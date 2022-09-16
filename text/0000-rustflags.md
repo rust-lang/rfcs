@@ -77,12 +77,19 @@ libraries thus losing out on collecting any code coverage.
 
 ## Other examples: debuginfo, saving temp files
 
-Other examples of this include having the ability to set the debuginfo level for only a single crate to save on binary size. One scenario
-where this is helpful is debugging tests that are not having the expected behavior. This feature will allow a Rust developer to set the
-debuginfo level for the current crate and have full debugging symbols but still allow all other dependencies to be fully optimized. This
-will save on both compilation time and binary size.
+Other examples of this include having the ability to set the debuginfo level, (`-C debuginfo=<val>`), for only a single crate to save on
+binary size. One scenario where this is helpful is debugging tests that are not having the expected behavior. This feature will allow a
+Rust developer to set the debuginfo level for the current crate and have full debugging symbols but still allow all other dependencies to
+be fully optimized. This will save on both compilation time and binary size.
 
-As with the previous example, being able to specify only saving the temporary files for the current crate as opposed to all crates in the dependency graph. This will save on disk space by not having all of the unnecessary temp files being saved on each invocation of the Rust compiler.
+As with the previous example, being able to specify only saving the temporary files, (`-C save-temps`), for the current crate as opposed
+to all crates in the dependency graph. This will save on disk space by not having all of the unnecessary temp files being saved on each
+invocation of the Rust compiler.
+
+There are some unstable flags that would also benefit from this feature such as the `-Z unpretty=<val>` option. This could be used to
+expand the input source to allow for easier debugging of macros and proc macros. This will allow a single crate to have its input
+expanded and lessen the amount of source expanded which would allow for Rust developer to better understand how a macro is affecting
+their source code.
 
 ## --rustflags
 
@@ -299,6 +306,15 @@ This approach has the benefit of extensibility. This meaning it can easily be ex
 for the root crate being built as well dependencies in the dependency graph by updating the crate name in the manifest section.
 For instance, supporting `build.foo.rustflags` would also make it simpler to support `build.<dependency>.rustflags` as well.
 
+#### Note
+
+The `profile-rustflags` cargo feature makes it possible to support this syntax since it is used in a very similar way. The
+`profile-rustflags` feature has support for setting crate specific rustflags for a profile. This syntax can simply be
+re-used to support crate specific rustflags as mentioned above. This feature is currently unstable but has been widely available
+for some time. Combining this with the recently stabilized `--config` cli option makes it possible to override config values
+on demand on the command line. I believe this option may include the fewest amount of changes to Cargo and would leverage existing
+syntax that Rust developers may already be familiar with.
+
 An issue with this approach is that changes to the config file is more cumbersome than simply adding commands at
 the CLI. This approach I believe would also make the feature more complicated in cases where a Rust developer wants to
 enable a specific flag for a set of crates such as the crates within a given workspace. This approach would mean each crate
@@ -326,7 +342,9 @@ for a simple `cargo run` and especially when running tests via `cargo test`.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-1. Should the cargo feature `--rustflags <RUSTFLAGS>` be dependent on the existing unstable cargo feature `-Z target-applies-to-host` to determine whether or not the rustc flags specified by the user on the cargo CLI should be passed to the invocation of rustc for build scripts defined in a given crate?
+1. Should the cargo feature `--rustflags <RUSTFLAGS>` be dependent on the existing unstable cargo feature `-Z target-applies-to-host`
+to determine whether or not the rustc flags specified by the user on the cargo CLI should be passed to the invocation of rustc for
+build scripts defined in a given crate?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
