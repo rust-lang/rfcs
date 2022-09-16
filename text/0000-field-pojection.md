@@ -21,19 +21,8 @@ stdlib:
 |[`Option`][option]`<&Struct>`                          |[`Option`][option]`<&Field>`                          |
 |[`Pin`][pin]`<&Struct>`                                |[`Pin`][pin]`<&Field>`                                |
 |[`Pin`][pin]`<&`[`MaybeUninit`][maybeuninit]`<Struct>>`|[`Pin`][pin]`<&`[`MaybeUninit`][maybeuninit]`<Field>>`|
-|[`Ref`][ref]`<'_, Struct>`                             |[`Ref`][ref]`<'_, Field>`                             |
 
-As well as their mutable versions:
-
-|           from                                            |            to                                            |
-|-----------------------------------------------------------|----------------------------------------------------------|
-|`&mut` [`MaybeUninit`][maybeuninit]`<Struct>`              |`&mut` [`MaybeUninit`][maybeuninit]`<Field>`              |
-|`&mut` [`Cell`][cell]`<Struct>`                            |`&mut` [`Cell`][cell]`<Field>`                            |
-|`&mut` [`UnsafeCell`][unsafecell]`<Struct>`                |`&mut` [`UnsafeCell`][unsafecell]`<Field>`                |
-|[`Option`][option]`<&mut Struct>`                          |[`Option`][option]`<&mut Field>`                          |
-|[`Pin`][pin]`<&mut Struct>`                                |[`Pin`][pin]`<&mut Field>`                                |
-|[`Pin`][pin]`<&mut` [`MaybeUninit`][maybeuninit]`<Struct>>`|[`Pin`][pin]`<&mut` [`MaybeUninit`][maybeuninit]`<Field>>`|
-|[`RefMut`][refmut]`<'_, Struct>`                           |[`RefMut`][refmut]`<'_, Field>`                           |
+Other pointers are also supported, for a list, see [here][supported-pointers].
 
 [maybeuninit]: https://doc.rust-lang.org/core/mem/union.MaybeUninit.html
 [cell]: https://doc.rust-lang.org/core/cell/struct.Cell.html
@@ -100,6 +89,8 @@ fn init_count(mut count: Box<MaybeUninit<Count>>) -> Box<Count> {
 }
 ```
 Before, this had to be done with raw pointers!
+
+[`Pin`][pin]`<P>` has a similar story:
 ```rust
 struct RaceFutures<F1, F2> {
     // Pin is somewhat special, it needs some way to specify
@@ -127,6 +118,7 @@ where
 ```
 Without this proposal, one would have to use `unsafe` with
 `Pin::map_unchecked_mut` to project the inner fields.
+
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -182,14 +174,14 @@ These *field projections* are also available on other types.
 
 Our second example is going to focus on [`Pin`][pin]`<P>`. This type is a little
 special, as it allows unwrapping while projecting, but only for specific fields.
-This information is expressed via the `#[pin]` attribute on the given field.
+This information is expressed via the `#[unpin]` attribute on the given field.
 ```rust
 struct RaceFutures<F1, F2> {
-    // we specify structurally pinned fields like this
-    #[pin]
     fut1: F1,
-    #[pin]
     fut2: F2,
+	// this will be used to fairly poll the futures
+	#[unpin]
+	first: bool,
 }
 impl<F1, F2> Future for RaceFutures<F1, F2>
 where
@@ -199,93 +191,162 @@ where
     type Output = F1::Output;
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context) -> Poll<Self::Output> {
-        // `self.fut1` has the type `Pin<&mut F1>` because `fut1` is a pinned field.
-        // if it was not pinned, the type would be `&mut F1`.
-        match self.fut1.poll(ctx) {
-            Poll::Pending => self.fut2.poll(ctx),
-            rdy => rdy,
-        }
+		// we can access self.first mutably, because it is `#[unpin]`
+		self.first = !self.first;
+		if self.first {
+			// `self.fut1` has the type `Pin<&mut F1>` because `fut1` is a pinned field.
+        	// if it was not pinned, the type would be `&mut F1`.
+        	match self.fut1.poll(ctx) {
+        	    Poll::Pending => self.fut2.poll(ctx),
+        	    rdy => rdy,
+        	}
+		} else {
+			match self.fut2.poll(ctx) {
+        	    Poll::Pending => self.fut1.poll(ctx),
+        	    rdy => rdy,
+        	}
+		}
     }
 }
 ```
 
-## Cells
+## Defining your own wrapper type
 
-When using [`Cell`][cell]`<T>` or [`UnsafeCell`][cell]`<T>`, one can use the
-same field access syntax as before to get a projected field:
+First you need to decide what kind of projection your wrapper type needs:
+- field projection: this allows users to project `&mut Wrapper<Struct>` to `&mut Wrapper<Field>`,
+  this is only available on types with `#[repr(transparent)]`
+- inner projection: this allows users to project `Wrapper<&mut Struct>` to `Wrapper<&mut Field>`,
+  this is *not* available for `union`s
+
+
+### Field projection
+Annotate your type with `#[field_projecting($T)]` where `$T` is the
+generic type parameter that you want to project.
 ```rust
-struct Foo {
-    a: usize,
-    b: u64,
-}
-
-fn process(x: &Cell<Foo>, y: &Cell<Foo>) {
-    x.a.swap(y.a);
-    x.b.set(x.b.get() + y.b.get());
+#[repr(transparent)]
+#[field_projecting(T)]
+pub union MaybeUninit<T> {
+	uninit: (),
+	value: ManuallyDrop<T>,
 }
 ```
+
+### Inner projection
+Annotate your type with `#[inner_projecting($T, $unwrap)]` where
+- `$T` is the generic type parameter that you want to project.
+- `$unwrap` is an optional identifier, that - when specified - is available to users to allow
+  projecting from `Wrapper<Pointer<Struct>> -> Pointer<Field>` on fields marked
+  with `#[$unwrap]`.
+```rust
+#[inner_projecting(T)]
+pub enum Option<T> {
+	Some(T),
+	None,
+}
+```
+Here is `Pin` as an example with `$unwrap`:
+```rust
+#[inner_projecting(T, unpin)]
+pub struct Pin<P> {
+	pointer: P,
+}
+
+// now the user can write:
+struct RaceFutures<F1, F2> {
+    fut1: F1,
+    fut2: F2,
+	#[unpin]
+	first: bool,
+}
+```
+`&mut race_future.first` has type `&mut bool`, because it is marked by `#[unpin]`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-See the tables from the [summary][summary] section for the exact projections that
-are part of this RFC.
+Here is the list of types from `core` that will be `field_projecting`:
+
+- [`MaybeUninit<T>`][maybeuninit]
+- [`Cell<T>`][cell]
+- [`UnsafeCell<T>`][unsafecell]
+
+These will be `inner_projecting`:
+
+- [`Option<T>`][option]
+- [`Pin<T>`][pin]
+
+## Supported pointers
+[supported-pointers]: #supported-pointers
+
+These are the pointer types that can be used as `P` in `P<Wrapper<Struct>> ->
+P<Wrapper<Field>>` for `field_projecting` and in `Wrapper<P<Struct>> ->
+Wrapper<P<Field>>` for `inner_projecting`:
+
+- `&mut T`, `&T`
+- `*mut T`, `*const T`, `NonNull<T>`, `AtomicPtr<T>`
+- `Pin<P>` where `P` is from above
+
+Note that all of these pointers have the same size and all can be transmuted to
+and from `*mut T`. This is by design and other pointer types suggested should
+follow this. There could be an internal trait
+```rust
+trait NoMetadataPtr<T> {
+	fn into_raw(self) -> *mut T;
+
+	/// # Safety
+	/// The supplied `ptr` must have its origin from either `Self::into_raw`, or
+	/// be directly derived from it via field projection (`ptr::addr_of_mut!((*raw).field)`)
+	unsafe fn from_raw(ptr: *mut T) -> Self;
+}
+```
+that then could be used by the compiler to ease the field projection
+implementation.
+
 
 ## Implementation
-### Trait-based
 
-It is currently unclear as to how this mechanism should be implemented. One
-way would be to create a compiler-internal trait:
+Add two new attributes: `#[field_projecting($T)]` and `#[inner_projecting($T)]`
+both taking a generic type parameter as an argument.
+
+### `#[field_projecting($T)]`
+
+#### Restrictions
+This attribute is only allowed on `#[repr(transparent)]` types where the only
+field has the layout of `$T`. Alternatively the type is a ZST.
+
+#### How it works
+This is done, because to do a projection, the compiler will
+`mem::transmute::<&mut Wrapper<Struct>, *mut Struct>` and then get the field
+using `ptr::addr_of_mut!` after which the pointer is then again
+`mem::transmute::<*mut Field, &mut Wrapper<Field>>`d to yield the
+projected field.
+
+### `#[inner_projecting($T, $unwrap)]`
+
+#### Restrictions
+This attribute cannot be added on `union`s, because it is unclear what field
+the projection would project. For example:
 ```rust
-pub trait FieldProject {
-    type Wrapper<'a, T>
-    where
-        T: 'a;
-    type WrapperMut<'a, T>
-    where
-        T: 'a;
-
-    /// Safety: closure must only do a field projection and not access the inner data
-    unsafe fn field_project<'a, T, U>(
-        this: Self::Wrapper<'a, T>,
-        f: impl FnOnce(*const T) -> *const U,
-    ) -> Self::Wrapper<'a, U>;
-
-    /// Safety: closure must only do a field projection and not access the inner data
-    unsafe fn field_project_mut<'a, T, U>(
-        this: Self::WrapperMut<'a, T>,
-        f: impl FnOnce(*mut T) -> *mut U,
-    ) -> Self::WrapperMut<'a, U>;
+#[inner_projecting($T)]
+pub union WeirdPair<T> {
+	a: (ManuallyDrop<T>, u32),
+	b: (u32, ManuallyDrop<T>),
 }
 ```
 
-That then would be implemented for the wrapper types. An example implementation
-for [`MaybeUninit`][maybeuninit]`<T>`:
-```rust
-impl FieldProject for MaybeUninit<()> {
-    type Wrapper<'a, T> = &'a MaybeUninit<T>where T:'a;
-    type WrapperMut<'a, T> = &'a mut MaybeUninit<T>where T:'a;
+`$unwrap` can only be specified on `#[repr(transparent)]`, because otherwise
+`Wrapper<Pointer<Struct>>` cannot be projected to `Pointer<Field>`.
 
-    unsafe fn field_project<'a, T, U>(
-        this: Self::Wrapper<'a, T>,
-        f: impl FnOnce(*const T) -> *const U,
-    ) -> Self::Wrapper<'a, U> {
-        &*f(this.as_ptr()).cast::<MaybeUninit<U>>()
-    }
 
-    unsafe fn field_project_mut<'a, T, U>(
-        this: Self::WrapperMut<'a, T>,
-        f: impl FnOnce(*mut T) -> *mut U,
-    ) -> Self::WrapperMut<'a, U> {
-        &mut *f(this.as_mut_ptr()).cast::<MaybeUninit<U>>()
-    }
-}
-```
-You can find the other implementations in [this](https://github.com/y86-dev/field-project) repository.
+#### How it works
+Each field mentioning `$T` will either need to be a ZST, or `#[inner_projecting]` or `$T`.
+The projection will work by projecting each field of type `Pointer<$T>` (remember, we
+are projecting from `Wrapper<Pointer<Struct>> -> Wrapper<Pointer<Field>>`) to
+`Pointer<$F>` and construct a `Wrapper<Pointer<$F>>` in place (because `Pointer<$F>`
+will have the same size as `Pointer<$T>` this will take up the same number of
+bytes, although the layout might be different). The last step will be skipped if
+the field is marked with `#[$unwrap]`.
 
-### Others
-It could also be entirely lang-item based. This would mean all wrapper types
-would exhibit special field projection behavior.
 
 ## Interactions with other language features
 
@@ -333,8 +394,17 @@ They however seem not very compatible with [`MaybeUninit`][maybeuninit]`<T>`
 
 Because [`Pin`][pin]`<P>` is a bit special, as it is the only Wrapper that
 permits access to raw fields when the user specifies so. It needs a mechanism
-to do so. This proposal has chosen an attribute named `#[pin]` for this purpose.
+to do so. This proposal has chosen an attribute named `#[unpin]` for this purpose.
 It would only be a marker attribute and provide no functionality by itself.
+It should be located either in the same module so `::core::pin::unpin` or at the
+type itself `::core::pin::Pin::unpin`.
+
+There are several problems with choosing `#[unpin]` as the marker:
+- poor migration support for users of [pin-project]
+- not yet resolved the problem of `PinnedDrop` that can be implemented more
+  easily with `#[pin]`, see below.
+
+### Alternative: specify pinned fields instead (`#[pin]`)
 
 An additional challenge is that if a `!Unpin` field is marked `#[pin]`, then
 one cannot implement the normal `Drop` trait, as it would give access to
@@ -363,6 +433,12 @@ impl Drop for $ty {
 }
 ```
 
+*To resolve before merge:*
+
+We could of course set an exception for `pin` and mark fields that keep the
+wrapper in contrast to other types. But `Option` does not support projecting
+"out of the wrapper" so this seems weird to make a general option.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -376,13 +452,41 @@ impl Drop for $ty {
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why is this design the best in the space of possible designs?
-This design is most likely the simplest design for field-projections, as users
-will use the same syntax they would use for field access. There is also no
-ambiguity, because when fields can be projected, the fields would not be
-accessible in the first place.
+This RFC consciously chose the presented design, because it addresses the
+following core issues:
+- ergonomic field projection for a wide variety of types with user accesible
+  ways of implementing it for their own types.
+- this feature integrates well with itself and other parts of the language.
+- the field access operator `.` is not imbued with additional meaning: it does
+  not introduce overhead to use `.` on `&mut MaybeUninit<T>` compared to `&mut T`.
 
-One remaining issue is: how can users specify their own wrapper types?
+In particular this feature will not and *should not in the future* support
+projecting types that require additional maintenance like `Arc`.
+This would change the meaning of `.` allowing implicit creations of potentially
+as many `Arc`s as one writes `.`.
+
+## *Out of scope:* `Arc` projection
+[out-of-scope-arc-projection]: #out-of-scope-arc-projection
+
+With the current design of `Arc` it is not possible to add field projection,
+because the refcount lives directly adjacent to the data. Instead the stdlib should
+include a new type of `Arc` (or `ProjectedArc<Field, Struct>`) that allows
+projection via a `map` function:
+```rust
+pub struct ProjectedArc<T, S> {
+    backing: Arc<S>,
+    ptr: NonNull<T>,
+}
+
+impl<T> Arc<T> {
+    pub fn project<U>(&self, map: impl FnOnce(&T) -> &U) -> ProjectedArc<U, T> {
+        ProjectedArc {
+            backing: self.clone(),
+            ptr: NonNull::from(map(&**self)),
+        }
+    }
+}
+```
 
 ## What other designs have been considered and what is the rationale for not choosing them?
 
@@ -428,11 +532,14 @@ when they want to perform a field projection.
 
 ## Other languages
 
-I have done some quick research but have not found similar concepts in other
-languages. C and C++ handle uninitialized memory differently by allowing
-any memory to be uninitialized and thus a field projection to uninitialized
-memory is just normal field access. These languages also do not have the wrapper
-types that rust provides.
+Other languages generally do not have this feature in the same extend. C++ has
+`shared_ptr` which allows the creation of another `shared_ptr` pointing at a field of
+a `shared_ptr`'s pointee. This is possible, because `shared_ptr` is made up of
+two pointers, one pointing to the data and another pointing at the ref count.
+While this is not possible to add to `Arc` without introducing a new field, it
+could be possible to add another `Arc` pointer that allowed field projections.
+See [this section][out-of-scope-arc-projection] for more, as this is out of this RFC's
+scope.
 
 ## RFCs
 
@@ -453,15 +560,13 @@ types that rust provides.
 
 ## Before merging
 
-- Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)?
-- Should there be a general mechanism to support nested projections? Currently
-there is explicit support planned for [`Pin`][pin]`<&mut` [`MaybeUninit`][maybeuninit]`<T>>`.
+[ ] Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)?
 
 ## Before stabilization
-- How can we enable users to leverage field projection? Maybe there should exist
+[x] How can we enable users to leverage field projection? Maybe there should exist
 a public trait that can be implemented to allow this.
-- Should `union`s also be supported?
-- How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?
+[ ] Should `union`s also be supported?
+[ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -478,10 +583,10 @@ exist, maybe there is room for generalization here as well.
 ## [`Rc`]`<T>` and [`Arc`]`<T>` projections
 
 While out of scope for this RFC, projections for [`Rc`]`<T>` and [`Arc`]`<T>`
-could be implemented in a similar way. This change seems to be a lot more
-involved and will probably require that more information is stored in these
-pointers. It seems more likely that this could be implemented for a new type
-that explicitly opts in to provide field projections.
+could be implemented by adding another field that points to the ref count.
+This RFC is designed for low cost projections, modifying an atomic ref count is
+too slow to let it happen without explicit opt-in by the programmer and as such
+it would be better to implement it via a dedicated `map` function.
 
 [`Rc`]: https://doc.rust-lang.org/alloc/sync/struct.Rc.html
 [`Arc`]: https://doc.rust-lang.org/alloc/sync/struct.Arc.html
