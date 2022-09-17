@@ -179,9 +179,9 @@ This information is expressed via the `#[unpin]` attribute on the given field.
 struct RaceFutures<F1, F2> {
     fut1: F1,
     fut2: F2,
-	// this will be used to fairly poll the futures
-	#[unpin]
-	first: bool,
+    // this will be used to fairly poll the futures
+    #[unpin]
+    first: bool,
 }
 impl<F1, F2> Future for RaceFutures<F1, F2>
 where
@@ -191,21 +191,21 @@ where
     type Output = F1::Output;
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context) -> Poll<Self::Output> {
-		// we can access self.first mutably, because it is `#[unpin]`
-		self.first = !self.first;
-		if self.first {
-			// `self.fut1` has the type `Pin<&mut F1>` because `fut1` is a pinned field.
-        	// if it was not pinned, the type would be `&mut F1`.
-        	match self.fut1.poll(ctx) {
-        	    Poll::Pending => self.fut2.poll(ctx),
-        	    rdy => rdy,
-        	}
-		} else {
-			match self.fut2.poll(ctx) {
-        	    Poll::Pending => self.fut1.poll(ctx),
-        	    rdy => rdy,
-        	}
-		}
+        // we can access self.first mutably, because it is `#[unpin]`
+        self.first = !self.first;
+        if self.first {
+            // `self.fut1` has the type `Pin<&mut F1>` because `fut1` is a pinned field.
+            // if it was not pinned, the type would be `&mut F1`.
+            match self.fut1.poll(ctx) {
+                Poll::Pending => self.fut2.poll(ctx),
+                rdy => rdy,
+            }
+        } else {
+            match self.fut2.poll(ctx) {
+                Poll::Pending => self.fut1.poll(ctx),
+                rdy => rdy,
+            }
+        }
     }
 }
 ```
@@ -226,8 +226,8 @@ generic type parameter that you want to project.
 #[repr(transparent)]
 #[field_projecting(T)]
 pub union MaybeUninit<T> {
-	uninit: (),
-	value: ManuallyDrop<T>,
+    uninit: (),
+    value: ManuallyDrop<T>,
 }
 ```
 
@@ -240,23 +240,23 @@ Annotate your type with `#[inner_projecting($T, $unwrap)]` where
 ```rust
 #[inner_projecting(T)]
 pub enum Option<T> {
-	Some(T),
-	None,
+    Some(T),
+    None,
 }
 ```
 Here is `Pin` as an example with `$unwrap`:
 ```rust
 #[inner_projecting(T, unpin)]
 pub struct Pin<P> {
-	pointer: P,
+    pointer: P,
 }
 
 // now the user can write:
 struct RaceFutures<F1, F2> {
     fut1: F1,
     fut2: F2,
-	#[unpin]
-	first: bool,
+    #[unpin]
+    first: bool,
 }
 ```
 `&mut race_future.first` has type `&mut bool`, because it is marked by `#[unpin]`.
@@ -291,12 +291,12 @@ and from `*mut T`. This is by design and other pointer types suggested should
 follow this. There could be an internal trait
 ```rust
 trait NoMetadataPtr<T> {
-	fn into_raw(self) -> *mut T;
+    fn into_raw(self) -> *mut T;
 
-	/// # Safety
-	/// The supplied `ptr` must have its origin from either `Self::into_raw`, or
-	/// be directly derived from it via field projection (`ptr::addr_of_mut!((*raw).field)`)
-	unsafe fn from_raw(ptr: *mut T) -> Self;
+    /// # Safety
+    /// The supplied `ptr` must have its origin from either `Self::into_raw`, or
+    /// be directly derived from it via field projection (`ptr::addr_of_mut!((*raw).field)`)
+    unsafe fn from_raw(ptr: *mut T) -> Self;
 }
 ```
 that then could be used by the compiler to ease the field projection
@@ -329,8 +329,8 @@ the projection would project. For example:
 ```rust
 #[inner_projecting($T)]
 pub union WeirdPair<T> {
-	a: (ManuallyDrop<T>, u32),
-	b: (u32, ManuallyDrop<T>),
+    a: (ManuallyDrop<T>, u32),
+    b: (u32, ManuallyDrop<T>),
 }
 ```
 
@@ -560,13 +560,16 @@ scope.
 
 ## Before merging
 
-[ ] Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)?
+- [ ] Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)?
+- [ ] how  do we disambiguate field access when both the wrapper and the struct
+  have the same named field? [`MaybeUninit`][maybeuninit]`<Struct>.value` and `Struct` also
+  has `.value`.
 
 ## Before stabilization
-[x] How can we enable users to leverage field projection? Maybe there should exist
+- [x] How can we enable users to leverage field projection? Maybe there should exist
 a public trait that can be implemented to allow this.
-[ ] Should `union`s also be supported?
-[ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?
+- [ ] Should `union`s also be supported?
+- [ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
