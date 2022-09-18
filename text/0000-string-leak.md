@@ -20,7 +20,8 @@ The existing alternative of `Box::leak(string.into_boxed_str())` may reallocate 
 `String::leak` works exactly like [`Vec::<u8>::leak`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.leak) except that
 it preserves the guarantee that the bytes are valid `utf8`.
 
-For example, the following code leaks a `String` without reallocation. ```rust
+For example, the following code leaks a `String` without reallocation.
+```rust
 let string = String::with_capacity(1000);
 string.push_str("Hello world!");
 let leaked: &'static mut str = string.leak();
@@ -33,7 +34,7 @@ println!("{}", leaked);
 ```rust
 impl String {
     pub fn leak(self) -> &'static mut str {
-        let me = s.into_bytes().leak();
+        let me = self.into_bytes().leak();
         // Safety: Bytes from a [`String`] are valid utf8.
         unsafe { std::str::from_utf8_unchecked_mut(me) }
     }	
