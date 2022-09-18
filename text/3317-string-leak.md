@@ -33,13 +33,14 @@ println!("{}", leaked);
 
 ```rust
 impl String {
-    pub fn leak(self) -> &'static mut str {
+    pub fn leak<'a>(self) -> &'a mut str {
         let me = self.into_bytes().leak();
         // Safety: Bytes from a [`String`] are valid utf8.
         unsafe { std::str::from_utf8_unchecked_mut(me) }
     }	
 }
 ```
+*note: It may be necessary to bound the allocator's lifetime.
 
 # Drawbacks
 [drawbacks]: #drawbacks
