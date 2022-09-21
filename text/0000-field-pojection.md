@@ -24,6 +24,33 @@ stdlib:
 
 Other pointers are also supported, for a list, see [here][supported-pointers].
 
+The projection works exactly like current field access:
+```rust
+struct MyStruct {
+    foo: Foo,
+    bar: usize,
+}
+struct Foo {
+    count: usize,
+}
+```
+when `mystruct` is of type `MyStruct`/`&mut MyStruct` field access works like this:
+
+| expression              | type        |
+|-------------------------|-------------|
+|`mystruct.foo`           | `Foo`       |
+|`&mystruct.foo`          | `&Foo`      |
+|`&mut mystruct.foo.count`|`&mut usize` |
+
+when `mystruct` is of type `&mut MaybeUninit<MyStruct>` this proposal allows this:
+
+| expression              | type                     |
+|-------------------------|--------------------------|
+|`mystruct.foo`           | `MaybeUninit<Foo>`       |
+|`&mystruct.foo`          | `&MaybeUninit<Foo>`      |
+|`&mut mystruct.foo.count`|`&mut MaybeUninit<usize>` |
+
+
 [maybeuninit]: https://doc.rust-lang.org/core/mem/union.MaybeUninit.html
 [cell]: https://doc.rust-lang.org/core/cell/struct.Cell.html
 [unsafecell]: https://doc.rust-lang.org/core/cell/struct.UnsafeCell.html
@@ -390,6 +417,38 @@ fn process(x: &Cell<FooBar>, y: &Cell<FooBar>) {
 They however seem not very compatible with [`MaybeUninit`][maybeuninit]`<T>`
 (more work needed).
 
+### `Deref` and `DerefMut`
+
+Field projection should have higher priority similar to how field access has a higher priority than
+`Deref`:
+```rust
+struct Foo {
+    field: usize,
+    inner: Bar,
+}
+
+struct Bar {
+    field: isize,
+}
+
+impl core::ops::Deref for Foo {
+    type Target = Bar;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+fn demo(f: &Foo) {
+    let _: usize = f.field;
+    let _: isize = (**f).field;
+}
+```
+
+Users will have to explicitly deref the expression/call `deref` explicitly.
+
+This could potentially introduce code breakage, but only if the wrapper type implements `Deref`,
+which is only the case for `Pin`. There is more information needed here.
+
 ## Pin projections
 
 Because [`Pin`][pin]`<P>` is a bit special, as it is the only Wrapper that
@@ -438,6 +497,7 @@ impl Drop for $ty {
 We could of course set an exception for `pin` and mark fields that keep the
 wrapper in contrast to other types. But `Option` does not support projecting
 "out of the wrapper" so this seems weird to make a general option.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -561,15 +621,18 @@ scope.
 ## Before merging
 
 - [ ] Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)?
-- [ ] how  do we disambiguate field access when both the wrapper and the struct
-  have the same named field? [`MaybeUninit`][maybeuninit]`<Struct>.value` and `Struct` also
-  has `.value`.
 
 ## Before stabilization
 - [x] How can we enable users to leverage field projection? Maybe there should exist
 a public trait that can be implemented to allow this.
 - [ ] Should `union`s also be supported?
 - [ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?
+- [ ] for `Pin`, should we use `#[unpin]` like other `#[inner_projecting]`, or should we stick with `#[pin]` (and maybe introduce a way to switch between the two modes).
+- [ ] how special does `PinnedDrop` need to be? This also ties in with the previous point, with `#[pin]` it is very easy to warrant a `PinnedDrop` instead of `Drop` (that will need to be compiler magic). With `#[unpin]` I do not really see a way how it could be implemented.
+- [ ] Any new syntax? <small>*I am leaning towards NO (except for the next point).*</small>
+- [ ] Disambiguate member access could we do something like `<struct as MaybeUninit>.value`?
+- [ ] Should we expose the `NoMetadataPtr` to the user?
+- [ ] What types should we also support? I am thinking of `PhantomData<&mut T>`, because this seems helpful in e.g. macro contexts that want to know the type of a field.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -581,7 +644,7 @@ Even more generalized projections e.g. slices: At the moment
 - [`as_array_of_cells`](https://doc.rust-lang.org/core/cell/struct.Cell.html#method.as_array_of_cells)
 - [`as_slice_of_cells`](https://doc.rust-lang.org/core/cell/struct.Cell.html#method.as_slice_of_cells)
 
-exist, maybe there is room for generalization here as well.
+exist, maybe there is room for generalization there as well.
 
 ## [`Rc`]`<T>` and [`Arc`]`<T>` projections
 
