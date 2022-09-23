@@ -6,12 +6,12 @@
 # Summary
 [summary]: #summary
 
-The stdlib has wrapper types that impose some restrictions/additional features
+The std-lib has wrapper types that impose some restrictions/additional features
 on the types that are wrapped. For example: `MaybeUninit<T>` allows `T` to be
 partially initialized. These wrapper types also affect the fields of the types.
 At the moment there is no easy access to these fields.
 This RFC proposes to add field projection to certain wrapper types from the
-stdlib:
+std-lib:
 
 |           from                                        |            to                                        |
 |-------------------------------------------------------|------------------------------------------------------|
@@ -98,8 +98,7 @@ fn do_stuff(debug: Option<&mut Count>) {
 }
 ```
 While this might only seem like a minor improvement for [`Option`][option]`<T>`
-it is transformative for [`Pin`][pin]`<P>` and
-[`MaybeUninit`][maybeuninit]`<T>`:
+it is transformative for [`Pin`][pin]`<P>` and [`MaybeUninit`][maybeuninit]`<T>`:
 ```rust
 struct Count {
     inner: usize,
@@ -156,7 +155,7 @@ When working with certain wrapper types in rust, you often want to access fields
 of the wrapped types. When interfacing with C one often has to deal with
 uninitialized data. In rust uninitialized data is represented by
 [`MaybeUninit`][maybeuninit]`<T>`. In the following example we demonstrate
-how one can initialize partial fields using [`MaybeUninit`][maybeuninit]`<T>`.
+how one can initialize fields using [`MaybeUninit`][maybeuninit]`<T>`.
 ```rust
 #[repr(C)]
 pub struct MachineData {
@@ -201,10 +200,15 @@ These *field projections* are also available on other types.
 
 Our second example is going to focus on [`Pin`][pin]`<P>`. This type is a little
 special, as it allows unwrapping while projecting, but only for specific fields.
-This information is expressed via the `#[unpin]` attribute on the given field.
+This information is expressed via the `#[pin]` attribute on each structurally pinned field.
+The `#[unpin]` attribute enables *pin unwrapping*. Fields with no attributes will not be accessible
+via field projections (remember that `Pin<&T>` implements `Deref` for *all* types `T`).
 ```rust
+use core::pin::pin;
 struct RaceFutures<F1, F2> {
+    #[pin]
     fut1: F1,
+    #[pin]
     fut2: F2,
     // this will be used to fairly poll the futures
     #[unpin]
@@ -218,7 +222,7 @@ where
     type Output = F1::Output;
 
     fn poll(self: Pin<&mut Self>, ctx: &mut Context) -> Poll<Self::Output> {
-        // we can access self.first mutably, because it is `#[unpin]`
+        // we can access self.first mutably, because it is not `#[pin]`
         self.first = !self.first;
         if self.first {
             // `self.fut1` has the type `Pin<&mut F1>` because `fut1` is a pinned field.
@@ -259,11 +263,8 @@ pub union MaybeUninit<T> {
 ```
 
 ### Inner projection
-Annotate your type with `#[inner_projecting($T, $unwrap)]` where
-- `$T` is the generic type parameter that you want to project.
-- `$unwrap` is an optional identifier, that - when specified - is available to users to allow
-  projecting from `Wrapper<Pointer<Struct>> -> Pointer<Field>` on fields marked
-  with `#[$unwrap]`.
+Annotate your type with `#[inner_projecting($T)]` where `$T` is the generic type parameter
+that you want to project.
 ```rust
 #[inner_projecting(T)]
 pub enum Option<T> {
@@ -271,22 +272,6 @@ pub enum Option<T> {
     None,
 }
 ```
-Here is `Pin` as an example with `$unwrap`:
-```rust
-#[inner_projecting(T, unpin)]
-pub struct Pin<P> {
-    pointer: P,
-}
-
-// now the user can write:
-struct RaceFutures<F1, F2> {
-    fut1: F1,
-    fut2: F2,
-    #[unpin]
-    first: bool,
-}
-```
-`&mut race_future.first` has type `&mut bool`, because it is marked by `#[unpin]`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -341,6 +326,14 @@ both taking a generic type parameter as an argument.
 This attribute is only allowed on `#[repr(transparent)]` types where the only
 field has the layout of `$T`. Alternatively the type is a ZST.
 
+```rust
+#[field_projecting(T)]
+pub struct Twice<T> {
+//         ^^^^^^^^ error: field projecting type needs to be `#[repr(transparent)]`
+    field: T,
+}
+```
+
 #### How it works
 This is done, because to do a projection, the compiler will
 `mem::transmute::<&mut Wrapper<Struct>, *mut Struct>` and then get the field
@@ -348,7 +341,7 @@ using `ptr::addr_of_mut!` after which the pointer is then again
 `mem::transmute::<*mut Field, &mut Wrapper<Field>>`d to yield the
 projected field.
 
-### `#[inner_projecting($T, $unwrap)]`
+### `#[inner_projecting($T)]`
 
 #### Restrictions
 This attribute cannot be added on `union`s, because it is unclear what field
@@ -360,26 +353,22 @@ pub union WeirdPair<T> {
     b: (u32, ManuallyDrop<T>),
 }
 ```
-
-`$unwrap` can only be specified on `#[repr(transparent)]`, because otherwise
-`Wrapper<Pointer<Struct>>` cannot be projected to `Pointer<Field>`.
-
+Each field mentioning `$T` will either need to be a ZST, `#[inner_projecting]` or `$T`.
 
 #### How it works
-Each field mentioning `$T` will either need to be a ZST, or `#[inner_projecting]` or `$T`.
-The projection will work by projecting each field of type `Pointer<$T>` (remember, we
-are projecting from `Wrapper<Pointer<Struct>> -> Wrapper<Pointer<Field>>`) to
+First each field of type `Pointer<$T>` (remember, we are projecting from
+`Wrapper<Pointer<Struct>> -> Wrapper<Pointer<Field>>`) is projected to
 `Pointer<$F>` and construct a `Wrapper<Pointer<$F>>` in place (because `Pointer<$F>`
 will have the same size as `Pointer<$T>` this will take up the same number of
-bytes, although the layout might be different). The last step will be skipped if
-the field is marked with `#[$unwrap]`.
+bytes, although the layout might be different).
 
+The special behavior of `Pin` is explained [below][pin-projections-section].
 
 ## Interactions with other language features
 
 ### Bindings
 
-Bindings could also be supported:
+Bindings are also be supported:
 ```rust
 struct Foo {
     a: usize,
@@ -389,33 +378,32 @@ struct Foo {
 fn process(x: &Cell<Foo>, y: &Cell<Foo>) {
     let Foo { a: ax, b: bx } = x;
     let Foo { a: ay, b: by } = y;
+    // ax, bx, ay and by are all &Cell;
     ax.swap(ay);
     bx.set(bx.get() + by.get());
 }
 ```
-
-This also enables support for `enum`s:
+Enum bindings cannot be supported with the wrappers [`MaybeUninit`][maybeuninit]`<T>` and
+[`Cell`][cell]`<T>`:
 ```rust
 enum FooBar {
     Foo(usize, usize),
     Bar(usize),
 }
 
-fn process(x: &Cell<FooBar>, y: &Cell<FooBar>) {
-    use FooBar::*;
-    match (x, y) {
-        (Foo(a, b), Foo(c, d)) => {
-            a.swap(c);
-            b.set(b.get() + d.get());
+fn problem(foo: &Cell<FooBar>) {
+    match foo {
+        Foo(a, b) => {
+            foo.set(Bar(0));
+            // UB: access to uninhabited field!
+            let x = b.get();
         }
-        (Bar(x), Bar(y)) => x.swap(y),
-        (Foo(a, b), Bar(y)) => a.swap(y),
-        (Bar(x), Foo(a, b)) => b.swap(x),
+        _ => {}
     }
 }
 ```
-They however seem not very compatible with [`MaybeUninit`][maybeuninit]`<T>`
-(more work needed).
+[`MaybeUninit`][maybeuninit]`<T>` has the problem that we cannot read the discriminant (as it might
+not be initialized).
 
 ### `Deref` and `DerefMut`
 
@@ -446,24 +434,86 @@ fn demo(f: &Foo) {
 
 Users will have to explicitly deref the expression/call `deref` explicitly.
 
-This could potentially introduce code breakage, but only if the wrapper type implements `Deref`,
-which is only the case for `Pin`. There is more information needed here.
+This does not introduces code breakage, because `Pin` is the only wrapper type that is `Deref`.
+And it special treatment will be explained below.
 
 ## Pin projections
+[pin-projections-section]: #pin-projections
 
-Because [`Pin`][pin]`<P>` is a bit special, as it is the only Wrapper that
-permits access to raw fields when the user specifies so. It needs a mechanism
-to do so. This proposal has chosen an attribute named `#[unpin]` for this purpose.
-It would only be a marker attribute and provide no functionality by itself.
-It should be located either in the same module so `::core::pin::unpin` or at the
-type itself `::core::pin::Pin::unpin`.
+Because [`Pin`][pin]`<P>` is a bit special, as it is the only Wrapper that permits access to raw
+fields when the user specifies so. It needs a mechanism to do so. This proposal has chosen two
+attributes named `#[pin]` and `#[unpin]` for this purpose. They are marker attribute and provide no
+further functionality. They will be located at `::core::pin::{pin, unpin}`.
 
-There are several problems with choosing `#[unpin]` as the marker:
-- poor migration support for users of [pin-project]
-- not yet resolved the problem of `PinnedDrop` that can be implemented more
-  easily with `#[pin]`, see below.
+In a future edition they can be added into the prelude.
 
-### Alternative: specify pinned fields instead (`#[pin]`)
+Two attributes are required for backwards compatibility. Suppose there exists this library:
+```rust
+pub struct BufPtr {
+    buf: [u8; 64],
+    // null, or points into buf
+    ptr: *const u8,
+    // for some legacy reasons this is `pub` and cannot be changed
+    pub len: u8,
+    _pin: PhantomPinned,
+}
+
+impl BufPtr {
+    pub fn new(buf: [u8; 64]) -> Self {
+        Self {
+            buf,
+            ptr: ptr::null(),
+            len: 0,
+            _pin: PhantomPinned,
+        }
+    }
+
+    pub fn next(self: Pin<&mut Self>) -> Option<u8> {
+        // SAFETY: we do not move out of `this`
+        let this = unsafe { Pin::get_unchecked_mut(self) };
+        if this.ptr.is_null() {
+            let buf: *const [u8] = &this.buf[1..];
+            this.ptr = buf.cast();
+            // here we set the len and it cannot be changed, since `self` is `!Unpin` and it is pinned.
+            this.len = 1;
+            Some(this.buf[0])
+        } else if this.len >= 64 {
+            None
+        } else {
+            this.len += 1;
+            // SAFETY: `ptr` is not null, so it points into `buf`
+            let res = Some(unsafe { *this.ptr });
+            this.ptr = this.ptr.wrapping_add(1);
+            res
+        }
+    }
+}
+```
+The code is sound, because after pinning `BufPtr`, users cannot change `len` with safe code.
+
+If this proposal would treat all fields without `#[pin]` as `#[unpin]` then this would be possible:
+```rust
+fn main() {
+    let mut buf = Box::pin(BufPtr::new([0; 64]));
+    loop {
+        // field projection used here:
+        buf.as_mut().len = 0;
+        buf.as_mut().next(); // at some point we read some bad address
+    }
+}
+```
+
+That is why for `Pin` we need the default behavior of **no projection at all**.
+Users can specify unwrapping/projecting with `#[unpin]`/`#[pin]`.
+
+Marking an `Unpin` field `#[pin]` produces a warning:
+```rust
+struct MyStruct {
+    #[pin]
+ // ^^^^^^ warning pinning `u64` is useless, because it implements `Unpin` [read here for more information].
+    num: u64,
+}
+```
 
 An additional challenge is that if a `!Unpin` field is marked `#[pin]`, then
 one cannot implement the normal `Drop` trait, as it would give access to
@@ -492,12 +542,26 @@ impl Drop for $ty {
 }
 ```
 
-*To resolve before merge:*
+An error is emitted if a `Drop` impl is found when at least one field is marked `#[pin]`:
+```rust
+struct MyStruct {
+    buf: [u8; 64],
+    ptr: *const u8,
+    #[pin]
+    _pin: PhantomPinned,
+}
 
-We could of course set an exception for `pin` and mark fields that keep the
-wrapper in contrast to other types. But `Option` does not support projecting
-"out of the wrapper" so this seems weird to make a general option.
+impl Drop for MyStruct {
+//   ^^^^ error: cannot implement `Drop` for `MyStruct` because it has pinned fields.
+//   help: implement `PinnedDrop` instead
+    fn drop(&mut self) {
+        println!("Dropping MyStruct");
+    }
+}
+```
 
+`PinnedDrop` would also reside in `core::ops` and should be added to the prelude in the next
+edition.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -507,6 +571,7 @@ wrapper in contrast to other types. But `Option` does not support projecting
 - Increased compiler complexity:
     - longer compile times
     - potential worse type inference
+    - `Pin` projection support might be confusing to new users
 
 
 # Rationale and alternatives
@@ -514,7 +579,7 @@ wrapper in contrast to other types. But `Option` does not support projecting
 
 This RFC consciously chose the presented design, because it addresses the
 following core issues:
-- ergonomic field projection for a wide variety of types with user accesible
+- ergonomic field projection for a wide variety of types with user accessible
   ways of implementing it for their own types.
 - this feature integrates well with itself and other parts of the language.
 - the field access operator `.` is not imbued with additional meaning: it does
@@ -529,7 +594,7 @@ as many `Arc`s as one writes `.`.
 [out-of-scope-arc-projection]: #out-of-scope-arc-projection
 
 With the current design of `Arc` it is not possible to add field projection,
-because the refcount lives directly adjacent to the data. Instead the stdlib should
+because the ref-count lives directly adjacent to the data. Instead the std-lib should
 include a new type of `Arc` (or `ProjectedArc<Field, Struct>`) that allows
 projection via a `map` function:
 ```rust
@@ -555,6 +620,28 @@ This proposal was initially only designed to enable projecting
 pin projecting.
 
 It seems beneficial to also provide this functionality for a wider range of types.
+
+### Using solely `#[pin]`/`#[unpin]` for specifying structurally pinned fields
+
+Because it makes existing code unsound this option has not been chosen.
+
+### Trait instead of attributes to create a wrapper type
+
+The trait could look like this:
+```rust
+pub trait FieldProjecting<T> {
+    type Inner<U>;
+    unsafe fn project<U>(self, proj: impl FnOnce(*mut T) -> *mut U) -> Self::Inner<U>;
+}
+```
+Implementing this trait is a footgun. One has to use raw pointers only and already know a good bit
+about `unsafe` code to write this correctly. This also opens the door for implementations that do
+not abide by the "no additional maintenance" invariant.
+
+It could of course just be a marker trait and fulfill the same purpose as the attributes. That would
+enable using the condition "this type has projection" as type bounds. But this marker trait could
+also be added later.
+
 
 ## What is the impact of not doing this?
 
@@ -626,13 +713,14 @@ scope.
 - [x] How can we enable users to leverage field projection? Maybe there should exist
 a public trait that can be implemented to allow this.
 - [ ] Should `union`s also be supported?
-- [ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?
+- [ ] ~~How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?~~
 - [ ] for `Pin`, should we use `#[unpin]` like other `#[inner_projecting]`, or should we stick with `#[pin]` (and maybe introduce a way to switch between the two modes).
 - [ ] how special does `PinnedDrop` need to be? This also ties in with the previous point, with `#[pin]` it is very easy to warrant a `PinnedDrop` instead of `Drop` (that will need to be compiler magic). With `#[unpin]` I do not really see a way how it could be implemented.
 - [ ] Any new syntax? <small>*I am leaning towards NO (except for the next point).*</small>
 - [ ] Disambiguate member access could we do something like `<struct as MaybeUninit>.value`?
 - [ ] Should we expose the `NoMetadataPtr` to the user?
 - [ ] What types should we also support? I am thinking of `PhantomData<&mut T>`, because this seems helpful in e.g. macro contexts that want to know the type of a field.
+- [ ] should the warning when using `#[pin]` on an `Unpin` field be an error?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
