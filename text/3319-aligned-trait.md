@@ -50,3 +50,4 @@ None that I am aware of.
 - Relaxing `NonNull::<T>::dangling()`'s trait bound from `T: Sized` to `T: ?Sized + Aligned + Pointee<Metadata: ~const Default>` may be desirable once the necessary library and language features are stabilized.
 - `extern type`s may want to be able to implement `Aligned`.
 - `Aligned` may warrant an addition the next edition's prelude.
+- Certain `Self: Sized` bounds in the standard library could be relaxed to `Self: Aligned`. However, this might cause backward-compatibility issues.
