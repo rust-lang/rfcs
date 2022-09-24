@@ -11,7 +11,7 @@ Add an `Aligned` marker trait to `core::marker`, as a supertrait of the `Sized` 
 
 Data structures and containers that wish to store unsized types are easier to implement if they can produce a dangling, well-aligned pointer to the unsized type. Being able to determine a type's alignment without a value of the type allows doing this.
 
-In addition, this RFC allows implementing certain object-safe traits for slices, where this was not possible before.
+In addition, this RFC allows implementing certain object-safe traits for slices, in a more complete fashion than was possible before.
 
 # Guide-level explanation
 
@@ -26,7 +26,7 @@ Implied `Sized` bounds also imply `Aligned`, because `Aligned` is a supertrait o
 # Reference-level explanation
 
 `Aligned` is not object-safe. Trait methods bounded by `Self: Aligned` can't be called from a vtable, but don't affect the object safety of the trait as a whole, just like `Self: Sized` currently.
-Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing certain object-safe traits for slices, where this was not previously possible.
+Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing those methods when `Self` is a slice, while preserving object safety.
 
 # Drawbacks
 
