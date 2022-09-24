@@ -705,22 +705,26 @@ scope.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+You can find the direction I am currently biased towards at the end of each Question. `(Y) = Yes`,
+`(N) = No`, `(-) = no bias`. Questions that have been crossed out are no longer relevant/have been
+answered with "No".
+
 ## Before merging
 
-- [ ] Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)?
+- [ ] Is new syntax for the borrowing necessary (e.g. `&pin mut x.y` or `&uninit mut x.y`)? `(N)`
 
 ## Before stabilization
 - [x] How can we enable users to leverage field projection? Maybe there should exist
-a public trait that can be implemented to allow this.
-- [ ] Should `union`s also be supported?
-- [ ] ~~How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible?~~
-- [ ] for `Pin`, should we use `#[unpin]` like other `#[inner_projecting]`, or should we stick with `#[pin]` (and maybe introduce a way to switch between the two modes).
-- [ ] how special does `PinnedDrop` need to be? This also ties in with the previous point, with `#[pin]` it is very easy to warrant a `PinnedDrop` instead of `Drop` (that will need to be compiler magic). With `#[unpin]` I do not really see a way how it could be implemented.
-- [ ] Any new syntax? <small>*I am leaning towards NO (except for the next point).*</small>
-- [ ] Disambiguate member access could we do something like `<struct as MaybeUninit>.value`?
-- [ ] Should we expose the `NoMetadataPtr` to the user?
-- [ ] What types should we also support? I am thinking of `PhantomData<&mut T>`, because this seems helpful in e.g. macro contexts that want to know the type of a field.
-- [ ] should the warning when using `#[pin]` on an `Unpin` field be an error?
+a public trait that can be implemented to allow this. `(Y)`
+- [ ] Should `union`s also be supported? `(N)`
+- [ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible? `(N)`
+- [ ] ~~for `Pin`, should we use `#[unpin]` like other `#[inner_projecting]`, or should we stick with `#[pin]` (and maybe introduce a way to switch between the two modes).~~
+- [ ] ~~how special does `PinnedDrop` need to be? This also ties in with the previous point, with `#[pin]` it is very easy to warrant a `PinnedDrop` instead of `Drop` (that will need to be compiler magic). With `#[unpin]` I do not really see a way how it could be implemented.~~
+- [ ] Any new syntax? `(N)` (except the next point)
+- [ ] Disambiguate member access could we do something like `<struct as MaybeUninit>.value`? `(Y)`
+- [ ] Should we expose the `NoMetadataPtr` to the user? `(-)`
+- [ ] What types should we also support? I am thinking of `PhantomData<&mut T>`, because this seems helpful in e.g. macro contexts that want to know the type of a field. `(Y)`
+- [ ] should the warning when using `#[pin]` on an `Unpin` field be an error? `(Y)`
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
