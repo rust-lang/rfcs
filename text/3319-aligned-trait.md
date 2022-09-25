@@ -51,3 +51,4 @@ None that I am aware of.
 - `extern type`s may want to be able to implement `Aligned`.
 - `Aligned` may warrant an addition the next edition's prelude.
 - Certain `Self: Sized` bounds in the standard library could be relaxed to `Self: Aligned`. However, this might cause backward-compatibility issues.
+- [RFC 3308: `core::mem::offset_of`](https://github.com/rust-lang/rfcs/pull/3308) could, if accepted, be made to work on any `Aligned` type.
