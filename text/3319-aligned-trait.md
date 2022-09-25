@@ -35,7 +35,8 @@ Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing those metho
 
 # Rationale and alternatives
 
-`core::mem::align_of<T>()` for slices could be implemented with a library. However, a library would be unable to support records that contain a slice as the last field. Also, relaxing the trait dyn safety requirements can only be done with a language feature.
+- `core::mem::align_of<T>()` for slices could be implemented with a library. However, a library would be unable to support records that contain a slice as the last field. Also, relaxing the trait dyn safety requirements can only be done with a language feature.
+- `?Aligned` could be accepted as new syntax, equivalent to `?Sized`. However, I don't think it's worth it to have two ways to spell the exact same concept in the same edition.
 
 # Prior art
 
@@ -50,5 +51,6 @@ None that I am aware of.
 - Relaxing `NonNull::<T>::dangling()`'s trait bound from `T: Sized` to `T: ?Sized + Aligned + Pointee<Metadata: ~const Default>` may be desirable once the necessary library and language features are stabilized.
 - `extern type`s may want to be able to implement `Aligned`.
 - `Aligned` may warrant an addition the next edition's prelude.
+- Also in a future edition, `?Sized` could be replaced with `?Aligned`, with `?Sized` then meaning "opt out of `Sized` bound only, not `Aligned`."
 - Certain `Self: Sized` bounds in the standard library could be relaxed to `Self: Aligned`. However, this might cause backward-compatibility issues.
 - [RFC 3308: `core::mem::offset_of`](https://github.com/rust-lang/rfcs/pull/3308) could, if accepted, be made to work on any `Aligned` type.
