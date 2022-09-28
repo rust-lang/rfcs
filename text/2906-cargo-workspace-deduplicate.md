@@ -3,6 +3,8 @@
 - RFC PR: [rust-lang/rfcs#2906](https://github.com/rust-lang/rfcs/pull/2906)
 - Rust Issue: [rust-lang/cargo#8415](https://github.com/rust-lang/cargo/issues/8415)
 
+> **Note**: This feature was stabilized in Rust 1.64. Several design changes were made in the course of the implementation. Please see the documentation for [`[workspace.package]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-package-table) and [`[workspace.dependencies]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-dependencies-table) for details on how to use this feature.
+
 # Summary
 [summary]: #summary
 
