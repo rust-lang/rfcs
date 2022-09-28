@@ -3,6 +3,8 @@
 - RFC PR: [rust-lang/rfcs#2906](https://github.com/rust-lang/rfcs/pull/2906)
 - Rust Issue: [rust-lang/cargo#8415](https://github.com/rust-lang/cargo/issues/8415)
 
+> **Note**: This feature was stabilized in Rust 1.64. Several design changes were made in the course of the implementation. Please see the documentation for [`[workspace.package]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-package-table) and [`[workspace.dependencies]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-dependencies-table) for details on how to use this feature.
+
 # Summary
 [summary]: #summary
 
@@ -180,10 +182,10 @@ version = { workspace = true }
 This directive tells Cargo that the version of `foo` is the same as the
 `workspace.version` directive found in the workspace manifest. This means that
 in addition to a new `[workspace.dependencies]` section, package metadata keys
-can now also be defined inside of a `[workspace.package]` section:
+can now also be defined inside of a `[workspace]` section:
 
 ```toml
-[workspace.package]
+[workspace]
 version = "0.25.2"
 ```
 
@@ -233,11 +235,11 @@ Dependencies declared in `[workspace.dependencies]` have no meaning as-is. They
 do not affect the build nor do they force packages to depend on those
 dependencies. This part comes later below.
 
-The `[workspace.package]` section will also allow the definition of a number of keys
+The `[workspace]` section will also allow the definition of a number of keys
 also defined in `[package]` today, namely:
 
 ```toml
-[workspace.package]
+[workspace]
 version = "1.2.3"
 authors = ["Nice Folks"]
 description = "..."
@@ -252,11 +254,11 @@ categories = ["development-tools"]
 publish = false
 edition = "2018"
 
-[workspace.package.badges]
+[workspace.badges]
 # ...
 ```
 
-Each of these keys have no meaning in a `[workspace.package]` table yet, but will have
+Each of these keys have no meaning in a `[workspace]` table yet, but will have
 meaning when they're assigned to crates internally. That part comes later though
 in this design! Note that the format and accepted values for these keys are the
 same as the `[package]` section of `Cargo.toml`.
@@ -294,7 +296,7 @@ This directive indicates that the license of `foo` is the same as
 `workspace.license`. If `workspace.license` isn't defined then this generates an
 error.
 
-The following keys in `[package]` can be inherited from `[workspace.package]` with the
+The following keys in `[package]` can be inherited from `[workspace]` with the
 new `workspace = true` directive.
 
 ```toml
@@ -589,7 +591,7 @@ ways this could happen.
 ## Inheriting metadata from other packages
 
 One possible extension of this RFC is for metadata to not only be inheritable
-from the `[workspace.package]` table but also from other packages. For example a
+from the `[workspace]` table but also from other packages. For example a
 scenario seen in the wild is that some repositories have multiple "cliques" of
 crates which are all versioned as a unit. In this scenario one "clique" can have
 its version directives deduplicated with this proposal, but not multiple ones.
