@@ -53,4 +53,4 @@ None that I am aware of.
 - `Aligned` may warrant an addition the next edition's prelude.
 - Also in a future edition, `?Sized` could be replaced with `?Aligned`, with `?Sized` then meaning "opt out of `Sized` bound only, not `Aligned`."
 - Certain `Self: Sized` bounds in the standard library could be relaxed to `Self: Aligned`. However, this might cause backward-compatibility issues.
-- [RFC 3308: `core::mem::offset_of`](https://github.com/rust-lang/rfcs/pull/3308) could, if accepted, be made to work on any `Aligned` type.
+- [RFC 3308: `core::mem::offset_of`](https://github.com/rust-lang/rfcs/pull/3308) could, if accepted, be made to work on any `Aligned` type. One caveat is that if Rust ever gets structs with multiple unsized fields, those could be `Aligned` but not support `offset_of` for every field.
