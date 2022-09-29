@@ -740,7 +740,7 @@ a public trait that can be implemented to allow this. `(Y)`
 - [ ] Any new syntax? `(N)` (except the next point)
 - [ ] Disambiguate member access could we do something like `<struct as MaybeUninit>.value`? `(Y)`
 - [ ] Should we expose the `NoMetadataPtr` to the user? `(-)`
-- [ ] What types should we also support? I am thinking of `PhantomData<&mut T>`, because this seems helpful in e.g. macro contexts that want to know the type of a field. `(Y)`
+- [ ] What types should we also support? 
 - [ ] should the warning when using `#[pin]` on an `Unpin` field be an error? `(Y)`
 
 # Future possibilities
@@ -749,6 +749,7 @@ a public trait that can be implemented to allow this. `(Y)`
 ## Types that could benefit from projections
 
 - [`Option`][option], it would be `#[inner_projecting(T)]`, so it allows projecting from `Option<Pointer<Struct>>` to `Option<Pointer<Field>>`
+- [`PhantomData`], it could allow macros to better access the type of a field.
 
 ## Arrays
 
@@ -769,3 +770,4 @@ it would be better to implement it via a dedicated `map` function.
 
 [`Rc`]: https://doc.rust-lang.org/alloc/sync/struct.Rc.html
 [`Arc`]: https://doc.rust-lang.org/alloc/sync/struct.Arc.html
+[`PhantomData`]: https://doc.rust-lang.org/core/marker/struct.PhantomData.html
