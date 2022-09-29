@@ -629,8 +629,9 @@ Because it makes existing code unsound this option has not been chosen.
 
 The trait could look like this:
 ```rust
-pub trait FieldProjecting<T> {
-    type Inner<U>;
+pub unsafe trait FieldProjecting<'a, T: 'a> where Self: 'a {
+    type Inner<U: 'a>: 'a;
+
     unsafe fn project<U>(self, proj: impl FnOnce(*mut T) -> *mut U) -> Self::Inner<U>;
 }
 ```
@@ -641,6 +642,25 @@ not abide by the "no additional maintenance" invariant.
 It could of course just be a marker trait and fulfill the same purpose as the attributes. That would
 enable using the condition "this type has projection" as type bounds. But this marker trait could
 also be added later.
+
+Example implementations for [`MaybeUninit`][maybeuninit] and [`Pin`][pin]:
+```rust
+unsafe impl<'a, T> FieldProjecting<'a, T> for &'a mut MaybeUninit<T> {
+    type Inner<U: 'a> = &'a mut MaybeUninit<U>;
+
+    unsafe fn project<U>(self, proj: impl FnOnce(*mut T) -> *mut U) -> Self::Inner<U> {
+        &mut *proj(self.as_mut_ptr()).cast::<MaybeUninit<U>>()
+    }
+}
+
+unsafe impl<'a, T> FieldProjecting<'a, T> for Pin<&'a mut T> {
+    type Inner<U: 'a> = Pin<&'a mut U>;
+
+    unsafe fn project<U>(self, proj: impl FnOnce(*mut T) -> *mut U) -> Self::Inner<U> {
+        Pin::new_unchecked(&mut *proj(addr_of_mut!(*Pin::into_inner_unchecked(self))))
+    }
+}
+```
 
 
 ## What is the impact of not doing this?
