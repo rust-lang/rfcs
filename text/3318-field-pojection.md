@@ -18,7 +18,6 @@ std-lib:
 |`&`[`MaybeUninit`][maybeuninit]`<Struct>`              |`&`[`MaybeUninit`][maybeuninit]`<Field>`              |
 |`&`[`Cell`][cell]`<Struct>`                            |`&`[`Cell`][cell]`<Field>`                            |
 |`&`[`UnsafeCell`][unsafecell]`<Struct>`                |`&`[`UnsafeCell`][unsafecell]`<Field>`                |
-|[`Option`][option]`<&Struct>`                          |[`Option`][option]`<&Field>`                          |
 |[`Pin`][pin]`<&Struct>`                                |[`Pin`][pin]`<&Field>`                                |
 |[`Pin`][pin]`<&`[`MaybeUninit`][maybeuninit]`<Struct>>`|[`Pin`][pin]`<&`[`MaybeUninit`][maybeuninit]`<Field>>`|
 
@@ -63,42 +62,26 @@ when `mystruct` is of type `&mut MaybeUninit<MyStruct>` this proposal allows thi
 [motivation]: #motivation
 
 Currently, there are some map functions that provide this functionality. These
-functions are not as ergonomic as a normal field access would be:
+functions are not as ergonomic as a normal field access would be. Accessing the fields can also be a
+totally safe operation, but the wrapper mapping functions need to be marked `unsafe`. This results
+in poor api ergonomics:
 ```rust
 struct Count {
     inner: usize,
     outer: usize,
 }
-fn do_stuff(debug: Option<&mut Count>) {
-    // something that will be tracked by inner
-    if let Some(inner) = debug.map(|c| &mut c.inner) {
-        *inner += 1;
-    }
-    // something that will be tracked by outer
-    if let Some(outer) = debug.map(|c| &mut c.outer) {
-        *inner += 1;
-    }
-}
-```
-With this RFC this would become:
-```rust
-struct Count {
-    inner: usize,
-    outer: usize,
-}
-fn do_stuff(debug: Option<&mut Count>) {
-    // something that will be tracked by inner
-    if let Some(inner) = &mut debug.inner {
-        *inner += 1;
-    }
-    // something that will be tracked by outer
-    if let Some(outer) = &mut debug.outer {
-        *inner += 1;
+fn init_count(mut count: Box<MaybeUninit<Count>>) -> Box<Count> {
+    let inner: &mut MaybeUninit<usize> =
+        unsafe { &mut *addr_of_mut!((*count.as_mut_ptr()).inner).cast::<MaybeUninit<usize>>() };
+    inner.write(42);
+    unsafe { &mut *addr_of_mut!((*count.as_mut_ptr()).outer).cast::<MaybeUninit<usize>>() }.write(63);
+    unsafe {
+        // SAFETY: all fields have been initialized
+        count.assume_init() // #![feature(new_uninit)]
     }
 }
 ```
-While this might only seem like a minor improvement for [`Option`][option]`<T>`
-it is transformative for [`Pin`][pin]`<P>` and [`MaybeUninit`][maybeuninit]`<T>`:
+Using the proposal from this RFC, the code simplifies to this:
 ```rust
 struct Count {
     inner: usize,
@@ -114,9 +97,28 @@ fn init_count(mut count: Box<MaybeUninit<Count>>) -> Box<Count> {
     }
 }
 ```
-Before, this had to be done with raw pointers!
-
 [`Pin`][pin]`<P>` has a similar story:
+```rust
+struct RaceFutures<F1, F2> {
+    fut1: F1,
+    fut2: F2,
+}
+impl<F1, F2> Future for RaceFutures<F1, F2>
+where
+    F1: Future,
+    F2: Future<Output = F1::Output>,
+{
+    type Output = F1::Output;
+
+    fn poll(self: Pin<&mut Self>, ctx: &mut Context) -> Poll<Self::Output> {
+        match unsafe { self.map_unchecked_mut(|t| &mut t.fut1) }.poll(ctx) {
+            Poll::Pending => unsafe { self.map_unchecked_mut(|t| &mut t.fut2) }.poll(ctx),
+            rdy => rdy,
+        }
+    }
+}
+```
+It gets a lot simpler:
 ```rust
 struct RaceFutures<F1, F2> {
     // Pin is somewhat special, it needs some way to specify
@@ -142,9 +144,6 @@ where
     }
 }
 ```
-Without this proposal, one would have to use `unsafe` with
-`Pin::map_unchecked_mut` to project the inner fields.
-
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -266,10 +265,9 @@ pub union MaybeUninit<T> {
 Annotate your type with `#[inner_projecting($T)]` where `$T` is the generic type parameter
 that you want to project.
 ```rust
-#[inner_projecting(T)]
-pub enum Option<T> {
-    Some(T),
-    None,
+#[inner_projecting(P)]
+pub struct Pin<P> {
+    pointer: P
 }
 ```
 
@@ -284,7 +282,6 @@ Here is the list of types from `core` that will be `field_projecting`:
 
 These will be `inner_projecting`:
 
-- [`Option<T>`][option]
 - [`Pin<T>`][pin]
 
 ## Supported pointers
@@ -748,6 +745,10 @@ a public trait that can be implemented to allow this. `(Y)`
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Types that could benefit from projections
+
+- [`Option`][option], it would be `#[inner_projecting(T)]`, so it allows projecting from `Option<Pointer<Struct>>` to `Option<Pointer<Field>>`
 
 ## Arrays
 
