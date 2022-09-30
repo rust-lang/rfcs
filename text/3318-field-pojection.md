@@ -64,7 +64,7 @@ when `mystruct` is of type `&mut MaybeUninit<MyStruct>` this proposal allows thi
 Currently, there are some map functions that provide this functionality. These
 functions are not as ergonomic as a normal field access would be. Accessing the fields can also be a
 totally safe operation, but the wrapper mapping functions need to be marked `unsafe`. This results
-in poor api ergonomics:
+in poor API ergonomics:
 ```rust
 struct Count {
     inner: usize,
@@ -147,7 +147,7 @@ where
 
 It is the most important goal of this RFC to make field projection an entirely safe operation. It
 also tries to make supporting field projection a safe operation. This second point is not as
-important as the first, but it will make field projection more accesible in third party libraries.
+important as the first, but it will make field projection more accessible in third party libraries.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -631,7 +631,7 @@ more clearly convey the intent.
 
 ### Disadvantages:
 
-- `.` is less confusing to beginners compared to `~`. Other languages use it primarly as a unary
+- `.` is less confusing to beginners compared to `~`. Other languages use it primarily as a unary
   binary negation operator
 - `.` can be used on `&mut Struct`, `&Struct` and `Struct`. The first two are outliers, as they do
   not have fields themselves (`.` is actually `(*expr).field`). So it would be weird to make
