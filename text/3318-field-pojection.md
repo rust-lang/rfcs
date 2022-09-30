@@ -145,6 +145,10 @@ where
 }
 ```
 
+It is the most important goal of this RFC to make field projection an entirely safe operation. It
+also tries to make supporting field projection a safe operation. This second point is not as
+important as the first, but it will make field projection more accesible in third party libraries.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
