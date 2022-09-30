@@ -610,6 +610,33 @@ impl<T> Arc<T> {
 }
 ```
 
+## Create a field projection operator
+
+In [Gankra's blog post][faultlore] about overhauling raw pointers she talks about using `~` as field
+projection for raw pointers.
+
+We could implement field projection for raw pointers with the current approach, but that would
+result in `x.y`. If we instead adopt Gankra's idea for field projection in general, it would also
+more clearly convey the intent.
+
+### Advantages:
+
+- we can imbue `~` with new meaning, users will not assume anything about what the operator does
+  from other languages
+- it clearly differentiates it from normal field access
+
+### Disadvantages:
+
+- `.` is less confusing to beginners compared to `~`. Other languages use it primarly as a unary
+  binary negation operator
+- `.` can be used on `&mut Struct`, `&Struct` and `Struct`. The first two are outliers, as they do
+  not have fields themselves (`.` is actually `(*expr).field`). So it would be weird to make
+  references special and not also require `~` for them. We could still allow `a~b` to be a shorthand
+  for `&mut a.b`.
+- migrating from `pin-project` is going to be a *lot* tougher. users will have to change every
+  access via `.` to `~` compared to just having to remove `.project`.
+
+
 ## What other designs have been considered and what is the rationale for not choosing them?
 
 This proposal was initially only designed to enable projecting
@@ -771,3 +798,4 @@ it would be better to implement it via a dedicated `map` function.
 [`Rc`]: https://doc.rust-lang.org/alloc/sync/struct.Rc.html
 [`Arc`]: https://doc.rust-lang.org/alloc/sync/struct.Arc.html
 [`PhantomData`]: https://doc.rust-lang.org/core/marker/struct.PhantomData.html
+[faultlore]: https://faultlore.com/blah/fix-rust-pointers/
