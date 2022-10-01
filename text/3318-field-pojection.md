@@ -627,16 +627,12 @@ more clearly convey the intent.
 
 - we can imbue `~` with new meaning, users will not assume anything about what the operator does
   from other languages
-- it clearly differentiates it from normal field access
+- it clearly differentiates it from normal field access (and will not have auto-deref like `.`)
 
 ### Disadvantages:
 
 - `.` is less confusing to beginners compared to `~`. Other languages use it primarily as a unary
   binary negation operator
-- `.` can be used on `&mut Struct`, `&Struct` and `Struct`. The first two are outliers, as they do
-  not have fields themselves (`.` is actually `(*expr).field`). So it would be weird to make
-  references special and not also require `~` for them. We could still allow `a~b` to be a shorthand
-  for `&mut a.b`.
 - migrating from `pin-project` is going to be a *lot* tougher. users will have to change every
   access via `.` to `~` compared to just having to remove `.project`.
 
