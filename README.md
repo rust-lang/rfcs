@@ -1,4 +1,4 @@
-# Rust RFCs - [Active RFC List](https://rfcbot.rs/)
+# Rust RFCs - [RFC Book](https://rust-lang.github.io/rfcs/) - [Active RFC List](https://rfcbot.rs/)
 
 [Rust RFCs]: #rust-rfcs
 
