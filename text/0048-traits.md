@@ -231,7 +231,7 @@ Note that there is some interaction with the distinction between input
 and output type parameters discussed in the previous
 example. Specifically, we must never *infer* the value of the `Self`
 type parameter based on the impls in scope. This is because it would
-cause *crate concatentation* to potentially lead to compilation errors
+cause *crate concatenation* to potentially lead to compilation errors
 in the form of inference failure.
 
 ## Properties
@@ -242,7 +242,7 @@ There are important properties I would like to guarantee:
   values for all of its type parameters, there should always be at
   most one applicable impl. This should remain true even when unknown,
   additional crates are loaded.
-- **Crate concatentation:** It should always be possible to take two
+- **Crate concatenation:** It should always be possible to take two
   creates and combine them without causing compilation errors. This
   property
 

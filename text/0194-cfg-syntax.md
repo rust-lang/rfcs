@@ -85,7 +85,7 @@ proposed names read better with the function-like syntax and are consistent
 with `Iterator::all` and `Iterator::any`.
 
 Issue [#2119](https://github.com/rust-lang/rust/issues/2119) proposed the
-addition of `||` and `&&` operators and parantheses to the attribute syntax
+addition of `||` and `&&` operators and parentheses to the attribute syntax
 to result in something like `#[cfg(a || (b && c)]`. I don't favor this proposal
 since it would result in a major change to the attribute syntax for relatively
 little readability gain.

@@ -71,8 +71,8 @@ opt-in. There are two main reasons for my concern:
 
 To elaborate on those two points: With respect to parallelization: for
 the most part, Rust types are threadsafe "by default". To make
-something non-threadsafe, you must employ unsychronized interior
-mutability (e.g., `Cell`, `RefCell`) or unsychronized shared ownership
+something non-threadsafe, you must employ unsynchronized interior
+mutability (e.g., `Cell`, `RefCell`) or unsynchronized shared ownership
 (`Rc`). In both cases, there are also synchronized variants available
 (`Mutex`, `Arc`, etc). This implies that we can make APIs to enable
 intra-task parallelism and they will work ubiquitously, so long as
@@ -116,7 +116,7 @@ All three of these (`Snapshot`, `NoManaged`, `NoDrop`) can be easily
 defined using traits with default impls.
 
 A final, somewhat weaker, motivator is aesthetics. Ownership has allowed
-us to move threading almost entirely into libaries. The one exception
+us to move threading almost entirely into libraries. The one exception
 is that the `Send` and `Share` types remain built-in. Opt-in traits
 makes them *less* built-in, but still requires custom logic in the
 "impl matching" code as well as special safety checks when
