@@ -165,7 +165,7 @@ are two main disadvantages:
    permit associated constants or generic integers to be used in a
    match statement.
 
-#### Disadvantage: Weakened abstraction bounary
+#### Disadvantage: Weakened abstraction boundary
 
 The single biggest concern with structural equality is that it
 introduces two distinct notions of equality: the `==` operator, based

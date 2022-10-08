@@ -99,7 +99,7 @@ we summarize the high-level points of the `Allocator` API.
 individual sections of code.)
 
  * Basic implementation of the trait requires just two methods
-   (`alloc` and `dealloc`). You can get an initial implemention off
+   (`alloc` and `dealloc`). You can get an initial implementation off
    the ground with relatively little effort.
 
  * All methods that can fail to satisfy a request return a `Result`
@@ -126,7 +126,7 @@ individual sections of code.)
 
      * Heterogenous structure; e.g. `layout1.extend(layout2)`,
 
-     * Homogenous array types: `layout.repeat(n)` (for `n: usize`),
+     * Homogeneous array types: `layout.repeat(n)` (for `n: usize`),
 
      * There are packed and unpacked variants for the latter two methods.
 
@@ -270,7 +270,7 @@ Since clients are not allowed to have blocks that outlive their
 associated allocator (see the [lifetimes][] section),
 it is sound for us to always drop the backing storage for an allocator
 when the allocator itself is dropped
-(regardless of what sequence of `alloc`/`dealloc` interactions occured
+(regardless of what sequence of `alloc`/`dealloc` interactions occurred
 with the allocator's clients).
 
 ```rust
@@ -470,7 +470,7 @@ almost certainly require a *default type*: `Vec<T:
 A:Allocator=HeapAllocator>` and
 `HashMap<K,V,A:Allocator=HeapAllocator>`.
 
-Default type parameters themselves, in the context of type defintions,
+Default type parameters themselves, in the context of type definitions,
 are a stable part of the Rust language.
 
 However, the exact semantics of how default type parameters interact
@@ -640,7 +640,7 @@ in a formal manner, in the style of [IETF RFC 2119][].)
 
  5. (for allocator impls and clients) if an allocator is cloneable, the 
     client *can assume* that all clones
-    are interchangably compatible in terms of their memory blocks: if
+    are interchangeably compatible in terms of their memory blocks: if
     allocator `a2` is a clone of `a1`, then one can allocate a block
     from `a1` and return it to `a2`, or vice versa, or use `a2.realloc`
     on the block, et cetera.
@@ -884,7 +884,7 @@ The Rust project has control over the `libstd` provided allocators, so
 the team can adapt them as necessary to fit the needs of whatever GC
 designs come around. But the same is not true for user-defined
 allocators: we want to ensure that adding support for them does not
-inadvertantly kill any chance for adding GC later.
+inadvertently kill any chance for adding GC later.
 
 ### The inspiration for Layout
 
@@ -1009,7 +1009,7 @@ few motivating examples that *are* clearly feasible and useful.
      offset) versus `Layout::array` (where the offset is derivable from
      the input `T`).
 
-   * Such a constraint would have precendent; in particular, the
+   * Such a constraint would have precedent; in particular, the
      `aligned_alloc` function of C11 requires the given size
      be a multiple of the alignment.
 
@@ -1072,7 +1072,7 @@ few motivating examples that *are* clearly feasible and useful.
       that reborrowing machinery is available to the client code.)
 
      Put more simply, requiring that allocators implement `Clone` means
-     that it will *not* be pratical to do
+     that it will *not* be practical to do
      `impl<'a> Allocator for &'a mut MyUniqueAlloc`.
 
      By using `&mut self` for the allocation methods, we can encode
@@ -1204,7 +1204,7 @@ few motivating examples that *are* clearly feasible and useful.
 
 # Change History
 
-* Changed `fn usable_size` to return `(l, m)` rathern than just `m`.
+* Changed `fn usable_size` to return `(l, m)` rather than just `m`.
 
 * Removed `fn is_transient` from `trait AllocError`, and removed discussion
   of transient errors from the API.
@@ -1583,7 +1583,7 @@ impl Layout {
     /// Creates a layout describing the record for `self` followed by
     /// `next` with no additional padding between the two. Since no
     /// padding is inserted, the alignment of `next` is irrelevant,
-    /// and is not incoporated *at all* into the resulting layout.
+    /// and is not incorporated *at all* into the resulting layout.
     ///
     /// Returns `(k, offset)`, where `k` is layout of the concatenated
     /// record and `offset` is the relative location, in bytes, of the
@@ -1654,7 +1654,7 @@ impl Layout {
     /// Creates a layout describing the record for `self` followed by
     /// `next` with no additional padding between the two. Since no
     /// padding is inserted, the alignment of `next` is irrelevant,
-    /// and is not incoporated *at all* into the resulting layout.
+    /// and is not incorporated *at all* into the resulting layout.
     ///
     /// Returns `(k, offset)`, where `k` is layout of the concatenated
     /// record and `offset` is the relative location, in bytes, of the
@@ -1715,7 +1715,7 @@ pub enum AllocErr {
     /// satisfying the original request. This condition implies that
     /// such an allocation request will never succeed on the given
     /// allocator, regardless of environment, memory pressure, or
-    /// other contextual condtions.
+    /// other contextual conditions.
     ///
     /// For example, an allocator that does not support zero-sized
     /// blocks can return this error variant.
@@ -1810,7 +1810,7 @@ pub unsafe trait Allocator {
     /// practice this means implementors should eschew allocating,
     /// especially from `self` (directly or indirectly).
     ///
-    /// Implementions of this trait's allocation methods are discouraged
+    /// Implementations of this trait's allocation methods are discouraged
     /// from panicking (or aborting) in the event of memory exhaustion;
     /// instead they should return an appropriate error from the
     /// invoked method, and let the client decide whether to invoke

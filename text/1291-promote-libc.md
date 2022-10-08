@@ -264,7 +264,7 @@ value, so even if you were restricted to a particular subset it's not clear that
 a program would automatically be more portable.
 
 That being said, it would still be useful to have these abstractions to *some
-degree*, but the filp side is that it's easy to build this sort of layer on top
+degree*, but the flip side is that it's easy to build this sort of layer on top
 of `libc` as designed here externally on crates.io. For example `extern crate
 posix` could just depend on `libc` and reexport all the contents for the
 POSIX standard, perhaps with tweaked signatures here and there to work better
@@ -288,7 +288,7 @@ in the immedidate future.
   unclear how much portability using these standards actually buys you.
 
 * The crate could be split up into multiple crates which represent an exact
-  correspondance to system libraries, but this has the downside of using common
+  correspondence to system libraries, but this has the downside of using common
   functions available on both OSX and Linux would require at least two `extern
   crate` directives and dependencies.
 

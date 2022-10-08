@@ -399,7 +399,7 @@ are unrestricted?
 The simple answer is: No, associated items are not implicitly `pub`;
 at least, not in general. (They are not in general implicitly `pub`
 today either, as discussed in [RFC 136][when public (RFC 136)].)
-(If they were implictly `pub`, things would be difficult; further
+(If they were implicitly `pub`, things would be difficult; further
 discussion in attached [appendix][associated items digression].)
 
 [when public (RFC 136)]: https://github.com/rust-lang/rfcs/blob/master/text/0136-no-privates-in-public.md#when-is-an-item-public
@@ -756,7 +756,7 @@ innards of other modules.
  * "Fix" the mental model of privacy (if necessary) without extending
    the language.
 
-   The alternative is bascially saying: "Our existing system is fine; all
+   The alternative is basically saying: "Our existing system is fine; all
    of the problems with it are due to bugs in the implementation"
 
    I am sympathetic to this response. However, I think it doesn't
@@ -865,7 +865,7 @@ pub mod a {
 
 However, since `b` is non-`pub`, its `pub` items and re-exports are
 solely accessible via the subhierarchy of its module parent (i.e.,
-`mod a`, as long as no entity attempts to re-export them to a braoder
+`mod a`, as long as no entity attempts to re-export them to a broader
 scope.
 
 In other words, in some sense `mod b { pub use item; }` *could*
@@ -930,7 +930,7 @@ mod m {
         // What is reexported here?
         // Just `S4`?
         // Anything in `m` visible
-        //  to `n` (which is not consisent with the current treatment of
+        //  to `n` (which is not consistent with the current treatment of
         `pub` by globs).
 
         pub use m::*;

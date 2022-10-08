@@ -19,7 +19,7 @@ from a vector.
 
 `drain` thus serves both to consume all or some elements from a collection without
 consuming the collection itself. The ranged `drain` allows bulk removal of
-elements, more efficently than any other safe API.
+elements, more efficiently than any other safe API.
 
 # Detailed design
 
@@ -51,7 +51,7 @@ The following collections need updated implementations:
 does.
 
 `LinkedList` should implement `.drain(range)` for index ranges. Just
-like the other seqences, this is a `O(n)` operation, and `LinkedList` already
+like the other sequences, this is a `O(n)` operation, and `LinkedList` already
 has other indexed methods (`.split_off()`).
 
 ## `BTreeMap` and `BTreeSet`
