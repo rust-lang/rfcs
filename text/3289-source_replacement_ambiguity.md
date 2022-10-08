@@ -63,7 +63,7 @@ error: crates-io is replaced: use `--registry replacement` or `--registry crates
 
 ### Change 3: credentials are only sent to the same registry
 If the `crates-io` source is replaced with another remote registry, the credentials for
-`crates-io` are never sent to the replacement registry. This makes `crates-io` consistant
+`crates-io` are never sent to the replacement registry. This makes `crates-io` consistent
 with alternative registries and ensures credentials are only sent to the registry they are
 associated with.
 
