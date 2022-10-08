@@ -176,7 +176,7 @@ LLVM already provides a set of intrinsics, implementing `va_start`, `va_arg`,
 intrinsic at the start of the function to provide the `VaList` argument (if
 used), and a matching call to the `va_end` intrinsic on any exit from the
 function. The implementation of `VaList::arg` will call `va_arg`. The
-implementation of `VaList::copy` wil call `va_copy`, and then `va_end` after
+implementation of `VaList::copy` will call `va_copy`, and then `va_end` after
 the closure exits.
 
 `VaList` may become a language item (`#[lang="VaList"]`) to attach the

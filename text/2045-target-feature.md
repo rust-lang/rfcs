@@ -25,7 +25,7 @@ The objective of this RFC is to extend the Rust language to solve these three pr
 
 ## Target features
 
-Each rustc target has a default set of target features that can be controled via
+Each rustc target has a default set of target features that can be controlled via
 the backend compilation options. The target features for each target should
 be documented by the compiler and the backends (e.g. LLVM).
 
@@ -460,13 +460,13 @@ What happens if the macro `cfg!(target_feature = "feature_name")` is used inside
 
 This might result in monomorphization errors if `#![cfg(target_feature)]` is used, but not if `if cfg!(target_feature)` is used since in this case all branches need to type-check properly.
 
-We might want to ammend this RFC with more concrete semantics about this as we improve the compiler.
+We might want to amend this RFC with more concrete semantics about this as we improve the compiler.
 
 ## How do we handle ABI issues with portable vector types?
 
 The ABI of `#[target_feature]` functions does not change for all types currently available in stable Rust. However, there are types that we might want to add to the language at some point, like portable vector types, for which this is not the case.
 
-The behavior of `#[target_feature]` for those types should be specified in the RFC that proposes to stabilize those types, and this RFC should be ammended as necessary.
+The behavior of `#[target_feature]` for those types should be specified in the RFC that proposes to stabilize those types, and this RFC should be amended as necessary.
 
 The following examples showcase some potential problems when calling functions with mismatching ABIs, or when using function pointers.
 

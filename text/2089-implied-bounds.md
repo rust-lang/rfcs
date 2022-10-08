@@ -655,7 +655,7 @@ impl Set<NotHash> { ... }
 ```
 the error will not be caught until someone actually uses `Set<NotHash>`.
 
-The idea is, when encountering an fn/trait impl/inherent impl, retrieve all input types that appear in the signature / header and for each input type `T`, do the following: retrieve type variables `X1, ..., Xn` bound by the declaration and ask for `∃X1, ..., ∃Xn; WF(T)` in an empty enviromnent (in Chalk terms). If there is no possible substitution for the existentials, output a warning.
+The idea is, when encountering an fn/trait impl/inherent impl, retrieve all input types that appear in the signature / header and for each input type `T`, do the following: retrieve type variables `X1, ..., Xn` bound by the declaration and ask for `∃X1, ..., ∃Xn; WF(T)` in an empty environment (in Chalk terms). If there is no possible substitution for the existentials, output a warning.
 
 Example:
 ```rust
@@ -687,7 +687,7 @@ trait Bar where Self: Foo { }
 // `Self: Foo` holds if `WF(Self: Bar)`
 // `WF(Self: Foo)` holds if `WF(Self: Bar)`
 ```
-Now suppose we are asking wether `u8: Foo` holds. The following branch exists in the proof tree:
+Now suppose we are asking whether `u8: Foo` holds. The following branch exists in the proof tree:
 `u8: Foo` holds if `WF(u8: Bar)` holds if `u8: Foo` holds.
 
 I *think* rustc would have the right behavior currently: just dismiss this branch since it only leads to the tautological rule `(u8: Foo) if (u8: Foo)`.
@@ -705,7 +705,7 @@ In Chalk we have a more sophisticated cycle detection strategy based on tabling,
 
 ## Including parameters in well-formedness rules
 
-Specific to this design: instead of disregarding parameters in well-formedness checks, we could have included them, and added reverse rules of the form: "`WF(T)` holds if `WF(Struct<T>)` holds". From a theoretical point of view, this would have had the same effects as the current design, and would have avoided the whole `InputTypes` thing. However, implementation in Chalk revelead some tricky issues. Writing in Chalk-style, suppose we have rules like:
+Specific to this design: instead of disregarding parameters in well-formedness checks, we could have included them, and added reverse rules of the form: "`WF(T)` holds if `WF(Struct<T>)` holds". From a theoretical point of view, this would have had the same effects as the current design, and would have avoided the whole `InputTypes` thing. However, implementation in Chalk revealed some tricky issues. Writing in Chalk-style, suppose we have rules like:
 ```
 WF(Struct<T>) :- WF(T)
 WF(T) :- WF(Struct<T>)

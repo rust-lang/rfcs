@@ -29,7 +29,7 @@ fn foo() {}
 ```
 
 This would be allowed by the compiler but ignored. When Rustfmt is run on the
-crate, it will read the attibute and skip formatting `foo` (note that we make no
+crate, it will read the attribute and skip formatting `foo` (note that we make no
 provision for reading the attribute or doing anything with it, that is all up to
 the tool).
 
@@ -85,7 +85,7 @@ compiler warning about unused lints. E.g., we want a user to be able to write
 
 This section assumes that attributes (e.g., `#[test]`) have already been taught.
 
-You can use attibutes in your crate to pass information to tools. For now, this
+You can use attributes in your crate to pass information to tools. For now, this
 facility is limited to the tools we include with the Rust distribution.
 
 The names of these attributes are a path starting with the name of a tool, and
@@ -157,7 +157,7 @@ A similar opt-in mechanism will exist for lints.
 ## Proposed for immediate implementation
 
 There is an attribute path white list of the names of tools shipped with the Rust
-distribution. Any crate can use an attibute path starting with those names and
+distribution. Any crate can use an attribute path starting with those names and
 the attribute will not trigger the custom attribute lint or require a macro
 feature gate.
 
@@ -205,10 +205,10 @@ check for unused attributes/lints as part of a possible long-term solution
 without introducing new warnings or errors.
 
 
-### Forward and backward compatability
+### Forward and backward compatibility
 
 Since custom attributes are feature gated and scoped attributes are part of the
-unstable macros 2.0 work, there is no backwards compatability issue.
+unstable macros 2.0 work, there is no backwards compatibility issue.
 
 For tools who want to move to these newly stable attributes (e.g., from
 `rustfmt_skip` to `rustfmt::skip`) they will have to manage the change

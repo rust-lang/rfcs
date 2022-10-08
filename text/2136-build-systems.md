@@ -81,7 +81,7 @@ The plan proposed in this RFC is to address the two use-cases from the
   added point of extensibility should ease build system integration for another
   round of customers.
 
-- **For the homoegenous build system case**, we will immediately pursue
+- **For the homogeneous build system case**, we will immediately pursue
   extensibility points that will enable the external build system to perform
   many of the tasks that Cargo does today--but while still meeting our
   interoperability constraints. We will then work on smoothing remaining rough

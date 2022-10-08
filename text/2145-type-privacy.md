@@ -56,7 +56,7 @@ mod m {
     pub type Alias = Priv;
     pub type AliasOpt = Option<Priv>;
 
-    // OK, public function returnning a value of the private type
+    // OK, public function returning a value of the private type
     pub fn get_value() -> Priv { ... }
 }
 
@@ -105,7 +105,7 @@ or usual generics (statically anonymized as well).
 ```rust
 struct Priv;
 
-// By defining funcions like these you explicitly give a promise that they will
+// By defining functions like these you explicitly give a promise that they will
 // always return something implementing `Trait`, maybe `Priv`, maybe some other
 // type (this is an implementation detail).
 impl Trait for Priv {}
@@ -281,7 +281,7 @@ Provisional name for the lint - `unnameable_types`.
 
 ### Lint #4: `private_in_public`
 
-Some private-in-public erros are currently reported as a lint
+Some private-in-public errors are currently reported as a lint
 `private_in_public` for compatibility reasons.  
 This compatibility lint will be removed and its uses will be reported as
 warnings by `renamed_and_removed_lints`.
@@ -468,7 +468,7 @@ pub fn f<T>(arg: T)
 ```
 being legal (even if it's warned against by default) the set of
 `PrivateTrait`'s implementations becomes a part of `f`'s interface.
-`PrivateTrait` can still be freely renamed or even splitted into several traits
+`PrivateTrait` can still be freely renamed or even split into several traits
 though.  
 `rustdoc` may be not fully prepared to document items with private traits in
 bounds, manually written documentation explaining how to use the interface

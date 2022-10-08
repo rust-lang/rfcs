@@ -549,7 +549,7 @@ support references to named structures.
 ## Allowing type parameters
 
 We could allow the type parameters of generic types as the named type of an
-unamed field. This could allow creative flexibility in API design, such as
+unnamed field. This could allow creative flexibility in API design, such as
 having a generic type that adds a field alongside the fields of the type it
 contains. However, this could also lead to much more complex errors that do not
 arise until the point that code references the generic type. Prohibiting the

@@ -340,7 +340,7 @@ to cover at some point in works like this:
   complicated method calls that are not covered by this proposal, such
   as the `v[0].push_str(&format!("{}", v.len()));` example. In that
   case, a simple desugaring can be used to show why the compiler
-  rejects this code -- in particular, a comparison with the errorneous
+  rejects this code -- in particular, a comparison with the erroneous
   examples may be helpful. A keen observer may note the contrast with
   `vec.push(vec.len())`, but such an observer can be referred to the
   reference. =)
@@ -604,7 +604,7 @@ whether a borrow is activated is affected by "no-ops" like `let x = y`
 
 Therefore, introducing two-phased borrows **outside** of method-call
 desugaring form doesn't feel like the right approach. (But, if they
-are limited to method-call desugaring, as ths RFC proposes, then they
+are limited to method-call desugaring, as this RFC proposes, then they
 are a simple and effective mechanism without broader impact.)
 
 ### Borrowing for the future
@@ -765,7 +765,7 @@ makes the Rust system qualitatively more complex to reason about.
 
 If all this talk of "steps in complexity" seems abstract, I think that
 the most immediate way it will surface is when we try to
-**teach**. Supporting discontinous borrows just makes it that much
+**teach**. Supporting discontinuous borrows just makes it that much
 harder to craft small examples that show how borrowing works. It will
 make the system feel more mysterious, since the underlying rules are
 indeed more complex and thus harder to "intuit" on your own. Getting

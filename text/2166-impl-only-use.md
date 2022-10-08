@@ -69,7 +69,7 @@ use zoo::Zoo as ZooTrait;
 This will work but seems a bit like a hack because rustc forces us to give a name to something we
 won’t use in our types.
 
-This RFC suggests to solve this by adding the possibility to explictly state that we won’t directly
+This RFC suggests to solve this by adding the possibility to explicitly state that we won’t directly
 refer to that trait, but we want the impls:
 
 ```rust

@@ -878,7 +878,7 @@ This RFC tries to abide by the following restrictions:
     accepts the caller information; it shouldn't require the trait itself to enforce it. It
     should not affect the signature of the function. This is an extension of rule 2, since the
     `Index` trait is involved in `HashMap::index`. The stability of `Index` must be upheld, e.g. it
-    should remain object-safe, and existing implementions should not be forced to accept the caller
+    should remain object-safe, and existing implementations should not be forced to accept the caller
     location.
 
 Restriction 4 "interface independence" is currently not implemented due to lack of
@@ -1031,7 +1031,7 @@ extern {
     fn close_fd(fd: c_int);
 }
 
-// declaration + defintion
+// declaration + definition
 #[precondition(option.is_some(), "Trying to unwrap None")]
 fn unwrap<T>(option: Option<T>) -> T {
     match option {

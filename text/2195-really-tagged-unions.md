@@ -364,7 +364,7 @@ struct MyEnum {
 
 If a non-C-like enum is *only* `#[repr(C)]`, then the layout will be the same as `#[repr(C, Int)]`, but the C-like tag enum will instead just be `#[repr(C)]` (so it will have whatever size C enums default to). 
 
-For both layouts, it is defined for Rust programs to cast/reinterpret/transmute such an enum into the equivalent Repr definition. Seperately manipulating the tag and payload is also defined. The tag and payload need only be in a consistent/initialized state when the value is matched on (which includes Dropping it). 
+For both layouts, it is defined for Rust programs to cast/reinterpret/transmute such an enum into the equivalent Repr definition. Separately manipulating the tag and payload is also defined. The tag and payload need only be in a consistent/initialized state when the value is matched on (which includes Dropping it). 
 
 For instance, this code is valid (using the same definitions above):
 
@@ -422,7 +422,7 @@ There are a few enum repr combinations that are left unspecified under this prop
 
 Since the whole point of this proposal is to enable low-level control, the guide-level explanation should cover all the relevant corner-cases and details in sufficient detail. All that remains is to discuss implementation details.
 
-It was [informally decided earilier this year](https://github.com/rust-lang/rust/issues/40029) that `repr(Int)`should have the behaviour this RFC proposes, as it was being partially relied on (in that it supressed dangerous optimizations) and it made sense to the developers. There is even a test in the rust-lang repo that was added to ensure that this behaviour doesn't regress. So this part of the proposal is already implemented and somewhat tested on stable Rust. This RFC just seeks to codify that this won't break in the future.
+It was [informally decided earlier this year](https://github.com/rust-lang/rust/issues/40029) that `repr(Int)`should have the behaviour this RFC proposes, as it was being partially relied on (in that it suppressed dangerous optimizations) and it made sense to the developers. There is even a test in the rust-lang repo that was added to ensure that this behaviour doesn't regress. So this part of the proposal is already implemented and somewhat tested on stable Rust. This RFC just seeks to codify that this won't break in the future.
 
 However `repr(C, Int)` currently doesn't do anything different from `repr(Int)`. Changing this is a relatively minor tweak to the code that lowers Rust code to a particular ABI. Anyone relying on `repr(C, Int)` being the same as `repr(Int)` is relying on unspecified behaviour, but a cargo bomb run should still be done just to check.
 
@@ -434,9 +434,9 @@ A PR [has been submitted](https://github.com/rust-lang/rust/pull/46123) to imple
 
 Half of this proposal is already implemented, and the other half has an implementation submitted (~20 line patch). The existence of this proposal can also be completely ignored by anyone who doesn't care about it, as they can keep using the default Rust repr. This is simply making things that exist sort-of-by-accident do something useful, which is basically a pure win considering the implementation/maintenance burden is minimal.
 
-One minor issue with this proposal is that there's no way to request the `repr(Int)` layout with the `repr(C)` tag size. To be blunt, this doesn't seem very important. It's unclear if developers should even use bare `repr(C)` on tagged unions, as the default C enum size is actually quite large for a tag. This is also consistent with the Rust philosophy of trying to minimize unecessary platform-specific details. Also, a desperate Rust programmer could acquire the desired behaviour with platform-specific cfgs (Rust has to basically guess at the type of a `repr(C)` enum anyway).
+One minor issue with this proposal is that there's no way to request the `repr(Int)` layout with the `repr(C)` tag size. To be blunt, this doesn't seem very important. It's unclear if developers should even use bare `repr(C)` on tagged unions, as the default C enum size is actually quite large for a tag. This is also consistent with the Rust philosophy of trying to minimize unnecessary platform-specific details. Also, a desperate Rust programmer could acquire the desired behaviour with platform-specific cfgs (Rust has to basically guess at the type of a `repr(C)` enum anyway).
 
-The remaining drawbacks amount to "what if this is the *wrong* interpretation", which shall be adressed in the alternatives.
+The remaining drawbacks amount to "what if this is the *wrong* interpretation", which shall be addressed in the alternatives.
 
 
 # Rationale and alternatives
@@ -458,7 +458,7 @@ With the `repr(C)` layout, there isn't a particularly compelling reason to move 
 
 It's possible positioning the tag afterwards could be desirable to interoperate with a definition that is provided by a third party (hardware spec or some existing C library). However there are tons of other tag packing strategies that we also can't handle, so we'd probably want a more robust solution for those kinds of cases anyway.
 
-With the `repr(Int)` layout, this could potentially save space (for instance, with a variant like `A(u16, u8)`). However the benefits are relatively minimal compared to the increased complexity. If that complexity is desirable, it can be adressed with a future extension.
+With the `repr(Int)` layout, this could potentially save space (for instance, with a variant like `A(u16, u8)`). However the benefits are relatively minimal compared to the increased complexity. If that complexity is desirable, it can be addressed with a future extension.
 
 
 
@@ -466,7 +466,7 @@ With the `repr(Int)` layout, this could potentially save space (for instance, wi
 
 With the `repr(Int)` layout this isn't really possible, because the tag needs a deterministic position, and we can't "partially" `repr(C)` a struct.
 
-With either layout, one can make the payload be a single repr(Rust) struct, and that will have its layout agressively optimized, because `repr(C)` isn't infectious. So this is just a matter of "what is a good default". The FFI case clearly wants fully defined layouts, while the pure-Rust case seems like a toss up. It seems like `repr(C)` is therefore the better default.
+With either layout, one can make the payload be a single repr(Rust) struct, and that will have its layout aggressively optimized, because `repr(C)` isn't infectious. So this is just a matter of "what is a good default". The FFI case clearly wants fully defined layouts, while the pure-Rust case seems like a toss up. It seems like `repr(C)` is therefore the better default.
 
 
 ## Opaque Tags

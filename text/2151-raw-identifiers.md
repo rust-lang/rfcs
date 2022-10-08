@@ -88,7 +88,7 @@ fn main() {
 [reference-level-explanation]: #reference-level-explanation
 
 The syntax for identifiers allows an optional `r#` prefix for a raw identifier,
-otherwise following the normal identifer rules.  Raw identifiers are always
+otherwise following the normal identifier rules.  Raw identifiers are always
 interpreted as plain identifiers and never as keywords, regardless of context.
 They are also treated equivalent to an identifier that wasn't raw -- for
 instance, it's perfectly legal to write:
