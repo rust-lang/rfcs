@@ -76,7 +76,7 @@ as `std` has become more conservative in favour of the much more agile cargovers
     * Too marginal for std
     * Significant implementation problems
 
-* A PR may also be closed because an RFC is approriate.
+* A PR may also be closed because an RFC is appropriate.
 
 * A (non-RFC) PR  may be **merged as unstable**. In this case, the feature
 should have a fresh feature gate and an associated tracking issue for
