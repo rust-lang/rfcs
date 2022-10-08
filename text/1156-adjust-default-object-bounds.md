@@ -136,7 +136,7 @@ The rules for user-defined types from RFC 599 are altered as follows
 
 This is a breaking change, and hence it behooves us to evaluate the
 impact and describe a procedure for making the change as painless as
-possible. One nice propery of this change is that it only affects
+possible. One nice property of this change is that it only affects
 *defaults*, which means that it is always possible to write code that
 compiles both before and after the change by avoiding defaults in
 those cases where the new and old compiler disagree.

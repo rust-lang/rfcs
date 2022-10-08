@@ -41,7 +41,7 @@ must be available in a stable fashion.
 
 # Detailed Design
 
-This RFC proposes a nuber of changes:
+This RFC proposes a number of changes:
 
 * Tweak the `#![no_std]` attribute slightly.
 * Introduce a `#![no_core]` attribute.

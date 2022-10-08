@@ -237,7 +237,7 @@ Let's take a look at each of these items in detail:
 
 * `impl PanicSafe for .. {}` - this makes this trait a marker trait, implying
   that a the trait is implemented for all types by default so long as the
-  consituent parts implement the trait.
+  constituent parts implement the trait.
 * `impl<T> !PanicSafe for &mut T {}` - this indicates that exception safety
   needs to be handled when dealing with mutable references. Thinking about the
   `recover` function, this means that the pointer could be modified inside the
@@ -344,7 +344,7 @@ properties are derived, adding a new marker trait can lead to a multiplicative
 increase in global complexity (as all types must consider the marker trait).
 
 With `PanicSafe`, however, it is expected that this is not the case. The
-`recover` function is not intented to be used commonly outside of FFI or thread
+`recover` function is not intended to be used commonly outside of FFI or thread
 pool-like abstractions. Within FFI the `PanicSafe` trait is typically not
 mentioned due to most types being relatively simple. Thread pools, on the other
 hand, will need to mention `AssertPanicSafe`, but will likely propagate panics

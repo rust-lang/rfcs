@@ -180,7 +180,7 @@ data within vectors, giving super-linear speed-ups sometimes. As such,
 shuffles are exposed generally: intrinsics that represent arbitrary
 shuffles.
 
-This may violate the "one instruction per instrinsic" principal
+This may violate the "one instruction per intrinsic" principal
 depending on the shuffle, but rearranging SIMD vectors is extremely
 useful, and providing a direct intrinsic lets the compiler (a) do the
 programmers work in synthesising the optimal (short) sequence of

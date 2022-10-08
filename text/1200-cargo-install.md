@@ -63,7 +63,7 @@ directory).
 
 There are multiple methods of installing a new crate onto the system. The
 `cargo install` command with no arguments will install the current crate (as
-specifed by the current directory). Otherwise the `-p`, `--package`, `--git`,
+specified by the current directory). Otherwise the `-p`, `--package`, `--git`,
 and `--path` options all specify the source from which a crate is being
 installed. The `-p` and `--package` options will download crates from crates.io.
 

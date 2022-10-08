@@ -266,7 +266,7 @@ the field `base_map` has the type `&'a mut HashMap<K,V>`, and this
 type is only valid if `K: 'a` and `V: 'a` hold. Since we don't know
 what `K` and `V` are, we have to surface this requirement in the form
 of a where-clause, so that users of the struct know that they must
-maintain this relationship in order for the struct to be interally
+maintain this relationship in order for the struct to be internally
 coherent.
 
 #### An aside: explicit WF requirements on types
@@ -551,7 +551,7 @@ Let's begin with a concrete example of an iterator type, like
 
     <Iter<'a,T> as Iterator>::Item
 
-or, in the more succint (but potentially ambiguous) form:
+or, in the more succinct (but potentially ambiguous) form:
 
     Iter<'a,T>::Item
 
@@ -680,7 +680,7 @@ sufficient.
 
 This complication is unfortunate, but to a large extent already exists
 with where-clauses and trait matching (see e.g. [#21974]). (Moreover,
-it seems to be inherent to the concept of assocated types, since they
+it seems to be inherent to the concept of associated types, since they
 take several inputs (the parameters to the trait) which may or may not
 be related to the actual type definition in question.)
 
@@ -867,7 +867,7 @@ struct Foo<'a, T:Eq> { .. }
 
 and a function type like `for<'a> fn(f: Foo<'a, T>)`, I still must
 show that `T: Eq` holds for that function to be well-formed.  This is
-because the condition which is geneated will be `'a ⊢ T: Eq`, but `'a`
+because the condition which is generated will be `'a ⊢ T: Eq`, but `'a`
 is not referenced there.
 
 #### Implied bounds

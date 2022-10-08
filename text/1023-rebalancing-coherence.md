@@ -184,7 +184,7 @@ operator, it seems reasonable to say that implementing a `Fn` trait is
 itself a breaking change. (This is not to suggest that there is
 something *fundamental* about the `Fn` traits that distinguish them
 from all other traits; just that if the goal is to have rules that
-users can easily remember, saying that implememting a core operator
+users can easily remember, saying that implementing a core operator
 trait is a breaking change may be a reasonable rule, and it enables
 useful patterns to boot -- patterns that are baked into the libstd
 APIs.)
