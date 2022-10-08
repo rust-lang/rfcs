@@ -104,7 +104,7 @@ There is one subtle note to this reservation: because raw string literals and st
 # Guide-level explanation
 When designing DSLs via macros that take token trees as inputs, be aware that certain syntactic productions which have no meaning in Rust are nonetheless forbidden by the grammar, as they represent "reserved space" for future language development. In particular, anything of the form `<identifier>#<identifier>`, `<identifier>"<string contents>"`, `<identifier>'<char contents>'`, and `<identifier>#<numeric literal>` is reserved for exclusive use by the language; these are called *reserved prefixes*.
 
-Unless a prefix has been assigned a specific meaning by the language (e.g. `r#async`, `b"foo"`), Rust will fail to tokenize when encountering any code that attempts to make use of such prefixes. Note that these prefixes rely on the absence of whitespace, so a macro invocation can use `<identifier> # <identifer>` (note the spaces) as a way to consume individual tokens adjacent to a `#`.
+Unless a prefix has been assigned a specific meaning by the language (e.g. `r#async`, `b"foo"`), Rust will fail to tokenize when encountering any code that attempts to make use of such prefixes. Note that these prefixes rely on the absence of whitespace, so a macro invocation can use `<identifier> # <identifier>` (note the spaces) as a way to consume individual tokens adjacent to a `#`.
 
 Putting it all together, this means that the following are valid macro invocations:
 

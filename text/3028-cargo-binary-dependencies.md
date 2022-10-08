@@ -88,7 +88,7 @@ Artifact dependencies can appear in any of the three sections of dependencies (o
 - `[dependencies]`
 - `[dev-dependencies]`
 
-By default, `build-dependencies` are built for the host, while  `dependencies` and `dev-dependencies` are built for the target. You can specify the `target` attribute to build for a specific target, such as `target = "wasm32-wasi"`; a literal `target = "target"` will build for the target even if specifing a build dependency. (If the target is not available, this will result in an error at build time, just as if building the specified crate with a `--target` option for an unavailable target.)
+By default, `build-dependencies` are built for the host, while  `dependencies` and `dev-dependencies` are built for the target. You can specify the `target` attribute to build for a specific target, such as `target = "wasm32-wasi"`; a literal `target = "target"` will build for the target even if specifying a build dependency. (If the target is not available, this will result in an error at build time, just as if building the specified crate with a `--target` option for an unavailable target.)
 
 Cargo provides the following environment variables to the crate being built:
 
@@ -109,7 +109,7 @@ Similar to features, if other crates in your dependencies also depend on the sam
 
 Cargo will unify versions across all kinds of dependencies, including artifact dependencies, just as it does for multiple dependencies on the same crate throughout a dependency tree.
 
-Cargo will not unify features across dependencies for different targets. One dependency tree may have both ordinary dependencies and artifact dependencies on the same crate, with different features for the ordinary dependency and for artifact depenencies for different targets.
+Cargo will not unify features across dependencies for different targets. One dependency tree may have both ordinary dependencies and artifact dependencies on the same crate, with different features for the ordinary dependency and for artifact dependencies for different targets.
 
 `artifact` may be a string, or a list of strings; in the latter case, this specifies a dependency on the crate with each of those artifact types, and is equivalent to specifying multiple dependencies with different `artifact` values. For instance, you may specify a build dependency on both a binary and a cdylib from the same crate. You may also specify separate dependencies with different `artifact` values, as well as dependencies on the same crate without `artifact` specified; for instance, you may have a build dependency on the binary of a crate and a normal dependency on the Rust library of the same crate.
 

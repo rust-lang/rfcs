@@ -153,7 +153,7 @@ rustc --check-cfg 'names(is_embedded, has_feathers)' \
 #[cfg(is_embedded)] // this is valid, and #[cfg] evaluates to disabled
 fn do_embedded() {}
 
-#[cfg(has_feathers)] // this is valid, and #[cfg] evalutes to enabled
+#[cfg(has_feathers)] // this is valid, and #[cfg] evaluates to enabled
 fn do_features() {}
 
 #[cfg(has_mumble_frotz)] // this is INVALID
@@ -204,7 +204,7 @@ rustc --check-cfg 'names(is_embedded, has_feathers)' \
 #[cfg(is_embedded)]         // this is valid, and #[cfg] evaluates to disabled
 fn do_embedded() {}
 
-#[cfg(has_feathers)]        // this is valid, and #[cfg] evalutes to enabled
+#[cfg(has_feathers)]        // this is valid, and #[cfg] evaluates to enabled
 fn do_features() {}
 
 #[cfg(has_mumble_frotz)]    // this is INVALID, because has_mumble_frotz is not in the
@@ -588,7 +588,7 @@ But for crates that do have a `build.rs` script, we may need a way for those scr
 control the behavior of checking condition names.
 
 One possible source of problems may come from build scripts (`build.rs` files) that add `--cfg`
-options that Cargo is not aware of. For exaple, if a `Cargo.toml` file did _not_ define a feature
+options that Cargo is not aware of. For example, if a `Cargo.toml` file did _not_ define a feature
 flag of `foo`, but the `build.rs` file added a `--cfg feature="foo"` option, then source code
 could use `foo` in a condition. My guess is that this is rare, and that a Crater run will expose
 this kind of problem.

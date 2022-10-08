@@ -104,7 +104,7 @@ textually identical, as long as they resolve to the same version.
 Cargo will not unify features across dependencies for different targets. One
 dependency tree may have both ordinary dependencies and multiple artifact
 dependencies on the same crate, with different features for the ordinary
-dependency and for artifact depenencies for different targets.
+dependency and for artifact dependencies for different targets.
 
 Building an artifact dependency for multiple targets may entail building
 multiple copies of other dependencies, which must similarly unify within a
