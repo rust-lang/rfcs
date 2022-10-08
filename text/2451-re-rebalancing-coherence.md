@@ -285,7 +285,7 @@ applies to `std`, `Vec<T>` now applies to types from `std` and any other crate.
   `impl<T> SomeTrait<LocalType, T> for ForeignType`, because no sibling crate
   can write an overlapping impl. However, this is not something that the
   majority of library authors are aware of, and requires API designers to order
-  their type parameters based on how likely they are to be overidden by other
+  their type parameters based on how likely they are to be overridden by other
   crates.
 
   We could instead provide a mechanism for traits to opt into a redesigned

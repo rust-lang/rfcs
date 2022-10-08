@@ -11,7 +11,7 @@ Add a lint that warns when marking an inner function as `#[test]`.
 # Motivation
 [motivation]: #motivation
 
-`#[test]` is used to mark funcitons to be run as part of a test suite. The
+`#[test]` is used to mark functions to be run as part of a test suite. The
 functions being marked need to be addressable for this to work. Currently,
 marking an inner function as `#[test]` will not raise any errors or warnings,
 but the test will silently not be run. By adding a lint that identifies these

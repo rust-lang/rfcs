@@ -295,7 +295,7 @@ any exceptions in the `try { .. }` block.
 
 An alternative would be to simply use the `do catch { ... }` syntax we have
 in the nightly compiler. However, this syntax was not in the accepted `catch`
-RFC and was only a temporarly fix around `catch { .. }` not working.
+RFC and was only a temporary fix around `catch { .. }` not working.
 
 ## Alternative: `do try { .. }`
 
@@ -488,10 +488,10 @@ problematic as it:
 
 Arguably, this candidate keyword is a somewhat a good choice.
 
-To `trap` an error is sufficently clear on the "exception boundary" semantics
+To `trap` an error is sufficiently clear on the "exception boundary" semantics
 we wish to communicate.
 
-However, `trap` is used as an error handler in at least one langauge.
+However, `trap` is used as an error handler in at least one language.
 
 It also does not have the familiarity that `try` does have and is entirely
 inconsistent wrt. naming in the standard library.
@@ -907,7 +907,7 @@ part and not for the handler, these languages are:
 + [Erlang](http://erlang.org/doc/reference_manual/expressions.html#catch)
 + [Tcl](https://www.tcl.tk/man/tcl/TclCmd/catch.htm)
 
-However, the combined popularity of these langauges are not significant as
+However, the combined popularity of these languages are not significant as
 compared to that for `try { .. }`.
 
 # Unresolved questions
