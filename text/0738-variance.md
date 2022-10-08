@@ -86,7 +86,7 @@ Here the `Context` struct has one lifetime parameter, `data`, that
 represents the lifetime of some data that it references. Now let's
 imagine that the lifetime of the data is some lifetime we call
 `'x`. If we have a context `cx` of type `Context<'x>`, it is ok to
-(for example) pass `cx` as an argment where a value of type
+(for example) pass `cx` as an argument where a value of type
 `Context<'y>` is required, so long as `'x : 'y` ("`'x` outlives
 `'y`"). That is, it is ok to approximate `'x` as a shorter lifetime
 like `'y`. This makes sense because by changing `'x` to `'y`, we're
@@ -199,7 +199,7 @@ used in the body of the type. This generally occurs with unsafe code:
 
 Since these parameters are unused, the inference can reasonably
 conclude that `AtomicPtr<int>` and `AtomicPtr<uint>` are
-interchangable: after all, there are no fields of type `T`, so what
+interchangeable: after all, there are no fields of type `T`, so what
 difference does it make what value it has? This is not good (and in
 fact we have behavior like this today for lifetimes, which is a common
 source of error).

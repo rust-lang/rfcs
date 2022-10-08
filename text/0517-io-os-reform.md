@@ -1470,7 +1470,7 @@ Windows, it can be considered an optimization for `flush` and on
 Windows behave identically to `sync_all`, just as it does on some Unix
 filesystems.)
 
-The `path` method wil remain `#[unstable]`, as we do not yet want to
+The `path` method will remain `#[unstable]`, as we do not yet want to
 commit to its API.
 
 The `open_mode` function will be removed in favor of and will take an

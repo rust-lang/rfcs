@@ -39,7 +39,7 @@ implemented):
 trait Foo for ?Sized { ... }
 ```
 
-This syntax doesn't have any other precendent in the language. One
+This syntax doesn't have any other precedent in the language. One
 might expect to write:
 
 ```rust
