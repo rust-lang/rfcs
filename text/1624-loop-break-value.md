@@ -204,7 +204,7 @@ loop {
 ### Result value
 
 A loop only yields a value if broken via some form of `break ...;` statement,
-in which case it yields the value resulting from the evaulation of the
+in which case it yields the value resulting from the evaluation of the
 statement's expression (`EXPR` above), or `()` if there is no `EXPR`
 expression.
 

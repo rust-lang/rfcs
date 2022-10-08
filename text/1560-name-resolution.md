@@ -64,7 +64,7 @@ important later.
   a macro.
 * Rust has multiple namespaces - types, values, and macros exist in separate
   namespaces (some items produce names in multiple namespaces). Imports
-  refer (implictly) to one or more names in different namespaces.
+  refer (implicitly) to one or more names in different namespaces.
 
   Note that all top-level (i.e., not parameters, etc.) path segments in a path
   other than the last must be in the type namespace, e.g., in `a::b::c`, `a` and
@@ -88,7 +88,7 @@ are resolved in different orders.
 
 Due to macro expansion, it is possible for a name to be resolved and then to
 become ambiguous, or (with rules formulated in a certain way) for a name to be
-resolved, then to be amiguous, then to be resolvable again (possibly to
+resolved, then to be ambiguous, then to be resolvable again (possibly to
 different bindings).
 
 Furthermore, there is some flexibility in the order in which macros can be

@@ -131,7 +131,7 @@ Now let's take a full example:
 
 # Drawbacks
 
-This will make contributing slighty more complex, as there are rules to follow, whereas right now there are none.
+This will make contributing slightly more complex, as there are rules to follow, whereas right now there are none.
 
 # Alternatives
 

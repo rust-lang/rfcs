@@ -37,7 +37,7 @@ It's another rather ad-hoc flag for modifying code generation.
 
 Like other such flags, this applies to the entire code unit,
 regardless of monomorphizations. This means that code generation for a
-single function can be diferent based on which code unit its
+single function can be different based on which code unit it's
 instantiated in.
 
 # Alternatives

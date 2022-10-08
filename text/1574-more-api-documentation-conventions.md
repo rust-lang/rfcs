@@ -8,7 +8,7 @@
 
 [RFC 505] introduced certain conventions around documenting Rust projects. This
 RFC augments that one, and a full text of the older one combined with these
-modfications is provided below.
+modifications is provided below.
 
 [RFC 505]: https://github.com/rust-lang/rfcs/blob/master/text/0505-api-comment-conventions.md
 
