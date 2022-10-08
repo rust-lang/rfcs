@@ -146,9 +146,9 @@ actually unsafe - where we have to assert to the compiler that we have a valid
 value. And we only ever tell the compiler we have a value of type `T` where we
 know we actually do have a value of type `T`. As such, this is fine to use with
 any `T`, including `!`. If the callback diverges then it's not possible to get
-to the `unsafe` block and try to read the non-existant value.
+to the `unsafe` block and try to read the non-existent value.
 
-Given that it's so easy for code using `uninitialzed` to hide bugs like this,
+Given that it's so easy for code using `uninitialized` to hide bugs like this,
 and given that there's a better alternative, this RFC proposes deprecating
 `uninitialized` and introducing the `MaybeUninit` type into the standard
 library as a replacement.

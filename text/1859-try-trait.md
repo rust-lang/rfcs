@@ -75,7 +75,7 @@ and hence could be changed back to be more in line with this RFC.)
 
 The existing `try!` macro and `?` operator already allow a limit
 amount of type conversion, specifically in the error case. That is, if
-you apply `?` to a value of type `Result<T, E>`, the surrouding
+you apply `?` to a value of type `Result<T, E>`, the surrounding
 function can have some other return type `Result<U, F>`, so long as
 the error types are related by the `From` trait (`F: From<E>`). The
 idea is that if an error occurs, we will wind up returning
@@ -119,7 +119,7 @@ help ensure that "accidental" interconversion does not occur.
 ### Playground
 
 Note: if you wish to experiment,
-[this Rust playgroud link](https://play.rust-lang.org/?gist=9ef8effa0c1c81bc8bb8dccb07505c54&version=stable&backtrace=0)
+[this Rust playground link](https://play.rust-lang.org/?gist=9ef8effa0c1c81bc8bb8dccb07505c54&version=stable&backtrace=0)
 contains the traits and impls defined herein.
 
 ### Desugaring and the `Try` trait

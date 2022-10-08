@@ -123,7 +123,7 @@ assert!(v == [1, 2, -3, 4, -5]);
 
 ### Implementation
 
-Proposed implementaton is available in the [pdqsort][stjepang-pdqsort] crate.
+Proposed implementation is available in the [pdqsort][stjepang-pdqsort] crate.
 
 **Q: Why choose this particular sort algorithm?**<br>
 A: First, let's analyse what unstable sort algorithms other languages use:
