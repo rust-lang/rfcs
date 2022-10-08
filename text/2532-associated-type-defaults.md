@@ -976,7 +976,7 @@ associated type include:
            type Output = Self;
 
            // OK to assume what `Output` really is because any overriding
-           // must override both `Outout` and `finish`.
+           // must override both `Output` and `finish`.
            fn finish(self) -> Self::Output { self }
        }
    }
@@ -1403,7 +1403,7 @@ impl Bar for Theta {
 
 impl Bar for Iota {
     // We have overridden `Bar` which is in the root group.
-    // Since all other items are decendants of the same group as `Bar` is in,
+    // Since all other items are descendants of the same group as `Bar` is in,
     // they are allowed to depend on what `Bar` is.
     type Bar = u8;
 

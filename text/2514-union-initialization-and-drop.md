@@ -193,7 +193,7 @@ union U<T> { x:(), f: ManuallyDrop<T> }
 
 fn main() {
     let mut u : U<(Vec<i32>,)> = U { x: () };
-    unsafe { u.f.0 = Vec::new() }; // uninitialized `Vec` being droped
+    unsafe { u.f.0 = Vec::new() }; // uninitialized `Vec` being dropped
 }
 ```
 This requires `unsafe` because it desugars to `ManuallyDrop::deref_mut(&mut u.f).0`,

@@ -52,7 +52,7 @@ fn foo() -> __foo_return {
 }
 ```
 
-The generated type `__foo_return` is not exposed: it is automatically contructed from any valid type (as in `(3)`).
+The generated type `__foo_return` is not exposed: it is automatically constructed from any valid type (as in `(3)`).
 
 Note that, in order for the type inference to support argument-position `impl Trait`, which may be polymorphic (just like a generic parameter), the inference used here is actually a more expressive form of type inference similar to ML-style let polymorphism. Here, the inference of function types may result in additional generic parameters, specifically relating to the occurrences of argument-position `impl Trait`.
 
@@ -96,7 +96,7 @@ fn foo() -> Baz {
 }
 ```
 
-However, if the function is parameterised, it may be necessary to add explicit parameters to the type alias (due to the return-type being within the scope of the function's generic paramters, unlike the type alias).
+However, if the function is parameterised, it may be necessary to add explicit parameters to the type alias (due to the return-type being within the scope of the function's generic parameters, unlike the type alias).
 
 Using `Baz` in multiple locations constrains all occurrences of the inferred type to be the same, just as with `existential type`.
 

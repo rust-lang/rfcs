@@ -80,7 +80,7 @@ A pointer returned from one library can now be passed to the other library witho
 In the standard library:
 
 * Create a new `core::ffi` module.
-* Move the `enum` definiton of `c_void` there.
+* Move the `enum` definition of `c_void` there.
 * In `c_void`’s former location (`std::os::raw`), replace it with a `pub use` reexport.
 * For consistency between `core` and `std`, also add a similar `pub use` reexport at `std::ffi::c_void`.
   (Note that the `std::ffi` module already exists.)
@@ -91,7 +91,7 @@ Once the above lands in Nightly, in the `libc` crate:
   (for example by executing `$RUSTC` with a temporary file like
   `#![crate_type = "lib"] #![no_std] pub use core::ffi::c_void;`)
   and conditionally set a compilation flag for the library.
-* In the library, based on the precence of that flag,
+* In the library, based on the presence of that flag,
   make `c_void` be either `pub use core::ffi::c_void;` or its current `enum` definition,
   to keep compatibility with older Rust versions.
 
@@ -147,7 +147,7 @@ for example, `ptr::null::<c_void>()` and `<*mut c_void>::offset(n)` would not be
 
 We could deprecated `c_void` and replace it with a new differently-named extern type,
 but forcing the ecosystem through that transition seems too costly for this theoretical nicety.
-Plus, this woud still be a nominal type.
+Plus, this would still be a nominal type.
 If this new type is to be present if both `libc` and `std`,
  it would still have to be in `core` as well.
 
@@ -176,5 +176,5 @@ This is left for a future RFC.
 This RFC does not propose any change such as moving to libcore for the C types other than `c_void`.
 
 Although some in previous discussions have expressed desire for using C-compatible types
-without linking to the C runtime libray (which the `libc` crate does) or depending on `std`.
+without linking to the C runtime library (which the `libc` crate does) or depending on `std`.
 This use case is also left for a future proposal or RFC.

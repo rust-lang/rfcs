@@ -527,7 +527,7 @@ param : pat<no_top_alt> ':' ty_sum ;
 For closures we now have:
 
 ```rust
-inferrable_param : pat<no_top_alt> maybe_ty_ascription ;
+inferable_param : pat<no_top_alt> maybe_ty_ascription ;
 ```
 
 Finally, `pat` macro fragment specifiers will also match the `pat<no_top_alt>`
@@ -851,7 +851,7 @@ There is support for or-patterns in [various lisp libraries][lisp_libs].
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
-1. Should we allow `top_pat` or `pat<allow_top_alt>` in `inferrable_param` such
+1. Should we allow `top_pat` or `pat<allow_top_alt>` in `inferable_param` such
    that closures permit `|Ok(x) | Err(x)|` without first wrapping in parenthesis?
 
    We defer this decision to stabilization as it may depend on experimentation.
