@@ -760,7 +760,7 @@ Name       | Type     | Description
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
-`lifetime` | String   | (*Optional*) The name of the lifetime parameter on this referece, if any.
+`lifetime` | String   | (*Optional*) The name of the lifetime parameter on this reference, if any.
 `mutable`  | bool     | Whether this is a `&mut` or just a `&`.
 `type`     | [Type](#Type) | The Type that this reference references.
 
@@ -1073,15 +1073,15 @@ representation separate from the human-readable outputs:
 - [PureScript] uses an intermediate JSON representation when publishing package information to their
   [Pursuit] directory. It's primarily used to generate documentation, but can also be used to
   generate `etags` files.
-- [DartDoc] is in the process of implementing a JSON ouput.
+- [DartDoc] is in the process of implementing a JSON output.
 - [Doxygen] has an option to generate an XML file with the code's information.
 - [Haskell]'s documentation tool, [Haddock], can generate an intermediate representation used by the
   type search engine [Hoogle] to integrate documentation of several packages.
 - [Kythe] is a "(mostly) language-agnostic" system for integrating documentation across several
-  langauges. It features its own schema that code information can be translated into, that services
+  languages. It features its own schema that code information can be translated into, that services
   can use to aggregate information about projects that span multiple languages.
 - [GObject Introspection] has an intermediate XML representation called GIR that's used to create
-  langauge bindings for GObject-based C libraries. While (at the time of this writing) it's not
+  language bindings for GObject-based C libraries. While (at the time of this writing) it's not
   currently used to create documentation, it is a stated goal to use this information to document
   these libraries.
 

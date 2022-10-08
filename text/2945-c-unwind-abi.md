@@ -71,7 +71,7 @@ how well the current design satisfies these constraints.
 * **Enable foreign exceptions to propagate through Rust frames:**
   Similarly, we would like to make it possible for C++ code (or other
   languages) to raise exceptions that will propagate through Rust
-  frames "as if" they were Rust panics (i.e., running destrutors or,
+  frames "as if" they were Rust panics (i.e., running destructors or,
   in the case of `unwind=abort`, aborting the program).
 * **Enable error handling with `longjmp`:**
   As mentioned above, some existing Rust libraries rely on the ability to
@@ -437,7 +437,7 @@ The attribute approach was deemed insufficient for the following reasons:
   change in the future, but until then, attributes cannot provide any way to
   differentiate function pointers that may unwind from those that are
   guaranteed not to. Assuming that no function pointers may unwind is not
-  viable, because that severly limits the utility of cross-FFI unwinding.
+  viable, because that severely limits the utility of cross-FFI unwinding.
   Conversely, assuming that all `extern "C"` function pointers may unwind is
   inconsistent with the no-unwind default for `extern "C"` functions.
 * The existence of a compatible unwind mechanism on both sides of a function
@@ -514,7 +514,7 @@ language or standard library feature.
 
 Coercions between `"C-unwind"` function types (such as function pointers) and
 the other ABIs are not part of this RFC. However, they will probably be
-indispensible for API design, so we plan to provide them in a future RFC.
+indispensable for API design, so we plan to provide them in a future RFC.
 
 As mentioned [above][rationale], shims will be required if Rust changes its
 unwind mechanism.

@@ -12,7 +12,7 @@ The RFC proposes a plan to adopt rust-analyzer as Rust's official LSP implementa
 * **Deprecation period** -- announce that the RLS is deprecated and encourage people to migrate to rust-analyzer
 * **Final transition** -- stop supporting the older RLS
 
-As detailed below, one major concern with rust-analyzer as it stands today is that it shares very little code with rustc. To avoid creating an unsustainable maintainance burden, this RFC proposes extracting shared libraries that will be used by both rustc and rust-analyzer ("library-ification"), which should eventually lead to rustc and rust-analyzer being two front-ends over a shared codebase.
+As detailed below, one major concern with rust-analyzer as it stands today is that it shares very little code with rustc. To avoid creating an unsustainable maintenance burden, this RFC proposes extracting shared libraries that will be used by both rustc and rust-analyzer ("library-ification"), which should eventually lead to rustc and rust-analyzer being two front-ends over a shared codebase.
 
 # Motivation
 [motivation]: #motivation
@@ -73,7 +73,7 @@ Library-ification can address these concerns by two distinct "host processes" th
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The high-level plan is effectively to adopt rust-analyzer as the primary LSP implementation for the Rust project, and to aggressively pursue 'library-ification' as a means to eliminate code duplication. The ultimate vision is that the majority of the compiler logic should live in shared libaries which have two "front-ends", one from rustc and one from rust-analyzer.
+The high-level plan is effectively to adopt rust-analyzer as the primary LSP implementation for the Rust project, and to aggressively pursue 'library-ification' as a means to eliminate code duplication. The ultimate vision is that the majority of the compiler logic should live in shared libraries which have two "front-ends", one from rustc and one from rust-analyzer.
 
 ## Adopting rust-analyzer as the primary LSP implementation
 
@@ -141,7 +141,7 @@ The primary drawback to the plan is that, in the short term, rust-analyzer and r
 
 A secondary drawback is that rust-analyzer today sometimes uses approximate answers where the current RLS is able to offer precise results. This can occur, for example, with jump to definition. This situation will continue to be the case until we make progress on library-ification of parsing and name resolution. 
 
-More generally, switching the offical IDE from RLS to rust-analyzer will incure tooling churn on users, and would not be strictly better in the short term (althought the expectation is that it will be significantly better on average).
+More generally, switching the official IDE from RLS to rust-analyzer will incur tooling churn on users, and would not be strictly better in the short term (although the expectation is that it will be significantly better on average).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -173,10 +173,10 @@ The reasons behind these limitations are that it will take some time to implemen
 
 The current proposal is informed by experience with existing RLS and query-based compilation in rustc. Additionally, rust-analyzer heavily draws from lessons learned while developing IntelliJ Rust.
 
-It's interesting that many compilers went through a phase with parallel implementaitons to get a great IDE support
+It's interesting that many compilers went through a phase with parallel implementations to get a great IDE support
 
-* For C#, the [Roslyn](https://github.com/dotnet/roslyn) project was a from scratch implemenation.
-* [Dart for a long time had different front-ends for command line and interractive compilers](https://youtu.be/WjdrUphF5l4?t=2204)
+* For C#, the [Roslyn](https://github.com/dotnet/roslyn) project was a from scratch implementation.
+* [Dart for a long time had different front-ends for command line and interactive compilers](https://youtu.be/WjdrUphF5l4?t=2204)
 * [Swift is transitioning to new syntax tree library by "reimplement separately, then swap" approach](https://medium.com/@kitasuke/deep-dive-into-integrating-libsyntax-into-the-compiler-pipeline-2d478c8600a1)
 
 Notable exceptions:

@@ -80,7 +80,7 @@ Implicit arguments would have lower precedence than the existing named arguments
     // expands to "hello Snoopy".
     println!("hello {person}", person="Snoopy");
 
-Indeed, in this example above the `person` variable would be unused, and so in this case the unused varible warning will apply, like the below:
+Indeed, in this example above the `person` variable would be unused, and so in this case the unused variable warning will apply, like the below:
 
     warning: unused variable: `person`
      --> src/foo.rs:X:Y
@@ -116,7 +116,7 @@ The implementation pathway is directly motivated by the guide level explanation 
 
    If this RFC were implemented, instead of this resulting in an error, this named argument would be treated as an **implicit named argument** and the final result of the expansion of the `format_args!` macro would be the same as if a named argument, with name equivalent to the identifier, had been provided to the macro invocation.
 
-   Because `person` is only treated as an implicit named argument if no exisiting named argument can be found, this ensures that implicit named arguments have lower precedence than explicit named arguments.
+   Because `person` is only treated as an implicit named argument if no existing named argument can be found, this ensures that implicit named arguments have lower precedence than explicit named arguments.
 
 ## Macro Hygiene
 [macro-hygiene]: #macro-hygiene
@@ -274,7 +274,7 @@ Indeed the RFC's perverse example reads slightly easier with this syntax:
 
     println!("hello {( if self.foo { &self.person } else { &self.other_person } )}");
 
-Because the interpolation syntax `{(expr)}` is orthogonal to positional `{}` and named `{ident}` argument syntax, and is a superset of the functionality which would be offered by implict named arguments, the argument was made that we should make the leap directly to interpolation without introducing implicit named arguments so as to avoid complicating the existing cases.
+Because the interpolation syntax `{(expr)}` is orthogonal to positional `{}` and named `{ident}` argument syntax, and is a superset of the functionality which would be offered by implicit named arguments, the argument was made that we should make the leap directly to interpolation without introducing implicit named arguments so as to avoid complicating the existing cases.
 
 ### Argument Against Interpolation
 
@@ -312,7 +312,7 @@ Similar to how implicit named arguments can be offered by third-party crates, in
 
 The overall argument is not to deny that the standard library macros in question would not become more expressive if they were to gain fully interpolation.
 
-However, the RFC author argues that adding interpolation to these macros is less neccessary to improve ergonomics when comparing against other languages which chose to introduce language-level interpolation support. Introduction of implicit named arguments will cater for many of the common instances where interpolation would have been desired. The existing positional and named arguments can accept arbitrary expressions, and are not so unergonomic that they feel overly cumbersome when the expression in question is also nontrivial.
+However, the RFC author argues that adding interpolation to these macros is less necessary to improve ergonomics when comparing against other languages which chose to introduce language-level interpolation support. Introduction of implicit named arguments will cater for many of the common instances where interpolation would have been desired. The existing positional and named arguments can accept arbitrary expressions, and are not so unergonomic that they feel overly cumbersome when the expression in question is also nontrivial.
 
 
 # Prior art
@@ -332,7 +332,7 @@ This syntax is widely used and clear to read. It's [introduced in the Rust Book 
 
 ## Other languages
 
-A number of languages support string-interpolation functionality with similar syntax to what Rust's formatting macros. The RFC author's influence comes primarily from Python 3's "f-strings" and Javscript's backticks.
+A number of languages support string-interpolation functionality with similar syntax to what Rust's formatting macros. The RFC author's influence comes primarily from Python 3's "f-strings" and JavaScript's backticks.
 
 The following code would be the equivalent way to produce a new string combining a `greeting` and a `person` in a variety of languages:
 
@@ -363,7 +363,7 @@ The following code would be the equivalent way to produce a new string combining
 
 It is the RFC author's experience that these interpolating mechanisms read easily from left-to-right and it is clear where each variable is being substituted into the format string.
 
-In the Rust formatting macros as illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be subsituted. The named form avoids this drawback at the cost of much longer code.
+In the Rust formatting macros as illustrated above, the positional form suffers the drawback of not reading strictly from left to right; the reader of the code must refer back-and-forth between the format string and the argument list to determine where each variable will be substituted. The named form avoids this drawback at the cost of much longer code.
 
 Implementing implicit named arguments in the fashion suggested in this RFC would eliminate the drawbacks of each of the Rust forms and permit new syntax much closer to the other languages:
 
@@ -396,7 +396,7 @@ However, in current stable Rust the `panic!` macro does not forward to `format_a
 
 This semantic of `panic!` has previously been acknowledged as a "papercut", for example in [this Rust issue](https://github.com/rust-lang/rust/issues/22932). However, it has so far been left as-is because changing the design was low priority, and changing it may break existing code.
 
-If this RFC were to be implemented, users will very likely expect invoking `panic!` with only a string literal will capture any implicit named arguments. This semantic would quickly become percieved as a major bug rather than a papercut.
+If this RFC were to be implemented, users will very likely expect invoking `panic!` with only a string literal will capture any implicit named arguments. This semantic would quickly become perceived as a major bug rather than a papercut.
 
 Implementing this RFC therefore would bring strong motivation for making a small breaking change to `panic!`: when a single argument passed to panic is a string literal, instead of the final panic message being that literal (the current behavior), the final panic message will be the formatted literal, substituting any implicit named arguments denoted in the literal.
 

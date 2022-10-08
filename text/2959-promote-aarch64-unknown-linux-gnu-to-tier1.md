@@ -107,7 +107,7 @@ As mentioned in the [summary](#Summary), items in 3 above are **required next st
 
  - The evidence to that effect is too numerous to quote but generally easy to verify openly. 
 
- - It is fair to state that this is an ongoing reality which is unlikely to stop trending upwards and sidewards for the forseeable future.
+ - It is fair to state that this is an ongoing reality which is unlikely to stop trending upwards and sidewards for the foreseeable future.
 
  - Software stacks built for those domains predominantly use an AArch64 Linux kernel build.
 
@@ -141,7 +141,7 @@ As mentioned in the [summary](#Summary), items in 3 above are **required next st
 
  - It is hard to concretely quantify this aspect.
 
- - Most major Arm software ecosystem partners are either already using Rust extensively, or are building up to extensive use. A few publically known examples are Microsoft, Google and Amazon. There are many more.
+ - Most major Arm software ecosystem partners are either already using Rust extensively, or are building up to extensive use. A few publicly known examples are Microsoft, Google and Amazon. There are many more.
 
  - Arm itself recognises Rust as an important component to consider in a broader horizontal safety and security foundation across multiple processor portfolios. 
 

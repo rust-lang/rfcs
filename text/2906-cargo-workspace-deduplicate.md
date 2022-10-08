@@ -440,7 +440,7 @@ continue to prune accidentally unused entries.
 ## Effect on `cargo metadata`
 
 Executing `cargo metadata` to learn about a crate graph will implicitly perform
-all subsitution defined in this proposal. Consumers of `cargo metadata` will
+all substitution defined in this proposal. Consumers of `cargo metadata` will
 continue to get the same output they got before this proposal, meaning that
 implicit substitutions, if any, will be invisible to users of `cargo metadata`.
 
@@ -455,7 +455,7 @@ Like today, `path` dependencies will be resolved relative to the file that
 defines them. This means that references to dependencies defined in the
 workspace means paths are still relative to the workspace root itself.
 
-For example if you write down a `[workspace.depencencies]` directive with a
+For example if you write down a `[workspace.dependencies]` directive with a
 relative path:
 
 ```toml

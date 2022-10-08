@@ -321,7 +321,7 @@ In some cases, fine control is needed over the way a register name is formatted 
 
 By default the compiler will always choose the name that refers to the full register size (e.g. `rax` on x86-64, `eax` on x86, etc).
 
-This default can be overriden by using modifiers on the template string operands, just like you would with format strings:
+This default can be overridden by using modifiers on the template string operands, just like you would with format strings:
 
 ```rust
 let mut x: u16 = 0xab;
@@ -860,7 +860,7 @@ There is however a fairly trivial mapping between the GCC-style and this format 
 
 Additionally, this RFC proposes using the Intel asm syntax by default on x86 instead of the AT&T syntax. We believe this syntax will be more familiar to most users, but may be surprising for users used to GCC-style asm.
 
-The `cpuid` example above would look like this in GCC-sytle inline assembly:
+The `cpuid` example above would look like this in GCC-style inline assembly:
 
 ```C
 // GCC doesn't allow directly clobbering an input, we need

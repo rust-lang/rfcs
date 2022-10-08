@@ -233,7 +233,7 @@ meaning for `@`-bindings in destructuring assignment is not inconceivable, we be
 confusing at best in this context. Conversely, destructuring tuples, slices or structs is very
 natural and we do not foresee confusion with allowing these.
 
-Our implementation is forwards-compatible with allowing these patterns in destructuring assigmnent,
+Our implementation is forwards-compatible with allowing these patterns in destructuring assignment,
 in any case, so we lose nothing by not allowing them from the start.
 
 Additionally, we do not give analogues for any of the following, which make little sense in this
