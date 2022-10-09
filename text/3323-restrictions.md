@@ -35,8 +35,8 @@ also a restriction, as it requires you to have a wildcard arm in a `match` expre
 are used on a daily basis by countless Rust programmers.
 
 Restrictions are a powerful tool because the compiler stops you from doing something you are not
-allowed to do. If you violate a restriction by using trickery, such as transmuting a type, the
-resulting code is _unsound_.
+allowed to do. If you violate a restriction by using unsafe trickery, such as transmuting a type,
+the resulting code is _unsound_.
 
 So why do we need restrictions? In fact, they are incredibly important. Those that have been around
 a while will remember a time before `#[non_exhaustive]`. Standard practice at that point in time was
@@ -155,8 +155,8 @@ pub struct Time {
 
 The author of `time` would love to have these fields public. However, they do not want users to be
 able to change the values, as that would violate the invariants of the type. As a result they
-currently have to keep the fields private and write getters. What if, instead, they could add
-`mut(crate)` to a field, just like `pub(crate)`? This would allow them to write:
+currently have to keep the fields private and write "getter" methods. What if, instead, they could
+add `mut(crate)` to a field, just like `pub(crate)`? This would allow them to write:
 
 ```rust
 pub struct Time {
@@ -229,18 +229,19 @@ let x = Cell::new(5);
 x.set(6);
 ```
 
-Rust, as you may know, has [interior mutability]. This is what we are using here. `x` is not
-declared mutable, and it does not need to be. This is the beauty of interior mutability. But it
-introduces a key question: where is the mutation? The answer is that it is **not** a mutation for
-the purposes of this restriction. This is not because the value is not changed: it is. Rather, it is
-the logical result of the semantics of `mut` restrictions and where errors must occur (as described
-after the previous example). If errors are emitted at the point where the mutable reference is
-created, then there can be no such error here, as no mutable reference is ever created. `Cell::set`
-is a method that takes `&self`, not `&mut self`. Surely we can make interior mutability a special
-case, right? No; the only way to work around this is to make any reference to a type with interior
-mutability considered a mutation. Consequently, you could never have a reference to a type
-containing a `mut`-restricted, interior-mutable field. This is unacceptable, so interior mutability
-cannot be considered a mutation for the purposes of this restriction.
+Rust has [interior mutability], which is what we are using here. `x` is not declared mutable, and it
+does not need to be. This is the purpose of interior mutability, by definition. But it introduces a
+key question: where is the mutation? The answer is that it is **not** a mutation for the purposes of
+this restriction. This is not because the value is not changed: it is. Rather, it is the logical
+result of the semantics of `mut` restrictions and where errors must occur (as described after the
+previous example). If errors are emitted at the point where the mutable reference is created, then
+there can be no such error here, as no mutable reference is ever created. `Cell::set` is a method
+that takes `&self`, not `&mut self`. Interior mutability is not special-cased; the only way to work
+around this would be to make even non-mutable reference to a type with interior mutability
+considered a mutation. Consequently, you could never have a reference to a type containing a
+`mut`-restricted, interior-mutable field. This is unacceptable, so interior mutability cannot be
+considered a mutation for the purposes of this restriction. Interfaces that wish to restrict even
+_interior_ mutability of a field should avoid exposing it as a public field with private mutability.
 
 [interior mutability]: https://doc.rust-lang.org/reference/interior-mutability.html
 
@@ -262,8 +263,8 @@ Time {
 then the invariant would be violated, as there are only 24 hours in a day (numbered 0–23). Given
 that the invariant is not enforced by the type system, it cannot be enforced at all in this case. As
 a result, we have no choice but to disallow `struct` expressions for types with `mut`-restricted
-fields. This applies even when [functional update syntax][fru-syntax] is used, as invariants can
-rely on the value of other fields.
+fields, in scopes where any fields are `mut`-restricted. This applies even when
+[functional update syntax][fru-syntax] is used, as invariants can rely on the value of other fields.
 
 [fru-syntax]: https://doc.rust-lang.org/stable/reference/expressions/struct-expr.html#functional-update-syntax
 
@@ -292,19 +293,18 @@ to the current crate. However, there are other ways to restrict visibility. You 
 `pub(super)` to restrict visibility to the parent module, and `pub(in path)` to restrict visibility
 to `path`, as long as that path is an ancestor of the location it is used. There is one additional
 case you have likely never encountered: `pub(self)`. The reason you have likely never seen this
-before is that it is completely useless. Why? `pub(self)` is identical to private, which is the
-default visibility.
+before is that it is redundant: `pub(self)` is identical to private, which is the default
+visibility.
 
-While `pub(self)` should never be written in ordinary code, `impl(self)` and `mut(self)` are quite
-different. As the default restriction is unrestricted implementation and unrestricted mutation, it
-is more than likely that `impl(self)` and `mut(self)` will be quite common. During previous
-discussions about syntax, the unclear meaning of `impl(self)` and `mut(self)` was brought up. Syntax
-should have a clear meaning, and `impl(self)` and `mut(self)` are not clear. While they should be
-allowed for consistency with `pub(self)`, an alternative was needed with the same behavior.
-`impl(mod)` and `mut(mod)` should have a sufficiently clear meaning: implementing the trait and
-mutating the field are restricted to the current module. `impl(in mod)` and `mut(in mod)` are
-accepted as well. The behavior of `impl(mod)` is identical to `impl(self)`; likewise for `mut(mod)`
-and `mut(self)`.
+While `pub(self)` should never be needed in most code, `impl(self)` and `mut(self)` are quite
+different. As no restrictions apply by default (anything visible can be implemented/mutated), is
+more than likely that `impl(self)` and `mut(self)` will be quite common. During previous discussions
+about syntax, the unclear meaning of `impl(self)` and `mut(self)` was brought up. Syntax should have
+a clear meaning, and `impl(self)` and `mut(self)` are not clear. While they should be allowed for
+consistency with `pub(self)`, an alternative was needed with the same behavior. `impl(mod)` and
+`mut(mod)` should have a sufficiently clear meaning: implementing the trait and mutating the field
+are restricted to the current module. `impl(in mod)` and `mut(in mod)` are accepted as well. The
+behavior of `impl(mod)` is identical to `impl(self)`; likewise for `mut(mod)` and `mut(self)`.
 
 For consistency with the new restriction syntax, `pub(mod)` and `pub(in mod)` are also allowed.
 
@@ -423,6 +423,7 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 # Alternatives
 
 - `impl` and `mut` restrictions could be attributes, similar to `#[non_exhaustive]`.
+  - The proposed syntax could by syntactic sugar for these attributes.
 
 # Prior art
 
@@ -436,6 +437,8 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   unhelpful to downstream users.
 - Various other languages have read-only fields, including C++, C#, Java, TypeScript, Kotlin, and
   Swift.
+- Users of many languages, including Rust, regularly implement read-only fields by providing a
+  getter method without a setter method, demonstrating a need for this.
 
 # Unresolved questions
 
@@ -456,11 +459,14 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 
 # Future possibilities
 
-- Sealed/exhaustive traits could happen in the future. This has the ability to impact coherence,
-  such that other crates could rely on the fact that the list of implementations is exhaustive. As
-  traits would default to unsealed, this does not have be decided now.
+- Explicitly sealed/exhaustive traits could happen in the future. This has the ability to impact
+  coherence, such that other crates could rely on the fact that the list of implementations is
+  exhaustive. As traits would default to unsealed, this does not have be decided now.
 - Trait items could gain proper visibility and/or restrictions of their own. This would allow
   private and/or defaulted trait items that cannot be overridden.
 - Set-once fields could potentially occur in the future. Functionally, this would be "true"
   read-only fields, in that they can be constructed but never mutated. They are not included in this
   proposal as the use case is nor clear, nor is there an immediately obvious syntax to support this.
+- The default could be changed in a future edition, such as to make `pub field: Type` be only
+  mutable within the module rather than mutable everywhere. This seems unlikely, as it would be an
+  incredibly disruptive change, and the benefits would have to be significant.
