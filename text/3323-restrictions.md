@@ -286,28 +286,6 @@ In this example, `Foo::Alpha { x: 5 }` is allowed when it is in the same crate a
 because `x` is not restricted within this scope, so the field can be freely mutated. Because of
 this, the previous concern about upholding variants is not applicable.
 
-## `mod` as a restriction scope
-
-`pub` can be restricted in a few ways. The most common is `pub(crate)`, which restricts visibility
-to the current crate. However, there are other ways to restrict visibility. You can also use
-`pub(super)` to restrict visibility to the parent module, and `pub(in path)` to restrict visibility
-to `path`, as long as that path is an ancestor of the location it is used. There is one additional
-case you have likely never encountered: `pub(self)`. The reason you have likely never seen this
-before is that it is redundant: `pub(self)` is identical to private, which is the default
-visibility.
-
-While `pub(self)` should never be needed in most code, `impl(self)` and `mut(self)` are quite
-different. As no restrictions apply by default (anything visible can be implemented/mutated), is
-more than likely that `impl(self)` and `mut(self)` will be quite common. During previous discussions
-about syntax, the unclear meaning of `impl(self)` and `mut(self)` was brought up. Syntax should have
-a clear meaning, and `impl(self)` and `mut(self)` are not clear. While they should be allowed for
-consistency with `pub(self)`, an alternative was needed with the same behavior. `impl(mod)` and
-`mut(mod)` should have a sufficiently clear meaning: implementing the trait and mutating the field
-are restricted to the current module. `impl(in mod)` and `mut(in mod)` are accepted as well. The
-behavior of `impl(mod)` is identical to `impl(self)`; likewise for `mut(mod)` and `mut(self)`.
-
-For consistency with the new restriction syntax, `pub(mod)` and `pub(in mod)` are also allowed.
-
 # Reference-level explanation
 
 ## Syntax
@@ -334,10 +312,8 @@ TupleField :
 +     mut
 +   | mut ( crate )
 +   | mut ( self )
-+   | mut ( mod )
 +   | mut ( super )
 +   | mut ( in SimplePath )
-+   | mut ( in mod )
 ```
 
 Trait definitions need a similar change to the [syntax for `trait`s][trait syntax] to accommodate
@@ -359,26 +335,11 @@ Trait :
 +     impl
 +   | impl ( crate )
 +   | impl ( self )
-+   | impl ( mod )
 +   | impl ( super )
 +   | impl ( in SimplePath )
-+   | impl ( in mod )
 ```
 
 Essentially, `mut` and `impl` have the same syntax as `pub`, just with a different keyword.
-
-Finally, a minor change is needed to the syntax for visibility to permit `pub(mod)`.
-
-```diff
-Visibility :
-     pub
-   | pub ( crate )
-   | pub ( self )
-+  | pub ( mod )
-   | pub ( super )
-   | pub ( in SimplePath )
-+  | pub ( in mod )
-```
 
 ## Behavior
 
@@ -390,8 +351,6 @@ most cases the default visibility is private, `pub` is default in some cases, na
 variants, `enum` fields, and `trait` items. `impl` and `mut` will have a consistent default: when
 omitted entirely, the scope is inherited from `pub`. This is both what is most convenient and is
 what is required for backwards compatibility with existing code.
-
-`pub(mod)` is equivalent to `pub(self)`; likewise for `impl(mod)` and `mut(mod)`.
 
 When an `ImplRestriction` is present, implementations of the associated trait are only permitted
 within the designated path. Any implementation of the trait outside this scope is a compile error.
@@ -470,3 +429,4 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 - The default could be changed in a future edition, such as to make `pub field: Type` be only
   mutable within the module rather than mutable everywhere. This seems unlikely, as it would be an
   incredibly disruptive change, and the benefits would have to be significant.
+- Syntax such as `impl(mod)` could be added for clarity as an alternative to `impl(self)`.
