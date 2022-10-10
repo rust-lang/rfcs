@@ -309,8 +309,7 @@ TupleField :
    Type
 
 +MutRestriction :
-+     mut
-+   | mut ( crate )
++   mut ( crate )
 +   | mut ( self )
 +   | mut ( super )
 +   | mut ( in SimplePath )
@@ -332,25 +331,24 @@ Trait :
    }
 
 +ImplRestriction :
-+     impl
-+   | impl ( crate )
++   impl ( crate )
 +   | impl ( self )
 +   | impl ( super )
 +   | impl ( in SimplePath )
 ```
 
-Essentially, `mut` and `impl` have the same syntax as `pub`, just with a different keyword.
+Essentially, `mut` and `impl` have the same syntax as `pub`, just with a different keyword. Using
+the keyword without providing a path is not allowed.
 
 ## Behavior
 
 The current behavior of `pub` is that `pub` makes something visible within the declared scope. If no
 scope is declared (such that it is just `pub`), then the item is visible everywhere. This behavior
 is preserved for `impl` and `mut`. When a restriction is used, the behavior is allowed only within
-the declared scope. When the keyword is used alone, the behavior is allowed everywhere. While in
-most cases the default visibility is private, `pub` is default in some cases, namely `enum`
-variants, `enum` fields, and `trait` items. `impl` and `mut` will have a consistent default: when
-omitted entirely, the scope is inherited from `pub`. This is both what is most convenient and is
-what is required for backwards compatibility with existing code.
+the declared scope. While in most cases the default visibility is private, `pub` is default in some
+cases, namely `enum` variants, `enum` fields, and `trait` items. `impl` and `mut` will have a
+consistent default: when omitted entirely, the scope is inherited from `pub`. This is both what is
+most convenient and is what is required for backwards compatibility with existing code.
 
 When an `ImplRestriction` is present, implementations of the associated trait are only permitted
 within the designated path. Any implementation of the trait outside this scope is a compile error.
@@ -401,11 +399,8 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 
 # Unresolved questions
 
-- Should unrestricted "restrictions" be allowed to be explicitly stated, or should this be banned?
-  If allowed, should it be a warning?
-  - Both `impl` and `mut` make no sense to have unrestricted, as that is the default behavior. An
-    "unnecessary" restriction lint that is warn-by-default would be ideal. This would allow macros
-    to emit more flexible syntax. This warning could also be used for `pub(self)`.
+- Should an "unnecessary restriction" lint be introduced? It would fire when the restriction is as
+  strict or less strict than the visibility. This warning could also be used for `pub(self)`.
 - How will restrictions work with `macro_rules!` matchers? There is currently a `vis` matcher, but
   it is likely unwise to add a new matcher for each restriction. Should the new syntax be included
   as part of the `vis` matcher? If so, it is important to note that restrictions are not the same
@@ -414,7 +409,8 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 - What is the interaction between stability and restrictions?
   - Suggestion: Visibility is an inherent part of the item; restrictions should be as well. Metadata
     can be added in the future indicating when an item had its restriction lifted, if applicable.
-    The design for this is left to the language team as necessary.
+    The design for this is left to the language team as necessary. A decision does _not_ need to be
+    made prior to stabilization, as stability attributes are not stable in their own right.
 
 # Future possibilities
 
@@ -430,3 +426,5 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   mutable within the module rather than mutable everywhere. This seems unlikely, as it would be an
   incredibly disruptive change, and the benefits would have to be significant.
 - Syntax such as `impl(mod)` could be added for clarity as an alternative to `impl(self)`.
+- `impl` and `mut` could be usable without a path if deemed necessary. This behavior would be
+  identical to omitting the keyword entirely.
