@@ -5,7 +5,7 @@
 
 # Summary
 
-Add an `Aligned` marker trait to `core::marker`, as a supertrait of the `Sized` trait. `Aligned` is implemented for all types with an alignment determined at compile time. This includes all `Sized` types, as well as slices and records containing them. Relax `core::mem::align_of<T>()`'s trait bound from `T: Sized` to `T: ?Sized + Aligned`.
+Add an `Aligned` marker trait to `core::marker`, and the prelude, as a supertrait of the `Sized` trait. `Aligned` is implemented for all types with an alignment determined at compile time. This includes all `Sized` types, as well as slices and records containing them. Relax `core::mem::align_of<T>()`'s trait bound from `T: Sized` to `T: ?Sized + Aligned`.
 
 # Motivation
 
@@ -15,7 +15,7 @@ In addition, this RFC allows implementing certain object-safe traits for slices,
 
 # Guide-level explanation
 
-`Aligned` is a marker trait defined in `core::marker`. It's automatically implemented for all types with an alignment determined at compile time. This includes all `Sized` types (`Aligned` is a supertrait of `Sized`), as well as slices and records containing them. Trait objects are not `Aligned`.
+`Aligned` is a marker trait defined in `core::marker`, and re-exported in the prelude. It's automatically implemented for all types with an alignment determined at compile time. This includes all `Sized` types (`Aligned` is a supertrait of `Sized`), as well as slices and records containing them. Trait objects are not `Aligned`.
 
 You can't implement `Aligned` yourself.
 
@@ -50,7 +50,7 @@ None that I am aware of.
 
 - Relaxing `NonNull::<T>::dangling()`'s trait bound from `T: Sized` to `T: ?Sized + Aligned + Pointee<Metadata: ~const Default>` may be desirable once the necessary library and language features are stabilized.
 - `extern type`s may want to be able to implement `Aligned`.
-- `Aligned` may warrant an addition the next edition's prelude.
 - Also in a future edition, `?Sized` could be replaced with `?Aligned`, with `?Sized` then meaning "opt out of `Sized` bound only, not `Aligned`."
 - Certain `Self: Sized` bounds in the standard library could be relaxed to `Self: Aligned`. However, this might cause backward-compatibility issues.
+  - [IRLO topic](https://internals.rust-lang.org/t/removing-self-sized-and-backward-compatibility/17456) on how the issues could be addressed.
 - [RFC 3308: `core::mem::offset_of`](https://github.com/rust-lang/rfcs/pull/3308) could, if accepted, be made to work on any `Aligned` type. One caveat is that if Rust ever gets structs with multiple unsized fields, those could be `Aligned` but not support `offset_of` for every field.
