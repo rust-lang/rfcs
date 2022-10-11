@@ -186,7 +186,11 @@ Given `trait A(n+1): Bn + Cn {}, trait Bn: An { fn bn(&self); }, trait Cn: An { 
 
 ## Why not adopt a "pointer-based" vtable layout?
 
-In this stable, every trait would have their own vtable, and we would embed links to each of them in the subtrait's vtable. This was rejected as it would be less efficient for the single-inheritance case, which is common.
+The current implementation uses a hybrid strategy that *sometimes* uses pointers. This was deemed preferable to using a *purely* pointer-based layout because it would be less efficient for the single-inheritance case, which is common.
+
+## Are there other optimizations possible with vtable layout?
+
+Certainly. Given that the RFC doesn't specify vtable layout, we still have room to do experimentation. For example, we might do special optimizations for traits with no methods.
 
 # Prior art
 [prior-art]: #prior-art
