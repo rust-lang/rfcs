@@ -381,6 +381,9 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 
 - `impl` and `mut` restrictions could be attributes, similar to `#[non_exhaustive]`.
   - The proposed syntax could by syntactic sugar for these attributes.
+- Visibility could be altered to accept restrictions as a type of parameter, such as
+  `pub(crate, mut = self)`. This does not work because restrictions are not permitted everywhere
+  visibility is.
 
 # Prior art
 
