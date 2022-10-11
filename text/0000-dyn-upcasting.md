@@ -166,6 +166,8 @@ This RFC does not specify the validity invariant, instead delegating that decisi
 
 It commits us to supporting upcasting, which can make "multi-trait" dyn more complex (see the Future Possibilities section).
 
+Vtables become larger to accommodate upcasting, which could have an affect on performance.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
