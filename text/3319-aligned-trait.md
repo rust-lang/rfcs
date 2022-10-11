@@ -9,7 +9,7 @@ Add an `Aligned` marker trait to `core::marker`, and the prelude, as a supertrai
 
 # Motivation
 
-Data structures and containers that wish to store unsized types are easier to implement if they can produce a dangling, well-aligned pointer to the unsized type. Being able to determine a type's alignment without a value of the type allows doing this.
+Data structures and containerss may be able to store unsized types only if their alignment can be known at compile-time. Alternatively, compile-time known alignment might enable more efficient algorithms or additional APIs. A built-in `Aligned` trait allows Rust code to implement APIs that that are fully usable with all aligned types. (For an example, see the [unsized-vec crate](https://crates.io/crates/unsized-vec)).
 
 In addition, this RFC allows implementing certain object-safe traits for slices, in a more complete fashion than was possible before.
 
