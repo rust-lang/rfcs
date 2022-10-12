@@ -50,7 +50,7 @@ pub unsafe fn write_unaligned<T>(p: *mut T, v: T) {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-There functions aren't *stricly* necessary since they are just convenience wrappers around `ptr::copy_nonoverlapping`.
+There functions aren't *strictly* necessary since they are just convenience wrappers around `ptr::copy_nonoverlapping`.
 
 # Alternatives
 [alternatives]: #alternatives

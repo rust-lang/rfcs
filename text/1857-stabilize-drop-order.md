@@ -44,7 +44,7 @@ code (which could rely on the new drop order).
 
 Both requirements seem quite difficult, if not impossible, to meet. Even in case
 we figured out how to meet those requirements, the complexity of the approach would
-probably outweight the current complexity of having a non-intuitive drop order.
+probably outweigh the current complexity of having a non-intuitive drop order.
 
 Finally, in case people really dislike the current drop order, it may still
 be possible to introduce alternative, opt-in, drop orders in a backwards

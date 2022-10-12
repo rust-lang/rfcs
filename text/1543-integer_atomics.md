@@ -72,7 +72,7 @@ static ATOMIC: Mutex<(u64, u64)> = Mutex::new((0, 0));
 #[cfg(target_has_atomic = "64")]
 static COUNTER: AtomicU64 = AtomicU64::new(0);
 #[cfg(not(target_has_atomic = "64"))]
-static COUTNER: AtomicU32 = AtomicU32::new(0);
+static COUNTER: AtomicU32 = AtomicU32::new(0);
 ```
 
 Note that it is not necessary for an architecture to natively support atomic operations for all sizes (`i8`, `i16`, etc) as long as it is able to perform a `compare_exchange` operation with a larger size. All smaller operations can be emulated using that. For example a byte atomic can be emulated by using a `compare_exchange` loop that only modifies a single byte of the value. This is actually how LLVM implements byte-level atomics on MIPS, which only supports word-sized atomics native. Note that the out-of-bounds read is fine here because atomics are aligned and will never cross a page boundary. Since this transformation is performed transparently by LLVM, we do not need to do any extra work to support this.

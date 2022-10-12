@@ -5,7 +5,7 @@
 # Summary
 
 Change the rebinding syntax from `use ID = PATH` to `use PATH as ID`,
-so that paths all line up on the left side, and imported identifers
+so that paths all line up on the left side, and imported identifiers
 are all on the right side.  Also modify `extern crate` syntax
 analogously, for consistency.
 

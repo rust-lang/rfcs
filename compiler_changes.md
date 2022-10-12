@@ -28,7 +28,7 @@ submitted later if there is scope for large changes to the language RFC.
 * Adding, removing, or changing a stable compiler flag
 * The implementation of new language features where there is significant change
   or addition to the compiler. There is obviously some room for interpretation
-  about what consitutes a "significant" change and how much detail the
+  about what constitutes a "significant" change and how much detail the
   implementation RFC needs. For guidance, [associated items](text/0195-associated-items.md)
   and [UFCS](text/0132-ufcs.md) would clearly need an implementation RFC,
   [type ascription](text/0803-type-ascription.md) and
@@ -41,7 +41,7 @@ submitted later if there is scope for large changes to the language RFC.
 
 * Bug fixes, improved error messages, etc.
 * Minor refactoring/tidying up
-* Implmenting language features which have an accepted RFC, where the
+* Implementing language features which have an accepted RFC, where the
   implementation does not significantly change the compiler or require
   significant new design work
 * Adding unstable API for tools (note that all compiler API is currently unstable)

@@ -24,7 +24,7 @@ Update the methods `std::io::stdin` `std::io::stdout` and `std::io::stderr` as f
 
 # Drawbacks
 
-* Hides an error from the user which we may want to expose and may lead to people missing panicks occuring in threads.
+* Hides an error from the user which we may want to expose and may lead to people missing panicks occurring in threads.
 * Some languages, such as Ruby and Python, do throw an exception when stdout is missing.
 
 # Alternatives

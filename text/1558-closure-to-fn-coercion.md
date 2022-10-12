@@ -7,7 +7,7 @@
 [summary]: #summary
 
 A closure that does not move, borrow, or otherwise access (capture) local
-variables should be coercable to a function pointer (`fn`).
+variables should be coercible to a function pointer (`fn`).
 
 # Motivation
 [motivation]: #motivation

@@ -7,7 +7,7 @@
 [summary]: #summary
 
 The standard library provides the `From` and `Into` traits as standard ways to
-convert between types. However, these traits only support *infallable*
+convert between types. However, these traits only support *infallible*
 conversions. This RFC proposes the addition of `TryFrom` and `TryInto` traits
 to support these use cases in a standard way.
 

@@ -66,7 +66,7 @@ fn mod_euc(self, rhs: Self) -> Self {
     r
 }
 ```
-And on `f64` (analagous to the `f32` implementation):
+And on `f64` (analogous to the `f32` implementation):
 ```rust
 fn div_euc(self, rhs: f64) -> f64 {
     let q = (self / rhs).trunc();

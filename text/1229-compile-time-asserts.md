@@ -5,7 +5,7 @@
 
 # Summary
 
-If the constant evaluator encounters erronous code during the evaluation of
+If the constant evaluator encounters erroneous code during the evaluation of
 an expression that is not part of a true constant evaluation context a warning
 must be emitted and the expression needs to be translated normally.
 

@@ -74,7 +74,7 @@ Providing these implementations in the current state of Rust requires substantia
 
 ## [`RcBox`][RcBox] is not public
 
-Furthermore, since [`RcBox`][RcBox] is not exposed publically from [`std::rc`][std::rc], one can't make an implementation outside of the standard library for this without making assumptions about the internal layout of [`Rc`][Rc]. The alternative is to roll your own implementation of [`Rc`][Rc] in its entirity - but this in turn requires using a lot of feature gates, which makes using this on stable Rust in the near future unfeasible.
+Furthermore, since [`RcBox`][RcBox] is not exposed publicly from [`std::rc`][std::rc], one can't make an implementation outside of the standard library for this without making assumptions about the internal layout of [`Rc`][Rc]. The alternative is to roll your own implementation of [`Rc`][Rc] in its entirety - but this in turn requires using a lot of feature gates, which makes using this on stable Rust in the near future unfeasible.
 
 ## For [`Arc`][Arc]
 
@@ -479,7 +479,7 @@ The main drawback would be increasing the size of the standard library.
 
 1. Only implement this for [`T: Copy`][Copy] and skip [`T: Clone`][Clone].
 2. Let other libraries do this. This has the problems explained in the [motivation]
-section above regarding [`RcBox`][RcBox] not being publically exposed as well as
+section above regarding [`RcBox`][RcBox] not being publicly exposed as well as
 the amount of feature gates needed to roll ones own [`Rc`][Rc] alternative - for
 little gain.
 3. Only implement this for [`Rc`][Rc] and skip it for [`Arc`][Arc].

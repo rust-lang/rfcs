@@ -81,7 +81,7 @@ specifically:
 Rust's ephemeral and ill-defined "linkage model" is... well... ill defined and
 ephemeral. This RFC is an extension of this model, but it's difficult to reason
 about extending that which is not well defined. As a result there could be
-unforseen interactions between this output format and where it's used.
+unforeseen interactions between this output format and where it's used.
 
 # Alternatives
 [alternatives]: #alternatives

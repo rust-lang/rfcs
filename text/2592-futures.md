@@ -404,7 +404,7 @@ The various discussions outlined in the historical context section above cover t
 path to these APIs from futures 0.1. But, in a nutshell, there are three major shifts:
 
 - The use of `Pin<&mut self>` rather than just `&mut self`, which is necessary
-to support borrowing withing `async` blocks. The `Unpin` marker trait can be used
+to support borrowing within `async` blocks. The `Unpin` marker trait can be used
 to restore ergonomics and safety similar to futures 0.1 when writing futures by hand.
 
 - Dropping *built in* errors from `Future`, in favor of futures returning a `Result`

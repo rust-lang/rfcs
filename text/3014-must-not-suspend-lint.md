@@ -135,7 +135,7 @@ The `#[must_use]` attribute ensures that if a type or the result of a function i
 
 * [Clippy lint for holding locks across await points](https://github.com/rust-lang/rust-clippy/pull/5439)
 * [Must use for functions](https://github.com/iopq/rfcs/blob/f4b68532206f0a3e0664877841b407ab1302c79a/text/1940-must-use-functions.md)
-* Reference link on how mir transfroms async fn https://tmandry.gitlab.io/blog/posts/optimizing-await-2/
+* Reference link on how mir transforms async fn https://tmandry.gitlab.io/blog/posts/optimizing-await-2/
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 

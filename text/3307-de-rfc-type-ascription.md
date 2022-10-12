@@ -27,7 +27,7 @@ Syntax isn't the only reason; while type ascription is probably a good idea, a f
 # Guide-level obfuscation
 [guide-level-obfuscation]: #guide-level-obfuscation
 
-The `:` type ascription syntax would be removed from the nightly language. It is up to the compiler team whether they wish to remove it completely from the compiler (or perhaps just make it unparseable and use some magical unstable `ascript!()` macro in the meantime so that it is testable).
+The `:` type ascription syntax would be removed from the nightly language. It is up to the compiler team whether they wish to remove it completely from the compiler (or perhaps just make it unparsable and use some magical unstable `ascript!()` macro in the meantime so that it is testable).
 
 This does not prevent future type ascription RFCs from happening, however they must propose the feature from first principles, and justify their choice of syntax. They are, of course, free to copy the work or text of the previous RFC.
 

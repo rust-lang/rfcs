@@ -52,7 +52,7 @@ make them difficult to use. Specifically, the current error format:
 * Repeats the file position on the left-hand side. This offers no additional information, but
 instead makes the error harder to read.
 * Prints messages about lines often out of order. This makes it difficult for the developer to
-glance at the error and recognize why the error is occuring
+glance at the error and recognize why the error is occurring
 * Lacks a clear visual break between errors. As more errors occur it becomes more difficult to tell
 them apart.
 * Uses technical terminology that is difficult for new users who may be unfamiliar with compiler

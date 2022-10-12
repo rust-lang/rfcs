@@ -19,7 +19,7 @@ compile if the type `MyType` doesn't implement the trait `MyTrait`:
 ```rust
 const _FOO: () = {
     use std::marker::PhantomData;
-    struct ImpelementsMyTrait<T: MyTrait>(PhantomData<T>);
+    struct ImplementsMyTrait<T: MyTrait>(PhantomData<T>);
     let _ = ImplementsMyTrait::<MyType>(PhantomData); // type checking error if MyType: !MyTrait
     ()
 };

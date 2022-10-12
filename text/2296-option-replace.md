@@ -13,7 +13,7 @@ This RFC proposes the addition of `Option::replace` to complete the `Option::tak
 
 You can see the `Option` as a container and other containers already have this kind of method to change a value in-place like the [HashMap::replace](https://doc.rust-lang.org/std/collections/struct.HashSet.html#method.replace) method.
 
-How do you replace a value inside an `Option`, you can use `mem::replace` but it can be really unconvenient to import the `mem` module just for that. Why not adding a useful method to do that ?
+How do you replace a value inside an `Option`, you can use `mem::replace` but it can be really inconvenient to import the `mem` module just for that. Why not adding a useful method to do that ?
 
 This is the symmetry of the already present `Option::take` method.
 

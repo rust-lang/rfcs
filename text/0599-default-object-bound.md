@@ -147,7 +147,7 @@ source today, but this has not been fully verified.)
 
 # Detailed design
 
-This section extends the high-level rule above with suppor for
+This section extends the high-level rule above with support for
 user-defined types, and also describes potential interactions with
 other parts of the system.
 
@@ -243,7 +243,7 @@ the expansion of `Box<SomeTrait>` would be different.
 
 **Interaction with object coercion.** The rules specify that `&'a
 SomeTrait` and `&'a mut SomeTrait` are expanded to `&'a
-(SomeTrait+'a)`and `&'a mut (SomeTrait+'a)` respecively. Today, in fn
+(SomeTrait+'a)`and `&'a mut (SomeTrait+'a)` respectively. Today, in fn
 signatures, one would get the expansions `&'a (SomeTrait+'b)` and `&'a
 mut (SomeTrait+'b)`, respectively. In the case of a shared reference
 `&'a SomeTrait`, this difference is basically irrelevant, as the

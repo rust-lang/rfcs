@@ -277,7 +277,7 @@ This section describes how GDB's pretty printers are supported in Rust.
 To use a pretty printer, developers write python scripts that describe how a type
 should be displayed when loaded up in GDB/LLDB. (See: https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing.html#Pretty-Printing)
 The pretty printers provide patterns, which match type names, and for matching
-types, descibe how to display those types. (For writing a pretty printer, see: https://sourceware.org/gdb/onlinedocs/gdb/Writing-a-Pretty_002dPrinter.html#Writing-a-Pretty_002dPrinter).
+types, describe how to display those types. (For writing a pretty printer, see: https://sourceware.org/gdb/onlinedocs/gdb/Writing-a-Pretty_002dPrinter.html#Writing-a-Pretty_002dPrinter).
 
 Rust developers can add one or more pretty printers to their crate. This is done
 in the Rust compiler via python scripts. Through the use of the new Rust attribute

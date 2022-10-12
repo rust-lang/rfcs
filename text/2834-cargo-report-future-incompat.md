@@ -316,7 +316,7 @@ For example, in our running example of `unwary`:
     will invoke `rustc` itself the same way, and each `rustc` invocation will emit
     the same set of diagnostics that it does today for each of those cases.
   * Thus, the warning lints in the downstream `brash` non-path dependency will
-    be capped, and the future-incompatiblity warnings associated with that `rustc`
+    be capped, and the future-incompatibility warnings associated with that `rustc`
     invocation will be hidden.
   * When `cargo` emits a future-incompatibility report at the end of the build,
     and reports that `brash` contains code that will be rejected by
@@ -383,7 +383,7 @@ The responsibilities of Cargo:
     are not mandated by this RFC, but some ideas are presented as
     [Future possibiilties][future-possibilities].
 
-## Implmentation strategy: Leverage JSON error-format
+## Implementation strategy: Leverage JSON error-format
 
 The cleanest way to implement the above division of responsbilities
 without perturbing *non-cargo* uses of `rustc` is probably to make 
@@ -431,7 +431,7 @@ In particular, it may not be reasonable for someone to resolve the
 flagged problem in the short term.
 
 In order to allow users to opt-out of being warned about future
-incompatiblity issues on every build, this RFC proposes
+incompatibility issues on every build, this RFC proposes
 extending the `.cargo/config` file with keys that allow
 the user to fine-tune the frequency of how often cargo will
 print the report. For example:
@@ -526,7 +526,7 @@ takes a lot of effort to make such transitions, (in no small part
 **because** of the issue described here).
 
 In the cases where the compiler and language teams have turned such
-lints into hard errors, the teams spent signficant time evaluating
+lints into hard errors, the teams spent significant time evaluating
 breakage via crater and then addressing such breakage. The changes
 suggested here would hopefully encourage more Rust users *outside* of
 the compiler and language teams to address future-compatibility
@@ -547,7 +547,7 @@ to `rustc` itself, and isolate the implementation to `cargo` alone.
 The main way I can imagine doing this is to stop passing
 `--cap-lints=allow`, and then having Cargo capture all diagnostic
 output from the compiler and post-processing it to determine which
-lints are future-incompatible warnings. However, ths has a number of
+lints are future-incompatible warnings. However, this has a number of
 problems:
 
  * It is fragile, since it relies on Cargo post-processing the compiler diagnostic output.
@@ -678,7 +678,7 @@ The main form of follow-up work I envisage for this RFC is what
 feedback that Cargo gives regarding the issues.
 
 Cargo is responsible for suggesting to the user how they might address an
-instance of a future-incompatbility lint.
+instance of a future-incompatibility lint.
 
 Some ideas for suggestions follow.
 

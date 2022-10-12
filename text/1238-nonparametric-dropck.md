@@ -106,7 +106,7 @@ parametricity of type-parameters.
 ### Changes to the Drop-Check Rule
 
 The Drop-Check Rule (both in its original form and as revised here)
-dicates when a lifetime `'a` must strictly outlive some value `v`,
+dictates when a lifetime `'a` must strictly outlive some value `v`,
 where `v` owns data of type `D`; the rule gave two circumstances where
 `'a` must strictly outlive the scope of `v`.
 
@@ -251,7 +251,7 @@ programmer to prove.
    above) was deliberately selected to be long and ugly, in order to
    discourage it from being stabilized in the future without at least
    some significant discussion. (Likewise, the acronym "UGEH" was
-   chosen for its likely pronounciation "ugh", again a reminder that
+   chosen for its likely pronunciation "ugh", again a reminder that
    we do not *want* to adopt this approach for the long term.)
 
 
@@ -468,7 +468,7 @@ a recursive property ensuring that during the extent of the call to `foo`,
 we will never invoke a function marked as `default` (and therefore, I *think*,
 will never even potentially invoke a method that has been specialized).
 
-It is also this second bullet that represents a signficant burden on
+It is also this second bullet that represents a significant burden on
 the destructor implementor. In particular, it immediately rules out
 using any library routine unless that routine has been marked as
 `#[unspecialized]`. The attribute is unlikely to be included on any

@@ -118,7 +118,7 @@ Any transition _away_ from "Intentional Artifact" requires an RFC.
 
 Any transition to "Intentional Artifact" should ideally be accompanied by an RFC, and an update to the team charter if there is one.
 
-Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary. If a team wishes to stop working on a crate, they should deprecate it and encourage the community to fork it or build their own thing. The repository may be transfered out, however the `crates.io` name is kept by the Rust project and the new group of maintainers will need to pick a new crate name.
+Expatriation should basically _never_ occur anymore, but it also requires an RFC and core team approval in case it is really necessary. If a team wishes to stop working on a crate, they should deprecate it and encourage the community to fork it or build their own thing. The repository may be transferred out, however the `crates.io` name is kept by the Rust project and the new group of maintainers will need to pick a new crate name.
 
 If "transitively intentional" crates are being deprecated care should be taken to ensure security issues will still be handled.
 

@@ -39,7 +39,7 @@ However, RFCs are not only what subteams do. To quote the RFC:
 > * Delegating reviewer rights for the subteam area. The ability to r+ is not limited to team members, and in fact earning r+ rights is a good stepping stone toward team membership. Each team should set reviewing policy, manage reviewing rights, and ensure that reviews take place in a timely manner. (Thanks to Nick Cameron for this suggestion.)
 
 The first two are about RFCs themselves, but the second two are more pertinent to documentation. In particular,
-deciding who gets `r+` rights is important. A lack of clarity in this area has been unfortuante, and has led to a
+deciding who gets `r+` rights is important. A lack of clarity in this area has been unfortunate, and has led to a
 chicken and egg situation: without a documentation team, it's unclear how to be more involved in working on Rust's
 documentation, but without people to be on the team, there's no reason to form a team. For this reason, I think
 a small initial team will break this logjam, and provide room for new contributors to grow.

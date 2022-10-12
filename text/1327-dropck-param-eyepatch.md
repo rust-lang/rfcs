@@ -14,7 +14,7 @@ parameters the destructor is guaranteed not to access.
 
 Specifically, this RFC proposes adding the capability to attach
 attributes to the binding sites for generic parameters (i.e. lifetime
-and type paramters). Atop that capability, this RFC proposes adding a
+and type parameters). Atop that capability, this RFC proposes adding a
 `#[may_dangle]` attribute that indicates that a given lifetime or type
 holds data that must not be accessed during the dynamic extent of that
 `drop` invocation.
@@ -153,7 +153,7 @@ to be proposed in a follow-up RFC.
 Having said that, here is the proposed short-term solution:
 
  1. Add the ability to attach attributes to syntax that binds formal
-    lifetime or type parmeters. For the purposes of this RFC, the only
+    lifetime or type parameters. For the purposes of this RFC, the only
     place in the syntax that requires such attributes are `impl`
     blocks, as in `impl<T> Drop for Type<T> { ... }`
 
@@ -531,7 +531,7 @@ Drawbacks of fn-drop-with-where-clauses:
 
     I actually do not give this drawback much weight; resolving this
     may be merely a matter of just trying to do it: e.g., build up the
-    set of where-clauses when we make the ADT's representatin, and
+    set of where-clauses when we make the ADT's representations, and
     then have `dropck` insert instantiate and insert them as needed.
 
   * It might have the wrong ergonomics for developers: It seems bad to

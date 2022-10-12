@@ -117,7 +117,7 @@ meaning that it will be common that these attributes are left off by accident.
   - This attribute would duplicate the information already provided by
     `#[link(kind="...")]`.
   - It is not always known whether `#[dllimport]` is needed. Native
-    libraires are not always known whether they're linked dynamically or
+    libraries are not always known whether they're linked dynamically or
     statically (e.g. that's what a build script decides), so `dllimport`
     will need to be guarded by `cfg_attr`.
 

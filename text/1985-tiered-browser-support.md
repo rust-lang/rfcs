@@ -152,7 +152,7 @@ The following principles are assumptions I'm making that we currently follow
 and that we should continue to strive for, no matter what browser support
 policy we end up with:
 
-- Follow best practices for accessibilty, fix bug reports from blind users,
+- Follow best practices for accessibility, fix bug reports from blind users,
   reach out to blind users in the community about how the accessibility of the
   web content could be improved.
   - This would include supporting lynx/links as these are sometimes used with
@@ -181,7 +181,7 @@ but our audience (developers) isn't the same as the general public.
 ## Google analytics browser usage stats
 
 We have Google Analytics on crates.io and on rust-lang.org. The entire data set
-of the usage stats by browser, browser verison, and OS are available [in this
+of the usage stats by browser, browser version, and OS are available [in this
 Google sheet][all-data] for the visits to crates.io in the last month. I chose
 to use just crates.io because on initial analysis, the top 90% of visits to
 rust-lang.org were less varied than the top 90% of visits to crates.io.
@@ -252,7 +252,7 @@ Other alternatives:
 
 ## Not have official browser support tiers (status quo)
 
-By not creating offical levels of browser support, we will continue to have the
+By not creating official levels of browser support, we will continue to have the
 situation we have today: discussions and decisions are happening that affect
 the level of support that Rust web content has in various browsers, but we
 don't have any agreed-upon guidelines to guide these discussions and decisions.

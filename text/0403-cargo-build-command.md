@@ -394,7 +394,7 @@ directly. Additionally, packages using `*-sys` packages should not declare a
 ## Phasing strategy
 
 The modifications to the `build` command are breaking changes to Cargo. To ease
-the transition, the build comand will be join'd to the root path of a crate, and
+the transition, the build command will be join'd to the root path of a crate, and
 if the file exists and ends with `.rs`, it will be compiled as describe above.
 Otherwise a warning will be printed and the fallback behavior will be
 executed.

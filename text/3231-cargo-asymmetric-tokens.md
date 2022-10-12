@@ -137,7 +137,7 @@ Credential Processes as defined in [RFC 2730](https://github.com/rust-lang/rfcs/
 Some credential processes that might be useful for people to develop include:
 - The ability to store keys in operating systems specific secure enclaves.
 - the ability to use keys embedded in common hardware tokens.
-- The ability to read keys in formats used by other tools (GPG, SSH, PKCS#12, ect.)
+- The ability to read keys in formats used by other tools (GPG, SSH, PKCS#12, etc.)
 
 ## Note on stability
 

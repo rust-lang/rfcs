@@ -557,7 +557,7 @@ If you read a file sequentially the read-ahead is beneficial, for completely
 random access it can become a penalty.
 
 - `Default` uses the generally good heuristics of the operating system.
-- `Sequential` indicates sequential but not neccesary consecutive access.
+- `Sequential` indicates sequential but not necessary consecutive access.
   With this the os may increase the amount of data that is read ahead.
 - `Random` indicates mainly random access. The os may disable its read-ahead
   cache.
@@ -611,7 +611,7 @@ This guarantees every write will not return before the data is written to disk.
 These options improve reliability as and you can never accidentally forget a
 sync.
 
-Whether perfermance with these options is worse than with the stand-alone
+Whether performance with these options is worse than with the stand-alone
 functions is hard to say. With these options the data maybe has to be
 synchronised more often. But the stand-alone functions often sync outstanding
 writes to all files, while the options possibly sync only the current file.

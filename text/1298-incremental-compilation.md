@@ -541,7 +541,7 @@ recompiling all of them. Our plan is to phase span support in incrementally:
    particular AST node (relative to the root of the item). Since we
    are hashing the structure of the AST, we know the AST from the
    previous and current compilation will match, and thus we can
-   compute the current span by finding tha corresponding AST node and
+   compute the current span by finding the corresponding AST node and
    loading its span. This will require some refactoring and work however.
    
 <a id="optimization"></a>

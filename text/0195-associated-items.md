@@ -1263,7 +1263,7 @@ impl<'a, T> Sliceable for &'a Vec<T> {
 But then there's a difficult question:
 
 ```
-fn dice<A>(a: &A) -> &A::Slice where &A: Slicable {
+fn dice<A>(a: &A) -> &A::Slice where &A: Sliceable {
     a // is this allowed?
 }
 ```

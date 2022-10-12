@@ -135,7 +135,7 @@ Then, depending on the real length of the iterator:
 [drawbacks]: #drawbacks
 
 Same as for any addition to `std`:
-not every program needs it, and standard library growth has a maintainance cost.
+not every program needs it, and standard library growth has a maintenance cost.
 
 # Alternatives
 [alternatives]: #alternatives
