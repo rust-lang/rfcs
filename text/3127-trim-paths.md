@@ -102,6 +102,8 @@ This flag accepts a comma-separated list of values and may be specified multiple
 
 Debug information are written to split files when the separate codegen option `-C split-debuginfo=packed` or `unpacked` (whether by default or explicitly set).
 
+Note: this RFC is not a commitment to stabilizing all of these options; stabilization will evaluate each option and see if that option carries enough value to stabilize.
+
 ## Cargo
 
 `trim-paths` is a profile setting which enables and controls the sanitisation of file paths in build outputs. It is a simplified version of rustc's `--remap-path-scope`. It takes a comma separated list of the following values:
@@ -111,6 +113,8 @@ Debug information are written to split files when the separate codegen option `-
 - `diagnostics` - sanitise paths in printed compiler diagnostics
 - `object` - sanitise paths in compiled executables or libraries
 - `all` and `true` - sanitise paths in all possible locations
+
+Note: this RFC is not a commitment to stabilizing all of these options; stabilization will evaluate each option and see if that option carries enough value to stabilize.
 
 It is defaulted to `none` for debug profiles, and `object` for release profiles. You can manually override it by specifying this option in `Cargo.toml`:
 ```toml
