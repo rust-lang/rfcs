@@ -106,7 +106,7 @@ struct Struct;
 impl Trait for Struct {
     fn count_down(&self, n: usize) {
         println!("Struct: {n}");
-        seslf.super.count_down(n);
+        self.super.count_down(n);
     }  
 }
 ```
