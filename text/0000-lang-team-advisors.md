@@ -72,7 +72,7 @@ The precise details of how advisors fit into the lang team [decision making proc
 
 ## Integration into the experiment process
 
-Advisors can serve as the liaison for an [experimental feature gate](https://lang-team.rust-lang.org/how_to/experiment.html) if the lang team leads approve. This is only recommended for advisors that attend triage/design meetings regularly and who have a strong sense for what might be controversial or likely to be accepted (as opposed to advisors who are domain experts but not following all aspects of Rust).
+Advisors can serve as the liaison for an [experimental feature gate](https://lang-team.rust-lang.org/how_to/experiment.html) if a lang team member approves. This is only recommended for advisors that attend triage/design meetings regularly and who have a strong sense for what might be controversial or likely to be accepted (as opposed to advisors who are domain experts but not following all aspects of Rust).
 
 # Drawbacks
 [drawbacks]: #drawbacks
