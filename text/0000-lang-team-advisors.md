@@ -79,7 +79,7 @@ Advisors can serve as the liaison for an [experimental feature gate](https://lan
 
 ## More sources for blocking objections
 
-There will be more people able to raise blocking objections than there were before. However, note that we only add people to the list whose opinion we would seek regardless, so this would primarily be an issue if we add advisors injudiciously.
+There will be more people able to raise blocking objections than there were before. However, note that we only add people to the list whose opinion we would seek and likely block on regardless, so this would primarily be an issue if we add advisors injudiciously.
 
 ## Potential for out-of-date records
 
