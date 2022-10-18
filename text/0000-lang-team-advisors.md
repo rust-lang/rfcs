@@ -68,7 +68,7 @@ There will be a team in the rust repo (`rust-lang/lang-team-advisors`). When a l
 The precise details of how advisors fit into the lang team [decision making process](https://lang-team.rust-lang.org/decision_process/reference.html) are as follows:
 
 * Like lang-team members, advisors may raise a blocking concern on an FCP. The expectation is that the advisor will work with the implementors to resolve the concern to everyone's mutual satisfaction.
-* Unlike lang-team members, advisors cannot sustain a concern to prevent it from being overruled; only full lang-team members can opt to sustain a concern. A concern raised by an advisor may be overruled if "all but one" lang-team members agree that it has been adequately addressed (this rule ensures that there is no incentive for an advisor to "proxy" a concern on behalf of a full member).
+* Unlike lang-team members, advisors cannot sustain a concern to prevent it from being overruled; only full lang-team members can opt to sustain a concern. A concern raised by an advisor may be overruled if "all but one" lang-team members agree that it has been adequately heard and understood (this rule ensures that there is no incentive for an advisor to "proxy" a concern on behalf of a full member).
 
 ## Integration into the experiment process
 
