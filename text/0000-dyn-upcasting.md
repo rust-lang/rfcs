@@ -59,7 +59,7 @@ When one module uses another in Salsa, that is expressed via supertrait relation
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When a trait is declared, it may include various supertraits. Implementing the trait also requires implementing each of its supertraits. For example, the `Sandwich` trait has both `Food` and `Grab` as supertraits:
+When a trait is declared, it may include various supertraits. Implementing the trait also requires implementing each of its supertraits. For example, the `Sandwich` trait has both `Eat` and `Grab` as supertraits:
 
 ```rust
 trait Eat { fn eat(&mut self); }
