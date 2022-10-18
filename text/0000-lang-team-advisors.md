@@ -53,7 +53,7 @@ These are the questions we ask ourselves when deciding whether someone would be 
 * Does this person have particular knowledge of some domain, or some particular part of Rust? Alternatively, do they have broad knowledge of Rust?
 * If, even after a long protracted debate, you knew that this person had concerns about a design, would you want to block the design from going forward until you had a chance to hear them out?
 
-Naturally, the [questions for lang team membership][new-member-process] are also appropriate, but they are "nice to haves", the bar for an advisor is lower.
+Naturally, the [questions for lang team membership][new-member-process] are also appropriate, but they are "nice to haves"; the bar for an advisor is lower. (And none of the requirements regarding meeting attendance or other team duties apply.)
 
 When adding an advisor primarily for a specific area of expertise, we should document that area of expertise in a comment in the lang-team-advisors toml file.
 
