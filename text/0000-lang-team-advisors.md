@@ -51,7 +51,7 @@ These are the questions we ask ourselves when deciding whether someone would be 
 * Do we regularly seek this person's opinion when **deliberating**?
     * For example, during triage, do we often say "let's check what this person thinks".
 * Does this person have particular knowledge of some domain, or some particular part of Rust? Alternatively, do they have broad knowledge of Rust?
-* If, even after a long and protected debate, you knew that this person had concerns about a design, would you want to block the design from going forward until you had a chance to hear them out?
+* If, even after a long protracted debate, you knew that this person had concerns about a design, would you want to block the design from going forward until you had a chance to hear them out?
 
 Naturally, the [questions for lang team membership][new-member-process] are also appropriate, but they are "nice to haves", the bar for an advisor is lower.
 
