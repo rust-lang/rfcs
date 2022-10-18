@@ -90,7 +90,7 @@ Note that you cannot, currently, upcast to *multiple* supertraits. That is, an `
 
 The `Unsize` trait is the (unstable) way that Rust controls coercions into unsized values. We currently permit `dyn Trait1: Unsize<dyn Trait2>` precisely for the case where there is the same "principal trait" (i.e., non-auto-trait) and the set of auto-traits differ. This RFC extends that coercion to permit `dyn Trait1` to be unsized to `dyn Trait2` if `Trait2` is a (transitive) supertrait of `Trait1`.
 
-The *supertraits* of a trait `X` are defined as any trait `Y` such taht `X` has a where-clause `where Self: Y` (note that `trait X: Y` is short for `trait X where Self: Y`). This definition already exists in the compiler, and we already prohibit the supertrait relationship from being cyclic.
+The *supertraits* of a trait `X` are defined as any trait `Y` such that `X` has a where-clause `where Self: Y` (note that `trait X: Y` is short for `trait X where Self: Y`). This definition already exists in the compiler, and we already prohibit the supertrait relationship from being cyclic.
 
 Note that this is a *coercion* and not a *subtyping* rule. That is observable because it means, for example, that `Vec<Box<dyn Trait>>` cannot be upcast to `Vec<Box<dyn Supertrait>>`. Coercion is required because vtable cocercion, in general, requires changes to the vtable, as described in the vtable layout section that comes next.
 
