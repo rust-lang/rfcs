@@ -55,7 +55,7 @@ These are the questions we ask ourselves when deciding whether someone would be 
 
 Naturally, the [questions for lang team membership][new-member-process] are also appropriate, but they are "nice to haves"; the bar for an advisor is lower. (And none of the requirements regarding meeting attendance or other team duties apply.)
 
-When adding an advisor primarily for a specific area of expertise, we should document that area of expertise in a comment in the lang-team-advisors toml file.
+When adding an advisor primarily for a specific area of expertise, we should document that area of expertise in a comment in the `lang-team-advisors.toml` file.
 
 ## Removing a lang-team advisor
 
