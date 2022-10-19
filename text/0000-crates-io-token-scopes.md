@@ -42,7 +42,7 @@ adding the following endpoint scopes:
 * **yank**: allows yanking and unyanking existing versions of the user's crates
 * **change-owners**: allows inviting new owners or removing existing owners
 * **legacy**: allows accessing all the endpoints on crates.io except for
-  creating new tokens, like tokens created befores the implementation of this
+  creating new tokens, like tokens created before the implementation of this
   RFC.
 
 More endpoint scopes might be added in the future without the need of a
@@ -81,8 +81,8 @@ crate scope filter (equivalent to no restrictions).
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Endpoint scopes and crates scope are two completly separate systems, and can be
-used independently from one another. Token scopes will be implemented entirely
+Endpoint scopes and crates scope are two completely separate systems, and can be
+used independently of one another. Token scopes will be implemented entirely
 on the crates.io side, and there will be no change to `cargo` or alternate
 registries.
 
@@ -162,7 +162,7 @@ in the RFC author's opinion, are more likely to need crate scopes than a person
 with just a few crates), and it wouldn't allow new crates matching the pattern
 but uploaded after the token's creation from being accessed.
 
-Finally an alternative could be to do nothing, and encourage users to create
+Finally, an alternative could be to do nothing, and encourage users to create
 "machine accounts" for each set of crates they own. A drawback of this is that
 GitHub's terms of service limit how many accounts a single person could have.
 
@@ -222,7 +222,7 @@ implementation of solutions that would make the check hard.
 To increase the security of CI environments even more, we could implement an
 option to require a separate confirmation for the actions executed by tokens.
 For example, we could send a confirmation email with a link the owners have to
-click to actually publish the crate uploaded by CI, preventing any mailicious
+click to actually publish the crate uploaded by CI, preventing any malicious
 action with stolen tokens.
 
 To remove the need for machine accounts, a future RFC could propose adding API
