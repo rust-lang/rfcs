@@ -48,11 +48,6 @@ adding the following endpoint scopes:
 More endpoint scopes might be added in the future without the need of a
 dedicated RFC.
 
-The crates.io UI will pre-select the scopes needed by the `cargo` CLI, which at
-the time of writing this RFC are `publish-new`, `publish-update`, `yank` and
-`change-owners`. The user will have to explicitly opt into extra scopes or the
-legacy permission model.
-
 Tokens created before the implementation of this RFC will default to the legacy
 scope.
 
