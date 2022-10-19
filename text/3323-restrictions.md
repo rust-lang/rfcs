@@ -398,7 +398,7 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   within the defining crate. The advantages of native read-only fields relating to borrow checking
   also do not apply when using this crate.
 - The `derive-getters` and `getset` crates are derive macros that are used to generate getter
-  methods. The latter also has the ability to derive getters. This demonstrates the usefulness of
+  methods. The latter also has the ability to derive setters. This demonstrates the usefulness of
   reduced syntax for common behavior. Further, `getset` allows explicitly setting the visibility of
   the derived methods. In this manner, it is very similar to the ability to provide a path to the
   `mut` restriction.
