@@ -77,9 +77,10 @@ crate scope filter (equivalent to no restrictions).
 [reference-level-explanation]: #reference-level-explanation
 
 Endpoint scopes and crates scope are two completely separate systems, and can be
-used independently of one another. Token scopes will be implemented entirely
-on the crates.io side, and there will be no change to `cargo` or alternate
-registries.
+used independently of one another.
+
+Token scopes will be implemented entirely on the crates.io side, and there will
+be no change necessary to `cargo` or alternate registries.
 
 ## Endpoint scopes
 
