@@ -42,16 +42,11 @@ adding the following endpoint scopes:
 * **yank**: allows yanking and unyanking existing versions of the user's crates
 * **change-owners**: allows inviting new owners or removing existing owners
 * **legacy**: allows accessing all the endpoints on crates.io except for
-  creating new tokens, like tokens created befores the implementation of this
+  creating new tokens, like tokens created before the implementation of this
   RFC.
 
 More endpoint scopes might be added in the future without the need of a
 dedicated RFC.
-
-The crates.io UI will pre-select the scopes needed by the `cargo` CLI, which at
-the time of writing this RFC are `publish-new`, `publish-update`, `yank` and
-`change-owners`. The user will have to explicitly opt into extra scopes or the
-legacy permission model.
 
 Tokens created before the implementation of this RFC will default to the legacy
 scope.
@@ -61,19 +56,19 @@ scope.
 The user will be able to opt into limiting which crates the token can act on by
 defining a crates scope.
 
-The crates scope can be left empty to allow the token to act on all the crates
-owned by the user, or it can contain the comma-separated list of crate names
-the token can interact with. Crate names can contain `*` to match zero or more
-characters.
+The crates scope can contain a list of crate name patterns the token can
+interact with. Crate name patterns can either be regular crate names or they
+can end with a `*` character to match zero or more characters.
 
-For example, a crates scope of `lazy_static,serde*` allows the token to act on
-the `lazy_static` crate or any present or future crates starting with `serde`
-(including `serde` itself), if the user is an owner of those crates.
+For example, a crate name pattern of `lazy_static` will only make the token
+apply to the corresponding crate, while `serde*` allows the token to act on
+any present or future crates starting with `serde` (including `serde` itself),
+but only if the user is an owner of those crates.
 
 The crates scope will allow access to all present and future crates matching
 it. When an endpoint that doesn't interact with crates is called by a token
 with a crates scope, the crates scope will be ignored and the call will be
-authorized.
+authorized, unless limited by an endpoint scope (see above).
 
 Tokens created before the implementation of this RFC will default to an empty
 crate scope filter (equivalent to no restrictions).
@@ -81,24 +76,25 @@ crate scope filter (equivalent to no restrictions).
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Endpoint scopes and crates scope are two completly separate systems, and can be
-used independently from one another. Token scopes will be implemented entirely
-on the crates.io side, and there will be no change to `cargo` or alternate
-registries.
+Endpoint scopes and crates scope are two completely separate systems, and can be
+used independently of one another.
+
+Token scopes will be implemented entirely on the crates.io side, and there will
+be no change necessary to `cargo` or alternate registries.
 
 ## Endpoint scopes
 
 The scopes proposed by this RFC allow access to the following endpoints:
 
-| Endpoint | Required scope |
-| --- | --- |
-| `PUT /crates/new` (new crates) | **publish-new** |
-| `PUT /crates/new` (existing crates) | **publish-update** |
-| `DELETE /crates/:crate_id/:version/yank` | **yank** |
-| `PUT /crates/:crate_id/:version/unyank` | **yank** |
-| `PUT /crates/:crate_id/owners` | **change-owners** |
-| `DELETE /crates/:crate_id/owners` | **change-owners** |
-| everything except `PUT /me/tokens` | **legacy** |
+| Endpoint                                 | Required scope     |
+|------------------------------------------|--------------------|
+| `PUT /crates/new` (new crates)           | **publish-new**    |
+| `PUT /crates/new` (existing crates)      | **publish-update** |
+| `DELETE /crates/:crate_id/:version/yank` | **yank**           |
+| `PUT /crates/:crate_id/:version/unyank`  | **yank**           |
+| `PUT /crates/:crate_id/owners`           | **change-owners**  |
+| `DELETE /crates/:crate_id/owners`        | **change-owners**  |
+| everything except `PUT /me/tokens`       | **legacy**         |
 
 Removing an endpoint from a scope or adding an existing endpoint to an existing
 scope will be considered a breaking change. Adding newly created endpoints to
@@ -108,31 +104,7 @@ existing set of endpoints in that scope.
 
 ## Crates scope
 
-The pattern for the crate scope is desugared into a regular expression,
-following these rules:
-
-* **`^(`** is added at the start of the pattern, and **`)$`** is added at the end of it.
-* **`,`** is desugared into `|`, separating multiple patterns.
-* **`*`** is desugared into `.*`, matching zero or more characters greedily.
-* All other non-alphanumeric characters are quoted to prevent them from having
-  a special meaning.
-
-As an example, the following pattern:
-
-```
-foo,bar-*
-```
-
-... is desugared into the following regex:
-
-```
-^(foo|bar\-.*)$
-```
-
-Any combination of those characters is allowed, but crates.io might define a
-complexity limit for the generated regular expressions.
-
-The pattern will be evaluated during each API call, and if no match is found
+The patterns will be evaluated during each API call, and if no match is found
 the request will be denied. Because it's evaluated every time, a crates scope
 will allow interacting with matching crates published after token creation.
 
@@ -162,7 +134,7 @@ in the RFC author's opinion, are more likely to need crate scopes than a person
 with just a few crates), and it wouldn't allow new crates matching the pattern
 but uploaded after the token's creation from being accessed.
 
-Finally an alternative could be to do nothing, and encourage users to create
+Finally, an alternative could be to do nothing, and encourage users to create
 "machine accounts" for each set of crates they own. A drawback of this is that
 GitHub's terms of service limit how many accounts a single person could have.
 
@@ -222,7 +194,7 @@ implementation of solutions that would make the check hard.
 To increase the security of CI environments even more, we could implement an
 option to require a separate confirmation for the actions executed by tokens.
 For example, we could send a confirmation email with a link the owners have to
-click to actually publish the crate uploaded by CI, preventing any mailicious
+click to actually publish the crate uploaded by CI, preventing any malicious
 action with stolen tokens.
 
 To remove the need for machine accounts, a future RFC could propose adding API
