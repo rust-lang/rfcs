@@ -56,19 +56,19 @@ scope.
 The user will be able to opt into limiting which crates the token can act on by
 defining a crates scope.
 
-The crates scope can be left empty to allow the token to act on all the crates
-owned by the user, or it can contain the comma-separated list of crate names
-the token can interact with. Crate names can contain `*` to match zero or more
-characters.
+The crates scope can contain a list of crate name patterns the token can
+interact with. Crate name patterns can either be regular crate names or they
+can end with a `*` character to match zero or more characters.
 
-For example, a crates scope of `lazy_static,serde*` allows the token to act on
-the `lazy_static` crate or any present or future crates starting with `serde`
-(including `serde` itself), if the user is an owner of those crates.
+For example, a crate name pattern of `lazy_static` will only make the token
+apply to the corresponding crate, while `serde*` allows the token to act on
+any present or future crates starting with `serde` (including `serde` itself),
+but only if the user is an owner of those crates.
 
 The crates scope will allow access to all present and future crates matching
 it. When an endpoint that doesn't interact with crates is called by a token
 with a crates scope, the crates scope will be ignored and the call will be
-authorized.
+authorized, unless limited by an endpoint scope (see above).
 
 Tokens created before the implementation of this RFC will default to an empty
 crate scope filter (equivalent to no restrictions).
