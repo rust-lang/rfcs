@@ -30,6 +30,10 @@ in OS Kernel environments (such as [Linux](https://lore.kernel.org/lkml/CAHk-=wh
 systems, high-reliability systems (such as databases) and multi-user services (where a single request may fail without the entire service halting, such as a
 web server).
 
+Users in such environments may wish to make use of the `no_global_oom_handling` cfg added in <https://github.com/rust-lang/rust/pull/84266> in order to ban infallible allocation in their codebase's entire dependency graph. In such a situation they may still wish to use use the standard library's `Vec` type, but in combination with custom fallible allocation extension methods or a `FallibleVec` wrapper type provided by an external crate such as [fallible_collections](https://crates.io/crates/fallible_collections). However, once the `no_global_oom_handling` CFG is enabled, basic `Vec` methods like `push` are removed, making it difficult and unsafe to implement fallible equivalents outside of the standard library.
+
+The additional methods proposed by this RFC would be enough for users in OOM-sensitive environments to make use of `no_global_oom_handling` without needing to fork or otherwise reimplement `Vec` externally. This is a sufficient stopgap solution for many use cases while a more complete fallible allocation solution is developed.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
