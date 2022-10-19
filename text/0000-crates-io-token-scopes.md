@@ -90,15 +90,15 @@ registries.
 
 The scopes proposed by this RFC allow access to the following endpoints:
 
-| Endpoint | Required scope |
-| --- | --- |
-| `PUT /crates/new` (new crates) | **publish-new** |
-| `PUT /crates/new` (existing crates) | **publish-update** |
-| `DELETE /crates/:crate_id/:version/yank` | **yank** |
-| `PUT /crates/:crate_id/:version/unyank` | **yank** |
-| `PUT /crates/:crate_id/owners` | **change-owners** |
-| `DELETE /crates/:crate_id/owners` | **change-owners** |
-| everything except `PUT /me/tokens` | **legacy** |
+| Endpoint                                 | Required scope     |
+|------------------------------------------|--------------------|
+| `PUT /crates/new` (new crates)           | **publish-new**    |
+| `PUT /crates/new` (existing crates)      | **publish-update** |
+| `DELETE /crates/:crate_id/:version/yank` | **yank**           |
+| `PUT /crates/:crate_id/:version/unyank`  | **yank**           |
+| `PUT /crates/:crate_id/owners`           | **change-owners**  |
+| `DELETE /crates/:crate_id/owners`        | **change-owners**  |
+| everything except `PUT /me/tokens`       | **legacy**         |
 
 Removing an endpoint from a scope or adding an existing endpoint to an existing
 scope will be considered a breaking change. Adding newly created endpoints to
