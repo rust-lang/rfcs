@@ -104,31 +104,7 @@ existing set of endpoints in that scope.
 
 ## Crates scope
 
-The pattern for the crate scope is desugared into a regular expression,
-following these rules:
-
-* **`^(`** is added at the start of the pattern, and **`)$`** is added at the end of it.
-* **`,`** is desugared into `|`, separating multiple patterns.
-* **`*`** is desugared into `.*`, matching zero or more characters greedily.
-* All other non-alphanumeric characters are quoted to prevent them from having
-  a special meaning.
-
-As an example, the following pattern:
-
-```
-foo,bar-*
-```
-
-... is desugared into the following regex:
-
-```
-^(foo|bar\-.*)$
-```
-
-Any combination of those characters is allowed, but crates.io might define a
-complexity limit for the generated regular expressions.
-
-The pattern will be evaluated during each API call, and if no match is found
+The patterns will be evaluated during each API call, and if no match is found
 the request will be denied. Because it's evaluated every time, a crates scope
 will allow interacting with matching crates published after token creation.
 
