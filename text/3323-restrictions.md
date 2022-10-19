@@ -284,7 +284,7 @@ Foo::Beta { y: 5 };
 
 In this example, `Foo::Alpha { x: 5 }` is allowed when it is in the same crate as `Foo`. This is
 because `x` is not restricted within this scope, so the field can be freely mutated. Because of
-this, the previous concern about upholding variants is not applicable.
+this, the previous concern about upholding invariants is not applicable.
 
 # Reference-level explanation
 
@@ -376,14 +376,20 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 # Drawbacks
 
 - Additional syntax for macros to handle
+- More syntax to learn
+- While unambiguous to parse, `trait impl(crate) Foo` could be confusing due to its similarity to
+  `impl Foo`.
 
 # Alternatives
 
 - `impl` and `mut` restrictions could be attributes, similar to `#[non_exhaustive]`.
   - The proposed syntax could by syntactic sugar for these attributes.
 - Visibility could be altered to accept restrictions as a type of parameter, such as
-  `pub(crate, mut = self)`. This does not work because restrictions are not permitted everywhere
-  visibility is.
+  `pub(crate, mut = self)`. This is not ideal because restrictions are not permitted everywhere
+  visibility is. As a result, any errors would have to occur later in the compilation process than
+  they would be with the proposed syntax. It would also mean macro authors would be unable to accept
+  only syntax that would be valid in a given context. Further, some positions such as `enum`
+  variants do not semantically accept a visibility, while they do accept a restriction.
 
 # Prior art
 
@@ -391,6 +397,11 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   attribute cannot define `Deref`, which can be limiting. Additionally, it applies to all fields and
   within the defining crate. The advantages of native read-only fields relating to borrow checking
   also do not apply when using this crate.
+- The `derive-getters` and `getset` crates are derive macros that are used to generate getter
+  methods. The latter also has the ability to derive getters. This demonstrates the usefulness of
+  reduced syntax for common behavior. Further, `getset` allows explicitly setting the visibility of
+  the derived methods. In this manner, it is very similar to the ability to provide a path to the
+  `mut` restriction.
 - The ability to restrict implementations of a trait can be simulated by a public trait in a private
   module. This has the disadvantage that the trait is no longer nameable by external users,
   preventing its use as a generic bound. Current diagnostics, while technically correct, are
@@ -404,16 +415,35 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 
 - Should an "unnecessary restriction" lint be introduced? It would fire when the restriction is as
   strict or less strict than the visibility. This warning could also be used for `pub(self)`.
+  - Does this necessarily have to be decided as part of this RFC?
 - How will restrictions work with `macro_rules!` matchers? There is currently a `vis` matcher, but
-  it is likely unwise to add a new matcher for each restriction. Should the new syntax be included
-  as part of the `vis` matcher? If so, it is important to note that restrictions are not the same
-  everywhere, if they are valid at all.
-  - Suggestions welcome!
+  it is likely unwise to add a new matcher for each restriction.
+  - The proposed syntax cannot be added to the `vis` matcher, as it does not current restrict the
+    tokens that can follow. For this reason, it could break existing code, such as the following
+    example.
+
+  ```rust
+  macro_rules! foo {
+      ($v:vis impl(crate) trait Foo) => {}
+  }
+
+  foo!(pub impl(crate) trait Foo);
+  ```
+
+  - A `restriction` matcher could work, but restrictions are not the same everywhere.
+  - `mut_restriction` and `impl_restriction` are relatively long.
 - What is the interaction between stability and restrictions?
   - Suggestion: Visibility is an inherent part of the item; restrictions should be as well. Metadata
     can be added in the future indicating when an item had its restriction lifted, if applicable.
     The design for this is left to the language team as necessary. A decision does _not_ need to be
     made prior to stabilization, as stability attributes are not stable in their own right.
+- Should the `in` syntax be permitted for restrictions? Including it is consistent with the existing
+  syntax for visibility. Further, the lack of inclusion would lead to continued use of the
+  workaround for `impl`. For `mut`, there is no workaround. The syntax is not used often for
+  visibility, but it is very useful when it is used.
+- Should `struct` expressions be disallowed?
+  - Where would it be desirable to prohibit mutability after construction, but still permit
+    construction with unchecked values?
 
 # Future possibilities
 
@@ -431,3 +461,5 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 - Syntax such as `impl(mod)` could be added for clarity as an alternative to `impl(self)`.
 - `impl` and `mut` could be usable without a path if deemed necessary. This behavior would be
   identical to omitting the keyword entirely.
+- `mut` could be placed on the `struct` or variant itself, which would be equivalent to having the
+  same restriction on each field. This would avoid repetition.
