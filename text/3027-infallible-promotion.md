@@ -17,7 +17,7 @@ Restrict (implicit) [promotion][rfc1414], such as lifetime extension of rvalues,
 
 Rvalue promotion (as it was originally called) describes the process of taking an rvalue that can be computed at compile-time, and "promoting" it to a constant, so that references to that rvalue can have `'static` lifetime.
 It has been introduced by [RFC 1414][rfc1414].
-The scope of what exactly is being promoted in which context has been extended over the years in an ad-hoc manner, and the underlying mechanism of promotion (to extract a part of a larger body of code into a separate constant) is now also used for purposes other than making references have `'statc` lifetime.
+The scope of what exactly is being promoted in which context has been extended over the years in an ad-hoc manner, and the underlying mechanism of promotion (to extract a part of a larger body of code into a separate constant) is now also used for purposes other than making references have `'static` lifetime.
 To account for this, the const-eval WG [agreed on the following terminology][promotion-status]:
 * Making references have `'static` lifetime is called "lifetime extension".
 * The underlying mechanism of extracting part of some code into a constant is called "promotion".
