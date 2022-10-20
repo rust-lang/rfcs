@@ -1,6 +1,6 @@
 - Feature Name: `phantomdata_dropck`
 - Start Date: 2022-10-19
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3331](https://github.com/rust-lang/rfcs/pull/3331)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -158,6 +158,11 @@ traits - which are best handled by just using `PhantomData`. In fact, despite
 the outdated comment (which hasn't changed since rustc 1.2, a couple of months
 before [RFC 1238]), this is what the compiler-internal `Unique<T>` pointer uses
 `PhantomData` for.
+
+It's also pointing out that these changes are sound - `ManuallyDrop` has them,
+and while `ManuallyDrop` is unsound in the presence of parametric drop, we do
+not have parametric drop since [RFC 1238]. In fact, this change is basically
+implicitly wrapping every `Copy` type in `ManuallyDrop`.
 
 The main alternative would be to special case `PhantomData` in NLL. It is yet
 unclear how to accomplish that.
