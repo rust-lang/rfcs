@@ -38,7 +38,7 @@ pub fn write(...) { ... }
 this will cause Rust to generate a globally visible function with the
 linker/export name `write`. As consequence of that, other code that wants to
 call the
-[C `write` function](https://man7.org/linux/man-pages/man2/write.2.html) might
+[POSIX `write` function](https://pubs.opengroup.org/onlinepubs/9699919799/functions/write.html) might
 end up calling this other `write` instead. This can easily lead to Undefined
 Behavior:
 - The other `write` might have the wrong signature, so arguments are passed
@@ -59,6 +59,14 @@ dangerous and needs manual checking, `unsafe(no_mangle)` acknowledges that
 pub fn my_own_write(...) { ... }
 ```
 
+Note that when writing a library crate, it is in general not possible to make
+claims like "there is no other global function of this name". This is a
+fundamental limitation of the global linking namespace, and not something Rust
+currently is able to overcome. Libraries that make such assumptions should
+ideally document somewhere publicly that they consider some namespace, i.e.
+every function starting with `_mycrate__`, to be reserved for their exclusive
+use.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -72,10 +80,10 @@ are considered "unsafe" attributes. An unsafe attribute must only be used inside
 ```
 
 For backwards compatibility reasons, using these attributes outside of
-`unsafe(...)` is just a lint, not a hard error. Initially, this lint will be
-allow-by-default. Unsafe attributes that are added in the future can
-hard-require `unsafe` from the start since the backwards compatibility concern
-does not apply to them.
+`unsafe(...)` is just a lint, not a hard error. The lint is called
+`unsafe_attr_outside_unsafe`. Initially, this lint will be allow-by-default.
+Unsafe attributes that are added in the future can hard-require `unsafe` from
+the start since the backwards compatibility concern does not apply to them.
 
 Syntactically, for each unsafe attribute `attr`, we now also accept
 `unsafe(attr)` anywhere that `attr` can be used. `unsafe` cannot be nested,
@@ -85,6 +93,21 @@ The `deny(unsafe_code)` lint denies the use of unsafe attributes both inside and
 outside of `unsafe(...)` blocks. (That lint currently has special handling to
 deny these attributes. Once there is a general notion of 'unsafe attributes' as
 proposed by this RFC, that special handling should no longer be needed.)
+
+The `unsafe(...)` attribute block is required even for functions declared inside
+an `unsafe` block. That is, the following is an error:
+
+```rust
+fn outer() {
+  unsafe {
+    #[no_mangle]
+    fn write() {}
+  }
+}
+```
+
+This matches the fact that expression-level unsafety is not inherited for items
+declared inside other items.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -161,7 +184,7 @@ attributes.
   `unsafe { ... }`.)
 - **Unsafe derive.** We could use `#[unsafe(derive(Trait))]` to derive an
   `unsafe impl` where the deriving macro itself cannot check all required safety
-  conditions.
+  conditions (i.e., this is 'unsafe to derive').
 - **Unsafe tool attributes.** Same as above, but for tool attributes.
 - **Unsafe attributes on statements.** For now, the only unsafe attributes we
   have don't make sense on the statement level. Once we do have unsafe statement
