@@ -128,11 +128,14 @@ does not occur early enough for attributes such as niche declarations.
 
 If a type `T` contains multiple niche values (e.g. `#[niche(range = 8..16)]`),
 the compiler does not guarantee any particular usage of those niche values in
-the representation of types containing `T`, except that multiple instances of
-the same identical type (e.g. `Option<T>` and `Option<T>`) will use an
-identical representation (permitting a round-trip `transmute` of such a value
-via bytes). In particular, the compiler does not commit to making use of all
-the invalid values of the niche, even if it otherwise could have.
+the representation of types containing `T`. In particular, the
+compiler does not commit to making use of all the invalid values of the niche,
+even if it otherwise could have.
+
+However, multiple instances of the same identical type (e.g. `Option<T>` and
+`Option<T>`) will use an identical representation (whether the type contains a
+niche or not). This permits a round-trip between such a value and a byte
+representation.
 
 If a type `T` contains niches and uses `repr(C)` or `repr(transparent)`, the
 compiler guarantees to use the same storage size for the type as it would
