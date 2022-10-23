@@ -64,7 +64,7 @@ assert_eq!(size_of::<Option<Option<Option<Bit>>>>(), 1);
 
 Constructing a structure with a niche value, or writing to the non-ZST field of
 such a structure, or obtaining a mutable reference to such a field, requires
-`unsafe` code. Causing a type with a niche to contain an invalid value (whther
+`unsafe` code. Causing a type with a niche to contain an invalid value (whether
 by construction, writing, or transmuting) results in undefined behavior.
 
 If a type `T` contains only a single niche value, `Option<T>` (and other enums
