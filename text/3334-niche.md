@@ -74,6 +74,9 @@ additionally `repr(transparent)` or `repr(C)` or otherwise permitted in FFI,
 `Option<T>` will likewise be permitted in FFI, with the niche value mapping
 bidirectionally to `None` across the FFI boundary.
 
+If a type contains multiple niche values, Rust does not guarantee any
+particular mapping at this time, but may in the future.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -112,12 +115,12 @@ error. Constants can use compile-time evaluation, and compile-time evaluation
 does not occur early enough for attributes such as niche declarations.
 
 If a type `T` contains multiple niche values (e.g. `#[niche(range = 8..16)]`),
-the compiler does not define the representation of types containing `T`, except
-that multiple instances of the same identical type (e.g. `Option<T>` and
-`Option<T>`) will use an identical representation (permitting a round-trip
-`transmute` of such a value via bytes). In particular, the compiler does not
-commit to making use of all the invalid values of the niche, even if it
-otherwise could have.
+the compiler does not guarantee any particular usage of those niche values in
+the representation of types containing `T`, except that multiple instances of
+the same identical type (e.g. `Option<T>` and `Option<T>`) will use an
+identical representation (permitting a round-trip `transmute` of such a value
+via bytes). In particular, the compiler does not commit to making use of all
+the invalid values of the niche, even if it otherwise could have.
 
 If a type `T` contains niches and uses `repr(C)` or `repr(transparent)`, the
 compiler guarantees to use the same storage size for the type as it would
