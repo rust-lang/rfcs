@@ -214,6 +214,9 @@ associated consts for invalid values. If we chose to do this in the future, the
 `#[niche(...)]` attribute could become forward-compatible with this, by
 generating the trait impl.
 
+We could use a syntax based on patterns, such as `struct S(u8 is 0..=32);` or
+`struct S(MyEnum is MyEnum::A | MyEnum::B)`.
+
 # Prior art
 [prior-art]: #prior-art
 
