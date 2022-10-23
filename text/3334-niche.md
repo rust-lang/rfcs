@@ -80,10 +80,6 @@ particular mapping at this time, but may in the future.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The attribute `#[niche]` may only appear on a struct declaration. The struct
-must contain exactly one field of a non-zero-sized type (non-ZST). The struct
-may contain zero or more ZST fields, such as `PhantomData`.
-
 The niche attribute may either contain `value = N` where `N` is an unsigned
 integer, or `range = R` where R is a range expression whose endpoints are both
 unsigned integers. The unsigned integers may use any integer base
@@ -93,14 +89,18 @@ corresponding to the representation of the non-ZST field. For instance, a
 struct with a float field could specify one or more NaN values as a niche using
 the integer representation of those values.
 
+The attribute `#[niche]` may only appear on a struct declaration. The struct
+must contain exactly one field of a non-zero-sized type (non-ZST). The struct
+may contain zero or more ZST fields, such as `PhantomData`.
+
 Declaring a niche on any item other than a struct declaration results in an
 error.
 
-Declaring multiple `niche` attributes on a single item, or multiple key-value
-pairs within a single `niche` attribute, results in an error.
-
 Declaring a niche on a struct containing more or less than one non-zero-sized
 field results in an error.
+
+Declaring multiple `niche` attributes on a single item, or multiple key-value
+pairs within a single `niche` attribute, results in an error.
 
 Declaring a niche on a struct that has any generic parameters affecting the
 non-zero-sized field results in an error.
