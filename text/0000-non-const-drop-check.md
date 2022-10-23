@@ -11,7 +11,7 @@ Warn when a type that does not implement [`core::marker::Destruct`](https://doc.
 
 This extends the `const Drop` check of the [const_trait_impl](https://github.com/rust-lang/rust/issues/67792) proposal to non-const functions, though with a warning rather than an error in case of failure.
 
-Make `core::marker::Destruct` an auto trait, so that it is implemented automatically when all component types implement it. Include in the core library a zero-sized struct `PhantomIndestructible` which has the negative impl `!Destruct`.
+Implement non-const `core::marker::Destruct` for most types in the standard library. Add support for `#[derive(Destruct)]`.
 
 # Motivation
 [motivation]: #motivation
@@ -48,11 +48,11 @@ As an example of an API that might choose to make use of non-`Destruct` types, c
 The relevant parts of the interface might look like:
 ```rust
 
+// BufWriter does not #[derive(Destruct]
 pub struct BufWriter<W: Write>
 {
     inner: W, // the inner writer
     buf: Vec<u8>, // the buffer
-    marker: PhantomIndestructible, // PhantomIndestructible does not implement ScopeDrop, so neither does `BufWriter`.
 }
 
 impl<W: Write> Write for BufWriter<W> {
@@ -82,7 +82,6 @@ where
     // Generally prefer using `close` instead.
     fn close_without_flush(self) -> () {
         mem::drop(self.inner); // Perform the close by making a partial move out of self and dropping the inner writer.
-        mem::forget(self.marker); // We cannot drop the marker, so we forget it instead. The compiler will complain if we don't include this line.
         ()
     }
 
@@ -96,14 +95,13 @@ where
 }
 
 impl<W: Write> Drop for BufWriter<W> {
-    // BufWriter does not implement ScopeDrop, but because implicit drop only emits a warning, we can still be dropped at any time.
+    // BufWriter does not implement Destruct, but because implicit drop only emits a warning, we can still be dropped at any time.
     // The best we can do is to flush ourselves, but we have to give up on reporting the error.
     fn drop(&mut self) {
         let _e = self.flush();
     }
 }
 ```
-(Disclaimer: This RFC does not include changing the API of existing types in the standard library. This proposal gives an external crate the tools needed for good compile-time checking for such an API. Changes to the standard library may be a good idea eventually.)
 
 Then to use it, you would need to call `close` to close the writer: if the writer goes out of scope a warning will be issued, which users are recommended to treat as an error. This makes it easy to do the correct thing (handle the errors), and makes it so that ignoring errors on close is intentional, not an accident.
 ```rust
@@ -112,7 +110,7 @@ Then to use it, you would need to call `close` to close the writer: if the write
 3:      writer.write("Hello")?;
 4:      writer.close_check_error()?
         // Omitting the `close_check_error` call causes a compiler warning:
-        // value writer should not be implicitly dropped; type BufWriter<...> does not implement ScopeDrop.
+        // value writer should not be implicitly dropped; type BufWriter<...> does not implement Destruct.
         // value created on line 2, scope ends on line 5.
         // last use does not consume value.
 5:  }
@@ -139,7 +137,18 @@ Relevant previous PR: https://github.com/rust-lang/rust/pull/68943
 
 ### Partial moves
 
-It should be possible to partially move out of a non-`ScopeDrop` type. The semantics are that any fields which are not moved get dropped, and if any of those fields are themselves non-`ScopeDrop` to throw an error. This makes writing destructors easier, because you can `mem::forget(marker)` and the rest will be automatically dropped without needing to list out the other droppable fields.
+It should be possible to partially move out of a non-`Destruct` type that does not implement `Drop`. The semantics are the same as today, that any fields which are not moved get dropped (if any of those fields are themselves non-`Destruct`, throw a warning). Similarly destructuring should work.
+
+I would like private fields to block partial moves, but that seems to be a change from how Rust works today. Types that want to block partial moves may need a dummy `Drop` implementation. If the warning message is good enough, having a private non-`Destruct` field may be sufficient, as a warning will be produced if it is dropped as part of a public partial move.
+
+## Destructuring types which do not implement `Destruct`
+
+to resolve: before implementation
+
+If a type has an explicit negative impl for `ScopeDrop`, should we allow or forbid partial moves and destructuring?
+I lean towards allowing partial moves from these types, which should be rare.
+
+Most types will use `PhantomIndestructible`, and putting this in a private field effectively prevents partial moves out of your type because you cannot move out the marker and thus the compiler will attempt to drop it, producing an error.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -194,9 +203,9 @@ Branded types allow the function return type to require the production of a valu
 
 ## What are the consequences of not doing this?
 
-If we do not adopt this proposal, types for which implicit drop is a footgun will remain reliant on runtime checking. The case of accidental async future cancellation by drop has been brought up. Another example of an API that would benefit from non-`ScopeDrop` is when you are expected to eventually complete every recieved request with a completion status (the example I am familiar with is Windows Driver Framework requests: https://docs.microsoft.com/en-us/windows-hardware/drivers/wdf/completing-i-o-requests).
+If we do not adopt this proposal, types for which implicit drop is a footgun will remain reliant on runtime checking. The case of accidental async future cancellation by drop has been brought up. Another example of an API that would benefit from non-`Destruct` is when you are expected to eventually complete every recieved request with a completion status (the example I am familiar with is Windows Driver Framework requests: https://docs.microsoft.com/en-us/windows-hardware/drivers/wdf/completing-i-o-requests).
 
-The issue of disabling implicit drops seems to come up frequently enough to demonstrate some level of desire for this feature in the Rust community. This feature does require language support: I do not believe it is possible to faithfully emulate compile-time checked `ScopeDrop` without compiler support.
+The issue of disabling implicit drops seems to come up frequently enough to demonstrate some level of desire for this feature in the Rust community. This feature does require language support: I do not believe it is possible to faithfully emulate compile-time checked `Destruct` without compiler support.
 
 # Prior art
 [prior-art]: #prior-art
@@ -221,15 +230,6 @@ to resolve: after implementation
 If the compiler copies types that implement `Copy` too freely, it may be easy to end up with extra copies that need to be consumed and aren't. It might improve usability to require `Copy: Destruct`. In an extension to the restriction that a type which implements `Copy` mustn't have any drop glue, we would essentially be requiring that `Copy` types can be silently dropped as well. This closes off the possibility of having copyable relevant (use at least once) types, but there is no problem with `Clone + !Destruct`.
 
 This would mean that `Copy` types are fully structural, with implicit duplication and dereliction.
-
-## Destructuring types with an explicit `impl !Destruct`
-
-to resolve: before implementation
-
-If a type has an explicit negative impl for `ScopeDrop`, should we allow or forbid partial moves and destructuring?
-I lean towards allowing partial moves from these types, which should be rare.
-
-Most types will use `PhantomIndestructible`, and putting this in a private field effectively prevents partial moves out of your type because you cannot move out the marker and thus the compiler will attempt to drop it, producing an error.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
