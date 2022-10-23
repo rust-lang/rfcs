@@ -91,7 +91,9 @@ the integer representation of those values.
 
 The attribute `#[niche]` may only appear on a struct declaration. The struct
 must contain exactly one field of a non-zero-sized type (non-ZST). The struct
-may contain zero or more ZST fields, such as `PhantomData`.
+may contain zero or more ZST fields, such as `PhantomData`. (Note that
+`#[non_exhaustive]` types do not count as ZSTs for this purpose, even if they
+*currently* contain no fields with non-zero sizes.)
 
 Declaring a niche on any item other than a struct declaration results in an
 error.
