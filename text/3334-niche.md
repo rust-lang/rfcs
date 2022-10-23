@@ -104,8 +104,11 @@ Declaring a range niche with an invalid range (e.g. `5..0`) results in an
 error.
 
 Declaring a niche using a negative value or a negative range endpoint results
-in an error. The text of the error should suggest the appropriate unsigned
-equivalent to use. The compiler may support this in the future.
+in an error. The representation of negative values depends on the size of the
+type, and the compiler may not have that information at the time it handles
+attributes such as `niche`. The text of the error should suggest the
+appropriate unsigned equivalent to use. The compiler may support this in the
+future.
 
 Declaring a range niche with an open start (`..3`) results in an error, for
 forwards-compatibility with support for negative values.
