@@ -84,6 +84,15 @@ The attribute `#[niche]` may only appear on a struct declaration. The struct
 must contain exactly one field of a non-zero-sized type (non-ZST). The struct
 may contain zero or more ZST fields, such as `PhantomData`.
 
+The niche attribute may either contain `value = N` where `N` is an unsigned
+integer, or `range = R` where R is a range expression whose endpoints are both
+unsigned integers. The unsigned integers may use any integer base
+representation (decimal, hex, binary, octal), but must not have a type suffix.
+The unsigned integers are interpreted as the bit patterns in memory
+corresponding to the representation of the non-ZST field. For instance, a
+struct with a float field could specify one or more NaN values as a niche using
+the integer representation of those values.
+
 Declaring a niche on any item other than a struct declaration results in an
 error.
 
