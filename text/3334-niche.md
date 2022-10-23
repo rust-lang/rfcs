@@ -90,6 +90,9 @@ pairs within a single `niche` attribute, results in an error.
 Declaring a niche on a struct containing more or less than one non-zero-sized
 field results in an error.
 
+Declaring a niche on a struct that has any generic parameters affecting the
+non-zero-sized field results in an error.
+
 Declaring a range niche with an empty range (e.g. `0..0`) results in a
 warn-by-default lint. As with many lints, this lint should be automatically
 suppressed for code expanded from a macro.
