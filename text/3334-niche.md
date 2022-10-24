@@ -315,6 +315,10 @@ only two valid values, any niche applying a further restriction to it would
 result in either a one-value type or a zero-value type, neither of which seems
 useful enough to support.
 
+Rather than supporting `derive(Default)`, we could reject it, and wait for
+general-purpose compiler support for safe assignment of compile-time constant
+expressions.
+
 # Prior art
 [prior-art]: #prior-art
 
