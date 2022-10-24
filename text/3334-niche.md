@@ -329,7 +329,7 @@ within the attribute.
 - **Safety**: The attribute specified in this RFC requires an unsafe block to
   set the field. Future extensions could allow safely setting the field, after
   verifying in a compiler-visible manner that the value works. For instance:
-- **`derive(TryInto)`**: Rust could support deriving `TryInto` from the
+- **`derive(TryFrom)`**: Rust could support deriving `TryFrom` from the
   contained type to the struct. The implementation could explicitly check the
   range, and return an error if not in-range. This would avoid the need to
   write explicit `unsafe` code, and many uses may be able to elide or coalesce
