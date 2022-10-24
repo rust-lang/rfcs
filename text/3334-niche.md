@@ -137,21 +137,10 @@ However, multiple instances of the same identical type (e.g. `Option<T>` and
 niche or not). This permits a round-trip between such a value and a byte
 representation.
 
-If a type `T` contains niches and uses `repr(C)` or `repr(transparent)`, the
-compiler guarantees to use the same storage size for the type as it would
-without the niche, even if the niche might allow storing fewer bytes. If a type
-`T` contains niches and uses the default (`Rust`) `repr`, the compiler may
-choose to represent the type using fewer bytes if the niche would allow doing
-so. For instance:
-
-```rust
-#[niche(range = 4..)]
-struct S {
-    field: u16,
-}
-
-// `size_of::<S>()` may return less than 2
-```
+Adding a niche to a type does not change the storage size of the type, even if
+the niche might otherwise allow storing fewer bytes. The type still allows
+obtaining mutable references to the field, which requires storing valid values
+using the same representation as those values would have had without the niche.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -340,4 +329,5 @@ within the attribute.
   such as niches. Given a mechanism for disallowing references to a type and
   requiring users to copy or move it rather than referencing it in-place, Rust
   could more aggressively optimize storage layout, such as by renumbering enum
-  values and translating them back when read.
+  values and translating them back when read, or by storing fields using fewer
+  bytes if their valid range requires fewer bytes to fully represent.
