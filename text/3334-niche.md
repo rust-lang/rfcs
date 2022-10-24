@@ -303,6 +303,8 @@ within the attribute.
   rather than a range.
 - **Per-field niches**: A structure containing multiple fields could have a
   niche on a specific field, rather than the whole structure.
+- **structs with ZST fields**: A struct could contain fields with zero-sized
+  types (e.g. `PhantomData`) and still have a niche.
 - **Whole-structure niches**: A structure containing multiple non-zero-sized
   fields could have a niche of invalid values for the whole structure.
 - **Union niches**: A union could have a niche.
