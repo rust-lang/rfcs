@@ -421,6 +421,7 @@ within the attribute.
   range, and return an error if not in-range. This would avoid the need to
   write explicit `unsafe` code, and many uses may be able to elide or coalesce
   the check if the compiler can prove the range of a value at compile time.
+  This would also avoid needing to duplicate the range in multiple places.
 - **Lints**: Multiple lints may help users define niches, or detect usages of
   niches that may be better expressed via other means. For instance, a lint
   could detect a newtype whose constructor maintains a range invariant, and
