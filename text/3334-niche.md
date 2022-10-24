@@ -206,6 +206,10 @@ Niches do not affect pattern-matching exhaustiveness. For the purposes of
 pattern matching, the compiler will check exhaustiveness as if the field could
 take on any value.
 
+If a struct has both a niche and `derive(Default)` declared on it, the compiler
+will check if the default value falls within the niche, and produce an error if
+so.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
