@@ -328,6 +328,8 @@ C, C++, and various other languages have "bitfields", which allow restricting
 the range and storage of a type based on the number of bits used to store it.
 This doesn't allow excluding a more fine-grained range, though.
 
+Ada supports declaring integer types with explicit ranges.
+
 Bit-twiddling tricks to store information compactly have seen widespread use
 and innovation since computing antiquity.
 
