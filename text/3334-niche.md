@@ -80,6 +80,19 @@ particular mapping at this time, but may in the future.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+If a struct contains a niche, the following operations may only occur in
+`unsafe` code, and produce an error if invoked in safe code:
+- Constructing the struct, which requires initializing the field.
+- Writing to the field.
+- Obtaining a mutable reference to the field.
+
+Other operations, including reading from the field, obtaining a non-mutable
+reference to the field, obtaining a mutable reference to the whole struct, or
+assigning to the whole struct, are not affected by the presence of the niche.
+
+Causing a type with a niche to contain an invalid value (whether by
+construction, writing, or transmuting) results in undefined behavior.
+
 The niche attribute may either contain `value = N` where `N` is an unsigned
 integer, or `range = R` where R is a range expression whose endpoints are both
 unsigned integers. The unsigned integers may use any integer base
