@@ -307,6 +307,11 @@ this does not prevent future syntax additions from adding a niche attribute on
 fields, in which case the two could be declared as equivalent on a single-field
 struct.
 
+We could support `bool`, just as easily as `char`. However, since `bool` has
+only two valid values, any niche applying a further restriction to it would
+result in either a one-value type or a zero-value type, neither of which seems
+useful enough to support.
+
 # Prior art
 [prior-art]: #prior-art
 
