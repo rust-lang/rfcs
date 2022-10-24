@@ -319,6 +319,14 @@ Rather than supporting `derive(Default)`, we could reject it, and wait for
 general-purpose compiler support for safe assignment of compile-time constant
 expressions.
 
+We could entirely forbid taking mutable references to fields of structs with
+niches, rather than allowing them in unsafe code. This would mean that unsafe
+code could not produce such a reference and call other code with it. However,
+that would also prevent calling mutating methods and otherwise reusing existing
+code that makes use of `&mut`. Other unsafe code already incurs similar
+obligations. We could also have lints detecting at least trivial misuses, such
+as returning such a `&mut` reference from a safe method.
+
 # Prior art
 [prior-art]: #prior-art
 
