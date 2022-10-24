@@ -67,6 +67,23 @@ struct, or obtaining a mutable reference to such a field, requires `unsafe`
 code. Causing a type with a niche to contain an invalid value (whether by
 construction, writing, or transmuting) results in undefined behavior.
 
+Typically, a user-defined type with a niche may wish to provide safe methods to
+construct or modify the type. For instance, a type `T` *might* choose to
+provide one or more of the following, depending on what makes sense for the
+expected usage of the type:
+- a `new` or `try_new` method returning a `Result<T, E>` or `Option<T>`
+- an unsafe `new_unchecked` method returning `T`
+- `TryFrom` implementations for conversions that can fail
+- `From` implementations for conversions from types that fully map to the valid
+  values, such that the conversion cannot fail
+- an implementation of `Default`
+- constant values of the type
+- methods that may fail to map to the valid range, and return `Result<T, E>` or
+  `Option<T>`
+- operators that may fail by panicking
+- saturating, checked, or similar versions of operators that cannot fail
+- methods or operators that cannot fail
+
 If a type `T` contains only a single niche value, `Option<T>` (and other enums
 isomorphic to it, with one variant containing `T` and one nullary variant) will
 use that value to represent `None` (the nullary variant). If such a `T` is
