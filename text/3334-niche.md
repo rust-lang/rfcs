@@ -64,8 +64,8 @@ assert_eq!(size_of::<Option<Option<Option<Bit>>>>(), 1);
 
 Constructing a struct with a niche value, or writing to the field of such a
 struct, or obtaining a mutable reference to such a field, requires `unsafe`
-code. Causing a type with a niche to contain an invalid value (whether by
-construction, writing, or transmuting) results in undefined behavior.
+code. Causing a type with a niche to contain one of its niche values (whether
+by construction, writing, or transmuting) results in undefined behavior.
 
 Typically, a user-defined type with a niche may wish to provide safe methods to
 construct or modify the type. For instance, a type `T` *might* choose to
@@ -107,7 +107,7 @@ Other operations, including reading from the field, obtaining a non-mutable
 reference to the field, obtaining a mutable reference to the whole struct, or
 assigning to the whole struct, are not affected by the presence of the niche.
 
-Causing a type with a niche to contain an invalid value (whether by
+Causing a type with a niche to contain one of its niche values (whether by
 construction, writing, or transmuting) results in undefined behavior.
 
 The niche attribute may either contain `value = N` where `N` is an unsigned
@@ -131,7 +131,7 @@ The field must have one of a restricted set of types:
   multiple discontiguous niches, the compiler need not take all of them into
   account.)
 - A raw pointer. (This allows user-defined types to store a properly typed
-  pointer while taking advantage of known-invalid pointer values.)
+  pointer while using known-invalid pointer values as niches.)
 - A fieldless enum with a `repr` of a primitive integer type.
 
 Declaring a niche on a struct whose field type does not meet these restrictions
@@ -172,9 +172,9 @@ does not occur early enough for attributes such as niche declarations.
 
 If a type `T` contains multiple niche values (e.g. `#[niche(range = 8..16)]`),
 the compiler does not guarantee any particular usage of those niche values in
-the representation of types containing `T`. In particular, the
-compiler does not commit to making use of all the invalid values of the niche,
-even if it otherwise could have.
+the representation of types containing `T`. In particular, the compiler does
+not commit to making use of all the niche values, even if it otherwise could
+have.
 
 However, multiple instances of the same identical type (e.g. `Option<T>` and
 `Option<T>`) will use an identical representation (whether the type contains a
@@ -246,7 +246,7 @@ building block like `niche`, and providing the underlying building blocks to
 the ecosystem as well.
 
 We could implement niches using a trait `Niche` implemented for a type, with
-associated consts for invalid values. If we chose to do this in the future, the
+associated consts for niche values. If we chose to do this in the future, the
 `#[niche(...)]` attribute could become forward-compatible with this, by
 generating the trait impl.
 
@@ -347,7 +347,7 @@ within the attribute.
   niches themselves). This should wait until after niches support providing
   values with the type of the field, rather than as an unsigned integer.
 - **Whole-struct niches**: A struct containing multiple non-zero-sized fields
-  could have a niche of invalid values for the whole struct.
+  could have niche values for the whole struct.
 - **Union niches**: A union could have a niche.
 - **Enum niches**: An enum or an enum variant could have a niche.
 - **Specified mappings into niches**: Users may want to rely on mappings of
