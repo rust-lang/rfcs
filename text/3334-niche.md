@@ -193,6 +193,11 @@ the niche might otherwise allow storing fewer bytes. The type still allows
 obtaining mutable references to the field, which requires storing valid values
 using the same representation as those values would have had without the niche.
 
+Declaring a niche *may* allow additional optimizations that assume the type
+cannot contain the niche values, though the compiler does not guarantee this.
+For instance, the compiler may be able to elide bounds checks that the valid
+values always satisfy.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
