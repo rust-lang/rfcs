@@ -417,6 +417,11 @@ within the attribute.
   niches that may be better expressed via other means. For instance, a lint
   could detect a newtype whose constructor maintains a range invariant, and
   suggest adding a niche.
+- **Niches affecting pattern-matching exhaustiveness**: In the future, Rust
+  could support having niches affect pattern-matching exhaustiveness. If so,
+  that future version of Rust would need to do so in a backwards-compatible
+  manner, such as by ensuring that the resulting redundant match arms produce
+  at most a suppressible warning lint (at least until an edition boundary).
 - **Range types**: Rust (or libraries built atop Rust) could provide integer
   types with associated valid ranges, along with operations that
   expand/contract/propagate those ranges as appropriate.
