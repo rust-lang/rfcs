@@ -350,6 +350,10 @@ containing primitive types, or similar?
 Do we need to make `niche` mutually exclusive with `packed`? What about other
 attributes?
 
+Can we make `derive(Default)` detect errors? The compiler already has support
+for detecting whether a type permits zero-initialization (used to produce a
+warning for `mem::zeroed()`); hopefully we can make use of the same support.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
