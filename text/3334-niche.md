@@ -210,6 +210,9 @@ If a struct has both a niche and `derive(Default)` declared on it, the compiler
 will check if the default value falls within the niche, and produce an error if
 so.
 
+If a struct has both a niche and `repr(packed)`, the compiler will produce an
+error.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -347,8 +350,7 @@ Will something go wrong if applying a niche to a struct whose field is itself a
 struct containing multiple fields? Do we need to restrict niches to structs
 containing primitive types, or similar?
 
-Do we need to make `niche` mutually exclusive with `packed`? What about other
-attributes?
+Are there any attributes we need to make mutually exclusive with `niche`?
 
 Can we make `derive(Default)` detect errors? The compiler already has support
 for detecting whether a type permits zero-initialization (used to produce a
