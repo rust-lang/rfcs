@@ -257,6 +257,35 @@ generating the trait impl.
 We could use a syntax based on patterns, such as `struct S(u8 is 0..=32);` or
 `struct S(MyEnum is MyEnum::A | MyEnum::B)`.
 
+We could attach the `#[niche(...)]` attribute to the *field* rather than to the
+struct. This would have the advantage of extending naturally to multiple
+fields, and would associate the value restrictions specifically to the field
+they apply to. This would also be more convenient for application to enum
+fields. However, this would be less convenient for defining single-field tuple
+structs:
+
+```rust
+// Proposed syntax
+#[niche(value = 0)]
+struct NonZeroU32(u32);
+
+// Alternative syntax
+struct NonZeroU32(
+    #[niche(value = 0)]
+    u32,
+);
+```
+
+In addition, that alternative syntax would *not* work for future multi-field
+niches that need to correlate across fields (e.g. a niche for one field that
+depends on the value of another field). It also would not work as well for
+niches on a `union`.
+
+Since the syntax proposed in this RFC requires exactly one field in the struct,
+this does not prevent future syntax additions from adding a niche attribute on
+fields, in which case the two could be declared as equivalent on a single-field
+struct.
+
 # Prior art
 [prior-art]: #prior-art
 
