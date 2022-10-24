@@ -358,7 +358,9 @@ within the attribute.
   Linux kernel's `ERR_PTR`).
 - **Safety**: The attribute specified in this RFC requires an unsafe block to
   set the field. Future extensions could allow safely setting the field, after
-  verifying in a compiler-visible manner that the value works. For instance:
+  verifying in a compiler-visible manner that the value does not fall within
+  the niche. For instance, via `derive(TryFrom)` (see below), or by checking a
+  compile-time constant expression to see if it falls within the niche.
 - **`derive(TryFrom)`**: Rust could support deriving `TryFrom` from the
   contained type to the struct. The implementation could explicitly check the
   range, and return an error if not in-range. This would avoid the need to
