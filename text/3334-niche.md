@@ -39,12 +39,12 @@ without manual bit-twiddling.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When defining a structure containing exactly one field of a non-zero-sized type
-(non-ZST), you can attach a `niche` attribute on it to declare a specific value
-or range of values for that field as invalid. This promises the compiler that
-you will never store those values in that field, which allows the compiler to
-use those in-memory representations for different purposes, such as the
-representation of `None` in a containing `Option`.
+When defining a struct containing exactly one field, you can attach a `niche`
+attribute to the struct to declare a specific value or range of values for that
+field as invalid. This promises the compiler that you will never store those
+values in that field, which allows the compiler to use those in-memory
+representations for different purposes, such as the representation of `None` in
+a containing `Option`.
 
 ```rust
 use std::mem::size_of;
@@ -62,10 +62,10 @@ assert_eq!(size_of::<Bit>(), 1);
 assert_eq!(size_of::<Option<Option<Option<Bit>>>>(), 1);
 ```
 
-Constructing a structure with a niche value, or writing to the non-ZST field of
-such a structure, or obtaining a mutable reference to such a field, requires
-`unsafe` code. Causing a type with a niche to contain an invalid value (whether
-by construction, writing, or transmuting) results in undefined behavior.
+Constructing a structure with a niche value, or writing to the field of such a
+structure, or obtaining a mutable reference to such a field, requires `unsafe`
+code. Causing a type with a niche to contain an invalid value (whether by
+construction, writing, or transmuting) results in undefined behavior.
 
 If a type `T` contains only a single niche value, `Option<T>` (and other enums
 isomorphic to it, with one variant containing `T` and one nullary variant) will
@@ -85,27 +85,25 @@ integer, or `range = R` where R is a range expression whose endpoints are both
 unsigned integers. The unsigned integers may use any integer base
 representation (decimal, hex, binary, octal), but must not have a type suffix.
 The unsigned integers are interpreted as the bit patterns in memory
-corresponding to the representation of the non-ZST field. For instance, a
-struct with a float field could specify one or more NaN values as a niche using
-the integer representation of those values.
+corresponding to the representation of the field. For instance, a struct with a
+float field could specify one or more NaN values as a niche using the integer
+representation of those values.
 
 The attribute `#[niche]` may only appear on a struct declaration. The struct
-must contain exactly one field of a non-zero-sized type (non-ZST). The struct
-may contain zero or more ZST fields, such as `PhantomData`. (Note that
-`#[non_exhaustive]` types do not count as ZSTs for this purpose, even if they
-*currently* contain no fields with non-zero sizes.)
+must contain exactly one field. The field must have a non-zero-sized type
+(non-ZST).
 
 Declaring a niche on any item other than a struct declaration results in an
 error.
 
-Declaring a niche on a struct containing more or less than one non-zero-sized
-field results in an error.
+Declaring a niche on a struct containing more or less than one field results in
+an error.
 
 Declaring multiple `niche` attributes on a single item, or multiple key-value
 pairs within a single `niche` attribute, results in an error.
 
-Declaring a niche on a struct that has any generic parameters affecting the
-non-zero-sized field results in an error.
+Declaring a niche on a struct that has any generic parameters results in an
+error.
 
 Declaring a range niche with an empty range (e.g. `0..0`) results in a
 warn-by-default lint. As with many lints, this lint should be automatically
@@ -240,11 +238,6 @@ and innovation since computing antiquity.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Does the compiler support niches on structs containing ZST fields such as
-`PhantomData`? If it doesn't, then initially, having a limitation to only
-structs containing a single field would be fine, and would not substantially
-reduce the usefulness of stabilizing this feature.
-
 Could we support niches on generic types? For instance, could we support
 declaring a niche of `0` on a generic structure with a single field?
 
@@ -252,9 +245,9 @@ Could we support negative numbers in a niche attribute, at least for fields of
 concrete primitive type? That would provide a much more friendly interface, but
 would require the compiler to better understand the type and its size.
 
-Will something go wrong if applying a niche to a struct whose non-ZST field is
-itself a struct containing multiple fields? Do we need to restrict niches to
-structs containing primitive types, or similar?
+Will something go wrong if applying a niche to a struct whose field is itself a
+struct containing multiple fields? Do we need to restrict niches to structs
+containing primitive types, or similar?
 
 Do we need to make `niche` mutually exclusive with `packed`? What about other
 attributes?
