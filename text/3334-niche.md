@@ -94,6 +94,9 @@ bidirectionally to `None` across the FFI boundary.
 If a type contains multiple niche values, Rust does not guarantee any
 particular mapping at this time, but may in the future.
 
+Structs with niches may be constructed or written to in `const` code, though
+such construction or writing still requires `unsafe`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
