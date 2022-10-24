@@ -198,6 +198,10 @@ cannot contain the niche values, though the compiler does not guarantee this.
 For instance, the compiler may be able to elide bounds checks that the valid
 values always satisfy.
 
+Niches do not affect pattern-matching exhaustiveness. For the purposes of
+pattern matching, the compiler will check exhaustiveness as if the field could
+take on any value.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
