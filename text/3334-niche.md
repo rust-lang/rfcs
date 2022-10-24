@@ -90,8 +90,22 @@ float field could specify one or more NaN values as a niche using the integer
 representation of those values.
 
 The attribute `#[niche]` may only appear on a struct declaration. The struct
-must contain exactly one field. The field must have a non-zero-sized type
-(non-ZST).
+must contain exactly one field.
+
+The field must have one of a restricted set of types:
+- A built-in integer type (iN or uN).
+- A built-in floating-point type (fN). (The niche must still be specified using
+  the integer representation.)
+- A `char`. (The niche uses the integer representation, and gets merged with
+  the built-in niches of `char`; if the result after merging would have
+  multiple discontiguous niches, the compiler need not take all of them into
+  account.)
+- A raw pointer. (This allows user-defined types to store a properly typed
+  pointer while taking advantage of known-invalid pointer values.)
+- A fieldless enum with a `repr` of a primitive integer type.
+
+Declaring a niche on a struct whose field type does not meet these restrictions
+results in an error.
 
 Declaring a niche on any item other than a struct declaration results in an
 error.
@@ -294,6 +308,10 @@ within the attribute.
   niche on a specific field, rather than the whole structure.
 - **structs with ZST fields**: A struct could contain fields with zero-sized
   types (e.g. `PhantomData`) and still have a niche.
+- **Non-primitive fields**: A struct could contain fields of non-primitive
+  types, such as tuples, arrays, or other structs (including structs with
+  niches themselves). This should wait until after niches support providing
+  values with the type of the field, rather than as an unsigned integer.
 - **Whole-structure niches**: A structure containing multiple non-zero-sized
   fields could have a niche of invalid values for the whole structure.
 - **Union niches**: A union could have a niche.
