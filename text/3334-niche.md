@@ -344,6 +344,9 @@ within the attribute.
 - **`unsafe` fields**: If in the future Rust introduces `unsafe` fields,
   declaring a niche could internally mark the field as unsafe, taking advantage
   of the same machinery.
+- **read-only fields**: If in the future Rust introduces read-only fields,
+  types with a niche may wish to provide read-only access to the value they
+  contain, rather than just providing conversion methods or traits.
 - **Move types, or types that don't support references**: Rust currently
   requires that all values of a given type have the same representation no
   matter where they get stored, to allow taking references to such types and
