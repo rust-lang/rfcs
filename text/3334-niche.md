@@ -120,7 +120,8 @@ interpreted as the bit patterns in memory corresponding to the representation
 of the field. For instance, a struct with a float field could specify one or
 more NaN values as a niche using the integer representation of those values.
 
-The range may be either exclusive (`start..end`) or inclusive (`start..=end`).
+The range may be exclusive (`start..end`), inclusive (`start..=end`), or
+open-ended (`start..`).
 
 The attribute `#[niche]` may only appear on a struct declaration. The struct
 must contain exactly one field.
