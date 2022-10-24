@@ -271,7 +271,8 @@ associated consts for niche values. If we chose to do this in the future, the
 generating the trait impl.
 
 We could use a syntax based on patterns, such as `struct S(u8 is 0..=32);` or
-`struct S(MyEnum is MyEnum::A | MyEnum::B)`.
+`struct S(MyEnum is MyEnum::A | MyEnum::B)`. The `niche` attribute could be
+forward-compatible with this, by generating the appropriate patterns.
 
 We could attach the `#[niche(...)]` attribute to the *field* rather than to the
 struct. This would have the advantage of extending naturally to multiple
