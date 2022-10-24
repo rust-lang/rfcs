@@ -62,8 +62,8 @@ assert_eq!(size_of::<Bit>(), 1);
 assert_eq!(size_of::<Option<Option<Option<Bit>>>>(), 1);
 ```
 
-Constructing a structure with a niche value, or writing to the field of such a
-structure, or obtaining a mutable reference to such a field, requires `unsafe`
+Constructing a struct with a niche value, or writing to the field of such a
+struct, or obtaining a mutable reference to such a field, requires `unsafe`
 code. Causing a type with a niche to contain an invalid value (whether by
 construction, writing, or transmuting) results in undefined behavior.
 
@@ -242,7 +242,7 @@ and innovation since computing antiquity.
 [unresolved-questions]: #unresolved-questions
 
 Could we support niches on generic types? For instance, could we support
-declaring a niche of `0` on a generic structure with a single field?
+declaring a niche of `0` on a generic struct with a single field?
 
 Could we support negative numbers in a niche attribute, at least for fields of
 concrete primitive type? That would provide a much more friendly interface, but
@@ -304,8 +304,8 @@ within the attribute.
   single range.
 - **Other bit-pattern niches**: A type could define niches via a bit pattern,
   rather than a range.
-- **Per-field niches**: A structure containing multiple fields could have a
-  niche on a specific field, rather than the whole structure.
+- **Per-field niches**: A struct containing multiple fields could have a niche
+  on a specific field, rather than the whole struct.
 - **structs with ZST fields**: A struct could contain fields with zero-sized
   types (e.g. `PhantomData`) and still have a niche.
 - **Fields of reference type**: In addition to allowing raw pointers, structs
@@ -316,8 +316,8 @@ within the attribute.
   types, such as tuples, arrays, or other structs (including structs with
   niches themselves). This should wait until after niches support providing
   values with the type of the field, rather than as an unsigned integer.
-- **Whole-structure niches**: A structure containing multiple non-zero-sized
-  fields could have a niche of invalid values for the whole structure.
+- **Whole-struct niches**: A struct containing multiple non-zero-sized fields
+  could have a niche of invalid values for the whole struct.
 - **Union niches**: A union could have a niche.
 - **Enum niches**: An enum or an enum variant could have a niche.
 - **Specified mappings into niches**: Users may want to rely on mappings of
@@ -330,8 +330,8 @@ within the attribute.
   set the field. Future extensions could allow safely setting the field, after
   verifying in a compiler-visible manner that the value works. For instance:
 - **`derive(TryInto)`**: Rust could support deriving `TryInto` from the
-  contained type to the structure. The implementation could explicitly check
-  the range, and return an error if not in-range. This would avoid the need to
+  contained type to the struct. The implementation could explicitly check the
+  range, and return an error if not in-range. This would avoid the need to
   write explicit `unsafe` code, and many uses may be able to elide or coalesce
   the check if the compiler can prove the range of a value at compile time.
 - **Lints**: Multiple lints may help users define niches, or detect usages of
