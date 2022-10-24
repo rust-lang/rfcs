@@ -308,6 +308,10 @@ within the attribute.
   niche on a specific field, rather than the whole structure.
 - **structs with ZST fields**: A struct could contain fields with zero-sized
   types (e.g. `PhantomData`) and still have a niche.
+- **Fields of reference type**: In addition to allowing raw pointers, structs
+  with niches could allow references. In practice, if the references have a
+  lifetime other than `'static`, this will also require at least some support
+  for generic parameters.
 - **Non-primitive fields**: A struct could contain fields of non-primitive
   types, such as tuples, arrays, or other structs (including structs with
   niches themselves). This should wait until after niches support providing
