@@ -360,10 +360,6 @@ Could we support negative numbers in a niche attribute, at least for fields of
 concrete primitive type? That would provide a much more friendly interface, but
 would require the compiler to better understand the type and its size.
 
-Will something go wrong if applying a niche to a struct whose field is itself a
-struct containing multiple fields? Do we need to restrict niches to structs
-containing primitive types, or similar?
-
 Are there any attributes we need to make mutually exclusive with `niche`?
 
 Can we make `derive(Default)` detect errors? The compiler already has support
