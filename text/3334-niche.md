@@ -67,6 +67,12 @@ struct, or obtaining a mutable reference to such a field, requires `unsafe`
 code. Causing a type with a niche to contain one of its niche values (whether
 by construction, writing, or transmuting) results in undefined behavior.
 
+The field type must be a built-in integer or floating-point type, a `char`, or
+a raw pointer.
+
+The value given for `value`, or the endpoints of the range given for `range`,
+may be either a value of the same type as the field, or an unsigned integer.
+
 Typically, a user-defined type with a niche may wish to provide safe methods to
 construct or modify the type. For instance, a type `T` *might* choose to
 provide one or more of the following, depending on what makes sense for the
@@ -113,33 +119,46 @@ assigning to the whole struct, are not affected by the presence of the niche.
 Causing a type with a niche to contain one of its niche values (whether by
 construction, writing, or transmuting) results in undefined behavior.
 
-The niche attribute may either contain `value = N` where `N` is an unsigned
-integer, or `range = R` where R is a range expression whose endpoints are both
-unsigned integers.
+The niche attribute may either contain `value = N` or `range = R`. The value
+given for `N`, or the endpoints of the range given for `R`, may be either a
+literal value of the same type as the field, or an unsigned integer literal.
 
-The unsigned integers may use any integer base representation (decimal, hex,
-binary, octal), but must not have a type suffix. The unsigned integers are
-interpreted as the bit patterns in memory corresponding to the representation
-of the field. For instance, a struct with a float field could specify one or
-more NaN values as a niche using the integer representation of those values.
+Signed and unsigned integer literals may use any integer base representation
+(decimal, hex, binary, octal), but must not have a type suffix. The unsigned
+integers are interpreted as the bit patterns in memory corresponding to the
+representation of the field. For instance, a struct with a float field could
+specify one or more NaN values as a niche using the integer representation of
+those values.
 
-The range may be exclusive (`start..end`), inclusive (`start..=end`), or
-open-ended (`start..`).
+The range may be exclusive (`start..end`), inclusive (`start..=end`),
+open-ended (`start..`), open-start (`..end`), or open-start inclusive
+(`..=end`).
+
+Note that an open-start range on a signed field or floating-point field will
+include all values less than the upper bound, including any negative numbers
+less than the upper bound. For instance, a field of type `i8` with a niche
+range of `..2` will have as niche values `1`, `0`, `-1`, `-2`, ..., `-128`.
 
 The attribute `#[niche]` may only appear on a struct declaration. The struct
 must contain exactly one field.
 
 The field must have one of a restricted set of types:
-- A built-in integer type (iN or uN).
-- A built-in floating-point type (fN). (The niche must still be specified using
-  the integer representation.)
-- A `char`. (The niche uses the integer representation, and gets merged with
-  the built-in niches of `char`; if the result after merging would have
-  multiple discontiguous niches, the compiler need not take all of them into
-  account.)
-- A raw pointer. (This allows user-defined types to store a properly typed
-  pointer while using known-invalid pointer values as niches.)
-- A fieldless enum with a `repr` of a built-in integer type.
+- A built-in unsigned integer type (uN). In this case, the niche specification
+  must use an unsigned integer.
+- A built-in signed integer type (iN). In this case, the niche specification
+  may use a signed integer, or an unsigned integer corresponding to the two's
+  complement representation. For instance, a field of type `i32` could have a
+  niche of `-1` or equivalently `0x8000_0000`.
+- A built-in floating-point type (fN). In this case, the niche specification
+  may use a floating-point number, or an unsigned integer corresponding to the
+  IEEE representation of that floating-point type.
+- A `char`. In this case, the niche specification may use a `char` literal, or
+  an unsigned integer. The niche gets merged with the built-in niches of
+  `char`; if the result after merging would have multiple discontiguous niches,
+  the compiler need not take all of them into account.
+- A raw pointer. In this case, the niche specification must use an unsigned
+  integer. This allows user-defined types to store a properly typed pointer
+  while using known-invalid pointer values as niches.
 
 Declaring a niche on a struct whose field type does not meet these restrictions
 results in an error.
@@ -167,15 +186,8 @@ suppressed for code expanded from a macro.
 Declaring a range niche with an invalid range (e.g. `5..0`) results in an
 error.
 
-Declaring a niche using a negative value or a negative range endpoint results
-in an error. The representation of negative values depends on the size of the
-type, and the compiler may not have that information at the time it handles
-attributes such as `niche`. The text of the error should suggest the
-appropriate two's-complement unsigned equivalent to use. The compiler may
-support this in the future.
-
-Declaring a range niche with an open start (`..3`) results in an error, for
-forwards-compatibility with support for negative values.
+Declaring a range niche with an unbounded range (`..`) results in an error, as
+this would represent a field with no valid values.
 
 Declaring a niche using a non-literal value (e.g. `usize::MAX`) results in an
 error. Constants can use compile-time evaluation, and compile-time evaluation
@@ -356,10 +368,6 @@ and innovation since computing antiquity.
 Could we support niches on generic types? For instance, could we support
 declaring a niche of `0` on a generic struct with a single field?
 
-Could we support negative numbers in a niche attribute, at least for fields of
-concrete primitive type? That would provide a much more friendly interface, but
-would require the compiler to better understand the type and its size.
-
 Are there any attributes we need to make mutually exclusive with `niche`?
 
 Can we make `derive(Default)` detect errors? The compiler already has support
@@ -378,11 +386,6 @@ specify only behavior that the Rust compiler already implements.
 New types of niches can use the same `niche` attribute, adding new key-values
 within the attribute.
 
-- **Signed values**: This RFC requires the use of unsigned values when defining
-  niches. A future version could permit the use of signed values, to avoid
-  having to manually perform the twos-complement conversion. This may
-  require either making the compiler's implementation smarter, or using a
-  syntax that defines the size of the integer type (e.g. `-1isize`).
 - **Limited constant evaluation**: This RFC excludes the possibility of using
   constants in the range expression, because doing so simplifies the
   implementation. Ideally, a future version would allow ranges to use at least
@@ -424,9 +427,8 @@ within the attribute.
   lifetime other than `'static`, this will also require at least some support
   for generic parameters.
 - **Non-primitive fields**: A struct could contain fields of non-primitive
-  types, such as tuples, arrays, or other structs (including structs with
-  niches themselves). This should wait until after niches support providing
-  values with the type of the field, rather than as an unsigned integer.
+  types, such as enums, tuples, arrays, or other structs (including structs
+  with niches themselves).
 - **Whole-struct niches**: A struct containing multiple non-zero-sized fields
   could have niche values for the whole struct.
 - **Union niches**: A union could have a niche.
