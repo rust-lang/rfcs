@@ -154,8 +154,8 @@ Declaring multiple `niche` attributes on a single item, or multiple key-value
 pairs within a single `niche` attribute, results in an error.
 
 The `niche` attribute may appear inside `cfg_attr`. The net effect after
-evaluating all configuration must be to apply either zero or one `niche`
-attribute to the type.
+evaluating all configuration must be to apply at most one `niche` attribute to
+the type.
 
 Declaring a niche on a struct that has any generic parameters results in an
 error.
