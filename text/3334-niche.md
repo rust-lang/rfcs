@@ -139,7 +139,7 @@ The field must have one of a restricted set of types:
   account.)
 - A raw pointer. (This allows user-defined types to store a properly typed
   pointer while using known-invalid pointer values as niches.)
-- A fieldless enum with a `repr` of a primitive integer type.
+- A fieldless enum with a `repr` of a built-in integer type.
 
 Declaring a niche on a struct whose field type does not meet these restrictions
 results in an error.
