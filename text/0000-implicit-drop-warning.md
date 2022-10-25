@@ -1,4 +1,4 @@
-- Feature Name: `non_const_drop_check`
+- Feature Name: `implicit_drop_warning`
 - Start Date: 2022-10-17
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -11,18 +11,14 @@ Warn when a type that does not implement [`core::marker::Destruct`](https://doc.
 
 This extends the `const Drop` check of the [const_trait_impl](https://github.com/rust-lang/rust/issues/67792) proposal to non-const functions, though with a warning rather than an error in case of failure.
 
-Implement non-const `core::marker::Destruct` for most types in the standard library. Add support for `#[derive(Destruct)]`.
+Implement non-const `core::marker::Destruct` for most types in the standard library. Support `#[derive(Destruct)]`.
 
 # Motivation
 [motivation]: #motivation
 
-Scope based implicit drop is a user-friendly way to make cleaning up resources properly easy, and leaking resources hard. For most cases, this works exceedingly well. However, in some APIs it would be nice to force the API user to call some method rather than allowing the implicit drop to clean up (For example, to force the user to think about errors on cleanup, or to recieve extra data needed for cleanup).
+Scope based implicit drop is a user-friendly way to make cleaning up resources properly easy, and leaking resources hard. For most cases, this works exceedingly well. However, in some APIs it would be nice to force the API user to call some method rather than allowing the implicit drop to clean up (for example, to force the user to think about errors on cleanup, or to recieve extra data needed for cleanup).
 
 A workaround used today is panicking on drop (a "drop bomb"), but this is a runtime check for what could be checked at compile time. Having a strong type system that catches many errors at compile time is one of Rust's strengths; it makes sense to allow types to opt out of implicit drop when they decide that implicit drop is wrong.
-
-Unwinding complicates this picture: for an unwinding panic, the compiler needs to clean up everything on the stack without a chance for the user to provide or recieve data. `Drop::drop` is a good fit for this case: it lets types specify custom cleanup behavior and reduces the amount of boilerplate by recursively dropping the subvalues.
-
-In many cases, is also convenient to have cleanup code that is automatically called when a value goes out of scope, and we want to do the same thing on unwinding and end of scope often enough that it makes sense to combine those two facilities. But while every type needs to handle cleanup on unwind, it is reasonable to declare that, for some types, we don't want the convenience of implicit drop on end of scope.
 
 Unwinding panics are an exceptional case. It is important to handle them without breaking Rust's memory safety guarantees, and useful to allow types to customize their behavior when dropped because of unwinding. But silently and implicitly making every variable which is not consumed before the end of its scope do the same thing (you can check `thread::panicking`, but still) as when handling an unwinding panic is frustrating when the best-effort cleanup can you can do leaks memory, silently ignores errors, or sends a placeholder value. The current use of `drop` combines the exceptional case of unwinding with the extremely common case of ending a scope: we don't necessarily want to do the same thing for both, and don't need to use the API forced by the limitations of unwinding panic in the case of non-exceptional control flow.
 
@@ -33,13 +29,13 @@ All of the above being said, breaking existing Rust code should be avoided. A wa
 
 ## The `Destruct` Trait
 
-Most types take care of their own cleanup when they go out of scope. A `Vec` deallocates its storage, a `MutexGuard` unlocks the mutex, a `Rc` or `Arc` decrements the reference count, and so on, along with types that don't need any cleanup like integers. These types implement the `Destruct` trait, which means you can drop them whenever you want just by letting their scope expire, or calling `mem::drop`.
+Most types take care of their own cleanup when they go out of scope. A `Vec` deallocates its storage, a `MutexGuard` unlocks the mutex, a `Rc` or `Arc` decrements the reference count, and so on, along with types like integers that don't need any cleanup. These types implement the `Destruct` trait, which means you can drop them whenever you want just by letting their scope expire, or calling `mem::drop`.
 
 However, some types would much rather have an explicit step before they go away. This could take the form of a file that might fail to close and wants to tell you about it, or a request that needs your signature as the last step before completion (and you don't want to just forget about it accidentally), among other possibilities. Types that want an explicit final step do not implement the `Destruct` trait.
 
-If a value of a type that does not implement the `Destruct` trait goes out of scope without being consumed, by default a warning will occur. You are recommended to treat this warning into an error. It is strongly recommended that you do not silence the warning, and instead suggest that you find a function to consume your value. That way the appropriate cleanup can be performed. In the rare case that you actually want to leak an object, `mem::forget` works for all values.
+If a value of a type that does not implement the `Destruct` trait goes out of scope without being consumed (is dropped), by default a warning will occur. The warning will go away if you consume the value or return it. In the rare case that you actually want to leak an object, `mem::forget` works for all values.
 
-Unlike `Sized`, `Destruct` is not assumed by default for type parameters and associated types. If you are implementing a generic API and need to drop values implicitly, you should add the `Destruct` bound to your type variables.
+Unlike `Sized`, `Destruct` is not assumed by default for type parameters and associated types. If you are implementing a generic API and need to drop values implicitly, you should add the `Destruct` bound to your type variables. For concrete types, `#[derive(Destruct)]` works.
 
 ## Writing types that don't implement `Destruct`
 
@@ -123,13 +119,15 @@ Unsafe code can make no new assumptions.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-TODO: This section is not yet written
+There is a new trait `core::marker::Destruct`, which supports `#[derive(Destruct)]`.
 
-## Corner cases
+Whenever a value is dropped, a constraint is added that the type of that value should implement `Destruct`.
+
+*Unlike other traits*, when a `T: Destruct` constraint fails, we produce a warning rather than an error. (Note, currently we automatically succeed on constraints of the form `T: Destruct`.)
 
 ### Types with no drop glue but that do not implement `Destruct`.
 
-Even if no component of the type implements `Drop`, so there is no drop glue for the type, the compiler must still produce an error if a type that does not implement `Destruct` is to be dropped. This impacts [the algorithm for elaborating open drops](https://rustc-dev-guide.rust-lang.org/mir/drop-elaboration.html#open-drops), which says "Fields whose type does not have drop glue are automatically Dead and need not be considered during the recursion." In this proposal, only fields that do not have drop glue but do implement `Destruct` can be automatically dead.
+Even if no component of the type implements `Drop`, so there is no drop glue for the type, the compiler should still produce a warning if a type that does not implement `Destruct` is to be dropped. This impacts [the algorithm for elaborating open drops](https://rustc-dev-guide.rust-lang.org/mir/drop-elaboration.html#open-drops), which says "Fields whose type does not have drop glue are automatically Dead and need not be considered during the recursion." In this proposal, only fields that do not have drop glue but do implement `Destruct` can be automatically dead.
 
 This only applies if the computation of when to emit a warning happens during this algorithm. I believe `rustc` currently has a separate pass for `const Drop` checking, which might be a better place to extend to include this feature.
 
@@ -141,21 +139,11 @@ It should be possible to partially move out of a non-`Destruct` type that does n
 
 I would like private fields to block partial moves, but that seems to be a change from how Rust works today. Types that want to block partial moves may need a dummy `Drop` implementation. If the warning message is good enough, having a private non-`Destruct` field may be sufficient, as a warning will be produced if it is dropped as part of a public partial move.
 
-## Destructuring types which do not implement `Destruct`
-
-to resolve: before implementation
-
-If a type has an explicit negative impl for `ScopeDrop`, should we allow or forbid partial moves and destructuring?
-I lean towards allowing partial moves from these types, which should be rare.
-
-Most types will use `PhantomIndestructible`, and putting this in a private field effectively prevents partial moves out of your type because you cannot move out the marker and thus the compiler will attempt to drop it, producing an error.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * Because `Destruct` is not assumed by default, adapting crates to this feature potentially requires lots of lines of code changes, particularly to crates that commonly drop generic values.
-* These are not linear types. This does not eliminate the use of `mem::forget`, so APIs like scoped thread guards are still broken: unsafe code cannot rely on destructors of any kind to be run for safety.
-* Adds another auto trait, which adds another piece of magic that happens without the user explicitly requesting it.
+* These are not linear types. This does not eliminate the use of `mem::forget`, so APIs like thread join guards are still broken: unsafe code cannot rely on destructors of any kind to be run for safety.
 
 # Rationale and alternatives
 
@@ -197,6 +185,10 @@ For these reasons, I argue that `mem::forget` should not require `T: Destruct`.
 
 Rather than changing the type system, we could consider using a lint to discover when a type we annotate gets implicitly dropped. However, to do this in a compositional way requires computing for generic functions which types they may implicitly drop, and we would want to propagate this information across crates. At this point, it seems clear that adding a lint for implicitly dropped values would require computing and communicating much the same data as using a trait, and using a trait gives a systematic way of integrating the feature into the language.
 
+## Why not an error?
+
+Making this an error *requires* crates to adapt, and as such is a breaking change. By making this a warning, we do not change the compiler behavior except for diagnostics. Feedback on previous proposals strongly indicated that a warning was preferrable.
+
 ## Branded types
 
 Branded types allow the function return type to require the production of a value from the specific input parameter, rather than any value of the same type. This lets you encode "You must use *this* item" rather than "You must use *a* item". I see this as solving a different problem. This proposal is about how to avoid accidentally calling drop ever, and is not tied to the lifetime of a single function.
@@ -212,8 +204,6 @@ The issue of disabling implicit drops seems to come up frequently enough to demo
 
 Vale has `!DeriveStructDrop`, which looks like a similar feature. This blog post [Higher RAII](https://verdagon.dev/blog/higher-raii-7drl), has interesting examples of real-world applications of this feature.
 
-TODO: talk about linear-rust
-
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
@@ -222,22 +212,11 @@ TODO: talk about linear-rust
 
 Modifying the standard library should give a sense of how intrusive this feature is. The question comes down to how often do functions drop values of generic type? A prototype implementation that ignores the complexity of open drops and just errors on static drops of non-`Destruct` types should give a good sense of this.
 
-## `Copy: Destruct`
-[copy-destruct]: #copy-destruct
-
-to resolve: after implementation
-
-If the compiler copies types that implement `Copy` too freely, it may be easy to end up with extra copies that need to be consumed and aren't. It might improve usability to require `Copy: Destruct`. In an extension to the restriction that a type which implements `Copy` mustn't have any drop glue, we would essentially be requiring that `Copy` types can be silently dropped as well. This closes off the possibility of having copyable relevant (use at least once) types, but there is no problem with `Clone + !Destruct`.
-
-This would mean that `Copy` types are fully structural, with implicit duplication and dereliction.
+Are there any types in the standard library that should not implement `Destruct`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-# Documentation Notes
-[documentation-notes]: #documentation-notes
+## Warning default behavior
 
-A list of places to add documentation for this feature to.
-
-* Add `Destruct` to the list of auto traits in https://doc.rust-lang.org/stable/reference/special-types-and-traits.html#auto-traits
-* TODO: fill out this list
+This warning might start out as ignore-by-default/opt-in, before graduating to warn by default and then to error by default.
