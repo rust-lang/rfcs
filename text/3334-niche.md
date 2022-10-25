@@ -192,10 +192,12 @@ However, multiple instances of the same identical type (e.g. `Option<T>` and
 niche or not). This permits a round-trip between such a value and a byte
 representation.
 
-Adding a niche to a type does not change the storage size of the type, even if
-the niche might otherwise allow storing fewer bytes. The type still allows
-obtaining mutable references to the field, which requires storing valid values
-using the same representation as those values would have had without the niche.
+Adding a niche to a type does not change the storage size, alignment, or other
+ABI details of the type, even if the niche might otherwise allow storing fewer
+bytes; it only changes the ABI of other types *containing* the type (e.g.
+`Option<T>`). The type still allows obtaining mutable references to the field,
+which requires storing valid values using the same representation as those
+values would have had without the niche.
 
 Declaring a niche *may* allow additional optimizations that assume the type
 cannot contain the niche values, though the compiler does not guarantee this.
