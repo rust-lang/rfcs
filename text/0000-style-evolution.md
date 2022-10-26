@@ -85,6 +85,9 @@ continuous-integration checks that check formatting.
 
 The Rust edition mechanism itself serves as prior art.
 
+`rustfmt` has a still-unstable option `version = "Two"` to opt into new
+formatting, though the exact changes this makes are not documented.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
