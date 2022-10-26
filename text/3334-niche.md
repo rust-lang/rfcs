@@ -130,11 +130,11 @@ representation of the field. For instance, a struct with a float field could
 specify one or more NaN values as a niche using the integer representation of
 those values.
 
-The range may be exclusive (`start..end`), inclusive (`start..=end`),
-open-ended (`start..`), open-start (`..end`), or open-start inclusive
+The range may be exclusive (`start..end`), inclusive (`start..=end`), bounded
+below (`start..`), bounded above (`..end`), or bounded above inclusive
 (`..=end`).
 
-Note that an open-start range on a signed field or floating-point field will
+Note that on a signed or floating-point field, a range bounded only above will
 include all values less than the upper bound, including any negative numbers
 less than the upper bound. For instance, a field of type `i8` with a niche
 range of `..2` will have as niche values `1`, `0`, `-1`, `-2`, ..., `-128`.
