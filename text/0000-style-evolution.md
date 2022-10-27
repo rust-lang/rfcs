@@ -36,10 +36,12 @@ style. The default Rust style varies by Rust edition. (Not every edition
 changes the Rust style, and thus some editions have identical default styles;
 Rust 2015, 2018, and 2021 all have the same default style.)
 
-By default, `rustfmt` and `cargo fmt` will use the same edition that the Rust
-code itself is configured to use. `cargo fmt` will pass `rustfmt` the edition
-specified in `Cargo.toml`; for direct invocation of `rustfmt`,
-`rustfmt.toml`/`.rustfmt.toml` can also specify the `edition`.
+Direct invocations of `rustfmt` obtain the edition used for parsing Rust code
+from the `edition` option in its configuration file (`rustfmt.toml` or
+`.rustfmt.toml`), or via the `--edition` command-line option; `cargo fmt`
+obtains the edition from the `edition` option in `Cargo.toml` and passes it to
+`rustfmt`. By default, `rustfmt` and `cargo fmt` will use the same edition for
+style as the Rust edition used for parsing.
 
 However, when transitioning between editions, projects may want to separately
 make and commit the changes for 1) transitioning to a new Rust edition and 2)
