@@ -103,13 +103,16 @@ Then to use it, you would need to call `close` to close the writer: if the write
 ```rust
 1:  fn main() -> Result<(), IoError> {
 2:      let mut writer = BufWriter::create(...)?;
-3:      writer.write("Hello")?;
-4:      writer.close_check_error()?
+3:      if let Error(e) = writer.write("Hello") {
+4:          writer.close_check_error()?;
+            return Error(e);
+        }
+5:      writer.close_check_error()?
         // Omitting the `close_check_error` call causes a compiler warning:
         // value writer should not be implicitly dropped; type BufWriter<...> does not implement Destruct.
-        // value created on line 2, scope ends on line 5.
+        // value created on line 2, scope ends on line 6.
         // last use does not consume value.
-5:  }
+6:  }
 ```
 
 If there is a `panic!` before the writer is closed, `Drop::drop` will be called as normal: in this case you don't have an opportunity to catch any errors reported by file close because you are already panicking.
