@@ -7,11 +7,7 @@
 # Summary
 [summary]: #summary
 
-Warn when a type that does not implement [`core::marker::Destruct`](https://doc.rust-lang.org/nightly/core/marker/trait.Destruct.html) is dropped.
-
-This extends the `const Drop` check of the [const_trait_impl](https://github.com/rust-lang/rust/issues/67792) proposal to non-const functions, though with a warning rather than an error in case of failure.
-
-Implement non-const `core::marker::Destruct` for most types in the standard library. Support `#[derive(Destruct)]`.
+Add an attribute `#[must_cleanup]` for structs and traits, and warn when a value of a type marked with the `#[must_cleanup]` attribute is dropped.
 
 # Motivation
 [motivation]: #motivation
@@ -22,29 +18,27 @@ A workaround used today is panicking on drop (a "drop bomb"), but this is a runt
 
 Unwinding panics are an exceptional case. It is important to handle them without breaking Rust's memory safety guarantees, and useful to allow types to customize their behavior when dropped because of unwinding. But silently and implicitly making every variable which is not consumed before the end of its scope do the same thing (you can check `thread::panicking`, but still) as when handling an unwinding panic is frustrating when the best-effort cleanup can you can do leaks memory, silently ignores errors, or sends a placeholder value. The current use of `drop` combines the exceptional case of unwinding with the extremely common case of ending a scope: we don't necessarily want to do the same thing for both, and don't need to use the API forced by the limitations of unwinding panic in the case of non-exceptional control flow.
 
-All of the above being said, breaking existing Rust code should be avoided. A warning (easy to turn off, easy to turn into a hard error, on a crate by crate or even finer grained level) achieves the purpose of alerting the user when they have accidentally dropped a type which very much does not want to be.
+All of the above being said, breaking existing Rust code should be avoided. A warning (easy to turn off, easy to turn into a hard error, on a crate by crate or even finer grained level) achieves the purpose of alerting the user when they have accidentally dropped a type which very much does not want to be. This warning should also be minimally invasive, and require small to no changes in existing Rust code.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## The `Destruct` Trait
+## The `#[must_cleanup]` attribute
 
-Most types take care of their own cleanup when they go out of scope. A `Vec` deallocates its storage, a `MutexGuard` unlocks the mutex, a `Rc` or `Arc` decrements the reference count, and so on, along with types like integers that don't need any cleanup. These types implement the `Destruct` trait, which means you can drop them whenever you want just by letting their scope expire, or calling `mem::drop`.
+Most types take care of their own cleanup when they go out of scope. A `Vec` deallocates its storage, a `MutexGuard` unlocks the mutex, a `Rc` or `Arc` decrements the reference count, and so on, along with types like integers that don't need any cleanup. These types can be dropped whenever you want just by letting their scope expire, or calling `mem::drop`.
 
-However, some types would much rather have an explicit step before they go away. This could take the form of a file that might fail to close and wants to tell you about it, or a request that needs your signature as the last step before completion (and you don't want to just forget about it accidentally), among other possibilities. Types that want an explicit final step do not implement the `Destruct` trait.
+However, some types would much rather have an explicit step before they go away. This could take the form of a file that might fail to close and wants to tell you about it, or a request that needs your signature as the last step before completion (and you don't want to just forget about it accidentally), among other possibilities. Types that want an explicit final step are marked with the `#[must_cleanup]` attribute.
 
-If a value of a type that does not implement the `Destruct` trait goes out of scope without being consumed (is dropped), by default a warning will occur. The warning will go away if you consume the value or return it. In the rare case that you actually want to leak an object, `mem::forget` works for all values.
+If a value of a type marked with the `#[must_cleanup]` attribute goes out of scope without being consumed (is dropped), a warning will occur. The warning will go away if you consume the value or return it. In the rare case that you actually want to leak an object, `mem::forget` works for all values.
 
-Unlike `Sized`, `Destruct` is not assumed by default for type parameters and associated types. If you are implementing a generic API and need to drop values implicitly, you should add the `Destruct` bound to your type variables. For concrete types, `#[derive(Destruct)]` works.
+## An example of a `#[must_cleanup]` type
 
-## Writing types that don't implement `Destruct`
-
-As an example of an API that might choose to make use of non-`Destruct` types, consider [`BufWriter`](https://doc.rust-lang.org/std/io/struct.BufWriter.html). Quoting from the documentation, "It is critical to call flush before `BufWriter<W>` is dropped. Though dropping will attempt to flush the contents of the buffer, any errors that happen in the process of dropping will be ignored. Calling flush ensures that the buffer is empty and thus dropping will not even attempt file operations." This is an example where the implicit drop leads to a footgun: rather than dropping, you want to call a method that first tries to flush, closes if successful, and if there was an error returns back to the caller to handle the error.
+As an example of an API that might choose to make use of `#[must_cleanup]`, consider [`BufWriter`](https://doc.rust-lang.org/std/io/struct.BufWriter.html). Quoting from the documentation, "It is critical to call flush before `BufWriter<W>` is dropped. Though dropping will attempt to flush the contents of the buffer, any errors that happen in the process of dropping will be ignored. Calling flush ensures that the buffer is empty and thus dropping will not even attempt file operations." This is an example where the implicit drop leads to a footgun: rather than dropping, you want to call a method that first tries to flush, closes if successful, and if there was an error returns back to the caller to handle the error.
 
 The relevant parts of the interface might look like:
 ```rust
 
-// BufWriter does not #[derive(Destruct]
+#[must_cleanup]
 pub struct BufWriter<W: Write>
 {
     inner: W, // the inner writer
@@ -56,9 +50,8 @@ impl<W: Write> Write for BufWriter<W> {
     fn flush(&mut self) -> Result<()>;
 }
 
+// For this example, we will assume that dropping the inner writer is how to close it. There are other reasonable choices here.
 impl<W: Write> Write for BufWriter<W>
-where
-    W: Destruct // For this example, we will assume that dropping the inner writer is how to close it. There are other reasonable choices here.
 {
     // On error, returns both the error code and the self parameter, which has not yet been closed.
     // The user can choose to try again, log the error, or do something else, and can even continue writing to this BufWriter<W>.
@@ -99,7 +92,7 @@ impl<W: Write> Drop for BufWriter<W> {
 }
 ```
 
-Then to use it, you would need to call `close` to close the writer: if the writer goes out of scope a warning will be issued, which users are recommended to treat as an error. This makes it easy to do the correct thing (handle the errors), and makes it so that ignoring errors on close is intentional, not an accident.
+Then to use it, you would need to call `close` (or `close_check_error` or `close_without_flush`) to close the writer: if the writer goes out of scope a warning will be issued. This makes it easy to do the correct thing (handle the errors), and makes sure that ignoring errors on close is intentional, not an accident.
 ```rust
 1:  fn main() -> Result<(), IoError> {
 2:      let mut writer = BufWriter::create(...)?;
@@ -109,7 +102,7 @@ Then to use it, you would need to call `close` to close the writer: if the write
         }
 5:      writer.close_check_error()?
         // Omitting the `close_check_error` call causes a compiler warning:
-        // value writer should not be implicitly dropped; type BufWriter<...> does not implement Destruct.
+        // value writer should not be implicitly dropped; type BufWriter<...> is marked #[must_cleanup].
         // value created on line 2, scope ends on line 6.
         // last use does not consume value.
 6:  }
@@ -122,30 +115,30 @@ Unsafe code can make no new assumptions.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-There is a new trait `core::marker::Destruct`, which supports `#[derive(Destruct)]`.
+There is a new attribute `#[must_cleanup]`, which can only be attached to structs and traits.
 
-Whenever a value is dropped, a constraint is added that the type of that value should implement `Destruct`.
+For each function, we compute the list of types which may be dropped (types may depend on generic parameters). Some types we can determine `#[must_cleanup]` or not immediately: types which only depend on lifetime parameters are always in this class. For each type which may be dropped, if we can determine that it is `#[must_cleanup]`, emit a warning explaining why the type may be dropped. If we can determine that it is not `#[must_cleanup]`, we do not need to do anything. For types we cannot determine `#[must_cleanup]` (which always depend on non-lifetime generic parameters), add them to a list associated with the function. This list gets propagated to callers, where we can substitute actual generic arguments for the generic parameters.
 
-*Unlike other traits*, when a `T: Destruct` constraint fails, we produce a warning rather than an error. (Note, currently we automatically succeed on constraints of the form `T: Destruct`.)
+The list of generic types which may be dropped for each function should be propagated to dependent crates. Furthermore, for each crate we can track if any `#[must_cleanup]` warnings were emitted, regardless of whether or not the crate author silenced them. Then we can emit a warning in dependent crates that their dependency did not follow strict `#[must_cleanup]` dicipline. This provides the guarantee that if there are no `#[must_cleanup]` warnings, then types marked with `#[must_cleanup]` will never be dropped except while unwinding.
 
-### Types with no drop glue but that do not implement `Destruct`.
+## Partial moves
 
-Even if no component of the type implements `Drop`, so there is no drop glue for the type, the compiler should still produce a warning if a type that does not implement `Destruct` is to be dropped. This impacts [the algorithm for elaborating open drops](https://rustc-dev-guide.rust-lang.org/mir/drop-elaboration.html#open-drops), which says "Fields whose type does not have drop glue are automatically Dead and need not be considered during the recursion." In this proposal, only fields that do not have drop glue but do implement `Destruct` can be automatically dead.
+Partial moves and destructuring are valid ways to clean up a struct marked with `#[must_cleanup]`.
+Internally, crates are expected to use these along with `mem::forget` to implement their public cleanup functions.
 
-This only applies if the computation of when to emit a warning happens during this algorithm. I believe `rustc` currently has a separate pass for `const Drop` checking, which might be a better place to extend to include this feature.
+Because destructuring is possible if all fields are public and partial moves are possible if any field is public, adding `#[must_cleanup]` to a struct with zero fields or any crate-public fields should itself produce a warning that users of the crate can clean up the type without going through the provided cleanup functions.
 
-Relevant previous PR: https://github.com/rust-lang/rust/pull/68943
+## Trait objects
 
-### Partial moves
+For traits, `#[must_cleanup]` means that `dyn Trait + ...` is `#[must_cleanup]`. For traits which are not object-safe, `#[must_cleanup]` is meaningless, and should warn.
 
-It should be possible to partially move out of a non-`Destruct` type that does not implement `Drop`. The semantics are the same as today, that any fields which are not moved get dropped (if any of those fields are themselves non-`Destruct`, throw a warning). Similarly destructuring should work.
-
-I would like private fields to block partial moves, but that seems to be a change from how Rust works today. Types that want to block partial moves may need a dummy `Drop` implementation. If the warning message is good enough, having a private non-`Destruct` field may be sufficient, as a warning will be produced if it is dropped as part of a public partial move.
+When a value is coerced into `dyn Trait`, if `Trait` is marked with `#[must_cleanup]`, treat the coercion as a drop of the initial type of the value.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* Because `Destruct` is not assumed by default, adapting crates to this feature potentially requires lots of lines of code changes, particularly to crates that commonly drop generic values.
+* Rust is expected to look at the implementation of functions to determine which types they may drop, and this information gets exported as part of the function interface.
+* Whether a trait object is `#[must_cleanup]` or not makes more sense as a modifier such as `dyn Trait + Destruct` rather than putting it on `Trait`, because different uses of trait objects need to drop or not.
 * These are not linear types. This does not eliminate the use of `mem::forget`, so APIs like thread join guards are still broken: unsafe code cannot rely on destructors of any kind to be run for safety.
 
 # Rationale and alternatives
@@ -160,37 +153,25 @@ Miscelaneous, non-exhaustive collection of similar prior proposals:
 * https://github.com/rust-lang/rfcs/issues/2642 (an approach with a variation on `#[must_use]`)
 * https://internals.rust-lang.org/t/pre-pre-rfc-nodrop-marker-trait/15682
 
+## Using a trait
+
+The trait `core::marker::Destruct` does a similar job tracking `const` drop types. General feeling was that adding this lint to the type system was too invasive for not enough benefit.
+
+The computation of which generic types may be dropped by a generic function, and the propagation of that information, is extremely similar to the trait system.
+
+## Why not an error?
+
+Making this an error *requires* crates to adapt, and as such is a breaking change. By making this a warning, we do not change the compiler behavior except for diagnostics. Feedback on previous proposals strongly indicated that a warning was preferrable.
+
 ## Unwinding
 
 This is not a proposal for linear types, although hopefully this proposal brings some of the advantages people are looking for in linear types.
 
 How to deal with unwinding is one of the issues that has complicated previous proposals for linear types in Rust. When unwinding is possible, at almost any point the stack could need to be cleaned up: what is to be done with linear types in this case? In postponed RFC https://github.com/rust-lang/rfcs/issues/814, a `Finalize` trait was proposed that behaves identically to `Drop` but is only called in the unwinding case. Here we propose simply reusing the `Drop` trait for custom cleanup in both the unwinding and scope drop cases: If you need different behavior you can check `thread::panicking`.
 
-This is a bit of a "punt": we still allow non-`Destruct` types to be scooped up and disposed of by panic at any point, without any compiler-emitted warnings. I argue that doing so makes integrating `Destruct` for gating implicit drops into Rust much less difficult than trying to forbid contexts where panic is possible.
+This is a bit of a "punt": we allow `#[must_cleanup]` types to be scooped up and disposed of by panic at any point, without any compiler-emitted warnings. This is much less difficult than trying to forbid contexts where panic is possible.
 
 Types can individually decide whether they want to abort, to leak, or to attempt a best-effort cleanup in the exceptional case of unwinding while being confident that users will not accidentally default to this suboptimal behavior.
-
-## `mem::forget`
-[memforget]: #memforget
-
-Should `mem::forget::<T>` require `T: Destruct`? I don't believe so.
-
-If the bound `Destruct` is added to all type parameters and associated types in the standard library, I do not see a way to write
-`mem::forget` without using `unsafe`. However, I do not think that this is a promise we want to make.
-
-There are many APIs for which obvious generalization to non-`Destruct` types allows writing `mem::forget` in safe code. For example, while `Rc` needs to destroy the value it is holding at an unpredictable time, as long as we provide a method `fn destroy(self) -> ()` this is a seemingly sound system. But in the case of a reference cycle, `destroy` never gets called, so choosing `fn destroy(self) { panic!() }` will allow writing `mem::forget` in safe code.
-
-As another example, it seems eminently reasonable to pass non-`Destruct` values to a separate thread: the new thread takes ownership which entails responsibility for cleaning up. But if the new thread goes into an infinite loop, then the value never gets cleaned up and we can again safely forget values.
-
-For these reasons, I argue that `mem::forget` should not require `T: Destruct`.
-
-## Why a trait?
-
-Rather than changing the type system, we could consider using a lint to discover when a type we annotate gets implicitly dropped. However, to do this in a compositional way requires computing for generic functions which types they may implicitly drop, and we would want to propagate this information across crates. At this point, it seems clear that adding a lint for implicitly dropped values would require computing and communicating much the same data as using a trait, and using a trait gives a systematic way of integrating the feature into the language.
-
-## Why not an error?
-
-Making this an error *requires* crates to adapt, and as such is a breaking change. By making this a warning, we do not change the compiler behavior except for diagnostics. Feedback on previous proposals strongly indicated that a warning was preferrable.
 
 ## Branded types
 
@@ -198,9 +179,9 @@ Branded types allow the function return type to require the production of a valu
 
 ## What are the consequences of not doing this?
 
-If we do not adopt this proposal, types for which implicit drop is a footgun will remain reliant on runtime checking. The case of accidental async future cancellation by drop has been brought up. Another example of an API that would benefit from non-`Destruct` is when you are expected to eventually complete every recieved request with a completion status (the example I am familiar with is Windows Driver Framework requests: https://docs.microsoft.com/en-us/windows-hardware/drivers/wdf/completing-i-o-requests).
+If we do not adopt this proposal, types for which implicit drop is a footgun will remain reliant on runtime checking. The case of accidental async future cancellation by drop has been brought up. Another example of an API that would benefit from `#[must_cleanup]` is when you are expected to eventually complete every recieved request with a completion status (the example I am familiar with is Windows Driver Framework requests: https://docs.microsoft.com/en-us/windows-hardware/drivers/wdf/completing-i-o-requests).
 
-The issue of disabling implicit drops seems to come up frequently enough to demonstrate some level of desire for this feature in the Rust community. This feature does require language support: I do not believe it is possible to faithfully emulate compile-time checked `Destruct` without compiler support.
+The issue of disabling implicit drops seems to come up frequently enough to demonstrate some level of desire for this feature in the Rust community.
 
 # Prior art
 [prior-art]: #prior-art
@@ -210,15 +191,16 @@ Vale has `!DeriveStructDrop`, which looks like a similar feature. This blog post
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## `Destruct` in the Standard Library
-[destruct-in-the-standard-library]: #destruct-in-the-standard-library
+## Destructuring a zero-field struct
 
-Modifying the standard library should give a sense of how intrusive this feature is. The question comes down to how often do functions drop values of generic type? A prototype implementation that ignores the complexity of open drops and just errors on static drops of non-`Destruct` types should give a good sense of this.
-
-Are there any types in the standard library that should not implement `Destruct`?
+If a struct has no fields, can it still be destructured? Or does the whole struct get dropped, which would trigger a warning? This affects which structs are private enough for `#[must_cleanup]` to make sense for.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Specify interface
+
+Add a way to specify the interface of a generic function, perhaps an attribute `#[may_drop(Type1, Type2, ...)]` for functions to specify a superset of the list of generic types they expect the compiler to infer.
 
 ## Warning default behavior
 
