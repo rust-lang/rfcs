@@ -47,7 +47,10 @@ However, when transitioning between editions, projects may want to separately
 make and commit the changes for 1) transitioning to a new Rust edition and 2)
 transitioning to a new style edition. To allow for this, `rustfmt` also allows
 configuring the style edition directly, via a separate `style_edition`
-configuration option, or `--style-edition` command-line option.
+configuration option, or `--style-edition` command-line option. `style_edition`
+or `--style-edition`, if set, always overrides `edition` or `--edition` for the
+purposes of styling, though `edition` or `--edition` still determines the
+edition for the purposes of parsing Rust code.
 
 Note that rustfmt may not necessarily support all combinations of Rust edition
 and style edition; in particular, it may not support using a style edition that
