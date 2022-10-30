@@ -127,6 +127,55 @@ Trait: 0
 
 Supercalls are permitted anywhere, on the basis that the default implementation can only call other trait methods which the caller would be able to call anyway.
 
+## Interaction with specialization
+
+Supercalls always call the method which would have been called if the overriding implementation (and anything that overrides them) were not present. To specify other impls, universal function call syntax is extended to support naming specific impls.
+
+In general, impls are named by dropping `impl`, wrapping the signature in angle brackets, and specifying the values of the parameters. For example, `impl<T1, T2, ...> Trait for SomeType where T1: W1, T2: W2, ...` in a concrete context where `T1=C1`, `T2=C2`, ... can be named with `<<T1=C1, T2=C2, ...> Trait for SomeType where T1: W1, T2: W2, ...`. These match impls semantically rather than syntactically, i.e. `<<T: Display=Struct> Trait for T>` is equivalent to `<<T=Struct> Trait for T: Display>`.
+
+`<Struct as Trait>` names the most specific impl.
+
+Given:
+
+```
+trait Trait {
+  name(&self) -> &'static str {"Trait"}
+}
+
+impl<T: Display> Trait for T {
+  default name(&self) -> &'static str {"Display"}
+}
+
+impl<T: Display> Trait for Vec<T> {
+  default name(&self) -> &'static str {"Vec<Display>"}
+}
+
+impl Trait for Vec<String> {
+  name(&self) -> &'static str {"Vec<String>"}
+}
+```
+
+Then within a `Vec<String>` impl:
+
+- These evaluate to "Vec<String>":
+  - `self.name()`
+  - `<Vec<String> as Trait>::name(self)`
+  - `<<T=String> Trait for T>::name(self)`
+- These evaluate to "Vec<Display>":
+  - `self.super.name()`
+  - `<Vec<String> as Trait>::super::name(self)`
+  - `<<T: Display=String> Trait for Vec<T>>::name(self)`
+  - `<<T=String> Trait for Vec<T> where T: Display>::name(self)`
+- These evaluate to "Display":
+  - `self.super.super.name()`
+  - `<Vec<String> as Trait>::super::super::name(self)`
+  - `<<T: Display=Vec<String>> Trait for T>::name(self)`
+  - `<<T=Vec<String>> Trait for T where T: Display>::name(self)`
+- These evaluate to "Trait":
+  - `self.super.super.super.name()`
+  - `<Vec<String> as Trait>::super::super::super::name(self)`
+  - `<<T=Vec<String>> Trait for T>::name(self)`
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -142,6 +191,23 @@ Other syntax was considered, such as:
 - `Trait::method(self)`, `<Trait>::method(self)`: These are already valid and call the overriding implementation.
 - `<super as Trait>::method(self)`: When there is no `self` receiver (i.e. `<super as Trait>::method()`), it's not clear which concrete type is used. This becomes relevant if the default implementation calls another method in the same trait, which would then need to resolve to its overridden implementation.
 - `<Struct::super as Trait>::foo(self)`: This could be interpeted as referencing the supertype of `Struct`.
+- `<<T=Struct> Trait for T>` (dropping constraints): Given impls such as:
+
+  ```
+  impl<T: Display> Trait for T {...}
+  impl<T: Display+Clone> Trait for T {...}
+  ```
+
+  then syntax like `<<T=Struct> Trait for T>` could not distinguish between these, but `<<T: Display=Struct> for Trait>` and `<<T: Display+Clone=Struct> for Trait>` can.
+- `<Struct as Trait where Struct: Display>::name(self)`: This is not future-proof if specialization were expanded to allow the following:
+
+  ```
+  impl<T: Display, U: Clone> Trait for (T, U) {...}
+  impl<T: Clone, U: Display> Trait for (T, U) {...}
+  impl Trait for (String, String) {...}
+  ```
+
+  then `<(String, String) as Trait where String: Clone+Display>` is amiguous.
 
 In any case, something like universal function call syntax will be necessary in some cases to resolve ambiguity.
 
