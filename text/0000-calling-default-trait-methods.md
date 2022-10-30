@@ -56,7 +56,7 @@ This requires the trait author to expose the default implementations intentional
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Trait implementations can call the default implementation using `self.super.foo()`, or when ambiguous, `<Struct::super as Trait>::foo(self)`.
+Trait implementations can call the default implementation using `self.super.foo()`, or when ambiguous, `<Struct as Trait>::super::foo(self)`.
 
 Given a trait like:
 
@@ -77,7 +77,7 @@ impl Visit for MyVisit {
     fn visit_block(&mut self, i: &Block) {
         self.super.visit_block(i);
         // Alternatively:
-        <MyVisit::super as Visit>::visit_block(self, i);
+        <MyVisit as Visit>::super::visit_block(self, i);
         ...
     }
 }
@@ -141,6 +141,7 @@ Other syntax was considered, such as:
 - `<super::Trait>::method(self)`: Using `super::` as a prefix could conflict with the existing semantics of `super`.
 - `Trait::method(self)`, `<Trait>::method(self)`: These are already valid and call the overriding implementation.
 - `<super as Trait>::method(self)`: When there is no `self` receiver (i.e. `<super as Trait>::method()`), it's not clear which concrete type is used. This becomes relevant if the default implementation calls another method in the same trait, which would then need to resolve to its overridden implementation.
+- `<Struct::super as Trait>::foo(self)`: This could be interpeted as referencing the supertype of `Struct`.
 
 In any case, something like universal function call syntax will be necessary in some cases to resolve ambiguity.
 
