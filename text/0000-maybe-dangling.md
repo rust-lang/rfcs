@@ -128,24 +128,22 @@ The standard library contains a type `MaybeDangling<P>` that is safely convertib
 "Behavior considered undefined" is adjusted as follows:
 
 ```diff
-- * Breaking the pointer aliasing rules. `&mut T` and `&T` follow LLVM’s
--   scoped noalias model, except if the &T contains an UnsafeCell<U>.
-+ * Breaking the pointer aliasing rules. `Box<T>`, `&mut T` and `&T` follow LLVM’s
-+   scoped noalias model, except for `UnsafeCell<_>` inside the `T`. 
-+   References must not be dangling while they are live, again except for
-+   `UnsafeCell<_>` inside the `T`. (The exact liveness duration is not
-+   specified, but it is certainly upper-bounded by the syntactic lifetime
-+   assigned by the borrow checker. When a reference is passed to a function,
-+   it is live at least as long as that function call.) All this also
-+   applies when values of these types are passed in a field of a compund
-+   type, except behind pointer indirections and when the pointers or
-+   references are inside `MaybeDangling`.
+  * Breaking the [pointer aliasing rules]. `Box<T>`, `&mut T` and `&T` follow LLVM’s
+    scoped noalias model, except if the `&T` contains an [`UnsafeCell<U>`].
+    References must not be dangling while they are live. (The exact liveness
+    duration is not specified, but it is certainly upper-bounded by the syntactic
+    lifetime assigned by the borrow checker. When a reference is passed to a
+    function, it is live at least as long as that function call, again except if
+    the `&T` contains an [`UnsafeCell<U>`].) All this also applies when values of
+    these types are passed in a (nested) field of a compound type, but not behind
+-   pointer indirections.
++   pointer indirections and also not for values inside a `MaybeDangling<_>`.
 [...]
- * Producing an invalid value, even in private fields and locals. 
-   "Producing" a value happens any time a value is assigned to or 
-   read from a place, passed to a function/primitive operation or 
-   returned from a function/primitive operation. The following 
-   values are invalid (at their respective type):
+   * Producing an invalid value, even in private fields and locals.
+     "Producing" a value happens any time a value is assigned to or
+     read from a place, passed to a function/primitive operation or
+     returned from a function/primitive operation. The following
+     values are invalid (at their respective type):
 [...]
 -  * A reference or Box<T> that is dangling, unaligned, or points to an
 -    invalid value.
@@ -155,7 +153,7 @@ The standard library contains a type `MaybeDangling<P>` that is safely convertib
 +    to an invalid value, it is itself invalid.
 ```
 
-*Note: this might seem to alter the aliasing rules compared to the current reference more than just by adding a `MaybeDangling` exception (specifically when it talks about the liveness duration of references), but really it just clarifies semnatics we have applied since Rust 1.0, and incorporates [#98017](https://github.com/rust-lang/rust/pull/98017).*
+*Note: this diff is based on [an updated version of the referece](https://github.com/rust-lang/reference/pull/1290).*
 
 Another way to think about this is: most types only have "by-value" requirements for their validity, i.e., they only require that the bit pattern be of a certain shape.
 References and boxes are the sole exception, they also require some properties of the memory they point to (e.g., they need to be dereferenceable).
