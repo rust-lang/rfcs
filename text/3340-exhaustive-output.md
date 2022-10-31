@@ -1,7 +1,7 @@
 - Feature Name: exhaustive_match_output
 - Start Date: 2022-10-31
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3340](https://github.com/rust-lang/rfcs/pull/3340)
+- Rust Issue: [rust-lang/rust#103818](https://github.com/rust-lang/rust/issues/103818)
 
 # Summary
 [summary]: #summary
