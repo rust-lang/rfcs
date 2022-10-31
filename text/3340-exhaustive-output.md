@@ -66,6 +66,8 @@ enum which it returns.
 \* Please note this is **not** "all possible values", it is "all possible variants". This means that if an enum variant is a tuple or struct variant, it is not necessary
 to exhaustively populate the fields of the variant. This lint will only trigger if a variant is missing from the possible outputs of the match statement.
 
+Applying `#[exhaustive_output]` to anything other than a `match` statement will produce an error.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
