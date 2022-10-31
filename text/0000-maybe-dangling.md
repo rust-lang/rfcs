@@ -240,6 +240,7 @@ Notice that `UnsafeCell` acts "behind references" while `MaybeDangling`, like `M
   `MaybeDangling` is somewhat misleading since the safety invariant still requires everything to be dereferenceable, only the validity invariant is relaxed.
   This is a bit like `ManuallyDrop` which supports dropping via an `unsafe` function but its safety invariant says that the data is not dropped (so that it can implement `Deref` and `DerefMut` and a safe `into_inner`).
   Furthermore, the type also allows maybe-aliasing references, not just maybe-dangling references.
+- Should `MaybeDangling` implement `Deref` and `DerefMut` like `ManuallyDrop` does, or should accessing the inner data be more explicit since that is when the aliasing and validity requirements do come back in full force?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
