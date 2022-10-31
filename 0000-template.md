@@ -2,11 +2,11 @@
 - Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
 - RFC PR: [#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 - Team: (fill me in with the team or teams responsible for this RFC)
 - Keywords: (fill me in with keywords which may be useful when searching for this RFC)
-- Previous RFCs: #0000 (fill me in with RFC numbers for any RFCs this RFC supersedes, deprecates, or extends)
-- Previous discussion: (fill me in with links to previous discussions such as internals.rust-lang.org or Zulip threads, or issues)
+- Previous RFCs: [#0000](https://github.com/rust-lang/rfcs/pull/0000) (fill me in with RFC numbers for any RFCs this RFC supersedes, deprecates, or extends)
+- Previous discussion: (fill me in with links to recent previous discussions such as internals.rust-lang.org or Zulip threads, or issues. Don't worry about being complete here, you only need to include discussion which is useful context for discussing this RFC)
 
 # Summary
 [summary]: #summary
@@ -14,14 +14,14 @@
 One paragraph explanation of the feature.
 
 # Motivation and background
-[motivation]: #motivation
+[motivation-and-background]: #motivation-and-background
 
 Why are we doing this? What use cases does it support? What is the expected outcome? Why are existing solutions not good enough? If possible, include data to support your claims. Include any background context useful for understanding the RFC.
 
 # Detailed explanation
 [detailed-explanation]: #detailed-explanation
 
-Explain the proposal in detail. Specify the proposal as it would be experienced by a user (usually a Rust developer) and so that it can be understood by an implementer. That generally means:
+Explain the proposal in detail. Specify the proposal as it would be experienced by a user (usually a developer using Rust) and so that it can be understood by an implementer. That generally means:
 
 - Introducing new named concepts.
 - Explaining the feature with examples.
@@ -38,12 +38,12 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 # Rationale
 [rationale]: #rationale
 
-Discuss the *why* of your proposal. You might want to include the following:
+Discuss *why* your proposal is the way it is. You might want to include the following:
 
 - What are the trade-offs, drawbacks, and risks of this design?
 - Why is this design the best in the space of possible designs?
+- What alternative designs have been considered and what is the rationale for not choosing them?
 - How does this design fit into the bigger picture?
-- What other designs have been considered and what is the rationale for not choosing them?
 - What is the impact of not doing this?
 
 # Prior art

@@ -2,10 +2,10 @@
 - Feature Name: N/A
 - Start Date: 2022-10-28
 - RFC PR: [#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: N/A
+- Tracking Issue: N/A
 - Team: core
 - Keywords: process, meta, RFC
-- Previous RFCs: #6, #32, #1636, #2059, #2333, #2561
+- Previous RFCs: [#6](https://github.com/rust-lang/rfcs/pull/6), [#32](https://github.com/rust-lang/rfcs/pull/32), [#1636](https://github.com/rust-lang/rfcs/pull/1636), [#2059](https://github.com/rust-lang/rfcs/pull/2059), [#2333](https://github.com/rust-lang/rfcs/pull/2333), [#2561](https://github.com/rust-lang/rfcs/pull/2561)
 - Previous discussion: N/A
 
 # Summary
@@ -16,7 +16,7 @@ Improve the RFC template by adding more metadata, making the structure more flex
 Note that this proposal uses the proposed template as a bootstrap example.
 
 # Motivation and background
-[motivation]: #motivation
+[motivation-and-background]: #motivation-and-background
 
 Rust's RFC process has existed since before the 1.0 release and is the primary decision-making process in the community. Over time the process has evolved and we've iterated on the template used for defining RFC proposals. This RFC proposes another iteration to address some weaknesses in the current template. These weaknesses have either revealed themselves over time, or have become worse as the volume of RFCs has grown, and as RFCs have tended to become more involved.
 
@@ -145,7 +145,7 @@ The RFC template has always been part of the RFC process but has changed over ti
 * #2333: adds a 'prior art' section,
 * #2561: adds a 'future possibilities' section.
 
-My impression is that the guide-level/reference-level split has not worked out for us. A;though it has had some benefits in thinking about the way new features are documented, these are outweighed by the drawbacks (discussed above). Adding sections for drawbacks, alternatives, and rationale have all been beneficial, but with the benefit of hindsight, these would be better as one section rather than three. Although no one change is responsible, we can see that the effect of the evolution over time has led to the RFC template having many fine-grained sections.
+My impression is that the guide-level/reference-level split has not worked out for us. Although it has had some benefits in thinking about the way new features are documented, these are outweighed by the drawbacks (discussed above). Adding sections for drawbacks, alternatives, and rationale have all been beneficial, but with the benefit of hindsight, these would be better as one section rather than three. Although no one change is responsible, we can see that the effect of the evolution over time has led to the RFC template having many fine-grained sections.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
