@@ -14,7 +14,7 @@ applicable to match statements that don't return an enum type.
 [motivation]: #motivation
 
 Oftentimes it is necessary to convert unrestricted values into enum variants. Unrestricted values can include integers, strings, UUIDs, even other much larger enums.
-When adding a new variant to the output enum variant, it's possible the author forgot to update the match statement which converts from unrestricted values, thus leaving
+When adding a new variant to the output enum, it's possible the author forgot to update the match statement which converts from unrestricted values, thus leaving
 the new enum variant unusable. This attribute would prevent this scenario, by alerting the author that they didn't update the input match statement.
 
 # Guide-level explanation
