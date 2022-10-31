@@ -19,7 +19,7 @@ Sometimes one has to work with references or boxes that either are already deall
 This comes up particularly often with `ManuallyDrop`.
 For example, the following code is UB at the time of writing this RFC:
 
-```rust=
+```rust
 fn id<T>(x: T) -> T { x }
 
 fn unsound(x: Box<i32>) 
@@ -40,7 +40,7 @@ There exist more complex versions of this problem, relating to a subtle aspect o
 when a reference is passed to a function as an argument (including nested in a struct), then that reference must remain live throughout the function.
 (In LLVM terms: we are annotating that reference with `dereferenceable`, which means "dereferenceable for the entire duration of this function call"). In [issue #101983](https://github.com/rust-lang/rust/issues/101983), this leads to a bug in `scoped_thread`.
 There we have a function that invokes a user-supplied `impl FnOnce` closure, roughly like this:
-```rust=
+```rust
 // Not showing all the `'lifetime` tracking, the point is that
 // this closure might live shorter than `thread`.
 fn thread(control: ..., closure: impl FnOnce() + 'lifetime) {
@@ -64,7 +64,7 @@ However, note that `thread` continues to run even after `signal_done`! Now consi
 
 As a third example, consider a type that wants to store a "pointer together with some data borrowed from that pointer", like the `owning_ref` crate. This will usually boil down to something like this:
 
-```rust=
+```rust
 unsafe trait StableDeref: Deref {}
 
 struct OwningRef<U, T: StableDeref<Target=U>> {
@@ -98,7 +98,7 @@ This means that the first example is actually fine:
 the dangling `Box` was passed inside a `ManuallyDrop`, so there is no UB.
 
 The 2nd example can be fixed by passing the closure in a `MaybeDangling`:
-```rust=
+```rust
 // Argument is passed as `MaybeDangling` since we might actually keep 
 // it around after its lifetime ends (at which point the caller can 
 // start dropping memory it points to).
@@ -111,7 +111,7 @@ fn thread(control: ..., closure: MaybeDangling<impl FnOnce() + 'lifetime>) {
 
 The 3rd example can be fixed by storing the `buffer` inside a `MaybeDangling`, which disables its aliasing requirements:
 
-```rust=
+```rust
 struct OwningRef<U, T: StableDeref<Target=U>> {
     buffer: MaybeDangling<T>,
     ref_: NonNull<U>, // conceptually borrows from `buffer`.
