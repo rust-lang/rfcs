@@ -105,12 +105,13 @@ merged into the RFC repository as a markdown file. At that point the RFC is
 
   - Fork the RFC repo [RFC repository]
   - Copy `0000-template.md` to `text/0000-my-feature.md` (where "my-feature" is
-    descriptive). Don't assign an RFC number yet; This is going to be the PR
-    number and we'll rename the file accordingly if the RFC is accepted.
+    descriptive). Don't assign an RFC number yet; this is going to be the PR
+    number.
   - Fill in the RFC. Put care into the details: RFCs that do not present
     convincing motivation, demonstrate lack of understanding of the design's
     impact, or are disingenuous about the drawbacks or alternatives tend to
-    be poorly-received.
+    be poorly-received. Feel free to alter this template to make it more
+    appropriate for your proposal.
   - Submit a pull request. As a pull request the RFC will receive design
     feedback from the larger community, and the author should be prepared to
     revise it in response.
