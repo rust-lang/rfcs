@@ -49,7 +49,7 @@ Note that if a function in a trait is written as an `async fn`, it must also be 
 ```rust
 impl Service for MyService {
     fn request(&self, key: i32) -> impl Future<Output = Response> {
-        async {
+        async move {
             ...
         }
     }
@@ -71,7 +71,7 @@ impl Service for MyService {
     where
         Self: 'a;
     fn request<'a>(&'a self, key: i32) -> RequestFut<'a> {
-        async { ... }
+        async move { ... }
     }
 }
 ```
