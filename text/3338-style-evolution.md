@@ -56,9 +56,8 @@ Note that rustfmt may not necessarily support all combinations of Rust edition
 and style edition; in particular, it may not support using a style edition that
 differs by more than one step from the Rust edition.
 
-The current version of the style guide will describe the latest Rust edition.
-Each distinct past style will have a corresponding archived version of the
-style guide. Note that archived versions of the style guide may not necessarily
+The style team will maintain distinct versions of the style guide for each style
+edition. Note that archived versions of the style guide may not necessarily
 document formatting for newer Rust constructs that did not exist at the time
 that version of the style guide was archived.
 
