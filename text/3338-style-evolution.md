@@ -56,6 +56,12 @@ Note that rustfmt may not necessarily support all combinations of Rust edition
 and style edition; in particular, it may not support using a style edition that
 differs by more than one step from the Rust edition.
 
+New style editions will be initially introduced as nightly-only, to make them
+available for testing; such nightly-only editions will produce an error if
+requested in stable rustfmt. Nightly versions of style editions are subject to
+change and do not provide stability guarantees. New style editions will get
+stabilized contemporaneously with the corresponding Rust edition.
+
 The style team will maintain distinct versions of the style guide for each style
 edition. Note that archived versions of the style guide may not necessarily
 document formatting for newer Rust constructs that did not exist at the time
@@ -87,7 +93,8 @@ continuous-integration checks that check formatting.
 # Prior art
 [prior-art]: #prior-art
 
-The Rust edition mechanism itself serves as prior art.
+The Rust edition mechanism itself serves as prior art, as does the mechanism of
+nightly features remaining subject to change until stabilization.
 
 `rustfmt` has a still-unstable option `version = "Two"` to opt into new
 formatting, though the exact changes this makes are not documented.
