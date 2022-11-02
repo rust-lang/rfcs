@@ -99,6 +99,9 @@ nightly features remaining subject to change until stabilization.
 `rustfmt` has a still-unstable option `version = "Two"` to opt into new
 formatting, though the exact changes this makes are not documented.
 
+`rustfmt`'s stability guarantees are documented in [RFC
+2437](https://github.com/rust-lang/rfcs/pull/2437/).
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
