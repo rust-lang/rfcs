@@ -124,6 +124,7 @@ As long as the `buffer` field is not used, the pointer stored in `ref_` will rem
 [reference-level-explanation]: #reference-level-explanation
 
 The standard library contains a type `MaybeDangling<P>` that is safely convertible with `P` (i.e., the safety invariant is the same), and that has all the same niches as `P`, but that does allow passing around dangling boxes and references within unsafe code.
+`MaybeDangling` propagates auto traits and has (at least) `derive(Copy, Clone, Debug)`.
 
 "Behavior considered undefined" is adjusted as follows:
 
