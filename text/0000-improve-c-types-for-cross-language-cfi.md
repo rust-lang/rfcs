@@ -52,18 +52,19 @@ user-defined types using `repr(transparent)` to be used in extern "C" function
 types indirectly called across the FFI boundary when cross-language CFI support
 is needed, and keeping the existing C-like type aliases.
 
+The new set of C types will make indirect calls to extern "C" function types
+across the FFI boundary work when CFI is enabled. These indirect calls will
+continue to not work when CFI is enabled unless the new set of C types are used.
+
 These are not backward-compatibility breaking changes because the Rust compiler
 currently does not support cross-language CFI (i.e., extern "C" function types
 indirectly called across the FFI boundary when CFI is enabled).
 
-This example explains the issue and the solution this RFC proposes:
+For example:
 
 example/src/main.rs
 ```rust
-// This RFC proposes changing
 use std::ffi::c_long;
-// To use std::ffi::cfi::c_long so both the Rust compiler and Clang use the same
-// encoding and the all indirect calls in this example work when CFI is enabled.
 
 #[link(name = "foo")]
 extern "C" {
@@ -117,6 +118,102 @@ indirect_call_from_c(void (*fn)(long), long arg)
 }
 ```
 
+Will need to be changed to:
+
+example/src/main.rs
+```rust
+use std::ffi::c_long;
+use std::ffi::cfi;
+
+#[link(name = "foo")]
+extern "C" {
+    fn hello_from_c(_: cfi::c_long);
+    fn indirect_call_from_c(f: unsafe extern "C" fn(cfi::c_long), arg: c_long);
+}
+
+unsafe extern "C" fn hello_from_rust(_: cfi::c_long) {
+    println!("Hello, world!");
+}
+
+unsafe extern "C" fn hello_from_rust_again(_: cfi::c_long) {
+    println!("Hello from Rust again!\n");
+}
+
+fn indirect_call(f: unsafe extern "C" fn(cfi::c_long), arg: c_long) {
+    unsafe { f(cfi::c_long(arg)) }
+}
+
+fn main() {
+    // This will continue to work
+    indirect_call(hello_from_rust, 1);
+    // This will work both when using rustc LTO and when using (proper) LTO
+    // because the Rust compiler and Clang will use the same encoding for
+    // hello_from_c and the test at the indirect call site at indirect_call.
+    indirect_call(hello_from_c, 2);
+    // This will work because the Rust compiler and Clang will use the same
+    // encoding for hello_from_rust_again and the test at the indirect call site
+    // at indirect_call_from_c.
+    unsafe {
+        indirect_call_from_c(hello_from_rust_again, 3);
+    }
+}
+```
+
+example/src/foo.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+void
+hello_from_c(long arg)
+{
+    printf("Hello from C!\n");
+}
+
+void
+indirect_call_from_c(void (*fn)(long), long arg)
+{
+    fn(arg);
+}
+```
+
+Direct calls to extern "C" function types across the FFI boundary, whether CFI
+is enabled or disabled, will continue to work whether Rust integer types or C
+type aliases are used.
+
+For example:
+
+example/src/main.rs
+```rust
+// Optionally, use std::ffi::c_long;
+
+#[link(name = "foo")]
+extern "C" {
+    fn hello_from_c(_: i64);
+    // Or fn hello_from_c(_: c_long);
+}
+
+fn main() {
+    unsafe { hello_from_c(1); }
+}
+```
+
+example/src/foo.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+void
+hello_from_c(long arg)
+{
+    printf("Hello from C!\n");
+}
+```
+
+Will continue to work when `fn hello_from_c(_: i64)` or `fn hello_from_c(_:
+c_long)` represents a `void hello_from_c(long arg)` in an LP64 or equivalent
+data model.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -161,7 +258,7 @@ equivalent data model.
 
 For cross-language LLVM CFI support, the Rust compiler must be able to identify
 and correctly encode C types in extern "C" function types indirectly called
-across the FFI boundary when forward-edge control flow protection is enabled.
+across the FFI boundary when CFI is enabled.
 
 For convenience, Rust provides some C-like type aliases for use when
 interoperating with foreign code written in C, and these C type aliases may be
@@ -187,18 +284,19 @@ user-defined types using `repr(transparent)` to be used in extern "C" function
 types indirectly called across the FFI boundary when cross-language CFI support
 is needed, and keeping the existing C-like type aliases.
 
+The new set of C types will make indirect calls to extern "C" function types
+across the FFI boundary work when CFI is enabled. These indirect calls will
+continue to not work when CFI is enabled unless the new set of C types are used.
+
 These are not backward-compatibility breaking changes because the Rust compiler
 currently does not support cross-language CFI (i.e., extern "C" function types
 indirectly called across the FFI boundary when CFI is enabled).
 
-This example explains the issue and the solution this RFC proposes in detail:
+For example:
 
 example/src/main.rs
 ```rust
-// This RFC proposes changing
 use std::ffi::c_long;
-// To use std::ffi::cfi::c_long so both the Rust compiler and Clang use the same
-// encoding and the all indirect calls in this example work when CFI is enabled.
 
 #[link(name = "foo")]
 extern "C" {
@@ -213,7 +311,7 @@ extern "C" {
 
     // This declaration would have the type id "_ZTSFvPFvlElE", but is encoded
     // as either "_ZTSFvPFvu3i32ES_E" (compressed) or "_ZTSFvPFvu3i64ES_E"
-    // (compressed), similarly to the hello_from_c declaration above--this can
+    // (compressed), similarly to the hello_from_c declaration above--this may
     // be ignored for the purposes of this example.
     fn indirect_call_from_c(f: unsafe extern "C" fn(c_long), arg: c_long);
 }
@@ -234,7 +332,7 @@ unsafe extern "C" fn hello_from_rust_again(_: c_long) {
 
 // This definition would also have the type id "_ZTSFvPFvlElE", but is encoded
 // as either "_ZTSFvPFvu3i32ES_E" (compressed) or "_ZTSFvPFvu3i64ES_E"
-// (compressed), similarly to the hello_from_c declaration above--this can be
+// (compressed), similarly to the hello_from_c declaration above--this may be
 // ignored for the purposes of this example.
 fn indirect_call(f: unsafe extern "C" fn(c_long), arg: c_long) {
     // This indirect call site tests whether the destinatin pointer is a member
@@ -248,7 +346,7 @@ fn indirect_call(f: unsafe extern "C" fn(c_long), arg: c_long) {
     unsafe { f(arg) }
 }
 
-// This definition has the type id "_ZTSFvvE"--this can be ignored for the
+// This definition has the type id "_ZTSFvvE"--this may be ignored for the
 // purposes of this example.
 fn main() {
     // This demonstrates an indirect call within Rust-only code using the same
@@ -301,7 +399,7 @@ hello_from_c(long arg)
     printf("Hello from C!\n");
 }
 
-// This definition has the type id "_ZTSFvPFvlElE"--this can be ignored for the
+// This definition has the type id "_ZTSFvPFvlElE"--this may be ignored for the
 // purposes of this example.
 void
 indirect_call_from_c(void (*fn)(long), long arg)
@@ -316,13 +414,157 @@ indirect_call_from_c(void (*fn)(long), long arg)
 }
 ```
 
+Will need to be changed to:
+
+example/src/main.rs
+```rust
+use std::ffi::c_long;
+use std::ffi::cfi;
+
+// The new set of C types in `core::ffi::cfi` as user-defined types using
+// `repr(transparent)` will be equivalent to (using c_long as an example):
+//
+// pub mod cfi {
+//     #[allow(non_camel_case_types)]
+//     #[repr(transparent)]
+//     pub struct c_long(pub std::ffi::c_long);
+// }
+
+#[link(name = "foo")]
+extern "C" {
+    // This declaration will have the type id "_ZTSFvlE".
+    fn hello_from_c(_: cfi::c_long);
+
+    // This declaration will have either the type id "_ZTSFvPFvlEu3i32E" or
+    // "_ZTSFvPFvlEu3i64E"--this may be ignored for the purposes of this
+    // example.
+    fn indirect_call_from_c(f: unsafe extern "C" fn(cfi::c_long), arg: c_long);
+}
+
+// This definition will have the type id "_ZTSFvlE".
+unsafe extern "C" fn hello_from_rust(_: cfi::c_long) {
+    println!("Hello, world!");
+}
+
+// This definition will have the type id "_ZTSFvlE".
+unsafe extern "C" fn hello_from_rust_again(_: cfi::c_long) {
+    println!("Hello from Rust again!\n");
+}
+
+// This definition will also have either the type id "_ZTSFvPFvlEu3i32E" or
+// "_ZTSFvPFvlEu3i64E"--this may be ignored for the purposes of this example.
+fn indirect_call(f: unsafe extern "C" fn(cfi::c_long), arg: c_long) {
+    // This indirect call site tests whether the destinatin pointer is a member
+    // of the group derived from the same type id of the f declaration, which
+    // will have the type id "_ZTSFvlE".
+    //
+    // Notice that since the test is at the call site and generated by the Rust
+    // compiler, the type id used in the test is encoded by the Rust compiler.
+    unsafe { f(cfi::c_long(arg)) }
+}
+
+// This definition has the type id "_ZTSFvvE"--this may be ignored for the
+// purposes of this example.
+fn main() {
+    // This demonstrates an indirect call within Rust-only code using the same
+    // encoding for hello_from_rust and the test at the indirect call site at
+    // indirect_call (i.e., "_ZTSFvlE").
+    indirect_call(hello_from_rust, 1);
+
+    // This demonstrates an indirect call across the FFI boundary with the Rust
+    // compiler and Clang using the same encoding for hello_from_c and the test
+    // at the indirect call site at indirect_call (i.e., "_ZTSFvlE").
+    indirect_call(hello_from_c, 2);
+
+    // This demonstrates an indirect call to a function passed as a callback
+    // across the FFI boundary with the Rust compiler and Clang using the same
+    // encoding for the passed-callback declaration and the test at the indirect
+    // call site at indirect_call_from_c (i.e., "_ZTSFvlE").
+    unsafe {
+        indirect_call_from_c(hello_from_rust_again, 3);
+    }
+}
+```
+
+example/src/foo.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+// This definition has the type id "_ZTSFvlE".
+void
+hello_from_c(long arg)
+{
+    printf("Hello from C!\n");
+}
+
+// This definition has the type id "_ZTSFvPFvlElE"--this may be ignored for the
+// purposes of this example.
+void
+indirect_call_from_c(void (*fn)(long), long arg)
+{
+    // This call site tests whether the destinatin pointer is a member of the
+    // group derived from the same type id of the fn declaration, which has the
+    // type id "_ZTSFvlE".
+    //
+    // Notice that since the test is at the call site and generated by Clang,
+    // the type id used in the test is encoded by Clang.
+    fn(arg);
+}
+```
+
+Direct calls to extern "C" function types across the FFI boundary, whether CFI
+is enabled or disabled, will continue to work whether Rust integer types or C
+type aliases are used.
+
+For example:
+
+example/src/main.rs
+```rust
+// Optionally, use std::ffi::c_long;
+
+#[link(name = "foo")]
+extern "C" {
+    // This declaration will have the type id "_ZTSFvu3i64E".
+    fn hello_from_c(_: i64);
+    // This declaration will have either the type id "_ZTSFvu3i32E" or
+    // "_ZTSFvu3i64E".
+    // Or fn hello_from_c(_: c_long);
+}
+
+// This definition has the type id "_ZTSFvvE"--this may be ignored for the
+// purposes of this example.
+fn main() {
+    // This will continue to work because direct call sites do not test type
+    // membership.
+    unsafe { hello_from_c(1); }
+}
+```
+
+example/src/foo.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+// This definition has the type id "_ZTSFvlE".
+void
+hello_from_c(long arg)
+{
+    printf("Hello from C!\n");
+}
+```
+
+Will continue to work when `fn hello_from_c(_: i64)` or `fn hello_from_c(_:
+c_long)` represents a `void hello_from_c(long arg)` in an LP64 or equivalent
+data model.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 The Rust compiler assumes that C char and integer types and their respective
 Rust aliased types can be used interchangeably. These assumptions can not be
 maintained for extern "C" function types indirectly called across the FFI
-boundary when CFI is enabled.
+boundary when CFI is enabled and the new set of C types are used.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -341,7 +583,7 @@ The alternatives considered were:
 
   3. adding a new set of parameter attributes to specify the corresponding C
      types to be used in extern "C" function types indirectly called across the
-     FFI boundary when cross-language CFI support is needed
+     FFI boundary when cross-language CFI support is needed.
 
   4. creating a new set of transitional C types in `core::ffi` as user-defined
      types using `repr(transparent)` to be used in extern "C" function types
@@ -360,14 +602,14 @@ The alternatives considered were:
 Alternatives (1), (2), and (3) are opt in for when cross-language CFI support is
 needed. These alternatives are not backward-compatibility breaking changes
 because the Rust compiler currently does not support cross-language CFI (i.e.,
-extern "C" function types indirectly called across the FFI boundary when
-forward-edge control flow protection is enabled).
+extern "C" function types indirectly called across the FFI boundary when CFI is
+enabled).
 
 Alternatives (4), (5), (6), and (7) are backward-compatibility breaking changes
 because they will require changes to existing code that use C types.
 
 The solution this RFC proposes (1) is opt in, is not a backward-compatibility
-breaking change, and is one of the less intrusive change to the language among
+breaking change, and is one of the less intrusive changes to the language among
 the alternatives listed.
 
 # Prior art
@@ -396,6 +638,11 @@ protection, such as Microsoft Windows eXtended Flow Guard (XFG) and ARM Pointer
 Authentication -based forward-edge control flow protection, that also depend on
 the Rust compiler being able to identify C char and integer type uses at the
 time types are encoded.
+
+# Acknowledgment
+
+Thanks to pnkfelix (Felix Klock) and the Rust community for all their help on
+this RFC.
 
 # Appendix
 [appendix]: #appendix
@@ -432,8 +679,7 @@ is a requirement for large-scale secure Rust adoption.
 
 These are not backward-compatibility breaking changes because the Rust compiler
 currently does not support cross-language CFI (i.e., extern "C" function types
-indirectly called across the FFI boundary when forward-edge control flow
-protection is enabled).
+indirectly called across the FFI boundary when CFI is enabled).
 
 ## Why not use the v0 mangling scheme for encoding?
 
