@@ -1,6 +1,6 @@
 - Feature Name: (`anonymous_associated_types`)
 - Start Date: (2022-11-1)
-- RFC PR: [rust-lang/rfcs#3310](https://github.com/rust-lang/rfcs/pull/3310)
+- RFC PR: [rust-lang/rfcs#3310](https://github.com/rust-lang/rfcs/pull/3342)
 
 # Summary
 [summary]: #summary
