@@ -185,12 +185,14 @@ For example:
 
 example/src/main.rs
 ```rust
-// Optionally, use std::ffi::c_long;
+// Optionally, use std::ffi::c_long. (Note this is the C type alias, not
+// the new C type.)
 
 #[link(name = "foo")]
 extern "C" {
     fn hello_from_c(_: i64);
-    // Or fn hello_from_c(_: c_long);
+    // Or fn hello_from_c(_: c_long). (Note this is the C type alias,
+    // not the new C type.)
 }
 
 fn main() {
@@ -521,7 +523,8 @@ For example:
 
 example/src/main.rs
 ```rust
-// Optionally, use std::ffi::c_long;
+// Optionally, use std::ffi::c_long. (Note this is the C type alias, not
+// the new C type.)
 
 #[link(name = "foo")]
 extern "C" {
@@ -529,7 +532,8 @@ extern "C" {
     fn hello_from_c(_: i64);
     // This declaration will have either the type id "_ZTSFvu3i32E" or
     // "_ZTSFvu3i64E".
-    // Or fn hello_from_c(_: c_long);
+    // Or fn hello_from_c(_: c_long). (Note this is the C type alias,
+    // not the new C type.)
 }
 
 // This definition has the type id "_ZTSFvvE"--this may be ignored for the
