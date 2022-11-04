@@ -205,7 +205,7 @@ Miri is adjusted as follows:
         fn foo(x: &i32) -> i32 {
             let val = *x;
             bar();
-            return val; // optimize to `*v`, avoid saving `val` across the call.
+            return val; // optimize to `*x`, avoid saving `val` across the call.
         }
         ```
         Under the adjusted rules, `x` could stop being live in the middle of the execution of `foo`, so it might not be live any more when the `return` is executed.
