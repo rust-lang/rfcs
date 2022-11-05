@@ -54,7 +54,8 @@ edition for the purposes of parsing Rust code.
 
 Note that rustfmt may not necessarily support all combinations of Rust edition
 and style edition; in particular, it may not support using a style edition that
-differs by more than one step from the Rust edition.
+differs by more than one step from the Rust edition. Similarly, rustfmt need
+not support every existing configuration option in new style editions.
 
 New style editions will be initially introduced as nightly-only, to make them
 available for testing; such nightly-only editions will produce an error if
