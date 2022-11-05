@@ -77,7 +77,10 @@ making the proposed educational material easier to read and understand.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The most clear alternative is "don't add this attribute" so let's consider the options for someone who wants to avoid this mistake without using this feature
+One alternative is to rely on the dead code lint, which will inform you when a variant hasn't been constructed. However it will fail to catch this if the 
+variant is constructed elsewhere, or the enum is public.
+
+Other alternatives would be to try and implement something like this outside of rustc. Let's consider those options.
 
 ### Use the `strum_macros` crate to automatically generate these types of match statements
 
