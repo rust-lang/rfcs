@@ -154,7 +154,7 @@ The standard library contains a type `MaybeDangling<P>` that is safely convertib
 +    to an invalid value, it is itself invalid.
 ```
 
-*Note: this diff is based on [an updated version of the referece](https://github.com/rust-lang/reference/pull/1290).*
+*Note: this diff is based on [an updated version of the reference](https://github.com/rust-lang/reference/pull/1290).*
 
 Another way to think about this is: most types only have "by-value" requirements for their validity, i.e., they only require that the bit pattern be of a certain shape.
 References and boxes are the sole exception, they also require some properties of the memory they point to (e.g., they need to be dereferenceable).
