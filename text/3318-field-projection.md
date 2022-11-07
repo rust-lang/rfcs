@@ -599,9 +599,13 @@ You can find the direction I am currently biased towards at the end of each Ques
 `(N) = No`, `(-) = no bias`. Questions that have been crossed out are no longer relevant/have been
 answered with "No".
 
-- [ ] Should `union`s also be supported? `(N)`
-- [ ] How can `enum` and  [`MaybeUninit`][maybeuninit]`<T>` be made compatible? `(N)`
 - [ ] should the warning when using `#[pin]` on an `Unpin` field be an error? `(Y)`
+- [ ] the current proposal requires explicit reborrowing, so `pinned.as_mut()->field`. Because it
+    would otherwise move `pinned`. Which might be used later.
+- [ ] how should the `const N: usize` parameter of `Field<T, U, N>` be calculated and exposed to the
+    user? There needs to be a way to refer to `Field<T, U, N>` using only the base type `T` and the
+    name of the field.
+- [ ] `HasFields` needs to be implemented automatically, how should this be done?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -642,6 +646,15 @@ impl<T> Arc<T> {
     }
 }
 ```
+
+## `enum` and `union` support
+
+When destructuring an enum, the discriminant needs to be read. The `MaybeUninit` wrapper type makes
+this impossible, as it permits uninitialized data, making the read UB. There could be an unsafe way
+of projecting the enum, with the assumption that the discriminant is initialized.
+
+Unions are probably simpler to implement, as they are much more similar to structs compared to
+enums. But this is also left to a future RFC.
 
 [`Rc`]: https://doc.rust-lang.org/alloc/sync/struct.Rc.html
 [`Arc`]: https://doc.rust-lang.org/alloc/sync/struct.Arc.html
