@@ -1,9 +1,9 @@
 # crates.io token scopes RFC
 
 - Feature Name: `crates_io_token_scopes`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- crates.io issue: [rust-lang/crates.io#0000](https://github.com/rust-lang/crates.io/issues/0000)
+- Start Date: 2020-06-24
+- RFC PR: [rust-lang/rfcs#2947](https://github.com/rust-lang/rfcs/pull/2947)
+- crates.io issue: [rust-lang/crates.io#5443](https://github.com/rust-lang/crates.io/issues/5443)
 
 # Summary
 [summary]: #summary
