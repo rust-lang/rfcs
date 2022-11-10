@@ -390,6 +390,10 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   they would be with the proposed syntax. It would also mean macro authors would be unable to accept
   only syntax that would be valid in a given context. Further, some positions such as `enum`
   variants do not semantically accept a visibility, while they do accept a restriction.
+- The current syntax separates the `mut`/`impl` keyword from the scope of the restriction. This
+  produces verbose syntax. Many users may want similar restrictions. Could we provide a simpler
+  syntax if we provided less flexibility? Would a new keyword or two help? We could choose a syntax
+  with less flexibility and verbosity but more simplicity. For instance, `sealed` or `readonly`.
 
 # Prior art
 
@@ -444,6 +448,8 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
 - Should `struct` expressions be disallowed?
   - Where would it be desirable to prohibit mutability after construction, but still permit
     construction with unchecked values?
+- Should a simpler syntax be provided for common cases? For instance, `sealed` or `readonly`. A
+  different syntax altogether could be used as well.
 
 # Future possibilities
 
@@ -463,3 +469,4 @@ Trait aliases cannot be implemented. As such, there is no concern about compatib
   identical to omitting the keyword entirely.
 - `mut` could be placed on the `struct` or variant itself, which would be equivalent to having the
   same restriction on each field. This would avoid repetition.
+- Trait implementations could be restricted to being used within a certain scope.
