@@ -1,97 +1,182 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: `at-least-one-feature`
+- Start Date: 2022-11-11
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+Allow packages to require that dependencies on them must specify at least one feature (the `default` feature counts).
+This avoids backwards compatibility problems with `default-features = false`.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+A major use-case of Cargo features to take previously mandatory functionality and make it optional.
+This is usual done in order to make the code more portable than it was previously, while not breaking existing consumers of the library.
+Consider this example which shoes both work works and what doesn't:
+
+1. Library has no features.
+
+2. A `foo` feature is added, gating functionality that already existed.
+   It is on by default.
+   `no-default-features = true` can be used in which some dependencies only needed for `foo` can be avoided.
+   Yay!
+
+3. A `bar` feature is added, gating functionality that already existed.
+
+   - Suppose it is off by default.
+     Oh no!
+     All Existing use-cases break because the functionality that depends on `bar` goes away.
+
+   - Suppose it is on by default, or depended-upon by `bar`.
+     Oh no!
+     Existing `no-default-features = true` are now broken!
+     They want a feature set of `{bar}` which would correspond to the old `{}`, but there is no way to arrange it.
+
+In step two, we could "ret-con" the empty feature set with the `default` feature.
+But this is a trick that can only be pulled once.
+The second time around, we already have a default feature; we are out of luck.
+
+The previous attempts attempted to make new default features, or migrate the requested feature sets.
+But that is complex.
+There is exactly a simpler solution: simply require that *some* feature always be depended-upon.
+
+To see why this works, it helps to first see that step 2 was *already* broken.
+Here's the thing, even though there previously were not any features, that *doesn't* mean there were not any `no-default-features = true` users!
+Sure, it wouldn't do anything for crate with new features, but one can still use it.
+Then when just `bar` is added, we already have a problem, because the `default` feature will no "catch" all the existing users ---
+the mischievous users that were already using `no-default-features = true` will have their code broken!
+
+This brings us to the heart of the problem.
+So long as users are depending on "something", we can be careful to make sure those features keep their meaning.
+But when users are depending on nothing at all with `no-default-features = true` and an empty feature set, we have nothing to "hook into".
+The simple solution is just to rule out that problem entirely!
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+Packages with
+```toml
+[package]
+at-least-one-feature = true
+```
+are easier to maintain!
+You don't need to worry about the `no-default-features = true, features = []` case anymore.
+You can be sure that all consumers must dependent on either `default` or a regular named feature.
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
+Whenever you want to make existing functionality more conditional, simply extend the set of features the code relies on with a new feature, and ensure existing features depend on that feature.
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+For example:
+```rust
+fn my_fun_that_allocates() { .. }
+
+#[cfg(all(feature = "foo", feature = "bar"))]
+fn my_weird_fun_that_allocates() { .. }
+```
+becomes:
+```rust
+#[cfg(feature = "baz")]
+fn my_fun_that_allocates() { .. }
+
+#[cfg(all(feature = "foo", feature = "bar", feature = "baz"))]
+fn my_weird_fun_that_allocates() { .. }
+```
+
+And the corresponding `Cargo.toml`:
+```toml
+[features]
+default = ["foo"]
+bar = ["foo"]
+```
+becomes:
+```toml
+[features]
+default = ["foo", "baz"]
+foo = ["baz"]
+bar = ["foo"] # no need to add "baz" because "bar" picks it up
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+Depending on a
+```toml
+[package]
+at-least-one-feature = true
+```
+crate with an empty feature set is disallowed and invalidates the solution.
+The `default` feature counts as a member of that set when `default-features = true`.
+ 
+The solver shall avoid such solutions (so as not break old versions of libraries without `at-least-one-feature` being "discoverable").
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+## Provisional Theory
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+We can begin to formalize library compatibility with something like
+[this](https://q.uiver.app/?q=WzAsNCxbMCwwLCJcXG1hdGhjYWx7UF/PiX0oXFxtYXRocm17RmVhdHVyZXN9X3tcXG1hdGhybXtPbGR9fSkiXSxbMSwwLCJcXG1hdGhjYWx7UF/PiX0oXFxtYXRocm17RmVhdHVyZXN9X3tcXG1hdGhybXtOZXd9fSkiXSxbMCwxLCJcXG1hdGhybXtSdXN0fSJdLFsxLDEsIlxcbWF0aHJte1J1c3R9Il0sWzAsMSwiXFxtYXRocm17c2FtZVxcIG5hbWVzfSIsMCx7InN0eWxlIjp7InRhaWwiOnsibmFtZSI6Imhvb2siLCJzaWRlIjoiYm90dG9tIn19fV0sWzAsMiwiXFwjW1xcbWF0aHR0e2NmZ30oLi4uKV1fXFxtYXRocm17T2xkfSIsMl0sWzEsMywiXFwjW1xcbWF0aHR0e2NmZ30oLi4uKV1fXFxtYXRocm17TmV3fSJdLFszLDIsIlxcbWF0aHJte2BgdXBjYXN0XCJcXCBsaWJyYXJ5XFwgaW50ZXJmYWNlc30iXV0=)
+[commutative diagram](https://en.wikipedia.org/wiki/Commutative_diagram).
+
+- The old and new features form a partial order
+
+- P_ω takes those partial orders to the partial order of their downsets.
+  (That is, sets of features with the implied features from feature dependencies "filled in", ordered by inclusion.)
+
+- "same names" maps the old downsets to the new downsets, filling in any newly implied features as needed.
+
+- `#[cfg(...)]` is the mapping of feature sets to exposed library interfaces
+
+- "'upcast' library interfaces" forgets whatever unrelated new stuff was added in the new library version
+
+The idea is that going from the old features directly to the old interfaces, or going the "long way" from old features to new features to new interfaces to old interfaces should yield the same result.
+
+For the more part, features can be "interspersed" anywhere the old feature partial order to make the new feature partial order.
+However, this is an exception!
+The old empty downset becomes the new empty downset, which means nothing can be added below it.
+This is the `default-features = false` gotcha!
+
+When we disallow the empty feature set, we are replacing P_ω with the "free join-semilattice" construction.
+We are enriching features with the ∨ binary operator but no ⊥ identity element.
+There is no empty downset becomes empty downset constraint, and thus we are free to add new features below all the others all we want.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+I can't really think of a reason, it's much simpler than the prior attempts!
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+An alternative is not to ban the empty feature set, but ensure it always translates to the empty library.
+I.e. to require that *all* items must be dependent upon *some* feature; everything needs a `cfg`.
+
+Returning to our half-worked-out theory, instead of banning a notion of a ⊥ empty feature set that must be preserved from the old library to the new (removing a requirement), we are adding a *new* requirement that the ⊥ feature set must map to the ⊥ Rust interface.
+We still have the restriction that new features can be added below, but this restriction is no longer a problem:
+there is no point of adding such a new minimal feature because there is nothing left to `cfg`-out!
+
+This solution is more mathematically elegant, but it seems harder to implement.
+It is unclear how Cargo could require the Rust code to obey this property without new infra like the portability lint.
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+This is a well-known problem.
+See just-rejected [#3283](https://github.com/rust-lang/rfcs/pull/3283), 
+and my previous retracted [#3146](https://github.com/rust-lang/rfcs/pull/3146).
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+I think this is much simpler than the other two.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+It would be nice to completely work out the theory.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
+The `default-features = false` syntax is clunky.
+A new edition could say that an explicit feature list always means `default-features = []`, but that `default` can be used in feature lists.
+With this change, "must depend on one feature, including possibly the default feature" becomes easier to explain:
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+- `[]` disallowed
+- `["default"]` allowed
+- `["foo"]` allowed
