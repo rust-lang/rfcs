@@ -237,7 +237,6 @@ That can be thought of from the perspective of this RFC as a "one-off" feature m
 
 ## "Negative features"
 
-I take a pretty dim view of this.
 It is easy to say that one wants negative features; it is harder to actually give a proper semantics for them.
 As far as I know, additive features are the only reasonable core semantics, so we have no choice but to "pre-process" away negative features before they ruin our core model.
 
