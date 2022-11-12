@@ -77,4 +77,4 @@ None.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-None.
+Move the `ToSocketAddrs` trait to `core::net` as well. This depends on having `core::io::Result`.
