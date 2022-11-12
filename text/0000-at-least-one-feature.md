@@ -212,11 +212,15 @@ We can instead
 
 This works and allows giving things the "right" names" every time, but is much work work to implement.
 
-I think it might make sense to do this someday, but it is better to start with this.
+One [point brought up in the comments](https://github.com/rust-lang/rfcs/pull/3146#issuecomment-1273473456) is that punning on the lower version bound to get the feature namespace is a bit tricky.
+In particular, it makes manually adjusting versions bounds risky because without consulting package definitions it is unclear how the feature list will be interpretted.
+I  think that is compelling reason not to do that, but instead version the feature namespace separately.
+
+Overal, I think it might make sense to do some sort of "name indirection" along these lines (but addressing the above problem), but it is better to start with this RFC before getting to that.
 My thinking about this is basically "walk before run".
 Today, that would be lots of work for an obscure problem, and a solution that downstream crates need to know about because it affects how dependencies are written.
 However if we do this first, "opt-out features" are poised to become much more popular now that they are no longer a compatibility hazard.
-We can evaluate both that new popularity, and the incidence of the "bad name" problem in *practice*, and use that to justify a more heavyweight solutions.
+We can evaluate both that new popularity, and the incidence of the "bad name" problem in *practice*, and use that to justify or not justify a more heavyweight solutions.
 
 ## RFC [#3283](https://github.com/rust-lang/rfcs/pull/3283)
 
