@@ -107,7 +107,7 @@ at-least-one-feature = true
 ```
 crate with an empty feature set is disallowed and invalidates the solution.
 The `default` feature counts as a member of that set when `default-features = true`.
- 
+
 The solver shall avoid such solutions (so as not break old versions of libraries without `at-least-one-feature` being "discoverable").
 
 ## Provisional Theory
@@ -169,17 +169,18 @@ Take [seanmonstar/warp#968](https://github.com/seanmonstar/warp/issues/968) as a
 Warp currently ships HTTP2 support by default. This means that in order to be able to ship a version without http2, _all current features must depend on HTTP2_.
 This means creating new `websocket-without-http2`, `tls-without-http2`, `compression-without-http2`, `compression-brotli-without-http2`, `compression-gzip-without-http2` features in order for other crates to depend on them without pulling in http2 support.
 
+Note that this is only a problem for new features that existing features or orthogonal too.
+In many cases, existing features will naturally (not just for back compat) depend on the new features, and then there is no need or possibility to introduce `...-without-...` siblings to those features.
+
 My sense that while that is a downside, it is better to first walk that run.
 Do this and the problem is solved.
-And if new opt-out features are only occasionally added, it might be fine.
-But, liberated from back-compat issues, new opt-features may become more popular, and then people will want sort of "feature migrations" so they can "reuse the good names" and avoid this `...-without-...` bussiness.
-
-But just cause we predict that doesn't mean we can avoid this first step!
-The "walking vs running" idea that feature migrations take significantly more work,
-and if we never first "unlock" increased demand for opt-out features via something cheap like this, we'll never be able to justify those costs.
+We can add feature migrations later once there is more demand.
+See the Alternatives section for more details.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Empty feature set is empty library.
 
 An alternative is not to ban the empty feature set, but ensure it always translates to the empty library.
 I.e. to require that *all* items must be dependent upon *some* feature; everything needs a `cfg`.
@@ -191,14 +192,89 @@ there is no point of adding such a new minimal feature because there is nothing 
 This solution is more mathematically elegant, but it seems harder to implement.
 It is unclear how Cargo could require the Rust code to obey this property without new infra like the portability lint.
 
+Finally, in a sense these variations are actually isomorphic.
+If no one can request the empty feature set, no one can observe what library interface that corresponds to.
+There is no reason to conclude that it *isn't* the empty library.
+
+## RFC [#3146](https://github.com/rust-lang/rfcs/pull/3146)
+
+This more more expensive solution aimed to solve the "running out of good names" problem this has.
+
+Returning to our commutative diagram, instead of
+
+- removing the ⊥ feature downset (this proposal)
+
+- mandating the ⊥ feature downset correspond to ⊥ the empty library interface (first alternative, extra rules on the vertical mappings in diagrams)
+
+We can instead
+
+- allow customizing the mapping from old feature names to new feature names (customizing top horizontal mapping)
+
+This works and allows giving things the "right" names" every time, but is much work work to implement.
+
+I think it might make sense to do this someday, but it is better to start with this.
+My thinking about this is basically "walk before run".
+Today, that would be lots of work for an obscure problem, and a solution that downstream crates need to know about because it affects how dependencies are written.
+However if we do this first, "opt-out features" are poised to become much more popular now that they are no longer a compatibility hazard.
+We can evaluate both that new popularity, and the incidence of the "bad name" problem in *practice*, and use that to justify a more heavyweight solutions.
+
+## RFC [#3283](https://github.com/rust-lang/rfcs/pull/3283)
+
+This proposal adds a new notion of a "feature base", which aims to essential provide more `default-features = false` options rather than just one forever.
+`default-features = false` is ret-conned as the first feature base.
+
+My view is that that RFC is pretty close to being this one in disguise.
+A "feature base" is just a feature.
+The fact that there is always one "feature base" is just another way of accomplishing the "at least one feature"
+restriction.
+
+The main difference is that `default-features = false` is ret-conned as a feature to allow for existing users.
+That can be thought of from the perspective of this RFC as a "one-off" feature migration to get reverse dependencies predating the use of `at-least-one-feature = true` on to a feature so they retroactively abide by the "at least one feature" rule.
+
+## "Negative features"
+
+I take a pretty dim view of this.
+It is easy to say that one wants negative features; it is harder to actually give a proper semantics for them.
+As far as I know, additive features are the only reasonable core semantics, so we have no choice but to "pre-process" away negative features before they ruin our core model.
+
+Here is an example of such a pre-processing step.
+Recall from our preliminary theory section that feature sets are feature *downsets*.
+Whatever the user writes, we must complete it with the missing features implied by what they wrote.
+That means we have this process:
+
+> Syntactic feature set
+>
+> --- fill in missing features --->
+>
+> Semantic feature downset
+
+We can add a middle step to account for "negative features"
+
+> Syntactic feature "dual set"
+>
+> --- negate negative features: add if they were not included, remove if they were --->
+>
+> Strictly positive feature set
+>
+> --- fill in missing features --->
+>
+> Semantic feature downset
+
+But not the ramifications of this: the final "fill in missing features" step may well "add back" one of the features that was removed!
+
+I think this will be confusing to users, to say the least.
+Moreover it is crucial to understand the underlying additive feature model to become proficient with Cargo, and the more we "disguise" it with superficial negative features, the harder it will be for users to understand that model.
+The syntax *impedes* learning.
+
+I think this is an awkward middle ground between this (dirt easy) and full feature migrations.
+Only full feature migrations provide the "ideal" naming of feature so users new to a library can be blissfully ignorant of whatever features previous versions of the library supported.
+
 # Prior art
 [prior-art]: #prior-art
 
-This is a well-known problem.
-See just-rejected [#3283](https://github.com/rust-lang/rfcs/pull/3283), 
-and my previous retracted [#3146](https://github.com/rust-lang/rfcs/pull/3146).
-
-I think this is much simpler than the other two.
+Nothing direct to my knowledge.
+In Haskell we often implement a lot of "non-empty" data structures because their sneaky semantics are useful.
+So in some sense the Math is newly-applied here, but not newly applied to programming in general.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
