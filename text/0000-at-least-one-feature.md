@@ -59,7 +59,7 @@ The simple solution is just to rule out that problem entirely!
 Packages with
 ```toml
 [package]
-at-least-one-feature = true
+empty-features = false
 ```
 are easier to maintain!
 You don't need to worry about the `no-default-features = true, features = []` case anymore.
@@ -103,7 +103,7 @@ bar = ["foo"] # no need to add "baz" because "bar" picks it up
 Depending on a
 ```toml
 [package]
-at-least-one-feature = true
+empty-features = false
 ```
 crate with an empty feature set is disallowed and invalidates the solution.
 The `default` feature counts as a member of that set when `default-features = true`.
@@ -139,12 +139,12 @@ When we disallow the empty feature set, we are replacing P_ω with the "free joi
 We are enriching features with the ∨ binary operator but no ⊥ identity element.
 There is no empty downset becomes empty downset constraint, and thus we are free to add new features below all the others all we want.
 
-# Compatibility of `at-least-one-feature = true` itself
+# Compatibility of `empty-features = false` itself
 
-At first, it seems like adding `at-least-one-feature = true` to a new version of a crate is a breaking change.
+At first, it seems like adding `empty-features = false` to a new version of a crate is a breaking change.
 But, I don't think it is.
 We have to step back a bit: a breaking change is one that if it *didn't* come with an increasing major version, would result in valid Cargo plans that do not build.
-Yes, adding `at-least-one-feature = true` to a newer version of a crate will result in depending (not dependent) crate that do not specify a feature for that dependency being unable to upgrade.
+Yes, adding `empty-features = false` to a newer version of a crate will result in depending (not dependent) crate that do not specify a feature for that dependency being unable to upgrade.
 But that's it!
 Those crates will *not* have their dependencies upgraded incorrectly, resulting in a build failure, and thus there is no problem.
 
@@ -233,7 +233,7 @@ The fact that there is always one "feature base" is just another way of accompli
 restriction.
 
 The main difference is that `default-features = false` is ret-conned as a feature to allow for existing users.
-That can be thought of from the perspective of this RFC as a "one-off" feature migration to get reverse dependencies predating the use of `at-least-one-feature = true` on to a feature so they retroactively abide by the "at least one feature" rule.
+That can be thought of from the perspective of this RFC as a "one-off" feature migration to get reverse dependencies predating the use of `empty-features = false` on to a feature so they retroactively abide by the "at least one feature" rule.
 
 ## "Negative features"
 
