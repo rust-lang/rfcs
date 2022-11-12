@@ -142,7 +142,21 @@ There is no empty downset becomes empty downset constraint, and thus we are free
 # Drawbacks
 [drawbacks]: #drawbacks
 
-I can't really think of a reason, it's much simpler than the prior attempts!
+## Bad names over time
+
+A downside of this proposal is that one has to resort to increasingly bad names.
+Take [seanmonstar/warp#968](https://github.com/seanmonstar/warp/issues/968) as an example.
+Warp currently ships HTTP2 support by default. This means that in order to be able to ship a version without http2, _all current features must depend on HTTP2_.
+This means creating new `websocket-without-http2`, `tls-without-http2`, `compression-without-http2`, `compression-brotli-without-http2`, `compression-gzip-without-http2` features in order for other crates to depend on them without pulling in http2 support.
+
+My sense that while that is a downside, it is better to first walk that run.
+Do this and the problem is solved.
+And if new opt-out features are only occasionally added, it might be fine.
+But, liberated from back-compat issues, new opt-features may become more popular, and then people will want sort of "feature migrations" so they can "reuse the good names" and avoid this `...-without-...` bussiness.
+
+But just cause we predict that doesn't mean we can avoid this first step!
+The "walking vs running" idea that feature migrations take significantly more work,
+and if we never first "unlock" increased demand for opt-out features via something cheap like this, we'll never be able to justify those costs.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
