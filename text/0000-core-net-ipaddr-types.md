@@ -6,7 +6,8 @@
 # Summary
 [summary]: #summary
 
-Make the `IpAddr`, `Ipv4Addr` and `Ipv6Addr` types available in `no_std`
+Make the `IpAddr`, `Ipv4Addr`, `Ipv6Addr`, `SocketAddr`, `SocketAddrV4`,
+`SocketAddrV6`, `Ipv6MulticastScope` and `AddrParseError` types available in `no_std`
 contexts by moving them into a `core::net` module.
 
 # Motivation
@@ -21,8 +22,10 @@ dependencies which is in line with the definition of the core library.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `core::net::IpAddr`, `core::net::Ipv4Addr` and `core::net::Ipv6Addr` types
-are available in `no_std` contexts.
+The `core::net::IpAddr`, `core::net::Ipv4Addr`, `core::net::Ipv6Addr`,
+`core::net::SocketAddr`, `core::net::SocketAddrV4`, `core::net::SocketAddrV6`,
+`core::net::Ipv6MulticastScope` and `core::net::AddrParseError` types are
+available in `no_std` contexts.
 
 Library developers should use `core::net` to implement abstractions in order
 for them to work in `no_std` contexts as well.
@@ -30,31 +33,17 @@ for them to work in `no_std` contexts as well.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Currently, the IP address types depend on their corresponding `libc`
-counterpart for their `inner` value.
+Since https://github.com/rust-lang/rust/pull/78802 has been merged, IP and
+socket address types are implemented in ideal Rust layout instead of wrapping
+their corresponding `libc` representation.
 
-IPv4 addresses are well-defined. [IETF RFC 791] specifically states:
+Formatting for these types has also been adjusted in
+https://github.com/rust-lang/rust/pull/100625 and
+https://github.com/rust-lang/rust/pull/100640 in order to remove the dependency
+on `std::io::Write`.
 
-> Addresses are fixed length of four octets (32 bits).
-
-IPv6 addresses are well-defined. [IETF RFC 4291] specifically states:
-
-> IPv6 addresses are 128-bit identifiers
-
-Since the size and representation of IPv4 and IPv6 addresses are well defined,
-we can replace the `inner` value of `Ipv4Addr` with a `[u8; 4]` and the `inner`
-value of `IPv6Addr` with a `[u8; 16]`.
-
-The inner types `[u8; 4]` and `[u8; 16]` are expected to correspond to `u32`
-and `u128`  in big-endian byte order. Currently, this is already ensured:
-
-- `u32::to_be` is used when constructing the corresponding `libc` type for
-  `Ipv4Addr`.
-- The corresponding `libc` type for `IPv6Addr` is already represented as a
-  `[u8; 16]` internally on all platforms.
-
-[IETF RFC 791]: https://tools.ietf.org/html/rfc791
-[IETF RFC 4291]: https://tools.ietf.org/html/rfc4291
+This means the types are now platform-agnostic, allowing them to be moved from
+`std::net` into `core::net`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -64,13 +53,10 @@ Moving the `std::net` types to `core::net` makes the core library less *minimal*
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Given the size of IP addresses is well defined by IETF RFCs, there is no
-  inherent need to have these types depend on `libc`.
-
 - Eliminates the need to use different abstractions for `no_std` and `std`.
 
 - Alternatively, move these types into a library other than `core`, so they
-  can be used without `std`.
+  can be used without `std`, and re-export them in `std`.
 
 # Prior art
 [prior-art]: #prior-art
@@ -91,5 +77,4 @@ None.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-`SocketAddr`, `SocketAddrV4` and `SocketAddrV6` could also be moved in the
-future.
+None.
