@@ -139,6 +139,26 @@ When we disallow the empty feature set, we are replacing P_ω with the "free joi
 We are enriching features with the ∨ binary operator but no ⊥ identity element.
 There is no empty downset becomes empty downset constraint, and thus we are free to add new features below all the others all we want.
 
+# Compatibility of `at-least-one-feature = true` itself
+
+At first, it seems like adding `at-least-one-feature = true` to a new version of a crate is a breaking change.
+But, I don't think it is.
+We have to step back a bit: a breaking change is one that if it *didn't* come with an increasing major version, would result in valid Cargo plans that do not build.
+Yes, adding `at-least-one-feature = true` to a newer version of a crate will result in depending (not dependent) crate that do not specify a feature for that dependency being unable to upgrade.
+But that's it!
+Those crates will *not* have their dependencies upgraded incorrectly, resulting in a build failure, and thus there is no problem.
+
+(This is very much analogous to the situation with minimum Rust versions.
+Updating the minimum Rust version in a new version of a crate is not a breaking change.
+Some users with old versions will be unable to use the new version, but no one will be falsely upgraded resulting in a build failure.
+
+Indeed, that point of being able to express the minimum Rust version is precisely to *avoid* bumping the minimum supported version being a breaking change.
+Before, Cargo was unaware of this dependency on the compiler, and so raising the implicit lower bound had to be a breaking change.
+Now, Cargo is aware of the dependency and it is no longer a breaking change.
+
+Putting it altogether, in general we can say that bumping major versions is a tool of last result to account for issues Cargo can't directly know about.
+If Cargo can be directly made aware of the issue, then there is no "residual breakage" requiring a major version bump.)
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
