@@ -60,6 +60,14 @@ Interactions with string related macros:
   Even if we had the right language features for a trivial correct implementation, there are many code bases where C strings are the primary form of string,
   making `cstr!("..")` syntax quite cumbersome.
 
+- No `c""` literal, but make it possible for `""` to implicitly become a `&CStr` through magic.
+
+  We already allow integer literals (e.g. `123`) to become one of many types, so perhaps we could do the same to string literals.
+
+  (It could be a built-in fixed set of types (e.g. just `str`, `[u8]`, and `CStr`),
+  or it could be something extensible through something like a `const trait FromStringLiteral`.
+  Not sure how that would exactly work, but it sounds cool.)
+
 * Allowing only valid UTF-8 and unicode-oriented escape codes (like in `"…"`, e.g. `螃蟹` or `\u{1F980}` but not `\xff`).
 
   For regular string literals, we have this restriction because `&str` is required to be valid UTF-8.
