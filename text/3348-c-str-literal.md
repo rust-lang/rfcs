@@ -22,7 +22,7 @@ In Rust 2021, we reserved prefixes for (string) literals, so let's make use of t
 
 `c"abc"` is a [`&CStr`](https://doc.rust-lang.org/stable/core/ffi/struct.CStr.html). A nul byte (`b'\0'`) is appended to it in memory and the result is a `&CStr`.
 
-All escape codes and characters accepted by `""` and `b""` literals are accepted, except the nul byte (`\0`).
+All escape codes and characters accepted by `""` and `b""` literals are accepted, except nul bytes.
 So, both UTF-8 and non-UTF-8 data can co-exist in a C string. E.g. `c"hello\x80我叫\u{1F980}"`.
 
 The raw string literal variant is prefixed with `cr`. For example, `cr"\"` and `cr##"Hello "world"!"##`. (Just like `r""` and `br""`.)
@@ -33,6 +33,8 @@ The raw string literal variant is prefixed with `cr`. For example, `cr"\"` and `
 Two new [string literal types](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings): `c"…"` and `cr#"…"#`.
 
 Accepted escape codes: [Quote](https://doc.rust-lang.org/reference/tokens.html#quote-escapes) & [Unicode](https://doc.rust-lang.org/reference/tokens.html#unicode-escapes) & [Byte](https://doc.rust-lang.org/reference/tokens.html#byte-escapes).
+
+Nul bytes are disallowed, whether as escape code or source character (e.g. `"\0"`, `"\x00"`, `"\u{0}"` or `"␀"`).
 
 Unicode characters are accepted and encoded as UTF-8. That is, `c"🦀"`, `c"\u{1F980}"` and `c"\xf0\x9f\xa6\x80"` are all accepted and equivalent.
 
