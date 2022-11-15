@@ -105,7 +105,7 @@ Interactions with string related macros:
 # Prior art
 [prior-art]: #prior-art
 
-- C as C string literals (`"…"`). :)
+- C has C string literals (`"…"`). :)
 - Nim has `cstring"…"`.
 - COBOL has `Z"…"`.
 - Probably a lot more languages, but it's hard to search for. :)
