@@ -78,6 +78,15 @@ Interactions with string related macros:
 
   We already have a type called `CStr` for this, so `c` seems consistent.
 
+- Also add `c'…'` as [`c_char`](https://doc.rust-lang.org/stable/core/ffi/type.c_char.html) literal.
+
+  It'd be identical to `b'…'`, except it'd be a `c_char` instead of `u8`.
+
+  This would easily lead to unportable code, since `c_char` is `i8` or `u8` depending on the platform. (Not a wrapper type, but a direct type alias.)
+  E.g. `fn f(_: i8) {} f(c'a');` would compile only on some platforms.
+
+  An alternative is to allow `c'…'` to implicitly be either a `u8` or `i8`. (Just like integer literals can implicitly become one of many types.)
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -95,7 +104,10 @@ Interactions with string related macros:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Also add `c'…'` C character literals? (`u8`, `i8`, `c_char`, or something more flexible?)
+
 - Should we make `&CStr` a thin pointer before stabilizing this? (If so, how?)
+
 - Should the (unstable) [`concat_bytes` macro](https://github.com/rust-lang/rust/issues/87555) accept C string literals? (If so, should it evaluate to a C string or byte string?)
 
 # Future possibilities
