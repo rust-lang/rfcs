@@ -11,7 +11,7 @@
 # Motivation
 [motivation]: #motivation
 
-Looking at the [amount of `cstr!()` invocations just on GitHub](https://cs.github.com/?scopeName=All+repos&scope=&q=cstr%21+lang%3Arust) it seems like C string literals
+Looking at the [amount of `cstr!()` invocations just on GitHub](https://cs.github.com/?scopeName=All+repos&scope=&q=cstr%21+lang%3Arust) (about 3.2k files with matches) it seems like C string literals
 are a widely used feature. Implementing `cstr!()` as a `macro_rules` or `proc_macro` requires non-trivial code to get it completely right (e.g. refusing embedded nul bytes),
 and is still less flexible than it should be (e.g. in terms of accepted escape codes).
 
@@ -25,7 +25,7 @@ In Rust 2021, we reserved prefixes for (string) literals, so let's make use of t
 All escape codes and characters accepted by `""` and `b""` literals are accepted, except the nul byte (`\0`).
 So, both UTF-8 and non-UTF-8 data can co-exist in a C string. E.g. `c"hello\x80我叫\u{1F980}"`.
 
-The raw string literal variant is prefixed with `cr`. For example, `cr"\"` and `r##"Hello "world"!"##`. (Just like `r""` and `br""`.)
+The raw string literal variant is prefixed with `cr`. For example, `cr"\"` and `cr##"Hello "world"!"##`. (Just like `r""` and `br""`.)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -97,6 +97,7 @@ Interactions with string related macros:
 # Prior art
 [prior-art]: #prior-art
 
+- C as C string literals (`"…"`). :)
 - NIM has `cstring"…"`.
 - COBOL has `Z"…"`.
 - Probably a lot more languages, but it's hard to search for. :)
