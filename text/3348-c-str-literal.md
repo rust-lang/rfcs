@@ -39,6 +39,7 @@ Nul bytes are disallowed, whether as escape code or source character (e.g. `"\0"
 Unicode characters are accepted and encoded as UTF-8. That is, `c"🦀"`, `c"\u{1F980}"` and `c"\xf0\x9f\xa6\x80"` are all accepted and equivalent.
 
 The type of the expression is [`&core::ffi::CStr`](https://doc.rust-lang.org/stable/core/ffi/struct.CStr.html). So, the `CStr` type will have to become a lang item.
+(`no_core` programs that don't use `c""` string literals won't need to define this lang item.)
 
 Interactions with string related macros:
 
@@ -124,6 +125,12 @@ Interactions with string related macros:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+(These aren't necessarily all good ideas.)
+
 - Make `concat!()` or `concat_bytes!()` work with `c"…"`.
 - Make `format_args!(c"…")` (and `format_args!(b"…")`) work.
 - Improve the `&CStr` type, and make it FFI safe.
+- Accept unicode characters and escape codes in `b""` literals too: [RFC 3349](https://github.com/rust-lang/rfcs/pull/3349).
+- More prefixes! `w""`, `os""`, `path""`, `utf16""`, `brokenutf16""`, `utf32""`, `wtf8""`, `ebcdic""`, …
+- No more prefixes! Have `let a: &CStr = "…";` work through magic, removing the need for prefixes.
+  (That won't happen any time soon probably, so that shouldn't block `c"…"` now.)
