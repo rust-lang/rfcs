@@ -82,7 +82,7 @@ However, for regular string literals that will result in an error in nearly all 
 # Alternatives
 [alternatives]: #alternatives
 
-- Only extend `b""`, but still don't accept `\x` in regular string literals (`""`).
+- Only extend `b""` (that is, accept `b"🦀"`), but still do not accept non-ASCII `\x` in regular string literals (that is, keep rejecting `"\xf0\x9f\xa6\x80"`).
 
 - Stabilize `concat_bytes!()` and require writing `"hello\xff你好"` as `concat_bytes!(b"hello\xff", "你好")`.
   (Assuming we extend the macro to accept a mix of byte string literals and regular string literals.)
