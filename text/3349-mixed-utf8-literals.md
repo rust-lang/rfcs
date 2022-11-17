@@ -11,7 +11,7 @@ Allow the exact same characters and escape codes in `"…"` and `b"…"` literal
 That is:
 
 - Allow unicode characters, including `\u{…}` escape codes, in byte string literals. E.g. `b"hello\xff我叫\u{1F980}"`
-- Allow `\x…` escape codes in regular string literals, as long as they are valid UTF-8. E.g. `"\xf0\x9f\xa6\x80"`
+- Also allow non-ASCII `\x…` escape codes in regular string literals, as long as they are valid UTF-8. E.g. `"\xf0\x9f\xa6\x80"`
 
 # Motivation
 [motivation]: #motivation
@@ -101,6 +101,17 @@ However, for regular string literals that will result in an error in nearly all 
 - Should `concat!("\xf0\x9f", "\xa6\x80")` work? (The string literals are not valid UTF-8 individually, but are valid UTF-8 after being concatenated.)
 
   (I don't care. I guess we should do whatever is easiest to implement.)
+
+- How about single byte and character literals?
+
+  - Should `b'\u{30}` work? (It's a unicode escape code, but it's still just one byte in UTF-8.)
+
+    I think yes. I see no reason to disallow it.
+
+  - Should `'\xf0\x9f\xa6\x80'` work? (It's multiple escape codes, but it's still just one character in UTF-8.)
+
+    Probably not, since a `char` is not UTF-8 encoded; it's a single UTF-32 codepoint.
+    _Decoding_ UTF-8 from `\x` escape codes back into UTF-32 would be a bit surprising.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
