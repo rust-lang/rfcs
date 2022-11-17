@@ -87,6 +87,17 @@ for handling forwards-compatibility and wonder how they differ. We feel that
 since we're providing a mechanism similar to editions, we should make it clear
 to users that it works like editions.
 
+We could allow style edition to vary completely independently of Rust edition.
+This would, for instance, allow projects to stay on old style editions
+indefinitely. However, this would substantially increase the development and
+testing burden for formatting tooling, and require more complex decisions about
+how old style editions format constructs that didn't exist in the corresponding
+Rust edition. In general, while the Rust edition mechanism allows projects to
+stay on old Rust editions, and projects doing so can similarly stay on the
+corresponding old style editions, the style edition mechanism does not exist to
+facilitate staying on old styles *indefinitely* while still moving forward to
+newer Rust editions.
+
 We could leave out the separate configuration of style edition, and keep style
 edition in lockstep with Rust edition. This would be easier to develop and
 test, but would mean larger and noisier commits in projects transitioning from
