@@ -67,10 +67,14 @@ requested in stable rustfmt. Nightly versions of style editions are subject to
 change and do not provide stability guarantees. New style editions will get
 stabilized contemporaneously with the corresponding Rust edition.
 
-The style team will maintain distinct versions of the style guide for each style
-edition. Note that archived versions of the style guide may not necessarily
+The current version of the style guide will describe the latest Rust edition.
+Each distinct past style will have a corresponding archived version of the
+style guide. Note that archived versions of the style guide may not necessarily
 document formatting for newer Rust constructs that did not exist at the time
-that version of the style guide was archived.
+that version of the style guide was archived. However, each style edition will
+still format all constructs valid in that Rust edition, with the style of those
+constructs coming from the first subsequent style edition providing formatting
+rules for that construct.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
