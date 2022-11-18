@@ -76,7 +76,7 @@ Interactions with string related macros:
   For regular string literals, we have this restriction because `&str` is required to be valid UTF-8.
   However, C literals (and objects of our `&CStr` type) aren't necessarily valid UTF-8.
 
-* Allowing only ASCII characters rand byte-oriented escape codes (like in `b"…"`, e.g. `\xff` but not `螃蟹` or `\u{1F980}`).
+* Allowing only ASCII characters and byte-oriented escape codes (like in `b"…"`, e.g. `\xff` but not `螃蟹` or `\u{1F980}`).
 
   While C literals (and  `&CStr`) aren't necessarily valid UTF-8, they often do contain UTF-8 data.
   Refusing to put UTF-8 in it would make the feature less useful and would unnecessarily make it harder to use unicode in programs that mainly use C strings.
