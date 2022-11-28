@@ -152,6 +152,20 @@ where
 ```
 It is the most important goal of this RFC to make field projection an ergonomic and safe operation.
 
+While there exist macro solutions like `pin-project` and `pin-project-lite`, there are situations
+where developers want to avoid the use of 3rd party libraries. In the case of the Rust-for-Linux
+project, any proc macro solutions with `syn` is problematic. At the moment (as of 28.11.2022),
+there are in total 10k lines of Rust code in the Linux kernel. Compare that with the over 50k lines
+that `syn` has. It is very difficult to vendor all of this into the kernel any time soon.
+`pin-project-lite` does not have this dependency problem. However, the macro itself is very
+convoluted and difficult to understand. When this is proposed to the Linux maintainers, they have to
+be able to understand the code, or at the very least comprehend the problem and the solution.
+This is why a language level solution that additionally future proofs any needs for projections is
+necessary.
+
+Additionally this RFC allows custom projections, these could be used in the Linux kernel to improve
+interactions of RCU with other locking mechanisms.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
