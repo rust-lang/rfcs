@@ -2,7 +2,7 @@
 
 - Start Date: 2022-10-09
 - RFC PR: [rust-lang/rfcs#3323](https://github.com/rust-lang/rfcs/pull/3323)
-- Rust Issue: TODO
+- Rust Issue: [rust-lang/rust#105077](https://github.com/rust-lang/rust/issues/105077)
 
 # Summary
 
