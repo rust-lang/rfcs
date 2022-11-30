@@ -39,26 +39,15 @@ error: unicode escape in byte string
 This can be annoying when working with "conventionally UTF-8" strings, such as with the popular [`bstr` crate](https://docs.rs/bstr/latest/bstr/).
 For example, right now, there is no convenient way to write a literal like `b"hello\xff你好"`.
 
-Allowing all characters and escape codes in both types of string literals reduces the complexity of the language.
+Allowing all characters and all known escape codes in both types of string literals reduces the complexity of the language.
 We'd no longer have [different escape codes](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings)
 for different literal types. We'd only require regular string literals to be valid UTF-8.
-
-If we can postpone the UTF-8 validation until the point where tokens are turned into literals, then this not only simplifies the job of the tokenizer,
-but allows macros to take string literals with invalid UTF-8 (through `$_:tt` or `TokenTree`).
-That can be useful for macros like `cstr!("…")` and `wide!("…")`, etc., which currently unnecessarily result in errors for non-UTF-8 data:
-
-```
-error: out of range hex escape
- --> src/main.rs:3:13
-  |
-3 |     cstr!("¿\xff");
-  |             ^^^^ must be a character in the range [\x00-\x7f]
-```
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Regular string literals (`""`) must be valid UTF-8. For example, valid strings are `"abc"`, `"🦀"`, `"\u{1F980}"` and `"\xf0\x9f\xa6\x80"`.
+Regular string literals (`""`) must be valid UTF-8.
+For example, valid strings are `"abc"`, `"🦀"`, `"\u{1F980}"` and `"\xf0\x9f\xa6\x80"`.
 `"\x80"` is not valid, however, as that is not valid UTF-8.
 
 Byte string literals (`b""`) may include non-ascii characters and unicode escape codes (`\u{…}`), which will be encoded as UTF-8.
@@ -66,12 +55,8 @@ Byte string literals (`b""`) may include non-ascii characters and unicode escape
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The tokenizer should accept all escape codes in both `""` and `b""` literals.
-Only a regular string literal is checked for invalid UTF-8, but only at the point where the token is converted to a string literal AST node.
-
-Just like how `$_:tt` accepts a thousand-digit integer literal but `$_:literal` does not,
-a `$_:tt` should accept `"\x80"`, but `$_:literal` should not.
-Similar, proc macros should be able to consume invalid UTF-8 string literals as `TokenTree`.
+The tokenizer should accept all known escape codes in both `""` and `b""` literals.
+Only a regular string literal is checked to be valid UTF-8 afterwards.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -92,8 +77,8 @@ However, for regular string literals that will result in an error in nearly all 
 
 - C and C++ do the same. (Assuming UTF-8 character set.)
 - [The `bstr` crate](https://docs.rs/bstr/latest/bstr/)
-- Python and Javascript do it differently: `\xff` mean `\u{ff}`, because their strings behave like UTF-32 or UTF-16 rather than UTF-8.
-  (Also, Python's byte strings "accept" `\u` escape codes as just `'\\', 'u'`, without any warning or error.)
+- Python and Javascript do it differently: `\xff` means `\u{ff}`, because their strings behave like UTF-32 or UTF-16 rather than UTF-8.
+  (Also, Python's byte strings "accept" `\u` as just `'\\', 'u'`, without any warning or error.)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -113,8 +98,15 @@ However, for regular string literals that will result in an error in nearly all 
     Probably not, since a `char` is not UTF-8 encoded; it's a single UTF-32 codepoint.
     _Decoding_ UTF-8 from `\x` escape codes back into UTF-32 would be a bit surprising.
 
+    (But note that `'\x41'` already works, for single byte UTF-8 characters, aka ASCII.)
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+- Postpone the UTF-8 validation to a later stage, such that macros can accept literals with invalid UTF-8. E.g. `cstr!("\xff")`.
+
+  - If we do that, we could also decide to accept _all_ escape codes, even unknown ones, to allow things like `some_macro!("\a\b\c")`.
+    (The tokenizer would only need to know about `\"`.)
 
 - Update the `concat!()` macro to accept `b""` strings and also not implicitly convert integers to strings, such that `concat!(b"", $x, b"\0")` becomes usable.
   (This would need to happen over an edition.)
