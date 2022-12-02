@@ -40,6 +40,7 @@ Each execution of a function stands in a particular "constness context". A `cons
 - array lengths (`[T; CONST]`)
 - enum discriminants (`enum A { B = CONST }`)
 - inline-const block (`const { CONST }`)
+- const generic arguments (`function::<CONST>()`)
 
 This list may be extended by future language features.
 
