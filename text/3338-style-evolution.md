@@ -1,7 +1,7 @@
 - Feature Name: style-evolution
 - Start Date: 2022-10-26
 - RFC PR: [rust-lang/rfcs#3338](https://github.com/rust-lang/rfcs/pull/3338)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#105336](https://github.com/rust-lang/rust/issues/105336)
 
 # Summary
 [summary]: #summary
