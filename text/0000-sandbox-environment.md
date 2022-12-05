@@ -32,7 +32,7 @@ However, in many cases it is too flexible. It poses several problems:
    where the compilation environment differs from the deployment environment
    (such as when cross-compiling).
 
-This RFC proposes a way to precisely coqntrol the environment visible to the
+This RFC proposes a way to precisely control the environment visible to the
 compile-time macros, while defaulting to the current behaviour of making the
 entire environment available.
 
@@ -51,15 +51,15 @@ control this environment:
 - `--env-remove VARIABLE` - Remove a specific variable from the logical
   environment. This is an exact match, and it does nothing if that variable is
   not set.
-- `--env-pass VARIABLE` - pass a variable from the process environment to the
+- `--env-pass VARIABLE` - Pass a variable from the process environment to the
   logical one, even if it had previously been removed. This lets specific
   variables to be allow-listed without having to explicitly set their value. The
-  variable is ignored if it is not set or not utf-8 encoded.
+  variable is ignored if it is not set or not UTF-8 encoded.
 - `--env-set VARIABLE=VALUE` - Set a variable in the logical environment. This will
   either create a new variable, or override an existing value.
 
 The options are processed in the order listed above (ie, clear, then remove,
-then set). Multiple `--env-set` options affecting the same variable are
+then pass, then set). Multiple `--env-set` options affecting the same variable are
 processed in command-line order, so later ones override earlier ones.
 
 # Reference-level explanation
@@ -71,7 +71,7 @@ The implementation of this RFC introduces the notion of:
 - a logical environment which is accessed by the `env!`/`option_env!` macros
 
 The logical environment is initialized from the complete process environment,
-excluding only environment variables which are not utf-8 encoded (name or
+excluding only environment variables which are not UTF-8 encoded (name or
 value).
 
 Once initialized, the logical environment may be manipulated via the `--env-`
@@ -87,7 +87,7 @@ These options are processed in order:
 1. `--env-remove VAR` - remove a specific variable from the logical environment.
    May be specified multiple times.
 1. `--env-pass VAR`- set a variable in the logical environment from the process
-   environment. Ignored if the variable is not set, or is not utf-8 encoded.
+   environment. Ignored if the variable is not set, or is not UTF-8 encoded.
 1. `--env-set VAR=VALUE` - multiple `--env-set` options affecting the same variable are
    processed in command-line order, so later ones override earlier ones.
 
@@ -162,7 +162,7 @@ logically equivalent to both of Rust's mechanisms:
 
 These macros are explicit on the command-line, so they're easy to take into
 account as an input to the compilation process. And the tools driving the C
-compiler don't need any addition way to control the process environment.
+compiler don't need any additional way to control the process environment.
 
 Rust has a couple of mechanisms for compile-time configuration:
 - It has the `--cfg` options which set flags which can be tested with
@@ -212,7 +212,7 @@ variables must be explicitly listed to remove or set their values.
 
 A possible extension would be to allow regular expressions to select which
 variable names should be removed from the logical environment or passed through
-from the process environment.
+from the process environment. For example, `--env-remove-re` or `--env-pass-re`.
 
 Environment variables are frequently used for paths - a common pattern is:
 ```
