@@ -33,8 +33,12 @@ Comparing any integer to a float NaN returns `false` (`None` in `partial_cmp()`)
 
 In a comparison, floats are compared by the exact mathematical value they represent according to IEEE-754. For example:
 - `19999999_f32 == 20000000` because `19999999` is rounded to `20000000` in 32 bit floats
+    - In other words, the number `19999999` _does not exist_ in 32 bit floats
 - `20000000_f32 != 20000001` because both literals represent their value exactly, and the values are different
 - `19999999_f64 != 20000000` because f64 has enough precision to exactly represent `19999999`
+
+Type inference shouldn't be affected by this change, because the generic parameter on `PartialOrd` and `PartialEq` is defaulted to `Self`.
+Therefore, expressions like `1 == 1_u8` will continue to work by correctly inferring the first literal to be a `u8`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
