@@ -164,9 +164,15 @@ This RFC does not specify the validity invariant, instead delegating that decisi
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It commits us to supporting upcasting, which can make "multi-trait" dyn more complex (see the Future Possibilities section).
+## Larger vtables
 
-Vtables become larger to accommodate upcasting, which could have an affect on performance.
+Although the precise layout of vtables is not stabilized in this RFC (and is never expected to be), adopting this feature does imply that vtables must *somehow* support upcasting. For "single-inheritance" scenarios, where traits have a single supertrait, this is not an issue, but for "multiple inheritance" scenarios, where traits have multiple supertraits, it may imply that vtables become larger. Under the current vtable design, we generate one additional vtable for each supertraits after the first. This leads to larger binaries, which can be an issue for some applications (particularly embedded).
+
+(Note that the we are already generating the larger vtables as of Rust 1.56, in anticipation of adopting this RFC.)
+
+## Multi-trait dyn is more complex
+
+As described in the Future Possibilities section, if we move to support `dyn Foo + Bar + Baz` for arbitrary sets of traits, we would likely also want to support upcasting to arbitrary subsets (e.g., `Foo + Bar`, `Bar + Baz`, or `Foo + Baz`). This potentially requires a large number of vtables to be generated in advance, since we cannot know which sets of supertraits users will want to upcast to.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -192,6 +198,16 @@ The current implementation uses a hybrid strategy that *sometimes* uses pointers
 
 Certainly. Given that the RFC doesn't specify vtable layout, we still have room to do experimentation. For example, we might do special optimizations for traits with no methods.
 
+## Why not make upcasting opt-in at a trait level?
+
+The current proposal always permits upcasting from a trait to its supertraits. This implies however that when creating a `dyn Trait` vtable we must always allow for the possibility of an upcast, unless we can somehow prove that this particular dyn will never be upcast (we currently make no effort to "trim" vtables, although it is theoretically possible with "link-time-optimization"). One alternative would be to make upcasting opt-in, perhaps at a trait level. This has the advantage that adding a supertrait does not cause a larger vtable unless the trait "opts in" to upcasting, but the disadvantage of imposing additional complexity on users. Library authors would have to anticipate whether users may wish to upcast, and it is likely that failure to add such an annotation would be a frequent irritation. Furthermore, for the vast majority of use-cases, the additional binary size from supporting upcasting is minimal and not a problem. 
+
+Apart from the complexity problem, it is not obvious that the trait level is the right place to opt-in to upcasting. It's unclear what guidance we would give to a user authoring a trait to indicate when they should enable opt-in, apart from "if you anticipate users wishing to upcast" (which of course begs the question, when would I anticipate upcasting?).
+
+## Why not make add a lint if traits would permit upcasting?
+
+Another proposal is to add a lint for traits that have multiple supertraits but which are not dyn safe, since they may require larger vtables. An allow-by-default lint may be acceptable, to help users identify this case if they should wish, but this RFC recommends against a warn-by-default lint. If we believe that larger vtables are enough of a problem to warn against multiple supertraits, we should prefer to make upcasting opt-in or to take some other approach to solve the problem.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -206,7 +222,7 @@ Java programs can upcast from an object to any superclass. Since Java is limited
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- None.
+* Should we make upcasting opt-in or take other steps to affect vtable size? The current inclination of the lang-team is "no", but it would be useful to gather data on how much supporting upcasting contributors to overall binary size.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -251,4 +267,19 @@ trait IsNull {
 ```
 
 For this to work, invoking `n.is_null()` on a `n: *const dyn IsNull` must have a valid vtable to use for dispatch. This condition is guaranteed by this RFC.
+
+## Allow traits to "opt out" from upcasting
+
+We could add an option allowing traits to opt-out from upcasting. Adding this option to a trait would be a semver-breaking change, as consumers may already have been taking advantage of upcasting. Adding such an option to the language, however, is a pure extension and can be done at any time.
+
+## Optimizations or options to trim binary size
+
+The primary downside of this RFC is that it requires larger vtables, which can be a problem for some applications. Vtables are of course only one contributor to overall binary sizes (and we don't have data to indicate how large of a contributor they are). To get an idea of other sources, take a look at [min-sized-rust](https://github.com/johnthagen/min-sized-rust), a repository which documents a Best Practices workflow for reducing Rust binary size.
+
+Looking forward, there are at least two potential ways we could address this problem:
+
+* Optimization to remove unused parts of vtables: When generating a final binary artifact, we could likely reduce the size of vtables overall by analyzing which methods are invoked and which upcast slots are used. Unused slots could be made NULL, which may enable additional dead code elimination as well. This would require some rearchitecture in the compiler, since LTO currently executes at the LLVM level, and this sort of analysis would be much easier to do at the MIR level; no language changes are required, however.
+* Target options to disable upcasting or other "space hogs": We could extend compilation profiles to allow targets to disable upcasting, either always or for select traits. This would lead to a compilation error if crates used upcasting, but permit generating smaller binaries (naturally, all crates being compiled would have to be compiled with the same target opions).
+
+Another option, though one that this RFC recommends against, would be to add a new form of `dyn` that does not support upcasting (e.g., `dyn =Trait` or some such). This would allow individual values to "opt out" from upcasting.
 
