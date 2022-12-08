@@ -168,7 +168,11 @@ This RFC does not specify the validity invariant, instead delegating that decisi
 
 Although the precise layout of vtables is not stabilized in this RFC (and is never expected to be), adopting this feature does imply that vtables must *somehow* support upcasting. For "single-inheritance" scenarios, where traits have a single supertrait, this is not an issue, but for "multiple inheritance" scenarios, where traits have multiple supertraits, it may imply that vtables become larger. Under the current vtable design, we generate one additional vtable for each supertraits after the first. This leads to larger binaries, which can be an issue for some applications (particularly embedded).
 
-(Note that the we are already generating the larger vtables as of Rust 1.56, in anticipation of adopting this RFC.)
+Note that the we are already generating the larger vtables as of Rust 1.56, in anticipation of adopting this RFC. We do not have data about real-world impact, but some synthetic benchmarks have been generated. [afetisov writes:](https://github.com/rust-lang/rfcs/pull/3324#issuecomment-1308124173)
+
+> I don't have any data from real-world projects, but I have made a test crate, which uses proc macro to generate a graph of traits and impls with width W and depth D, as in my example above. At least when generating rlibs, I did not see any exponential blowup of artifact size, which I predicted above. The rlib size seemed to grow roughly linearly in W and D.
+
+This is suggestive that increased binary size will not be an issue in practice.
 
 ## Multi-trait dyn is more complex
 
