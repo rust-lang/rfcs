@@ -54,7 +54,7 @@ The only upcasting coercion we permit for dyn today is to remove auto-traits; e.
 
 One example use case comes from the [salsa](https://github.com/salsa-rs/salsa) crate. Salsa programs have a central database but they can be broken into many modules. Each module has a trait that defines its view on the final database. So for example a parser module might define a `ParserDb` trait that contains the methods the parser needs to be present. All code in the parser module then takes a `db: &mut dyn ParserDb` parameter; `dyn` traits are used to avoid monomorphization costs.
 
-When one module uses another in Salsa, that is expressed via supertrait relationships. So if the type checker module wishes to invoke a parser, it might define its `trait TypeCheckDb: ParserDb` to have the `ParserDb` as a supertrait. The methods in the type checker then take a `db: &mut dyn TypeCheckerDb` parameter. If they wish to invoke the `ParserDb` methods, they would ideally be able to pass this `db` parameter to the parser methods and have it automatically upcast. This does not work with today's design, requiring elaborate workarounds.
+When one module uses another in Salsa, that is expressed via supertrait relationships. So if the type checker module wishes to invoke a parser, it might define its `trait TypeCheckerDb: ParserDb` to have the `ParserDb` as a supertrait. The methods in the type checker then take a `db: &mut dyn TypeCheckerDb` parameter. If they wish to invoke the `ParserDb` methods, they would ideally be able to pass this `db` parameter to the parser methods and have it automatically upcast. This does not work with today's design, requiring elaborate workarounds.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
