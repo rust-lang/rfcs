@@ -172,7 +172,7 @@ Note that the we are already generating the larger vtables as of Rust 1.56, in a
 
 > I don't have any data from real-world projects, but I have made a test crate, which uses proc macro to generate a graph of traits and impls with width W and depth D, as in my example above. At least when generating rlibs, I did not see any exponential blowup of artifact size, which I predicted above. The rlib size seemed to grow roughly linearly in W and D.
 
-This is suggestive that increased binary size will not be an issue in practice.
+It's not entirely clear why this is, however, and more investigation may be warranted.
 
 ## Multi-trait dyn is more complex
 
