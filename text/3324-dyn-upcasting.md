@@ -1,6 +1,6 @@
 - Feature Name: `trait_upcasting`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Start Date: 2022-12-10
+- RFC PR: [rust-lang/rfcs#3324](https://github.com/rust-lang/rfcs/pull/3324)
 - Rust Issue: [rust-lang/rust#65991](https://github.com/rust-lang/rust/issues/65991)
 - Design repository: [rust-lang/dyn-upcasting-coercion-initiative](https://github.com/rust-lang/dyn-upcasting-coercion-initiative)
 
