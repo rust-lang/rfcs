@@ -226,7 +226,7 @@ Java programs can upcast from an object to any superclass. Since Java is limited
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Should we make upcasting opt-in or take other steps to affect vtable size? The current inclination of the lang-team is "no", but it would be useful to gather data on how much supporting upcasting contributors to overall binary size.
+* Should we make upcasting opt-in in some form to limit vtable size by default? The current inclination of the lang-team is "no", but it would be useful to gather data on how much supporting upcasting contributors to overall binary size.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
