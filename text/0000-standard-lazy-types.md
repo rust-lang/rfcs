@@ -30,9 +30,7 @@ At the same time, working with lazy values in Rust is not easy:
 * C++ and Java provide language-level delayed initialization for static values, while Rust requires explicit code to handle runtime-initialization.
 * Rust borrowing rules require a special pattern when implementing lazy fields.
 
-While `lazy_static` is implemented using macros, to work-around language limitations, today it is possible to implement similar functionality without resorting to macros, as a natural combination of two features:
-* lazy values
-* `static` keyword
+`lazy_static` is implemented using macros, to work-around former language limitations. Since then, various language improvements have made it possible to  create runtime initialized (lazy) objects in a `static` scope, accomplishing the same goals without macros.
 
 We can have a single canonical API for a commonly used tricky unsafe concept, so we probably should have it!
 
@@ -104,7 +102,7 @@ Notable features of the API:
 Similarly to other interior mutability primitives, `OnceCell` comes in two flavors:
 
 * Non thread-safe `std::cell::OnceCell`.
-* Thread-safe `std::sync::OnceCell`.
+* Thread-safe `std::sync::OnceLock`.
 
 Here's how `OnceCell` can be used to implement lazy-initialized global data:
 
@@ -142,37 +140,35 @@ impl Ctx {
 }
 ```
 
-We also provide a more convenient but less powerful `Lazy<T, F>` wrapper around `OnceCell<T>`, which allows to specify the initializing closure at creation time:
+We also provide the more convenient but less powerful `Lazy<T, F>` and `LazyLock<T, F>` wrappers around `OnceCell<T>` and `OnceLock<T>`, which allows specifying the initializing closure at creation time:
 
 ```rust
-pub struct Lazy<T, F = fn() -> T> { ... }
+pub struct LazyCell<T, F = fn() -> T> { ... }
 
-impl<T, F> Lazy<T, F> {
+impl<T, F: FnOnce() -> T> LazyCell<T, F> {
     /// Creates a new lazy value with the given initializing function.
-    pub const fn new(init: F) -> Lazy<T, F>;
-}
-
-impl<T, F: FnOnce() -> T> Lazy<T, F> {
+    pub const fn new(init: F) -> LazyCell<T, F>;
+    
     /// Forces the evaluation of this lazy value and returns a reference to
     /// the result.
     ///
     /// This is equivalent to the `Deref` impl, but is explicit.
-    pub fn force(this: &Lazy<T, F>) -> &T;
+    pub fn force(this: &LazyCell<T, F>) -> &T;
 }
 
-impl<T, F: FnOnce() -> T> Deref for Lazy<T, F> {
+impl<T, F: FnOnce() -> T> Deref for LazyCell<T, F> {
     type Target = T;
 
     fn deref(&self) -> &T;
 }
 ```
 
-`Lazy` directly replaces `lazy_static!`:
+`LazyLock` directly replaces `lazy_static!`:
 
 ```rust
-use std::{sync::{Mutex, Lazy}, collections::HashMap};
+use std::{sync::{Mutex, LazyLock}, collections::HashMap};
 
-static GLOBAL_DATA: Lazy<Mutex<HashMap<i32, String>>> = Lazy::new(|| {
+static GLOBAL_DATA: LazyLock<Mutex<HashMap<i32, String>>> = LazyLock::new(|| {
     let mut m = HashMap::new();
     m.insert(13, "Spica".to_string());
     m.insert(74, "Hoyten".to_string());
@@ -189,16 +185,15 @@ use std::cell::{RefCell, Lazy};
 pub static FOO: Lazy<RefCell<u32>> = Lazy::new(|| RefCell::new(1));
 ```
 
-However, `#[thread_local]` attribute is pretty far from stabilization at the moment, and due to the required special handling of destructors, it's unclear if just using `cell::Lazy` will work out.
 
 Unlike `lazy_static!`, `Lazy` can be used for locals:
 
 ```rust
-use std::cell::Lazy;
+use std::cell::LazyCell;
 
 fn main() {
     let ctx = vec![1, 2, 3];
-    let thunk = Lazy::new(|| {
+    let thunk = LazyCell::new(|| {
         ctx.iter().sum::<i32>()
     });
     assert_eq!(*thunk, 6);
@@ -212,12 +207,12 @@ The proposed API is directly copied from [`once_cell`] crate.
 
 Altogether, this RFC proposes to add four types:
 
-* `std::cell::OnceCell`, `std::cell::Lazy`
-* `std::sync::OnceCell`, `std::sync::Lazy`
+* `std::cell::OnceCell`, `std::cell::LazyCell`
+* `std::sync::OnceLock`, `std::sync::LazyLock`
 
-`OnceCell` is an important core primitive.
-`Lazy` can be stabilized separately from `OnceCell`, or it can be omitted from the standard library altogether.
-However, it provides significantly nicer ergonomics for the common use-case of static lazy values.
+`OnceCell` and `OnceLock` are important primitives.
+`LazyCell ` and `LazyLock` can be stabilized separately from `OnceCell`, or optionally omitted from the standard library altogether.
+However, as they provide significantly nicer ergonomics for the common use case of static lazy values, it is worth developing in tandem.
 
 Non thread-safe flavor is implemented by storing an `UnsafeCell<Option<T>>`:
 
@@ -247,7 +242,7 @@ Non thread-safe flavor can be added to `core` as well.
 
 The thread-safe variant is implemented similarly to `std::sync::Once`.
 Crucially, it has support for blocking: if many threads call `get_or_init` concurrently, only one will be able to execute the closure, while all other threads will block.
-For this reason, most of `std::sync::OnceCell` API can not be provided in `core`.
+For this reason, most of `std::sync::OnceLock` API can not be provided in `core`.
 In the `sync` case, reliably panicking on re-entrant initialization is not trivial.
 For this reason, the implementation would simply deadlock, with a note that a deadlock might be elevated to a panic in the future.
 
@@ -255,19 +250,19 @@ For this reason, the implementation would simply deadlock, with a note that a de
 [drawbacks]: #drawbacks
 
 * This is a moderately large addition to stdlib, there's a chance we do something wrong.
-  This can be mitigated by piece-wise stabilization (in particular, `Lazy` convenience types are optional) and the fact that API is tested in the crates.io ecosystem via `once_cell` crate.
+  This can be mitigated by piece-wise stabilization (in particular, `LazyCell` convenience types are optional) and the fact that API is tested in the crates.io ecosystem via `once_cell` crate.
 
-* The design of `Lazy` type uses default type-parameter as a work-around for the absence of type-inference of statics.
+* The design of `LazyCell` type uses default type-parameter as a workaround for the absence of type inference of statics.
 
 * We use the same name for unsync and sync types, which might be confusing.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why not `Lazy` as a primitive?
+## Why not `LazyCell` as a primitive?
 
-On the first look, it may seem like we don't need `OnceCell`, and should only provide `Lazy`.
-The critical drawback of `Lazy` is that it's not always possible to provide the closure at creation time.
+On the first look, it may seem like we don't need `OnceCell`, and should only provide `LazyCell`.
+The critical drawback of `LazyCell` is that it's not always possible to provide the closure at creation time.
 
 This is important for lazy fields:
 
@@ -361,12 +356,12 @@ fn try_set(&self, value: T) -> Result<&T, (Option<&T>, T)>
 ```
 
 That is, if value is set successfully, a reference is returned.
-Otherwise, ther the cell is either fully initialized, and a reference is returned as well, or the cell is being initialized, and no valid reference exist yet.
+Otherwise, the cell is either fully initialized, and a reference is returned as well, or the cell is being initialized, and no valid reference exist yet.
 
 ## Support for `no_std`
 
-The RFC proposes to add `cell::OnceCell` and `cell::Lazy` to `core`, while keeping `sync::OnceCell` and `sync::Lazy` `std`-only.
-However, there's a subset of `sync::OnceCell` that can be provided in `core`:
+The RFC proposes to add `cell::OnceCell` and `cell::LazyCell` to `core`, while keeping `sync::OnceLock` and `sync::LazyLock` `std`-only.
+However, there's a subset of `OnceLock` that can be provided in `core`:
 
 ```rust
 impl<T> OnceCell<T> {
@@ -464,17 +459,7 @@ However, the situation with `consume` ordering is cloudy right now:
 * [nobody knows what it actually means](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0371r0.html),
 * [but people rely on it in practice for performance](https://docs.rs/crossbeam-utils/0.7.0/crossbeam_utils/atomic/trait.AtomicConsume.html#tymethod.load_consume).
 
-We can do one of the following:
-
-1. Specify and implement `acquire` ordering,
-2. Specify `consume` but implement `acquire` (or hack `consume` in an implementation-defined manner) with the hope to make implementation more efficient later.
-3. Specify and implement `acquire`, but provide additional API which can take `Ordering` as an argument.
-
-Option two seems the most promising:
-
-* it is forward compatible with specifying `acquire` later,
-* for typical `OnceCell` use-cases, `consume` should be enough.
-  For guaranteeing side effects, `std::sync::Once` may be used instead.
+Given the cost of `consume` ordering for minimal benefit, this crate proposes to specify and implement `acquire/release` ordering. If at some point Rust adds a `consume/release` option to `std::sync::atomic::Ordering`, the option of adding API methods that accept an `Ordering` can be considered.
 
 # Prior art
 [prior-art]: #prior-art
@@ -495,7 +480,7 @@ This design doesn't always work in Rust, as closing over `self` runs afoul of th
 [unresolved-questions]: #unresolved-questions
 
 - What is the best naming/place for these types?
-- What is the best naming scheme for methods? Is it `get_or_try_init` or `try_inert_with`?
+- What is the best naming scheme for methods? Is it `get_or_try_init` or `try_insert_with`?
 - Is the `F = fn() -> T` hack worth it?
 - Which synchronization guarantee should we pick?
 
