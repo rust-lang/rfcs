@@ -574,3 +574,13 @@ features (like custom DSTs, extern types, or whatever other new unsized types we
 might want to add).
 
 As such, it's left for future work.
+
+## Fields in Traits
+
+If support for fields in traits is ever added, then it would be an open question
+how `offset_of!` behaves when applied to a generic value of a trait type which
+has fields. Similarly, if an `offset_of_val!` is added, it would interact with
+trait objects of traits that have fields.
+
+In either case, this could be forbidden or allowed, but decisions along these
+lines are deferred for now, as fields in traits do not yet exist.
