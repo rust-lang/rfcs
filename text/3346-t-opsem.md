@@ -49,6 +49,10 @@ Because of the size and complexity inherent to attempting to stabilize an operat
 
 ## Membership
 
+New members will be added to the team using a process identical to one already used by the libs and style teams. Specifically:
+
+> Proposed new members of the team are nominated by existing members. All existing members of the team must affirmatively agree to the addition of a member, with zero objections; if there is any objection to a nomination, the new member will not be added. In addition, the team lead or another team member will check with the moderation team regarding any person nominated for membership, to provide an avenue for awareness of concerns or red flags.
+
 When considering someone for membership, the qualifications below will all be taken into account:
 
  - Is this person **familiar with the current state of operational semantics** work in Rust?
