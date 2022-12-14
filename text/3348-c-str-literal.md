@@ -1,7 +1,7 @@
 - Feature Name: `c_str_literal`
 - Start Date: 2022-11-15
 - RFC PR: [rust-lang/rfcs#3348](https://github.com/rust-lang/rfcs/pull/3348)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#105723](https://github.com/rust-lang/rust/issues/105723)
 
 # Summary
 [summary]: #summary
