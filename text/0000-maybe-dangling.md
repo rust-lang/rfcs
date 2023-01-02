@@ -89,6 +89,7 @@ The goal of this RFC is to
 
 To handle situations like this, Rust has a special type called `MaybeDangling<P>`:
 references and boxes in `P` do *not* have to be dereferenceable or follow aliasing guarantees.
+This applies inside nested references/boxes inside `P` as well.
 They still have to be non-null and aligned, and it has to at least be *possible* that there exists valid data behind that reference (i.e., `MaybeDangling<&!>` is still invalid), but the rules are relaxed when compared with just a plain `P`.
 Also note that safe code can still generally assume that every `MaybeDangling<P>` it encounters is a valid `P`, but within unsafe code this makes it possible to store data of arbitrary type without making reference guarantees (this is similar to `ManuallyDrop`).
 
