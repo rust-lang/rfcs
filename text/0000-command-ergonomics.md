@@ -360,6 +360,23 @@ Alternatives and prior proposals include:
    but got bogged down due to lack of consensus on overall direction
    and some bikeshed issues.
 
+ * The `SubprocessError` type could be a
+   transparent non-exhaustive struct.
+   This might be reasonable,
+   since it's really just a bag of information
+   with getters and setters for every field.
+   But transparent structs are unfashionable in modern Rust.
+
+ * Instead of a single `SubprocessError` type used everywhere,
+   there could be a different error type for the different calls.
+   For example, `run()` could have a different error type to
+   `get_output()`,
+   since `run` doesn't need to represent UTF-8 conversion errors.
+   This would not be very in keeping with the rest of `std::process`,
+   which tends to unified types with variation selected at runtime.
+   There would still have to be *a* type as complex as `SubprocessError`,
+   since that's what `get_output_read` needs.
+
 # Prior art
 [prior-art]: #prior-art
 
