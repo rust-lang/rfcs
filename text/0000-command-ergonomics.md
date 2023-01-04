@@ -55,7 +55,7 @@ on the overall approach.  Some references:
 
 The following incorrect program fragments are all accepted today and run to completion without returning any error:
 
-```
+```rust
     Command::new("touch")
         .args(&["/dev/enoent/touch-1"]);
     // ^ programmer surely wanted to actually run the command
