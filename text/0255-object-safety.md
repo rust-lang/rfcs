@@ -70,11 +70,11 @@ where a trait object is used with a generic call and would be something like
 "type error: SomeTrait does not implement SomeTrait" - no indication that the
 non-object-safe method were to blame, only a failure in trait matching.
 
-Another advantage of this proposal is that it implies that all
-method-calls can always be rewritten into an equivalent [UFCS]
-call. This simplifies the "core language" and makes method dispatch
-notation -- which involves some non-trivial inference -- into a kind
-of "sugar" for the more explicit UFCS notation.
+Another advantage of this proposal is that it implies that all method-calls
+can always be rewritten into an equivalent fully-qualified function call
+(see [RFC 132]). This simplifies the "core language" and makes method dispatch
+notation -- which involves some non-trivial inference -- into a kind of
+"sugar" for the more explicit fully-qualified notation.
 
 # Detailed design
 
@@ -212,5 +212,5 @@ N/A
   (2) specify that methods may include `where Self:Sized` to overcome
   object safety restrictions.
 
-[UFCS]: 0132-ufcs.md
+[RFC 132]: 0132-ufcs.md
 [RFC 546]: 0546-Self-not-sized-by-default.md
