@@ -82,7 +82,7 @@ especially if good error messages are wanted.
 We will introduce new APIs on `Command`,
 for running the command and collecting its output:
 
-```
+```rust
 impl Command {
     fn run(&mut self) -> Result<(), SubprocessError>;
     fn get_output_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>;
@@ -219,7 +219,7 @@ probably printed to stderr;
 with `piped` we capture that, and represent both the stderr
 and the exit status as problems within the `SubprocessError`.
 
-```
+```rust
 impl SubprocessError {
     /// The program, if we know it.
     fn program(&self) -> Option<&OsStr>;
@@ -275,7 +275,7 @@ We also provide ways for this new error to be constructed,
 which will be needed by other lower level libraries besides std,
 notably async frameworks:
 
-```
+```rust
 impl SubprocessError {
     /// Makes a "blank" error which doesn't contain any useful information
     ///
@@ -484,7 +484,7 @@ Options might include:
 With the proposed API,
 completely correctly running `diff(1)` would look a bit like this:
 
-```
+```rust
     let result = Command::new("diff")
         .args(["before","after"])
         .run();
@@ -504,7 +504,7 @@ completely correctly running `diff(1)` would look a bit like this:
 This is doable but cumbersome.
 A naive Dionysus is likely to write:
 
-```
+```rust
     let status = match result {
         Ok(()) => 0,
         Err(err) => {
@@ -524,7 +524,7 @@ containing a nonzero exit status *and* any other problem.
 But in a more complex situation it might be wrong.
 
 Perhaps:
-```
+```rust
 impl SubprocessError {
     /// Returns `Ok<ExitStatus>` if the only reason for the failure was a nonzero exit status.  Otherwise returns `self`.
     ////
@@ -534,7 +534,7 @@ impl SubprocessError {
 ```
 
 Then Dionysus can write:
-```
+```rust
     let status = match result {
         Ok(()) => 0,
         Err(err) => err.just_status()?.code(),
