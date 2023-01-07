@@ -11,20 +11,22 @@
   - [Example: Error Handling](#example-error-handling)
 - [Desugaring](#desugaring)
   - [Overview](#overview-1)
-  - [Basic step-by-step guide](#basic-step-by-step-guide)
-  - [(TODO) Unimplementable trait methods](#todo-unimplementable-trait-methods)
+  - [Step-by-step guide](#step-by-step-guide)
+  - [Handling default trait methods](#handling-default-trait-methods)
   - [(TODO) Representing `Self` in traits and types](#todo-representing-self-in-traits-and-types)
+  - [(TODO) `Any` trait and `TypeId`](#todo-any-trait-and-typeid)
 - [Interaction with lifetimes](#interaction-with-lifetimes)
 - [(TODO) Relationship to `dyn`](#todo-relationship-to-dyn)
   - [(TODO) Parity in lifetime rules](#todo-parity-in-lifetime-rules)
   - [(TODO) Sized and Self](#todo-sized-and-self)
 - [Drawbacks](#drawbacks)
-  - [(TODO) Concerns about size and performance](#todo-concerns-about-size-and-performance)
+  - [(TODO) Downcasting](#todo-downcasting)
+  - [(TODO) Size and performance](#todo-size-and-performance)
   - [(TODO) Teaching `impl` and `dyn`](#todo-teaching-impl-and-dyn)
 - [Alternatives](#alternatives)
   - [(TODO) Introduce new syntax for multi-type RPIT](#todo-introduce-new-syntax-for-multi-type-rpit)
   - [Design a general-purpose delegation language feature first](#design-a-general-purpose-delegation-language-feature-first)
-  - [TODO Stack-allocated `dyn Trait`.](#todo-stack-allocated-dyn-trait)
+  - [(TODO) Stack-allocated `dyn Trait`.](#todo-stack-allocated-dyn-trait)
 - [Prior art](#prior-art)
   - [RFC 1951 and RFC 2515](#rfc-1951-and-rfc-2515)
   - [auto-enums crate](#auto-enums-crate)
@@ -39,7 +41,7 @@
 [summary]: #summary
 
 This RFC enables [Return Position Impl Trait (RPIT)][RPIT] to work in functions
-which return more than one type:
+which return more than one type, mostly without any additional restrictions:
 
 [RPIT]: https://doc.rust-lang.org/stable/rust-by-example/trait/impl_trait.html#as-a-return-type
 
@@ -207,7 +209,7 @@ wrong. As pointed out in [this
 comment](https://github.com/rust-lang/rfcs/pull/3367#discussion_r1063688548), we
 need to provide a strategy to keep the right version. 
 
-## Basic step-by-step guide
+## Step-by-step guide
 
 What we're proposing we start with is the 
 This desugaring can be implemented using the following steps:
@@ -216,6 +218,11 @@ This desugaring can be implemented using the following steps:
 2. Define a new enum with a member for each of the function's return types
 3. Implement the traits declared in the `-> impl Trait` bound for the new enum,
    matching on `self` and delegating to the enum's members
+   1. Check whether the trait methods on the delegates are the _default_ method,
+   or a custom implementation.
+   2. Keep the default method if all instances of the method on the delegates
+   are the default.
+   3. Only generate delegating implementations if there are custom implementations
 4. Substitute the `-> impl Trait` signature with the concrete enum
 5. Wrap each of the function's return calls in the appropriate enum member
 
@@ -223,19 +230,97 @@ The hardest part of implementing this RFC will likely be the actual trait
 implementation on the enum, as each of the trait methods will need to be
 delegated to the underlying types.
 
-## (TODO) Unimplementable trait methods
+## Handling default trait methods
 
-TODO (tldr: like `Iterator::step_by`, we should check whether the default
-implementations are used, and if they are we just do the same. This really
-should have better language support tho, so note that in "future
-possibilities". What we don't want to do is disallow types which don't return
-`Self`, or disallow `Self: Sized` bounds.)
+In complex traits such as `Iterator`, a majority of the methods will not be
+replaced on implementations and remain the default. In fact, for a large number
+of default methods it's not even possible to replace them with custom
+implementations, because they return types whose constructors are effectively
+sealed. For example, this is how `Iterator::step_by` is implemented in the
+stdlib:
+
+```rust
+fn step_by(self, step: usize) -> StepBy<Self>
+where
+    Self: Sized,
+{
+    StepBy::new(self, step) // `StepBy::new` is private to `core`
+}
+```
+
+Say we're returning two different iterators from a function using `-> impl
+Iterator`. If we attempted to generate a delegation, the codegen might be
+invalid and fail to compile:
+
+```rust
+// ❌ This codegen would be invalid
+fn step_by(self, step: usize) -> StepBy<Enum<'a>> {
+    match self {
+        Enum::A(iter) => iter.step_by(step), // : StepBy<Range<i32>>
+        Enum::B(iter) => iter.step_by(step), // : StepBy<vec::IntoIter<'a>>
+    }
+}
+```
+
+Instead we should only ever generate a delegation for methods where the default
+method has been replaced by a custom implementation. Which tracks with how we
+would implement this by hand as well, and is probably more efficient even in
+cases where delegating to default implementations was possible:
+
+```rust
+// sticking to the default implementation...
+impl Iterator for Enum {
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None) // default impl
+    }
+}
+
+// ... is going to be more efficient than delegating to two instances of the
+// default implementation
+impl Iterator for Enum {
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            A(iter) => iter.size_hint(), // calls default impl: `(0, None)` 
+            B(iter) => iter.size_hint(), // calls default impl: `(0, None)`
+        }
+    }
+}
+```
+
+This approach is similar to how this would be done when unifying types to an
+enum by hand, and will work as expected in all practical cases. The only
+special case this needs to account for is custom implementations of methods
+which return the never type (`!`).
+
+```rust
+impl Iterator for MyType {
+    // This would type-check, but would not be practical, as it can't ever
+    // generate `StepBy`. This may still register as a "custom implementation"
+    // however, which could cause code to be generated which doesn't typecheck
+    fn step_by(self, step: usize) -> StepBy<Enum<'a>> {
+        loop {} // this would 
+    }
+}
+```
+
+These implementations are not at all practical but would styll type-check, and
+would cause the delegation to generate code which wouldn't work. This seems
+impractical enough that we could probably ignore it in an initial
+implementation. But later on we could detect where the actual returned type
+of the function is never, and emit a diagnostic for that. In the even longer
+term, we could annotate these types of unimplementable functions. See the "future
+possibilities" section for more on that.
 
 ## (TODO) Representing `Self` in traits and types
 
 TODO (tldr: when generating types which expect a `Self`, make sure to wrap the
 output in the appropriate enum member branch. If anyone later asks what type it
 is: just say it's an `impl Trait`.)
+
+## (TODO) `Any` trait and `TypeId`
+
+TODO (tldr: proxy the type id to the inner type, that's what `dyn` does too. You
+can't downcast `impl Trait` as-is anyway, so it's likely fine.
 
 # Interaction with lifetimes
 
@@ -311,7 +396,14 @@ to be either in the future. That's the main difference in this approach.)
 
 # Drawbacks
 
-## (TODO) Concerns about size and performance
+## (TODO) Downcasting
+
+TODO (tldr: because we're generating an anonymous enum, you can't downcast to a
+concrete type. With single-value RPIT you have a concrete type which you _can_
+downcast to. But with MTRPIT we're generating a type, meaning you can't downcast
+into it)
+
+## (TODO) Size and performance
 
 TODO (tldr: we already see issues around auto-generated enums in the compiler
 already. Boats did a great post on that. The solution is probably not to eschew
@@ -367,7 +459,7 @@ to start with the simpler feature first, which in turn can help make the harder
 feature easier to implement later. This same argument applies to "why not start
 with anonymous enums" as well.
 
-## TODO Stack-allocated `dyn Trait`.
+## (TODO) Stack-allocated `dyn Trait`.
 
 TODO (tldr: `dyn Trait` has object-safety restrictions which apply even if you
 stack-allocate. `impl Trait` does not have these restrictions, making it more
