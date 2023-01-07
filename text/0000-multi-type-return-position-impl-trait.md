@@ -1,5 +1,5 @@
-- Feature Name: (fill me in with a unique ident, `multi_type_return_position_impl_trait`)
-- Start Date: (fill me in with today's date, 2023-01-05)
+- Feature Name: `multi_type_return_position_impl_trait` (MTRPIT)
+- Start Date: 2023-01-05
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -22,7 +22,7 @@
   - [(TODO) Concerns about size and performance](#todo-concerns-about-size-and-performance)
   - [(TODO) Teaching `impl` and `dyn`](#todo-teaching-impl-and-dyn)
 - [Alternatives](#alternatives)
-  - [(TODO) Introduce new syntax for multi-value RPIT](#todo-introduce-new-syntax-for-multi-value-rpit)
+  - [(TODO) Introduce new syntax for multi-type RPIT](#todo-introduce-new-syntax-for-multi-type-rpit)
   - [Design a general-purpose delegation language feature first](#design-a-general-purpose-delegation-language-feature-first)
   - [TODO Stack-allocated `dyn Trait`.](#todo-stack-allocated-dyn-trait)
 - [Prior art](#prior-art)
@@ -336,7 +336,7 @@ isn't new either - we just need to better explain the tradeoffs.)
 
 # Alternatives
 
-## (TODO) Introduce new syntax for multi-value RPIT
+## (TODO) Introduce new syntax for multi-type RPIT
 
 TODO (Q: why not introduce `impl enum Trait` or the like? A: enums are an
 implementation detail, and syntax is expensive. If there are no _semantic_
@@ -474,7 +474,7 @@ fn multi_iter(x: i32) -> impl Iterator<Item = Enum> {
 }
 ```
 
-This code resembles the desugaring for multi-value RPIT we're proposing in this
+This code resembles the desugaring for multi-type RPIT we're proposing in this
 RFC. In fact: it may very well be that a lot of the internal compiler machinery
 used for multi-RPIT could be reused for anonymous enums.
 
@@ -487,7 +487,7 @@ imagine the earlier errror example could instead be written like this:
 ```rust
 use std::{fs, io, num};
 
-// The earlier mult-value RPIT version returned `-> Result<(), impl Error>`.
+// The earlier multi-type RPIT version returned `-> Result<(), impl Error>`.
 // This example declares an anonymous enum instead, using made-up syntax
 fn main() -> Result<(), num::ParseIntError | io::Error> {
     let num = i8::from_str_radix("A", 16)?;       // `Result<_, std::num::ParseIntError>`
@@ -556,7 +556,7 @@ impl<T> Iterator for NewIterator<T> by Self.0; // Use `Self.0` as the `Iterator`
 
 There are many open questions here regarding semantics, syntax, and expanding it
 to other features such as method delegation. But given the codegen for both
-multi-value RPIT and delegation will share similarities, it may be worth
+multi-type RPIT and delegation will share similarities, it may be worth
 exploring further in the future.
 
 ## (TODO) Mark unimplementable/sealed trait methods
