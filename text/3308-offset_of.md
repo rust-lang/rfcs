@@ -1,7 +1,7 @@
 - Feature Name: `offset_of`
 - Start Date: 2022-08-29
 - RFC PR: [rust-lang/rfcs#3308](https://github.com/rust-lang/rfcs/pull/3308)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#106655](https://github.com/rust-lang/rust/issues/106655)
 
 # Summary
 [summary]: #summary
