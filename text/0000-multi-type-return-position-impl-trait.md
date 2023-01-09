@@ -34,6 +34,7 @@
   - [Anonymous enums](#anonymous-enums)
   - [Language-level support for delegation/proxies](#language-level-support-for-delegationproxies)
   - [(TODO) Mark unimplementable/sealed trait methods](#todo-mark-unimplementablesealed-trait-methods)
+  - [(TODO) Annotate dispatch-safety](#todo-annotate-dispatch-safety)
   - [(TODO) Clippy lint tracking big impl traits](#todo-clippy-lint-tracking-big-impl-traits)
 
 
@@ -320,7 +321,7 @@ is: just say it's an `impl Trait`.)
 ## (TODO) `Any` trait and `TypeId`
 
 TODO (tldr: proxy the type id to the inner type, that's what `dyn` does too. You
-can't downcast `impl Trait` as-is anyway, so it's likely fine.
+can't downcast `impl Trait` as-is anyway, so it's likely fine).
 
 # Interaction with lifetimes
 
@@ -657,6 +658,12 @@ TODO (we can't implement `Iterator::step_by` manually because of orphan rules,
 but that information is not available from the interface anywhere. Can we
 surface or somehow mark which methods can _actually_ be overloaded, versus which
 can't?)
+
+## (TODO) Annotate dispatch-safety
+
+TODO (tldr receiverless functions (static methods) and traits with associated
+consts can't be delegated to. We should have some opt-in or opt-out marker for a
+trait which can be dispatched to.)
 
 ## (TODO) Clippy lint tracking big impl traits
 
