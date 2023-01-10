@@ -180,9 +180,8 @@ into the following negative trait impl:
 impl !IntoIterator for String {}
 ```
 
-This would simplify the syntax of the proposed attribute, but in turn block the implementation of type based filtering on the stabilization of `negative_impls`. On the other hand it would likely simplify writing more complex filters, that match only a certain generic set of types and it would prevent "duplicating" the filter-logic as this reuses the exiting trait system. The large disadvantage of this approach is that it couples error messages to the crates public API. Removing a negative trait impl is a breaking change, removing a `#[on_unimplemented]` attribute is only a change in the emitted compiler error.
+This would simplify the syntax of the proposed attribute, but in turn block the implementation of type based filtering on the stabilization of `negative_impls`. On the other hand it would likely simplify writing more complex filters, that match only a certain generic set of types and it would prevent "duplicating" the filter-logic as this reuses the exiting trait system. To express complex filtering logic this would likely need some sort of `specialization` for at least negative trait implementations. A second disadvantage of this approach is that it couples error messages to the crates public API. Removing a negative trait impl is a breaking change, removing a `#[on_unimplemented]` attribute is only a change in the emitted compiler error.
 
-* Allow `#[diagnostic::on_unimplemented]` to be placed on types instead of traits. This would allow third party crates to customize the error messages emitted for unsatisfied trait bounds with out of crate traits. This feels more like an extension to the proposed attribute.
 
 # Prior art
 [prior-art]: #prior-art
@@ -216,7 +215,9 @@ Clarify the procedure of various potential changes prior stabilisation of the at
 [future-possibilities]: #future-possibilities
 
 * More attributes like `#[diagnostics::on_type_error]`
-* Extend the `#[diagnostics::on_unimplemented]` attribute to incorporate the semantics of `#[do_not_recommend]`
+* Extend the `#[diagnostics::on_unimplemented]` attribute to incorporate the semantics of `#[do_not_recommend]` or 
+provide a distinct `#[diagnostics::do_not_recommend]` attribute
 * Un-RFC `#[do_not_recommend]`?
 * Apply `#[diagnostics::on_unimplemented]` to types as well
 * Extend the `if()` filter syntax to allow more complex filter expressions
+* Allow `#[diagnostic::on_unimplemented]` to be placed on types instead of traits. This would allow third party crates to customize the error messages emitted for unsatisfied trait bounds with out of crate traits.
