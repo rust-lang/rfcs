@@ -110,11 +110,11 @@ trait MyIterator<A> {
 ```
 
 
-Each of the options `message`, `label` and `note` are optional. They are separated by comma. The tailing comma is optional. Specifying any of these options hints the compiler to replace the normally emitted part of the error message with the provided string. At least one of these options needs to exist. Each option can appear at most once. The error message can include type information for the `Self` type or any generic type by using `{Self}` or `{A}` (where `A` refers to the generic type name in the definition). These placeholders are replaced by the actual type name.
+Each of the options `message`, `label` and `note` are optional. They are separated by comma. The trailing comma is optional. Specifying any of these options hints the compiler to replace the normally emitted part of the error message with the provided string. At least one of these options needs to exist. Each option can appear at most once. The error message can include type information for the `Self` type or any generic type by using `{Self}` or `{A}` (where `A` refers to the generic type name in the definition). These placeholders are replaced by the actual type name.
 
-In addition the `on_unimplemented` attribute provides mechanisms to specify for which exact types a certain message should be emitted via an `if()` option. It accepts a set of filter options. A filter option consists on the generic parameter name from the trait definition and a type path against which the parameter should be checked. These type path could either be a fully qualified path or refer to any type in the current scope. As a special generic parameter name `Self` is added to refer to the `Self` type of the trait implementation. A filter option evaluates to `true` if the corresponding generic parameter in the trait definition matches the specified type. The provided `message`/`note`/`label` options are only emitted if the filter operation evaluates to `true`.
+In addition the `on_unimplemented` attribute provides mechanisms to specify for which exact types a certain message should be emitted via an `if()` option. It accepts a set of filter options. A filter option consists of the generic parameter name from the trait definition and a type path against which the parameter should be checked. This type path could either be a fully qualified path or refer to any type in the current scope. As a special generic parameter name `Self` is added to refer to the `Self` type of the trait implementation. A filter option evaluates to `true` if the corresponding generic parameter in the trait definition matches the specified type. The provided `message`/`note`/`label` options are only emitted if the filter operation evaluates to `true`.
 
-The `any` and `all` option allows to combine multiple filter options. The `any` option matches if one of the supplied filter options evaluates to `true`, the `all` option requires that all supplied filter options evaluate to true. `not` allows to negate a given filter option. It evaluates to `true` if the inner filter option evaluates to `false`. These options can be nested to construct complex filters.
+The `any` and `all` options allow to combine multiple filter options. The `any` option matches if one of the supplied filter options evaluates to `true`, the `all` option requires that all supplied filter options evaluate to true. `not` allows to negate a given filter option. It evaluates to `true` if the inner filter option evaluates to `false`. These options can be nested to construct complex filters.
 
 The `on_unimplemented` attribute can be applied multiple times to the same trait definition. Multiple attributes are evaluated in order. The first matching instance for each of the `message`/`label`/`note` options is emitted.
 ```rust
@@ -182,13 +182,13 @@ impl !IntoIterator for String {}
 
 This would simplify the syntax of the proposed attribute, but in turn block the implementation of type based filtering on the stabilization of `negative_impls`. On the other hand it would likely simplify writing more complex filters, that match only a certain generic set of types and it would prevent "duplicating" the filter-logic as this reuses the exiting trait system. The large disadvantage of this approach is that it couples error messages to the crates public API. Removing a negative trait impl is a breaking change, removing a `#[on_unimplemented]` attribute is only a change in the emitted compiler error.
 
-* Allow `#[diagnostic::on_unimplemented]` to be placed on types instead of traits. This would allow third party crates to customize the error messages emitted for unsatisfied trait bounds with out of crate traits. This feels more like an extension tho the proposed attribute.
+* Allow `#[diagnostic::on_unimplemented]` to be placed on types instead of traits. This would allow third party crates to customize the error messages emitted for unsatisfied trait bounds with out of crate traits. This feels more like an extension to the proposed attribute.
 
 # Prior art
 [prior-art]: #prior-art
 
 * [rustc_on_unimplemented](https://rustc-dev-guide.rust-lang.org/diagnostics.html#rustc_on_unimplemented) already provides the described functionality as rustc internal attribute. It is used for improving error messages for various standard library API's. [This repo](https://github.com/weiznich/rust-foundation-community-grant/) contains several examples on how this attribute can be used in external crates to improve their error messages.
-* [GHC](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_errors.html) provides an Haskell language extension for specifying custom compile time errors
+* [GHC](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_errors.html) provides a Haskell mechanism for specifying custom compile time errors
 
 Notably all of the listed similar features are unofficial language extensions.
 
