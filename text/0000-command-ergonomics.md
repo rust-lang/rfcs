@@ -220,33 +220,77 @@ with `piped` we capture that, and represent both the stderr
 and the exit status as problems within the `SubprocessError`.
 
 ```rust
-impl SubprocessError {
+/// Problem(s) which occurred while running a subprocess
+///
+/// This struct represents problems which occurred while
+/// running a subprocess.
+///
+/// Running a subprocess is complex, and it is even possible for a single invocation
+/// to give rise to more than one problem.
+/// So this struct can contain zero or more such problems,
+/// along with information about what was run, for error reporting.
+///
+/// ### Tolerating certain kinds of error
+///
+/// Don't check the fields of this struct one by one.
+/// Future language revisions may add more fields representing new kinds of problem!
+///
+/// Instead:
+///
+///  * If you want to capture stderr but combine it with stdout,
+///    TODO need way to combine them!
+///
+///  * If you wish to tolerate other particular kind(s) of problem,
+///    set the field for the problems you want to tolerate to `None`
+///    (doing any ncecessary checks on the the existing values,
+///    to see if it's really something you want to ignore).
+///    Then call `.has_problem()`.
+#[must_use]
+#[non_exhaustive]
+struct SubprocessError {
     /// The program, if we know it.
-    fn program(&self) -> Option<&OsStr>;
+    //
+    // Used in the `Display` impl so we get good error messages.
+    program: Option<OsString>,
 
     /// The arguments, if we know them.
-    fn args(&self) -> Option<std::process::CommandArgs<'_>>;
+    //
+    // Used in the `Display` impl so we get good error messages.
+    args: Vec<OsString>,
 
     /// If the stdout was captured in memory, the stdout data.
-    fn stdout_bytes(&self) -> Option<&[u8]>;
+    //
+    // Needed so that a caller can have the output even if the program failed.
+    stdout_bytes: Option<Vec<u8>>,
 
     /// If the process exited and we collected its status, the exit status.
-    fn status(&self) -> Option<ExitStatus>;
+    ///
+    /// If this is present and not success, it is treated as a problem.
+    status: Option<ExitStatus>,
 
-    /// If trouble included nonempty stderr, the captured stderr
-    fn stderr_bytes(&self) -> Option<&[u8]>;
+    /// If the stderr was captured in memory, the stdout data.
+    ///
+    /// If this is present and nonempty, it is treated as a problem.
+    stderr_bytes: Option<Vec<u8>>,
 
-    /// If trouble included failure to spawn, the spawn error.
-    fn spawn_error() -> Option<&io::Error>;
+    /// If had a problem spawning, the spawn error.
+    spawn_error: Option<io::Error>,
 
-    /// If trouble included failure to talk to the child, the IO error.
+    /// If we had a problem talking to the child, the IO error.
     ///
     /// This might include problems which might be caused by child
     /// misbehaviour.
-    fn communication_error() -> Option<&io::Error>;
+    communication_error: Option<io::Error>,
 
-    /// If trouble included failed UTF-8 conversion.
-    fn utf8_error(&self) -> Option<&std::str::FromUtf8Error>;
+    /// If we had a problem converting stdout to UTF-8.
+    ///
+    /// The `error_len()` and `valid_up_to()` reference positions in `stdout_bytes`.
+    utf8_error: Option<std::str::FromUtf8Error>,
+}
+impl Debug for SubprocessError {
+    // print all the fields except `stdout_bytes`.
+}
+impl Error for SubprocessError {
 }
 ```
 
@@ -285,16 +329,6 @@ impl SubprocessError {
 
     // If we keep ExitStatusError
     fn from_exit_status_error(status: ExitStatusError) -> Self { }
-
-    fn set_program(&mut self, impl Into<OsString>);
-    fn set_args(&mut self, impl IntoIterator<Item=impl Into<OsString>>);
-    fn set_stdout_bytes(output: Option<Into<Box<[u8]>>>);
-
-    fn set_status(&mut self, status: ExitStatus);
-    fn set_stderr_bytes(&mut self, stderr: impl Into<Box<u8>>);
-    fn set_spawn_error(&mut self, error: Option<io::Error>);
-    fn set_communication_error(&mut self, error: Option<io::Error>);
-    fn set_utf8_error(&mut self, error: Option<std::str::FromUtf8Error>);
 
     /// Find out if this error contains any actual error information
     ///
@@ -360,12 +394,10 @@ Alternatives and prior proposals include:
    but got bogged down due to lack of consensus on overall direction
    and some bikeshed issues.
 
- * The `SubprocessError` type could be a
-   transparent non-exhaustive struct.
-   This might be reasonable,
-   since it's really just a bag of information
-   with getters and setters for every field.
-   But transparent structs are unfashionable in modern Rust.
+ * The `SubprocessError` type could be opaque with getters and setters.
+   Transparent structs are unfashionable in modern Rust.
+   However, providing getters and setters obscures what's going on and
+   greatly enlarges the API surface.
 
  * Instead of a single `SubprocessError` type used everywhere,
    there could be a different error type for the different calls.
