@@ -432,6 +432,8 @@ Options are:
    to all the new methods.
    These seem unpalatably unergonomic.
 
+5. One of the above, and additionally provide a lint that makes a best-effort attempt to catch this at compile time.
+
 Here we propose option 1: treat as `inherit`.
 
 # Future possibilities
