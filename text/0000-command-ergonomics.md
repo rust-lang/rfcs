@@ -141,7 +141,7 @@ We aim to serve well each of the following people:
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Does not trim any trailing line ending.
 
- * `fn get_output_line(&mut self) -> Result<Vec<String>, SubprocessError>`:
+ * `fn get_output_line(&mut self) -> Result<String, SubprocessError>`:
 
    Runs the command and collects its stdout.
    Decodes the stdout as UTF-8, and fails if that's not possible.
