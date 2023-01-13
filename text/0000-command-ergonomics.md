@@ -88,7 +88,7 @@ impl Command {
     fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, ProcessError>;
     fn read_stdout(&mut self) -> Result<String, ProcessError>;
     fn read_stdout_line(&mut self) -> Result<String, ProcessError>;
-    fn stdout_readable(&mut self) -> impl std::io::Read;
+    fn stdout_reader(&mut self) -> impl std::io::Read;
 }
 struct ProcessError { ... }
 impl From<ProcessError> for io::Error { ... }
@@ -150,13 +150,13 @@ We aim to serve well each of the following people:
    If program prints no output at all, returns an empty string
    (and this cannot be distinguished from the program printing just a newline).
 
- * `fn read_stdout_read(&mut self) -> std::process::ChildOutputStream`
-   (where `struct ChildOutputStream` implements `io::Read`
+ * `fn stdout_reader(&mut self) -> std::process::ChildOutputReader`
+   (where `struct ChildOutputReader` implements `io::Read`
    and is `Send + Sync + 'static`).
 
    Starts the command, allowing the caller to
    read the stdout in a streaming way.
-   Neither EOF nor an error will be reported by `ChildOutputStream`
+   Neither EOF nor an error will be reported by `ChildOutputReader`
    until the child has exited, *and* the stdout pipe reports EOF.
    (This includes errors due to nonempty stderr,
    if stderr was set to `piped`.)
@@ -306,7 +306,7 @@ a resulting error message unambiguous.
 ### `impl From<ProcessError> for io::Error`
 
 `ProcessError` must be convertible to `io::Error`
-so that we can use it in `ChildOutputStream`'s
+so that we can use it in `ChildOutputReader`'s
 `Read` implementation.
 This may also be convenient elsewhere.
 
