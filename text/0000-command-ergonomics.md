@@ -57,17 +57,17 @@ The following incorrect program fragments are all accepted today and run to comp
 
 ```rust
     Command::new("touch")
-        .args(&["/dev/enoent/touch-1"]);
+        .args(&["/nonexistent/touch-1"]);
     // ^ programmer surely wanted to actually run the command
 
     Command::new("touch")
-        .args(&["/dev/enoent/touch-2"])
+        .args(&["/nonexistent/touch-2"])
         .spawn()?;
     // ^ accidentally failed to wait, if programmer wanted to make a daemon
     //   or zombie or something they should have to write let _ =.
 
     Command::new("touch")
-        .args(&["/dev/enoent/touch-3"])
+        .args(&["/nonexistent/touch-3"])
         .spawn()?
         .wait()?;
     // ^ accidentally failed to check exit status
