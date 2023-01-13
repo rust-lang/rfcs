@@ -347,7 +347,6 @@ impl ProcessError {
     pub fn just_status(self) -> Result<ExitStatus, ProcessError>;
 }
 impl Default for ProcessError { ... }
-impl Clone for ProcessError { ... } // contained io:Errors are in Arcs
 ```
 
 # Drawbacks
