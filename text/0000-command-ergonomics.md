@@ -395,7 +395,7 @@ for process invocation and output handling.
 ## Printing command arguments in `impl Display for SubprocessError`
 
 Perhaps printing the command arguments is overly verbose,
-and we should print onliy the command name.
+and we should print only the command name.
 
 ## `get_output` vs `read_output` naming.
 
