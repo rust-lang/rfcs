@@ -524,6 +524,39 @@ Here we propose option 1: treat as `inherit`.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Providing a way to combine and interleave stdout and stderr
+
+Currently, `Command` insists on separating out stdout and stderr,
+if you ask to capture them.
+If you want them combined
+(which is the only way to preserve the relative ordering)
+you must do one of:
+
+ * run a command which itself does the redirection
+   (easy using the shell on Unix)
+
+ * send them each to your own stdout/stderr with `inherit`
+   and expect your caller to combine them
+
+ * sent themk to the *same* one of your stdout/stderr
+   which will be possible after
+   https://github.com/rust-lang/rust/pull/88561)
+
+We should provide something like this:
+
+```
+impl Command {
+    /// Arranges that the command's stderr will be sent to wherever its stdout is going
+    fn stderr_to_stdout();
+}
+```
+
+(It is not sensibly possible at least on Unix
+to get all of the stdout and stderr output
+and find out *both* what order it out came in,
+*and* which data was printed to which stream.
+This is a limitation of the POSIX APIs.)
+
 ## Deprecating `Command.output()` and `std::process::Output`
 
 The `.output()` and `Output` API has an error handling hazard,
