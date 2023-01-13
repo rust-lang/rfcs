@@ -137,13 +137,13 @@ We aim to serve well each of the following people:
 
  * `fn read_stdout(&mut self) -> Result<String, ProcessError>`:
 
-   Runs the command and collects its stdout.
+   Runs the command and collects its stdout, as for `read_stdout_bytes`.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Does not trim any trailing line ending.
 
  * `fn read_stdout_line(&mut self) -> Result<String, ProcessError>`:
 
-   Runs the command and collects its stdout.
+   Runs the command and collects its stdout, as for `read_stdout_bytes`.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Fails unless the output is a single line (with or without line ending).
    Trims the line ending (if any).
