@@ -94,9 +94,6 @@ struct ProcessError { ... }
 impl From<ProcessError> for io::Error { ... }
 ```
 
-The `.output()` function and `std::process::Output`
-will be deprecated.
-
 No significant changes are made to the `Command` construction APIs,
 but it may become necessary to call `.stderr()` explicitly
 to use the new methods (see Unresolved Questions).
@@ -168,10 +165,6 @@ recommended by docs for other, lower-level functions
 which people were previously required to use.
 
 ## Deprecations
-
- * Deprecate `std::process::Command::output()`.
-   This API cannot be fixed;
-   see [#73126](https://github.com/rust-lang/rust/issues/73126).
 
  * Apply `#[must_use]` to `Command` and `Child`.
 
@@ -500,6 +493,16 @@ Here we propose option 1: treat as `inherit`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Deprecating `Command.output()` and `std::process::Output`
+
+The `.output()` and `Output` API has an error handling hazard,
+see [#73126](https://github.com/rust-lang/rust/issues/73126).
+
+Perhaps it should be deprecated at some point.
+
+However, it is a popular API so that would be disruptive,
+and some things are easier to do with `Output` than with `Result<..., ProcessError>`.
 
 ## Changes to `ExitStatusError`
 
