@@ -161,6 +161,12 @@ which people were previously required to use.
  * Apply `#[must_use]` to `ExitStatus`.
    (May require fixing quite a few of the examples.)
 
+ * Add a warning to the docs for `Command.output()` about the lost error bugs,
+   in particular the need to check `.status` and the lack of any compiler
+   warning if one doesn't.  Suggest to the reader to consider
+   `.run()` or `.read_stdout*` instead.
+   Do not deprecate `.output()` though.
+
 ## stderr handling
 
 If `stderr(Stdio::piped())`,
