@@ -239,6 +239,8 @@ and the exit status as problems within the `SubprocessError`.
 ///
 ///  * If you want to capture stderr but combine it with stdout,
 ///    TODO need way to combine them!
+///    
+///  * If you wish to tolerate only nonzero exit status, call `.just_status()`.
 ///
 ///  * If you wish to tolerate other particular kind(s) of problem,
 ///    set the field for the problems you want to tolerate to `None`
@@ -342,6 +344,13 @@ impl SubprocessError {
     // and a caller can't reimplement it without making assumptons
     // about `SubprocessError`'s contents.
     fn has_problem(&self) -> bool;
+
+    /// Returns `Ok<ExitStatus>` if the only reason for the failure was a nonzero exit status.
+    /// Otherwise returns `self`.
+    ////
+    /// Use this if you want to to tolerate some exit statuses,
+    /// but still fail if there were other problems.
+    pub fn just_status(self) -> Result<ExitStatus, SubprocessError>;
 }
 impl Default for SubprocessError { ... }
 impl Clone for SubprocessError { ... } // contained io:Errors are in Arcs
@@ -468,6 +477,21 @@ Options are:
 
 Here we propose option 1: treat as `inherit`.
 
+# Examples
+
+## Conveniently running `diff`
+
+```rust
+    let result = Command::new("diff")
+        .args(["before","after"])
+        .stderr(Stdio::piped()) // optional, could just let it inherit
+        .run();
+    let status = match result {
+        Ok(()) => 0,
+        Err(err) => err.just_status()?.code(),
+    };
+```
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -512,65 +536,3 @@ Options might include:
    [`read2`](https://github.com/rust-lang/cargo/blob/58a961314437258065e23cb6316dfc121d96fb71/crates/cargo-util/src/read2.rs)
 
  * Expect users who want this to use pipes by hand (perhaps with threads), or async.
-
-## More convenient way to run `diff`
-
-With the proposed API,
-completely correctly running `diff(1)` would look a bit like this:
-
-```rust
-    let result = Command::new("diff")
-        .args(["before","after"])
-        .run();
-    let status = match result {
-        Ok(()) => 0,
-        Err(err) => {
-            let status = err.status();
-            err.set_status(ExitStatusExt::from_raw(0));
-            if err.has_problem() {
-                return Err(err);
-            }
-            status.code()
-        }
-    };
-```
-
-This is doable but cumbersome.
-A naive Dionysus is likely to write:
-
-```rust
-    let status = match result {
-        Ok(()) => 0,
-        Err(err) => {
-            if ! err.status().success() {
-                err.status().code()
-            } else {
-                return Err(err);
-            }
-        }
-    };
-```
-
-As it happens, this is correct in the sense that it won't malfunction,
-since actually `run()`, without piped stderr,
-cannot produce a `SubprocessError`
-containing a nonzero exit status *and* any other problem.
-But in a more complex situation it might be wrong.
-
-Perhaps:
-```rust
-impl SubprocessError {
-    /// Returns `Ok<ExitStatus>` if the only reason for the failure was a nonzero exit status.  Otherwise returns `self`.
-    ////
-    /// Use this if you want to to tolerate some exit statuses, but still fail if there were other problems.
-    pub fn just_status(self) -> Result<ExitStatus, SubprocessError>;
-}
-```
-
-Then Dionysus can write:
-```rust
-    let status = match result {
-        Ok(()) => 0,
-        Err(err) => err.just_status()?.code(),
-    };
-```
