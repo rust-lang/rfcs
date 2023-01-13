@@ -238,41 +238,41 @@ struct ProcessError {
     /// The program, if we know it.
     //
     // Used in the `Display` impl so we get good error messages.
-    program: Option<OsString>,
+    pub program: Option<OsString>,
 
     /// The arguments, if we know them.
     //
     // Used in the `Display` impl so we get good error messages.
-    args: Vec<OsString>,
+    pub args: Vec<OsString>,
 
     /// If the stdout was captured in memory, the stdout data.
     //
     // Needed so that a caller can have the output even if the program failed.
-    stdout_bytes: Option<Vec<u8>>,
+    pub stdout_bytes: Option<Vec<u8>>,
 
     /// If the process exited and we collected its status, the exit status.
     ///
     /// If this is present and not success, it is treated as a problem.
-    status: Option<ExitStatus>,
+    pub status: Option<ExitStatus>,
 
     /// If the stderr was captured in memory, the stdout data.
     ///
     /// If this is present and nonempty, it is treated as a problem.
-    stderr_bytes: Option<Vec<u8>>,
+    pub stderr_bytes: Option<Vec<u8>>,
 
     /// If had a problem spawning, the spawn error.
-    spawn_error: Option<io::Error>,
+    pub spawn_error: Option<io::Error>,
 
     /// If we had a problem talking to the child, the IO error.
     ///
     /// This might include problems which might be caused by child
     /// misbehaviour.
-    communication_error: Option<io::Error>,
+    pub communication_error: Option<io::Error>,
 
     /// If we had a problem converting stdout to UTF-8.
     ///
     /// The `error_len()` and `valid_up_to()` reference positions in `stdout_bytes`.
-    utf8_error: Option<std::str::FromUtf8Error>,
+    pub utf8_error: Option<std::str::FromUtf8Error>,
 }
 impl Debug for ProcessError {
     // print all the fields except `stdout_bytes`.
