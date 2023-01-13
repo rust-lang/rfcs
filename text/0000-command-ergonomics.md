@@ -87,7 +87,6 @@ impl Command {
     fn run(&mut self) -> Result<(), ProcessError>;
     fn read_stdout(&mut self) -> Result<Vec<u8>, ProcessError>;
     fn read_stdout_string(&mut self) -> Result<String, ProcessError>;
-    fn read_stdout_line(&mut self) -> Result<String, ProcessError>;
     fn stdout_reader(&mut self) -> impl std::io::Read;
 }
 struct ProcessError { ... }
@@ -137,15 +136,6 @@ We aim to serve well each of the following people:
    Runs the command and collects its stdout, as for `read_stdout`.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Does not trim any trailing line ending.
-
- * `fn read_stdout_line(&mut self) -> Result<String, ProcessError>`:
-
-   Runs the command and collects its stdout, as for `read_stdout`.
-   Decodes the stdout as UTF-8, and fails if that's not possible.
-   Fails unless the output is a single line (with or without line ending).
-   Trims the line ending (if any).
-   If program prints no output at all, returns an empty string
-   (and this cannot be distinguished from the program printing just a newline).
 
  * `fn stdout_reader(&mut self) -> std::process::ChildOutputReader`
    (where `struct ChildOutputReader` implements `io::Read`
@@ -561,6 +551,22 @@ to get all of the stdout and stderr output
 and find out *both* what order it out came in,
 *and* which data was printed to which stream.
 This is a limitation of the POSIX APIs.)
+
+## Provide a way to read exactly a single line
+
+```
+ * `fn read_stdout_line(&mut self) -> Result<String, ProcessError>`:
+
+   Runs the command and collects its stdout, as for `read_stdout`.
+   Decodes the stdout as UTF-8, and fails if that's not possible.
+   Fails unless the output is a single line (with or without line ending).
+   Trims the line ending (if any).
+   If program prints no output at all, returns an empty string
+   (and this cannot be distinguished from the program printing just a newline).
+```
+
+It's not clear if this ought to live here or
+as a method on `String`.
 
 ## Deprecating `Command.output()` and `std::process::Output`
 
