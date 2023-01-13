@@ -301,11 +301,12 @@ The `io::ErrorKind` for a `ProcessError` will be:
   * Otherwise, a new kind `io::ErrorKind::ProcessFailed`,
     which means that the subprocess itself failed.
 
-### Further necessary APIs for `ProcessError`
+### Further APIs for `ProcessError`
 
-We also provide ways for this new error to be constructed,
-which will be needed by other lower level libraries besides std,
-notably async frameworks:
+A `ProcessError` is a transparent `Default` struct so it can be
+constructed outside std, for example by async frameworks.
+
+We propose the following additional methods:
 
 ```rust
 impl ProcessError {
@@ -313,6 +314,9 @@ impl ProcessError {
     ///
     /// `has_problem()` will return `false` until one of the setters
     /// is used to store an actual problem.
+    //
+    // This is a name for the `Default` impl, and not essential,
+    // although it's conventional in Rust to provide it.
     fn new_empty() -> Self { }
 
     // If we keep ExitStatusError
@@ -336,6 +340,10 @@ impl ProcessError {
     ////
     /// Use this if you want to to tolerate some exit statuses,
     /// but still fail if there were other problems.
+    //
+    // This is optional, and could be a separate feature from the rest of the RFC.
+    // But it does make running programs like `diff` considerably easier.
+    // (It is also implementable externally in terms of .has_problem()`.)
     pub fn just_status(self) -> Result<ExitStatus, ProcessError>;
 }
 impl Default for ProcessError { ... }
