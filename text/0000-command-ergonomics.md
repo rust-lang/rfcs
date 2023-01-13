@@ -84,14 +84,14 @@ for running the command and collecting its output:
 
 ```rust
 impl Command {
-    fn run(&mut self) -> Result<(), SubprocessError>;
-    fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>;
-    fn read_stdout(&mut self) -> Result<String, SubprocessError>;
-    fn read_stdout_line(&mut self) -> Result<String, SubprocessError>;
+    fn run(&mut self) -> Result<(), ProcessError>;
+    fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, ProcessError>;
+    fn read_stdout(&mut self) -> Result<String, ProcessError>;
+    fn read_stdout_line(&mut self) -> Result<String, ProcessError>;
     fn stdout_readable(&mut self) -> impl std::io::Read;
 }
-struct SubprocessError { ... }
-impl From<SubprocessError> for io::Error { ... }
+struct ProcessError { ... }
+impl From<ProcessError> for io::Error { ... }
 ```
 
 The `.output()` function and `std::process::Output`
@@ -123,25 +123,25 @@ We aim to serve well each of the following people:
 
 ## New methods on `Command`:
 
- * `fn run(&mut self) -> Result<(), SubprocessError>`:
+ * `fn run(&mut self) -> Result<(), ProcessError>`:
 
    Runs the command.
    Equivalent to `.spawn()` followed by `.status()`,
    but with better error handling.
 
- * `fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>`:
+ * `fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, ProcessError>`:
 
    Runs the command and collects its stdout.
    After the child indicates EOF on its stdout,
    we will wait for it to finish and check the exit status.
 
- * `fn read_stdout(&mut self) -> Result<String, SubprocessError>`:
+ * `fn read_stdout(&mut self) -> Result<String, ProcessError>`:
 
    Runs the command and collects its stdout.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Does not trim any trailing line ending.
 
- * `fn read_stdout_line(&mut self) -> Result<String, SubprocessError>`:
+ * `fn read_stdout_line(&mut self) -> Result<String, ProcessError>`:
 
    Runs the command and collects its stdout.
    Decodes the stdout as UTF-8, and fails if that's not possible.
@@ -182,7 +182,7 @@ If `stderr(Stdio::piped())`,
 these new functions all collect the child's stderr.
 Then,
 if the stderr output is nonempty, this is considered an error,
-and reported in the `SubprocessError`.
+and reported in the `ProcessError`.
 
 These functions *do not* wait for EOF on stderr.
 Rather, they wait for child process termination and expect that
@@ -204,20 +204,20 @@ The implementation may involve a temporary file,
 or an in-memory buffer,
 or both.
 
-## New `struct SubprocessError`
+## New `struct ProcessError`
 
 This new struct is used as the error type for the new methods.
 
 It can represents zero or more of the various
 distinct problems that can occur while running a process.
-A `SubprocessError` returned by a `std` function will always
+A `ProcessError` returned by a `std` function will always
 represent at least one problem (unless otherwise stated),
 but it may represent several
 
 For example a process which exited nonzero
 probably printed to stderr;
 with `piped` we capture that, and represent both the stderr
-and the exit status as problems within the `SubprocessError`.
+and the exit status as problems within the `ProcessError`.
 
 ```rust
 /// Problem(s) which occurred while running a subprocess
@@ -249,7 +249,7 @@ and the exit status as problems within the `SubprocessError`.
 ///    Then call `.has_problem()`.
 #[must_use]
 #[non_exhaustive]
-struct SubprocessError {
+struct ProcessError {
     /// The program, if we know it.
     //
     // Used in the `Display` impl so we get good error messages.
@@ -289,10 +289,10 @@ struct SubprocessError {
     /// The `error_len()` and `valid_up_to()` reference positions in `stdout_bytes`.
     utf8_error: Option<std::str::FromUtf8Error>,
 }
-impl Debug for SubprocessError {
+impl Debug for ProcessError {
     // print all the fields except `stdout_bytes`.
 }
-impl Error for SubprocessError {
+impl Error for ProcessError {
 }
 ```
 
@@ -301,28 +301,28 @@ including the command's arguments.
 The arguments will be escaped or quoted in some way that renders 
 a resulting error message unambiguous.
 
-### `impl From<SubprocessError> for io::Error`
+### `impl From<ProcessError> for io::Error`
 
-`SubprocessError` must be convertible to `io::Error`
+`ProcessError` must be convertible to `io::Error`
 so that we can use it in `ChildOutputStream`'s
 `Read` implementation.
 This may also be convenient elsewhere.
 
-The `io::ErrorKind` for a `SubprocessError` will be:
+The `io::ErrorKind` for a `ProcessError` will be:
 
   * The `io::ErrorKind` from the spawn error, if any.
 
   * Otherwise, a new kind `io::ErrorKind::ProcessFailed`,
     which means that the subprocess itself failed.
 
-### Further necessary APIs for `SubprocessError`
+### Further necessary APIs for `ProcessError`
 
 We also provide ways for this new error to be constructed,
 which will be needed by other lower level libraries besides std,
 notably async frameworks:
 
 ```rust
-impl SubprocessError {
+impl ProcessError {
     /// Makes a "blank" error which doesn't contain any useful information
     ///
     /// `has_problem()` will return `false` until one of the setters
@@ -342,7 +342,7 @@ impl SubprocessError {
     // We must provide this because it's needed for handling programs
     // with unusual exit status conventions (eg `diff(1)`)
     // and a caller can't reimplement it without making assumptons
-    // about `SubprocessError`'s contents.
+    // about `ProcessError`'s contents.
     fn has_problem(&self) -> bool;
 
     /// Returns `Ok<ExitStatus>` if the only reason for the failure was a nonzero exit status.
@@ -350,10 +350,10 @@ impl SubprocessError {
     ////
     /// Use this if you want to to tolerate some exit statuses,
     /// but still fail if there were other problems.
-    pub fn just_status(self) -> Result<ExitStatus, SubprocessError>;
+    pub fn just_status(self) -> Result<ExitStatus, ProcessError>;
 }
-impl Default for SubprocessError { ... }
-impl Clone for SubprocessError { ... } // contained io:Errors are in Arcs
+impl Default for ProcessError { ... }
+impl Clone for ProcessError { ... } // contained io:Errors are in Arcs
 ```
 
 # Drawbacks
@@ -361,7 +361,7 @@ impl Clone for SubprocessError { ... } // contained io:Errors are in Arcs
 
 This is nontrivial new API surface.
 
-Much of the new API surface is in `SubprocessError`.
+Much of the new API surface is in `ProcessError`.
 If we didn't want to try to make it easy for Rust programmers
 to run subprocesses and produce good error messages,
 we could omit this error type 
@@ -403,19 +403,19 @@ Alternatives and prior proposals include:
    but got bogged down due to lack of consensus on overall direction
    and some bikeshed issues.
 
- * The `SubprocessError` type could be opaque with getters and setters.
+ * The `ProcessError` type could be opaque with getters and setters.
    Transparent structs are unfashionable in modern Rust.
    However, providing getters and setters obscures what's going on and
    greatly enlarges the API surface.
 
- * Instead of a single `SubprocessError` type used everywhere,
+ * Instead of a single `ProcessError` type used everywhere,
    there could be a different error type for the different calls.
    For example, `run()` could have a different error type to
    `read_stdout()`,
    since `run` doesn't need to represent UTF-8 conversion errors.
    This would not be very in keeping with the rest of `std::process`,
    which tends to unified types with variation selected at runtime.
-   There would still have to be *a* type as complex as `SubprocessError`,
+   There would still have to be *a* type as complex as `ProcessError`,
    since that's what `read_stdout_read` needs.
 
 # Prior art
@@ -433,7 +433,7 @@ for process invocation and output handling.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Printing command arguments in `impl Display for SubprocessError`
+## Printing command arguments in `impl Display for ProcessError`
 
 Perhaps printing the command arguments is overly verbose,
 and we should print only the command name.
@@ -505,20 +505,20 @@ Possibilities include:
 
  * Abolish `ExitStatusError`
  * Stabilise `ExitStatusError` as-is
- * `impl From<ExitStatusError> for SubprocessError`
+ * `impl From<ExitStatusError> for ProcessError`
  * `impl From<ExitStatusError> for io::Error`
 
 Error messages from `ExitStatusError` are rather poor,
-and it is likely that `SubprocessError` will
+and it is likely that `ProcessError` will
 subsume most of its use cases.
 
 ## Async ecosystem could mirror these APIs
 
  * An async versions of `run()` seems like it would be convenient.
  * Async versions of the output-capturing runners too.
- * Async frameworks ought to (be able to) use `SubprocessError`.
+ * Async frameworks ought to (be able to) use `ProcessError`.
 
-Maybe `SubprocessError` would have to be able to contain a nested
+Maybe `ProcessError` would have to be able to contain a nested
 `Arc<dyn Error + Send + Sync + 'static>`.
 That doesn't need to happen now.
 But it is one reason why `.has_problem()` needs to exist.
