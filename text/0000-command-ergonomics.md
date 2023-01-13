@@ -85,8 +85,8 @@ for running the command and collecting its output:
 ```rust
 impl Command {
     fn run(&mut self) -> Result<(), ProcessError>;
-    fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, ProcessError>;
-    fn read_stdout(&mut self) -> Result<String, ProcessError>;
+    fn read_stdout(&mut self) -> Result<Vec<u8>, ProcessError>;
+    fn read_stdout_string(&mut self) -> Result<String, ProcessError>;
     fn read_stdout_line(&mut self) -> Result<String, ProcessError>;
     fn stdout_reader(&mut self) -> impl std::io::Read;
 }
@@ -126,21 +126,21 @@ We aim to serve well each of the following people:
    Equivalent to `.spawn()` followed by `.status()`,
    but with better error handling.
 
- * `fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, ProcessError>`:
+ * `fn read_stdout(&mut self) -> Result<Vec<u8>, ProcessError>`:
 
    Runs the command and collects its stdout.
    After the child indicates EOF on its stdout,
    we will wait for it to finish and check the exit status.
 
- * `fn read_stdout(&mut self) -> Result<String, ProcessError>`:
+ * `fn read_stdout_string(&mut self) -> Result<String, ProcessError>`:
 
-   Runs the command and collects its stdout, as for `read_stdout_bytes`.
+   Runs the command and collects its stdout, as for `read_stdout`.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Does not trim any trailing line ending.
 
  * `fn read_stdout_line(&mut self) -> Result<String, ProcessError>`:
 
-   Runs the command and collects its stdout, as for `read_stdout_bytes`.
+   Runs the command and collects its stdout, as for `read_stdout`.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Fails unless the output is a single line (with or without line ending).
    Trims the line ending (if any).
@@ -367,7 +367,7 @@ Perhaps we don't need all the `read_stdout` variants,
 and could require Bob to write out the boilerplate
 or provide his own helper function.
 
-Perhaps we don't need `read_stdout_read`.
+Perhaps we don't need `stdout_reader`.
 However,
 avoiding deadlocks when reading subprocess output,
 and also doing error checks properly,
@@ -467,17 +467,22 @@ This leaves us with the following options:
 
 We have `fs::read_to_string`.
 
-Possible names (taking `read_stdout_bytes` as the example):
+Possible names (taking `read_stdout_string` as the example):
 
- * `read_stdout_bytes` (proposed in this RFC)
- * `stdout_bytes` but `stdout` is alread taken.
- * `get_stdout_bytes`
- * `run_get_stdout_bytes`
- * `run_stdout_bytes`
+ * `read_stdout_string` (proposed in this RFC)
+ * `stdout_string` but `stdout` is alread taken.
+ * `get_stdout_string`
+ * `run_get_stdout_string`
+ * `run_stdout_string`
 
 It is difficult to convey everything that is needed in a short name.
 In particular, all of these functions spawn the program,
 and wait (at an appropriate point) for it to exit.
+
+Should `read_output` be the one that returns `Vec<u8>`
+or the one that returns `Vec<String>` ?
+Precedent in the stdlib is usually to have the bytes version undecorated
+(eg, `fs::read_to_string`).
 
 ## stderr handling default
 
