@@ -85,10 +85,10 @@ for running the command and collecting its output:
 ```rust
 impl Command {
     fn run(&mut self) -> Result<(), SubprocessError>;
-    fn get_output_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>;
-    fn get_output(&mut self) -> Result<String, SubprocessError>;
-    fn get_output_line(&mut self) -> Result<String, SubprocessError>;
-    fn get_output_read(&mut self) -> impl std::io::Read;
+    fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>;
+    fn read_stdout(&mut self) -> Result<String, SubprocessError>;
+    fn read_stdout_line(&mut self) -> Result<String, SubprocessError>;
+    fn stdout_readable(&mut self) -> impl std::io::Read;
 }
 struct SubprocessError { ... }
 impl From<SubprocessError> for io::Error { ... }
@@ -129,26 +129,26 @@ We aim to serve well each of the following people:
    Equivalent to `.spawn()` followed by `.status()`,
    but with better error handling.
 
- * `fn get_output_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>`:
+ * `fn read_stdout_bytes(&mut self) -> Result<Vec<u8>, SubprocessError>`:
 
    Runs the command and collects its stdout.
    After the child indicates EOF on its stdout,
    we will wait for it to finish and check the exit status.
 
- * `fn get_output(&mut self) -> Result<String, SubprocessError>`:
+ * `fn read_stdout(&mut self) -> Result<String, SubprocessError>`:
 
    Runs the command and collects its stdout.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Does not trim any trailing line ending.
 
- * `fn get_output_line(&mut self) -> Result<String, SubprocessError>`:
+ * `fn read_stdout_line(&mut self) -> Result<String, SubprocessError>`:
 
    Runs the command and collects its stdout.
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Fails unless the output is a single line (with or without line ending).
    Trims the line ending (if any).
 
- * `fn get_output_read(&mut self) -> std::process::ChildOutputStream`
+ * `fn read_stdout_read(&mut self) -> std::process::ChildOutputStream`
    (where `struct ChildOutputStream` implements `io::Read`
    and is `Send + Sync + 'static`).
 
@@ -367,11 +367,11 @@ to run subprocesses and produce good error messages,
 we could omit this error type 
 (perhaps using something like `ExitStatusError`).
 
-Perhaps we don't need all the `get_output` variants,
+Perhaps we don't need all the `read_stdout` variants,
 and could require Bob to write out the boilerplate
 or provide his own helper function.
 
-Perhaps we don't need `get_output_read`.
+Perhaps we don't need `read_stdout_read`.
 However,
 avoiding deadlocks when reading subprocess output,
 and also doing error checks properly,
@@ -411,12 +411,12 @@ Alternatives and prior proposals include:
  * Instead of a single `SubprocessError` type used everywhere,
    there could be a different error type for the different calls.
    For example, `run()` could have a different error type to
-   `get_output()`,
+   `read_stdout()`,
    since `run` doesn't need to represent UTF-8 conversion errors.
    This would not be very in keeping with the rest of `std::process`,
    which tends to unified types with variation selected at runtime.
    There would still have to be *a* type as complex as `SubprocessError`,
-   since that's what `get_output_read` needs.
+   since that's what `read_stdout_read` needs.
 
 # Prior art
 [prior-art]: #prior-art
@@ -438,17 +438,21 @@ for process invocation and output handling.
 Perhaps printing the command arguments is overly verbose,
 and we should print only the command name.
 
-## `get_output` vs `read_output` naming.
+## `read_stdout` etc. naming.
 
 We have `fs::read_to_string`.
 
-Possible names (taking `get_output_bytes` as the example):
+Possible names (taking `read_stdout_bytes` as the example):
 
- * `get_output_bytes` (proposed in this RFC)
- * `output_bytes` but `output` is alread taken for bad `Output`.
- * `run_get_output_bytes`
- * `run_output_bytes`
- * `read_output_bytes`
+ * `read_stdout_bytes` (proposed in this RFC)
+ * `stdout_bytes` but `stdout` is alread taken.
+ * `get_stdout_bytes`
+ * `run_get_stdout_bytes`
+ * `run_stdout_bytes`
+
+It is difficult to convey everything that is needed in a short name.
+In particular, all of these functions spawn the program,
+and wait (at an appropriate point) for it to exit.
 
 ## stderr handling default
 
