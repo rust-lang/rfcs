@@ -288,6 +288,7 @@ impl Debug for ProcessError {
     // print all the fields except `stdout_bytes`.
 }
 impl Error for ProcessError {
+    // fn cause() always returns None.
 }
 ```
 
@@ -432,6 +433,29 @@ for process invocation and output handling.
 
 Perhaps printing the command arguments is overly verbose,
 and we should print only the command name.
+
+## `cause` in `Error` impl of `ProcessError`
+
+Because maybe several things went wrong, ever providing a `Some` `cause`
+would involve prioritising multiple possible problems.
+
+Also, (IMO doubtful) EHWG guidelines about `Display` implementations
+say that we shouldn't include information about the cause in our own `Display`.
+
+This leaves us with the following options:
+
+ 1. Not include the actual thing that went wrong in our `Display`.
+    This would in practice result in very poor error messages from many 
+    natural uses of this API.
+    Also whether problem A appears in the `Display` output might depend
+    on whether "higher-priority cause" B is present.
+    This seems madness.
+
+ 2. Violate the EHWG guideline.
+    (Or try to get it deprecated.)
+
+ 3. Not include a `cause` at all.
+    This is the option we propose.
 
 ## `read_stdout` etc. naming.
 
