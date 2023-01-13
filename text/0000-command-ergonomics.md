@@ -135,7 +135,7 @@ We aim to serve well each of the following people:
    After the child indicates EOF on its stdout,
    we will wait for it to finish and check the exit status.
 
- * `fn get_output(&mut self) -> Result<Vec<String>, SubprocessError>`:
+ * `fn get_output(&mut self) -> Result<String, SubprocessError>`:
 
    Runs the command and collects its stdout.
    Decodes the stdout as UTF-8, and fails if that's not possible.
