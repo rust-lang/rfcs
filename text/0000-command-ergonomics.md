@@ -147,6 +147,8 @@ We aim to serve well each of the following people:
    Decodes the stdout as UTF-8, and fails if that's not possible.
    Fails unless the output is a single line (with or without line ending).
    Trims the line ending (if any).
+   If program prints no output at all, returns an empty string
+   (and this cannot be distinguished from the program printing just a newline).
 
  * `fn read_stdout_read(&mut self) -> std::process::ChildOutputStream`
    (where `struct ChildOutputStream` implements `io::Read`
