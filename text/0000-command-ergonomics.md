@@ -310,7 +310,8 @@ The `io::ErrorKind` for a `ProcessError` will be:
 ### Further APIs for `ProcessError`
 
 A `ProcessError` is a transparent `Default` struct so it can be
-constructed outside std, for example by async frameworks.
+constructed outside std, for example by async frameworks,
+or other code which handles launching subprocesses.
 
 We propose the following additional methods:
 
