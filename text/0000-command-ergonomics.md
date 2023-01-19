@@ -321,8 +321,9 @@ impl ProcessError {
     /// `has_problem()` will return `false` until one of the setters
     /// is used to store an actual problem.
     //
-    // This is a name for the `Default` impl, and not essential,
-    // although it's conventional in Rust to provide it.
+    // This is equivalent to `ProcessError::default()`, but provides
+    // a more semantically meaningful name, making it clear that it
+    // returns an empty error that needs filling in.
     fn new_empty() -> Self { }
 
     // If we keep ExitStatusError
