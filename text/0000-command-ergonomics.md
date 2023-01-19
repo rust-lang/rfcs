@@ -483,7 +483,7 @@ It is difficult to convey everything that is needed in a short name.
 In particular, all of these functions spawn the program,
 and wait (at an appropriate point) for it to exit.
 
-Should `read_output` be the one that returns `Vec<u8>`
+Should `read_stdout` be the one that returns `Vec<u8>`
 or the one that returns `Vec<String>` ?
 Precedent in the stdlib is usually to have the bytes version undecorated
 (eg, `fs::read_to_string`).
