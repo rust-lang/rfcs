@@ -546,7 +546,7 @@ you must do one of:
  * send them each to your own stdout/stderr with `inherit`
    and expect your caller to combine them
 
- * sent themk to the *same* one of your stdout/stderr
+ * send them to the *same* one of your stdout/stderr
    which will be possible after
    https://github.com/rust-lang/rust/pull/88561)
 
