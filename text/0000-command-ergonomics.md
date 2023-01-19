@@ -439,7 +439,8 @@ Perhaps printing the command arguments is overly verbose,
 and we should print only the command name.
 
 Sometimes people pass sensitive information (such ass passwords) in command line arguments.
-This is not a good idea, because command line arguments are generally public on Unix.
+This is not a good idea in portable software,
+because command line arguments are generally public on Unix.
 
 Perhaps some option could be added in the future to control this.
 For now, we propose always printing the arguments.
