@@ -310,4 +310,4 @@ use-cases of match would cause more [subtle bugs](https://fasterthanli.me/articl
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I can't think of anything related to match that could be improved in this area
+In theory, some other Rust constructs could also have postfix alternatives, but this RFC should not be taken as precedent for doing so. This RFC only proposes postfix `match`.
