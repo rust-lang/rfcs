@@ -560,8 +560,8 @@ impl Command {
 }
 ```
 
-(It is not sensibly possible at least on Unix
-to get all of the stdout and stderr output
+(It [can be difficult or impossible](https://docs.rs/io-mux/latest/io_mux/) at least on Unix
+to reliably get all of the stdout and stderr output
 and find out *both* what order it out came in,
 *and* which data was printed to which stream.
 This is a limitation of the POSIX APIs.)
