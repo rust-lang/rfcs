@@ -277,8 +277,10 @@ struct ProcessError {
     /// misbehaviour.
     //
     // In an earlier draft this was `communication_error: Option<io::Error>`.
-    // But an `io::Error` is not sufficient, because we would also want to report
-    // what it was we were trying to do that failed.
+    // But an `io::Error` is not ideal,
+    // because we need to represent what we were doing, for reporting in messages,
+    // (so it would have to a custom type boxed inside the `io::Error` anyway)
+    // and the `io::ErrorKind` isn't very meaningful.
     //
     // Communication errors like this are going to be rare
     // (at least, on Unix, I think they "can never happen"
