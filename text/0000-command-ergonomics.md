@@ -269,11 +269,30 @@ struct ProcessError {
     /// If had a problem spawning, the spawn error.
     pub spawn_error: Option<io::Error>,
 
-    /// If we had a problem talking to the child, the IO error.
+    /// If we had some other problem, that error.
+    ///
+    /// This could a problem talking to the child, or collecting its exit status.
     ///
     /// This might include problems which might be caused by child
     /// misbehaviour.
-    pub communication_error: Option<io::Error>,
+    //
+    // In an earlier draft this was `communication_error: Option<io::Error>`.
+    // But an `io::Error` is not sufficient, because we would also want to report
+    // what it was we were trying to do that failed.
+    //
+    // Communication errors like this are going to be rare
+    // (at least, on Unix, I think they "can never happen"
+    // barring bugs in the kernel, stdlib or libc,
+    // unreasonable signal dispositions,
+    // UB or fd bugs in the Rust program, or the like).
+    // We don't want to expose lots of complicated details here,
+    //
+    // Also, these aren't usefully tolerable by applications.
+    // So a Box<dyn Error> is good enough.
+    //
+    // Making it `other` allows it to be used by outside-stdlib
+    // constructors of process errors.
+    pub other_error: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
 
     /// If we had a problem converting stdout to UTF-8.
     ///
@@ -418,6 +437,9 @@ Alternatives and prior proposals include:
    which tends to unified types with variation selected at runtime.
    There would still have to be *a* type as complex as `ProcessError`,
    since that's what `read_stdout_read` needs.
+
+ * Maybe `ProcessError::other_error` ought not to exist yet,
+   and we should have a separate `ProcessError::communication_error`.
 
 # Prior art
 [prior-art]: #prior-art
@@ -612,11 +634,6 @@ subsume most of its use cases.
  * An async versions of `run()` seems like it would be convenient.
  * Async versions of the output-capturing runners too.
  * Async frameworks ought to (be able to) use `ProcessError`.
-
-Maybe `ProcessError` would have to be able to contain a nested
-`Arc<dyn Error + Send + Sync + 'static>`.
-That doesn't need to happen now.
-But it is one reason why `.has_problem()` needs to exist.
 
 ## More flexible and less synchronous output handling
 
