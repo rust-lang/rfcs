@@ -38,6 +38,9 @@ Starting in the Rust 2024 edition:
 Rust 2015, 2018, and 2021 continue to permit this, but will produce a
 warn-by-default lint.
 
+No other language features provide a means of defining a name inside a function
+and referencing that name outside the function.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
