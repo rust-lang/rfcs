@@ -6,43 +6,48 @@
 # Summary
 [summary]: #summary
 
-Starting in Rust 2024, stop allowing items inside functions to implement
-methods or traits that are visible outside the function.
+Starting in Rust 2024, stop allowing items inside functions or expressions to
+implement methods or traits that are visible outside the function or
+expression.
 
 # Motivation
 [motivation]: #motivation
 
 Currently, tools cross-referencing uses and definitions (such as IDEs) must
-either search inside all function bodies to find potential definitions
-corresponding to uses within a function, or not cross-reference those
-definitions at all.
+either search inside all function bodies and other expression-containing items
+to find potential definitions corresponding to uses within another function, or
+not cross-reference those definitions at all.
 
 Humans cross-referencing such uses and definitions may find themselves
 similarly baffled.
 
 With this change, both humans and tools can limit the scope of their search and
-avoid looking for definitions inside other functions, without missing any
-relevant definitions.
+avoid looking for definitions inside other functions or items, without missing
+any relevant definitions.
 
 # Explanation
 [explanation]: #explanation
 
+The following types of items, "expression-containing items", can contain
+expressions, including the definitions of other items:
+- Functions
+- Closures
+- The values assigned to `static`/`const` items
+- The discriminant values assigned to `enum` variants
+
 Starting in the Rust 2024 edition:
-- An item nested inside a function or closure (through any level of nesting)
-  may not define an `impl Type` block unless the `Type` is also nested inside
-  the same function or closure.
-- An item nested inside a function or closure (through any level of nesting)
-  may not define an `impl Trait for Type` unless either the `Trait` or the
-  `Type` is also nested inside the same function or closure.
-- An item nested inside a function or closure (through any level of nesting)
-  may not define an exported macro visible outside the function or closure
-  (e.g. using `#[macro_export]`).
+- An item nested inside an expression-containing item (through any level of
+  nesting) may not define an `impl Type` block unless the `Type` is also nested
+  inside the same expression-containing item.
+- An item nested inside an expression-containing item (through any level of
+  nesting) may not define an `impl Trait for Type` unless either the `Trait` or
+  the `Type` is also nested inside the same expression-containing item.
+- An item nested inside an expression-containing item (through any level of
+  nesting) may not define an exported macro visible outside the
+  expression-containing item (e.g. using `#[macro_export]`).
 
 Rust 2015, 2018, and 2021 continue to permit this, but will produce a
 warn-by-default lint.
-
-No other language features provide a means of defining a name inside a function
-and referencing that name outside the function.
 
 # Drawbacks
 [drawbacks]: #drawbacks
