@@ -13,14 +13,16 @@ methods or traits that are visible outside the function.
 [motivation]: #motivation
 
 Currently, tools cross-referencing uses and definitions (such as IDEs) must
-search inside all function bodies to find potential definitions corresponding
-to uses within a function.
+either search inside all function bodies to find potential definitions
+corresponding to uses within a function, or not cross-reference those
+definitions at all.
 
 Humans cross-referencing such uses and definitions may find themselves
 similarly baffled.
 
 With this change, both humans and tools can limit the scope of their search and
-avoid looking for definitions inside other functions.
+avoid looking for definitions inside other functions, without missing any
+relevant definitions.
 
 # Explanation
 [explanation]: #explanation
