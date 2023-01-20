@@ -28,11 +28,12 @@ relevant definitions.
 [explanation]: #explanation
 
 Starting in the Rust 2024 edition:
-- An item nested inside a `fn` (through any level of nesting) may not define an
-  `impl Type` block unless the `Type` is also nested inside the same `fn`.
-- An item nested inside a `fn` (through any level of nesting) may not define an
-  `impl Trait for Type` unless either the `Trait` or the `Type` is also nested
-  inside the same `fn`.
+- An item nested inside a function or closure (through any level of nesting)
+  may not define an `impl Type` block unless the `Type` is also nested inside
+  the same function or closure.
+- An item nested inside a function or closure (through any level of nesting)
+  may not define an `impl Trait for Type` unless either the `Trait` or the
+  `Type` is also nested inside the same function or closure.
 
 Rust 2015, 2018, and 2021 continue to permit this, but will produce a
 warn-by-default lint.
