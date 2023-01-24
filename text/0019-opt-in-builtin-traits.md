@@ -2,6 +2,9 @@
 - RFC PR #: [rust-lang/rfcs#19](https://github.com/rust-lang/rfcs/pull/19), [rust-lang/rfcs#127](https://github.com/rust-lang/rfcs/pull/127)
 - Rust Issue #: [rust-lang/rust#13231](https://github.com/rust-lang/rust/issues/13231)
 
+**Note:** The `Share` trait described in this RFC was later
+[renamed to `Sync`](0123-share-to-threadsafe.md).
+
 # Summary
 
 The high-level idea is to add language features that simultaneously
