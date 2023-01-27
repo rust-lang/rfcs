@@ -134,7 +134,7 @@ In addition the `on_unimplemented` attribute provides mechanisms to specify for 
 
 The `any` and `all` options allow to combine multiple filter options. The `any` option matches if one of the supplied filter options evaluates to `true`, the `all` option requires that all supplied filter options evaluate to true. `not` allows to negate a given filter option. It evaluates to `true` if the inner filter option evaluates to `false`. These options can be nested to construct complex filters.
 
-The `on_unimplemented` attribute can be applied multiple times to the same trait definition. Multiple attributes are evaluated in order. The first matching instance for each of the `message`/`label`/`note` options is emitted.
+The `on_unimplemented` attribute can be applied multiple times to the same trait definition. Multiple attributes are evaluated in order. The first matching instance for each of the `message`/`label`/`note` options is emitted. The compiler may lint against ignored variants as this is the case for `match` arms for example.
 ```rust
 #[diagnostic::on_unimplemented(
     if(Self = std::string::String),
