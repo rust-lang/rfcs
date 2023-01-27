@@ -55,7 +55,7 @@ Similarly, `cargo build --example fetch-http` will enable the `networking` featu
 This field can be specified for any Cargo Target except the `[lib]` target.
 
 > **Note**: Because features and dependencies are package-wide, using `enable-features` does not narrow the scope of the features or dependencies to the specific target.
-> The features and dependencies will be enabled for all targets.
+> The features and dependencies will be enabled for all targets that have been asked to be built.
 
 # Implementation Details
 
@@ -99,6 +99,36 @@ In these situations, `required-features` may be the appropriate way to condition
 
 Documentation will need to emphasize the difference between these seemingly similar options.
 
+### `required-features` unlock
+
+There may be situations where an `enable-features` field may enable features that were listed in `required-features` of another target.
+The resolver should iterate, enabling features unlocked by newly added targets now satisfying a `required-features` field.
+
+For example:
+
+```toml
+[[bin]]
+name = "foo"
+enable-features = ["a"]
+
+[[bin]]
+name = "bar"
+required-features = ["a"]
+enable-features = ["b"]
+
+[[bin]]
+name = "baz"
+required-features = ["b"]
+```
+
+If this is built with no explicit feature flags, then `foo` will enable feature `a`.
+Enabling feature `a` now satisfies `bar`'s required features, and thus it is added to the set of enabled targets, which in turn enables feature `b`.
+Now that feature `b` is enabled, `baz`'s required features are also now satisfied, so it is also enabled.
+
+Thus, all three targets will be built, and features `a` and `b` are enabled.
+
+This will likely require iterating over the targets until no additional targets can be added.
+
 ## Other cargo command behavior
 
 [`cargo metadata`](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html) and [`cargo tree`](https://doc.rust-lang.org/cargo/commands/cargo-tree.html) will behave as-if they are ignoring the `enable-features` fields.
@@ -132,10 +162,11 @@ When using those commands with `--all-features`, any hidden `dep:` dependencies 
 ## Change the `required-features` behavior
 
 * `required-features` could be changed to behave the same as `enable-features` described in this RFC (possibly over an Edition).
-However, as outlined in the [Relationship with `required-features`](#relationship-with-required-features) section, there are some use cases where the present behavior of `required-features` is desirable.
-This could also lead to a breaking change for some projects if it started building targets that were previously not included.
+  However, as outlined in the [Relationship with `required-features`](#relationship-with-required-features) section, there are some use cases where the present behavior of `required-features` is desirable.
+  This could also lead to a breaking change for some projects if it started building targets that were previously not included.
 * Instead of adding a separate field that lists features, a `force-enable-features = true` field could be added to change the behavior of `required-features` to have the behavior explained in this RFC.
   That might be less confusing, but would prevent the ability to have both behaviors at the same time.
+  It would also require entering two lines (instead of one) in `Cargo.toml` to get the behavior that most users will likely want.
 * Only the situation where `required-features` generates an error could be changed to implicitly enable the missing features.
   This would likely make `required-features` less annoying to work with, but doesn't help for use cases like running `cargo test` where you have specific tests or examples that you want to be automatically included (where `required-features` simply makes them silently excluded).
 * A new CLI argument could be added to change the behavior of `required-features` to behave the same as `enable-features`, avoiding the need to add `enable-features`.
@@ -145,6 +176,8 @@ This could also lead to a breaking change for some projects if it started buildi
 
 * Instead of using `enable-features`, developers can be diligent in passing the appropriate `--features` options on the command-line when building their projects, possibly using `required-features` to ensure they only get built in the correct scenarios.
   The intent of this RFC is to make that process easier and more seamless.
+  The current UX for using `required-features` can be confusing when the required features are not specified.
+  For example, `cargo install` fails to inform why it fails (see [#11617](https://github.com/rust-lang/cargo/issues/11617)).
 * Users can set up [aliases](https://doc.rust-lang.org/cargo/reference/config.html#alias) which pass in the feature flags they want to enable.
   This can help with a development workflow, but requires more documentation and education, and doesn't help with some commands like a remote `cargo install`.
 * Developers can organize their project in a [Cargo Workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html) instead of using multiple targets within a single package.
@@ -164,6 +197,8 @@ This could also lead to a breaking change for some projects if it started buildi
 
 * [cargo#1982](https://github.com/rust-lang/cargo/issues/1982) is the primary issue requesting the ability to set per-target dependencies, and contains some discussion of the desired use cases.
 * Other names may be considered for the field `enable-features`, such as `forced-features`, `force-enable-features`, etc.
+* A flag could be added to the target definition to indicate that default features should be disabled when the target is being built.
+  This would allow having different default features when running a command such as `cargo install` versus using the package's library as a dependency.
 
 # Prior art
 [prior-art]: #prior-art
