@@ -114,7 +114,7 @@ Adding a new attribute or option to the `#[diagnostic]` namespace is a decision 
 
 ## The `#[diagnostic::on_unimplemented]` attribute
 
-This section describes the syntax of the `on_unimplemented` attribute and additionally how it is supposed to work. The specification of this attribute is partially provided as example and motivation for the `#[diagnostic]` attribute namespace. In addition it is provided to give this RFC a 
+This section describes the syntax of the `on_unimplemented` attribute and additionally how it is supposed to work. The specification of this attribute is partially provided as example and motivation for the `#[diagnostic]` attribute namespace. In addition it is provided to give this RFC a concrete use, such that we not only define an empty attribute namespace.
 
 ```rust
 #[diagnostic::on_unimplemented(
