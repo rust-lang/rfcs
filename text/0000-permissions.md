@@ -39,7 +39,7 @@ pub struct Person {
 And now we want a function for `Person` which lets us age him/her by one year and another one for renaming him/her.
 ```rust
 impl Person {
-  pub fn aging(&ut self) {
+  pub fn aging(&mut self) {
     self.age += 1;
   }
   
@@ -87,7 +87,7 @@ fn main() {
 Dang it! But with permissions, we can easily fix this. So let us change some things in our `impl` of `Person`:
 ```rust
 impl Person {
-  pub fn 'Age aging(&ut self) { // this function needs the permission `'Age`
+  pub fn 'Age aging(&mut self) { // this function needs the permission `'Age`
     self.age += 1;
   }
   
