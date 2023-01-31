@@ -87,11 +87,11 @@ fn main() {
 Dang it! But with permissions, we can easily fix this. So let us change some things in our `impl` of `Person`:
 ```rust
 impl Person {
-  pub fn 'Age aging(&mut self) { // this function needs the permission `'Age`
+  pub fn aging(&'Age mut self) { // this function needs the permission `'Age`
     self.age += 1;
   }
   
-  pub fn 'Name rename(&mut self, new_name: String) -> String { // this function needs the permission `'Name`
+  pub fn rename(&'Name mut self, new_name: String) -> String { // this function needs the permission `'Name`
     std::mem::replace(&mut self.name, new_name)
   }
 }
