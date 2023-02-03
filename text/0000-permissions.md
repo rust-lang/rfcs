@@ -91,11 +91,11 @@ impl Person {
   permission Age(self.age);
   permission Name(self.name);
 
-  pub fn aging(&mut self permits Age) { // this function needs the permission `'Age`
+  pub fn aging(&mut self permits Age) { // this function needs the permission `Age`
     self.age += 1;
   }
   
-  pub fn rename(&mut self permits Name, new_name: String) -> String { // this function needs the permission `'Name`
+  pub fn rename(&mut self permits Name, new_name: String) -> String { // this function needs the permission `Name`
     std::mem::replace(&mut self.name, new_name)
   }
 }
@@ -135,11 +135,11 @@ impl Hack {
   permission HackA(self.one_data);
   permission HackB(self.one_data); // this should throw an error: `cannot permit `self.one_data` more than once at a time second mutable borrow occurs here - Use a unique permission instead.`
 
-  pub fn 'HackA hack_a(&mut self) {
+  pub fn hack_a(&mut self permits HackA) {
     self.one_data./*...*/
   }
   
-  pub fn 'HackB hack_b(&mut self) {
+  pub fn hack_b(&mut self permits HackB) {
     self.one_data./*...*/
   }
 }
