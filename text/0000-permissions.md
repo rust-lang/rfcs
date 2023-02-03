@@ -10,10 +10,12 @@ Set permissions for functions and add permissioned borrows.
 # Motivation
 [motivation]: #motivation
 
-So I've been latetly writing a lot of rust code where I need a struct mutable borrowed and stored paralelly to other borrows of the same data.
+~So I've been latetly writing a lot of rust code where I need a struct mutable borrowed and stored paralelly to other borrows of the same data.
 They really don't interop or block each other, they are two iterators nested and one needs the whole type to call a function on it (immutable) and get that data.
 The other iterator needs a mutable borrow of an underlying `HashMap` in that same struct to convert the key to a mutable ref to the value.
-But these two iterators nested wouldn't work, because they would both reference to the same data.
+But these two iterators nested wouldn't work, because they would both reference to the same data.~
+So I've been latetly writing a lot of rust code where I need a struct mutable borrowed and stored paralelly to other borrows of the same struct but different fields.
+So they were just fine but i got an error.
 To resolve the error: ```cannot borrow `*app` as mutable more than once at a time
 second mutable borrow occurs here```, I've just be using unsafe pointer magic..:
 ```rust
@@ -28,7 +30,6 @@ While I wrote this, the idea of a langauge with permissions came up to me.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-So, a permission is looking like a life-time specifier.
 Imagine we have a struct for a person:
 ```rust
 pub struct Person {
@@ -87,19 +88,22 @@ fn main() {
 Dang it! But with permissions, we can easily fix this. So let us change some things in our `impl` of `Person`:
 ```rust
 impl Person {
-  pub fn aging(&'Age mut self) { // this function needs the permission `'Age`
+  permission Age(self.age);
+  permission Name(self.name);
+
+  pub fn aging(&mut self permits Age) { // this function needs the permission `'Age`
     self.age += 1;
   }
   
-  pub fn rename(&'Name mut self, new_name: String) -> String { // this function needs the permission `'Name`
+  pub fn rename(&mut self permits Name, new_name: String) -> String { // this function needs the permission `'Name`
     std::mem::replace(&mut self.name, new_name)
   }
 }
 ```
 Now let us change the borrow for `Department` and `Calendar`:
 ```rust
-pub struct Department<'p>(&'p 'Name mut Person); // the borrow has the permission `'Name`
-pub struct Calendar<'p>(&'p 'Age mut Person); // the borrow has the permission `'Age`
+pub struct Department<'p>(&'p mut Person permits Name); // the borrow has the permission `Name`
+pub struct Calendar<'p>(&'p mut Person permits Age); // the borrow has the permission `Age`
 ```
 And now let's see our main code:
 ```rust
@@ -110,7 +114,7 @@ fn main() {
   };
   
   let department = Department(&mut person); // implicit permission
-  let calendar = Calendar(&'Age mut person); // explicit permission
+  let calendar = Calendar(&mut person permits Age); // explicit permission
   
   calendar.next_year();
   calendar.next_year();
@@ -128,6 +132,9 @@ The compiler should know what the permissions allow of data to use.
 For example, when two functions need the same data mutably and normally it wouldn't compile, they shouldn't just add two different permissions to evade it:
 ```rust
 impl Hack {
+  permission HackA(self.one_data);
+  permission HackB(self.one_data); // this should throw an error: `cannot permit `self.one_data` more than once at a time second mutable borrow occurs here - Use a unique permission instead.`
+
   pub fn 'HackA hack_a(&mut self) {
     self.one_data./*...*/
   }
@@ -140,14 +147,18 @@ impl Hack {
 Instead, the compiler should notify that the permissions intercept with each other and they should create a sub-permission for both:
 ```rust
 impl Hack {
-  pub fn 'OneData + 'HackA hack_a(&mut self)
+  permission OneData(self.one_data);
+  permission HackA; // we can also use them to limit visibility of functions in a even cooler way
+  permission HackB;
+
+  pub fn hack_a(&mut self permits OneData + HackA)
   where
     self.one_data: 'OneData // I'm unsure about this syntax
   {
     self.one_data./*...*/
   }
   
-  pub fn 'OneData + 'HackB hack_b(&mut self)
+  pub fn hack_b(&mut self permits OneData + HackB)
   where
     self.one_data: 'OneData
   {
@@ -158,8 +169,6 @@ impl Hack {
 
 # Drawbacks
 [drawbacks]: #drawbacks
-
-It may be confusing especially for newbies to differentiate between lifetimes and permissions. Maybe something else than `'`?
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -177,7 +186,7 @@ The idea came to me by Minecraft server development, where it is used for giving
 [unresolved-questions]: #unresolved-questions
 
 * Is there a clearer way to solve this problem?
-* Is there a cleaner syntax for this? (especially for the `where self.one_data: 'OneData`.
+* Should we also allow permissions without any data for just sematic borrow permission? like `permission HackA;` above
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
