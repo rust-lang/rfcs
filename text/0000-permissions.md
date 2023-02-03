@@ -171,7 +171,7 @@ It maybe "could" be done with macros, but then it would also generate unsafe cod
 [prior-art]: #prior-art
 
 I don't know any language who has done something like this before.
-The idea came to me by minecraft server development and there its used for giving players the permission to execute commands, so it may be similar in the smallest way possible 😅.
+The idea came to me by Minecraft server development, where it is used for giving players the permission to execute commands, so it may be similar in the smallest way possible 😅.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
