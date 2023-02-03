@@ -151,17 +151,11 @@ impl Hack {
   permission HackA; // we can also use them to limit visibility of functions in a even cooler way
   permission HackB;
 
-  pub fn hack_a(&mut self permits OneData + HackA)
-  where
-    self.one_data: 'OneData // I'm unsure about this syntax
-  {
+  pub fn hack_a(&mut self permits OneData + HackA) {
     self.one_data./*...*/
   }
   
-  pub fn hack_b(&mut self permits OneData + HackB)
-  where
-    self.one_data: 'OneData
-  {
+  pub fn hack_b(&mut self permits OneData + HackB) {
     self.one_data./*...*/
   }
 }
