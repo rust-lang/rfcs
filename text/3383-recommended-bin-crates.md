@@ -85,11 +85,11 @@ The developers of `foobar` suggest you may want to install `foobar-cli` instead.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `cargo-install` command has already parsed the `Cargo.toml` manifest
+The `cargo install` command has already parsed the `Cargo.toml` manifest
 file when it prints this error message, so it would simply have to
 additionally check for this new field when printing the error message.
 
-`cargo-publish` should assert that the referenced
+`cargo publish` should assert that the referenced
 crates already exist and have not been yanked.
 
 # Drawbacks
