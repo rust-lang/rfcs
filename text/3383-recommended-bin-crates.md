@@ -89,12 +89,20 @@ The `cargo-install` command has already parsed the `Cargo.toml` manifest
 file when it prints this error message, so it would simply have to
 additionally check for this new field when printing the error message.
 
+`cargo-publish` should assert that the referenced
+crates already exist and have not been yanked.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * It introduces yet another manifest `field`.
-* The crates referenced by this field could become abandoned, out-of-date or yanked.
-* Updating this field for a library crate requires you to bump its version.
+
+* The crates referenced by this field could become abandoned, out-of-date or yanked
+  (although the referencing and referenced crate will presumably often be published
+  by the same person/group, in which case this can be simply avoided).
+
+* Like any other manifest field, updating the field requires you to publish
+  a new version of the crate (a patch version bump suffices).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -113,11 +121,20 @@ with two disadvantages:
 
 The problem could also be sidestepped by publishing the command in a
 crate with the same name as the command and using a different name for
-the library crate, but this does arguably result in a worse user
-experience problem since `cargo add` does not fail for binary-only
-crates.
+the library crate. (While `cargo add` currently does not fail for
+binary-only crates that could very well be addressed without an RFC.)
+A disparity between crate name and library name again comes with its
+own disadvantages, e.g. Rust users often expect libraries published
+on crates.io to be documented at docs.rs/{lib_name}.
 
-This RFC poses a simple solution to a rather annoying problem.
+So while these two alternatives have their own disadvantages, they are
+also generally not an option for projects that have already been published
+using the described naming convention, since converting a library-only
+crate to a binary-only crate is bound to result in confusion.
+
+The proposed field provides a simple solution to a rather annoying
+problem and could be easily applied to existing projects using this
+common naming convention to solve the described user experience problem.
 
 # Prior art
 [prior-art]: #prior-art
