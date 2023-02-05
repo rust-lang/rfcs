@@ -155,6 +155,8 @@ In practice, it should be rare to have two different projects using the same nam
 
 In case the parent directory is `/` or `C:\`, the subdirectory name is implementation defined.
 
+See "Rationale and alternatives" about conflicts in the naming scheme.
+
 ## Impact on `cargo ...` calls
 
 When calling `cargo` where `CARGO_TARGET_DIRECTORIES` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, including calls to third-party tools.
@@ -202,8 +204,12 @@ It is already possible today to use `CARGO_TARGET_DIR` to remap workspaces and p
 
 1) If done globally, the `CARGO_TARGET_DIR` becomes a hodge-podge of every project, which is not often the goal.
 2) If done per-project, it is very cumbersome to maintain.
+3) [`targo`](https://github.com/sunshowers/targo) by @sunshowers
+4) [rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156)
 
-For those reason, this option has not been retained.
+`targo` and the cargo issue express a need for either remapping or a global target directory that is not shared between different Cargo workspaces.
+
+For those reason, this option has not been retained and the `targo` tool is discussed more in details below.
 
 ## Using `XDG_CACHE_HOME` instead of a cargo-specific env-var
 
@@ -220,6 +226,32 @@ bringing the registry cache in their build directory for example.
 
 I feel this require an hard-to-break naming scheme, which I don't have the skills nor motivation to design. Instead, I prefer explicitely telling the naming scheme is not to
 be considered stable and allow more invested people to experiment with the feature and find something solid.
+
+## Make the naming conflict less easily
+
+The (possibly) conflicting naming scheme used here is something that can easily be fixed: instead of just `/cargo-caches/work-project`, use something like `/cargo-caches/work-project-<blake3 hash of full path to 'work-project' directory>`, like `targo` does. This approach has at least two defaults and one advantage:
+
+- **Advantage**: conflicts are pretty much impossible while the naming scheme is still predictable
+- **Disadvantage**: external tools now have to know about the naming scheme internal more than just "set `$CARGO_TARGET_DIRECTORIES` and append crate directory name" and changing the hash method or length could heavily break them (even with us specifying it as unstable, we all know how that goes in real life). We would also have to specify when is the hash resolved (before symlink resolution or after).
+- **Disadvantage**: moving the crate directory implies a full rebuild because the hash has changed. This is especially impactful for CIs, where different steps could be executed in different temporary directories, preventing them from enjoying the benefits of such a cache. For CIs, this is strongly mitigated by using `$CARGO_TARGET_DIR` directly and so may not be that much of a disadvantage. For local builds, I expect users are not moving their crates all over the place often, although I only have myself as data on this.
+
+Also, I don't expect people are using similarly-named directories for unrelated projects. I checked my machines, it's zero for all of them. I have two `rust-lang/rust` worktree, named `rust-lang-1` and `rust-lang-2`, and they would not interfere with each other if they used a system like `$CARGO_TARGET_DIRECTORIES` since their directory names are different.
+
+## Just use `targo`
+
+While a very nice tool, `targo` is not integrated with `cargo` and has a few shortcomings:
+
+- It uses symlinks, which are not always handled well by other tools. Specifically, since it's not integrated inside `cargo`, it uses a `target` symlink to avoid having to remap `cargo`'s execution using `CARGO_TARGET_DIR` and such,making it less useful for external build tools that would use this functionality. Using such a symlink also means `cargo clean` does not work, it just removes the symlink and not the data.
+- It completely ignores `CARGO_TARGET_DIR`-related options, which again may break workflows.
+- It needs more metadata to work well, which means an external tool using it would have to understand that metadata too.
+- It uses `$CARGO_HOME/targo` to place its cache, making it less useful for external build tools and people wanting to separate caches and configuration.
+- It needs to intercept `cargo`'s arguments, making it more brittle than an integrated solution.
+- It uses a hash-based naming scheme, making it less predictable and compatible with external build tools and moving directories, as seen above.
+
+Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to
+solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
+
+On the other hand, `targo` is already here and working for at least one person, making it the most viable alternative for now.
 
 # Prior art
 [prior-art]: #prior-art
@@ -240,10 +272,17 @@ Note that while precedent set by other languages is some motivation, it does not
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
 -->
 
-- [`targo`](https://github.com/sunshowers/targo) by @sunshowers
-- [rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156)
+## `bazel`
 
-Both express the needs for either remapping or a global target directory that is not shared between different Cargo workspaces.
+The [`bazel`] build system has a similar feature called the [`outputRoot`](https://docs.bazel.build/versions/5.4.0/output_directories.html), which is always active and has default directories on all major platforms (Linux, macOS, Windows).
+
+The naming scheme is as follow: `<outputRoot>/_bazel_$USER/` is the `outputUserRoot`, used for all builds done by `$USER`. Below that, projects are identified by the MD5 hash of the path name of the workspace directory (computed after resolving symlinks).
+
+The `outputRoot` can be overridden using `--output_base=...` (this is `$CARGO_TARGET_DIRECTORIES`, the subject of this RFC) and the `outputUserRoot` with `--output_user_root=...` (this is close to using `$CARGO_TARGET_DIR`, already possible in today's `cargo`).
+
+**Conclusion**: `bazel` shows that a hash-based workflow seems to work well enough, making an argument for the use of it in `cargo` too. It also uses the current user, to prevent attacks by having compiled a program as root and making the directory accessible to other users later on by also compiling there for them. `cargo` could also do this, though I do not know what happens when `--output_user_root` is set to the same path for two different users.
+
+*Note: I looked at Bazel 5.4.0, the latest stable version as of this writing, things may change in the future or be different for older versions.*
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -254,7 +293,8 @@ Both express the needs for either remapping or a global target directory that is
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
-None I can think of.
+- Should we use a hash-based solution or simply a directory-named based one ? `bazel` using hashes indicates this solution is viable for them, it probably would be for `cargo` too and if we use both the hash and the directory name, it would stay fairly human-readable but this solution also has disadvantages.
+- Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for us ?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
