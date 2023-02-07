@@ -43,7 +43,7 @@ When the dependency string contains at least one dot, it is an URI.
 
 #### URI definition
 
-The `package.uri` field of Cargo.toml is an optional string based in the regular expression `(www.)?[a-z_\-0-9]+(\.[a-z_\-0-9]+)+(/[a-z_\-0-9]+)*` which is similiar to an URI without a scheme, query, hash fragment and `%` octet sequences. In other words, it contains one or more identifiers delimited by dot followed by an optional slash and zero or more identifiers delimited by slash.
+The `package.uri` field of Cargo.toml is an optional string based in the regular expression `(www.)?[a-z_\-0-9]+(\.[a-z_\-0-9]+)+(/[A-Za-z_\-0-9]+)*` which is similiar to an URI without a scheme, query, hash fragment and `%` octet sequences. In other words, it contains one or more identifiers delimited by dot followed by an optional slash and zero or more identifiers delimited by slash.
 
 The optional "www." prefix is ignored.
 
