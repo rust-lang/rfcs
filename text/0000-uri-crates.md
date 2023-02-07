@@ -8,7 +8,7 @@
 
 Introduce crate identification through simplified URIs and introduce crate domains. The URIs are used solely in package configuration files, `Cargo.toml`, and are a limited subset of URIs.
 
-Domains can be registered into crates.io and its ownership is managed by the user.
+Domains can be registered into crates.io and its ownership is managed by the user. There's no need for graphical user interface in crates.io; just use the `cargo` command for now.
 
 Like crate names, domains have impermanent ownership. So, for example, a crate `jresig_shibuya` can at anytime have its ownership renewed. The same can be said about a domain `www.jresig.com`.
 
