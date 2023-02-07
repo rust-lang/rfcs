@@ -45,13 +45,17 @@ When the dependency string contains at least one dot, it is an URI.
 
 The `package.uri` field of Cargo.toml is an optional string based in the regular expression `(www.)?[a-z_\-0-9]+(\.[a-z_\-0-9]+)+(/[a-z_\-0-9]+)*` which is similiar to an URI without a scheme, query, hash fragment and `%` octet sequences. In other words, it contains one or more identifiers delimited by dot followed by an optional slash and zero or more identifiers delimited by slash.
 
+The optional "www." prefix is ignored.
+
 #### Dependency
 
 If a dependency string contains at least one dot, the dependency string is an URI. Cargo resolves it as a crate identified by that URI in crates.io
 
+The optional "www." prefix is ignored.
+
 #### Publishing process
 
-An user cannot publish a crate with a specific URI if its domain does not exist in crates.io or does not belong to the user.
+An user cannot publish a crate with a specific URI if either its domain does not exist in crates.io, its domain does not belong to the user or the URI is duplicate.
 
 #### crates.io Domains
 
@@ -61,7 +65,7 @@ The `cargo` command allows managing domains from crates.io. For example, it allo
 - registering domains,
 - removing domains,
 - transferring domain ownership between users and
-- adding other users as owners of a domain
+- adding other users as owners of a domain.
 
 # Drawbacks
 [drawbacks]: #drawbacks
