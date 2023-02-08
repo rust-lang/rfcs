@@ -1,7 +1,7 @@
 - Feature Name: sparse_index
 - Start Date: 2019-10-18
 - RFC PR: [rust-lang/rfcs#2789](https://github.com/rust-lang/rfcs/pull/2789)
-- Tracking Issue: [rust-lang/rust#9069](https://github.com/rust-lang/cargo/issues/9069)
+- Tracking Issue: [rust-lang/cargo#9069](https://github.com/rust-lang/cargo/issues/9069)
 
 # Summary
 [summary]: #summary
