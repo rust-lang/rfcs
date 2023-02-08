@@ -288,6 +288,22 @@ An alternative is to extend the syntax accepted by `--remap-path-prefix` or add 
 scoping rules to be explicitly applied to each remapping. This can co-exist with `--remap-path-scope` so it will be discussed further in
 [Future possibilities](#future-possibilities) section.
 
+## Rationale for the `--remap-path-scope` options
+There are quite a few options available for `--remap-path-scope`. Not all of them are expected to have meaningful use-cases in their own right.
+Some are only added for completeness, that is, the behaviour of `--remap-path-prefix=all` (or the original `--remap-path-prefix` on its own) is
+the same as specifying all individual scopes. In the future, we expect some of the scopes to be removed as independent options, while preserving
+the behaviour of `--remap-path-prefix=all` and the stable `--remap-path-prefix`, which is "Remap source names in all output".
+
+- `macro` is primarily meant for panic messages embedded in binaries.
+- `diagnostics` is unlikely to be used on its own as it only affects console outputs, but is required for completeness. See [#87745](https://github.com/rust-lang/rust/issues/87745).
+- `unsplit-debuginfo` is used to sanitise debuginfo embedded in binaries.
+- `split-debuginfo` is used to sanitise debuginfo separate from binaries. This is may be used when debuginfo files are separate and the author
+still wants to distribute them.
+- `split-debuginfo-path` is used to sanitise the path embedded in binaries pointing to separate debuginfo files. This is likely needed in all
+contexts where `unsplit-debuginfo` is used, but it's technically a separate piece of information inserted by the linker, not rustc.
+- `object` is a shorthand for the most common use-case: sanitise everything in binaries, but nowhere else. 
+- `all` and `true` preserves the documented behaviour of `--remap-path-prefix`.
+
 # Prior art
 [prior-art]: #prior-art
 
