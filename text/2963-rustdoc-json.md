@@ -261,7 +261,6 @@ Name      | Type    | Description
 `links`   | Map<String, [ID](#ID)> | A map of intra-doc link names to the IDs of the items they resolve to. For example if the `docs` string contained `"see [HashMap][std::collections::HashMap] for more details"` then `links` would have `"std::collections::HashMap": "<some id>"`.
 `attrs`   | [String] | The [unstable](#Unstable) stringified attributes (other than doc comments) on the Item (e.g. `["#[inline]", "#[test]"]`).
 `deprecation` | [Deprecation](#Deprecation) | (*Optional*) Information about the Item's deprecation, if present.
-`kind`    | String  | The kind of Item this is. Determines what fields are in `inner`.
 `inner`   | Object  | The type-specific fields describing this Item. Check the `kind` field to determine what's available.
 
 ### Restricted visibility
