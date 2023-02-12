@@ -53,7 +53,7 @@ explicitly re-proposed through the project group process detailed in this RFC.
 This is a high level overview of the complete process of a project group.
 
 <p align="center">
-    <img src="../resources/project-group-workflow.svg"
+    <img src="2856-project-groups/project-group-workflow.svg"
         alt="A flow diagram showing each step of a project group"
         height="800px">
     <p align="center">Figure 1. Project Group Lifecycle</p>
