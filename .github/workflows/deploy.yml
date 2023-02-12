@@ -18,7 +18,7 @@ jobs:
         echo `pwd`/mdbook >> $GITHUB_PATH
     - name: Generate Book
       run: |
-        ./generate-book.sh
+        ./generate-book.py
     - name: Deploy GitHub Pages
       run: |
         git worktree add gh-pages gh-pages
