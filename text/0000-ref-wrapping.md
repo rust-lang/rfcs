@@ -167,15 +167,46 @@ When borrowing the literal, the same rules will apply for borrowing the field it
 # Drawbacks
 [drawbacks]: #drawbacks
 
+There are two minor drawbacks to this proposal:
+
 * This is possible today with transmutes.
 * This may complicate the compiler for something that may be a relatively niche use case.
+
+However, a large drawback is the fact that this technically changes the semantics of public wrapper constructors containing private types:
+
+```rust
+// Can only be (safely) constructed via `Inner::new` and
+// `Outer::new` because `x` is private.
+pub struct Inner { x: u32, }
+
+impl Inner {
+    pub fn new(x: u32) -> &'static Self {
+        Box::leak(Box::new(Self { x }))
+    }
+}
+
+// Can only be (safely) constructed via `Outer::new` because
+// `Inner` is only exposed via immutable references.
+#[repr(transparent)]
+pub struct Outer {
+    // `x` is guaranteed to be even.
+    pub inner: Inner,
+}
+
+impl Outer {
+    pub fn new(x: u32) -> &'static Self {
+        assert!(x % 2 == 0);
+        Box::leak(Box::new(Self { inner: Inner { x } }))
+    }
+}
+```
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The most obvious alternative is to do nothing, and to force people to use unsafe code to achieve this. I personally disagree that this is acceptable, but it is a genuine alternative.
 
-The other alternative is to allow ref-wrapping via `as`-casting. For example, the `Path` example under this model could be done like the below:
+One alternative is to allow ref-wrapping via `as`-casting. For example, the `Path` example under this model could be done like the below:
 
 ```rust
 fn from_bytes(s: &[u8]) -> &Path {
@@ -190,10 +221,17 @@ This has a few problems:
 3. It's unclear whether this should be allowed for values in addition to references, e.g. could `struct Seconds(u32)` allow casting `0 as Seconds`?
 4. It's less clear how this translates with privacy rules. Presumably, the privacy rules would be the same as this RFC's proposal, where it would only be allowed if the constructor is accessible, but that's still less clear than using the constructor directly.
 
+And finally, there is also the [safe `transmute` initiative](https://github.com/rust-lang/project-safe-transmute/issues/11) which aims to selectively make a few known-safe transmutes actually safe in the language. This proposal has similar drawbacks to `as`-casting, although it fits much more nicely in a world where `as` is discouraged in favour of dedicated functions and traits to perform conversions.
+
 # Prior art
 [prior-art]: #prior-art
 
-As far as this RFC is concerned, there really isn't much prior art for this. Discussions have been had about using `as`-casting for this purpose, although as mentioned in the alternatives section, that has downsides.
+In terms of a syntax solution to this problem, no prior art is known. However, there are a number of proposals and crates dedicated to solving this problem, including:
+
+* [Safe `transmute`](https://github.com/rust-lang/project-safe-transmute/issues/11)
+* [`ref_cast`](https://docs.rs/ref-cast/)
+* [`bytemuck::TransparentWrapper`](https://docs.rs/bytemuck/latest/bytemuck/trait.TransparentWrapper.html)
+* [`aliri_braid`](https://docs.rs/aliri_braid)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
