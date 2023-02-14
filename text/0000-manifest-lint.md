@@ -136,7 +136,7 @@ Python
   - Format is `level = [lint, ...]`
 - [pylint](https://github.com/PyCQA/pylint/blob/main/examples/pylintrc#L402)
   - Format is `level = [lint, ...]` but the [config file is a reflection of the CLI](https://pylint.pycqa.org/en/latest/user_guide/configuration/index.html)
-- [ruff](https://beta.ruff.rs/docs/configuration/))
+- [ruff](https://beta.ruff.rs/docs/configuration/)
   - Format is `level = [lint, ...]`, likely due to past precedence in ecosystem (see above)
 
 Javascript
