@@ -119,6 +119,8 @@ When running rustc, cargo will transform the lints from `lint = level` to
 `--level lint` and pass them on the command line before `RUSTFLAGS`, allowing
 user configuration to override package configuration.
 
+**Note:** This reserves the lint name `workspace` to allow workspace inheritance.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
