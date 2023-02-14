@@ -184,7 +184,9 @@ How does this affect fingerprinting / recompilation and how should it?
 
 How should we hand rustdoc lint levels or, in the future, cargo lint levels?
 The current proposal takes all lints and passes them to rustc like `RUSTFLAGS`
-but rustdoc uses `RUSTDOCFLAGS` and cargo would use neither.
+but rustdoc uses `RUSTDOCFLAGS` and cargo would use neither.  This also starts
+to get into
+[user-defined tool attributes](https://rust-lang.github.io/rfcs/2103-tool-attributes.html).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
