@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add a `package.lints` table to `Cargo.toml` to configure reporting levels for
+Add a `[lints]` table to `Cargo.toml` to configure reporting levels for
 rustc and other tool lints.
 
 # Motivation
@@ -37,9 +37,9 @@ See also
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A new `package.lints` table would be added to configure lints:
+A new `lints` table would be added to configure lints:
 ```toml
-[package.lints]
+[lints]
 unsafe = "forbid"
 ```
 and `cargo` would pass these along as flags to `rustc` and `clippy`.
@@ -47,27 +47,23 @@ and `cargo` would pass these along as flags to `rustc` and `clippy`.
 This would work with
 [RFC 2906 `workspace-deduplicate`](https://rust-lang.github.io/rfcs/2906-cargo-workspace-deduplicate.html?highlight=2906#):
 ```toml
-[workspace.package.lints]
-unsafe = "forbid"
+[lints]
+workspace = true
 
-[package]
-lints = "workspace"
+[workspace.lints]
+unsafe = "forbid"
 ```
 
 ## Documentation Updates
 
-Note:
-[Workspace: The Package Table](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table)
-would be updated to say this works for workspace-inheritance
+## The `lints` section
 
-As a new [`[package]` entry](https://doc.rust-lang.org/cargo/reference/manifest.html#the-package-section):
-
-**The `lints` field**
+*as a new ["Manifest Format" entry](https://doc.rust-lang.org/cargo/reference/manifest.html#the-manifest-format)*
 
 Override the default level of lints by assigning them to a new level in a
 table, for example:
 ```toml
-[package.lints]
+[lints]
 unsafe = "forbid"
 ```
 
@@ -80,15 +76,44 @@ Supported levels include:
 **Note:** TOML does not support `:` in unquoted keys, requiring tool-specific
 lints to be quoted, like
 ```toml
-[package.lints]
+[lints]
 "clippy::enum_glob_use" = "warn"
+```
+
+## The `lints` table
+
+*as a new [`[workspace]` entry](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-workspace-section)*
+
+The `workspace.lints` table is where you define lint configuration to be inherited by members of a workspace.
+
+Specifying a workspace lint configuration is similar to package lints.
+
+Example:
+
+```toml
+# [PROJECT_DIR]/Cargo.toml
+[workspace]
+members = ["crates/*"]
+
+[workspace.lints]
+unsafe = "forbid"
+```
+
+```toml
+# [PROJECT_DIR]/crates/bar/Cargo.toml
+[package]
+name = "bar"
+version = "0.1.0"
+
+[lints]
+workspace = true
 ```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When parsing a manifest, cargo will resolve workspace inheritance for
-`package.lints.workspace = true` as it does with other fields.
+`lints.workspace = true` as it does with other fields.
 
 When running rustc, cargo will transform the lints from `lint = level` to
 `--level lint` and pass them on the command line before `RUSTFLAGS`, allowing
@@ -109,8 +134,9 @@ possibility's", we mention direct support for tying lints to rust versions.
 
 This could be left to `clippy.toml` but that leaves `rustc` without a solution.
 
-`[package.lints]` could be `[lints]` but the lints are tied to the package and
-this aligns within the existing design space for workspace inheritance.
+`[lints]` could be `[package.lints]`, tying it to the package unlike `[patch]`
+and other fields that are more workspace related.  Instead, we used
+`[dependencies]` as our model.
 
 `[lints]` could be `[lint]` but we decided to follow the precedence of `[dependencies]`.
 
