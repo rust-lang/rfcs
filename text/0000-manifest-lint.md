@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add a `package.lint` table to `Cargo.toml` to configure reporting levels for
+Add a `package.lints` table to `Cargo.toml` to configure reporting levels for
 rustc and other tool lints.
 
 # Motivation
@@ -37,9 +37,9 @@ See also
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A new `package.lint` table would be added to configure lints:
+A new `package.lints` table would be added to configure lints:
 ```toml
-[package.lint]
+[package.lints]
 unsafe = "forbid"
 ```
 and `cargo` would pass these along as flags to `rustc` and `clippy`.
@@ -47,11 +47,11 @@ and `cargo` would pass these along as flags to `rustc` and `clippy`.
 This would work with
 [RFC 2906 `workspace-deduplicate`](https://rust-lang.github.io/rfcs/2906-cargo-workspace-deduplicate.html?highlight=2906#):
 ```toml
-[workspace.package.lint]
+[workspace.package.lints]
 unsafe = "forbid"
 
 [package]
-lint = "workspace"
+lints = "workspace"
 ```
 
 ## Documentation Updates
@@ -62,12 +62,12 @@ would be updated to say this works for workspace-inheritance
 
 As a new [`[package]` entry](https://doc.rust-lang.org/cargo/reference/manifest.html#the-package-section):
 
-**The `lint` field**
+**The `lints` field**
 
 Override the default level of lints by assigning them to a new level in a
 table, for example:
 ```toml
-[package.lint]
+[package.lints]
 unsafe = "forbid"
 ```
 
@@ -80,7 +80,7 @@ Supported levels include:
 **Note:** TOML does not support `:` in unquoted keys, requiring tool-specific
 lints to be quoted, like
 ```toml
-[package.lint]
+[package.lints]
 "clippy::enum_glob_use" = "warn"
 ```
 
@@ -88,7 +88,7 @@ lints to be quoted, like
 [reference-level-explanation]: #reference-level-explanation
 
 When parsing a manifest, cargo will resolve workspace inheritance for
-`package.lint.workspace = true` as it does with other fields.
+`package.lints.workspace = true` as it does with other fields.
 
 When running rustc, cargo will transform the lints from `lint = level` to
 `--level lint` and pass them on the command line before `RUSTFLAGS`, allowing
@@ -109,20 +109,22 @@ possibility's", we mention direct support for tying lints to rust versions.
 
 This could be left to `clippy.toml` but that leaves `rustc` without a solution.
 
-`[package.lint]` could be `[lint]` but the lints are tied to the package and
+`[package.lints]` could be `[lints]` but the lints are tied to the package and
 this aligns within the existing design space for workspace inheritance.
 
+`[lints]` could be `[lint]` but we decided to follow the precedence of `[dependencies]`.
+
 We could support platform or feature specific settings, like with
-`[lint.<target>]` or `[target.<target>.lint]` but
+`[lints.<target>]` or `[target.<target>.lints]` but
 - There isn't a defined use case for this yet besides having support for `cfg(feature = "clippy")` or
   which does not seem high enough priority to design
   around.
-- `[lint.<target>]` runs into ambiguity issues around what is a `<target>`
-  entry vs a `<lint>` entry in the `[lint]` table.
+- `[lints.<target>]` runs into ambiguity issues around what is a `<target>`
+  entry vs a `<lint>` entry in the `[lints]` table.
 - We have not yet defined semantics for sharing something like this across a
   workspace
 
-Instead of the `[package.lint]` table being `lint = "level"`, we could organize
+Instead of the `[package.lints]` table being `lint = "level"`, we could organize
 it around `level = ["lint", ...]` like some other linters do (like
 [ruff](https://beta.ruff.rs/docs/configuration/)) but this works better for
 logically organizing lints, highlighting what changed in diffs, and for
@@ -150,8 +152,6 @@ Go
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Should it be `lint` or `lints`?
-
 How does this affect fingerprinting / recompilation and how should it?
 
 How should we hand rustdoc lint levels or, in the future, cargo lint levels?
@@ -165,12 +165,12 @@ but rustdoc uses `RUSTDOCFLAGS` and cargo would use neither.
 
 We can extend basic lint syntax:
 ```toml
-[package.lint]
+[package.lints]
 cyclomatic_complexity = "allow"
 ```
 to support configuration, whether for cargo or the lint tool:
 ```toml
-[package.lint]
+[package.lints]
 cyclomatic_complexity = { level = "allow", rust-version = "1.23.0", threshold = 30 }
 ```
 Where `rust-version` is used by cargo to determine whether to pass along this
