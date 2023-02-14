@@ -210,9 +210,9 @@ impl Drop for ScribbleOnDrop {
 
 struct Foo<'a: '!>(u32, &'a ScribbleOnDrop);
 
-unsafe impl<'a: '!> Drop for Foo<'a> {
+impl<'a: '!> Drop for Foo<'a> {
     fn drop(&mut self) {
-        // Use of `'a: '!` is sound, because destructor never accesses `self.1`.
+        // Use of `'a: '!` means destructor cannot access `self.1`.
         println!("Dropping Foo({}, _)", self.0);
     }
 }
