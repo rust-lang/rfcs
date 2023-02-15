@@ -40,7 +40,7 @@ See also
 
 A new `lints` table would be added to configure lints:
 ```toml
-[lints]
+[lints.rust]
 unsafe = "forbid"
 ```
 and `cargo` would pass these along as flags to `rustc` and `clippy`.
@@ -61,10 +61,10 @@ unsafe = "forbid"
 
 *as a new ["Manifest Format" entry](https://doc.rust-lang.org/cargo/reference/manifest.html#the-manifest-format)*
 
-Override the default level of lints by assigning them to a new level in a
+Override the default level of lints from different tools by assigning them to a new level in a
 table, for example:
 ```toml
-[lints]
+[lints.rust]
 unsafe = "forbid"
 ```
 
@@ -74,12 +74,10 @@ Supported levels include:
 - `warn`
 - `allow`
 
-**Note:** TOML does not support `:` in unquoted keys, requiring tool-specific
-lints to be quoted, like
-```toml
-[lints]
-"clippy::enum_glob_use" = "warn"
-```
+To know which tool a lint falls under, it is the part before `::` in the lint
+name.  If there isn't a `::`, then the tool is `rust`.  For example a warning
+about `unsafe` would be `lints.rust.unsafe` but a lint about
+`clippy::enum_glob_use` would be `lints.clippy.enum_glob_use`.
 
 ## The `lints` table
 
@@ -96,7 +94,7 @@ Example:
 [workspace]
 members = ["crates/*"]
 
-[workspace.lints]
+[workspace.lints.rust]
 unsafe = "forbid"
 ```
 
@@ -123,7 +121,7 @@ When running rustc, cargo will transform the lints from `lint = level` to
 user configuration to override package configuration.  These flags will be
 fingerprinted so changing them will cause a rebuild.
 
-**Note:** This reserves the lint name `workspace` to allow workspace inheritance.
+**Note:** This reserves the tool name `workspace` to allow workspace inheritance.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -148,11 +146,11 @@ and other fields that are more workspace related.  Instead, we used
 
 `[lints]` could be `[lint]` but we decided to follow the precedence of `[dependencies]`.
 
-Instead of using `::` as a separator between tool and lint (e.g.
-`clippy::enum_glob_use`), we could use TOML dotted keys for this (e.g.
-`clippy.enum_glob_use`).  This has the advantage of allowing unquoted keys at
-the cost of not being able to copy/paste the lint name from the tool's output
-into the file.
+Instead of `<tool>.<lint>`, we could use `<tool>::<lint>` (e.g.
+`"clipp::enum_glob_use"` instead of `clippy.enum_glob_use`), like in the
+diagnostic messages.  This would make it easier to copy/paste lint names but it
+will requiring quoting the keys and is more difficult to add tool-level
+configuration in the future.
 
 We could support platform or feature specific settings, like with
 `[lints.<target>]` or `[target.<target>.lints]` but
@@ -241,19 +239,26 @@ projects.
 
 We can extend basic lint syntax:
 ```toml
-[lints]
+[lints.clippy]
 cyclomatic_complexity = "allow"
 ```
 to support configuration, whether for cargo or the lint tool:
 ```toml
-[lints]
+[lints.clippy]
 cyclomatic_complexity = { level = "allow", rust-version = "1.23.0", threshold = 30 }
 ```
 Where `rust-version` is used by cargo to determine whether to pass along this
 lint and `threshold` is used by the tool.  We'd need to define how to
 distinguish between reserved and unreserved field names.
 
-`cargo metadata` would need to report the `lints` table so `clippy` could read
+Tool-wide configuration would be in in the `lints.<tool>.metadata` table and be
+completely ignored by `cargo`.  For example:
+```toml
+[lints.clippy.metadata]
+avoid-breaking-exported-api = true
+```
+
+Tools will need `cargo metadata` to report the `lints` table so they can read
 it without re-implementing workspace inheritance.
 
 ## Packages overriding inherited lints
