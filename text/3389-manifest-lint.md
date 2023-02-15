@@ -231,6 +231,12 @@ precedence between levels that the user can't control.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## External file
+
+Like with `package.license`, users might want to refer to an external file for
+their lints.  This especially becomes useful for copy/pasting lints between
+projects.
+
 ## Configurable lints
 
 We can extend basic lint syntax:
