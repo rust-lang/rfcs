@@ -58,7 +58,8 @@ The following is written as if it was part of the [manifest page] of the Cargo B
 
 ## The `recommended-bin-packages` field
 
-The `recommended-bin-packages` field is an array of names of related binary packages.
+The `recommended-bin-packages` field is an array of names of related
+binary packages that have been published in the same registry.
 
 ```toml
 [package]
