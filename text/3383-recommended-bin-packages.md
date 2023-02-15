@@ -1,11 +1,11 @@
-- Feature Name: recommended-bin-crates
+- Feature Name: recommended-bin-packages
 - Start Date: 2023-01-04
 - RFC PR: [rust-lang/rfcs#3383](https://github.com/rust-lang/rfcs/pull/3383)
 
 # Summary
 [summary]: #summary
 
-Add an optional `recommended-bin-crates` field to the `[package]`
+Add an optional `recommended-bin-packages` field to the `[package]`
 section of `Cargo.toml`, to enable crate authors to point out related
 binary crates in the error message Cargo users get when attempting to
 `cargo install` a crate without binaries.
@@ -41,7 +41,7 @@ a library-only crate could specify for instance:
 [package]
 name = "diesel"
 # ...
-recommended-bin-crates = ["diesel-cli"]
+recommended-bin-packages = ["diesel-cli"]
 ```
 
 which could be picked up by Cargo in order to additionally include
@@ -56,15 +56,15 @@ resulting in a more seamless user experience.
 
 The following is written as if it was part of the [manifest page] of the Cargo Book.
 
-## The `recommended-bin-crates` field
+## The `recommended-bin-packages` field
 
-The `recommended-bin-crates` field is an array of names of related binary crates.
+The `recommended-bin-packages` field is an array of names of related binary crates.
 
 ```toml
 [package]
 name = "foobar"
 # ...
-recommended-bin-crates = ["foobar-cli"]
+recommended-bin-packages = ["foobar-cli"]
 ```
 
 Specifying this field for a library-only crate, enables Cargo to print
@@ -80,7 +80,7 @@ The developers of `foobar` suggest you may want to install `foobar-cli` instead.
 ```
 
 (Notice the last line in the above output, which is enabled by the
-`recommended-bin-crates` field.)
+`recommended-bin-packages` field.)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -145,7 +145,7 @@ install command does not mandate that the package contains binaries.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Is `recommended-bin-crates` a good name for the field?
+* Is `recommended-bin-packages` a good name for the field?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
