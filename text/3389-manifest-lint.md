@@ -267,3 +267,12 @@ Similar to `profile` and `patch` being in both files, we could support
 `[lints]` in both files.  This allows more flexibility for experimentation with
 this feature, like conditionally applying them or applying them via environment
 variables.  For now, users still have the option of using `rustflags`.
+
+## Cargo Lints
+
+The cargo team has expressed interest in producing warnings for more situations
+but this requires defining a lint control system for it.  The overhead of doing
+so has detered people from adding additional warnings.  This would provide an
+MVP for controlling cargo lints, unblocking the cargo team from adding more
+warnings.  This just leaves the question of whether these belong more in cargo
+or in clippy which already has some cargo-specific lints.
