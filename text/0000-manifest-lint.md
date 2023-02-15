@@ -152,6 +152,18 @@ We could support platform or feature specific settings, like with
 - We have not yet defined semantics for sharing something like this across a
   workspace
 
+Instead of using workspace inheritance for `[lint]`, we could make it
+workspace-level configuration, like `[patch]` which is automatically applied to
+all workspace members.  However, `[patch]` and friends are because they affect
+the resolver / `Cargo.toml` and so they can only operate at the workspace
+level.  `[lints]` is more like `[dependencies]` in being something that applies
+at the package level but we want shared across workspaces.
+
+Instead of traditional workspace inheritance where there is a single value to
+inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
+which defines presets and the user could do `lints.<preset> = true`.  The user
+could then name them as they wish to avoid collision with rustc lints.
+
 Instead of the `[package.lints]` table being `lint = "level"`, we could organize
 it around `level = ["lint", ...]` like some other linters do (like
 [ruff](https://beta.ruff.rs/docs/configuration/)) but this works better for
