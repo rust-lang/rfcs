@@ -33,6 +33,7 @@ See also
 - [rust-lang/rust-clippy#1313](https://github.com/rust-lang/rust-clippy/issues/1313)
 - [rust-lang/cargo#5034](https://github.com/rust-lang/cargo/issues/5034)
 - [EmbarkStudios/rust-ecosystem#59](https://github.com/EmbarkStudios/rust-ecosystem/issues/59)
+- [Proposal: Cargo Lint configuration](https://internals.rust-lang.org/t/proposal-cargo-lint-configuration/9135)
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -117,7 +118,8 @@ When parsing a manifest, cargo will resolve workspace inheritance for
 
 When running rustc, cargo will transform the lints from `lint = level` to
 `--level lint` and pass them on the command line before `RUSTFLAGS`, allowing
-user configuration to override package configuration.
+user configuration to override package configuration.  These flags will be
+finterprinted so changing them will cause a rebuild.
 
 **Note:** This reserves the lint name `workspace` to allow workspace inheritance.
 
@@ -131,6 +133,8 @@ to "undefined lint" warnings when used on earlier versions, requiring that
 warning to also be suppressed, reducing its value.  However, in the "Future
 possibility's", we mention direct support for tying lints to rust versions.
 
+This does not allow sharing lints across workspaces.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -141,6 +145,12 @@ and other fields that are more workspace related.  Instead, we used
 `[dependencies]` as our model.
 
 `[lints]` could be `[lint]` but we decided to follow the precedence of `[dependencies]`.
+
+Instead of using `::` as a separator between tool and lint (e.g.
+`clippy::enum_glob_use`), we could use TOML dotted keys for this (e.g.
+`clippy.enum_glob_use`).  This has the advantage of allowing unquoted keys at
+the cost of not being able to copy/paste the lint name from the tool's output
+into the fileV
 
 We could support platform or feature specific settings, like with
 `[lints.<target>]` or `[target.<target>.lints]` but
@@ -164,7 +174,7 @@ inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
 which defines presets and the user could do `lints.<preset> = true`.  The user
 could then name them as they wish to avoid collision with rustc lints.
 
-Instead of the `[package.lints]` table being `lint = "level"`, we could organize
+Instead of the `[lints]` table being `lint = "level"`, we could organize
 it around `level = ["lint", ...]` like some other linters do (like
 [ruff](https://beta.ruff.rs/docs/configuration/)) but this works better for
 logically organizing lints, highlighting what changed in diffs, and for
@@ -192,13 +202,22 @@ Go
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-How does this affect fingerprinting / recompilation and how should it?
-
 How should we hand rustdoc lint levels or, in the future, cargo lint levels?
 The current proposal takes all lints and passes them to rustc like `RUSTFLAGS`
 but rustdoc uses `RUSTDOCFLAGS` and cargo would use neither.  This also starts
 to get into
 [user-defined tool attributes](https://rust-lang.github.io/rfcs/2103-tool-attributes.html).
+
+Should we only apply/fingerprint lints for the appropriate tool?  For example,
+we would not include and fingerprint `clippy::` lints when running builds,
+allowing them to change without forcing a rebuild.  We likely already need to
+be tool-aware for built-in tools to handle `rustdoc::` lints (see above) so
+this isn't much more of a step.
+
+How do we allow controling precedence between lints and lint groups?  We are
+using a TOML table with the keys as lint names which does not allow controlling
+ordering.  Even if we switched to `level = [lint, ...]`, you get a hard coded
+precedence between levels that the user can't control.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -207,14 +226,21 @@ to get into
 
 We can extend basic lint syntax:
 ```toml
-[package.lints]
+[lints]
 cyclomatic_complexity = "allow"
 ```
 to support configuration, whether for cargo or the lint tool:
 ```toml
-[package.lints]
+[lints]
 cyclomatic_complexity = { level = "allow", rust-version = "1.23.0", threshold = 30 }
 ```
 Where `rust-version` is used by cargo to determine whether to pass along this
 lint and `threshold` is used by the tool.  We'd need to define how to
 distinguish between reserved and unreserved field names.
+
+## Extending the syntax to `.cargo/config.toml`
+
+Similar to `profile` and `patch` being in both files, we could support
+`[lints]` in both files.  This allows more flexibility for experimentation with
+this feature, like conditionally applying them or applying them via environment
+variables.  For now, users still have the option of using `rustflags`.
