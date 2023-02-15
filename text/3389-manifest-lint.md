@@ -199,6 +199,10 @@ Go
 - [golangci-lint](https://golangci-lint.run/usage/configuration/)
   - Format is `level = [lint, ...]`
 
+Ruby
+- [rubocop](https://docs.rubocop.org/rubocop/1.45/configuration.html)
+  - Format is `Lint: Enabled: true`
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
