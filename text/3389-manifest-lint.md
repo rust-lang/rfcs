@@ -226,6 +226,11 @@ using a TOML table with the keys as lint names which does not allow controlling
 ordering.  Even if we switched to `level = [lint, ...]`, you get a hard coded
 precedence between levels that the user can't control.
 
+What does this mean for rustfmt?  If this feature slowly absorbs the role of
+`clippy.toml`, a `rustfmt.toml` file might stick out like a sore thumb.  Do we
+accept that, shoe-horn it in, generalize this feature into "tools" and "rules"
+from "linters" and "lints"?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
