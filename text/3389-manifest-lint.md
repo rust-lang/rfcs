@@ -183,6 +183,9 @@ possibly adding lint-specific configuration in the future.
 # Prior art
 [prior-art]: #prior-art
 
+Rust
+- [cargo cranky](https://github.com/ericseppanen/cargo-cranky)
+
 Python
 - [flake8](https://flake8.pycqa.org/en/latest/user/configuration.html)
   - Format is `level = [lint, ...]`
