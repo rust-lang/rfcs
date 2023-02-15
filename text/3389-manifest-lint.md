@@ -1,6 +1,6 @@
 - Feature Name: `manifest-lint`
 - Start Date: 2023-02-14
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3389](https://github.com/rust-lang/rfcs/pull/3389)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
