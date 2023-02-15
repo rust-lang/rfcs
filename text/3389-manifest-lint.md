@@ -150,7 +150,7 @@ Instead of using `::` as a separator between tool and lint (e.g.
 `clippy::enum_glob_use`), we could use TOML dotted keys for this (e.g.
 `clippy.enum_glob_use`).  This has the advantage of allowing unquoted keys at
 the cost of not being able to copy/paste the lint name from the tool's output
-into the fileV
+into the file.
 
 We could support platform or feature specific settings, like with
 `[lints.<target>]` or `[target.<target>.lints]` but
@@ -218,7 +218,7 @@ allowing them to change without forcing a rebuild.  We likely already need to
 be tool-aware for built-in tools to handle `rustdoc::` lints (see above) so
 this isn't much more of a step.
 
-How do we allow controling precedence between lints and lint groups?  We are
+How do we allow controlling precedence between lints and lint groups?  We are
 using a TOML table with the keys as lint names which does not allow controlling
 ordering.  Even if we switched to `level = [lint, ...]`, you get a hard coded
 precedence between levels that the user can't control.
