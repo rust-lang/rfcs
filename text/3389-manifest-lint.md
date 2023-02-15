@@ -253,6 +253,9 @@ Where `rust-version` is used by cargo to determine whether to pass along this
 lint and `threshold` is used by the tool.  We'd need to define how to
 distinguish between reserved and unreserved field names.
 
+`cargo metadata` would need to report the `lints` table so `clippy` could read
+it without re-implementing workspace inheritance.
+
 ## Packages overriding inherited lints
 
 Currently, it is a hard error to mix `workspace = true` and lints.  We could
