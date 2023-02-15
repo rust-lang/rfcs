@@ -244,10 +244,11 @@ of `#[may_dangle]`):
 
 ```text
 ManuallyDrop<T> where for<'a> &'a T: '!
-PhantomData<T> where for<'a> &'a T: '!
+PhantomData<T> where for<'a> &'a T: '! // see below for unresolved questions
+[T; 0] where for<'a> &'a T: '! // see below for unresolved questions
 *const T where for<'a> &'a T: '!
 *mut T where for<'a> &'a T: '!
-&'_ T where for<'a> &'a T: '!
+&'_ T where for<'a> &'a T: '! // N.B. this is special
 &'_ mut T where for<'a> &'a T: '!
 
 OnceLock<T: '!>
@@ -262,6 +263,8 @@ Vec<T: '!, A>
 vec::IntoIter<T: '!, A>
 Arc<T: '!>
 sync::Weak<T: '!>
+HashMap<K: '!, V: '!, A>
+// FIXME: other types which currently use may_dangle but were not found by grep
 ```
 
 # Drawbacks
@@ -272,16 +275,21 @@ Why should we *not* do this?
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+This design is a further refinement of RFC 1327 with intent to stabilize. It
+tries to avoid introducing too many new concepts, but does attempt to integrate
+the lessons learned from RFC 1327 into the type system - specifically, allowing
+them to be checked by the compiler.
+
+In particular, this design explicitly prevents the user from doing unsound
+operations in safe code, while also allowing `impl Drop` to be *safe* even in
+the presence of liveness obligations/dropck bounds.
 
 # Prior art
 [prior-art]: #prior-art
 
 - Compiler MCP 563: This RFC was supposed to come after the implementation of MCP 563 but that didn't happen. This RFC is basically a refinement of the ideas in the MCP.
 - Unsound dropck elaboration for `BTreeMap`: <https://github.com/rust-lang/rust/pull/99413>
+- `may_dangle`: RFC 1238, RFC 1327
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -337,6 +345,12 @@ spooky-dropck has changed in the past: namely, between Rust 1.35 and Rust 1.36,
 in the 2015 edition: <https://github.com/rust-lang/rust/issues/102810#issuecomment-1275106549>.
 (Arguably, this is when it *became* "spooky".)
 
+## Behaviour of `[T; 0]`
+
+Should `[T; 0]` have dropck obligations? As above, this also basically falls
+under spooky-dropck-at-a-distance, since `[T; 0]` lacks drop glue. This RFC
+proposes treating `[T; 0]` the same as `PhantomData`, as above.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -377,3 +391,9 @@ A future RFC could build on this RFC to allow traits to demand dropck
 obligations from their implementers. Adding these bounds to existing traits
 would be semver-breaking, so it can't be done with `Iterator`, but it could
 be useful for other traits.
+
+## Generalize to "bounds generics" or "associated bounds"
+
+This proposal limits itself to dropck semantics, but a future proposal could
+generalize these kinds of bounds to some sort of "bounds generics" or
+"associated bounds" kind of system.
