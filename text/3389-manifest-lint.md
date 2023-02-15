@@ -114,7 +114,9 @@ workspace = true
 [reference-level-explanation]: #reference-level-explanation
 
 When parsing a manifest, cargo will resolve workspace inheritance for
-`lints.workspace = true` as it does with other fields.
+`lints.workspace = true` as it does with basic fields, when `workspace` is
+present, no other fields are allowed to be present.  This precludes having the
+package override the workspace on a lint-by-lint basis.
 
 When running rustc, cargo will transform the lints from `lint = level` to
 `--level lint` and pass them on the command line before `RUSTFLAGS`, allowing
@@ -244,6 +246,14 @@ cyclomatic_complexity = { level = "allow", rust-version = "1.23.0", threshold = 
 Where `rust-version` is used by cargo to determine whether to pass along this
 lint and `threshold` is used by the tool.  We'd need to define how to
 distinguish between reserved and unreserved field names.
+
+## Packages overriding inherited lints
+
+Currently, it is a hard error to mix `workspace = true` and lints.  We could
+open this up in the future for the package to override lints from the
+workspace.  This would not be a breaking change as we'd be changing an error
+case into a working case.  We'd need to ensure we had a path forward for the
+semantics for configurable lints.
 
 ## Extending the syntax to `.cargo/config.toml`
 
