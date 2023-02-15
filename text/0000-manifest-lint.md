@@ -16,9 +16,9 @@ Currently, you can configure lints through
 - `#[<level>(<lint>)]` or `#![<level>(<lint>)]`, like `#[forbid(unsafe)]`
   - But this doesn't scale up with additional targets (benches, examples,
     tests) or workspaces
-- On the command line, like `cargo check -- --forbid unsafe`
+- On the command line, like `cargo clippy -- --forbid unsafe`
   - This puts the burden on the caller
-- Through `RUSTFLAGS`, like `RUSTFLAGS=--forbid=unsafe cargo check`
+- Through `RUSTFLAGS`, like `RUSTFLAGS=--forbid=unsafe cargo clippy`
   - This puts the burden on the caller
 - In `.cargo/config.toml`'s `target.*.rustflags`
   - This couples you to the running in specific directories and not running in
