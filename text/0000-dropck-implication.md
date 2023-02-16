@@ -13,6 +13,104 @@ stabilize (a refinement of) `may_dangle`.
 # Motivation
 [motivation]: #motivation
 
+Rust's drop checker (dropck) is an invaluable tool for making sure `impl Drop`
+is sound. However, it can be too strict sometimes. Consider a custom `Box`:
+
+```rust
+struct MyBox<T> {
+    inner: *const T,
+}
+
+impl<T> MyBox<T> {
+  fn new(t: T) -> Self { ... }
+}
+
+impl<T> Drop for MyBox<T> {
+    fn drop(&mut self) { ... }
+}
+```
+
+This is... fine. However, actual `Box`es have the following property:
+
+```rust
+let x = String::new();
+let y = Box::new(&x);
+drop(x);
+// y implicitly dropped here
+```
+
+Meanwhile, using `MyBox` produces the following error:
+
+```text
+error[E0505]: cannot move out of `x` because it is borrowed
+  --> src/main.rs:16:10
+   |
+15 |     let y = MyBox::new(&x);
+   |                        -- borrow of `x` occurs here
+16 |     drop(x);
+   |          ^ move out of `x` occurs here
+17 |     // y implicitly dropped here
+18 | }
+   | - borrow might be used here, when `y` is dropped and runs the `Drop` code for type `MyBox`
+```
+
+This is where `may_dangle` comes in: it allows the impl to say "I don't touch
+this parameter in a way that may cause unsoundness", and in fact the real `Box`
+does use it. However, `may_dangle` was introduced as a hack specifically to make
+`Box` (and collections like `Vec`) work like this, and it was never intended to
+be the final form.
+
+`may_dangle` is itself a refinement of "unguarded escape hatch" (or UGEH for
+short), because UGEH was found to be too much of a footgun even for an internal
+compiler feature. UGEH effectively applied `may_dangle` to *all* parameters. But
+even `may_dangle` sometimes comes back to bite, for example when dropck was
+simplified, causing a broken BTreeMap implementation to become unsound. (see
+rust-lang/rust#99413)
+
+This RFC proposes a *safe* refinement of `may_dangle`, while also making it
+resistant to the pitfalls observed with the existing `may_dangle` mechanism.
+This refined mechanism can be called "Liveness obligations" or "Dropck bounds".
+In particular, it tries to encode the soundness obligations of `may_dangle` in
+the type system, directly, so that they can be checked by the compiler.
+
+## Custom Box and Custom Collections
+
+The perhaps main use-case for a stable `may_dangle` is custom collections. With
+the `MyBox` above, we can have a `Drop` impl as below:
+
+```rust
+impl<T: '!> Drop for MyBox<T> {
+  fn drop(&mut self) {
+    unsafe {
+      drop_in_place(self.inner);
+      free(self.inner);
+    }
+  }
+}
+```
+
+(N.B. this still uses `unsafe`! however, the unsafety is about upholding the
+contract of `drop_in_place` and `free`, *not* the `: '!` mechanism.)
+
+## Self-referential types
+
+The second use-case for a stable `may_dangle` is the ability to have `Drop` for
+self-referential types. This doesn't come up too often, but:
+
+```rust
+struct Foo<'a> {
+  this: Cell<Option<&'a Foo<'a>>>
+}
+
+impl<'a: '!> Drop for Foo<'a> {
+  fn drop(&mut self) {
+    ...
+  }
+}
+```
+
+## Checking dropck in a macro, without alloc
+
 TODO
 
 # Guide-level explanation
