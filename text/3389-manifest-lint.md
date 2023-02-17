@@ -116,10 +116,21 @@ When parsing a manifest, cargo will resolve workspace inheritance for
 present, no other fields are allowed to be present.  This precludes having the
 package override the workspace on a lint-by-lint basis.
 
-When running rustc, cargo will transform the lints from `lint = level` to
-`--level lint` and pass them on the command line before `RUSTFLAGS`, allowing
-user configuration to override package configuration.  These flags will be
-fingerprinted so changing them will cause a rebuild.
+cargo will contain a mapping of tool to underlying command (e.g. `rust` to
+`rustc`, `clippy` to `rustc` when clippy is the driver, `rustdoc` to
+`rustdoc`).  When running the underlying command, cargo will transform the
+lints from `lint = level` to `--level lint` and pass them on the command line
+before other configuration, `RUSTFLAGS`, allowing user configuration to
+override package configuration.  These flags will be fingerprinted so changing
+them will cause a rebuild.
+
+Initially, the only supported tools will be:
+- `rust`
+- `clippy`
+- `rustdoc`
+
+Addition of third-party tools would fall under their
+[attributes for tools](https://github.com/rust-lang/rust/issues/44690).
 
 **Note:** This reserves the tool name `workspace` to allow workspace inheritance.
 
@@ -208,12 +219,6 @@ Ruby
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-How should we hand rustdoc lint levels or, in the future, cargo lint levels?
-The current proposal takes all lints and passes them to rustc like `RUSTFLAGS`
-but rustdoc uses `RUSTDOCFLAGS` and cargo would use neither.  This also starts
-to get into
-[user-defined tool attributes](https://rust-lang.github.io/rfcs/2103-tool-attributes.html).
 
 Should we only apply/fingerprint lints for the appropriate tool?  For example,
 we would not include and fingerprint `clippy::` lints when running builds,
