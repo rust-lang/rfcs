@@ -329,7 +329,23 @@ fn main() {
 
 #### As applied to all possible lifetimes
 
-[TODO explain, this is more of a construct to enable the semantics of &T etc]
+When given a type and a lifetime:
+
+```rust
+struct Bar<'a: '!, T: '!>(&'a T);
+
+impl<'a: '!, T: '!> Drop for Bar<'a, T> {
+  ...
+}
+```
+
+This treats `T` like it needs to be safe to drop, which is overly restrictive.
+(After all, a type with `'a` and `T: 'a` could have both `&'a T` and an owned
+`T` in it.) So we need a way to convey that we don't want that.
+
+[FIXME: `for<'a> &'a T: '!` doesn't make sense, what we want is more akin to
+`for<'a> 'a: T + '!`, or "for all `'a`, `'a` outlives `T` and may dangle", which
+is just cursed.]
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -586,6 +602,16 @@ The explicit goals are:
 Explicit **non**-goals include:
 
 - Preventing double frees, use-after-free, etc in unsafe code.
+
+Leveraging typeck is good. The fact that `: '!` acts akin to `?Sized` can be a
+bit confusing, but is necessary for backwards compatibility, and further, if we
+treat `may_dangle` as a bound, it's basically in the name: *may* dangle.
+
+As a consequence of `'!` being akin to `?Sized`, something like
+`<'a: '!, 'b: 'a>` does not imply `'b: '!`, while `<'a: 'b + '!, 'b>` does imply
+`'b: '!`. (In the first, `'b` outlives `'a`, which may dangle. if `'a` dangles,
+`'b` does not also need to dangle. In the second, `'a` outlives `'b`, and so if
+`'a` dangles, then so must `'b`.)
 
 # Prior art
 [prior-art]: #prior-art
