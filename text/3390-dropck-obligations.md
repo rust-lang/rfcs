@@ -1,4 +1,4 @@
-- Feature Name: `dropck_implication`
+- Feature Name: `dropck_obligations`
 - Start Date: 2023-02-13
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -79,7 +79,7 @@ The perhaps main use-case for a stable `may_dangle` is custom collections. With
 the `MyBox` above, we can have a `Drop` impl as below:
 
 ```rust
-impl<T: '!> Drop for MyBox<T> {
+impl<T: Droppable + '!> Drop for MyBox<T> {
   fn drop(&mut self) {
     unsafe {
       drop_in_place(self.inner);
@@ -129,7 +129,7 @@ and they are named as such:
 3. You may freely access the type/value in question.
 
 For a type which does not itself implement `Drop`, these are implied by what's
-in the type. These implications are akin to variance or traits like `Send` and
+in the type. These obligations are akin to variance or traits like `Send` and
 `Sync`. Unlike `Send`/`Sync` these cannot be overriden by non-`Drop` types.
 
 For a type which implements `Drop`, these obligations can be added to the type
@@ -187,22 +187,24 @@ As the error says, "borrow might be used here, when `y` is dropped and runs the
 put a "You may only drop the type/value in question." bound on `T`, like so:
 
 ```rust
-struct MyBox<T: '!> {
+struct MyBox<T: Droppable + '!> {
     inner: *const T,
 }
 
+// N.B: `'!` provides a *relaxation* of bounds, similarly to `?Sized`, hence
+// neither `Droppable` nor `'!` appear here.
 impl<T> MyBox<T> {
   fn new(t: T) -> Self { ... }
 }
 
-impl<T: '!> Drop for MyBox<T: '!> {
+impl<T: Droppable + '!> Drop for MyBox<T: '!> {
     fn drop(&mut self) { ... }
 }
 ```
 
 This "You may only drop the type/value in question." bound, represented by
-`T: '!`, is only (directly) compatible with exactly one function:
-`core::ptr::drop_in_place`, which has a `T: '!` bound. (N.B. it's also perfectly
+`T: Droppable + '!`, is only (directly) compatible with exactly one function:
+`core::ptr::drop_in_place`, which has the same bound. (N.B. it's also perfectly
 fine to wrap `drop_in_place` and call it indirectly, as long as the dropck
 bound is carried around.) Trying to use `T` in any other way causes an error.
 For our example, this bound prevents the `Drop` impl from using the borrow,
@@ -224,6 +226,18 @@ struct PrintOnDrop<T: Display>(T);
 impl<T: Display> Drop for PrintOnDrop<T> {
     fn drop(&mut self) {
         println!("{}", self.0);
+    }
+}
+```
+
+or even create new instances of `T`:
+
+```rust
+struct Foo<T: Default>(T);
+
+impl<T: Default> Drop for Foo<T> {
+    fn drop(&mut self) {
+        T::default();
     }
 }
 ```
@@ -251,12 +265,12 @@ error[E0505]: cannot move out of `x` because it is borrowed
    | - borrow might be used here, when `y` is dropped and runs the `Drop` code for type `PrintOnDrop`
 ```
 
-And it also rejects an `T: '!` bound:
+And it also rejects an `T: Droppable + '!` bound:
 
 ```rust
-struct PrintOnDrop<T: Display + '!>(T);
+struct PrintOnDrop<T: Display + Droppable + '!>(T);
 
-impl<T: Display + '!> Drop for PrintOnDrop<T> {
+impl<T: Display + Droppable + '!> Drop for PrintOnDrop<T> {
     fn drop(&mut self) {
         println!("{}", self.0);
     }
@@ -264,7 +278,7 @@ impl<T: Display + '!> Drop for PrintOnDrop<T> {
 ```
 
 ```text
-TODO
+`self.0` does not live long enough, [...]
 ```
 
 ### You must not touch the type/value in question
@@ -276,9 +290,8 @@ So far, the other 2 dropck obligations have applied to type parameters. This
 dropck obligation instead applies to lifetimes.
 
 Actually, there are 2 forms of it: As applied to one or more lifetimes, it
-prevents accessing those lifetimes. As applied to *all possible* lifetimes, it
-prevents accessing the *type* entirely. A bound can be applied to all possible
-lifetimes with the use of HRTB syntax, i.e. `for<'a>`.
+prevents accessing those lifetimes. As applied to a type, it
+prevents accessing the *type* entirely.
 
 #### As applied to one (or more) lifetimes
 
@@ -294,7 +307,7 @@ lifetimes with the use of HRTB syntax, i.e. `for<'a>`.
 //
 // Compare with ui/span/issue28498-reject-lifetime-param.rs
 
-#![feature(dropck_implication)]
+#![feature(dropck_obligations)]
 
 #[derive(Debug)]
 struct ScribbleOnDrop(String);
@@ -327,9 +340,9 @@ fn main() {
 }
 ```
 
-#### As applied to all possible lifetimes
+#### As applied to a type
 
-When given a type and a lifetime:
+When applied to a type:
 
 ```rust
 struct Bar<'a: '!, T: '!>(&'a T);
@@ -339,13 +352,7 @@ impl<'a: '!, T: '!> Drop for Bar<'a, T> {
 }
 ```
 
-This treats `T` like it needs to be safe to drop, which is overly restrictive.
-(After all, a type with `'a` and `T: 'a` could have both `&'a T` and an owned
-`T` in it.) So we need a way to convey that we don't want that.
-
-[FIXME: `for<'a> &'a T: '!` doesn't make sense, what we want is more akin to
-`for<'a> 'a: T + '!`, or "for all `'a`, `'a` outlives `T` and may dangle", which
-is just cursed.]
+This makes `T` completely unusable.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -356,73 +363,108 @@ The core syntax for dropck obligations is `'!` in bound position. This is
 further restricted to only being allowed in functions (including trait
 functions), data types (structs, enums), and impls.
 
-## Extent of bound-ness
+## Extent of bound-ness and interactions with borrowck
 
-Dropck obligations aren't true bounds. If anything, they're syntactic sugar for
-an implicit impl. They also work backwards from how most bounds work. This was
-chosen for both ergonomics and backwards compatibility reasons.
+May dangle bounds aren't true bounds - they instead opt-out of a bound, similar
+to `?Sized`.
 
-A type is considered "safe to drop" if all of its fields are considered "safe to
-drop".
-
-For example, given a struct like:
+Specifically, given a function like
 
 ```rust
-struct Foo<'a>(&'a str);
+fn foo<'a, T>(a: &'a (), t: T)
 ```
 
-The struct `Foo` is considered safe to drop if `&'a str` is safe to drop. Since
-`&'a str` is always safe to drop, then `Foo` is always safe to drop.
-
-For another example, given a struct like:
+The borrowck implicitly introduces an fn-scope lifetime that basically exists
+for the duration of the function call, and defines everything as needing to
+outlive it. Effectively desugared as:
 
 ```rust
-struct Bar<T: '!>(T);
+fn foo<'a: 'fn, T: 'fn>(a: &'a (), t: T)
+```
 
-impl<T: '!> Drop for Bar<T> {
-  ...
+The may dangle bound, `'!`, simply opts-out of this mechanism. This requires
+borrowck to treat the type/lifetime as if it were already dropped/moved,
+just as how it would be if one tried to write:
+
+```rust
+fn main() {
+    let y;
+    {
+        let x = String::new();
+        y = &x;
+    }
+    y;
 }
 ```
 
-Then `Bar` is safe to drop if `T` is safe to drop. (Note that `Bar` implicitly
-drops `T`.)
+But this would still forbid our `MyBox` impl. We need a mechanism to identify
+if a type is safe to drop in a given lifetime, without introducing that lifetime
+as a bound.
 
-Effectively, it's as if these were automatically generated by the compiler:
+Given a hypothetical `T: SafeToDrop in 'a` syntax which is distinct from
+`T: SafeToDrop<'a>`, and desugaring implicit borrowck lifetimes, we can discuss
+whether a type is safe to drop:
 
-```rust
-impl<'a> SafeToDrop for Foo<'a> where &'a str: SafeToDrop {}
-impl<T> SafeToDrop for Bar<T> where T: SafeToDrop {}
-```
-
-But they are only evaluated where `Drop` needs to be called.
-
-Meanwhile, `ManuallyDrop` is always safe to drop. As a lang item, it behaves as
-if:
+For a type `T` with no (type or lifetime) parameters, regardless of `Drop` impl,
+we have:
 
 ```rust
-impl<T> SafeToDrop for ManuallyDrop<T> {}
-```
-
-Additionally, where a parameter is used in the `Drop` impl, the type is only
-safe to drop while the parameter is alive:
-
-```rust
-struct Baz<T>(T);
-
-impl<T> Drop for Baz<T> {
-  ...
+struct Foo {
+    field: Type,
+    ...
 }
 
-// effectively:
-impl<T> SafeToDrop for Baz<T> where T: Alive {}
+impl SafeToDrop for Foo where Type: SafeToDrop in 'self {}
 ```
 
-(A type which is `Alive` is also `SafeToDrop`.)
+(This is effectively always true - Rust doesn't have "undroppable types", tho
+it does have undroppable *values*.)
 
-These examples also show that this kind of bound is primarily about types, not
-lifetimes. But `may_dangle` also works on lifetimes, so they must be supported
-too. Lifetimes are "easier" to support, since we just need to forbid using their
-scope entirely.
+For a type with lifetime parameters, but no type parameters, and no `Drop`:
+
+```rust
+struct Foo<'a> {
+    field: &'a Type,
+    ...
+}
+
+impl<'a> SafeToDrop for Foo<'a> where Type, 'a {}
+```
+
+(Note the lack of bounds on `Type`! This is because of `&'a T`, more on this
+later.)
+
+For a type with type parameters and no `Drop`, we just extend the field rule to
+type parameters, as such:
+
+```rust
+struct Foo<T> {
+    field: T,
+    ...
+}
+
+impl<T> SafeToDrop for Foo<T> where T: SafeToDrop in 'self {}
+```
+
+When `Drop` is involved, we then add additional requirements, unless they've
+been opted out:
+
+```rust
+struct Foo<'live, 'opt_out: '!, Accessible, Dropped: Droppable + '!, Dead: '!> {
+    ...
+}
+
+impl<...> Drop for Foo<...> { ... }
+
+impl<'live, 'opt_out, Accessible, Dropped, Dead> SafeToDrop for Foo<...> where
+    'live: 'self,
+    'opt_out,
+    Accessible: 'self,
+    Dropped: SafeToDrop in 'self,
+    Dead,
+    ... // + bounds generated by fields in Foo
+{}
+```
 
 ## Parametricity (or lack thereof)
 
@@ -432,7 +474,8 @@ concrete type `T`: either that it is safe to use, or that it is safe to drop.
 If it is safe to use, then the `Drop` impl is allowed to use it. If it's safe to
 drop, then the `Drop` impl is only allowed to drop it.
 
-Given the classic example of parametric dropck unsoundness: (rust-lang/rust#26656)
+Given the classic example of parametric dropck unsoundness:
+(rust-lang/rust#26656, adapted)
 
 ```rust
 // Using this instead of Fn etc. to take HRTB out of the equation.
@@ -445,9 +488,9 @@ impl<B: Button> Trigger<B> for () {
 
 // Still unsound Zook
 trait Button { fn push(&self); }
-struct Zook<B: '!> { button: B, trigger: Box<Trigger<B>+'static> }
+struct Zook<B: Droppable + '!> { button: B, trigger: Box<Trigger<B>+'static> }
 
-impl<B: '!> Drop for Zook<B> {
+impl<B: Droppable + '!> Drop for Zook<B> {
     fn drop(&mut self) {
         self.trigger.fire(&mut self.button);
     }
@@ -477,11 +520,14 @@ fn main() {
 ```
 
 This errors directly in `Zook<B>::drop`, since it attempts to call an
-inappropriate function.
+inappropriate function. (Using the desugaring mentioned in the previous section,
+it attempts to use an `B: 'fn` function, but it only has an
+`B: SafeToDrop in 'fn`.)
 
-## Interactions with `ManuallyDrop`
+## Interactions with `ManuallyDrop` and pointer types
 
-`may_dangle` interacts badly with `ManuallyDrop`. This is unsound:
+For some historical background, `may_dangle` interacts badly with
+`ManuallyDrop`. This is unsound:
 
 ```rust
 struct Foo<T>(ManuallyDrop<T>);
@@ -509,72 +555,94 @@ drop(s);
 ```
 
 Meanwhile, this RFC requires the `Drop for Foo<T>` to be annotated with "safe to
-drop" obligations on `T` (i.e. `T: '!`), preventing this mistake. With
-`may_dangle`, one needs to remember to add a `PhantomData<T>` for the dropck
-obligations instead. Likewise for pointer types.
+drop" obligations on `T` (i.e. `T: Droppable + '!`), preventing this mistake.
+With `may_dangle`, one needs to remember to add a `PhantomData<T>` for the
+dropck obligations instead. Likewise for pointer types.
 
 While the compiler can't prevent double-frees here without real typestate, it
 can at least prevent regressions like rust-lang/rust#99413.
 
+Using the previously mentioned desugaring syntax (see: interactions with
+borrowck), we can describe the behaviour of `ManuallyDrop` and pointer types:
+
+```rust
+// there is some bikeshedding about the existence of dangling references, but
+// #[may_dangle] does allow it, and this is observable on stable through various
+// means.
+impl<'a, T> SafeToDrop for &'a T where 'a, T {}
+impl<'a, T> SafeToDrop for &'a mut T where 'a, T {}
+
+impl<T> SafeToDrop for ManuallyDrop<T> where T {}
+impl<T> SafeToDrop for *const T where T {}
+impl<T> SafeToDrop for *mut T where T {}
+
+// this is arguably not a pointer type, but for internal purposes it is treated
+// as one.
+impl<T> SafeToDrop for Box<T> where T: SafeToDrop in 'self {}
+```
+
 ## Dropck elaboration
 
-After processing all implied bounds for the types, dropck becomes a matter of
-checking those bounds when dropping. This is a weakened form of typestate,
-which only applies to dropck, but is not too dissimilar to existing dropck. The
-main difference is that the type is already fully annotated by the time we get
-here, so no recursing into the type's fields is necessary.
+After processing all of the above, we now have our `SafeToDrop` impls. We then
+evaluate them at the drop lifetime. As an exaple, the desugared `drop` fn is:
 
-In other words, we treat dropck obligations as both bounds (when writing code
-and running typeck) and annotations (when running dropck).
-
-Given a type `T`:
-
-- If `T` has no (type or lifetime) parameters, then it can be dropped.
-- If `T` has lifetime parameters:
-    - For each lifetime parameter that is not annotated with a `'!` bound, check
-        that it's still live.
-- If `T` has type parameters:
-    - For each type parameter that is not annotated with a `'!` bound, check
-        that it's still live.
-    - For each type parameter that is annotated with a `'!` bound, check that it
-        can be dropped.
-
-## Tweaks to Typeck
-
-Lifetimes tagged as `'!` cannot be used. Types tagged as `'!` cannot be used
-except where `drop_in_place` is concerned. `unsafe` does not allow sidestepping
-these restrictions. If all possible lifetimes for a type are tagged as `'!`
-(i.e. `for<'a> &'a T: '!`), then said type cannot be dropped either (since that
-would require creating a reference to it, for `fn drop(&mut self)`).
+```rust
+fn drop<T: 'fn + SafeToDrop in 'fn>(t: T) {
+}
+```
 
 ## Dropck obligations for built-in types
 
-The following types have the given dropck implications (based on existing usage
-of `#[may_dangle]`):
+The following types have the given dropck obligations (based on existing usage
+of `#[may_dangle]`), using the "fully-desugared" syntax (since these - aside
+from `ManuallyDrop` - aren't representable using `struct` syntax):
 
 ```text
-ManuallyDrop<T> where for<'a> &'a T: '!
-PhantomData<T> where for<'a> &'a T: '! // see below for unresolved questions
-[T; 0] where for<'a> &'a T: '! // see below for unresolved questions
-*const T where for<'a> &'a T: '!
-*mut T where for<'a> &'a T: '!
-&'_ T where for<'a> &'a T: '! // N.B. this is special
-&'_ mut T where for<'a> &'a T: '!
+// The previously mentioned pointer types (and `ManuallyDrop`):
+impl<'a, T> SafeToDrop for &'a T where 'a, T {}
+impl<'a, T> SafeToDrop for &'a mut T where 'a, T {}
+impl<T> SafeToDrop for ManuallyDrop<T> where T {}
+impl<T> SafeToDrop for *const T where T {}
+impl<T> SafeToDrop for *mut T where T {}
+```
 
-OnceLock<T: '!>
-RawVec<T: '!, A>
-Rc<T: '!>
-rc::Weak<T: '!>
-VecDeque<T: '!, A>
-BTreeMap<K: '!, V: '!, A>
-LinkedList<T: '!>
-Box<T: '!, A>
-Vec<T: '!, A>
-vec::IntoIter<T: '!, A>
-Arc<T: '!>
-sync::Weak<T: '!>
-HashMap<K: '!, V: '!, A>
+And the next types have the given dropck obligations, using the surface syntax:
+
+```
+// Various container types:
+struct OnceLock<T: Droppable + '!>
+struct RawVec<T: Droppable + '!, A>
+struct Rc<T: Droppable + '!>
+struct rc::Weak<T: Droppable + '!>
+struct VecDeque<T: Droppable + '!, A>
+struct BTreeMap<K: Droppable + '!, V: Droppable + '!, A>
+struct LinkedList<T: Droppable + '!>
+struct Box<T: Droppable + '!, A>
+struct Vec<T: Droppable + '!, A>
+struct vec::IntoIter<T: Droppable + '!, A>
+struct Arc<T: Droppable + '!>
+struct sync::Weak<T: Droppable + '!>
+struct HashMap<K: Droppable + '!, V: Droppable + '!, A>
 // FIXME: other types which currently use may_dangle but were not found by grep
+```
+
+We can also explain the behaviour of a few oddities. `PhantomData` and arrays
+currently behave as such:
+
+```rust
+impl<T> SafeToDrop for PhantomData<T> where T: SafeToDrop in 'self {}
+impl<T, const N: usize> SafeToDrop for [T; N] where T: SafeToDrop in 'self {}
+```
+
+But these are only checked if they are actually drop-elaborated! Since they
+don't have drop glue, they're not usually checked. For more details, see
+rust-lang/rust#103413. However, this RFC proposes making them:
+
+```rust
+impl<T> SafeToDrop for PhantomData<T> where T {}
+impl<T, const N: usize> SafeToDrop for [T; N] where T: SafeToDrop in 'self {}
+// not actually possible (at this time). see also `Copy`.
+impl<T> SafeToDrop for [T; 0] where T {}
 ```
 
 # Drawbacks
@@ -603,15 +671,9 @@ Explicit **non**-goals include:
 
 - Preventing double frees, use-after-free, etc in unsafe code.
 
-Leveraging typeck is good. The fact that `: '!` acts akin to `?Sized` can be a
+Leveraging borrowck is good. The fact that `: '!` acts akin to `?Sized` can be a
 bit confusing, but is necessary for backwards compatibility, and further, if we
 treat `may_dangle` as a bound, it's basically in the name: *may* dangle.
-
-As a consequence of `'!` being akin to `?Sized`, something like
-`<'a: '!, 'b: 'a>` does not imply `'b: '!`, while `<'a: 'b + '!, 'b>` does imply
-`'b: '!`. (In the first, `'b` outlives `'a`, which may dangle. if `'a` dangles,
-`'b` does not also need to dangle. In the second, `'a` outlives `'b`, and so if
-`'a` dangles, then so must `'b`.)
 
 # Prior art
 [prior-art]: #prior-art
@@ -622,13 +684,6 @@ As a consequence of `'!` being akin to `?Sized`, something like
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-## Syntax for "no dropck obligations, cannot use or drop type"
-
-This RFC proposes the syntax `for<'a> &'a T: '!` to discharge all dropck
-obligations and restrict `impl Drop` the most. However, something feels off
-about this syntax, but we can't quite put a finger on what. Meanwhile, using
-`T: '!` and `'a: '!` for the rest of the dropck bounds feels fine.
 
 ## Spooky-dropck-at-a-distance
 
@@ -666,7 +721,7 @@ users from defining similar spooky-dropck behaviour. If removed, the above
 example would be accepted by the compiler.
 
 However, this spooky-dropck behaviour can also be used in no-alloc crates to
-detect potentially-unsound `Drop` impls in current stable. For example, the
+detect potentially-unsound `Drop` impls in *current stable*. For example, the
 `selfref` crate *could* do something like this:
 
 ```rust
@@ -728,8 +783,8 @@ obligations from their implementers. Adding these bounds to existing traits
 would be semver-breaking, so it can't be done with `Iterator`, but it could
 be useful for other traits.
 
-## Generalize to "bounds generics" or "associated bounds"
+## Generalize to "bounds generics" or "associated bounds" (or typestate?)
 
 This proposal limits itself to dropck semantics, but a future proposal could
 generalize these kinds of bounds to some sort of "bounds generics" or
-"associated bounds" kind of system.
+"associated bounds" or "typestate" kind of system.
