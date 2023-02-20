@@ -137,6 +137,10 @@ The syntax has the potential to be confused with introducing a type alias, rathe
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+Doing nothing is not a compelling option here, [RFC 1861] is merged but is not implementable.
+At minimum we should mark that RFC as deprecated/unimplemented and remove extern types from the compiler and docs.
+However, the fact that RFC was merged is a very strong indication that something is needed here, and the current workaround with sized types is not good enough.
+
 This design aims to be minimal while still allowing extern types to feel like a fully supported part of the language, namely retaining the ability for them to be used in generics.
 A simpler alternative would be to not allow extern types in generics, this would mean not adding `MetaSized` and retaining the existing meaning of `?Sized`.
 This would severely restrict the utility of extern types and would prevent them from implementing many useful traits that have blanket implementations in the standard library.
