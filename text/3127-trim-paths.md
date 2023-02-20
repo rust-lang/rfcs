@@ -127,15 +127,15 @@ trim-paths = "none"
 
 The default release profile setting (`object`) sanitises only the paths in emitted executable or library files. It always affects paths from macros such as panic messages, and in debug information
   only if they will be embedded together with the binary (the default on platforms with ELF binaries, such as Linux and windows-gnu),
-  but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the path to these separate files are sanitised.
+  but will not touch them if they are in separate files (the default on Windows MSVC and macOS). But the paths to these separate files are sanitised.
 
 If `trim-paths` is not `none` or `false`, then the following paths are sanitised if they appear in a selected scope:
 
 1. Path to the source files of the standard and core library (sysroot) will begin with `/rustc/[rustc commit hash]`.
    E.g. `/home/username/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/result.rs` -> 
    `/rustc/fe72845f7bb6a77b9e671e6a4f32fe714962cec4/library/core/src/result.rs`
-2. Path to the working directory will be stripped. E.g. `/home/username/crate/src/lib.rs` -> `src/lib.rs`.
-3. Path to packages outside of the working directory will be replaced with `[package name]-[version]`. E.g. `/home/username/deps/foo/src/lib.rs` -> `foo-0.1.0/src/lib.rs`
+2. Path to the current package will be stripped. E.g. `/home/username/crate/src/lib.rs` -> `src/lib.rs`.
+3. Path to dependency packages will be replaced with `[package name]-[version]`. E.g. `/home/username/deps/foo/src/lib.rs` -> `foo-0.1.0/src/lib.rs`
 
 When a path to the source files of the standard and core library is *not* in scope for sanitisation, the emitted path will depend on if `rust-src` component
 is present. If it is, then some paths will point to the copy of the source files on your file system; if it isn't, then they will
@@ -157,8 +157,8 @@ If `trim-paths` is `none` (`false`), no extra flag is supplied to `rustc`.
 
 If `trim-paths` is anything else, then its value is supplied directly to `rustc`'s `--remap-path-scope` option, along with two `--remap-path-prefix` arguments:
 - From the path of the local sysroot to `/rustc/[commit hash]`. 
-- If the compilation unit is under the working directory, from the the working directory absolute path to empty string.
-  If it's outside the working directory, from the absolute path of the package root to `[package name]-[package version]`.
+- For the the current package (where the current working directory is in), from the the absolute path of the package root to empty string.
+  For other packages, from the absolute path of the package root to `[package name]-[package version]`.
 
 The default value of `trim-paths` is `object` for release profile. As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
 
@@ -166,7 +166,7 @@ Some interactions with compiler-intrinsic macros need to be considered:
 1. Path (of the current file) introduced by [`file!()`](https://doc.rust-lang.org/std/macro.file.html) *will* be remapped. **Things may break** if
    the code interacts with its own source file at runtime by using this macro.
 2. Path introduced by [`include!()`](https://doc.rust-lang.org/std/macro.include.html) *will* be remapped, given that the included file is under
-   the current working directory or a dependency package.
+   the current package or a dependency package.
 
 If the user further supplies custom `--remap-path-prefix` arguments via `RUSTFLAGS`
 or similar mechanisms, they will take precedence over the one supplied by `trim-paths`. This means that the user-defined remapping arguments must be
@@ -286,7 +286,7 @@ There has been an issue (https://github.com/rust-lang/rust/issues/40552) asking 
 release builds. It has, over the past 4 years, gained a decent amount of popular support. The remapping rule proposed here is very simple to 
 implement.
 
-Path to sysroot crates are specially handled by `rustc`. Due to this, the behaviour we currently have is that all such paths are virtualised.
+Paths to sysroot crates are specially handled by `rustc`. Due to this, the behaviour we currently have is that all such paths are virtualised.
 Although good for privacy and reproducibility, some people find it a hindrance for debugging: https://github.com/rust-lang/rust/issues/85463.
 Hence the user should be given control on if they want the virtual or local path.
 
@@ -303,7 +303,7 @@ the behaviour of `--remap-path-prefix=all` and the stable `--remap-path-prefix`,
 - `macro` is primarily meant for panic messages embedded in binaries.
 - `diagnostics` is unlikely to be used on its own as it only affects console outputs, but is required for completeness. See [#87745](https://github.com/rust-lang/rust/issues/87745).
 - `unsplit-debuginfo` is used to sanitise debuginfo embedded in binaries.
-- `split-debuginfo` is used to sanitise debuginfo separate from binaries. This is may be used when debuginfo files are separate and the author
+- `split-debuginfo` is used to sanitise debuginfo separate from binaries. This may be used when debuginfo files are separate and the author
 still wants to distribute them.
 - `split-debuginfo-path` is used to sanitise the path embedded in binaries pointing to separate debuginfo files. This is likely needed in all
 contexts where `unsplit-debuginfo` is used, but it's technically a separate piece of information inserted by the linker, not rustc.
@@ -332,7 +332,7 @@ the other for only debuginfo: https://reproducible-builds.org/docs/build-path/. 
   in specific directories for these paths to work. [For instance](https://github.com/rust-lang/rust/issues/87825#issuecomment-920693005), if the
   absolute path to the `.pdb` file is sanitised to the relative `target/release/foo.pdb`, then the binary must be invoked under the crate root as
   `target/release/foo` to allow the correct backtrace to be displayed.
-- Should we treat the current working directory the same as other packages? We could have one fewer remapping rule by remapping all
+- Should we treat the current package the same as other packages? We could have one fewer remapping rule by remapping all
   package roots to `[package name]-[version]`. A minor downside to this is not being able to `Ctrl+click` on paths to files the user is working
   on from panic messages.
 - Will these cover all potentially embedded paths? Have we missed anything?
