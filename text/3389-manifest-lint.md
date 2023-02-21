@@ -68,13 +68,22 @@ table, for example:
 unsafe = "forbid"
 ```
 
-Supported levels include:
+This is short-hand for:
+```toml
+[lints.rust]
+unsafe = { level = "forbid", priority = 1 }
+```
+
+`level` corresponds to the lint levels in `rustc`:
 - `forbid`
 - `deny`
 - `warn`
 - `allow`
 
-To know which tool a lint falls under, it is the part before `::` in the lint
+`priority` controls which lints override other lints:
+- `0` is lowest priority, being overridden by all, and shows up first on the command-line to tools like `rustc`
+
+To know which table under `[lints]` a particular lint belongs under, it is the part before `::` in the lint
 name.  If there isn't a `::`, then the tool is `rust`.  For example a warning
 about `unsafe` would be `lints.rust.unsafe` but a lint about
 `clippy::enum_glob_use` would be `lints.clippy.enum_glob_use`.
@@ -119,10 +128,11 @@ package override the workspace on a lint-by-lint basis.
 cargo will contain a mapping of tool to underlying command (e.g. `rust` to
 `rustc`, `clippy` to `rustc` when clippy is the driver, `rustdoc` to
 `rustdoc`).  When running the underlying command, cargo will transform the
-lints from `lint = level` to `--level lint` and pass them on the command line
-before other configuration, `RUSTFLAGS`, allowing user configuration to
-override package configuration.  These flags will be fingerprinted so changing
-them will cause a rebuild only for the commands where they are used.
+lints from `lint = level` to `--level lint`, sort them by priority and then
+lint name, and pass them on the command line before other configuration,
+`RUSTFLAGS`, allowing user configuration to override package configuration.
+These flags will be fingerprinted so changing them will cause a rebuild only
+for the commands where they are used.
 
 Initially, the only supported tools will be:
 - `rust`
@@ -201,6 +211,14 @@ We could support platform or feature specific settings, like with
 - We have not yet defined semantics for sharing something like this across a
   workspace
 
+Instead of the `[lints]` table being `lint = "level"`, we could organize
+it around `level = ["lint", ...]` like some other linters do (like
+[ruff](https://beta.ruff.rs/docs/configuration/)) but this works better for
+logically organizing lints, highlighting what changed in diffs, and for
+possibly adding lint-specific configuration in the future.
+
+## Workspace Inheritance
+
 Instead of using workspace inheritance for `[lint]`, we could make it
 workspace-level configuration, like `[patch]` which is automatically applied to
 all workspace members.  However, `[patch]` and friends are because they affect
@@ -213,11 +231,45 @@ inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
 which defines presets and the user could do `lints.<preset> = true`.  The user
 could then name them as they wish to avoid collision with rustc lints.
 
-Instead of the `[lints]` table being `lint = "level"`, we could organize
-it around `level = ["lint", ...]` like some other linters do (like
-[ruff](https://beta.ruff.rs/docs/configuration/)) but this works better for
-logically organizing lints, highlighting what changed in diffs, and for
-possibly adding lint-specific configuration in the future.
+## Lint Predence
+
+The priority field is meant to allow mimicing
+- `-Aclippy::all -Wclippy::doc_markdown`
+- `-D future-incompatible -A semicolon_in_expressions_from_macros`
+
+We can't order lints based on the level as which we want first is dependent on the context.
+
+We can't rely on the order of the keys in the table as that is undefined in TOML.
+
+We could use an array instead of a table:
+
+Unconfigurable:
+```toml
+[lints]
+clippy = [
+  { all = "Alow" },
+  { doc_markdown = "Worn" },
+]
+```
+
+Configurable:
+```toml
+[[lints.clippy.all]
+level = "Alow"
+[[lints.clippy.doc_markdown]
+level = "Worn"
+```
+Where the order is based on how to pass them on the command-line.
+
+Complex TOML arrays tend to be less friendly to work with including the fact
+that TOML 1.0 does not allow multi-line inline tables.
+
+For the most part, people won't need granularity, so we could instead start
+with a `priority: bool` field.  This might get confusing to mix with numbers
+though (what does `false` and `true` map to?).  There is also the problem that
+generally people will want to opt a specific lint into being low-priority (the
+group) and the leave the exceptions at default but making `priority = true` the
+default would read weird (everything is a priorty but one or two items).
 
 # Prior art
 [prior-art]: #prior-art
@@ -247,11 +299,6 @@ Ruby
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-How do we allow controlling precedence between lints and lint groups?  We are
-using a TOML table with the keys as lint names which does not allow controlling
-ordering.  Even if we switched to `level = [lint, ...]`, you get a hard coded
-precedence between levels that the user can't control.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
