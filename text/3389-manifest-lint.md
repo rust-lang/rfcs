@@ -122,7 +122,7 @@ cargo will contain a mapping of tool to underlying command (e.g. `rust` to
 lints from `lint = level` to `--level lint` and pass them on the command line
 before other configuration, `RUSTFLAGS`, allowing user configuration to
 override package configuration.  These flags will be fingerprinted so changing
-them will cause a rebuild.
+them will cause a rebuild only for the commands where they are used.
 
 Initially, the only supported tools will be:
 - `rust`
@@ -136,6 +136,22 @@ Addition of third-party tools would fall under their
 
 # Drawbacks
 [drawbacks]: #drawbacks
+
+There has been some user/IDE confusion about running commands like `rustfmt`
+directly and expecting them to pick up configuration only associated with their
+higher-level cargo-plugins despite that configuration (like `package.edition`)
+being cargo-specific.  By baking the configuration for rustc, rustdoc, and
+clippy directly into cargo, we will be seeing more of this.  A hope is that
+this will actually improve with this RFC.  Over time, tools will need to switch
+to the model of runnign `cargo` to get confuguratio in response to this RFC.
+As for users, if a tool's primary configuration is in `Cargo.toml`, that will
+provide a strong coupling with `cargo` in users minds as compared to using an
+external configuration file and overlooking the one or two fields read from
+`Cargo.toml`.
+
+As this focuses on lints, this leaves out first-party tools that need
+configuration but aren't linters, namely `rustfmt`, leading to an inconsistent
+experience if `clippy.toml` goes away.
 
 A concern brought up in
 [rust-lang/rust-clippy#1313](https://github.com/rust-lang/rust-clippy/issues/1313)
@@ -162,6 +178,18 @@ Instead of `<tool>.<lint>`, we could use `<tool>::<lint>` (e.g.
 diagnostic messages.  This would make it easier to copy/paste lint names but it
 will requiring quoting the keys and is more difficult to add tool-level
 configuration in the future.
+
+We could possibly extend this new field to `rustfmt` by shifting the focus from
+"lints" to "rules" (see
+[eslint](https://eslint.org/docs/latest/use/configure/rules)).  However, the
+more we generalize this field, the fewer assumptions we can make about it.  On
+one extreme is `package.metadata` which is so free-form we can't support it
+with workspace inheritance.  A less extreme example is if we make the
+configuration too general, we would preclude the option of supporting
+per-package overrides as we wouldn't know enough about the shape of the data to
+know how to merge it.  There is likely a middle ground that we could make work
+but it would take time and experimentation to figure that out which is at odds
+with trying to maintain a stable file format.
 
 We could support platform or feature specific settings, like with
 `[lints.<target>]` or `[target.<target>.lints]` but
@@ -220,21 +248,10 @@ Ruby
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Should we only apply/fingerprint lints for the appropriate tool?  For example,
-we would not include and fingerprint `clippy::` lints when running builds,
-allowing them to change without forcing a rebuild.  We likely already need to
-be tool-aware for built-in tools to handle `rustdoc::` lints (see above) so
-this isn't much more of a step.
-
 How do we allow controlling precedence between lints and lint groups?  We are
 using a TOML table with the keys as lint names which does not allow controlling
 ordering.  Even if we switched to `level = [lint, ...]`, you get a hard coded
 precedence between levels that the user can't control.
-
-What does this mean for rustfmt?  If this feature slowly absorbs the role of
-`clippy.toml`, a `rustfmt.toml` file might stick out like a sore thumb.  Do we
-accept that, shoe-horn it in, generalize this feature into "tools" and "rules"
-from "linters" and "lints"?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
