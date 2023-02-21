@@ -17,25 +17,41 @@ This supersedes [RFC 1861].
 
 The motivation from [RFC 1861] for why we want extern types at all still applies.
 
-The motivation for replacing that RFC is around computing the offset of fields in aggregate types.
-Extern types do not have an alignment known to the Rust compiler and therefore cannot be included as a field in an aggregate type as it is impossible to correctly calculate their offset.
-This implies that extern types cannot be included in (non-`repr(transparent)`) structs.
+The summary of that is that when writing FFI bindings, the foreign code may give you a pointer to a type but not provide the layout for that type.
+The current approach for representing these types in Rust, suggested by the 'nomicon, is with a ZST like the following.
+```rust
+#[repr(C)]
+pub struct Opaque {
+    _data: [u32; 0],
+    _marker: PhantomData<(*mut u8, PhantomPinned)>
+}
+```
+The type is `repr(C)` so that it can be used in FFI.
+The `_data` field provides the alignment of the type, and the `_marker` field causes the correct set of automatically implemented traits to be implemented, in this case `!Send`, `!Sync`, `!Unpin`, but `Freeze` (`UnsafeCell` can be used to remove the last one of those).
+This works, however the compiler believes this type is statically sized and aligned which may not be true.
+This means that the type can be easily misused by placing it on the stack, allocating it on the heap, calling `ptr::read`, calling `mem::size_of`, etc.
+This proposal introduces extern types, a way to accurately represent these opaque types in the Rust type system such that the compiler prevents you from misusing it.
 
-Extern types should be able to be used in generic contexts so they receive blanket trait implementations and can be used inside generic wrapper types.
-Prior to this, all generic types could be included as fields of structs and it was possible to obtain the size and alignment of any type, this is not possible for extern types so this RFC allows users to specify generic bounds sufficiently to statically prevent this.
+The motivation for replacing [RFC 1861] is around computing the offset of fields in aggregate types.
+Extern types do not have an alignment known to the Rust compiler and therefore cannot be included as a field in an aggregate type as it is impossible to correctly calculate their offset, however that RFC did not address this.
+This implies that extern types cannot be included in any (non-`repr(transparent)`) structs and so must be prevented.
+
+Extern types should be able to be used in generic contexts so that they receive blanket trait implementations and can be used inside generic wrapper types.
+Prior to this, all generic types could be included as fields of structs and it was possible to obtain the size and alignment of any type.
+Extern types do not have a size or alignment so this RFC allows users to specify generic bounds sufficiently to statically prevent the above issues.
 
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When writing bindings to foreign code, any types that are opaque to the Rust type system, should be declared as follows:
+When writing bindings to foreign code, any types that are opaque to the Rust type system should be declared as follows:
 ```rust
 extern {
     type Foo;
 }
 ```
 This is called an extern type and is `!Sized`, `!MetaSized` (explained below), `!Send`, `!Sync`, and is FFI-safe.
-Unlike other dynamically-sized types (DSTs), like slices and trait objects, pointers to it (`&Foo`, `&mut Foo`, `*const Foo`, `*mut Foo`, etc) are thin, that is they are 1 `usize` wide not 2.
+Unlike other dynamically-sized types (DSTs), currently only slices and trait objects, pointers to it (`&Foo`, `&mut Foo`, `*const Foo`, `*mut Foo`, etc) are thin, that is they are 1 `usize` wide not 2.
 
 These types cannot be included in structs as Rust is not able to compute the offset of the field because it does not know the alignment.
 ```rust
@@ -54,10 +70,12 @@ struct Wrapper<T> {
 }
 ```
 
+The lack of the `Sized` and `MetaSized` traits on these structs prevent you from calling `ptr::read`, `mem::size_of_val`, etc, which are not meaningful for opaque types.
+
 In the 2021 edition and earlier, these types cannot be used in generic contexts as `T: Sized` and `T: ?Sized` both imply that `T` has a computable size and alignment.
 
-In the 2024 edition and later, `T: ?Sized` no longer implies this and so opaque types can be used in generic contexts.
-If you require your generic type to have a computable size and offset you can use the bound `T: ?Sized + MetaSized`, which will enable you to store the type in a struct and query its size and alignment.
+In the 2024 edition and later, `T: ?Sized` no longer implies any knowledge of the size and alignment so opaque types can be used in generic contexts.
+If you require your generic type to have a computable size and alignment you can use the bound `T: ?Sized + MetaSized`, which will enable you to store the type in a struct.
 
 The automated tooling for migrating from the 2021 edition to the 2024 edition will replace `?Sized` bounds with `?Sized + MetaSized` bounds.
 
@@ -69,11 +87,21 @@ Some nomenclature to assist the rest of this explanation:
 
 Types have a size and alignment that is known:
 * statically - the size/alignment is known by the Rust compiler at compile time. This is the current `Sized` trait.
-* from metadata - the size/alignment can be derived purley from pointer metadata without having to inspect or dereference the pointer.
+  Most types in Rust are statically sized and aligned, like `u32`, `String`, `&[u8]`.
+* from metadata - the size/alignment can be derived purely from pointer metadata without having to inspect or dereference the pointer.  
+  All remaining types fit in this category and are DSTs.
+  `[u8]` has a statically known alignment but the size can only be determined from the pointer metadata, `dyn Debug`'s size and alignment are both obtained from the vtable in the pointer metadata.
 * dynamically - the size/alignment can only be determined at run time.
-* unknown - the size/alignment is not able to be determined at compile time or run time.
+  There are no types currently expressible in the language with dynamically known size or alignment.  
+  The most discussed potential type in this category is `CStr`, which has a statically known alignment but it's size can only be determined by iterating over it's contents to find the position of the null byte.
+  Note that these types are odd, for example determining the size of a `Mutex<CStr>` requires taking a lock on the mutex.
+* unknown - the size/alignment is not able to be determined at compile time or run time.  
+  This is the category that opaque types fall in (and no other existing types occupy), without any additional domain specific knowledge.
+  Therefore extern types will occupy this category to allow the most flexibility.
 
 The rest of this document will refer to types as "statically sized", "metadata aligned", etc.
+
+"dynamically aligned" (or "unknown aligned") types cannot be placed as the last field of a struct as their offset cannot be determined, without already having a pointer to the field.
 
 In the Rust 2021 edition and earlier `T: Sized` implies that `T` is "statically sized" and "statically aligned" and `T: ?Sized` implies that `T` is "metadata sized" and "metadata aligned".
 
@@ -92,6 +120,10 @@ trait MetaSized: Pointee {
 }
 ```
 This trait is automatically implemented for all types except extern types.
+
+All types that implement `MetaSized` can be placed as the last field in a struct because the compiler can emit code to determine the offset of the field purely from the pointer metadata.
+At the time of writing all `MetaSized` types are either statically aligned, or are trait objects and have their alignment in their vtable.
+This RFC does not propose changing codegen for computing the offset as it does not introduce any new `MetaSized` types.
 
 All locations in the standard library that use `?Sized` bounds need to be reviewed when migrating to the 2024 edition and replaced with either `?Sized` or `?Sized + MetaSized` as appropriate. Some examples:
 ```rust
@@ -156,18 +188,18 @@ This would be a significant departure from the compilers approach to generics, b
 [prior-art]: #prior-art
 
 There is a lot of prior art in rust itself from previous attempts at custom DSTs, the `DynSized` trait, and some other things related to "exotically sized types".
-- [Lang team design notes on exotically sized types](https://github.com/rust-lang/lang-team/blob/master/src/design_notes/dynsized_constraints.md).
+- [Lang team design notes on exotically sized types](https://github.com/rust-lang/lang-team/blob/master/src/design_notes/dynsized_constraints.md).  
   This document contains notes from the lang team about what `?Sized + DynSized` needs to imply.
   This document outlines `DynSized`, `MetaSized`, and `Sized` which inspired the "metadata sized" and friends in this RFC.
   I believe this RFC satisfies the constraints outlined, mostly by dropping `DynSized` as an available bound, which limits expressiveness in favour of simplicity.
-- [Custom DSTs](https://github.com/rust-lang/rfcs/pull/2594).
+- [Custom DSTs](https://github.com/rust-lang/rfcs/pull/2594).  
   This postponed RFC attempts to introduce a generic framework for DSTs with arbitrary metadata.
   This RFC aims to be compatible with future attempts at custom DSTs, as it is in essence a very restricted form.
-- [DynSized without ?DynSized](https://github.com/rust-lang/rfcs/pull/2310).
+- [DynSized without ?DynSized](https://github.com/rust-lang/rfcs/pull/2310).  
   This contains a lot of very useful analysis of what exactly commonly used crates want when they state `?Sized`.
   However, this RFC aims to be simpler than the lint-based solution presented there.
   Additionally, this deals with not being able to place extern types as fields in structs, rather than solely on `size_of_val` and `align_of_val`.
-- [More implicit bounds](https://github.com/rust-lang/rfcs/issues/2255).
+- [More implicit bounds](https://github.com/rust-lang/rfcs/issues/2255).  
   This discusses whether we should be adding more implicit bounds into the language, and there associated relaxations (like `?MetaSized`).
   This RFC aims to sidestep this issue by utilising the edition system to change the definition of `?Sized`.
 
@@ -178,8 +210,11 @@ There is a lot of prior art in rust itself from previous attempts at custom DSTs
 - Should `MetaSized` contain methods, or should it be a marker trait with the implementation left to `core::mem::size_of_val` and `core::mem::align_of_val`?
 - Should "metadata sized" imply "metadata aligned" or should we be adding the `MetaAligned` trait rather than `MetaSized`?
 - Should `MetaSized` be a supertrait of `Sized`? All `Sized` things are `MetaSized` but `Sized` doesn't semantically require `MetaSized`.
-- Should users be able to slap a `#[repr(align(n))]` attribute onto opaque types to give them an alignment? This would necessitate splitting `MetaSized` and `MetaAligned` as they would not be "metadata sized" in general.
-- Should the `extern type` syntax exist, or should there just be a `repr(unsized)`? This would allow headers with opaque tails but invites annoying custom DST questions.
+- Should users be able to slap a `#[repr(align(n))]` attribute onto opaque types to give them an alignment?  
+  This would allow us to represent `CStr` properly but would necessitate splitting `MetaSized` and `MetaAligned` as they would not be "metadata sized" in general.
+  (We may be able to get away with the [Aligned trait](https://github.com/rust-lang/rfcs/pull/3319))
+- Should the `extern type` syntax exist, or should there just be a `repr(unsized)`?  
+  This would allow headers with opaque tails (which are very common in C code) but is a more significant departure from the original RFC, and looks more like custom DSTs.
 
 
 # Future possibilities
