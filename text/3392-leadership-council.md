@@ -1,6 +1,6 @@
 - Feature Name: leadership-council
 - Start Date: 2022-08-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3392](https://github.com/rust-lang/rfcs/pull/3392)
 - Rust Issue: N/A
 
 # Summary
@@ -63,11 +63,11 @@ The Council is charged with the success of the Rust Project as a whole. The Coun
 
 To reduce the size of this RFC, non-binding reference materials appear in separate documents:
 
-- [Full motivation](0000-leadership-council/motivation.md)
+- [Full motivation](3392-leadership-council/motivation.md)
   - [Further research into the needs of Project-wide governance (Inside Rust blog post)](https://blog.rust-lang.org/inside-rust/2022/05/19/governance-update.html)
-- [Non-goals of this RFC](0000-leadership-council/non-goals.md)
-- [Rationale and alternatives](0000-leadership-council/alternatives.md)
-- [Recommendations for initial work of the Council](0000-leadership-council/initial-work-of-the-council.md)
+- [Non-goals of this RFC](3392-leadership-council/non-goals.md)
+- [Rationale and alternatives](3392-leadership-council/alternatives.md)
+- [Recommendations for initial work of the Council](3392-leadership-council/initial-work-of-the-council.md)
 
 # Motivation
 
