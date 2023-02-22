@@ -13,7 +13,7 @@ For instance, the standard library's Windows Mutex implementation could potentia
 ```rust
 pub unsafe fn unlock(&self) {
     *self.held.get() = false;
-    if cfg!(os_version_min("6.1.7600")) { // `cfg!(os_version_min("Windows7"))` is also possible
+    if cfg!(os_version_min("windows", "6.1.7600")) { // `cfg!(os_version_min("Windows7"))` is also possible
         c::ReleaseSRWLockExclusive(raw(self))
     } else {
         match kind() {
@@ -66,7 +66,7 @@ pub unsafe fn unlock(&self) {
 }
 ```
 
-Crate authors can set the API requirements of their Cargo configuration file under the  [`target key`](https://doc.rust-lang.org/cargo/reference/config.html#target) like so (suggested variable name/syntax only):
+Crate authors can set the API requirements of their Cargo manifest file under the  [`target key`](https://doc.rust-lang.org/cargo/reference/config.html#target) like so (suggested variable name/syntax only):
 
 ```toml
 [target.x86_64-pc-windows-msvc]
@@ -75,7 +75,7 @@ min_os_version_windows = "6.0.6000" # Vista
 
 When compiling, the user can provide the API levels to compile for: `rustc --cfg 'target_os_version.windows="6.0.6000"'`.
 
-If an end user sets their `os_version.windows` to an incompatible version then the user receives an error. For instance, in the example above where the user is setting their `min_os_version_windows` to Windows Vista, they will receive an error when linking with the standard library which imposes Windows 7 as its minimum `os_version.windows` by default for the `x86_64-pc-windows-msvc` target.
+If an end user sets their `target_os_version.windows` to an incompatible version then the user receives an error. For instance, in the example above where the user is setting their `min_os_version_windows` to Windows Vista, they will receive an error when linking with the standard library which imposes Windows 7 as its minimum `target_os_version.windows` by default for the `x86_64-pc-windows-msvc` target.
 
 If a library does not explicitly set its `min_os_target_windows` value, it will automatically be set to the largest `min_windows_build_version` of all of its transitive dependencies.
 
@@ -90,15 +90,15 @@ These predicates do not assume any semantic versioning information. The specifie
 **Note:** Here it would be important to link to documentation showing the `cfg` predicates and the different version strings that are supported.
 
 
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
+# Implementation
+[implementation]: #implementation
 
 The various target API version `cfg` predicates allow users to conditionally compile code based on the API version supported by the target platform.  Each platform is responsible for defining a default key, a set of keys it supports, and functions that are able to compare the version strings they use.  A set of comparison functions can be provided by `rustc` for common formats such as 2- and 3-part semantic versioning.  When a platform detects a key it doesn’t support it will return `false` and emit a warning.
 
 When a target is being built the actual API versions will be set via the following methods, in decreasing order of precedence:
-* Command line
+* Command line arguments to `rustc` and/or `cargo`
 * Cargo.toml target sections
-* Target platform defaults
+* Target platform defaultsi
 
 ## Versioning Schema
 
@@ -115,7 +115,7 @@ The functions for parsing and comparing version strings will need to be updated 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Based on the outcome of various discussions around this RFC it may be necessary to make non-backwards-compatible changes to various parts of `rustc`.  If this occurs older versions of the compiler will not be able to handle crates that make use of these new features.
+Each supported platform will need to implement version string parsing logic (or re-use some provided defaults), maintain the logic in response to future changes, and update any version alias tables.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
