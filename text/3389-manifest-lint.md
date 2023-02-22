@@ -71,7 +71,7 @@ unsafe = "forbid"
 This is short-hand for:
 ```toml
 [lints.rust]
-unsafe = { level = "forbid", priority = 1 }
+unsafe = { level = "forbid", priority = 0 }
 ```
 
 `level` corresponds to the lint levels in `rustc`:
@@ -80,8 +80,10 @@ unsafe = { level = "forbid", priority = 1 }
 - `warn`
 - `allow`
 
-`priority` controls which lints override other lints:
-- `0` is lowest priority, being overridden by all, and shows up first on the command-line to tools like `rustc`
+`priority` is a signed value that controls which lints override other lints:
+- lower (particularly negative) numbers have lower priority, being overridden
+  by higher numbers, and shows up first on the command-line to tools like
+  `rustc`
 
 To know which table under `[lints]` a particular lint belongs under, it is the part before `::` in the lint
 name.  If there isn't a `::`, then the tool is `rust`.  For example a warning
