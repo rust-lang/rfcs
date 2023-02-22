@@ -259,9 +259,9 @@ clippy = [
 
 Configurable:
 ```toml
-[[lints.clippy.all]
+[[lints.clippy.all]]
 level = "Alow"
-[[lints.clippy.doc_markdown]
+[[lints.clippy.doc_markdown]]
 level = "Worn"
 ```
 Where the order is based on how to pass them on the command-line.
