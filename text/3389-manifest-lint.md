@@ -201,7 +201,10 @@ configuration too general, we would preclude the option of supporting
 per-package overrides as we wouldn't know enough about the shape of the data to
 know how to merge it.  There is likely a middle ground that we could make work
 but it would take time and experimentation to figure that out which is at odds
-with trying to maintain a stable file format.
+with trying to maintain a stable file format.  Another problem with `rules` is
+that it is divorced from any context.  In eslint, it is in an eslint-specific
+config file but a `[rules]` table is not a clear as a `[lints]` table as to
+what role it fulfills.
 
 We could support platform or feature specific settings, like with
 `[lints.<target>]` or `[target.<target>.lints]` but
