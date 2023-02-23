@@ -73,6 +73,8 @@ Crate authors can set the API requirements of their Cargo manifest file under th
 min_os_version_windows = "6.0.6000" # Vista
 ```
 
+If a crate specifies a version value lower than that of one of it's dependencies an error will be issued.
+
 When compiling, the user can provide the API levels to compile for: `rustc --cfg 'target_os_version.windows="6.0.6000"'`.
 
 If an end user sets their `target_os_version.windows` to an incompatible version then the user receives an error. For instance, in the example above where the user is setting their `min_os_version_windows` to Windows Vista, they will receive an error when linking with the standard library which imposes Windows 7 as its minimum `target_os_version.windows` by default for the `x86_64-pc-windows-msvc` target.
