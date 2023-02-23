@@ -238,7 +238,7 @@ could then name them as they wish to avoid collision with rustc lints.
 
 ## Lint Predence
 
-The priority field is meant to allow mimicing
+The priority field is meant to allow mimicking
 - `-Aclippy::all -Wclippy::doc_markdown`
 - `-D future-incompatible -A semicolon_in_expressions_from_macros`
 
@@ -252,17 +252,17 @@ Unconfigurable:
 ```toml
 [lints]
 clippy = [
-  { all = "Alow" },
-  { doc_markdown = "Worn" },
+  { all = "allow" },
+  { doc_markdown = "worn" },
 ]
 ```
 
 Configurable:
 ```toml
 [[lints.clippy.all]]
-level = "Alow"
+level = "allow"
 [[lints.clippy.doc_markdown]]
-level = "Worn"
+level = "worn"
 ```
 Where the order is based on how to pass them on the command-line.
 
@@ -274,7 +274,7 @@ with a `priority: bool` field.  This might get confusing to mix with numbers
 though (what does `false` and `true` map to?).  There is also the problem that
 generally people will want to opt a specific lint into being low-priority (the
 group) and the leave the exceptions at default but making `priority = true` the
-default would read weird (everything is a priorty but one or two items).
+default would read weird (everything is a priority but one or two items).
 
 # Prior art
 [prior-art]: #prior-art
