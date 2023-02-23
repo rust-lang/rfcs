@@ -131,7 +131,7 @@ The Council establishes top-level teams via public policy decisions. In general,
 - Have an open-ended purview that's expected to continue indefinitely
 - Be a currently active part of the Rust Project
 
-There must be between 4 and 9 top-level teams (inclusive), preferably between 5 and 8. This number balances the desire for a diverse and relatively shallow structure while still being practical for productive conversation and consent.[^number-of-representative]
+There must be between 4 and 9 top-level teams (inclusive), preferably between 5 and 8. This number balances the desire for a diverse and relatively shallow structure while still being practical for productive conversation and consent.[^number-of-representatives]
 
 When the Council creates a new top-level team, that team then designates a Council representative.[^bootstrapping-new-teams] When creating a new top-level team, the Council must provide justification for why it should not be a subteam or other governance structure.
 
