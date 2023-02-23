@@ -1,6 +1,6 @@
 - Feature Name: `format_dynamic_fill`
 - Start Date: 2023-02-23
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3394](https://github.com/rust-lang/rfcs/pull/3394)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
