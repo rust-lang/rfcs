@@ -18,7 +18,7 @@ To allow changing the *fill* character at run-time. Due to not being able to cre
 
 Extending on [`std::fmt`#Fill/Alignment](https://doc.rust-lang.org/std/fmt/index.html#fillalignment):
 
-The value for the fill can also be provided as a [`char`](https://doc.rust-lang.org/std/primitive.char.html) in the list of parameters by adding a postfix `$` indicating that the second argument is a char specifying the fill.
+The value for the fill can also be provided as a [`char`](https://doc.rust-lang.org/std/primitive.char.html) in the list of parameters by adding a postfix `$` indicating that the *n*th or named argument is a char specifying the fill.
 
 Referring to an argument with the dollar syntax does not affect the “next argument” counter, so it’s usually a good idea to refer to arguments by position, or use named arguments.
 
@@ -48,8 +48,8 @@ It complicates the format spec, and it is unclear how much it might be used.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- If enforcing a minimum of 2 characters the `$` could be omitted, but this only makes this easier to mess up and is unnecessarily restrictive.
-- This can only be implemented in rust as it is impossible to drive the `Display` family traits on stable without going through the format string.
+- If a minimum of 2 characters was enforced the `$` could be omitted, but this only makes this easier to mess up and is unnecessarily restrictive, as well as inconsistent with other parameters that do require `$`.
+- This can only be implemented in rust as it is impossible to drive the `Display` family traits in stable rust without using a format string.
 
 # Prior art
 [prior-art]: #prior-art
