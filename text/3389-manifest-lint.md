@@ -308,6 +308,13 @@ Ruby
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## rustc reporting `Cargo.toml` as lint-level source
+
+Currently Rust tells you where a lint level was enabled when it emits a lint.
+`rustc` only sees that these lints are coming in from the command-line and
+doesn't know about `[lints]`.
+It would be nice if it could also point to Cargo.toml for this.
+
 ## External file
 
 Like with `package.license`, users might want to refer to an external file for
