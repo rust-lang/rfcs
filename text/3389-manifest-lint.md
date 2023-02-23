@@ -155,7 +155,7 @@ higher-level cargo-plugins despite that configuration (like `package.edition`)
 being cargo-specific.  By baking the configuration for rustc, rustdoc, and
 clippy directly into cargo, we will be seeing more of this.  A hope is that
 this will actually improve with this RFC.  Over time, tools will need to switch
-to the model of running `cargo` to get confuguratio in response to this RFC.
+to the model of running `cargo` to get configuration in response to this RFC.
 As for users, if a tool's primary configuration is in `Cargo.toml`, that will
 provide a strong coupling with `cargo` in users minds as compared to using an
 external configuration file and overlooking the one or two fields read from
