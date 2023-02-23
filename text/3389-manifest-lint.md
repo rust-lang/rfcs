@@ -80,7 +80,7 @@ unsafe = { level = "forbid", priority = 0 }
 - `warn`
 - `allow`
 
-`priority` is a signed value that controls which lints override other lints:
+`priority` is a signed value that controls which lints or lint groups override other lint groups:
 - lower (particularly negative) numbers have lower priority, being overridden
   by higher numbers, and shows up first on the command-line to tools like
   `rustc`
