@@ -220,13 +220,30 @@ References have a few special properties:
 
 This RFC relaxes those properties. For the first one, we have that `&'a &'b T`
 does no longer imply `'b: 'a` if `'b: '!`, and thus `&'b T: 'a` is also no
-longer true.
+longer true. That is, `&'a U` does not imply `U: 'a`, at least not inherently.
 
 The second one is a bit more complicated. However, there is an existing
 mechanism which also breaks this assumption: `#[may_dangle]`. Putting
 `#[may_dangle]` on a lifetime allows that lifetime to no longer be alive when
 the code runs (but `#[may_dangle]` has its own set of issues, like allowing
 the relevant lifetimes to be interacted with).
+
+## Interactions with implied lifetime bounds
+
+Rust has an implied lifetime bounds mechanism, particularly on impl blocks.
+
+Opting out of the implied lifetime also opts out of the implied lifetime bounds
+that would apply to said lifetime, but otherwise this mechanism is not changed:
+
+```rust
+impl<'a, 'b, T> Foo<'a, 'b, T> {
+    // here we have 'b: 'a, T: 'b
+}
+
+impl<'a: '!, 'b: '!, T: '!> Bar<'a, 'b, T> {
+    // here we can no longer imply 'b: 'a, T: 'b
+}
+```
 
 ## Interactions with dropck
 
@@ -355,12 +372,22 @@ to define that). But simply exposing `SafeToDrop` is enough to avoid issues like
 rust-lang/rust#99413. (Just because unsafe Rust is unsafe, doesn't mean we
 should add known footguns.)
 
+Also, compared to other proposals using similar syntax, `'!` is explicitly not a
+lifetime. Further, this RFC rejects the possibility of empty lifetimes
+altogether: the intersection between a lifetime and an expired lifetime is an
+anonymous expired lifetime. This is in alignment with existing borrowck rules,
+in particular the disjoint block rule which is the basis of this RFC, and avoids
+the soundness issues that would be introduced by these other proposals.
+
 # Prior art
 [prior-art]: #prior-art
 
 - Compiler MCP 563: This RFC was supposed to come after the implementation of MCP 563 but that didn't happen. This RFC is basically a refinement of the ideas in the MCP.
 - Unsound dropck elaboration for `BTreeMap`: <https://github.com/rust-lang/rust/pull/99413>
 - `may_dangle`: RFC 1238, RFC 1327
+- empty lifetimes: <https://github.com/rust-lang/rfcs/pull/3199> (sorry,
+    couldn't find the proposals that use the `'!` syntax, but they're roughly
+    the same as this.)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
