@@ -1,7 +1,7 @@
 - Feature Name: `core_net_types`
 - Start Date: 2019-12-06
 - RFC PR: [rust-lang/rfcs#2832](https://github.com/rust-lang/rfcs/pull/2832)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#108443](https://github.com/rust-lang/rust/issues/108443)
 
 # Summary
 [summary]: #summary
