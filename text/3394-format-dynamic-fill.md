@@ -49,7 +49,7 @@ It complicates the format spec, and it is unclear how much it might be used.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - If a minimum of 2 characters was enforced the `$` could be omitted, but this only makes this easier to mess up and is unnecessarily restrictive, as well as inconsistent with other parameters that do require `$`.
-- This can only be implemented in rust as it is impossible to drive the `Display` family traits in stable rust without using a format string.
+- This cannot be implemented in a library, as the `Formatter` used by the `Display` trait does not expose a mechanism to change the fill character, and any other mechanism would not allow using the `Display` implementations throughout the ecosystem.
 
 # Prior art
 [prior-art]: #prior-art
