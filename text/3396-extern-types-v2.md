@@ -1,6 +1,6 @@
 - Feature Name: `extern_types_v2`
 - Start Date: 2023-02-19
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3396](https://github.com/rust-lang/rfcs/pull/3396)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 
