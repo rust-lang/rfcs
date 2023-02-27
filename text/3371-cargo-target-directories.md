@@ -88,7 +88,7 @@ It's not possible to have to projects building at once because Cargo locks its t
 
 `cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts in `/cargo-cache/work-project/debug/...`
 
-A `cargo build` in `project-1` will produce new artifacts in `/cargo-cache/project-1/debug/...`.
+A `cargo build` in `project-1` will produce new artifacts in `/cargo-cache/project-1-<hash>/debug/...`.
 
 A `cargo clean` will only remove the `/cargo-cache/<project>/` subdirectory, not all the artifacts.
 
@@ -147,26 +147,22 @@ The resolution order favors `CARGO_TARGET_DIR` in all its forms, in the interest
 
 ## Naming
 
-In the example in the previous section, using `CARGO_TARGET_DIRECTORIES` with `cargo build` produces named subdirectories. The name of those is deterministic:
-it is the name of the parent directory of the workspace's `Cargo.toml` manifest, so building `work-project/crate-1` will still use the `/cargo-caches/work-project/debug/...` directory for a `cargo build` call.
+In the example in the previous section, using `CARGO_TARGET_DIRECTORIES` with `cargo build` produces named subdirectories. The name of those is partially deterministic:
+it is the name of the parent directory of the workspace's `Cargo.toml` manifest and an unspecified hash of the absolute path to the workspace's root, so building `work-project/crate-1` will still use the `/cargo-caches/work-project-<hash>/debug/...` directory for a `cargo build` call.
 
-This naming scheme is chosen to be simple for people to navigate but is **not considered stable**: since it can easily conflict, Cargo maintainers reserve the right to change it if too many conflicts happen.
-In practice, it should be rare to have two different projects using the same name on a single machine so conflicts are not considered more important than readability and predictability.
+This naming scheme is chosen to be simple for people to navigate but is **not considered stable**: the hashing method (and so the hash) will not change within a single minor version of cargo (1.68.0 -> 1.68.1) but it can change between any two minor versions (1.68 -> 1.69) and tools using that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value.
 
 In case the parent directory is `/` or `C:\`, the subdirectory name is implementation defined.
-
-See "Rationale and alternatives" about conflicts in the naming scheme.
 
 ## Impact on `cargo ...` calls
 
 When calling `cargo` where `CARGO_TARGET_DIRECTORIES` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, including calls to third-party tools.
 
-In the same vein, `cargo metadata` will fill the target directory and make no mention of `CARGO_TARGET_DIRECTORIES` since it can only be used in a single workspace at once.
+In the same vein, `cargo metadata` will fill the target directory information with the absolute path and make no mention of `CARGO_TARGET_DIRECTORIES` since it can only be used in a single workspace at once.
 
 ### `cargo clean`
 
-Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists. The same behavior is used for
-`CARGO_TARGET_DIRECTORIES`.
+Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists. The same behavior is used for `CARGO_TARGET_DIRECTORIES`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -180,13 +176,6 @@ This introduces one more option to look at to find the target directory, which m
 This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_DIRECTORIES`, so an external tool can set it and go on its way.
 Also, having `cargo` set `CARGO_TARGET_DIR` when inside a workspace where `CARGO_TARGET_DIRECTORIES` is used will help current tools (those not
 yet using `cargo metadata`) continue working without trouble.
-
-## Conflicting names are easy to produce
-
-This option easily conflicts.
-
-Entirely true, and for now ignored because of the rationale in the "Naming" subsection above. It's an option set by the people controlling the machine
-for their convenience and does nothing when absent.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -224,18 +213,16 @@ bringing the registry cache in their build directory for example.
 
 ## Stabilize the naming scheme
 
-I feel this require an hard-to-break naming scheme, which I don't have the skills nor motivation to design. Instead, I prefer explicitely telling the naming scheme is not to
-be considered stable and allow more invested people to experiment with the feature and find something solid.
+I feel this require an hard-to-break naming scheme (a recent hash algorithm should be good enough in 99% of the cases but collisions are always possible), which I don't have the skills nor motivation to design. Instead, I prefer explicitely telling the naming scheme is not to be considered stable and allow more invested people to experiment with the feature and find something solid.
 
-## Make the naming conflict less easily
+What's more, by explicitely not stabilizing it (and maybe voluntarily changing it between versions sometimes, since a version change recompiles everything anyway ?) we can instead reroute people and tools towards `CARGO_TARGET_DIR` / `cargo metadata` instead, which are much more likely to be suited to their use case if they need the path to the target directory.
 
-The (possibly) conflicting naming scheme used here is something that can easily be fixed: instead of just `/cargo-caches/work-project`, use something like `/cargo-caches/work-project-<blake3 hash of full path to 'work-project' directory>`, like `targo` does. This approach has at least two defaults and one advantage:
+## Use only the hash, not the name of the workspace directory
 
-- **Advantage**: conflicts are pretty much impossible while the naming scheme is still predictable
-- **Disadvantage**: external tools now have to know about the naming scheme internal more than just "set `$CARGO_TARGET_DIRECTORIES` and append crate directory name" and changing the hash method or length could heavily break them (even with us specifying it as unstable, we all know how that goes in real life). We would also have to specify when is the hash resolved (before symlink resolution or after).
-- **Disadvantage**: moving the crate directory implies a full rebuild because the hash has changed. This is especially impactful for CIs, where different steps could be executed in different temporary directories, preventing them from enjoying the benefits of such a cache. For CIs, this is strongly mitigated by using `$CARGO_TARGET_DIR` directly and so may not be that much of a disadvantage. For local builds, I expect users are not moving their crates all over the place often, although I only have myself as data on this.
+While this solution is just as easy to work with for tools, I think having a somewhat human-readable part in the name make it easier to work with through things like logging or just listing the subdirectories in `CARGO_TARGET_DIRECTORIES`. It also makes the path printed by `cargo run` or
+the local URL used when calling `cargo doc --open` much clearer.
 
-Also, I don't expect people are using similarly-named directories for unrelated projects. I checked my machines, it's zero for all of them. I have two `rust-lang/rust` worktree, named `rust-lang-1` and `rust-lang-2`, and they would not interfere with each other if they used a system like `$CARGO_TARGET_DIRECTORIES` since their directory names are different.
+Ultimately, tools are not negatively affected since they should be using `CARGO_TARGET_DIR` or `cargo metadata` and humans have an easier time working with such paths so I think it's worthwhile to include the workspace's name.
 
 ## Just use `targo`
 
@@ -246,7 +233,6 @@ While a very nice tool, `targo` is not integrated with `cargo` and has a few sho
 - It needs more metadata to work well, which means an external tool using it would have to understand that metadata too.
 - It uses `$CARGO_HOME/targo` to place its cache, making it less useful for external build tools and people wanting to separate caches and configuration.
 - It needs to intercept `cargo`'s arguments, making it more brittle than an integrated solution.
-- It uses a hash-based naming scheme, making it less predictable and compatible with external build tools and moving directories, as seen above.
 
 Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to
 solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
@@ -281,6 +267,7 @@ The naming scheme is as follow: `<outputRoot>/_bazel_$USER/` is the `outputUserR
 The `outputRoot` can be overridden using `--output_base=...` (this is `$CARGO_TARGET_DIRECTORIES`, the subject of this RFC) and the `outputUserRoot` with `--output_user_root=...` (this is close to using `$CARGO_TARGET_DIR`, already possible in today's `cargo`).
 
 It should be noted that `bazel` is integrated with [remote caching](https://bazel.build/remote/caching) and has different needs from `cargo`, the latter only working locally.
+
 **Conclusion**: `bazel` shows that a hash-based workflow seems to work well enough, making an argument for the use of it in `cargo` too. It also uses the current user, to prevent attacks by having compiled a program as root and making the directory accessible to other users later on by also compiling there for them. `cargo` could also do this, though I do not know what happens when `--output_user_root` is set to the same path for two different users.
 
 *Note: I looked at Bazel 5.4.0, the latest stable version as of this writing, things may change in the future or be different for older versions.*
@@ -294,7 +281,6 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
-- Should we use a hash-based solution or simply a directory-named based one ? `bazel` using hashes indicates this solution is viable for them, it probably would be for `cargo` too and if we use both the hash and the directory name, it would stay fairly human-readable but this solution also has disadvantages.
 - Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for us ?
 
 # Future possibilities
@@ -322,3 +308,4 @@ The section merely provides additional information.
 
 - Allowing relative paths: I feel this is counter-productive to the stated goal and have thought of no use for it, but it's entirely possible someone else will.
 - Introduce remapping into the concept in some way.
+- Use `CARGO_TARGET_DIRECTORIES` as the default instead of the current `target` dir, with platform-defined defaults. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon.
