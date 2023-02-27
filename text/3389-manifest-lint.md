@@ -362,6 +362,9 @@ Similar to `profile` and `patch` being in both files, we could support
 this feature, like conditionally applying them or applying them via environment
 variables.  For now, users still have the option of using `rustflags`.
 
+In doing so, we would need to define how `priority` interacts with different
+sources of `[lints]`.
+
 ## Cargo Lints
 
 The cargo team has expressed interest in producing warnings for more situations
