@@ -260,7 +260,7 @@ Unconfigurable:
 [lints]
 clippy = [
   { all = "allow" },
-  { doc_markdown = "worn" },
+  { doc_markdown = "warn" },
 ]
 ```
 
@@ -269,7 +269,7 @@ Configurable:
 [[lints.clippy.all]]
 level = "allow"
 [[lints.clippy.doc_markdown]]
-level = "worn"
+level = "warn"
 ```
 Where the order is based on how to pass them on the command-line.
 
