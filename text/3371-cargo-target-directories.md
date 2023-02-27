@@ -239,6 +239,23 @@ solve some of these or ensure forward compatibility as well as the solution prop
 
 On the other hand, `targo` is already here and working for at least one person, making it the most viable alternative for now.
 
+## Remapping
+
+[rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156) was originally about remapping the target directory, not about having a
+central one but reading the issue, there seems to be no needs for more than the simple redefinition of the target directory proposed in this document.
+In the future, if `CARGO_TARGET_DIR_REMAP` is introduced, it could be used to be the prefix to the target directory like so:
+
+- Set `CARGO_TARGET_DIR_REMAP=/home/user/projects=/tmp/cargo-build`
+- Compile the crate under `/home/user/projects/foo/` **without** `CARGO_TARGET_DIR` or `CARGO_TARGET_DIRECTORIES` set
+- The resulting target directory will be at `/tmp/cargo-build/foo/target`
+
+By making the priority order `CARGO_TARGET_DIR` > `CARGO_TARGET_DIRECTORIES` > `CARGO_TARGET_DIR_REMAP` (when all are absolute paths) we would keep backward compatibility. Or we could disallow having the last two set at once, so that they're alternatives and not ordered.
+
+When `CARGO_TARGET_DIR` is relative, the result could be `/tmp/cargo-build/foo/$CARGO_TARGET_DIR`.
+
+Overall, I feel remapping is much harder to implement well and can be added later without interfering with `CARGO_TARGET_DIRECTORIES` (and without
+this RFC interfering with remapping), though the design space is probably bigger than the one for this RFC.
+
 # Prior art
 [prior-art]: #prior-art
 
