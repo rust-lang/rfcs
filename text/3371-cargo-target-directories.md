@@ -43,7 +43,7 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 
 For a single project, it is possible to use the `CARGO_TARGET_DIR` environment variable (or the `target-dir` TOML config option or the `--target-dir` command-line flag) to change the position of the `target/` directory used for build artifacts during compilation with Cargo.
 
-While this option is useful for single-project environments (CI builds, builds through other build systems like Meson or Bazel), in multi-projects environment, like personal machines, it conflates every under the configured path: `CARGO_TARGET_DIR` directly replaces the `<workspace>/target/` directory.
+While this option is useful for single-project environments (simple CI builds, builds through other build systems like Meson or Bazel), in multi-projects environment, like personal machines or repos with multiple workspaces, it conflates every build directory under the configured path: `CARGO_TARGET_DIR` directly replaces the `<workspace>/target/` directory.
 
 `CARGO_TARGET_DIRECTORIES` (or the `target-directories` TOML option or the `--target-directories` command-line flag) instead acts as a parent for those `target` directories.
 
@@ -92,7 +92,7 @@ A `cargo build` in `project-1` will produce new artifacts in `/cargo-cache/proje
 
 A `cargo clean` will only remove the `/cargo-cache/<project>/` subdirectory, not all the artifacts.
 
-It's not possible for Cargo to produce invalid state without a `build.rs` deliberately writing outside its target directory.
+In this situation, it's not possible for Cargo to produce invalid state without a `build.rs` deliberately writing outside its target directory.
 
 Two projects can be built in parallel without troubles.
 
