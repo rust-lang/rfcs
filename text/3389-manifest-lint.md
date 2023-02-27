@@ -80,9 +80,9 @@ unsafe = { level = "forbid", priority = 0 }
 - `warn`
 - `allow`
 
-`priority` is a signed value that controls which lints or lint groups override other lint groups:
+`priority` is a signed integer that controls which lints or lint groups override other lint groups:
 - lower (particularly negative) numbers have lower priority, being overridden
-  by higher numbers, and shows up first on the command-line to tools like
+  by higher numbers, and show up first on the command-line to tools like
   `rustc`
 
 To know which table under `[lints]` a particular lint belongs under, it is the part before `::` in the lint
@@ -170,7 +170,7 @@ A concern brought up in
 was that this will pass lints unconditionally to the underlying tool, leading
 to "undefined lint" warnings when used on earlier versions, requiring that
 warning to also be suppressed, reducing its value.  However, in the "Future
-possibility's", we mention direct support for tying lints to rust versions.
+possibilities" section, we mention direct support for tying lints to rust versions.
 
 This does not allow sharing lints across workspaces.
 
@@ -236,7 +236,7 @@ inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
 which defines presets and the user could do `lints.<preset> = true`.  The user
 could then name them as they wish to avoid collision with rustc lints.
 
-## Lint Predence
+## Lint Precedence
 
 The priority field is meant to allow mimicking
 - `-Aclippy::all -Wclippy::doc_markdown`
