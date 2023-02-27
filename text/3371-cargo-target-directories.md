@@ -274,12 +274,13 @@ Please also take into consideration that rust sometimes intentionally diverges f
 
 ## `bazel`
 
-The [`bazel`] build system has a similar feature called the [`outputRoot`](https://docs.bazel.build/versions/5.4.0/output_directories.html), which is always active and has default directories on all major platforms (Linux, macOS, Windows).
+The [`bazel`](https://bazel.build) build system has a similar feature called the [`outputRoot`](https://docs.bazel.build/versions/5.4.0/output_directories.html), which is always active and has default directories on all major build/development platforms (Linux, macOS, Windows).
 
 The naming scheme is as follow: `<outputRoot>/_bazel_$USER/` is the `outputUserRoot`, used for all builds done by `$USER`. Below that, projects are identified by the MD5 hash of the path name of the workspace directory (computed after resolving symlinks).
 
 The `outputRoot` can be overridden using `--output_base=...` (this is `$CARGO_TARGET_DIRECTORIES`, the subject of this RFC) and the `outputUserRoot` with `--output_user_root=...` (this is close to using `$CARGO_TARGET_DIR`, already possible in today's `cargo`).
 
+It should be noted that `bazel` is integrated with [remote caching](https://bazel.build/remote/caching) and has different needs from `cargo`, the latter only working locally.
 **Conclusion**: `bazel` shows that a hash-based workflow seems to work well enough, making an argument for the use of it in `cargo` too. It also uses the current user, to prevent attacks by having compiled a program as root and making the directory accessible to other users later on by also compiling there for them. `cargo` could also do this, though I do not know what happens when `--output_user_root` is set to the same path for two different users.
 
 *Note: I looked at Bazel 5.4.0, the latest stable version as of this writing, things may change in the future or be different for older versions.*
