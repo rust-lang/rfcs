@@ -129,12 +129,15 @@ package override the workspace on a lint-by-lint basis.
 
 cargo will contain a mapping of tool to underlying command (e.g. `rust` to
 `rustc`, `clippy` to `rustc` when clippy is the driver, `rustdoc` to
-`rustdoc`).  When running the underlying command, cargo will transform the
-lints from `lint = level` to `--level lint`, sort them by priority and then
-lint name, and pass them on the command line before other configuration,
-`RUSTFLAGS`, allowing user configuration to override package configuration.
-These flags will be fingerprinted so changing them will cause a rebuild only
-for the commands where they are used.
+`rustdoc`).  When running the underlying command for the specified package,
+cargo will transform the lints from `lint = level` to `--level lint`, sort them
+by priority and then lint name, and pass them on the command line before other
+configuration, `RUSTFLAGS`, allowing user configuration to override package
+configuration.  These flags will be fingerprinted so changing them will cause a
+rebuild only for the commands where they are used.
+
+Note that this means that `[lints]` does not affect dependencies which is
+normally not an issue due to `--cap-lints` being used for dependencies.
 
 Initially, the only supported tools will be:
 - `rust`
@@ -148,6 +151,10 @@ Addition of third-party tools would fall under their
 
 # Drawbacks
 [drawbacks]: #drawbacks
+
+Since `[lints]` only affects the associated package, and not dependencies, it
+will not work with `future-incompat` lints that are meant to be applied to
+dependencies.  This may cause some user confusion.
 
 There has been some user/IDE confusion about running commands like `rustfmt`
 directly and expecting them to pick up configuration only associated with their
@@ -361,6 +368,9 @@ Similar to `profile` and `patch` being in both files, we could support
 `[lints]` in both files.  This allows more flexibility for experimentation with
 this feature, like conditionally applying them or applying them via environment
 variables.  For now, users still have the option of using `rustflags`.
+
+We would need to define whether this only affects local packages as-if the user
+set it in `Cargo.toml` or if it also affects dependencies.
 
 In doing so, we would need to define how `priority` interacts with different
 sources of `[lints]`.
