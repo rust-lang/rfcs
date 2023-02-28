@@ -241,7 +241,7 @@ Ultimately, tools are not negatively affected since they should be using `CARGO_
 
 ## Just use `targo`
 
-While a very nice tool, `targo` is not integrated with `cargo` and has a few shortcomings:
+While a very nice tool, [`targo`](https://github.com/sunshowers/targo) is not integrated with `cargo` and has a few shortcomings:
 
 - It uses symlinks, which are not always handled well by other tools. Specifically, since it's not integrated inside `cargo`, it uses a `target` symlink to avoid having to remap `cargo`'s execution using `CARGO_TARGET_DIR` and such,making it less useful for external build tools that would use this functionality. Using such a symlink also means `cargo clean` does not work, it just removes the symlink and not the data.
 - It completely ignores `CARGO_TARGET_DIR`-related options, which again may break workflows.
@@ -253,6 +253,12 @@ Some of those could be fixed of course, and I don't expect `cargo`'s `--target-d
 solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
 
 On the other hand, `targo` is already here and working for at least one person, making it the most viable alternative for now.
+
+### Providing backlinks
+
+`targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target dire.
+
+`cargo` does not for `CARGO_TARGET_DIR` and will not do it either for `CARGO_TARGET_DIRECTORIES` : it provides `cargo metadata` that is the blessed way to obtain the actual target directory and when `CARGO_TARGET_DIRECTORIES` is used, it will set `CARGO_TARGET_DIR` on all invocation (if not already set) to make it easy to obtain the target directory for simple task (e.g. a test needing to launch another binary in the repo).
 
 ## Remapping
 
