@@ -154,6 +154,21 @@ This naming scheme is chosen to be simple for people to navigate but is **not co
 
 In case the parent directory is `/` or `C:\`, the subdirectory name is implementation defined.
 
+### Symbolic links
+
+In the following situation
+
+```
+/Users/
+├─ poliorcetics/
+│  ├─ projects/
+│  │  ├─ actual-crate/
+│  │  │  ├─ Cargo.toml
+│  │  ├─ symlink-to-crate/ -> actual-crate/
+```
+
+When calling `cargo metadata` in the `symlink-to-crate` path, the result contains `"manifest_path": "/Users/poliorcetics/projects/actual-crate/Cargo.toml"` and `"workspace_root":"/Users/poliorcetics/projects/actual-crate"`. This behaviour means that symlinks won't change the final directory used inside `CARGO_TARGET_DIRECTORIES`, or in other words: symbolic links are resolved.
+
 ## Impact on `cargo ...` calls
 
 When calling `cargo` where `CARGO_TARGET_DIRECTORIES` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, including calls to third-party tools.
