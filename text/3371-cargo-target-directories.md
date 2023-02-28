@@ -150,7 +150,7 @@ The resolution order favors `CARGO_TARGET_DIR` in all its forms, in the interest
 In the example in the previous section, using `CARGO_TARGET_DIRECTORIES` with `cargo build` produces named subdirectories. The name of those is partially deterministic:
 it is the name of the parent directory of the workspace's `Cargo.toml` manifest and an unspecified hash of the absolute path to the workspace's root, so building `work-project/crate-1` will still use the `/cargo-caches/work-project-<hash>/debug/...` directory for a `cargo build` call.
 
-This naming scheme is chosen to be simple for people to navigate but is **not considered stable**: the hashing method (and so the hash) will not change within a single minor version of cargo (1.68.0 -> 1.68.1) but it can change between any two minor versions (1.68 -> 1.69) and tools using that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value.
+This naming scheme is chosen to be simple for people to navigate but is **not considered stable**: the hashing method (and so the hash) will probably not change often but `cargo` offers no guarantee and may change it in any release. Tools that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value each time they are invoked.
 
 In case the parent directory is `/` or `C:\`, the subdirectory name is implementation defined.
 
