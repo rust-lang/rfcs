@@ -320,7 +320,9 @@ Ruby
 Currently Rust tells you where a lint level was enabled when it emits a lint.
 `rustc` only sees that these lints are coming in from the command-line and
 doesn't know about `[lints]`.
-It would be nice if it could also point to Cargo.toml for this.
+It would be nice if it could also point to Cargo.toml for this.  This could be
+as simple as a `--lint-source=Cargo.toml` with rustc knowing just enough about
+the `[lints]` table to process it directly.
 
 ## External file
 
