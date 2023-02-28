@@ -177,7 +177,7 @@ In the same vein, `cargo metadata` will fill the target directory information wi
 
 ### `cargo clean`
 
-Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists. The same behavior is used for `CARGO_TARGET_DIRECTORIES`.
+Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_DIRECTORIES`: if it set, `cargo clean` will delete `CARGO_TARGET_DIRECTORIES/<project>-<hash>` and not `target/`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
