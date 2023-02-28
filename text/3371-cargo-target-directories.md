@@ -86,11 +86,11 @@ It's not possible to have to projects building at once because Cargo locks its t
 
 #### With `CARGO_TARGET_DIRECTORIES=/cargo-cache`
 
-`cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts in `/cargo-cache/work-project/debug/...`
+`cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts in `/cargo-cache/work-project-<hash>/debug/...`
 
 A `cargo build` in `project-1` will produce new artifacts in `/cargo-cache/project-1-<hash>/debug/...`.
 
-A `cargo clean` will only remove the `/cargo-cache/<project>/` subdirectory, not all the artifacts.
+A `cargo clean` will only remove the `/cargo-cache/<project>-<hash>/` subdirectory, not all the artifacts.
 
 In this situation, it's not possible for Cargo to produce invalid state without a `build.rs` deliberately writing outside its target directory.
 
