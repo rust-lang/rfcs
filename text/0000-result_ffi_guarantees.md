@@ -28,7 +28,7 @@ I'm not sure how to write a "guide" portion of this that's any simpler than the 
 When either of these two `core` types:
 
 * `Option<T>`
-* `Result<T, E>` where either `T` or `E` are a zero-sized type with alignment 1 (a "1-ZST").
+* `Result<T, E>` where either `T` or `E` are a zero-sized type with alignment 1 (a "1-ZST") and either no fields (eg: `()` or `struct Foo;`) or with `repr(transparent)` if there are fields.
 
 Is combined with a non-zero or non-null type (see the chart), the combination has the same layout (size and alignment) and the same ABI as the primitive form of the data.
 
@@ -52,6 +52,17 @@ Is combined with a non-zero or non-null type (see the chart), the combination ha
 | `Result<NonZeroUsize, ()>` | `usize` |
 
 * While `fn()` is listed just once in the above table, this rule applies to all `fn` types (regardless of ABI, arguments, and return type).
+
+For simplicity the table listing only uses `Result<_, ()>`, but swapping the `T` and `E` types, or using `Option<T>` is also valid.
+What changes are the implied semantics:
+* `Result<NonZeroI32, ()>` is "a non-zero success value"
+* `Result<(), NonZeroI32>` is "a non-zero error value"
+* `Option<NonZeroI32>` is "a non-zero value is present"
+* they all pass over FFI as if they were an `i32`.
+
+Which type you should use with a particular FFI function signature still depends on the function.
+Rust can't solve that part for you.
+However, once you've decided on the type you want to use, the compiler's normal type checks can guide you everywhere else in the code.
 
 # Drawbacks
 [drawbacks]: #drawbacks
