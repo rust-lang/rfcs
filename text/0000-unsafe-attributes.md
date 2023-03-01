@@ -86,8 +86,10 @@ Unsafe attributes that are added in the future can hard-require `unsafe` from
 the start since the backwards compatibility concern does not apply to them.
 
 Syntactically, for each unsafe attribute `attr`, we now also accept
-`unsafe(attr)` anywhere that `attr` can be used. `unsafe` cannot be nested,
-cannot contain `cfg_attr`, and cannot contain any other (non-unsafe) attributes.
+`unsafe(attr)` anywhere that `attr` can be used (in particular, inside
+`cfg_attr`). `unsafe` cannot be nested, cannot contain `cfg_attr`, and cannot
+contain any other (non-unsafe) attributes. Only a single attribute can be used
+inside `unsafe`, i.e., `unsafe(foo, bar)` is invalid.
 
 The `deny(unsafe_code)` lint denies the use of unsafe attributes both inside and
 outside of `unsafe(...)` blocks. (That lint currently has special handling to
