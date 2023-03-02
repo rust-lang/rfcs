@@ -29,9 +29,9 @@ When either of these two `core` types:
 
 * `Option<T>`
 * `Result<T, E>` where either `T` or `E` meet all of the following conditions:
-  * Are a zero-sized type with alignment 1 (a "1-ZST").
-  * Either have no fields (eg: `()` or `struct Foo;`) or have `repr(transparent)` if there are fields.
-  * Do not have the `#[non_exhaustive]` attribute.
+  * Is a zero-sized type with alignment 1 (a "1-ZST").
+  * Has no fields.
+  * Does not have the `#[non_exhaustive]` attribute.
 
 Is combined with a non-zero or non-null type (see the chart), the combination has the same layout (size and alignment) and the same ABI as the primitive form of the data.
 
