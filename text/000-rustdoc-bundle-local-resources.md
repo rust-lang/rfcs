@@ -90,6 +90,7 @@ Another problem is that people will add images into their published crates, incr
 - [sphinx](https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-latex_additional_files)
 - [haddock](https://haskell-haddock.readthedocs.io/en/latest/invoking.html?highlight=image#cmdoption-theme): it's mentioned in this command documentation that local files in the given directory will be copied into the generated output directory.
 - [doxygen](https://doxygen.nl/manual/commands.html#cmdimage): supported through `\image`.
+- [embed-doc-image](https://docs.rs/embed-doc-image/latest/embed_doc_image/): a proc-macro based version which directly embed the content into the generated documented as a base64 string.
 
 Another approach to this feature:
 
