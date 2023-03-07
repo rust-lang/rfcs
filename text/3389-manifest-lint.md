@@ -260,6 +260,17 @@ generally people will want to opt a specific lint into being low-priority (the
 group) and the leave the exceptions at default but making `priority = true` the
 default would read weird (everything is a priority but one or two items).
 
+We could pass this to the tool and say "you figure it out" based on which is
+the most specific and least specific.  This requires lint groups to be
+subsets or disjoint of each other to avoid ambiguity.  While this might hold
+today, I'm a bit cautious of putting this requirement on us forever.  For
+example, if we merged `cargo semver-check`, there are proposed lint groups
+based on what a lint's user-overideable semver-level is which couldn't be
+guarenteed to meet these requirements.  On the implementation side, this will
+require a new channel to communicate these lints to the tools (unless we infer
+order for flags/config as well) and require them to organize their data in a
+way for it to inferred.
+
 We could use an array instead of a table:
 
 Unconfigurable:
