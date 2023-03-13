@@ -184,5 +184,5 @@ describing here.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Can we allow `#[expect(..., count = 0)] with some useful behavior? What about
+- Can we allow `#[expect(..., count = 0)]` with some useful behavior? What about
   negative `count`s?
