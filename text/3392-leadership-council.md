@@ -231,6 +231,8 @@ The Leadership Council serves as the successor to the core team in all capacitie
 
 External entities or processes may have references to "the Rust core team" in various capacities. The Council doesn't use the term "core team", but the Council will serve in that capacity for the purposes of any such external references.
 
+The core team currently has access to credentials for various Project accounts, in addition to the infrastructure team. As the Council is not expected to need these credentials, they will not be transferred from the core team into Council ownership, instead residing solely with the infrastructure team[^infra-creds]. The infrastructure team's responsibilities include ensuring teams have the tools and access needed to do their work effectively, while balancing against security and maintainability of our infrastructure. The Council can help coordinate which teams should have access through policy.
+
 ## Relationship to the Rust Foundation
 
 The Council is responsible for establishing the process for selecting Project directors. The Project directors are the mechanism by which the Rust Project's interests are reflected on the Rust Foundation board.
@@ -659,3 +661,5 @@ This RFC will be ratified using the standard RFC process, with the approving tea
 [^representative-selection]: Being a Council representative is ultimately a position of service to the respective team and to the Project as a whole. While the authors of this RFC hope that the position is fulfilling and engaging to whomever fills it, we also hope that it is not viewed as a position of status to vie for.
 
 [^council-roles]: The Council is not required to assign such roles exclusively to Council representatives; the Council may appoint any willing Project member. Such roles do not constitute membership in the Council for purposes such as decision-making.
+
+[^infra-creds]: In practice the infrastructure team as a whole will not have access to all credentials and internally strives to meet the principle of least privilege.
