@@ -40,7 +40,7 @@
 
 ## Мотивация
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#motivation)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#motivation)
 
 Структура Rust позволяет делегировать большинство решений соответствующим командам. Тем не менее, существует большой объем работ, который не входит в компетенцию ни одной из созданных команд.
 
@@ -50,7 +50,7 @@
 
 В рамках данного RFC также устанавливаются механизмы надзора и подотчетности между Советом в целом, отдельными членами Совета, командой модерации, командами Проекта и членами Проекта. ## Обязанности, ожидания и ограничения, применимые к Совету
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#duties-expectations-and-constraints-on-the-council)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#duties-expectations-and-constraints-on-the-council)
 
 Совет выявляет и определяет приоритеты, а также отслеживает выполнение работы, которая остается не сделанной в силу отсутствия четких сфер ответственности. Он делегирует эту работу командам (причем они могут быть новыми или временными). В некоторых случаях он вправе разрешать *срочные* вопросы, не имеющие четкой сферы ответственности.
 
@@ -58,7 +58,7 @@
 
 ## Структура Совета
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#structure-of-the-council)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#structure-of-the-council)
 
 В состав Совета входят [представители команд](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#candidate-criteria), каждый из которых представляет одну из команд верхнего уровня и ее под-команд.
 
@@ -66,11 +66,11 @@
 
 Все команды в рамках Проекта Rust должны в конечном итоге быть подотчетны как минимум одной из команд верхнего уровня. Для команд, у которых в настоящее время нет вышестоящей команды, настоящий RFC создает [команду "запуска"](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/ 3392-leadership-council.md#the-launching-pad-top-level-team) в качестве временной аффилиации. Таким образом, все команды получают представительство в Совете.
 
-Срок службы представителей [ограничен](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#term-limits). Существуют [ограничения на число представителей одной структуры](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#limits-on-representatives-from-a-single-companyentity). Команды должны [назначать заместителей на случай отсутствия представителя](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#alternates-and-forgoing-representation).
+Срок службы представителей [ограничен](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#term-limits). Существуют [ограничения на число представителей одной структуры](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#limits-on-representatives-from-a-single-companyentity). Команды должны [назначать заместителей на случай отсутствия представителя](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#alternates-and-forgoing-representation).
 
 ## Процедура принятия решений в Совете
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#the-councils-decision-making-process)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#the-councils-decision-making-process)
 
 Совет принимает как [оперативные, так и относящиеся к политике решения](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/ 3392-leadership-council.md#operational-vs-policy-decisions). По умолчанию Совет использует [процедуру принятия решений, основанную на общественном согласии](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/ 3392-leadership-council.md#the-consent-decision-making-process) для принятия всех решений, относительно которых представителям предлагается высказать свои возражения, а не прямое одобрение. Минимальные [критерии принятия решений](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#approval-criteria) включают в себя наличие кворума и обеспечение представителям достаточного времени для ознакомления с предложением.
 
@@ -78,7 +78,7 @@
 
 ## Прозрачность и надзор за принятием решений
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#transparency-and-oversight-for-decision-making)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#transparency-and-oversight-for-decision-making)
 
 Различные виды решений, принимаемых Руководящим советом, нуждаются в различных уровнях прозрачности и надзора.
 
@@ -88,7 +88,7 @@
 
 ## Механизмы надзора и отчетности
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#mechanisms-for-oversight-and-accountability)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#mechanisms-for-oversight-and-accountability)
 
 Совет обязан [публично обеспечивать постоянное соответствие более общим требованиям Проекта и сообщества, применимым к деятельности Совета](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#ensuring-the-council-is-accountable).
 
@@ -98,7 +98,7 @@
 
 ## Модерация, разногласия и конфликты
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#moderation-disagreements-and-conflicts)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#moderation-disagreements-and-conflicts)
 
 По возможности команды должны пытаться разрешать разногласия собственными силами, [при необходимости прибегая к помощи Совета](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#disagreements-among-teams). Конфликты с участием команд или участников Проекта [доводятся до сведения команды модерации](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/ 3392-leadership-council.md#conflicts-involving-teams-or-project-members) в кратчайшие сроки.
 
@@ -106,11 +106,11 @@
 
 В качестве самого крайнего средства либо Совет, либо команда модерации [может принять решение об одновременном роспуске обеих команд](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#last-resort-accountability). После этого команды выбирают новых представителей, и контингент модераторов становится временной командой модерации и выбирают кандидатов себе на смену.
 
-[В случаях модерации с участием членов Проекта](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/ 3392-leadership-council.md#moderation-actions-involving-project-members) любая сторона может запросить аудит. В случаях модерации с участием [представителей Совета](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#conflicts-involving-council-representatives) или [членов команды модераторов](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#conflicts-involving-moderation-team-members) предусмотрены дополнительные меры надзора и ответственности.
+[В случаях модерации с участием членов Проекта](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/ 3392-leadership-council.md#moderation-actions-involving-project-members) любая сторона может запросить аудит. В случаях модерации с участием [представителей Совета](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#conflicts-involving-council-representatives) или [членов команды модераторов](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#conflicts-involving-moderation-team-members) предусмотрены дополнительные меры надзора и ответственности.
 
 ## Ратификация данного RFC
 
-[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md#ratification-of-this-rfc)
+[[полный текст]](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md#ratification-of-this-rfc)
 
 С ноября 2021 г. в качестве фактических лидеров Проекта выступает следующая группа: все члены основной команды, все члены команды модерации, все представители Проекта, входящие в состав правления Rust Foundation, а также руководители всех команд "верхнего уровня":
 
@@ -124,4 +124,4 @@
 
 Данный RFC подлежит ратификации с использованием стандартной процедуры RFC, причем утверждающая группа состоит из всех членов данной фактической руководящей группы. Эта группа также должна выдвигать возражения от имени других участников Проекта; в частности, руководители команд должны запрашивать обратную связь от своих команд и под-команд.
 
-[Визуализация](https://github.com/rust-lang/rfc-leadership-council/blob/main/ text/3392-leadership-council.md)
+[Визуализация](https://github.com/rust-lang/rfc-leadership-council/blob/main/text/3392-leadership-council.md)
