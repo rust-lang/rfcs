@@ -51,7 +51,7 @@ This would work with
 [lints]
 workspace = true
 
-[workspace.lints]
+[workspace.lints.rust]
 unsafe = "forbid"
 ```
 
