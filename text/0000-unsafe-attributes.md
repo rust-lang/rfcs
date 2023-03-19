@@ -84,6 +84,8 @@ For backwards compatibility reasons, using these attributes outside of
 `unsafe_attr_outside_unsafe`. Initially, this lint will be allow-by-default.
 Unsafe attributes that are added in the future can hard-require `unsafe` from
 the start since the backwards compatibility concern does not apply to them.
+The 2024 edition is also expected to increase the severity of this lint,
+possibly even making it a hard error.
 
 Syntactically, for each unsafe attribute `attr`, we now also accept
 `unsafe(attr)` anywhere that `attr` can be used (in particular, inside
