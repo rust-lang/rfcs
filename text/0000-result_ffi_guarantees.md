@@ -56,7 +56,7 @@ Is combined with a non-zero or non-null type (see the chart), the combination ha
 
 * While `fn()` is listed just once in the above table, this rule applies to all `fn` types (regardless of ABI, arguments, and return type).
 
-For simplicity the table listing only uses `Result<_, ()>`, but swapping the `T` and `E` types, or using `Option<T>` is also valid.
+For simplicity the table listing only uses `Result<_, ()>`, but swapping the `T` and `E` types, or using `Option<T>`, is also valid.
 What changes are the implied semantics:
 * `Result<NonZeroI32, ()>` is "a non-zero success value"
 * `Result<(), NonZeroI32>` is "a non-zero error value"
