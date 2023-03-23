@@ -10,11 +10,11 @@
 
 # 程序性信息
 
-##讨论
+## 讨论
 
 有关本PR的讨论，请使用[本专用Zulip流](https://rust-lang.zulipchat.com/#narrow/stream/369838-rfc-leadership-council-feedback)。
 
-##翻译
+## 翻译
 
 本RFC的权威版本是英文版。然而，为了帮助人们广泛理解Rust的管理结构和政策，我们已经开始将所提议的管理结构和政策翻译成其他语言。具体来说，根据[Rust调查数据](https://blog.rust-lang.org/2022/02/15/Rust-Survey-2021.html)中认为非英语交流会有帮助的被调查对象使用最多的语种，我们将在完成以下语种的（非权威性）译版后发布这些译版：
 
