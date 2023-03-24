@@ -388,8 +388,9 @@ plans for clippy itself.
 Currently, it is a hard error to mix `workspace = true` and lints.  We could
 open this up in the future for the package to override lints from the
 workspace.  This would not be a breaking change as we'd be changing an error
-case into a working case.  We'd need to ensure we had a path forward for the
-semantics for configurable lints.
+case into a working case.  We should consider the possibility of adding
+configurable lints in the future and what that would look like with
+overridin of lints.
 
 ## Extending the syntax to `.cargo/config.toml`
 
