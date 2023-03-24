@@ -378,6 +378,11 @@ avoid-breaking-exported-api = true
 Tools will need `cargo metadata` to report the `lints` table so they can read
 it without re-implementing workspace inheritance.
 
+**Note:** At this time, there is no lint configuration for clippy, just tool
+configuration.  `lints.clippy.cyclomatic_complexity` exists for illustrative
+purposes of what linters could support and is not indicative of any future
+plans for clippy itself.
+
 ## Packages overriding inherited lints
 
 Currently, it is a hard error to mix `workspace = true` and lints.  We could
