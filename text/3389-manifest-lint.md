@@ -43,7 +43,7 @@ A new `lints` table would be added to configure lints:
 [lints.rust]
 unsafe = "forbid"
 ```
-and `cargo` would pass these along as flags to `rustc` and `clippy`.
+and `cargo` would pass these along as flags to `rustc`, `clippy`, or other lint tools.
 
 This would work with
 [RFC 2906 `workspace-deduplicate`](https://rust-lang.github.io/rfcs/2906-cargo-workspace-deduplicate.html?highlight=2906#):
