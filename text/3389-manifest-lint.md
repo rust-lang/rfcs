@@ -130,11 +130,16 @@ package override the workspace on a lint-by-lint basis.
 cargo will contain a mapping of tool to underlying command (e.g. `rust` to
 `rustc`, `clippy` to `rustc` when clippy is the driver, `rustdoc` to
 `rustdoc`).  When running the underlying command for the specified package,
-cargo will transform the lints from `lint = level` to `--level lint`, sort them
-by priority and then lint name, and pass them on the command line before other
-configuration, `RUSTFLAGS`, allowing user configuration to override package
-configuration.  These flags will be fingerprinted so changing them will cause a
-rebuild only for the commands where they are used.
+cargo will:
+1. Transform the lints from `tool.lint = level` to `--level tool::lint`
+  - Leaving off the `tool::` when it is `rust`
+  - cargo will error if `lint` contains `::` as the first part is assumed to be
+    a tool and it should be listed in that tool's table
+2. Sort them by priority and then lint name
+3. Pass them on the command line before other configuration like
+`RUSTFLAGS`, allowing user configuration to override package configuration.
+  - These flags will be fingerprinted so changing them will cause a rebuild only
+    for the commands where they are used.
 
 Note that this means that `[lints]` does not affect dependencies which is
 normally not an issue due to `--cap-lints` being used for dependencies.
