@@ -169,7 +169,7 @@ dependencies.  This may cause some user confusion.
 There has been some user/IDE confusion about running commands like `rustfmt`
 directly and expecting them to pick up configuration only associated with their
 higher-level cargo-plugins despite that configuration (like `package.edition`)
-being cargo-specific.  By baking the configuration for rustc, rustdoc, and
+being cargo-specific.  By baking the configured lint levels for rustc, rustdoc, and
 clippy directly into cargo, we will be seeing more of this.  A hope is that
 this will actually improve with this RFC.  Over time, tools will need to switch
 to the model of running `cargo` to get configuration in response to this RFC.
