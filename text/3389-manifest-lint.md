@@ -180,7 +180,8 @@ external configuration file and overlooking the one or two fields read from
 
 As this focuses on lints, this leaves out first-party tools that need
 configuration but aren't linters, namely `rustfmt`, leading to an inconsistent
-experience if `clippy.toml` goes away.
+experience if `clippy.toml` goes away in the future (if we act on the future
+possibility of supporting linter configuration)
 
 A concern brought up in
 [rust-lang/rust-clippy#1313](https://github.com/rust-lang/rust-clippy/issues/1313)
