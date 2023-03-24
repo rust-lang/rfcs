@@ -149,7 +149,10 @@ Initially, the only supported tools will be:
 - `clippy`
 - `rustdoc`
 
-A downside to naming the category `rust` is it might be confusing if we ever expose `rustc::` lints.
+The reason for `rust` existing, despite lints not being prefixed with `rust::`, is
+to avoid ambiguity in the data model between `lint.<lint>` and
+`lint.<tool>.<lint>`.  A downside to naming the tool `rust` is it might be
+confusing if we ever expose `rustc::` lints.
 
 Addition of third-party tools would fall under their
 [attributes for tools](https://github.com/rust-lang/rust/issues/44690).
