@@ -8,19 +8,24 @@
 
 This document proposes the integration with Sigstore for cargo and crates.io to support signing and verifying crates.
 
-Sigstore consists of a set of components that together provide a complete artifact signing and verification mechanism. Sigstore was created as a “common good” service much in the same way that Let’s Encrypt was and in fact shares some underlying service components with Let’s Encrypt, most notably the Transparency Log implementation in the Rekor service. Moreover, Sigstore addresses some of the inherent challenges in legacy signing mechanisms such as the necessity to have long term sensitive key management capabilities.
+Sigstore consists of a set of components that together provide a complete artifact signing and verification mechanism. Sigstore was created as a “common good” service much in the same way that Let’s Encrypt was and in fact shares some underlying service components with Let’s Encrypt, most notably the Transparency Log implementation in the Rekor service. Moreover, Sigstore addresses some of the inherent challenges in legacy signing mechanisms such as the necessity to manage keys.
+
+For crate maintainers and consumers, the tooling will continue to work the same way by default, with opt-in features for signing and verifying crates that uses Sigstore.
+
+# Motivation
+[motivation]: #motivation
 
 This document will address two primary use case scenarios:
 
 1. The developer building Crates locally on their desktop
 1. Crates produced through a formal build plant (GitHub Actions, CircleCI, etc. and commercial enterprise internal build plants)
 
-These use cases will allow us to start to draw trust boundaries around artifact production processes and identify the metadata attributes that will need to be generated at artifact build-time which are subsequently consumed at run-time for effective policy and consumption controls to be possible for the ultimate consumers.
+These use cases will allow us to draw trust boundaries around artifact production processes and identify the metadata attributes that will need to be generated at artifact build-time, which are subsequently 
+consumed at run-time for effective policy and consumption controls. 
 
 This proposal has been influenced by [this document](https://docs.google.com/document/d/1mXrVAkUA9dd4M7fa_AJC8mQ55YnYJ-DKsGq30lh0FvA/edit#heading=h.jyrb6etgzah), as well as the work at GH regarding the NPM ecosystem, the RFC for which can be [found here](https://github.com/npm/rfcs/blob/main/accepted/0049-link-packages-to-source-and-build.md). Further we have engaged both parties in discussions to further glean relevant information related to this effort and to achieve a certain level of commonality in the overall pattern of implementation in the language ecosystem. 
 
-# Motivation
-[motivation]: #motivation
+## Background
 
 The Solar Winds breach event was an inflection point for the topic of software supply chain security. The Solar Winds event exposed weaknesses in two specific areas, artifact provenance and build system integrity. That event resulted in a broad variety of reactions ranging from an aggressive push by the USG to a rapid acceleration of security/provenance related OSS and commercial projects oriented on addressing the significant shortcomings in the OSS software ecosystem.
 
@@ -28,10 +33,11 @@ One of the most notable projects to arrive early on the heels of the Solar Winds
 
 When considering artifact provenance, one of the long known weaknesses in the OSS world are the central official package management systems that serve as a nexus for sharing and consumption of artifacts in any given language ecosystem. Historically these systems have struggled with a variety of attack vectors and suffered most specifically from a lack of concrete cryptographic artifact identities and security focused policies and tooling to manage contribution and ongoing artifact maintenance. The challenges are further exacerbated by the state of build system fidelity broadly. Provenance generation at artifact creation time and subsequent verification is where Sigstore comes in. Its approach, leveraging OIDC based identities as a gate to the signing function as opposed to long-term sensitive keys, as well as a public root and widely available verification capabilities make it a developer friendly, potentially ubiquitous signing architecture.
 
-It is in the context of failure after failure in the OSS ecosystem related to compromised packages and lack of reliable provenance, as well as the looming changes that will be driven by the recently announced White House cybersecurity strategy, that this RFC is presented. The Rust ecosystem can *and should* lead on these topics given its accelerating adoption in mission critical scenarios, expanding use in linux core, etc, etc. Not only can the community address basic artifact signature operations, but it can also “skate to where the puck is going to be” on the evolving build plant ecosystem. 
+It is in the context of failure after failure in the OSS ecosystem related to compromised packages and lack of reliable provenance. The Rust ecosystem can *and should* lead on these topics given its accelerating adoption in mission critical scenarios, expanding use in linux core, etc, etc. Not only can the community address basic artifact signature operations, but it can also “skate to where the puck is going to be” on the evolving build plant ecosystem. 
 
 On the topic of build system integrity, historically, this operational domain was not delineated as a specific function from generic security systems operations in the context of say, NIST. However, with the new SSDF directive NIST has specifically engaged on this topic. from a standards perspective. It’s not an exaggeration to say that NIST artifacts can be a bit dense, but more interestingly, one of the other early ecosystem events post Solar Winds was the launch of the Supply Chain Levels for Software Artifacts or “SLSA”. [SLSA](https://slsa.dev) is a capabilities framework that specifically and exclusively addresses the topic of build system fidelity and fills a gap in the existing standards. It is relatively lean and approachable and provides organizations with a fast, easy way to assess current capabilities and plan for improvement. SLSA addresses both artifact provenance and build system integrity and also very clearly lays out relevant attack vectors as can be seen below):
 
+## Supply chain attacks
 
 ![Description of supply-chain-threats and the different attack vectors: a. submitting an unauthorized change, b. compromising the source, c. building from modified source, d. compromise the build process, e. use compromised dependency, f. upload modified package, g. compromise package repo and h. use compromised package](https://user-images.githubusercontent.com/20165/174750708-2be483ac-7e41-4bc3-8ee9-440ef33d9423.svg)
 
