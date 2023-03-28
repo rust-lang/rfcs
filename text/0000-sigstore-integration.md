@@ -198,7 +198,7 @@ However, in practice most OSS projects where there are more than a handful of co
 
 Sigstore uses the OIDC pattern and ecosystem as the basis for authentication against the signing issuer (Fulcio). We assume that most are familiar with the OIDC pattern and tooling and so will not address those topics here, with the exception of the OIDC identity payload attributes. The certificates used for signing of course need to have an associated identity:
 
-* In the case of an individual developer signing from his desktop, Sigstore will embed the email address of the signing individual in the metadata delivered to the Rekor service. 
+* In the case of an individual developer signing from their desktop, Sigstore will embed the email address of the signing individual in the metadata delivered to the Rekor service. 
 * In the case of an NPE signer the metadata delivered to the Rekor service will have an Issuer attribute that looks something like this: "Issuer": "https://token.actions.githubusercontent.com".
 
 ## Authorization
