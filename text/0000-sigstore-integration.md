@@ -33,7 +33,7 @@ It is in the context of failure after failure in the OSS ecosystem related to co
 On the topic of build system integrity, historically, this operational domain was not delineated as a specific function from generic security systems operations in the context of say, NIST. However, with the new SSDF directive NIST has specifically engaged on this topic. from a standards perspective. It’s not an exaggeration to say that NIST artifacts can be a bit dense, but more interestingly, one of the other early ecosystem events post Solar Winds was the launch of the Supply Chain Levels for Software Artifacts or “SLSA”. [SLSA](https://slsa.dev) is a capabilities framework that specifically and exclusively addresses the topic of build system fidelity and fills a gap in the existing standards. It is relatively lean and approachable and provides organizations with a fast, easy way to assess current capabilities and plan for improvement. SLSA addresses both artifact provenance and build system integrity and also very clearly lays out relevant attack vectors as can be seen below):
 
 
-![SLSA: Supply-chain-threats](https://user-images.githubusercontent.com/20165/174750708-2be483ac-7e41-4bc3-8ee9-440ef33d9423.svg)
+![Description of supply-chain-threats and the different attack vectors: a. submitting an unauthorized change, b. compromising the source, c. building from modified source, d. compromise the build process, e. use compromised dependency, f. upload modified package, g. compromise package repo and h. use compromised package](https://user-images.githubusercontent.com/20165/174750708-2be483ac-7e41-4bc3-8ee9-440ef33d9423.svg)
 
 In the context of the SLSA framework, adopting Sigstore as proposed in this RFC  will immediately address the B, C, F and H attacks identified above.
 
@@ -209,7 +209,7 @@ This RFC does not recommend a specific timeframe to enter into Phase 2, but assu
 
 ## Cargo publish flow
 
-![publish flow](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-publish.drawio.png)
+![Diagram showing the flow on cargo publish including the authentication, signing and publication to crates.io](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-publish.drawio.png)
 
 The following changes must be made to cargo when publishing a crate:
 
@@ -226,7 +226,7 @@ Most of the above is already implemented in https://github.com/sigstore/sigstore
 
 The crates.io sub-flow on publish is described below:
 
-![crates.io flow](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-crates.io.drawio.png)
+![Diagram showing the flow within crates.io as a crate is accepted and stored](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-crates.io.drawio.png)
 
 The following components need changing for crates.io:
 
@@ -238,7 +238,7 @@ The following components need changing for crates.io:
 
 The cargo flow during verification is shown below:
 
-![verify flow](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-verify.drawio.png)
+![Diagram showing the flow in cargo as crates are downloaded and verified against the signature and certificate](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-verify.drawio.png)
 
 The following changes must be made to cargo when building/verifying a crate:
 
@@ -250,7 +250,7 @@ The following changes must be made to cargo when building/verifying a crate:
 
 The offline verification flow is shown below
 
-![verify flow](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-verify-offline.drawio.png)
+![Diagram showing the alternative verification flow using he offline bundles that proves that the entry has been stored in the public log](https://raw.githubusercontent.com/lulf/rfc-resources/main/sigstore/cargo_sigstore-verify-offline.drawio.png)
 
 ## Note on cargo dependencies
 
