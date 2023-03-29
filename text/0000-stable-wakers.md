@@ -1,7 +1,7 @@
 - Feature Name: `stable_wakers`
 - Start Date: 2023-03-28
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3404](https://github.com/rust-lang/rfcs/pull/3404)
+- Implementation PR: [rust-lang/rust#109706](https://github.com/rust-lang/rust/pull/109706)
 
 # Summary
 [summary]: #summary
