@@ -98,7 +98,6 @@ struct OldRawWakerVTable {
     drop: unsafe fn(*const ()),
 	clone_adapter: Option<unsafe extern "C" fn(unsafe fn(*const ()) -> RawWaker, *const ()) -> RawWaker>,
 	other_adapter: Option<unsafe extern "C" fn(unsafe fn(*const ()), *const ())>,
-    padding: [*const (); 2] // Reserved space for future changes to the v-table, the need for it and amount are debatable.
 }
 #[repr(C)]
 struct NewRawWakerVTable {
@@ -106,7 +105,7 @@ struct NewRawWakerVTable {
     wake: unsafe extern "C" fn(*const ()),
     wake_by_ref: unsafe extern "C" fn(*const ()),
     drop: unsafe extern "C" fn(*const ()),
-    padding: [*const (); 4] // Reserved space for future changes to the v-table, the need for it and amount are debatable.
+    padding: [*const (); 2] // Must be null
 }
 #[repr(C)]
 pub union RawWakerVTable {
@@ -127,7 +126,7 @@ impl RawWakerVTable {
 		unsafe extern "C" fn other_adapter(other: unsafe fn(*const ()), data: *const ()) {
 			other(data)
 		}
-        Self { old: OldRawWakerVTable { clone, wake, wake_by_ref, drop, clone_adapter, other_adapter, padding: [core::ptr::null(); 2] } }
+        Self { old: OldRawWakerVTable { clone, wake, wake_by_ref, drop, clone_adapter, other_adapter }
     }
     pub const fn c_abi(
         clone: unsafe extern "C" fn(*const ()) -> RawWaker,
@@ -135,7 +134,7 @@ impl RawWakerVTable {
         wake_by_ref: unsafe extern "C" fn(*const ()),
         drop: unsafe extern "C" fn(*const ()),
     ) -> Self {
-        Self { new: NewRawWakerVTable { clone, wake, wake_by_ref, drop, padding: [core::ptr::null(); 4] } }
+        Self { new: NewRawWakerVTable { clone, wake, wake_by_ref, drop, padding: [core::ptr::null(); 2] } }
     }
 }
 impl Waker {
