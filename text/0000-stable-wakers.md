@@ -25,8 +25,6 @@ Note that should more efficient ways to convert wakers into and from stable-wake
 
 This RFC is entirely implementation-oriented, as the only visible change to the average user would be the ability to pass `core::task::Waker` over the FFI safely.
 
-One of the proposed solution would introduce a small, but existing API break in `RawWakerVTable::new`. This RFC is _not_ in favour of making this API-break (not even by edition 2024), but mentions it for as I wouldn't consider it complete otherwise.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -34,17 +32,7 @@ This RFC proposes two strategies to ABI-stabilize `core::task::Waker`.
 
 In both cases, `core::task::RawWaker` and `core::task::RawWakerVTable` would be annotated with `#[repr(C)]` to ensure stable field ordering. Consideration may be taken as to which field order is more likely to help with the niche optimization of sum-types, but the likelihood of storing `Waker` or its fields in non-`Option` sum types is low, making this a low priority task.
 
-The issue remains: the v-table being constructed from `extern "rust" fn`s, which are FFI-unsafe, where two approaches may be taken.
-
-## Small API breakage
-
-By replacing the `extern "rust" fn` by a stable calling convention (such as `extern "C"`) in the types required for `RawWakerVTable::new`, we would introduce a small, but easily fixable (authors would simply have to annotate their function declarations with the appropriate calling convention) API-break in the API. However, this method has the benefits of keeping `RawWakerVTable` as simple as it currently is.
-
-This API break would however cause massive build-failures if introduced hastily.
-
-## No API breakage
-
-An alternative would be to keep the `extern "rust" fn`s in the API, but add automatically constructed function call adapters to `RawWakerVTable`'s fields:
+The issue remains: the v-table being constructed from `extern "rust" fn`s, which are FFI-unsafe, where two approaches may be taken. A solution to this would be to add automatically constructed function call adapters to `RawWakerVTable`'s fields:
 ```rust
 #[repr(C)]
 pub struct RawWakerVTable {
@@ -100,7 +88,7 @@ impl Clone for Waker {
 }
 ```
 
-This approach could be extended by making providing a `RawWakerVTable::c_abi` constructor, and making it a stable niche optimized sum type like so:
+However, this adds a level of indirection to function calls. Providing a `RawWakerVTable::new_with_c_abi` constructor, and making it a stable niche optimized sum type like so would allow removing that indirection when the vtable is constructed from `extern "C" fn`s:
 ```rust
 #[repr(C)]
 struct OldRawWakerVTable {
@@ -175,9 +163,8 @@ impl Waker {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- The API-breaking technique is, well, _API breaking_. Despite being an easy fix, this is in contradiction with Rust's stability guarantees, and would break builds for _all_ crates relying on the current versions of `tokio`, `async-std`, `smol`, etc...
-- The non-API-breaking technique has runtime costs: all operations on wakers will go through one more function-call, or have to branch on the representation of the v-table. However, these runtime costs are likely negligible against the typical workload of a waker. In the case of the branching v-table, systems that only use one executor, or homogenous executors with regard to how they construct wakers, will likely have 100% correctness on branch-prediction.
-- The non-API-breaking technique requires a bit more `'static`ally borrowed memory, although the amount is negligible.
+- This has runtime costs: all operations on wakers will go through one more function-call, or have to branch on the representation of the v-table. However, these runtime costs are likely negligible against the typical workload of a waker. In the case of the branching v-table, systems that only use one executor, or homogenous executors with regard to how they construct wakers, will likely have 100% correctness on branch-prediction.
+- The proposed v-table layout requires a bit more `'static`ally borrowed memory, although the amount is negligible.
 - Should the FFI-safe `Waker` imply a performance penalty, the whole ecosystem would be affected, including projects that do not care about the FFI-safety of futures.
 - This introduces an ABI-stability constraint to a core feature of Rust.
 
@@ -193,7 +180,7 @@ impl Waker {
 # Prior art
 [prior-art]: #prior-art
 
-The non-API-breaking method is one of [`stabby`](https://github.com/ZettaScaleLabs/stabby)'s attempted techniques at providing `StableWaker`, discarded due to the difficulty of accessing `core::task::RawWakerVTable`'s original fields and the fact that it doesn't remove the need for allocating on `clone` for `StableWaker` to still be used by the newly-constructed waker.
+The proposed technique is one of [`stabby`](https://github.com/ZettaScaleLabs/stabby)'s attempted techniques at providing `StableWaker`, discarded due to the difficulty of accessing `core::task::RawWakerVTable`'s original fields and the fact that it doesn't remove the need for allocating on `clone` for `StableWaker` to still be used by the newly-constructed waker.
 
 [waker_getters](https://github.com/rust-lang/rust/issues/87021) states the difficulty of passing wakers across the FFI boundary as its motivation, but doesn't address the issue of calling convention. The current state of its implementation doesn't provide accessors all the way to the v-table, whose layout isn't `#[repr(C)]` either.
 
