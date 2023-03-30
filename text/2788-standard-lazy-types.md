@@ -1,7 +1,7 @@
 - Feature Name: `once_cell`
 - Start Date: 2019-10-17
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#2788](https://github.com/rust-lang/rfcs/pull/2788)
+- Rust Issue: [rust-lang/rust#74465](https://github.com/rust-lang/rust/issues/74465)
 
 # Summary
 [summary]: #summary
@@ -148,7 +148,7 @@ pub struct LazyCell<T, F = fn() -> T> { ... }
 impl<T, F: FnOnce() -> T> LazyCell<T, F> {
     /// Creates a new lazy value with the given initializing function.
     pub const fn new(init: F) -> LazyCell<T, F>;
-    
+
     /// Forces the evaluation of this lazy value and returns a reference to
     /// the result.
     ///
