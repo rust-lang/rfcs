@@ -240,9 +240,18 @@ We could support platform or feature specific settings, like with
 
 Instead of the `[lints]` table being `lint = "level"`, we could organize
 it around `level = ["lint", ...]` like some other linters do (like
-[ruff](https://beta.ruff.rs/docs/configuration/)) but this works better for
-logically organizing lints, highlighting what changed in diffs, and for
-possibly adding lint-specific configuration in the future.
+[ruff](https://beta.ruff.rs/docs/configuration/)).  This is less verbose.  We
+chose `lint` being the keys because
+- Most reasons for organizing around `level` are preference from which ecosystem they came from (Python vs JS)
+- Organizing around `lint` makes it harder to lose track of what section you
+  are in for large lint lists (which exist), people do with dependency tables
+  today
+- TOML isn't great for nesting complex data structures and we have allow a
+  `priority` field and might allo other lint-level configuration.  Organizing
+  around `lint` makes this cleaner.
+- If we add support for packages overiding inherited workspace lints, it likely
+  better maps to a users model to just say the package lint table gets merged
+  into the workspace lint table.  This is also easier to implement correctly.
 
 ## Workspace Inheritance
 
