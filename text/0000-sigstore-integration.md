@@ -187,8 +187,8 @@ In the event that the crate is not being signed, these fields may be optional/nu
 
 In the Summary section above we described two use cases specific to this implementation. Those use cases of course have associated identity types:
 
-* Use-case #1(Developer Desktop Builds) clearly is associated with an individual
-* Use-case #2(Build Plant) is what is commonly referred to as an Non-Person Entity or NPE
+* Use-case #1 (Developer Desktop Builds) clearly is associated with an individual
+* Use-case #2 (Build Plant) is what is commonly referred to as an Non-Person Entity or NPE
 
 Individual (Person) identities are a sensitive topic and there is no “good” (let alone great) story on this broadly in the OSS ecosystem. There are efforts in several regions globally beginning to take shape around a government issued digital identity however, and this has the potential to allow a base upon which to move forward. In the meantime we are left with email addresses and associated credentialing through IdP’s provided by large scale private entities such as GH, Gitlab, Google, MSFT, Apple, etc.
 
