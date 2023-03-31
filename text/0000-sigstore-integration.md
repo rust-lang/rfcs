@@ -43,7 +43,7 @@ On the topic of build system integrity, historically, this operational domain wa
 
 In the context of the SLSA framework, adopting Sigstore as proposed in this RFC  will immediately address the B, C, F and H attacks identified above.
 
-It’s worth noting that the team at GitHub working on the NPM implementation have essentially landed at the same to use case patterns. In our discussions with them as this document was prepared they articulated a focus on the build plant pattern as that pattern allows for the establishment of an attestation story around the systems where the artifact was produced. Conversely, artifacts produced on a developer desktop or system that is not formally controlled from a security perspective must necessarily be classified as technically “unsafe”.
+It’s worth noting that the team at GitHub working on the NPM implementation have essentially landed at the same two use case patterns. In our discussions with them as this document was prepared they articulated a focus on the build plant pattern as that pattern allows for the establishment of an attestation story around the systems where the artifact was produced. Conversely, artifacts produced on a developer desktop or system that is not formally controlled from a security perspective must necessarily be classified as technically “unsafe”.
 
 In all of this the elephant in the room is identity. However, identity can also be addressed in the context of the two primary use case buckets. The easy one is build system identity, the hard one is individual contributor identity. This will be addressed in the [Identity section](#identities) below.
 
