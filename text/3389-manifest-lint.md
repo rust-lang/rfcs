@@ -207,11 +207,12 @@ Instead of `<tool>.<lint>`, we could use `<tool>::<lint>` (e.g.
 `"clipp::enum_glob_use"` instead of `clippy.enum_glob_use`), like in the
 diagnostic messages.  This would make it easier to copy/paste lint names.
 However, with the schema being `<lint> = <level>`, this would require quoting
-the keys rather than leaving them as bare words.  This would also cause
+the keys rather than leaving them as bare words.  This might also cause
 problems for tool-level configuration.  The first is that the lints wouldn't be
-easily grouped with their config.  The second is if we use `<lint> = <level>`,
-we'd be mixing tool names in with lints, making it easier to conflict and
-harder to collect all lints to forward to a tool.
+easily grouped with their tool's config.  The second is if we use `lints.<lint> = <level>`
+and tool-level configuration goes under `lints.<tool>`,
+then keys under `[lints]` are ambiguous as to whether they are a tool or a
+lint, making it harder to collect all lints to forward tools.
 
 We could possibly extend this new field to `rustfmt` by shifting the focus from
 "lints" to "rules" (see
