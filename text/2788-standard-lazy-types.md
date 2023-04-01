@@ -1,7 +1,7 @@
 - Feature Name: `once_cell`
 - Start Date: 2019-10-17
 - RFC PR: [rust-lang/rfcs#2788](https://github.com/rust-lang/rfcs/pull/2788)
-- Rust Issue: [rust-lang/rust#74465](https://github.com/rust-lang/rust/issues/74465)
+- Rust Issue: [rust-lang/rust#74465](https://github.com/rust-lang/rust/issues/74465), [rust-lang/rust#109736](https://github.com/rust-lang/rust/issues/109736), [rust-lang/rust#109737](https://github.com/rust-lang/rust/issues/109737)
 
 # Summary
 [summary]: #summary
