@@ -8,6 +8,8 @@
 
 This feature allows guaranteeing that function calls are tail-call optimized (TCO) via the `become` keyword. If this guarantee can not be provided by the compiler an error is generated instead. The check for the guarantee is done by verifying that the candidate function call follows several restrictions such as tail position and a function signature that exactly matches the calling function (it might be possible to loosen the function signature restriction in the future).
 
+This RFC discusses a minimal version that restricts function signatures to be exactly matching the calling function. It is possible that some restrictions can be removed with more experience of the implementation and usage of this feature. Also note that the current proposed version does not support general tail call optimization, this likely requires some more changes in Rust and the backends.
+
 # Motivation
 [motivation]: #motivation
 
@@ -23,14 +25,15 @@ Some specific use cases that are supported by this feature are new ways to encod
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## Introducing new named concepts. 
 The `become` keyword can be used at the same locations as the `return` keyword, however, only a *simple* function call can take the place of the argument. That is supported are calls such as `become foo()`, `become foo(a)`, `become foo(a, b)`, however, **not** supported are calls that contain or are part of a larger expression such as `become foo() + 1`, `become foo(1 + 1)`, `become foo(bar())` (though this may be subject to change). Additionally, there is a further restriction on the tail-callable functions: the function signature must exactly match that of the calling function (a restriction that might be loosened in the future). 
 
-TODO explain in terms of examples
-
-Now on to some examples.
+## Explaining the feature largely in terms of examples.
+Now on to some examples. Starting with how `return` and `become` differ, and some potential pitfalls. 
+TODO add usecases
 
 ### The difference between `return` and `become`
-One essential difference to `return` is that `become` drops function **local** variables before the function call instead of after. So the following function ([original example](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1136728427)):
+One essential difference to `return` is that `become` drops function local variables **before** the function call instead of after. So the following function ([original example](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1136728427)):
 ```rust
 fn x() {
     let a = Box::new(());
@@ -50,12 +53,45 @@ fn x() {
 }
 ```
 
-This early dropping allows us to avoid many complexities associated with deciding if a call can be TCO, instead the heavy lifting is done by the borrow checker and a lifetime error will be produced if references to local variables are passed to the called function. To be clear a reference to a local variable could be passed if instead of `become` the call would be done with `return y(a);` (or equivalently `y(a)`), indeed this difference between the handling of local variables is also the main difference between `return` and `become`.
+This early dropping allows to avoid many complexities associated with deciding if a call can be TCO, instead the heavy lifting is done by the borrow checker and a lifetime error will be produced if references to local variables are passed to the called function. To be clear a reference to a local variable could be passed if instead of `become` the call would be done with `return y(a);` (or equivalently `y(a)`), indeed this difference between the handling of local variables is also the main difference between `return` and `become`.
+
+### Omission of the `become` keyword causes the call to be `return` instead.
+([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-278988088))
+
+```rust
+fn foo(x: i32) -> i32 {
+    if x % 2 {
+        let x = x / 2;
+        // one branch uses `become`
+        become foo(new_x);
+    } else {
+        let x = x + 3;
+        // the other does not
+        foo(x) // == return foo(x);
+    }
+}
+```
+
+This is a potential source of confusion, indeed in a function language where every call is expected to be TCO this would be quite unexpected. (Maybe in functions that use `become` a lint should be applied that enforces usage of either `return` or `become`.)
 
 
+### Alternating `become` and `return` calls
+([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-279062656))
 
+```rust
+fn foo(n: i32) {
+    // ups! we forgot become!
+    return bar(n); // or alternatively: `bar(n)`
+}
 
-TODO
+fn bar(n: i32) {
+    become foo(n);
+}
+```
+
+Here one function uses `become` the other `return`, this is another potential source of confusion. This mutual recursion would eventual overflow the stack. As mutual recursion can also happen across more functions, `become` needs to be used consistently in all functions if TCO should be guaranteed. (Maybe it is also possible to create a lint for these use-cases as well.)
+
+<!-- TODO
 ```rust
 fn sum_list(data: Vec<u64>, mut offset: usize, mut accum: u64) -> u64 {
     if offset < data.len() {
@@ -66,28 +102,28 @@ fn sum_list(data: Vec<u64>, mut offset: usize, mut accum: u64) -> u64 {
         accum
     }
 }
-```
+``` -->
 
-TODO as specific as possible ..
-So how should a Rust programmer *think* about this feature. This feature is useful only for some specific coding styles, though it might make a function programming style more popular. In general this feature is only of interest for programmers that want to program in a more functional style than was previously possible with rust, or for programmers that want to achieve the best possible performance for
 
-TODO should sample error messages be provided? migration guidance?
+## Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
+This feature is only useful for some specific algorithms, where it can be essential, though it might also create a push towards a more functional programming style in Rust. In general this feature is probably unneeded for most Rust programmers, Rust has been getting on fine without this feature for most applications. As a result it impacts only those few Rust programmers that require TCO provided by this feature.
 
-For new Rust programmers this feature should probably be introduced late into the learning process, it is not a required feature and only useful for niche problems. So it should be taught similarly as to programmers that already know Rust. It is likely enough to provide a description of the feature, compare the differences to `return`, and give examples of possible use-cases and mistakes.
 
+## If applicable, provide sample error messages, deprecation warnings, or migration guidance.
+TODO Error messages
+
+As this is a independent new feature there should be no need for deprecation warnings.
+
+Regarding migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation from `return` to `become` can be done for function calls where requisites are already fulfilled. However, this lint might be confusing and noisy without too much of a benefit, especially if TCO is already done without `become`.
+
+
+## If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+For new Rust programmers this feature should probably be introduced late into the learning process, it is not a required feature and only useful for niche problems. So it should be taught similarly as to programmers that already know Rust. It is likely enough to provide a description of the feature, explain TCO, compare the differences to `return`, and give examples of possible use-cases and mistakes.
+
+
+## Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
 As this feature introduces a new keyword and is independent of existing code it has no impact on existing code. For code that does use this feature, it is required that a programmer understands the differences between `become` and `return`, it is difficult to judge how big this impact is without an initial implementation. One difference, however, is in debugging code that uses `become`. As the stack is not preserved, debugging context is lost which likely makes debugging more difficult. That is, elided parent functions as well as their variable values are not available during debugging. (Though this issue might be lessened by providing a flag to opt out of TCO, which would, however, break the semantic guarantee of creating further stack frames. This is likely an issue that needs some investigation after creating an initial implementation.)
 
-
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
-
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
-
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -105,13 +141,43 @@ The section should return to the examples given in the previous section, and exp
 
 Why should we *not* do this?
 
+As this feature should be mostly independent from other features the main drawback lies in the implementation and maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other tooling. The main effort, however, lies in supporting this feature in the backends:
+- LLVM supports a `musttail` marker to indicate that TCO should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature, seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 30.03.23).
+- GCC does not support a equivalent `musttail` marker.
+- WebAssembly accepted tail-calls into the [standard](https://github.com/WebAssembly/proposals/pull/157/) and Cranelift is now [working](https://github.com/bytecodealliance/rfcs/pull/29) towards supporting it.
+
+Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version could be used for a more comprehensive version.
+
+There is also a unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds.)
+
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+## Why is this design the best in the space of possible designs?
+This design is the best tradeoff between implementation effort and provided functionality. Though it 
+
+## What other designs have been considered and what is the rationale for not choosing them?
+
+### Loop based approach
+
+### Attribute on return
+
+### Attribute on tail-callable functions
+
+### Using `become` and a marker for tail-callable functions
+
+### Custom compiler or MIR passes
+
+
+## What is the impact of not doing this?
+- https://github.com/rust-lang/rust/issues/102952
+- Clang has support, this feature would restore this deficit parity
+- 
+
+## If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+While there exist libraries for a trampoline based method to avoid growing the stack, this is not enough to achieve the possible performance of real TCO, so this feature requires support by the compiler itself.
+
 
 # Prior art
 [prior-art]: #prior-art
