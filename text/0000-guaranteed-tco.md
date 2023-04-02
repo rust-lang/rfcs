@@ -22,7 +22,7 @@ For the second goal no guaranteed method exists, so if TCO is performed depends 
 Some specific use cases that are supported by this feature are new ways to encode state machines and jump tables, allowing code to be written in a continuation-passing style, recursive algorithms to be guaranteed TCO, and faster interpreters. One common example for the usefulness of tail-calls in C is improving performance of Protobuf parsing [blog](https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html), which would then also be possible in Rust.
 
 
-# Guide-level explanation
+# TODO Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ## Introducing new named concepts. 
@@ -125,7 +125,7 @@ For new Rust programmers this feature should probably be introduced late into th
 As this feature introduces a new keyword and is independent of existing code it has no impact on existing code. For code that does use this feature, it is required that a programmer understands the differences between `become` and `return`, it is difficult to judge how big this impact is without an initial implementation. One difference, however, is in debugging code that uses `become`. As the stack is not preserved, debugging context is lost which likely makes debugging more difficult. That is, elided parent functions as well as their variable values are not available during debugging. (Though this issue might be lessened by providing a flag to opt out of TCO, which would, however, break the semantic guarantee of creating further stack frames. This is likely an issue that needs some investigation after creating an initial implementation.)
 
 
-# Reference-level explanation
+# TODO Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This is the technical portion of the RFC. Explain the design in sufficient detail that:
@@ -151,11 +151,11 @@ Additionally, this proposal is limited to exactly matching function signatures w
 There is also a unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds.)
 
 
-# Rationale and alternatives
+# TODO Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Why is this design the best in the space of possible designs?
-This design is the best tradeoff between implementation effort and provided functionality. Though it 
+TODO This design is the best tradeoff between implementation effort and provided functionality.
 
 ## What other designs have been considered and what is the rationale for not choosing them?
 
@@ -179,7 +179,7 @@ This design is the best tradeoff between implementation effort and provided func
 While there exist libraries for a trampoline based method to avoid growing the stack, this is not enough to achieve the possible performance of real TCO, so this feature requires support by the compiler itself.
 
 
-# Prior art
+# TODO Prior art
 [prior-art]: #prior-art
 
 Discuss prior art, both the good and the bad, in relation to this proposal.
@@ -196,14 +196,14 @@ If there is no prior art, that is fine - your ideas are interesting to us whethe
 Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
 
-# Unresolved questions
+# TODO Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
-# Future possibilities
+# TODO Future possibilities
 [future-possibilities]: #future-possibilities
 
 Think about what the natural extension and evolution of your proposal would
