@@ -141,17 +141,17 @@ The section should return to the examples given in the previous section, and exp
 
 Why should we *not* do this?
 
-As this feature should be mostly independent from other features the main drawback lies in the implementation and maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other tooling. The main effort, however, lies in supporting this feature in the backends:
+As this feature should be mostly independent from other features the main drawback lies in the implementation and maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other tooling. The primary effort, however, lies in supporting this feature in the backends:
 - LLVM supports a `musttail` marker to indicate that TCO should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature, seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 30.03.23).
 - GCC does not support a equivalent `musttail` marker.
 - WebAssembly accepted tail-calls into the [standard](https://github.com/WebAssembly/proposals/pull/157/) and Cranelift is now [working](https://github.com/bytecodealliance/rfcs/pull/29) towards supporting it.
 
-Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version could be used for a more comprehensive version.
+Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
 There is also a unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds.)
 
 
-# TODO Rationale and alternatives
+# Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Why is this design the best in the space of possible designs?
@@ -197,9 +197,12 @@ This would be a error prone and unergonomic approach to solving this problem.
 
 
 ## What is the impact of not doing this?
-- https://github.com/rust-lang/rust/issues/102952
-- Clang has support, this feature would restore this deficit parity
-- 
+One goal of Rust is to ([source](https://blog.rust-lang.org/inside-rust/2022/04/04/lang-roadmap-2024.html)):
+> Rust's goal is to empower everyone to build reliable and efficient software.
+This feature provides a crucial optimization for some low level code. It seems that without this feature there is a [big incentive](https://github.com/rust-lang/rust/issues/102952) to use other system level languages that can perform TCO.
+
+Additionally, this feature enables recursive algorithms that require TCO, which would provide better support for functional programming in Rust. 
+
 
 ## If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
 While there exist libraries for a trampoline based method to avoid growing the stack, this is not enough to achieve the possible performance of real TCO, so this feature requires support by the compiler itself.
