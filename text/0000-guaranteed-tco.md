@@ -155,19 +155,45 @@ There is also a unwanted interaction between TCO and debugging. As TCO by design
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Why is this design the best in the space of possible designs?
-TODO This design is the best tradeoff between implementation effort and provided functionality.
+This design is the best tradeoff between implementation effort and provided functionality, while also offering a good starting point towards exploration of a more general implementation. To expand on this, compared to other options creating a function local scope with the use of `become` greatly reduces implementation effort. Additionally, limiting tail-callable functions to those with an exactly matching function signatures enforces a common stack layout across all functions. This should in theory, depending on the backend, allow tail-calls to be performed without any stack shuffling, indeed it might even be possible to do so for indirect calls or external functions.
 
 ## What other designs have been considered and what is the rationale for not choosing them?
+There are some designs that either can not achieve the same performance or functionality as the chosen approach. Though most other designs evolve around how to mark what should be a tail-call or marking what functions can be tail called. There is also the possibility of providing support for a custom backend (e.g. LLVM) or MIR pass.
 
-### Loop based approach
+There might also be some variation on the current design, which can be explore after the chosen design has been implemented see [unresolved questions](#unresolved) for some possibilities.
 
-### Attribute on return
+### Trampoline based Approach
+There could be a trampoline based approach ([comment](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-326952763)) that can fulfill the semantic guarantee of using constant stack space, though they can not be used to achieve the performance that the chosen design is capable of. Additionally, functions need to be known during compile time for these approaches to work.
 
-### Attribute on tail-callable functions
+### Principled Local Goto
+One alternative would be to support some kind of local goto natively, indeed there exists a
+[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)). This design should be able to achieve the same performance and stack usage, though it seems to be quite difficult to implement and does not seems to be as flexible as the chosen design (regarding indirect calls / external functions).
 
-### Using `become` and a marker for tail-callable functions
+### Attribute on tail-callable Functions
+One alternative is to mark a group of functions that should be mutually tail-callable [example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1161525527) with some follow up [discussion](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1185828948).
+
+The goal behind this design is to TCO functions other than exactly matching function signatures, in theory this just requires that tail-called functions are callee cleanup, which is a mismatch to the default calling convention used by Rust. To limit the impact of this change all functions that should be TCO-able should be marked with a attribute.
+
+While quite noisy it is also less flexible than the chosen approach. Indeed TCO is a property of the call and not a function, sometimes a call should be guaranteed to be TCO and sometimes not, marking a function would be less flexible.
+
+### Attribute on Return
+One alternative could be to use a attribute instead of the `become` keyword for function calls. To my knowledge this would be the first time a attribute would be allowed for a call. Example:
+
+```rust
+fn a() {
+    become b();
+    // or
+    #[become]
+    return b();
+}
+```
+
+This alternative mostly comes to taste (or bikeshedding) and `become` was chosen as it is shorter to write.
 
 ### Custom compiler or MIR passes
+One more distant alternative would be to support a custom compiler or MIR pass so that this optimization can be done externally. While supported for LLVM [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/187780-t-compiler.2Fwg-llvm/topic/.E2.9C.94.20Running.20Custom.20LLVM.20Pass/near/320275483), for MIR this is not supported [discussion](https://internals.rust-lang.org/t/mir-compiler-plugins-for-custom-mir-passes/3166/10).
+
+This would be a error prone and unergonomic approach to solving this problem.
 
 
 ## What is the impact of not doing this?
@@ -198,6 +224,9 @@ Please also take into consideration that rust sometimes intentionally diverges f
 
 # TODO Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+- should the performance be guaranteed? that is turning a `call` is transformed into a `jmp`
+- how general do signatures for tail-callable functions need to be? would it be enough to create some padding arguments to allow "general" tail-calls across functions with same sized arguments, maybe only the sum of argument sizes need to match?
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
