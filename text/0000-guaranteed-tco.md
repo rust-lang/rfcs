@@ -176,7 +176,7 @@ The goal behind this design is to TCO functions other than exactly matching func
 
 While quite noisy it is also less flexible than the chosen approach. Indeed TCO is a property of the call and not a function, sometimes a call should be guaranteed to be TCO and sometimes not, marking a function would be less flexible.
 
-### Attribute on Return
+### Attribute on `return`
 One alternative could be to use a attribute instead of the `become` keyword for function calls. To my knowledge this would be the first time a attribute would be allowed for a call. Example:
 
 ```rust
@@ -199,6 +199,7 @@ This would be a error prone and unergonomic approach to solving this problem.
 ## What is the impact of not doing this?
 One goal of Rust is to ([source](https://blog.rust-lang.org/inside-rust/2022/04/04/lang-roadmap-2024.html)):
 > Rust's goal is to empower everyone to build reliable and efficient software.
+
 This feature provides a crucial optimization for some low level code. It seems that without this feature there is a [big incentive](https://github.com/rust-lang/rust/issues/102952) to use other system level languages that can perform TCO.
 
 Additionally, this feature enables recursive algorithms that require TCO, which would provide better support for functional programming in Rust. 
