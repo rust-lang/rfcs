@@ -75,6 +75,9 @@ fn foo(x: i32) -> i32 {
 This is a potential source of confusion, indeed in a function language where every call is expected to be TCO this would be quite unexpected. (Maybe in functions that use `become` a lint should be applied that enforces usage of either `return` or `become`.)
 
 
+### TODO none returns
+
+
 ### Alternating `become` and `return` calls
 ([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-279062656))
 
@@ -212,6 +215,8 @@ While there exist libraries for a trampoline based method to avoid growing the s
 # TODO Prior art
 [prior-art]: #prior-art
 
+TODO remove
+----
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
 
@@ -225,6 +230,98 @@ If there is no prior art, that is fine - your ideas are interesting to us whethe
 
 Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
+----
+
+
+## Clang
+Clang, as of April 2021, does offer support for a musttail attribute on `return` statements in both C and C++. This functionality is enabled by the support in LLVM, which should also be the first backend an initial implementation in Rust.
+
+It seems this feature is received with "excitement" by those that can make use of it, a popular example is its usage to improve [Protobuf parsing speed](https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html). However, one issue is that it is not very portable and there still seem to be some problem with it's [implementation](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983).
+
+
+For a more detailed description see this excerpt from the description of the [implementation](https://reviews.llvm.org/rG834467590842):
+
+>  Guaranteed tail calls are now supported with statement attributes
+>  ``[[clang::musttail]]`` in C++ and ``__attribute__((musttail))`` in C. The
+>  attribute is applied to a return statement (not a function declaration),
+>  and an error is emitted if a tail call cannot be guaranteed, for example if
+>  the function signatures of caller and callee are not compatible. Guaranteed
+>  tail calls enable a class of algorithms that would otherwise use an
+>  arbitrary amount of stack space.
+>
+> If a ``return`` statement is marked ``musttail``, this indicates that the
+>  compiler must generate a tail call for the program to be correct, even when
+>  optimizations are disabled. This guarantees that the call will not cause
+>  unbounded stack growth if it is part of a recursive cycle in the call graph.
+>
+> If the callee is a virtual function that is implemented by a thunk, there is
+>  no guarantee in general that the thunk tail-calls the implementation of the
+>  virtual function, so such a call in a recursive cycle can still result in
+>  unbounded stack growth.
+>
+> ``clang::musttail`` can only be applied to a ``return`` statement whose value
+> is the result of a function call (even functions returning void must use
+> ``return``, although no value is returned). The target function must have the
+> same number of arguments as the caller. The types of the return value and all
+> arguments must be similar according to C++ rules (differing only in cv
+> qualifiers or array size), including the implicit "this" argument, if any.
+> Any variables in scope, including all arguments to the function and the
+> return value must be trivially destructible. The calling convention of the
+> caller and callee must match, and they must not be variadic functions or have
+> old style K&R C function declarations.
+
+There is also a proposal (https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2920.pdf) for the C Standard (https://www.open-std.org/JTC1/SC22/WG14/), outlining some limitations for Clang.
+> Clang requires the argument types, argument number, and return type to be the same between the
+> caller and the callee, as well as out-of-scope considerations such as C++ features and the calling
+> convention. Implementor experience with Clang shows that the ABI of the caller and callee must be
+> identical for the feature to work; otherwise, replacement may be impossible for some targets and
+> conventions (replacing a differing argument list is non-trivial on some platforms).
+
+
+## GCC
+GCC does not support a feature equivalent to Clang's `musttail`, there also does not seem to be push to implement it ([pipermail](https://gcc.gnu.org/pipermail/gcc/2021-April/235882.html)). However, there also exists a experimental [plugin](https://github.com/pietro/gcc-musttail-plugin) for gcc last updated in 2021.
+
+
+## dotnet
+[Pull Request](https://github.com/dotnet/runtime/pull/341) ([Issue](https://github.com/dotnet/runtime/issues/2191))
+> This implements tailcall-via-help support for all platforms supported by
+> the runtime. In this new mechanism the JIT asks the runtime for help
+> whenever it realizes it will need a helper to perform a tailcall, i.e.
+> when it sees an explicit tail. prefixed call that it cannot make into a
+> fast jump-based tailcall.
+
+
+## Zig
+Zig provides separate syntax to allow more flexibility than normal function calls. There are options for async calls, inlining, compile time evaluation of the called function, and to enforce TCO on the call.
+([source](https://ziglang.org/documentation/master/#call))
+```zig
+const expect = @import("std").testing.expect;
+
+test "noinline function call" {
+    try expect(@call(.auto, add, .{3, 9}) == 12);
+}
+
+fn add(a: i32, b: i32) i32 {
+    return a + b;
+}
+```
+
+(TODO what is the communities reception of this feature?)
+
+
+## JS
+https://github.com/rust-lang/rfcs/pull/1888#issuecomment-368204577 (Feb, 2018)
+> Technically the ES6 spec mandates tail-calls, but the situation in reality is more complicated than that.
+>
+> The only browser that actually supports tail calls is Safari (and Webkit). And the Edge team has said that it's unlikely that they will implement tail calls (for similar reasons as Rust: they currently use the Windows ABI calling convention, which doesn't work well with tail calls).
+>
+> Therefore, tail calls in JS is a very controversial thing, even to this day
+>
+> Just to be clear, the Edge team is against implicit tail-calls for all functions, but they're in favor of tail-calls-with-an-explicit-keyword (similar to this RFC).
+
+
+A unofficial summary of the ECMA Script/ Javascript proposal for tail call/return
+https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-1198672079 (Jul, 2022)
 
 # TODO Unresolved questions
 [unresolved-questions]: #unresolved-questions
