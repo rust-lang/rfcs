@@ -212,11 +212,9 @@ Additionally, this feature enables recursive algorithms that require TCO, which 
 While there exist libraries for a trampoline based method to avoid growing the stack, this is not enough to achieve the possible performance of real TCO, so this feature requires support by the compiler itself.
 
 
-# TODO Prior art
+# Prior art
 [prior-art]: #prior-art
-
-TODO remove
-----
+<!-- 
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
 
@@ -230,16 +228,20 @@ If there is no prior art, that is fine - your ideas are interesting to us whethe
 
 Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
-----
+-->
+Functional languages usually depend on proper tail calls as a language feature, which requires guaranteed TCO. For system level languages the topic of guaranteed TCO is usually wanted but implementation effort is the common reason this is not yet done. Even languages with managed code such as .Net or ECMAScript (though implementation is lagging behind) also support guaranteed TCO, again performance and resource usage were the main motivators for their implementation.
+
+See below for a more detailed description for compilers and languages.
+
 
 
 ## Clang
 Clang, as of April 2021, does offer support for a musttail attribute on `return` statements in both C and C++. This functionality is enabled by the support in LLVM, which should also be the first backend an initial implementation in Rust.
 
-It seems this feature is received with "excitement" by those that can make use of it, a popular example is its usage to improve [Protobuf parsing speed](https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html). However, one issue is that it is not very portable and there still seem to be some problem with it's [implementation](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983).
+It seems this feature is received with "excitement" by those that can make use of it, a popular example of its usage is to improve [Protobuf parsing speed](https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html). However, one issue is that it is not very portable and there still seem to be some problem with it's [implementation](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983).
 
 
-For a more detailed description see this excerpt from the description of the [implementation](https://reviews.llvm.org/rG834467590842):
+For a more detailed description see this excerpt from the description of the feature, taken from the [implementation](https://reviews.llvm.org/rG834467590842):
 
 >  Guaranteed tail calls are now supported with statement attributes
 >  ``[[clang::musttail]]`` in C++ and ``__attribute__((musttail))`` in C. The
@@ -279,16 +281,7 @@ There is also a proposal (https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2920
 
 
 ## GCC
-GCC does not support a feature equivalent to Clang's `musttail`, there also does not seem to be push to implement it ([pipermail](https://gcc.gnu.org/pipermail/gcc/2021-April/235882.html)). However, there also exists a experimental [plugin](https://github.com/pietro/gcc-musttail-plugin) for gcc last updated in 2021.
-
-
-## dotnet
-[Pull Request](https://github.com/dotnet/runtime/pull/341) ([Issue](https://github.com/dotnet/runtime/issues/2191))
-> This implements tailcall-via-help support for all platforms supported by
-> the runtime. In this new mechanism the JIT asks the runtime for help
-> whenever it realizes it will need a helper to perform a tailcall, i.e.
-> when it sees an explicit tail. prefixed call that it cannot make into a
-> fast jump-based tailcall.
+GCC does not support a feature equivalent to Clang's `musttail`, there also does not seem to be push to implement it ([pipermail](https://gcc.gnu.org/pipermail/gcc/2021-April/235882.html)) (as of 2021). However, there also exists a experimental [plugin](https://github.com/pietro/gcc-musttail-plugin) for GCC last updated in 2021.
 
 
 ## Zig
@@ -306,10 +299,23 @@ fn add(a: i32, b: i32) i32 {
 }
 ```
 
-(TODO what is the communities reception of this feature?)
+(TODO: What is the community sentiment regarding this feature? Except for some bug reports I did not find anything.)
+
+## Carbon
+As per this [issue](https://github.com/carbon-language/carbon-lang/issues/1761) it seems providing TCO is of interest even if the implementation is difficult
 
 
-## JS
+## .Net
+The .Net JIT does support TCO as of 2020, a main motivator for this feature was improving performance.
+[Pull Request](https://github.com/dotnet/runtime/pull/341) ([Issue](https://github.com/dotnet/runtime/issues/2191))
+> This implements tailcall-via-help support for all platforms supported by
+> the runtime. In this new mechanism the JIT asks the runtime for help
+> whenever it realizes it will need a helper to perform a tailcall, i.e.
+> when it sees an explicit tail. prefixed call that it cannot make into a
+> fast jump-based tailcall.
+
+
+## ECMA Script / JS
 https://github.com/rust-lang/rfcs/pull/1888#issuecomment-368204577 (Feb, 2018)
 > Technically the ES6 spec mandates tail-calls, but the situation in reality is more complicated than that.
 >
