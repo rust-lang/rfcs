@@ -30,7 +30,7 @@ Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing those metho
 
 # Drawbacks
 
-- Slightly compicates situation around implied `Sized` bounds.
+- Slightly complicates situation around implied `Sized` bounds.
 - May make certain object safety diagnostics more confusing, as they will now refer to the new, lesser-known `Aligned` trait instead of `Sized`.
 
 # Rationale and alternatives
