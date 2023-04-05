@@ -113,7 +113,7 @@ This feature is only useful for some specific algorithms, where it can be essent
 
 
 ## If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-TODO Error messages
+(TODO Error messages once an initial implementation exists)
 
 As this is a independent new feature there should be no need for deprecation warnings.
 
@@ -222,7 +222,7 @@ If these conditions are fulfilled the function call following `become` is flagge
 Should any check during compilation not pass a compiler error should be issued.
 
 
-# TODO Drawbacks
+# Drawbacks
 [drawbacks]: #drawbacks
 <!-- Why should we *not* do this? -->
 As this feature should be mostly independent from other features the main drawback lies in the implementation and maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other tooling. The primary effort, however, lies in supporting this feature in the backends:
@@ -233,8 +233,6 @@ As this feature should be mostly independent from other features the main drawba
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
 There is also a unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds.)
-
-TODO portability
 
 
 # Rationale and alternatives
@@ -411,22 +409,29 @@ https://github.com/rust-lang/rfcs/pull/1888#issuecomment-368204577 (Feb, 2018)
 A unofficial summary of the ECMA Script/ Javascript proposal for tail call/return
 https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-1198672079 (Jul, 2022)
 
-# TODO Unresolved questions
+# Unresolved questions
 [unresolved-questions]: #unresolved-questions
-<!-- - What parts of the design do you expect to resolve through the RFC process before this gets merged?
+<!--
+- What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC? -->
 
-- should the performance be guaranteed? that is turning a `call` is transformed into a `jmp`
-- how general do signatures for tail-callable functions need to be? would it be enough to create some padding arguments to allow "general" tail-calls across functions with same sized arguments, maybe only the sum of argument sizes need to match?
-- method calls?
-- generics?
-- async?
-- closures?
-- debugging
-- calling-convention
+- What parts of the design do you expect to resolve through the RFC process before this gets merged?
+    - The main uncertainties are regarding the exact restrictions on when backends can guarantee TCO, this RFC is intentionally strict to try and require as little as possible from the backends.
+    - One point that needs to be decided is if TCO should be a feature that needs to be required from all backends or if it can be optional.
+    - Another point that needs to be decided is, if TCO is supported by a backend what exactly should be guaranteed? While the guarantee that there is no stack growth should be necessary, should performance (as in transforming `call` instructions into `jmp`) also be guaranteed? Note that a backend that guarantees performance should do so **always** otherwise the main intend of this RFC seems to be lost.
+- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
+    - Are all calling-convention used by Rust available for TCO with the proposed restrictions on function signatures?
+    - Can the restrictions on function signatures be relaxed?
+    - Can generic functions be supported?
+    - Can async functions be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assesment)
+    - Can closures be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assesment)
+    - Can dynamic function calls be supported?
+    - Can functions outside the current crate be supported, functions from dynamically loaded libraries?
+    - Is there some way to reduce the impact on debugging?
 
-# TODO Future possibilities
+
+# Future possibilities
 [future-possibilities]: #future-possibilities
 <!-- Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
@@ -445,3 +450,24 @@ Note that having something written down in the future-possibilities section
 is not a reason to accept the current or a future RFC; such notes should be
 in the section on motivation or rationale in this or subsequent RFCs.
 The section merely provides additional information. -->
+## Helpers
+It seems possible to keep the restriction on exactly matching function signatures by offering some kind of placeholder arguments to pad out the differences. For example:
+```rust
+foo(a: u32, b: u32) {
+    // ...
+}
+
+bar(a: u32, _b: u32) {
+    // ...
+}
+```
+Maybe it is useful to provide a macro or attribute that inserts missing arguments.
+```rust
+#[pad_args(foo)]
+bar(a: u32) {
+    // ...
+}
+```
+
+## Function Programming
+It might be possible to allow even more functional programming paradigms based on TCO, the examples in this RFC still seem quite far from typical functional programming.
