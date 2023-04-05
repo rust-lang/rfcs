@@ -88,6 +88,20 @@ macro_rules! field_of {
     ($struct:ty, $field:tt) => { /* compiler built-in */ }
 }
 ```
+`Project` trait, this trait permits changing the output type of projections based on properties of the projected field:
+```rust
+/// Used for projection operations like `expr->field`.
+///
+/// `F` is the projected Field of the inner type.
+pub trait Project<F> {
+    /// The output of the projection.
+    type Output;
+
+    /// Projects this wrapper type to the given field.
+    fn project(self, f: F) -> Self::Output;
+}
+```
+
 ## Improving ergonomics 1: Closures
 
 For improving the ergonomics of getting a field of a specific type, we could leverage specially marked closures:
@@ -128,23 +142,35 @@ There is the need to make the output type of the `map` function above depend on 
 A way this could be expressed is by allowing some negative reasoning. Here is the solution discussed on the example of `Pin`:
 ```rust
 // First we create a marker trait to differ structurally pinned fields:
+#[with_negative_reasoning]
 pub trait StructurallyPinnedField: Field {}
 // This trait needs to then be implemented for every field that should be structurally pinned.
 // Since this is user-decideable at the struct definition, this could be done with a proc-macro akin to `pin-project`.
 
-impl<T> Pin<&mut T> {
-    pub fn map<F: FieldClosure<T>>(self, f: F) -> Pin<&mut <F::Field as Field>::Type>
-    where
-        F::Field: StructurallyPinnedField,
+impl<'a, T, F: FieldClosure> Project<F> for Pin<&'a mut T>
+where
+    F::Field: StructurallyPinnedField,
+{
+    type Output = Pin<&'a mut <F::Field as Field>::Type>;
+    pub fn map(self, f: impl) -> Self::Output
     { /* do the offsetting */ }
+}
 
-    pub fn map<F: FieldClosure<T>>(self, f: F) -> &mut <F::Field as Field>::Type
-    where
-        F::Field: !StructurallyPinnedField,
+impl<'a, T, F: FieldClosure> Project<F> for Pin<&'a mut T>
+where
+    F::Field: !StructurallyPinnedField,
+{
+    type Output = &'a mut <F::Field as Field>::Type;
+    pub fn map(self, f: F) -> Self::Output
     { /* do the offsetting */ }
 }
 ```
-The compiler would need to be able to prove that these two functions do not overlap for this to work.
+The `#[with_negative_reasoning]` attribute on a `Trait` result in the following:
+- `!Trait` can be used in where clauses.
+- `T: !Trait` means that there exists an explicit `impl !Trait for T` somewhere.
+- Typechk knows that `Trait` and `!Trait` are mutually exclusive and thus can identify non-overlapping impl blocks.
+- When `Trait` or `!Trait` are implemented, they have to be implemented for the entire type. This behavior is similar to `Drop`. So you are not able to implement it only for `Foo<'static>`.
+
 
 A variation of this feature is `xor` traits, where a type is only ever allowed to implement one from the given set. It could achieve the same thing, while being more flexible when one wants to define more than two different user-specified projections.
 
