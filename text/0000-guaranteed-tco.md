@@ -26,7 +26,7 @@ Some specific use cases that are supported by this feature are new ways to encod
 [guide-level-explanation]: #guide-level-explanation
 
 ## Introducing new named concepts. 
-The `become` keyword can be used at the same locations as the `return` keyword, however, only a *simple* function call can take the place of the argument. That is supported are calls such as `become foo()`, `become foo(a)`, `become foo(a, b)`, however, **not** supported are calls that contain or are part of a larger expression such as `become foo() + 1`, `become foo(1 + 1)`, `become foo(bar())` (though this may be subject to change). Additionally, there is a further restriction on the tail-callable functions: the function signature must exactly match that of the calling function (a restriction that might be loosened in the future). 
+The `become` keyword can be used at the same locations as the `return` keyword, however, only a plain function or method call can take the place of the argument. That is supported are calls such as `become foo()`, `become foo(a)`, `become foo(a, b)`, however, **not** supported are calls that contain or are part of a larger expression such as `become foo() + 1`, `become foo(1 + 1)`, `become foo(bar())` (though this may be subject to change). Additionally, there is a further restriction on the tail-callable functions: the function signature must exactly match that of the calling function (a restriction that might be loosened in the future). 
 
 ## Explaining the feature largely in terms of examples.
 Now on to some examples. Starting with how `return` and `become` differ, and some potential pitfalls. 
@@ -128,22 +128,103 @@ For new Rust programmers this feature should probably be introduced late into th
 As this feature introduces a new keyword and is independent of existing code it has no impact on existing code. For code that does use this feature, it is required that a programmer understands the differences between `become` and `return`, it is difficult to judge how big this impact is without an initial implementation. One difference, however, is in debugging code that uses `become`. As the stack is not preserved, debugging context is lost which likely makes debugging more difficult. That is, elided parent functions as well as their variable values are not available during debugging. (Though this issue might be lessened by providing a flag to opt out of TCO, which would, however, break the semantic guarantee of creating further stack frames. This is likely an issue that needs some investigation after creating an initial implementation.)
 
 
-# TODO Reference-level explanation
+# Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+<!-- This is the technical portion of the RFC. Explain the design in sufficient detail that:
 
 - Its interaction with other features is clear.
 - It is reasonably clear how the feature would be implemented.
 - Corner cases are dissected by example.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work. -->
+This explanation is mostly based on a [previous RFC](https://github.com/DemiMarie/rfcs/blob/become/0000-proper-tail-calls.md#detailed-design) though is more restricted as the current RFC does not target general tail calls anymore.
 
-# Drawbacks
+The goal of this RFC is to create a first implementation that is already useful, while providing a basis to explore possible ways to relax the requirements when TCO can be guaranteed.
+
+## Syntax
+[syntax]: #syntax
+
+A guaranteed TCO is indicated by using the `become` keyword in place of `return`. The `become` keyword is already
+reserved, so there is no backwards-compatibility break. The `become` keyword must be followed by a plain function call
+or method calls, that is supported are calls like: `become foo()`, `become foo(a)`, `become foo(a, b)`, and so on, or
+`become foo.bar()` with plain arguments. Neither the function call or any arguments can be part of a larger expression
+such as `become foo() + 1`, `become foo(1 + 1)`, `become foo(bar())`. Additionally, there is a further restriction on
+the tail-callable functions: the function signature must exactly match that of the calling function. 
+
+Invocations of overloaded operators with at least one non-primitive argument were considered as valid targets, but were
+rejected on grounds of being too error-prone. In any case, these can still be called as methods.
+
+## Type checking
+[typechecking]: #typechecking
+A `become` statement is type-checked like a `return` statement, with the added restriction of exactly matching the
+function signatures between caller and callee. Additionally, the caller and callee **must** use the same calling
+convention.
+
+## Borrowchecking and Runtime Semantics
+[semantics]: #semantics
+A `become` expression acts as if the following events occurred in-order:
+
+1. All variables that are being passed by-value are moved to temporary storage.
+2. All local variables in the caller are destroyed according to usual Rust semantics. Destructors are called where
+   necessary. Note that values moved from in step 1 are _not_ dropped.
+3. The caller's stack frame is removed from the stack.
+4. Control is transferred to the callee's entry point.
+
+This implies that it is invalid for any references into the caller's stack frame to outlive the call. The borrow checker ensures that none of the above steps will result in the use of a value that has gone out of scope.
+
+As `become` is always in a tail position (due to being used in place of `return`), this requirement for TCO is already
+fulfilled.
+
+Example:
+```rust
+fn x() {
+    let a = Box::new(());
+    let b = Box::new(());
+    become y(a)
+}
+```
+
+Will be desugared in the following way:
+```rust
+fn x() {
+    let a = Box::new(());
+    let b = Box::new(());
+    let _tmp = a;
+    drop(b);
+    become y(_tmp)
+}
+```
+
+## Implementation
+[implementation]: #implementation
+
+A now six years old implementation for the earlier mentioned
+[RFC](https://github.com/DemiMarie/rfcs/blob/become/0000-proper-tail-calls.md) can be found at
+[DemiMarie/rust/tree/explicit-tailcalls](https://github.com/DemiMarie/rust/tree/explicit-tailcalls). A current implementation is planned as part of this RFC.
+
+The parser parses `become` exactly how it parses the `return` keyword. The difference in semantics is handled later.
+
+During type checking, the following are checked:
+
+1. The target of the tail call is, in fact, a simple call.
+2. The target of the tail call has the proper ABI.
+
+Later phases in the compiler assert that these requirements are met.
+
+New nodes are added in HIR and THIR to correspond to `become`. In MIR, the function call is checked that:
+1. The returned value is directly returned.
+2. There are no cleanups.
+3. The basic block being branched into has length zero.
+4. The basic block being branched into terminates with a return.
+
+If these conditions are fulfilled the function call following `become` is flagged to indicate the TCO requirement. This flag is then propagated to the corresponding backend. In the backend, there is an additional check if TCO can be performed.
+
+Should any check during compilation not pass a compiler error should be issued.
+
+
+# TODO Drawbacks
 [drawbacks]: #drawbacks
-
-Why should we *not* do this?
-
+<!-- Why should we *not* do this? -->
 As this feature should be mostly independent from other features the main drawback lies in the implementation and maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other tooling. The primary effort, however, lies in supporting this feature in the backends:
 - LLVM supports a `musttail` marker to indicate that TCO should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature, seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 30.03.23).
 - GCC does not support a equivalent `musttail` marker.
@@ -152,6 +233,8 @@ As this feature should be mostly independent from other features the main drawba
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
 There is also a unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds.)
+
+TODO portability
 
 
 # Rationale and alternatives
@@ -172,7 +255,7 @@ There could be a trampoline based approach ([comment](https://github.com/rust-la
 One alternative would be to support some kind of local goto natively, indeed there exists a
 [pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)). This design should be able to achieve the same performance and stack usage, though it seems to be quite difficult to implement and does not seems to be as flexible as the chosen design (regarding indirect calls / external functions).
 
-### Attribute on tail-callable Functions
+### Attribute on Function Declaration
 One alternative is to mark a group of functions that should be mutually tail-callable [example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1161525527) with some follow up [discussion](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1185828948).
 
 The goal behind this design is to TCO functions other than exactly matching function signatures, in theory this just requires that tail-called functions are callee cleanup, which is a mismatch to the default calling convention used by Rust. To limit the impact of this change all functions that should be TCO-able should be marked with a attribute.
@@ -229,10 +312,9 @@ If there is no prior art, that is fine - your ideas are interesting to us whethe
 Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
 -->
-Functional languages usually depend on proper tail calls as a language feature, which requires guaranteed TCO. For system level languages the topic of guaranteed TCO is usually wanted but implementation effort is the common reason this is not yet done. Even languages with managed code such as .Net or ECMAScript (though implementation is lagging behind) also support guaranteed TCO, again performance and resource usage were the main motivators for their implementation.
+Functional languages (such as OCaml, SML, Haskell, Scheme, and F#) usually depend on proper tail calls as a language feature, which requires guaranteed TCO. For system level languages the guaranteed TCO is usually wanted but implementation effort is a common reason this is not yet done. Even languages with managed code such as .Net or ECMAScript (though implementation is lagging behind) also support guaranteed TCO, again performance and resource usage were the main motivators for their implementation.
 
 See below for a more detailed description for compilers and languages.
-
 
 
 ## Clang
@@ -331,18 +413,22 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
 
 # TODO Unresolved questions
 [unresolved-questions]: #unresolved-questions
+<!-- - What parts of the design do you expect to resolve through the RFC process before this gets merged?
+- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
+- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC? -->
 
 - should the performance be guaranteed? that is turning a `call` is transformed into a `jmp`
 - how general do signatures for tail-callable functions need to be? would it be enough to create some padding arguments to allow "general" tail-calls across functions with same sized arguments, maybe only the sum of argument sizes need to match?
-
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- method calls?
+- generics?
+- async?
+- closures?
+- debugging
+- calling-convention
 
 # TODO Future possibilities
 [future-possibilities]: #future-possibilities
-
-Think about what the natural extension and evolution of your proposal would
+<!-- Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
 way. Try to use this section as a tool to more fully consider all possible
 interactions with the project and language in your proposal.
@@ -358,4 +444,4 @@ you may simply state that you cannot think of anything.
 Note that having something written down in the future-possibilities section
 is not a reason to accept the current or a future RFC; such notes should be
 in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+The section merely provides additional information. -->
