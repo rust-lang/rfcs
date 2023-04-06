@@ -11,7 +11,7 @@ The proposal of Derefered Composite Types is a Rust unification of Refered Types
 
 Derefered Composite Types could help also to get rid of constructor boilerplate.
 
-Symbol `*` before the type name is a marker to Dereferd Composite Type. 
+The symbol `*` before the type name is a marker of Derefered Composite Type. 
 
 The new operator `=&` (and `=&&`, `=&&&`, ...) as a compound of borrow and assignment (`x = &2` same as `x =& 2`) is also required.
 
@@ -20,8 +20,8 @@ The new operator `=&` (and `=&&`, `=&&&`, ...) as a compound of borrow and assig
 [motivation]: #motivation
 
 Currently, Rust has 
-- (1) derefered primitive types (like `i32'`)
-- (2) refered primitive types (like `&i32'`) 
+- (1) derefered primitive types (like `i32`)
+- (2) refered primitive types (like `&i32`) 
 - (3) refered composite types (like `Box<i32>`)
 
 But there are no any derefered composite types.
@@ -34,8 +34,8 @@ This is not universal. We wish to improve this. So we propose types like `*Box<i
 
 Currently we could write:
 ```rust
-let foo : u32 = 5;  // derefered primitive type ~ *Stack<u32>
-let baz : &u32 = &5;  // refered primitive type ~ Stack<u32> == &*Stack<u32>
+let foo : u32 = 5;  // derefered primitive type ~ *Stack<u32> == u32
+let baz : &u32 = &5;  // refered primitive type ~ Stack<u32> == &*Stack<u32> == &u32
 let bar : Box<u32> = Box::new(5);  // refered composite type
 
 let foo2 : u32 = 5 + *bar;
@@ -43,19 +43,17 @@ let foo2 : u32 = 5 + *bar;
 
 It is possible to write derefered composite type with new syntax:
 ```rust
-let bar2 : *Box<u32> = 5;  // derefered composite type
-let foo3 : u32 = 5 + bar2;
+let bar2 : *Box<u32> = 5;  // derefered composite type, auto-casting ::new(5)
+let foo3 : u32 = 5 + bar2; // no additional deref-casting is need in use of *Box<u32>
 ```
 
-We expect, that `Box<T> == &*Box<T>`.
-
-Sure, to use composite dereferd types, those types must implement 2 traits: `Deref` and new `Construct`
+Sure, to use composite derefered types, those types must implement 2 traits: `Deref` and new `Construct`
 ```rust
 impl<T> Deref .... fn deref(&self)
 impl<T> Construct .... fn construct(&self)
 ```
 
-That allow also to get rid of constructor boilerplate
+That allows also to get rid of constructor boilerplate
 ```rust
 let foo : *String = "some string";  // we get rid of String::from("some string")
 let bar : *Box<u32> = 5;    // we get rid of Box::new(5)
@@ -73,6 +71,8 @@ let bar : Box<u32> =& 5;    // free transmute &*Box<u32> to Box<u32>
 let foo : Box<String> =&& "some string";  // free transmute &*Box<&*String> to Box<String>
 ```
 
+We expect, that `Box<T> == &*Box<T>`.
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -81,7 +81,7 @@ let foo : Box<String> =&& "some string";  // free transmute &*Box<&*String> to B
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Rust has a hack of `&str` type, which technically is a `str == *Str` type in terms of Dereferd Composite Types.
+Rust has a hack of `&str` type, which technically is a `str == *Str` type in terms of Derefered Composite Types.
 
 With this proposal we must admit additional type hack `&str == str`.
 
