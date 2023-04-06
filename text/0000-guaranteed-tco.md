@@ -7,7 +7,7 @@
 [summary]: #summary
 
 This feature provides a guarantee that function calls are tail-call optimized via the `become` keyword. If this
-guarantee can not be provided by the compiler an error is generated instead.
+guarantee can not be provided by the compiler a compile time error is generated instead.
 
 # Motivation
 [motivation]: #motivation
@@ -343,7 +343,7 @@ tooling. The primary effort, however, lies in supporting this feature in the bac
 
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
-There is also an unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds.)
+There is also an unwanted interaction between TCO and debugging. As TCO by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCO provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCO for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCO for debugging builds. As suggested [here](https://github.com/rust-lang/rfcs/pull/3407/files#r1159817279), another option would be special support for `become` by a debugger. With this support the debugger would keep track of the N most recent calls providing at least some context to the bug.)
 
 
 # Rationale and alternatives
@@ -560,7 +560,6 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
     - Can dynamic function calls be supported?
     - Can functions outside the current crate be supported, functions from dynamically loaded libraries?
     - Can functions that abort be supported?
-    - Can functions that return a result be supported? As in: `become foo()?;`
     - Is there some way to reduce the impact on debugging?
 
 
@@ -602,7 +601,7 @@ bar(a: u32) {
 }
 ```
 
-## Function Programming
+## Functional Programming
 This might be a silly idea but if guaranteed TCO is supported there could be further language extensions to make Rust
 more attractive for functional programming paradigms. Though it is unclear to me how far this should be taken or what
 changes exactly would be a benefit.
