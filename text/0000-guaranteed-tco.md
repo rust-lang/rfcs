@@ -216,7 +216,7 @@ differences to `return`, and give examples of possible use cases and mistakes.
 
 
 ## Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
-As this feature introduces a new keyword and is independent of existing code it has no impact on existing code. For code
+As the `become` keyword is already reserved, this has no impact on existing code. For code
 that does use this feature, it is required that a programmer understands the differences between `become` and `return`,
 it is difficult to judge how big this impact is without an initial implementation. One difference, however, is in
 debugging code that uses `become`. As the stack is not preserved, debugging context is lost which likely makes debugging
