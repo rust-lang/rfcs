@@ -29,8 +29,7 @@ and repeatedly use `ref` or `ref mut` specifiers.
 ## Expert explanation
 
 The `move` keyword resets the binding mode for an individual identifier pattern
-to the moving mode. The meaning of `mut` remains the same. The combination
-`move mut` is allowed as an alias of `mut` for greater flexibility.
+to the moving mode. The meaning of `mut` remains the same.
 The matching still dereferences by match ergonomics rules.
 
 ## Beginner explanation
@@ -83,7 +82,7 @@ if let Some(x) = &mut possibly_x {
 
 You can opt out of this behaviour for individual identifier patterns by prefixing
 them with `move` or `mut`. Note that you cannot create a mutable reference from an
-immutable one, and this is not what `mut` does—it behaves if you had written `move mut`.
+immutable one, and this is not what `mut` does.
 
 ```rust
 let mut x_and_y: (i32, i32) = (25, -4);
@@ -109,7 +108,7 @@ The syntax for _IdentifierPattern_ is updated as follows:
 > (`ref` | `move`)? `mut`? IDENTIFIER (`@` _PatternNoTopAlt_)?
 
 The binding mode of a binding depends on the default mode and
-the binding mode specifier (`mut`, `move`, `ref`, `ref mut` or `move mut`)
+the binding mode specifier (`mut`, `move`, `ref`, or `ref mut`)
 and is described by the following table. If the entry into the table is 
 followed by an exclamation mark in parentheses, a warning is emitted.
 The symbol “-//-” indicates that the entry is the same as the entry to the right,
@@ -118,7 +117,6 @@ excluding whether it emits a warning ((!)).
 | ↓specifier | →default = move   | reference | mutable reference |
 |------------|-------------------|-----------|-------------------|
 | `mut`      | move mutable      | -//-      | -//-              |
-| `move mut` | move mutable (!)  | -//- (!)  | -//- (!)          |
 | `ref mut`  | mutable reference | -//-      | -//- (!)          |
 | `ref`      | reference         | -//- (!)  | -//-              |
 | `move`     | move (!)          | -//-      | -//-              |
@@ -131,7 +129,6 @@ It is warn-by-default.
 [drawbacks]: #drawbacks
 
 - This complicates the grammar.
-- This introduces a redundant `move mut` keyword combination.
 - It can be argued that use of the `move` keyword should be replaced with
   use of the `ref` keyword and not using match ergonomics at all.
 
@@ -152,6 +149,12 @@ None that I know of. Other languages don’t have match ergonomics as far as I k
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+How should the combination `move mut` be handled? Should it generate an error or be warned against?
+I believe having the combination of `move` vs `ref` and `mut` vs nothing be as simple as concatenation
+could be useful for macros.
+
+---
 
 What should the warnings look like?
 Here are some preliminary designs:
