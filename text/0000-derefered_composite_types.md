@@ -38,8 +38,15 @@ let foo : u32 = 5;  // dereferenced primitive type ~ *Stack<u32> == u32
 let baz : &u32 = &5;  // referenced primitive type ~ Stack<u32> == &*Stack<u32> == &u32
 let bar : Box<u32> = Box::new(5);  // referenced composite type
 
-let foo2 : u32 = 5 + *bar;
+let foo2 : u32 = 5 + foo;
+let foo3 : u32 = 5 + *bar;
 ```
+
+Vriable `bar` has unhidden type `Box<u32>`, unhidden constructor `Box::new()` and unhidden deref `*bar`.
+
+But variable `foo` has hidden type `Stack<u32>`, hidden constructor `Stack::new()` and hidden deref `foo`.
+
+So, I propose to add star-marker to type for variables, that uses hidden constructor and hidden deref.
 
 It is possible to write dereferenced composite type with new syntax:
 ```rust
@@ -84,7 +91,7 @@ let a : u32 = 5;
 let b : u32 = 4 + a;
 ```
 
-Rust desugars into something like
+Rust desugars into something like (pseudo-code)
 ```rust
 // Stack<T> must implement  Construct<T> Trait
 impl<T> Construct<T> for Stack<T> {
@@ -97,7 +104,7 @@ let a : *Stack<u32> = Stack::constuct(5)::as_deref_type();
 let b : *Stack<u32> = Stack::constuct(4 + a::deref())::as_deref_type();
 ```
 
-which desugars further by  Construct<T> Trait into
+which desugars further by `Construct<T>` Trait into
 ```rust
 let a : *Stack<u32> = Stack::new(5) as *Stack<u32>;
 let b : *Stack<u32> = Stack::new(4 + a::deref()) as *Stack<u32>;
@@ -117,7 +124,7 @@ let s : *String = String::construct("some string")::as_deref_type();
 let z : *Box<*String> = Box::constuct( String::construct("some string")::as_deref_type() )::as_deref_type();
 ```
 
-which desugars further by  Construct<T> Trait into
+which desugars further by `Construct<T>` Trait into
 ```rust
 let a : *Box<u32> = Box::new(5) as *Box<u32>;
 let s : *String = String::from("some string") as *String;
