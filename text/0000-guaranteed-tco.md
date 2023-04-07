@@ -50,10 +50,10 @@ Pretending this RFC has already been accepted into Rust, it could be explained t
 ## Introducing new named concepts.
 Rust now supports a way to guarantee tail call optimization (TCO).  This is interesting for two groups of programmers: those that want to use recursive algorithms and those that want to create highly optimized code. Note that using this feature can have some difficulties, as there are several requirements on functions where TCO can be performed.
 
-TCO provides a way to call functions without creating a new stack frame, instead, the stack frame of the calling
-function is reused. This is only possible if the functions have a similar enough stack layout in the first place, this
-layout is based on the calling convention, and arguments as well as return types (the function signature in short).
-Currently, all of these need to match exactly otherwise an error will be thrown during compilation.
+TCO provides a way to call functions without creating a new stack frame.  Instead, the stack frame of the calling
+function is reused.  This is only possible if the functions have a similar enough stack layout.  This
+layout is based on the calling convention, arguments, well as return types (the function signature in short).
+Currently, all of these need to match exactly; otherwise, an error will be thrown during compilation.
 
 Reusing the stack frame has two effects: One is that the stack will no longer grow, allowing unlimited nested function
 calls, if all are TCO'ed. The other is that creating a new stack frame is actually quite expensive, especially for code
