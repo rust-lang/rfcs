@@ -7,11 +7,11 @@
 # Summary
 [summary]: #summary
 
-The proposal of Derefered Composite Types is a Rust unification of Refered Types and Derefered Types.
+The proposal of Dereferenced (or Derefered) Composite Types is a Rust unification of Referenced Types and Dereferenced Types.
 
-Derefered Composite Types could help also to get rid of constructor boilerplate.
+Dereferenced Composite Types could help also to get rid of constructor boilerplate.
 
-The symbol `*` before the type name is a marker of Derefered Composite Type. 
+The symbol `*` before the type name is a marker of Dereferenced Composite Type. 
 
 The new operator `=&` (and `=&&`, `=&&&`, ...) as a compound of borrow and assignment (`x = &2` same as `x =& 2`) is also required.
 
@@ -20,11 +20,11 @@ The new operator `=&` (and `=&&`, `=&&&`, ...) as a compound of borrow and assig
 [motivation]: #motivation
 
 Currently, Rust has 
-- (1) derefered primitive types (like `i32`)
-- (2) refered primitive types (like `&i32`) 
-- (3) refered composite types (like `Box<i32>`)
+- (1) dereferenced primitive types (like `i32`)
+- (2) referenced primitive types (like `&i32`) 
+- (3) referenced composite types (like `Box<i32>`)
 
-But there are no any derefered composite types.
+But there are no any dereferenced composite types.
 
 This is not universal. We wish to improve this. So we propose types like `*Box<i32>`.
 
@@ -34,20 +34,20 @@ This is not universal. We wish to improve this. So we propose types like `*Box<i
 
 Currently we could write:
 ```rust
-let foo : u32 = 5;  // derefered primitive type ~ *Stack<u32> == u32
-let baz : &u32 = &5;  // refered primitive type ~ Stack<u32> == &*Stack<u32> == &u32
-let bar : Box<u32> = Box::new(5);  // refered composite type
+let foo : u32 = 5;  // dereferenced primitive type ~ *Stack<u32> == u32
+let baz : &u32 = &5;  // referenced primitive type ~ Stack<u32> == &*Stack<u32> == &u32
+let bar : Box<u32> = Box::new(5);  // referenced composite type
 
 let foo2 : u32 = 5 + *bar;
 ```
 
-It is possible to write derefered composite type with new syntax:
+It is possible to write dereferenced composite type with new syntax:
 ```rust
-let bar2 : *Box<u32> = 5;  // derefered composite type, auto-casting ::new(5)
+let bar2 : *Box<u32> = 5;  // dereferenced composite type, auto-casting ::new(5)
 let foo3 : u32 = 5 + bar2; // no additional deref-casting is need in use of *Box<u32>
 ```
 
-Sure, to use composite derefered types, those types must implement 2 traits: `Deref` and new `Construct`
+Sure, to use composite dereferenced types, those types must implement 2 traits: `Deref` and new `Construct`
 ```rust
 impl<T> Deref .... fn deref(&self)
 impl<T> Construct .... fn construct(&self)
@@ -64,7 +64,7 @@ The `&=` operator is already in use and it has meaning bitwise and assignment.
 
 It is required to include a compound borrow and assignment operator `=&` (and `=&&`, `=&&&`, ...) for use with derefed composite types.
 
-We could also use derefered types for refered types with new operator (`x = &2` same as `x =& 2`):
+We could also use dereferenced types for referenced types with new operator (`x = &2` same as `x =& 2`):
 ```rust
 let foo : String =& "some string";  // free transmute &*String to String
 let bar : Box<u32> =& 5;    // free transmute &*Box<u32> to Box<u32>
@@ -81,7 +81,7 @@ We expect, that `Box<T> == &*Box<T>`.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Rust has a hack of `&str` type, which technically is a `str == *Str` type in terms of Derefered Composite Types.
+Rust has a hack of `&str` type, which technically is a `str == *Str` type in terms of Dereferenced Composite Types.
 
 With this proposal we must admit additional type hack `&str == str`.
 
