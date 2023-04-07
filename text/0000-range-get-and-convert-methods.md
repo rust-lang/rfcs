@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add a method to get a value from range, which is tied to the range.
+Add a method to get a value from the range tied to the range.
 Later that value may be converted into another range of values,
 preserving the relative position within the new range.
 
@@ -15,10 +15,10 @@ preserving the relative position within the new range.
 
 <!-- Why are we doing this? What use cases does it support? What is the expected outcome? -->
 
-It is useful to have a range of possible values and being able to quickly
+It is helpful to have a range of possible values and be able to quickly
 obtain a value from this range. Currently, there is no way to get a value
 from a range of types `std::ops::Range` and `std::ops::RangeInclusive`;
-there is only a method called `contains()` which can be called with a
+there is only a method called `contains()`, which can be called with a
 proposed value to check if it lies within the range. Later, if the
 value lies within the range, there is no way to tell that the value
 checked actually does that within the code: additional logic is required.
@@ -27,15 +27,15 @@ A possibility for a value to be tied to a "parent" range it was got from
 will allow a value-to-new-range conversion. For example, we may want to
 have a thread priority value, which we may want to be "user-friendly" by
 having values in the range of `[0; 100]`. Later, we may pick a value out
-of this range, for example, `50`. However, on different operating systems
+of this range, for example, `50`. However, on different operating systems,
 the thread priority ranges are different and depend on many things; in
 other words, it is almost certainly not the `[0; 100]` range we wanted.
 Let's assume we want to change a Linux niceness of a thread. On Linux,
 the niceness values are in the range of `[-20; 19]`. A certain calculation
-is required to map a value `50` from range `[0; 100]` to the range
+is required to map a value `50` from the range `[0; 100]` to the range
 `[-20; 19]`, to preserve the relative (middle) position, which would be
 `0` in this case (`40` allowed values in total). This can be avoided
-as these calculations can be all written once and just used. Such a
+as these calculations can all be written once and just used. Such a
 mechanism within an already existing type like `std::ops::Range` and/or
 `std::ops::RangeInclusive` would greatly simplify this process of
 mapping values from certain ranges.
@@ -114,7 +114,7 @@ impl<'r, V> GetRangeValue<'r, V> for std::ops::Range<V> where V: ToOwned<Owned =
 }
 ```
 
-Later we introduce a method for `RangeValue` which would convert the
+Later we introduce a method for `RangeValue`, which would convert the
 value from one range to another range's value:
 
 ```rust
@@ -161,21 +161,21 @@ range of values represented by the range the method is used on.
 
 This feature would allow to:
 
-1. Easily know whether a value is within some range or not and such fact
+1. Easily know whether a value is within some range or not, and such fact
    will never be able to be "forgotten" in the code as the `RangeValue`
-   types make sure it is bound to the parent range and this is ensured
+   types make sure it is bound to the parent range, and this is ensured
    at compile time.
 2. Easily map a value from one range to another range, preserving the
    relative position within the range.
 
 In the end, the feature brings:
 
-1. A new type `RangeValue` which defines a type bound to a range.
-2. A new trait `GetRangeValue` implementors of which return a
+1. A new type, `RangeValue`, which defines a type bound to a range.
+2. A new trait, `GetRangeValue`, implementors of which return a
 `RangeValue`.
 3. A new way to obtain a value from a range based on the `Option` type:
 when `Some` is returned, a value returned is guaranteed to lie
-within the range and it can't change. As opposed to using the
+within the range, and it can't change. As opposed to using the
 `contains()` method, this allows the developer to work with a type
 having a guarantee that this value can't be changed and lies within
 the scope of allowed values by the range, and this fact can't be
@@ -214,6 +214,7 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+<!--
 This is the technical portion of the RFC. Explain the design in sufficient detail that:
 
 - Its interaction with other features is clear.
@@ -221,6 +222,9 @@ This is the technical portion of the RFC. Explain the design in sufficient detai
 - Corner cases are dissected by example.
 
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+-->
+
+TODO
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -238,23 +242,23 @@ It is a simple as possible. Should also be fast enough.
 - What other designs have been considered and what is the rationale for not choosing them?
 
 For the sake of this RFC, a special trait has been provided to allow the
-readers to understand how it is supposed faster, by providing a
-fully-working code; for the implementation we may avoid using traits in
+readers to understand how it is supposed to work faster, by providing a
+fully-working code; for the implementation, we may avoid using traits in
 favour of using struct methods.
 
 - What is the impact of not doing this?
 
-When it comes to conversion of a value from one range to another, -
+When it comes to the conversion of a value from one range to another, -
 everyone who needs to perform the same operation will have to spend time
 googling and calculating everything on his own, possibly doing mistakes.
 
-When it comes to improving usability of the Range structures, this RFC
+When it comes to improving the usability of the Range structures, this RFC
 suggests a way to guarantee a certain value lies within the range by
 providing a specific type, which is supposed to only be created by a
 range object when a value lies within the range. By having it as a
 separate type with lifetime bounds to its parent range and the ability
 not only be immutable, the developer never has to guess and carefully
-re-read the code to understand he did the things right.
+re-read the code to understand he did things right.
 
 When it comes to the interface, returning an `Option` when getting the
 range value lying within the range allows to easily use the question-mark
@@ -289,18 +293,20 @@ I don't know.
 
 I am not aware of this.
 
+<!--
 This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
 If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
 
 Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
+-->
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 
-I suggest to get rid of the `trait GetRangeValue` used in this RFC in
+I suggest getting rid of the `trait GetRangeValue` used in this RFC in
 favour of having `std::ops::Range` and `std::ops::RangeInclusive`
 methods instead.
 
@@ -309,7 +315,7 @@ types used for this RFC.
 
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 
-All the corner-cases when it comes the value calculation: if we can
+All the corner-cases when it comes to the value calculation: if we can
 guarantee that the new range to which the mapping is done can't be empty
 and is always valid, we may avoid returning `Option` from there.
 
