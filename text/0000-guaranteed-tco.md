@@ -97,8 +97,7 @@ This early dropping allows the compiler to avoid many complexities associated wi
 variables are passed to the called function.  This is distinct from `return`, which _does_ allow references to local variables to be passed.  Indeed, this difference in the handling of local variables is also the main difference between `return` and `become`.
 
 ### Use Case 1: Recursive Algorithm
-As a possible use case let us take a look at creating the sum over a `Vec`. Admittedly an unusual example for Rust as
-this is usually done with iteration. Though, this is kind of the point, without TCO this example can overflow the stack.
+A simple example is the following algorithm for summing the elemnts of a `Vec`.  While this would usually be done with iteration in Rust, this example illustrates a simple use of `become`.  Without TCO, this example could overflow the stack.
 
 ```rust
 fn sum_list(data: Vec<u64>, mut offset: usize, mut accum: u64) -> u64 {
