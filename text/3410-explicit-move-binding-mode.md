@@ -155,12 +155,12 @@ could be useful for macros.
 
 ---
 
-What should the warnings look like?
+What should the warnings/errors look like?
 Here are some preliminary designs:
 
 Superfluous `move`:
 ```none
-error: move semantics don't need to be specified here because bare mut implies it
+error: move semantics can't be specified here, use bare mut instead
  --> src/main.rs:4:10
   |
 4 |         (move mut x, y, z) => {
@@ -168,7 +168,6 @@ error: move semantics don't need to be specified here because bare mut implies i
   |          |
   |          help: remove this `move`
   |
-  = note: `#[warn(unnecessary_binding_mode)]` on by default
 ```
 
 Unnecessary `ref`:
