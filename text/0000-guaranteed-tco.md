@@ -52,7 +52,7 @@ Rust now supports a way to guarantee tail call optimization (TCO).  This is inte
 
 TCO provides a way to call functions without creating a new stack frame.  Instead, the stack frame of the calling
 function is reused.  This is only possible if the functions have a similar enough stack layout.  This
-layout is based on the calling convention, arguments, well as return types (the function signature in short).
+layout is based on the calling convention, arguments, as well as return types (the function signature in short).
 Currently, all of these need to match exactly; otherwise, an error will be thrown during compilation.
 
 Reusing the stack frame has two effects: One is that the stack will no longer grow, allowing unlimited nested function
