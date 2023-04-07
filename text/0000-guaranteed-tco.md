@@ -316,7 +316,8 @@ During type checking, the following are checked:
 1. The target of the tail call is, in fact, a simple call.
 2. The target of the tail call has the proper ABI.
 
-Later phases in the compiler assert that these requirements are met.
+Should any of these checks fail a compiler error should be issued.
+
 
 New nodes are added in HIR and THIR to correspond to `become`. In MIR, the function call is checked that:
 1. The returned value is directly returned.
@@ -329,7 +330,7 @@ this guarantees that nothing can be inserted between the call and `become`. Addi
 the TCO requirement for the call which is then propagated to the corresponding backend. In the backend,
 there is an additional check if TCO can be performed.
 
-Should any check during compilation not pass a compiler error should be issued.
+Should any of these checks fail a ICE should be issued.
 
 
 # Drawbacks
