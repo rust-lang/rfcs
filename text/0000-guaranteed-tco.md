@@ -340,7 +340,7 @@ As this feature should be mostly independent of other features the main drawback
 maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other
 tooling. The primary effort, however, lies in supporting this feature in the backends:
 - LLVM supports a `musttail` marker to indicate that TCO should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature, seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 30.03.23).
-- GCC does not support an equivalent `musttail` marker.
+- GCC does seem to support an equivalent `musttail` marker, though it is only accessible via the [libgccjit API](https://gcc.gnu.org/onlinedocs/gcc-7.3.0/jit/topics/expressions.html#gcc_jit_rvalue_set_bool_require_tail_call) ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1160013809)).
 - WebAssembly accepted tail-calls into the [standard](https://github.com/WebAssembly/proposals/pull/157/) and Cranelift is now [working](https://github.com/bytecodealliance/rfcs/pull/29) towards supporting it.
 
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
