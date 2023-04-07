@@ -150,7 +150,7 @@ None that I know of. Other languages don’t have match ergonomics as far as I k
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-How should the combination `move mut` be handled? Should it generate an error or be warned against?
+How should the combination `move mut` be handled? Should it generate an error or be warned against, working as if it was bare `mut`?
 I believe having the combination of `move` vs `ref` and `mut` vs nothing be as simple as concatenation
 could be useful for macros.
 
