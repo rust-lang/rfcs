@@ -110,7 +110,7 @@ The binding mode of a binding depends on the default mode and
 the binding mode specifier (`mut`, `move`, `ref`, or `ref mut`)
 and is described by the following table. If the entry into the table is 
 followed by an exclamation mark in parentheses, a warning is emitted.
-The symbol “-//-” indicates that the entry is the same as the entry to the right,
+The symbol “-//-” indicates that the entry is the same as the entry to the left,
 excluding whether it emits a warning ((!)).
 
 | ↓specifier | →default = move   | reference | mutable reference |
