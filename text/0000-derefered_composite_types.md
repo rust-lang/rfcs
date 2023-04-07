@@ -78,6 +78,52 @@ We expect, that `Box<T> == &*Box<T>`.
 [reference-level-explanation]: #reference-level-explanation
 
 
+Actually primitive types
+```rust
+let a : u32 = 5;
+let b : u32 = 4 + a;
+```
+
+Rust desugars into something like
+```rust
+// Stack<T> must implement  Construct<T> Trait
+impl<T> Construct<T> for Stack<T> {
+   fn construct(t : T) -> Stack<T> {
+      Stack::new(t)
+   }
+}
+
+let a : *Stack<u32> = Stack::constuct(5)::as_deref_type();
+let b : *Stack<u32> = Stack::constuct(4 + a::deref())::as_deref_type();
+```
+
+which desugars further by  Construct<T> Trait into
+```rust
+let a : *Stack<u32> = Stack::new(5) as *Stack<u32>;
+let b : *Stack<u32> = Stack::new(4 + a::deref()) as *Stack<u32>;
+```
+
+So, by analogy
+```rust
+let a : *Box<u32> = 5;
+let s : *String = "some string";
+let z : *Box<*String> = "some string";
+```
+
+must desugars into
+```rust
+let a : *Box<u32> = Box::constuct(5)::as_deref_type();
+let s : *String = String::construct("some string")::as_deref_type();
+let z : *Box<*String> = Box::constuct( String::construct("some string")::as_deref_type() )::as_deref_type();
+```
+
+which desugars further by  Construct<T> Trait into
+```rust
+let a : *Box<u32> = Box::new(5) as *Box<u32>;
+let s : *String = String::from("some string") as *String;
+let z : *Box<*String> = Box::new( String::from("some string") as *String ) as *Box<*String>;
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
