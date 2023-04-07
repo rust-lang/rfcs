@@ -48,9 +48,7 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 Pretending this RFC has already been accepted into Rust, it could be explained to another Rust programmer as follows.
 
 ## Introducing new named concepts.
-Rust now supports a way to guarantee tail call optimization (TCO), this is interesting for two groups of programmers
-those that want to use recursive algorithms and those that want to create highly optimized code. Note that using this
-feature can have some difficulties as there are several requirements on functions where TCO can be performed.
+Rust now supports a way to guarantee tail call optimization (TCO).  This is interesting for two groups of programmers: those that want to use recursive algorithms and those that want to create highly optimized code. Note that using this feature can have some difficulties, as there are several requirements on functions where TCO can be performed.
 
 TCO provides a way to call functions without creating a new stack frame, instead, the stack frame of the calling
 function is reused. This is only possible if the functions have a similar enough stack layout in the first place, this
