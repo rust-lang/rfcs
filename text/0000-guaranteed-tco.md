@@ -93,11 +93,8 @@ fn x() {
 ```
 
 
-This early dropping allows the compiler to avoid many complexities associated with deciding if a call can be TCO,
-instead the heavy lifting is done by the borrow checker and a lifetime error will be produced if references to local
-variables are passed to the called function. To be clear a reference to a local variable could be passed if instead of
-`become` the call would be done with `return y(a);` (or equivalently `y(a)`), indeed this difference between the
-handling of local variables is also the main difference between `return` and `become`.
+This early dropping allows the compiler to avoid many complexities associated with deciding if a call can be TCO.  Instead, the heavy lifting is done by the borrow checker, which will produce a lifetime error if references to local
+variables are passed to the called function.  This is distinct from `return`, which _does_ allow references to local variables to be passed.  Indeed, this difference in the handling of local variables is also the main difference between `return` and `become`.
 
 ### Use Case 1: Recursive Algorithm
 As a possible use case let us take a look at creating the sum over a `Vec`. Admittedly an unusual example for Rust as
