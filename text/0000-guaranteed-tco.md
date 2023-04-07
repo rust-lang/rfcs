@@ -324,9 +324,10 @@ New nodes are added in HIR and THIR to correspond to `become`. In MIR, the funct
 3. The basic block being branched into has length zero.
 4. The basic block being branched into terminates with a return.
 
-If these conditions are fulfilled the function call following `become` is flagged to indicate the TCO requirement. This
-flag is then propagated to the corresponding backend. In the backend, there is an additional check if TCO can be
-performed.
+If these conditions are fulfilled the function call and the `become` are merged into a `TailCall` MIR node,
+this guarantees that nothing can be inserted between the call and `become`. Additionally, this node indicates
+the TCO requirement for the call which is then propagated to the corresponding backend. In the backend,
+there is an additional check if TCO can be performed.
 
 Should any check during compilation not pass a compiler error should be issued.
 
