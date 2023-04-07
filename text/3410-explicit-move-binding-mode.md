@@ -158,9 +158,9 @@ could be useful for macros.
 What should the warnings look like?
 Here are some preliminary designs:
 
-Unnecessary `move`:
-```
-warning: move semantics don't need to be specified here because bare mut implies it
+Superfluous `move`:
+```none
+error: move semantics don't need to be specified here because bare mut implies it
  --> src/main.rs:4:10
   |
 4 |         (move mut x, y, z) => {
@@ -172,7 +172,7 @@ warning: move semantics don't need to be specified here because bare mut implies
 ```
 
 Unnecessary `ref`:
-```
+```none
   warning: ref semantics don't need to be specified here because you're matching against a reference
  --> src/main.rs:4:10
   |
