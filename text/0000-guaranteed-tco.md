@@ -357,7 +357,7 @@ point toward further exploration of a more general implementation. To expand on 
 creating a function local scope with the use of `become` greatly reduces implementation effort. Additionally, limiting
 tail-callable functions to those with exactly matching function signatures enforces a common stack layout across all
 functions. This should in theory, depending on the backend, allow tail calls to be performed without any stack
-shuffling, indeed it might even be possible to do so for indirect calls or external functions.
+shuffling, indeed it is even possible to do so for indirect calls or external functions.
 
 ## What other designs have been considered and what is the rationale for not choosing them?
 There are some designs that either can not achieve the same performance or functionality as the chosen approach. Though most other designs evolve around how to mark what should be a tail-call or marking what functions can be tail called. There is also the possibility of providing support for a custom backend (e.g. LLVM) or MIR pass.
