@@ -256,8 +256,7 @@ rejected on grounds of being too error-prone. In any case, these can still be ca
 
 ## Type checking
 [typechecking]: #typechecking
-A `become` statement is type-checked like a `return` statement, with the added restriction of exactly matching the
-function signatures between caller and callee. Additionally, the caller and callee **must** use the same calling
+A `become` statement is type-checked like a `return` statement, with the added restriction that the function signatures of the caller and callee must match exactly. Additionally, the caller and callee **must** use the same calling
 convention.
 
 ## Borrowchecking and Runtime Semantics
