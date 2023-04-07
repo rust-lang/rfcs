@@ -56,6 +56,7 @@ use std::ops::Deref;
 struct RangeValue<'r, V> {
     value: V,
     range: &'r std::ops::Range<V>,
+    initial: Option<Self>,
 }
 impl<'r, V> RangeValue<'r, V>
  {
@@ -306,7 +307,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 
-I suggest getting rid of the `trait GetRangeValue` used in this RFC in
+I suggest getting rid of the trait `GetRangeValue` used in this RFC in
 favour of having `std::ops::Range` and `std::ops::RangeInclusive`
 methods instead.
 
@@ -318,6 +319,51 @@ types used for this RFC.
 All the corner-cases when it comes to the value calculation: if we can
 guarantee that the new range to which the mapping is done can't be empty
 and is always valid, we may avoid returning `Option` from there.
+
+Another problem which might happen when converting values from one range
+to another and back or just multiple times is losing precision in
+terms of the initial relative position. For example, when converting a
+value of `50` from the range `[0; 100]` to the range of `[1; 3]`,
+the conversion back won't work as expected:
+
+```rust
+    let new_range = 0..100;
+    let value = value.unwrap().convert(&new_range);
+    assert_eq!(value.unwrap().get(), &50);
+
+    // After this conversion, the new value will lose the precision of
+    // the initial value relative position.
+    let new_range = 1..4;
+    let value = value.unwrap().convert(&new_range);
+    assert_eq!(value.unwrap().get(), &2);
+
+    let new_range = 0..10;
+    let value = value.unwrap().convert(&new_range);
+    // This assertion fails, the value converted is actually `3`.
+    assert_eq!(value.unwrap().get(), &5);
+```
+
+I can't think of any **easy** way to circumvent this, so, probably, it should
+just be mentioned in the documentation that this should be expected.
+The only thing promised should be that the calculated value lies within
+the new range. When it comes to losing the precision, the smaller the
+range to which conversion is performed, the smaller the precision
+will be when converting this value to a bigger range.
+
+However, there still is a solution to that problem. Within the
+`RangeValue` struct we can additionally store an `Option<Self>` which
+would store the initial (and so of maximum precision possible) range
+value, and use it instead of the "current" one. This way, in the
+example above, we can safely calculated the value `5` in the last
+assertion, as the conversion would be done from the initial range value:
+`50` from the range of `[0; 100]`, rather than of `2` from the range of
+`[1; 3]`.
+
+Another possible improvement is that the `Range` object may occupy less
+space than a reference to it. So, depending on the size of the `Idx`
+type used for the `Range`, we may decide whether to use an implementation
+storing references to the parent `Range` in the `RangeValue` or a full
+copy of it instead if it occupies less space.
 
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
