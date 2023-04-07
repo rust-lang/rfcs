@@ -32,7 +32,7 @@ significantly faster interpreters / emulators. One common example of the usefuln
 performance of Protobuf parsing as described in this [blog post](https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html), this approach would then also be possible in Rust.
 
 
-# TODO Guide-level explanation
+# Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 <!--
 Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
