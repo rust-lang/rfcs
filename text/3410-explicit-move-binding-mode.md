@@ -126,7 +126,7 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This complicates the grammar.
+- This complicates the grammar slightly.
 - It can be argued that use of the `move` keyword should be replaced with
   use of the `ref` keyword and not using match ergonomics at all.
 
