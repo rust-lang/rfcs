@@ -111,7 +111,7 @@ the binding mode specifier (`mut`, `move`, `ref`, or `ref mut`)
 and is described by the following table. If the entry into the table is 
 followed by an exclamation mark in parentheses, a lint is triggered.
 The symbol “-//-” indicates that the entry is the same as the entry to the left,
-excluding whether it emits a warning ((!)).
+excluding whether it triggers the lint ((!)).
 
 | ↓specifier | →default = move   | reference | mutable reference |
 |------------|-------------------|-----------|-------------------|
