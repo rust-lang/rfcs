@@ -109,7 +109,7 @@ The syntax for _IdentifierPattern_ is updated as follows:
 The binding mode of a binding depends on the default mode and
 the binding mode specifier (`mut`, `move`, `ref`, or `ref mut`)
 and is described by the following table. If the entry into the table is 
-followed by an exclamation mark in parentheses, a warning is emitted.
+followed by an exclamation mark in parentheses, a lint is triggered.
 The symbol “-//-” indicates that the entry is the same as the entry to the left,
 excluding whether it emits a warning ((!)).
 
@@ -121,8 +121,7 @@ excluding whether it emits a warning ((!)).
 | `move`     | move (!)          | -//-      | -//-              |
 | _none_     | move              | reference | mutable reference |
 
-The warning is controlled by the `unnecessary_binding_mode` lint.
-It is warn-by-default.
+The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -139,7 +138,13 @@ as it already exists and exactly describes what the binding mode is.
 
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
-recursively matches the subpatterns against borrowed values taken from the value matched against.
+matches the subpatterns against borrowed subvalues. This would allow writing this:
+```rs
+let x_and_y: (i32, i32) = (-9, 2);
+let (x, &y) = &x_and_y;
+// `x` is of type `&i32`, while
+// `y` is of type `i32`
+```
 
 # Prior art
 [prior-art]: #prior-art
