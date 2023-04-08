@@ -142,7 +142,7 @@ An alternative to this proposal is to update match ergonomics such that a non-re
 pattern matched against a reference does not update the binding mode, but instead
 matches the subpatterns against borrowed subvalues. This would allow writing this:
 
-```rs
+```rust
 let x_and_y: (i32, i32) = (-9, 2);
 let (x, &y) = &x_and_y;
 // `x` is of type `&i32`, while
@@ -152,7 +152,7 @@ let (x, &y) = &x_and_y;
 Then, the `mut` keyword could then be used to make the binding itself
 mutable instead of the reference the binding binds.
 
-```
+```rust
 let mut a = 3;
 let mut x_and_y: (i32, i32) = (77, 0);
 let (mut x, y) = &mut x_and_y;
