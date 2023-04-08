@@ -16,7 +16,8 @@ Warn about unnecessary keywords that specify binding mode (called “specifiers�
 Currently, there are multiple binding modes in patterns, but only some are explicitly specifiable.
 This is an obvious inconsistency, as match ergonomics permit changing the
 default binding mode of a pattern. Changing it back is only natural, as changing it
-to the non-default non-move one is possible.
+to the non-default non-move one is possible—that is, writing `mut` overrides match ergonomics
+and performs a move, although the resulting binding is mutable.
 
 Specifically, when most bindings of a large pattern should be of one binding mode,
 but some should be moves, it is inconvenient to forgo match ergonomics entirely
