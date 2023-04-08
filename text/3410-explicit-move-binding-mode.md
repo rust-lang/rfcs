@@ -149,7 +149,7 @@ let (x, &y) = &x_and_y;
 // `y` is of type `i32`
 ```
 
-Then, the `mut` keyword could then be used to make the binding itself
+Then, the `mut` keyword could be used to make the binding itself
 mutable instead of the reference the binding binds.
 
 ```rust
