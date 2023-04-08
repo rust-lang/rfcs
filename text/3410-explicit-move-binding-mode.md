@@ -147,6 +147,21 @@ let (x, &y) = &x_and_y;
 // `y` is of type `i32`
 ```
 
+Then, the `mut` keyword could then be used to make the binding itself
+mutable instead of the reference the binding binds.
+
+```
+let mut a = 3;
+let mut x_and_y: (i32, i32) = (77, 0);
+let (mut x, y) = &mut x_and_y;
+*x += 2; // `x_and_y` is modified
+x = &mut a;
+*x += 2; // `a` is modified
+```
+
+A similar possibility exists in the current proposal: The combination `mut ref` could
+be added distinctly from `ref mut` to make the binding mutable, not the reference.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -198,6 +213,6 @@ Unnecessary `ref`:
 [future-possibilities]: #future-possibilities
 
 It is somewhat unintuitive that the `mut` specifier sets the binding mode to a mutable move.
-It would be possible to update the ergonomics in a future edition of Rust to have `mut` turn
-a default binding mode of “reference” into “mutable reference”, and have `move mut` be used
-to turn off reference entirely.
+It would be possible to update the ergonomics in a future edition of Rust to have specifiers
+_modify_ the binding mode instead of setting them, or that `move mut` is required instead of
+just `mut` (see also the alternatives section)
