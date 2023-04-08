@@ -134,7 +134,8 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 I believe the `move` keyword is an excellent candidate for syntax here,
-as it already exists and exactly describes what the binding mode is.
+as it already exists and exactly describes what the binding mode is.  
+Alternative keywords would be `const` or `let`.
 
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
