@@ -139,6 +139,7 @@ as it already exists and exactly describes what the binding mode is.
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
 matches the subpatterns against borrowed subvalues. This would allow writing this:
+
 ```rs
 let x_and_y: (i32, i32) = (-9, 2);
 let (x, &y) = &x_and_y;
