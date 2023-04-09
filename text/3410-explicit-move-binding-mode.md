@@ -215,6 +215,6 @@ Unnecessary `ref`:
 [future-possibilities]: #future-possibilities
 
 It is somewhat unintuitive that the `mut` specifier sets the binding mode to a mutable move.
-It would be possible to update the ergonomics in a future edition of Rust to have specifiers
+It would be possible to update ergonomics in a future edition of Rust to have specifiers
 _modify_ the binding mode instead of setting them, or that `move mut` is required instead of
 just `mut` (see also the alternatives section)
