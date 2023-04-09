@@ -244,7 +244,7 @@ implementation.)
 - Corner cases are dissected by example.
 
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work. -->
-This explanation is mostly based on a [previous RFC](https://github.com/DemiMarie/rfcs/blob/become/0000-proper-tail-calls.md#detailed-design)
+This explanation is mostly based on the [previous RFC](https://github.com/DemiMarie/rfcs/blob/become/0000-proper-tail-calls.md#detailed-design)
 though is more restricted as the current RFC does not target general tail calls anymore.
 
 The goal of this RFC is to describe a first implementation that is already useful while providing a basis to explore
