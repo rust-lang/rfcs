@@ -71,6 +71,7 @@ Now on to some examples. Starting with how `return` and `become` differ, two exa
 pitfalls. 
 
 ### The difference between `return` and `become`
+[difference]: #difference
 The essential difference to `return` is that `become` drops function local variables **before** the function call
 instead of after. So the following function ([original example](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1136728427)):
 ```rust
@@ -283,25 +284,7 @@ This implies that it is invalid for any references into the caller's stack frame
 As `become` is always in a tail position (due to being used in place of `return`), this requirement for TCO is already
 fulfilled.
 
-Example:
-```rust
-fn x() {
-    let a = Box::new(());
-    let b = Box::new(());
-    become y(a)
-}
-```
-
-Will be desugared in the following way:
-```rust
-fn x() {
-    let a = Box::new(());
-    let b = Box::new(());
-    let _tmp = a;
-    drop(b);
-    become y(_tmp)
-}
-```
+See this earlier [example](#the-difference-between-return-and-become) on how become causes drops to be elaborated.
 
 ## Implementation
 [implementation]: #implementation
