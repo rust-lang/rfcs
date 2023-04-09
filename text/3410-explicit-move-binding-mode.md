@@ -6,7 +6,7 @@
 [summary]: #summary
 
 Enable the use of the `move` keyword to explicitly specify the moving binding
-mode in patterns. This allows users to opt out of ergonomics for some but not all bindings.
+mode in patterns. This allows users to opt out of match ergonomics for some but not all bindings.
 
 Warn about unnecessary keywords that specify binding mode (called “specifiers” in this document).
 
@@ -127,9 +127,8 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This complicates the grammar slightly.
-- It can be argued that use of the `move` keyword should be replaced with
-  use of the `ref` keyword and not using match ergonomics at all.
+It can be argued that use of the `move` keyword should be replaced with
+use of the `ref` keyword and not using match ergonomics at all.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -161,6 +160,8 @@ x = &mut a;
 *x += 2; // `a` is modified
 ```
 
+---
+
 A similar possibility for the current proposal: The combination `mut ref` could
 be added distinctly from `ref mut` to make the binding mutable, not the reference.
 
@@ -179,9 +180,10 @@ could be useful for macros.
 ---
 
 What should the warnings/errors look like?
-Here are some preliminary designs:
+Here are some ideas:
 
-Superfluous `move`:
+Error for `move mut`:
+
 ```none
 error: move semantics can't be specified here, use bare mut instead
  --> src/main.rs:4:10
@@ -193,13 +195,28 @@ error: move semantics can't be specified here, use bare mut instead
   |
 ```
 
+Unnecessary `move`:
+
+```
+error: unnecessary binding mode specifier
+ --> src/main.rs:4:10
+  |
+4 |         (move x, y, z) => {
+  |          ^^^^
+  |          |
+  |          `move` not permitted here because it's implied
+  |
+  = note: `#[warn(unnecessary_binding_mode)]` on by default
+```
+
 Unnecessary `ref`:
+
 ```none
   warning: ref semantics don't need to be specified here because you're matching against a reference
  --> src/main.rs:4:10
   |
 3 |     match &(a, b, c) {
-  |           ^
+  |           ^---------
   |           |
   |           reference originates here
   |
@@ -211,10 +228,12 @@ Unnecessary `ref`:
   = note: `#[warn(unnecessary_binding_mode)]` on by default
 ```
 
+Note that the author is not intimately familiar with the style of `rustc` error messages, so these likely need adjustment.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
 It is somewhat unintuitive that the `mut` specifier sets the binding mode to a mutable move.
-It would be possible to update ergonomics in a future edition of Rust to have specifiers
+It would be possible to update match ergonomics in a future edition of Rust to have specifiers
 _modify_ the binding mode instead of setting them, or that `move mut` is required instead of
 just `mut` (see also the alternatives section)
