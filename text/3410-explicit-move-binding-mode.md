@@ -161,7 +161,7 @@ x = &mut a;
 *x += 2; // `a` is modified
 ```
 
-A similar possibility exists in the current proposal: The combination `mut ref` could
+A similar possibility for the current proposal: The combination `mut ref` could
 be added distinctly from `ref mut` to make the binding mutable, not the reference.
 
 # Prior art
