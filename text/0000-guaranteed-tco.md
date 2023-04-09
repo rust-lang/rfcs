@@ -81,14 +81,24 @@ fn x() {
 }
 ```
 
-Will be desugared in the following way:
+The drops will be elaborated by the compiler like this:
 ```rust
 fn x() {
     let a = Box::new(());
     let b = Box::new(());
-    let _tmp = a;
-    drop(b);
-    become y(_tmp);
+    drop(b); // `a` is not dropped because it is moved to the callee
+    become y(a);
+}
+```
+
+If we used `return` instead, the drops would happen after the call:
+```rust
+fn x() {
+    let a = Box::new(());
+    let b = Box::new(());
+    let tmp = y(a);
+    drop(b); // `a` is not dropped because it is moved to the callee
+    return tmp;  
 }
 ```
 
