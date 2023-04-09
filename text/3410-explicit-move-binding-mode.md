@@ -204,10 +204,12 @@ error: unnecessary binding mode specifier
 4 |         (move x, y, z) => {
   |          ^^^^
   |          |
-  |          `move` not permitted here because it's implied
+  |          `move` not required here because it's implied
   |
   = note: `#[warn(unnecessary_binding_mode)]` on by default
 ```
+
+(inspired by E0449)
 
 Unnecessary `ref`:
 
