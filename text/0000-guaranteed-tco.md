@@ -116,8 +116,7 @@ fn sum_list(data: Vec<u64>, mut offset: usize, mut accum: u64) -> u64 {
         offset += 1;
         become sum_list(data, offset, accum); // <- become here
     } else {
-        // Note that this would be a `return accum;`
-        accum
+        accum // <- equivalent to `return accum;`
     }
 }
 ```
@@ -129,7 +128,7 @@ In an interpreter the usual loop is to get an instruction, match on that instruc
 ```rust
 fn exec_instruction(mut self) {
     loop {
-        let next_instruction = self.read_instr(); // this call can be inlined
+        let next_instruction = self.read_instr();
         match next_instruction {
             Instruction::Foo => self.execute_instruction_foo(),
             Instruction::Bar => self.execute_instruction_bar(),
