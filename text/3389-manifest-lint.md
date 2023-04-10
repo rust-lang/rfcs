@@ -135,7 +135,8 @@ cargo will:
   - Leaving off the `tool::` when it is `rust`
   - cargo will error if `lint` contains `::` as the first part is assumed to be
     a tool and it should be listed in that tool's table
-2. Sort them by priority and then lint name
+2. Sort them by priority and then an unspecified order within priority that we may change in the [future](#future-possibilities).
+  - On initial release, the sort will likely be reverse alphabetical which would cause `all` to be last, making it unlikely to do what the user wants which would raise awareness of the need for setting `priority` for all groups.
 3. Pass them on the command line before other configuration like
 `RUSTFLAGS`, allowing user configuration to override package configuration.
   - These flags will be fingerprinted so changing them will cause a rebuild only
@@ -350,6 +351,32 @@ Ruby
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Help the user with `priority`
+
+When running linters through cargo, we could warn the user when there is ambiguity, including
+- A group and a lint at the same priority
+- A group that is a superset of another group at the same priority
+- Two intersecting groups at the same priority
+- A lint or group that is masked by a group in a later priority
+
+We could then take this a step further and change the way we sort within a
+priority level to put the most specific entry last, where ambiguity doesn't
+exist.  This would nearly eliminate the need for specifying `priority` with the
+current groups.
+
+We specifically recommend warning, rather than error, so groups can evolve to
+become intersecting without it being a breaking change.
+
+To implement this, either cargo needs to pass the lints down to the tool in a
+way to communicate the priority batches, allow cargo to query the group
+memberships from the linter, or we hard code this at compile-time like
+rust-analyzer
+([lints](https://rust-lang.github.io/rust-clippy/master/lints.json),
+[generate](https://github.com/rust-lang/rust-analyzer/blob/a6464392c15fa8788215d669c4c0b1e46bcadeea/crates/ide-db/src/tests/sourcegen_lints.rs)).
+One thing to keep in mind is the potential for [custom
+tools](https://rust-lang.github.io/rfcs/2103-tool-attributes.html) in the
+future.
 
 ## rustc reporting `Cargo.toml` as lint-level source
 
