@@ -54,6 +54,8 @@ let bar2 : *Box<u32> = 5;  // dereferenced composite type, auto-casting ::new(5)
 let foo3 : u32 = 5 + bar2; // no additional deref-casting is need in use of *Box<u32>
 ```
 
+**Note**: variable with Dereferenced Type could be constructed if type is explicitly known!
+
 Sure, to use composite dereferenced types, those types must implement 2 traits: `Deref` and new `Construct`
 ```rust
 impl<T> Deref .... fn deref(&self)
