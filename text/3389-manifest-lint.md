@@ -218,20 +218,59 @@ and other fields that are more workspace related.  Instead, we used
 
 ## Schema
 
-Instead of the `[lints]` table being `lint = "level"`, we could organize
-it around `level = ["lint", ...]` like some other linters do (like
-[ruff](https://beta.ruff.rs/docs/configuration/)).  This is less verbose.  We
-chose `lint` being the keys because
-- Most reasons for organizing around `level` are preference from which ecosystem they came from (Python vs JS)
-- Organizing around `lint` makes it harder to lose track of what section you
-  are in for large lint lists (which exist), people do with dependency tables
-  today
-- TOML isn't great for nesting complex data structures and we have allow a
-  `priority` field and might allo other lint-level configuration.  Organizing
-  around `lint` makes this cleaner.
-- If we add support for packages overriding inherited workspace lints, it likely
-  better maps to a users model to just say the package lint table gets merged
-  into the workspace lint table.  This is also easier to implement correctly.
+In evaluating prior art, we saw two major styles for configuring lint levels:
+
+Python-style:
+```toml
+[lints]
+warn = [
+  { lint = "rust_2018_idioms", priority = -1 },
+  { lint = "clippy::all", priority = -1 },
+  "clippy::await_holding_lock",
+  "clippy::char_lit_as_u8",
+  "clippy::checked_conversions",
+]
+deny = [
+  "unsafe_code",
+]
+```
+
+Inspired by ESLint-style:
+```toml
+[lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1}
+
+unsafe_code = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+
+await_holding_lock = "warn"
+char_lit_as_u8 = "warn"
+checked_conversions = "warn"
+```
+- More akin to `eslint`
+
+In a lot of areas, which to choose comes down to personal preference and what people are comfortable with:
+- If you want to lookup everything for a level, Python-style works better
+- If you want to look up the level for a lint, ESLint-style works better
+- Python-style is more succinct
+- Python-style has fewer jagged edges
+
+We ended up favoring more of the ESLint-style because:
+- ESLint-style offers more syntax choices for lint config (inline tables,
+  standard tables, dotted keys).  In general, the TOML experience for deeply
+  nested inline structures is not great.
+  - Right now, the only other lint field beside `level` is `priority`.  In the future we may add lint configuration.  While we shouldn't exclusively design for this possibility, all things being equal, we shouldn't make that potential future's experience worse
+- ESLInt-style makes it easier to visually highlight groups and the lints related to those groups
+- The cargo team has seen support issues that partially arise from a user
+  losing track of which `dependencies` table they are in because the list of
+  dependencies is large enough to have the header far enough away (or off
+  screen).  This can similarly happen with Python-style as the context of the
+  level is in the table header.  See [EmbarkStudios's lint list as an example of where this could happen](https://github.com/EmbarkStudios/rust-ecosystem/blob/81d62539a57add13f4b0f1c503e267b6de358f70/lints.toml)
+- If we add support for packages to override some of the lints inherited from
+  the workspace, it is easier for users to map out this relationship with
+  ESLint-style.
 
 ## Linter Tables vs Linter Namespaces
 
