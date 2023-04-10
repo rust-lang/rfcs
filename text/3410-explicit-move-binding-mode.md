@@ -263,3 +263,6 @@ It is somewhat unintuitive that the `mut` specifier sets the binding mode to a m
 It would be possible to update match ergonomics in a future edition of Rust to have specifiers
 _modify_ the binding mode instead of setting them, or require `move mut` instead of
 just `mut` for mutable moves (see also the alternatives section).
+
+It would also be possible to demote `mut` from the status of binding mode specifier and instead
+have it be completely orthogonal to binding mode.
