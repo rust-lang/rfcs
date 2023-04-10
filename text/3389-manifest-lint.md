@@ -235,16 +235,18 @@ chose `lint` being the keys because
 
 ## Linter Tables vs Linter Namespaces
 
-Instead of `<tool>.<lint>`, we could use `<tool>::<lint>` (e.g.
-`"clipp::enum_glob_use"` instead of `clippy.enum_glob_use`), like in the
-diagnostic messages.  This would make it easier to copy/paste lint names.
-However, with the schema being `<lint> = <level>`, this would require quoting
-the keys rather than leaving them as bare words.  This might also cause
-problems for tool-level configuration.  The first is that the lints wouldn't be
-easily grouped with their tool's config.  The second is if we use `lints.<lint> = <level>`
-and tool-level configuration goes under `lints.<tool>`,
-then keys under `[lints]` are ambiguous as to whether they are a tool or a
-lint, making it harder to collect all lints to forward tools.
+We started off with lints being referenced with their tool as a namespace (e.g.
+`"clipp::enum_glob_use"`) like in diagnostic messages, making copy/paste easy.
+
+However, we switched to a more hierarchical data model (e.g.
+`clippy.enum_glob_use`) to avoid quoting keys with the `lints.<lint> = <level>` schema.
+
+If we add lint/linter config in the future
+- Being more hierarchical means lint and linter config are kept closer to each
+  other, making it easier to evaluate their impact on each other.
+- `lints.<lint> = <level>` combined with `lints.<linter>.metadata` makes it
+  harder for cargo to collect all the lints to pass down into the compiler
+  driver.
 
 ## Lint Precedence
 
