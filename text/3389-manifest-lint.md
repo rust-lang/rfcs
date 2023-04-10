@@ -206,6 +206,8 @@ However, we also need to consider how decisions might limit us in the future and
 - Whether existing decisions will be revisited
 - When new tools are added, like `cargo` and `cargo-semver-check`, which haven't had lint levels and configuration long enough (or at all) to explore their problem and design space.
 
+## Misc
+
 This could be left to `clippy.toml` but that leaves `rustc`, `rustdoc`, and future linters without a solution.
 
 `[lints]` could be `[package.lints]`, tying it to the package unlike `[patch]`
@@ -214,41 +216,7 @@ and other fields that are more workspace related.  Instead, we used
 
 `[lints]` could be `[lint]` but we decided to follow the precedence of `[dependencies]`.
 
-Instead of `<tool>.<lint>`, we could use `<tool>::<lint>` (e.g.
-`"clipp::enum_glob_use"` instead of `clippy.enum_glob_use`), like in the
-diagnostic messages.  This would make it easier to copy/paste lint names.
-However, with the schema being `<lint> = <level>`, this would require quoting
-the keys rather than leaving them as bare words.  This might also cause
-problems for tool-level configuration.  The first is that the lints wouldn't be
-easily grouped with their tool's config.  The second is if we use `lints.<lint> = <level>`
-and tool-level configuration goes under `lints.<tool>`,
-then keys under `[lints]` are ambiguous as to whether they are a tool or a
-lint, making it harder to collect all lints to forward tools.
-
-We could possibly extend this new field to `rustfmt` by shifting the focus from
-"lints" to "rules" (see
-[eslint](https://eslint.org/docs/latest/use/configure/rules)).  However, the
-more we generalize this field, the fewer assumptions we can make about it.  On
-one extreme is `package.metadata` which is so free-form we can't support it
-with workspace inheritance.  A less extreme example is if we make the
-configuration too general, we would preclude the option of supporting
-per-package overrides as we wouldn't know enough about the shape of the data to
-know how to merge it.  There is likely a middle ground that we could make work
-but it would take time and experimentation to figure that out which is at odds
-with trying to maintain a stable file format.  Another problem with `rules` is
-that it is divorced from any context.  In eslint, it is in an eslint-specific
-config file but a `[rules]` table is not a clear as a `[lints]` table as to
-what role it fulfills.
-
-We could support platform or feature specific settings, like with
-`[lints.<target>]` or `[target.<target>.lints]` but
-- There isn't a defined use case for this yet besides having support for `cfg(feature = "clippy")` or
-  which does not seem high enough priority to design
-  around.
-- `[lints.<target>]` runs into ambiguity issues around what is a `<target>`
-  entry vs a `<lint>` entry in the `[lints]` table.
-- We have not yet defined semantics for sharing something like this across a
-  workspace
+## Schema
 
 Instead of the `[lints]` table being `lint = "level"`, we could organize
 it around `level = ["lint", ...]` like some other linters do (like
@@ -265,19 +233,18 @@ chose `lint` being the keys because
   better maps to a users model to just say the package lint table gets merged
   into the workspace lint table.  This is also easier to implement correctly.
 
-## Workspace Inheritance
+## Linter Tables vs Linter Namespaces
 
-Instead of using workspace inheritance for `[lint]`, we could make it
-workspace-level configuration, like `[patch]` which is automatically applied to
-all workspace members.  However, `[patch]` and friends are because they affect
-the resolver / `Cargo.toml` and so they can only operate at the workspace
-level.  `[lints]` is more like `[dependencies]` in being something that applies
-at the package level but we want shared across workspaces.
-
-Instead of traditional workspace inheritance where there is a single value to
-inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
-which defines presets and the user could do `lints.<preset> = true`.  The user
-could then name them as they wish to avoid collision with rustc lints.
+Instead of `<tool>.<lint>`, we could use `<tool>::<lint>` (e.g.
+`"clipp::enum_glob_use"` instead of `clippy.enum_glob_use`), like in the
+diagnostic messages.  This would make it easier to copy/paste lint names.
+However, with the schema being `<lint> = <level>`, this would require quoting
+the keys rather than leaving them as bare words.  This might also cause
+problems for tool-level configuration.  The first is that the lints wouldn't be
+easily grouped with their tool's config.  The second is if we use `lints.<lint> = <level>`
+and tool-level configuration goes under `lints.<tool>`,
+then keys under `[lints]` are ambiguous as to whether they are a tool or a
+lint, making it harder to collect all lints to forward tools.
 
 ## Lint Precedence
 
@@ -329,6 +296,49 @@ Where the order is based on how to pass them on the command-line.
 
 Complex TOML arrays tend to be less friendly to work with including the fact
 that TOML 1.0 does not allow multi-line inline tables.
+
+## Workspace Inheritance
+
+Instead of using workspace inheritance for `[lint]`, we could make it
+workspace-level configuration, like `[patch]` which is automatically applied to
+all workspace members.  However, `[patch]` and friends are because they affect
+the resolver / `Cargo.toml` and so they can only operate at the workspace
+level.  `[lints]` is more like `[dependencies]` in being something that applies
+at the package level but we want shared across workspaces.
+
+Instead of traditional workspace inheritance where there is a single value to
+inherit with `workspace = true`, we could have `[workspace.lints.<preset>]`
+which defines presets and the user could do `lints.<preset> = true`.  The user
+could then name them as they wish to avoid collision with rustc lints.
+
+## `rustfmt`
+
+We could possibly extend this new field to `rustfmt` by shifting the focus from
+"lints" to "rules" (see
+[eslint](https://eslint.org/docs/latest/use/configure/rules)).  However, the
+more we generalize this field, the fewer assumptions we can make about it.  On
+one extreme is `package.metadata` which is so free-form we can't support it
+with workspace inheritance.  A less extreme example is if we make the
+configuration too general, we would preclude the option of supporting
+per-package overrides as we wouldn't know enough about the shape of the data to
+know how to merge it.  There is likely a middle ground that we could make work
+but it would take time and experimentation to figure that out which is at odds
+with trying to maintain a stable file format.  Another problem with `rules` is
+that it is divorced from any context.  In eslint, it is in an eslint-specific
+config file but a `[rules]` table is not a clear as a `[lints]` table as to
+what role it fulfills.
+
+## Target-specific lint
+
+We could support platform or feature specific settings, like with
+`[lints.<target>]` or `[target.<target>.lints]` but
+- There isn't a defined use case for this yet besides having support for `cfg(feature = "clippy")` or
+  which does not seem high enough priority to design
+  around.
+- `[lints.<target>]` runs into ambiguity issues around what is a `<target>`
+  entry vs a `<lint>` entry in the `[lints]` table.
+- We have not yet defined semantics for sharing something like this across a
+  workspace
 
 # Prior art
 [prior-art]: #prior-art
