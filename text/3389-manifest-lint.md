@@ -289,54 +289,110 @@ If we add lint/linter config in the future
 
 ## Lint Precedence
 
-The priority field is meant to allow mimicking
+Currently, `rustc` allows lints to be controlled on the command-line with the
+last level for a lint winning.  They may also be specified as attributes with
+the last instance winning.  `cargo` adds the `RUSTFLAGS` environment variable
+and `config.toml` entry.  On top of this, there are lint groups that act as
+aliases to sets of lints.  These groups may be disjoint, supersets, or they may
+even intersect.
+
+Example `RUSTFLAGS`:
 - `-Aclippy::all -Wclippy::doc_markdown`
-- `-D future-incompatible -A semicolon_in_expressions_from_macros`
+- `-Dfuture-incompatible -Asemicolon_in_expressions_from_macros`
 
-We can't order lints based on the `level` as which we want first is dependent on the context (see above).
+In providing lint-level configuration in `Cargo.toml`, users will need to be
+able to set the lint level for group and then override individual lints within
+that group while interacting with the existing `RUSTFLAGS` system.
 
-We can't rely on the order of the keys in the table as that is undefined in TOML.
+We have chosen **Option 6** with `priority` being in-scope for this RFC and
+warnings and auto-sorting as a future possibility.
 
-For the most part, people won't need granularity, so we could instead start
-with a `priority: bool` field.  This might get confusing to mix with numbers
-though (what does `false` and `true` map to?).  There is also the problem that
-generally people will want to opt a specific lint into being low-priority (the
-group) and the leave the exceptions at default but making `priority = true` the
-default would read weird (everything is a priority but one or two items).
+**Option 1: Auto-sort**
+```rust
+[lints.rust]
+unsafe_code = "deny"
+allow_dead_code = "allow"
+all = "warn"
+```
+- Unable to handle if two intersecting groups are assigned different levels
 
-We could pass this to the tool and say "you figure it out" based on which is
-the most specific and least specific.  This requires lint groups to be
-subsets or disjoint of each other to avoid ambiguity.  While this might hold
-today, I'm a bit cautious of putting this requirement on us forever.  For
-example, if we merged `cargo semver-check`, there are proposed lint groups
-based on what a lint's user-overideable semver-level is which couldn't be
-guaranteed to meet these requirements.  On the implementation side, this will
-require a new channel to communicate these lints to the tools (unless we infer
-order for flags/config as well) and require them to organize their data in a
-way for it to inferred.
+**Option 2: Ordered keys**
+```rust
+[lints.rust]
+all = "warn"
+allow_dead_code = "allow"
+unsafe_code = "deny"
+```
+- Relies on the order of keys in a TOML table which is undefined
+- Without standard ordering semantics, like with `[]`, users or formatters
+  might naively reformat the table which would affect the semantics
 
-We could use an array instead of a table:
-
-Unconfigurable:
+**Option 3: Array of tables**
 ```toml
+# inline table
 [lints]
-clippy = [
-  { all = "allow" },
-  { doc_markdown = "warn" },
+rust = [
+    { lint = "all", level = "warn" },
+    { lint = "allow_dead_code", level = "allow" },
+    { lint = "unsafe_code", level = "deny" },
+]
+# standard table
+[[lints.clippy]]
+lint = "all"
+level = "warn"
+[[lints.clippy]]
+lint = "cyclomatic_complexity"
+level = "allow"
+```
+- The syntax for this seems overly verbose
+- Complex, nested structures aren't the easiest to work with in TOML
+
+**Option 4: Compact array of tables**
+```toml
+[tools.rust]
+lints = [
+    { warn = "all" },
+    { allow = "allow_dead_code" },
+    { deny = "unsafe_code" },
 ]
 ```
+- *Note:* `lints.rust = []` wasn't used as that won't work with linter configuration in the future
+- *Note:* Top-level table was changed to avoid `lints.rust.lints` redundancy and would allow us to open this up to more tools in the future
+- *Note:* `<level> = <lint>` (instead of the other way) to keep the keys finite so we can add more fields in the future
+- Mirrors the familiar `RUSTFLAGS` syntax
+- Complex, nested structures aren't the easiest to work with in TOML
 
-Configurable:
-```toml
-[[lints.clippy.all]]
-level = "allow"
-[[lints.clippy.doc_markdown]]
-level = "warn"
+**Option 5: `priority` field**
+```rust
+[lints.rust]
+all = { level = "warn", priority = -1 }
+allow_dead_code = "allow"
+unsafe_code = "deny"
 ```
-Where the order is based on how to pass them on the command-line.
+- Difficult for the user to figure out there is a problem or how to address it
 
-Complex TOML arrays tend to be less friendly to work with including the fact
-that TOML 1.0 does not allow multi-line inline tables.
+**Option 6: `priority` field with warnings and maybe auto-sort**
+```rust
+[lints.rust]
+all = "warn"
+allow_dead_code = "allow"
+unsafe_code = "deny"
+```
+- Option 1 (auto-sort) but using Option 5 (`priority` field) to break ties
+- Produces warnings to tell the user when `priority` may be needed
+- As `priority` is a low-level subset, we can start with that as an MVP.  Later, we can add warnings for all the ambiguity cases.  As we gain confidence in this, we can then add auto-sorting.
+
+**Option 7: Explicit groups**
+```rust
+[lints.rust.groups]
+all = "warn"
+[lints.rust.lints]
+allow_dead_code = "allow"
+unsafe_code = "deny"
+```
+- Hard codes knowledge of `all`
+- Does not solve the intersecting group problem
+- Names aren't validated as being from a group without duplicating the work needed for Option 1 (auto-sort)
 
 ## Workspace Inheritance
 
