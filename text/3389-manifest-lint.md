@@ -229,7 +229,7 @@ chose `lint` being the keys because
 - TOML isn't great for nesting complex data structures and we have allow a
   `priority` field and might allo other lint-level configuration.  Organizing
   around `lint` makes this cleaner.
-- If we add support for packages overiding inherited workspace lints, it likely
+- If we add support for packages overriding inherited workspace lints, it likely
   better maps to a users model to just say the package lint table gets merged
   into the workspace lint table.  This is also easier to implement correctly.
 
@@ -271,7 +271,7 @@ subsets or disjoint of each other to avoid ambiguity.  While this might hold
 today, I'm a bit cautious of putting this requirement on us forever.  For
 example, if we merged `cargo semver-check`, there are proposed lint groups
 based on what a lint's user-overideable semver-level is which couldn't be
-guarenteed to meet these requirements.  On the implementation side, this will
+guaranteed to meet these requirements.  On the implementation side, this will
 require a new channel to communicate these lints to the tools (unless we infer
 order for flags/config as well) and require them to organize their data in a
 way for it to inferred.
