@@ -196,7 +196,17 @@ This does not allow sharing lints across workspaces.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This could be left to `clippy.toml` but that leaves `rustc` without a solution.
+When designing this, we wanted to keep in mind how things work today, including
+- `clippy` defines all configuration as linter/tool config and not lint config (linter/lint config is a future possibility)
+- All `clippy` lints are disjoint
+- `rustdoc` has no plans for groups outside of `all`
+- `rustc` today has some intersecting groups
+
+However, we also need to consider how decisions might limit us in the future and whether we want to bind future decisions with this RFC, including
+- Whether existing decisions will be revisited
+- When new tools are added, like `cargo` and `cargo-semver-check`, which haven't had lint levels and configuration long enough (or at all) to explore their problem and design space.
+
+This could be left to `clippy.toml` but that leaves `rustc`, `rustdoc`, and future linters without a solution.
 
 `[lints]` could be `[package.lints]`, tying it to the package unlike `[patch]`
 and other fields that are more workspace related.  Instead, we used
