@@ -20,7 +20,7 @@ to the non-default mutable move is possible—that is, writing `mut` overrides m
 and performs a move after the dereference, although the resulting binding is mutable.
 
 Specifically, when most bindings of a large pattern should be of one binding mode,
-but some should be plain moves, it is inconvenient to forgo match ergonomics entirely
+but some should be moves, it is inconvenient to forgo match ergonomics entirely
 and repeatedly use `ref` or `ref mut` specifiers.
 
 # Guide-level explanation
@@ -29,7 +29,7 @@ and repeatedly use `ref` or `ref mut` specifiers.
 ## Expert explanation
 
 The `move` keyword resets the binding mode for an individual identifier pattern
-to the plain moving mode. The meaning of `mut` remains the same.
+to the moving mode. The meaning of `mut` remains the same.
 The matching still dereferences by match ergonomics rules.
 
 ## Beginner explanation
@@ -126,13 +126,13 @@ followed by an exclamation mark in parentheses, a lint is triggered.
 The symbol “-//-” indicates that the entry is the same as the entry to the left,
 excluding whether it triggers the lint ((!)).
 
-| ↓specifier | →default = plain move | reference | mutable reference |
+| ↓specifier | →default = move       | reference | mutable reference |
 |------------|-----------------------|-----------|-------------------|
 | `mut`      | move mutable          | -//-      | -//-              |
 | `ref mut`  | mutable reference     | -//-      | -//- (!)          |
 | `ref`      | reference             | -//- (!)  | -//-              |
-| `move`     | plain move (!)        | -//-      | -//-              |
-| _none_     | plain move            | reference | mutable reference |
+| `move`     | move (!)              | -//-      | -//-              |
+| _none_     | move                  | reference | mutable reference |
 
 The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 
@@ -151,7 +151,7 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 I believe the `move` keyword is an excellent candidate for syntax here,
-as it already exists and exactly describes what the binding mode is.  
+as it already exists and is also used by the match ergonomics RFC.  
 Alternative keywords would be `const` or `let`.
 Alternatively, a new keyword could be added, although this would need to be a soft keyword or happen over an edition boundary. If this path is desired I suggest `bind`.
 
