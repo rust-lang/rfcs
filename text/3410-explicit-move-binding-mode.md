@@ -143,6 +143,9 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
   use of the `ref` keyword and not using match ergonomics at all.
 - This further entrenches the unintuitive fact that `mut` sets the binding
   mode to a mutable move and disables referencing.
+- This means that either the grammar gets more complicated or an additional
+  sequence is allowed by the grammar but disallowed by the compiler.
+- The `move` keyword can be confusing here because a copy may happen instead.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -150,6 +153,7 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 I believe the `move` keyword is an excellent candidate for syntax here,
 as it already exists and exactly describes what the binding mode is.  
 Alternative keywords would be `const` or `let`.
+Alternatively, a new keyword could be added, although this would need to be a soft keyword or happen over an edition boundary. If this path is desired I suggest `bind`.
 
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
