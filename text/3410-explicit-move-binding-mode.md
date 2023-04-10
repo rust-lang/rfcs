@@ -16,11 +16,11 @@ Warn about unnecessary keywords that specify binding mode (called “specifiers�
 Currently, there are multiple binding modes in patterns, but only some are explicitly specifiable.
 This is an obvious inconsistency, as match ergonomics permit changing the
 default binding mode of a pattern. Changing it back is only natural, as changing it
-to the non-default non-move one is possible—that is, writing `mut` overrides match ergonomics
+to the non-default mutable move is possible—that is, writing `mut` overrides match ergonomics
 and performs a move, although the resulting binding is mutable.
 
 Specifically, when most bindings of a large pattern should be of one binding mode,
-but some should be moves, it is inconvenient to forgo match ergonomics entirely
+but some should be plain moves, it is inconvenient to forgo match ergonomics entirely
 and repeatedly use `ref` or `ref mut` specifiers.
 
 # Guide-level explanation
@@ -29,7 +29,7 @@ and repeatedly use `ref` or `ref mut` specifiers.
 ## Expert explanation
 
 The `move` keyword resets the binding mode for an individual identifier pattern
-to the moving mode. The meaning of `mut` remains the same.
+to the plain moving mode. The meaning of `mut` remains the same.
 The matching still dereferences by match ergonomics rules.
 
 ## Beginner explanation
@@ -38,7 +38,7 @@ When deconstructing a value, it is sometimes desirable to get a reference to the
 element bound to a variable instead of moving that value into the variable. To do
 this, you can set the _binding mode_ of an identifier pattern by prefixing it with
 `ref`, `ref mut` (or `move`, but this is the default). You can also use this syntax
-to make the binding mutable, by prefixing with just `mut`.
+to make a plain move mutable, by prefixing with just `mut`.
 
 ```rust
 let mut possibly_x: Option<i32> = Some(37);
@@ -65,8 +65,9 @@ match possibly_x {
 ```
 
 _Match ergonomics_ allow you to more easily get references to bindings in patterns.
-When a pattern that is not a reference pattern (`&<pattern>`) is matched against a
-value that is a reference, the value is automatically dereferenced, and the default
+When a pattern that is not a reference pattern (`&<pattern>` or similar) is matched against a
+value that is a reference (`&<type>` or `&mut <type>`), the value is automatically dereferenced,
+as though the pattern had been written `&<pattern>`, and the default
 binding mode is set to `ref` or `ref mut`, depending on if the reference is mutable.
 All identifier patterns (`x` and the like) that don’t have an explicit binding mode
 instead bind with binding mode `ref` or `ref mut`.  
@@ -82,7 +83,7 @@ if let Some(x) = &mut possibly_x {
 
 You can opt out of this behaviour for individual identifier patterns by prefixing
 them with `move` or `mut`. Note that you cannot create a mutable reference from an
-immutable one, and this is not what `mut` does.
+immutable one, and this is not what `mut` does—it sets the binding mode to a mutable move.
 
 ```rust
 let mut x_and_y: (i32, i32) = (25, -4);
@@ -97,6 +98,16 @@ y += 2; // `x_and_y` is not modified
 let (move x, y) = &x_and_y;
 // The type of `x` is `i32` and
 // the type of `y` is `&i32`
+```
+
+You can also switch to an immutable reference binding mode by using the `ref` keyword.
+
+```rust
+let mut x_y_z: (i32, i32, i32) = (400, 1, -99);
+let (x, ref y, move z) = &mut x_y_z;
+// The type of `x` is `&mut i32`,
+// the type of `y` is `&i32` and
+// the type of `z` is `i32`
 ```
 
 # Reference-level explanation
@@ -114,21 +125,23 @@ followed by an exclamation mark in parentheses, a lint is triggered.
 The symbol “-//-” indicates that the entry is the same as the entry to the left,
 excluding whether it triggers the lint ((!)).
 
-| ↓specifier | →default = move   | reference | mutable reference |
-|------------|-------------------|-----------|-------------------|
-| `mut`      | move mutable      | -//-      | -//-              |
-| `ref mut`  | mutable reference | -//-      | -//- (!)          |
-| `ref`      | reference         | -//- (!)  | -//-              |
-| `move`     | move (!)          | -//-      | -//-              |
-| _none_     | move              | reference | mutable reference |
+| ↓specifier | →default = plain move | reference | mutable reference |
+|------------|-----------------------|-----------|-------------------|
+| `mut`      | move mutable          | -//-      | -//-              |
+| `ref mut`  | mutable reference     | -//-      | -//- (!)          |
+| `ref`      | reference             | -//- (!)  | -//-              |
+| `move`     | plain move (!)        | -//-      | -//-              |
+| _none_     | plain move            | reference | mutable reference |
 
 The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It can be argued that use of the `move` keyword should be replaced with
-use of the `ref` keyword and not using match ergonomics at all.
+- It can be argued that use of the `move` keyword should be replaced with
+  use of the `ref` keyword and not using match ergonomics at all.
+- This further entrenches the unintuitive fact that `mut` sets the binding
+  mode to a mutable move and disables referencing.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -160,6 +173,9 @@ x = &mut a;
 *x += 2; // `a` is modified
 ```
 
+Note that this proposal likely requires an edition boundary unless
+complicated backwards-compatibility measures are employed.
+
 ---
 
 A similar possibility for the current proposal: The combination `mut ref` could
@@ -177,15 +193,18 @@ How should the combination `move mut` be handled? Should it generate an error or
 I believe having the combination of `move` vs `ref` and `mut` vs nothing be as simple as concatenation
 could be useful for macros.
 
+It is also possible to change the preferred way of indicating a mutable move to `move mut`
+and warn against plain `mut` instead, as plain `mut` switching to moves is unintuitive.
+
 ---
 
 What should the warnings/errors look like?
 Here are some ideas:
 
-Error for `move mut`:
+### Error for `move mut`:
 
 ```none
-error: move semantics can't be specified here, use bare mut instead
+error: move semantics can't be specified here, use bare `mut` instead
  --> src/main.rs:4:10
   |
 4 |         (move mut x, y, z) => {
@@ -195,9 +214,9 @@ error: move semantics can't be specified here, use bare mut instead
   |
 ```
 
-Unnecessary `move`:
+### Unnecessary `move`:
 
-```
+```none
 error: unnecessary binding mode specifier
  --> src/main.rs:4:10
   |
@@ -211,7 +230,7 @@ error: unnecessary binding mode specifier
 
 (inspired by E0449)
 
-Unnecessary `ref`:
+### Unnecessary `ref`:
 
 ```none
   warning: ref semantics don't need to be specified here because you're matching against a reference
@@ -237,5 +256,5 @@ Note that the author is not intimately familiar with the style of `rustc` error 
 
 It is somewhat unintuitive that the `mut` specifier sets the binding mode to a mutable move.
 It would be possible to update match ergonomics in a future edition of Rust to have specifiers
-_modify_ the binding mode instead of setting them, or that `move mut` is required instead of
-just `mut` (see also the alternatives section)
+_modify_ the binding mode instead of setting them, or require `move mut` instead of
+just `mut` for mutable moves (see also the alternatives section).
