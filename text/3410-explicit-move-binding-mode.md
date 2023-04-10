@@ -17,7 +17,7 @@ Currently, there are multiple binding modes in patterns, but only some are expli
 This is an obvious inconsistency, as match ergonomics permit changing the
 default binding mode of a pattern. Changing it back is only natural, as changing it
 to the non-default mutable move is possible—that is, writing `mut` overrides match ergonomics
-and performs a move, although the resulting binding is mutable.
+and performs a move after the dereference, although the resulting binding is mutable.
 
 Specifically, when most bindings of a large pattern should be of one binding mode,
 but some should be moves, albeit after a copy, it is inconvenient to forgo match ergonomics entirely
@@ -76,7 +76,8 @@ value that is a reference, the value is automatically dereferenced,
 as though the pattern had been written `&<pattern>`, and the default
 binding mode is set to `ref` or `ref mut`, depending on if the reference is mutable.
 All identifier patterns (`x` and the like) that don’t have an explicit binding mode
-instead bind with binding mode `ref` or `ref mut`.  
+instead bind with binding mode `ref` or `ref mut`.
+This means that `let (x, y) = &a` is the same as `let &(ref x, ref y) = &a`.  
 We can rewrite the above example as follows:
 
 ```rust
