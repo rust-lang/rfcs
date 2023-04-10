@@ -20,7 +20,7 @@ to the non-default mutable move is possible—that is, writing `mut` overrides m
 and performs a move, although the resulting binding is mutable.
 
 Specifically, when most bindings of a large pattern should be of one binding mode,
-but some should be plain moves, it is inconvenient to forgo match ergonomics entirely
+but some should be moves, albeit after a copy, it is inconvenient to forgo match ergonomics entirely
 and repeatedly use `ref` or `ref mut` specifiers.
 
 # Guide-level explanation
@@ -29,8 +29,9 @@ and repeatedly use `ref` or `ref mut` specifiers.
 ## Expert explanation
 
 The `move` keyword resets the binding mode for an individual identifier pattern
-to the plain moving mode. The meaning of `mut` remains the same.
+to the moving mode. The meaning of `mut` remains the same.
 The matching still dereferences by match ergonomics rules.
+The move occurs after the dereferencing and is thus a move from a copy.
 
 ## Beginner explanation
 
@@ -38,7 +39,7 @@ When deconstructing a value, it is sometimes desirable to get a reference to the
 element bound to a variable instead of moving that value into the variable. To do
 this, you can set the _binding mode_ of an identifier pattern by prefixing it with
 `ref`, `ref mut` (or `move`, but this is the default). You can also use this syntax
-to make a plain move mutable, by prefixing with just `mut`.
+to make plain move mutable, by prefixing with just `mut`.
 
 ```rust
 let mut possibly_x: Option<i32> = Some(37);
@@ -64,9 +65,14 @@ match possibly_x {
 }
 ```
 
+_Reference patterns_ allow you to match on a reference by automatically dereferencing it.
+Writing `let &a = b` is equivalent to writing `let a = *b`. This is only allowed if `b`’s
+type is `Copy`. If it isn’t you either cannot do this or have to write an explicit `clone` call.
+You can turn any pattern except range patterns into a reference pattern by prefixing them with `&` or `&mut`.
+
 _Match ergonomics_ allow you to more easily get references to bindings in patterns.
-When a pattern that is not a reference pattern (`&<pattern>` or similar) is matched against a
-value that is a reference (`&<type>` or `&mut <type>`), the value is automatically dereferenced,
+When a pattern that is not a pattern that can normally match against a reference is matched against a
+value that is a reference, the value is automatically dereferenced,
 as though the pattern had been written `&<pattern>`, and the default
 binding mode is set to `ref` or `ref mut`, depending on if the reference is mutable.
 All identifier patterns (`x` and the like) that don’t have an explicit binding mode
@@ -84,6 +90,7 @@ if let Some(x) = &mut possibly_x {
 You can opt out of this behaviour for individual identifier patterns by prefixing
 them with `move` or `mut`. Note that you cannot create a mutable reference from an
 immutable one, and this is not what `mut` does—it sets the binding mode to a mutable move.
+Note that the move occurs after the dereferencing and is thus part of a copy.
 
 ```rust
 let mut x_and_y: (i32, i32) = (25, -4);
@@ -125,15 +132,21 @@ followed by an exclamation mark in parentheses, a lint is triggered.
 The symbol “-//-” indicates that the entry is the same as the entry to the left,
 excluding whether it triggers the lint ((!)).
 
-| ↓specifier | →default = plain move | reference | mutable reference |
-|------------|-----------------------|-----------|-------------------|
-| `mut`      | move mutable          | -//-      | -//-              |
-| `ref mut`  | mutable reference     | -//-      | -//- (!)          |
-| `ref`      | reference             | -//- (!)  | -//-              |
-| `move`     | plain move (!)        | -//-      | -//-              |
-| _none_     | plain move            | reference | mutable reference |
+| ↓specifier | →default = move   | reference | mutable reference |
+|------------|-------------------|-----------|-------------------|
+| `mut`      | move mutable      | -//-      | -//-              |
+| `ref mut`  | mutable reference | -//-      | -//- (!)          |
+| `ref`      | reference         | -//- (!)  | -//-              |
+| `move`     | move (!)          | -//-      | -//-              |
+| _none_     | move              | reference | mutable reference |
 
 The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
+
+Match ergonomics continues to work by automatically dereferencing and setting
+the default binding mode to “reference” or “mutable reference”.
+
+Note that the move happens after the dereference caused by match ergonomics
+and can thus be considered part of a copy.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -142,13 +155,20 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
   use of the `ref` keyword and not using match ergonomics at all.
 - This further entrenches the unintuitive fact that `mut` sets the binding
   mode to a mutable move and disables referencing.
+- This means that either the grammar gets more complicated or an additional
+  sequence is allowed by the grammar but disallowed by the compiler.
+- The `move` keyword can be confusing because it hides the fact that the move
+  happens as part of a copy.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-I believe the `move` keyword is an excellent candidate for syntax here,
-as it already exists and exactly describes what the binding mode is.  
 Alternative keywords would be `const` or `let`.
+
+A new keyword could be added, although this would need to be a soft keyword or require
+an edition boundary. If this path is deemed better I suggest `bind`, although many others are possible.
+
+---
 
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
@@ -254,7 +274,8 @@ Note that the author is not intimately familiar with the style of `rustc` error 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-It is somewhat unintuitive that the `mut` specifier sets the binding mode to a mutable move.
+It is somewhat unintuitive that the `mut` specifier sets the binding mode to a
+mutable move and not a mutable reference, as might be expected.
 It would be possible to update match ergonomics in a future edition of Rust to have specifiers
 _modify_ the binding mode instead of setting them, or require `move mut` instead of
 just `mut` for mutable moves (see also the alternatives section).
