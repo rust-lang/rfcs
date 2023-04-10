@@ -124,7 +124,7 @@ it's unlikely we'd end up with a complete, consistent, properly maintained speci
 
 So this RFC proposes that we ask the Rust Foundation to coordinate and take responsibility
 for the parts of the work that would otherwise not get done.
-The foundation should hire a technical editor (or perhaps multiple people)
+The foundation should hire a technical editor
 who will work with the Rust teams and contributors to create the Rust specification.
 The editor will be responsible for maintaining the document and will coordinate with the relevant teams
 (e.g. the language team, the operational semantics team, the compiler, the types team, the library API team, and so on)
@@ -132,6 +132,55 @@ to collect all relevant information and make sure that consensus is reached on e
 
 The relevant Rust teams keep authority on their respective parts of Rust.
 The Rust Foundation supports and coordinates the work, but the Rust teams will remain in charge of what Rust is.
+
+## Role of the Editor
+
+The role of the editor is more than just a technical writer; the editor will be a leader in the specification development process.
+
+The tasks of the editor (as [suggested by Joel](https://github.com/rust-lang/rfcs/pull/3355#issuecomment-1481813621)):
+
+1. *Active coordination and management of the specification process*.
+  Working with project members, an editor dedicated to the specification will
+  work to ensure that there is continuous progress on the specification itself,
+  through activities like coordinating meetings, suggesting relevant topics of
+  discussion, managing the infrastructure around the creation of the
+  specification.
+
+2. *Collecting and aggregating information from spec-relevant Project teams*.
+  Related to the coordination and management of the process, the editor will have
+  an ear in all the relevant Project teams that have members working on the
+  specification in order to understand their thoughts, ideas and requirements.
+  The editor will aggregate this information to use during the specification
+  process. The editor will work closely with Project teams such as the Language
+  team, the Operational Semantics team, etc. to ensure, for example,
+  specification proposals can be officially approved for inclusion into the
+  specification. To be clear the editor is not necessarily a member of any
+  particular team, but will work with those teams to ensure they are represented
+  well and fairly in the specification.
+
+3. *Technical writing*.
+  The editor actually has to incorporate the concepts and write the words that
+  will ultimately make up the specification. The reason that this is not
+  necessarily the top priority is that without the coordination and information
+  gathering, this cannot be done in any meaningful way. But, obviously, this is
+  where the rubber meets the road and where the final output will be made. The
+  editor, in conjunction with any potential required ancillary design or
+  copyediting resources, will produce a developer and community friendly Rust
+  language specification.
+
+4. *Reporting progress*.
+  Since not everyone in the Project will be involved in the specification process
+  on a daily basis and with the expected interest within the Rust community, the
+  editor will provide regular status updates on the progress of the
+  specification. The vehicle by which this will be done is to be determined, but
+  you can imagine public blog posts, a dedicated Zulip stream, etc.
+
+5. *Propose technical clarifications and corrections to the specification*.
+  As we work on the specification, there is a reasonable probability that we may
+  find areas that are unclear, confusing and maybe even contradictory. While not
+  a hard requirement and more of a nice-to-have, optimally the editor will be
+  well-versed in programming languages and can offer potential clarifications and
+  corrections for technical correctness and consistency purposes.
 
 # Questions deliberately left open
 
