@@ -65,10 +65,10 @@ match possibly_x {
 ```
 
 _Match ergonomics_ allow you to more easily get references to bindings in patterns.
-When a pattern that is not a reference pattern (`&<pattern>` or similar) is matched against a
-value that is a reference (`&<type>` or `&mut <type>`), the value is automatically dereferenced,
-as though the pattern had been written `&<pattern>`, and the default
-binding mode is set to `ref` or `ref mut`, depending on if the reference is mutable.
+When a pattern that is not a reference pattern is matched against a
+value that is a reference, the value is automatically dereferenced,
+as though the pattern had been written `&<pattern>` or `&mut <pattern>`, and the default
+binding mode is set to `ref` or `ref mut`.
 All identifier patterns (`x` and the like) that don’t have an explicit binding mode
 instead bind with binding mode `ref` or `ref mut`.
 This means that `let (x, y) = &a` is the same as `let &(ref x, ref y) = &a`.  
