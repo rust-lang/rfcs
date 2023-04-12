@@ -157,6 +157,8 @@ Alternatively, a new keyword could be added, although this would need to be
 a soft keyword or happen over an edition boundary.
 Possible keywords are `bind`, `value`, `free`, `new`, `just`, `get`, `fresh`, `set`, `var`.
 
+---
+
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
 matches the subpatterns against borrowed subvalues. This would allow writing this:
