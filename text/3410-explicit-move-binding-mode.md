@@ -153,7 +153,9 @@ The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
 I believe the `move` keyword is an excellent candidate for syntax here,
 as it already exists and is also used by the match ergonomics RFC.  
 Alternative keywords would be `const` or `let`.
-Alternatively, a new keyword could be added, although this would need to be a soft keyword or happen over an edition boundary. If this path is desired I suggest `bind`.
+Alternatively, a new keyword could be added, although this would need to be
+a soft keyword or happen over an edition boundary.
+Possible keywords are `bind`, `value`, `free`, `new`, `just`, `get`, `fresh`, `set`, `var`.
 
 An alternative to this proposal is to update match ergonomics such that a non-reference
 pattern matched against a reference does not update the binding mode, but instead
