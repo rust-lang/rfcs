@@ -67,7 +67,7 @@ let foo = 199 as Result<NonZeroU32,_>;
 
 ## As-Prime Casting
 
-Unfortunately, as_cast has has huge disadvantage of using too many brackets in expressions, because it has strong precedence = 13.
+Unfortunately, as_cast has has huge disadvantage of using too many parentheses in expressions, because it has strong precedence = 13.
 
 (A) So, it is important to add a new operator as_prime `as'` (or its alternatives, like  `as$` / `as#`, ..) that cast the whole expression.
 
