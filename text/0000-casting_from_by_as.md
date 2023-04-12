@@ -7,9 +7,11 @@
 # Summary
 [summary]: #summary
 
-This proposal adds more abilities to as_cast operator for conversion into Types, which have by `From` (and `TryFrom`) Trait Implementations.
+This proposal adds more abilities to as_cast operator for conversion into Types, which have `From` (and `TryFrom`) Trait Implementations.
 
-The new operator `as'`(as-prime) is added, which is a synonym to as_cast, but it has low precedence.
+The new operator `as'`(as-prime) is added, which is a synonym to as_cast, but it has low precedence. 
+
+And maybe another one `as!`(as-bang), which is a synonym to as_cast, but it has high precedence.
 
 
 # Motivation
@@ -54,7 +56,7 @@ let bar : String = "my string" as _;
 
 Unfortunately, as_cast has has huge disadvantage of using too many brackets in expressions, because it has strong precedence = 13.
 
-So, it is important to add a new operator as_prime `as'` (or its alternatives, like  `as$` / `as#`, ..)
+(A) So, it is important to add a new operator as_prime `as'` (or its alternatives, like  `as$` / `as#`, ..) that cast the whole expression.
 
 This is a new keyword, but fully backward-compatible.
 
@@ -72,6 +74,13 @@ let foo : Bar = ((1 as Foo) + ("two" as Foo)) ast Bar;
 let foo : Bar = Bar::from(Foo::from(1) + Foo::from("two"));
 ```
 
+(C) Alternatively a new cousin of `as` should be added, that cast values before referencing.
+
+Let call it `as!`(as_bang), it has strong precedence = 15 (stronger than `&` reference operator)
+```rust
+let foo = & 5 as! i32;
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -79,7 +88,7 @@ let foo : Bar = Bar::from(Foo::from(1) + Foo::from("two"));
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The new additional keyword `as'` - as_prime_cast is needed.
+The new additional keyword `as'`(weak_as) - as_prime_cast is needed. Maybe two keywords are needed, if `as!` (strong_as) would added.
 
 
 # Rationale and alternatives
@@ -87,12 +96,14 @@ The new additional keyword `as'` - as_prime_cast is needed.
 
 (B) Alternative of implementing casting from both `From` and `TryFrom` Traits, is implementing casting from just one Trait - `From`.
 
-(C) As_prime operator could have another name
+(D) As_prime operator could have another name
 - `as'` (as_prime)
 - `as#` (in my opinion it is the best choice)
 - `as$` or `a$`
+- `as!`
 - `ast` (as_type)  or `astp`
 - `asw` (as_weak) or `asl`(as_late)
+- `asst` (as_strong)
 
 
 # Prior art
