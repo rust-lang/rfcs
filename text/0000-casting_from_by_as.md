@@ -35,7 +35,7 @@ let foo = "my string" as String;
 
 let baz = 12u32 as Ipv4Addr;
 
-let bar = 12 as Rc<i32>;
+let bar = 42 as Rc<i32>;
 
 // which desugars into
 let foo = String::from("my string");
@@ -60,6 +60,8 @@ let foo = 5i32 as Result<u32,_>;
 let bar : String = "my string" as _;
 
 let baz = 12i32 as Rc<_>;
+
+let foo = 199 as Result<NonZeroU32,_>;
 ```
 
 
@@ -95,6 +97,23 @@ let foo = & 5 as! i32;
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+Default behavior for as_cast remains (pseudo-code):
+
+```rust
+// default
+a as T where T == T_as_castable   ~   a as T; // nothing changes
+```
+
+But we also add additional sugaring if next pattern matches (pseudo-code):
+```rust
+// new (A)
+a as T    ~   T::from(a);
+(a : U) as T<U>  ~  T::from(a);
+
+// new (B)
+a as Result<T,_>   ~   T::try_from(a);
+(a : U) as Result<T<U>,_>   ~   T::try_from(a);
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
