@@ -7,7 +7,7 @@
 # Summary
 [summary]: #summary
 
-Add more abilities to as_cast operator for conversion into Types, which are followed by `From` (and `TryFrom`) Trait Implementations.
+This proposal adds more abilities to as_cast operator for conversion into Types, which have by `From` (and `TryFrom`) Trait Implementations.
 
 The new operator `as'`(as-prime) is added, which is a synonym to as_cast, but it has low precedence.
 
@@ -16,6 +16,7 @@ The new operator `as'`(as-prime) is added, which is a synonym to as_cast, but it
 [motivation]: #motivation
 
 As_cast operator has very limited use in Rust today: it is a cost-less type cast operator from primitive types.
+
 But as_cast has a **huge** potential as **smart** transmute operator for every non-general `From` (and `TryFrom`) implementations!
 
 
