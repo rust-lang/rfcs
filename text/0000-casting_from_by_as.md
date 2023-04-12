@@ -33,8 +33,16 @@ But as_cast has a **huge** potential as **smart** transmute operator for every n
 ```rust
 let foo = "my string" as String;
 
+let baz = 12u32 as Ipv4Addr;
+
+let bar = 12 as Rc<i32>;
+
 // which desugars into
 let foo = String::from("my string");
+
+let baz = Ipv4Addr::from(12u32);
+
+let bar = Rc::from(12);
 ```
 
 (B) Alternatively allow also to use for non-general Result-Types like `Result<SomeType,SomeErrorType>` cast implementation of `TryFrom` Trait:
