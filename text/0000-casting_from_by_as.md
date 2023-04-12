@@ -56,7 +56,10 @@ let foo = u32::try_from(5i32);
 The wildcard is still a valid option:
 ```rust
 let foo = 5i32 as Result<u32,_>;
+
 let bar : String = "my string" as _;
+
+let baz = 12i32 as Rc<_>;
 ```
 
 
