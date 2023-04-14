@@ -124,6 +124,10 @@ The new additional keyword `as'`(weak_as) - as_prime_cast is needed. Maybe two k
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+(1) Remain as_cast as is ("status quo")
+
+(2) Add alternative transformations to as_cast [issue#204](https://github.com/rust-lang/libs-team/issues/204)
+
 (B) Alternative of implementing casting from both `From` and `TryFrom` Traits, is implementing casting from just one Trait - `From`.
 
 (D) As_prime operator could have another name
