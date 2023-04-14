@@ -39,7 +39,7 @@ Conversions between number types can sometimes be lossy. For example, when conve
 
 - `TruncatingFrom`/`TruncatingInto`: These traits are used for lossy integer conversions. When using these traits, leading bits that don't fit into the output type are cut off; the remaining bits are reinterpreted as the output type. This can change the value completely, even turn a negative number into a positive number or vice versa. This conversion is very fast, but should be used with care.
 
-- `SaturatingFrom`/`SaturatingInto`: Like the `Saturating*` traits, these traits are used for lossy integer conversions. They check if the input fits into the output type, and if not, the closest possible value is used instead. For example, converting `258` to a `u8` with this strategy results in `255`, which is the highest `u8`.
+- `SaturatingFrom`/`SaturatingInto`: Like the `Truncating*` traits, these traits are used for lossy integer conversions. They check if the input fits into the output type, and if not, the closest possible value is used instead. For example, converting `258` to a `u8` with this strategy results in `255`, which is the highest `u8`.
 
 - `LossyFrom`/`LossyInto`: These traits cover conversions involving floats (`f32` and `f64`). The converted value may be both rounded and saturated. When converting from a float to an integer, `NaN` is converted to `0`.
 
@@ -56,7 +56,7 @@ i8::try_from( 42_u8) == Ok(42)
 i8::try_from(-24_u8).is_err()
 
 i8::truncating_from( 42_u8)  == 42
-u8::truncating_from(-24_i8)  == 232  // u8::MAX + 1 - 14
+u8::truncating_from(-24_i8)  == 232  // u8::MAX + 1 - 24
 i8::truncating_from(232_u8)  == -24  // u8::MAX + 1 - 232
 u8::truncating_from(280_i16) == 24   // 280 % u8::MAX = 24
 
@@ -104,7 +104,21 @@ Truncation and Wrapping often occur together; for example, an `i32 → u16` conv
 - `Saturating{From,Into}` — saturating conversions between integers
 - `Lossy{From,Into}` — lossy conversions that involve floats
 
-Note that the word "lossy" means any conversion that doesn't preserve the input value (including includes truncation and saturation), but the `Lossy*` traits have a narrower scope.
+Note that the word "lossy" means any conversion that doesn't preserve the input value (including truncation and saturation), but the `Lossy*` traits have a narrower scope.
+
+```rust
+pub trait TruncatingFrom<T> {
+    fn truncating_from(value: T) -> Self;
+}
+
+pub trait SaturatingFrom<T> {
+    fn saturating_from(value: T) -> Self;
+}
+
+pub trait LossyFrom<T> {
+    fn lossy_from(value: T) -> Self;
+}
+```
 
 `TruncatingFrom` and `LossyFrom` can be implemented in the standard library using `as` by silencing the lint. For example:
 
@@ -131,9 +145,9 @@ impl LossyFrom<f64> for f32 {
 
 impl SaturatingFrom<i16> for i8 {
     fn saturating_from(value: u8) -> i8 {
-        if value < i8::MIN {
+        if value < i8::MIN as i16 {
             i8::MIN
-        } else if value > i8::MAX {
+        } else if value > i8::MAX as i16 {
             i8::MAX
         } else {
             value as i8
@@ -263,6 +277,7 @@ These lints show that lossy numeric casts can pose enough of a problem to forbid
 
 - Are there better trait and method names?
 - Does this impact compile times?
+- Should the traits remain perma-unstable, so they can be used, but not implemented outside of the standard library?
 
 # Future possibilities
 
