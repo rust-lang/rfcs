@@ -312,7 +312,7 @@ Nonblocking:
   ```toml
   [tools.rustdoc]
   # cargo would likely have to canonicalize this path
-  resource-root: "../static"
+  resource-root = "../static"
   
   [resources]
   # .rs files can refer to this asset as "intro-video", located at "../static/sample.mp4"
