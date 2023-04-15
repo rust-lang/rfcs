@@ -145,6 +145,10 @@ earlier items):
 3. Crate `Cargo.toml`
 4. Crate root `rustdoc.toml`
 
+`rustdoc` will be in charge of handling configuration merging. This should
+create an intuitive layering of global options and overrides while keeping
+`rustdoc` and `Cargo` reasonably separate.
+
 ## Changes to `rustdoc`
 
 `rustdoc` must be aware of two new arguments: `--config-json` and
