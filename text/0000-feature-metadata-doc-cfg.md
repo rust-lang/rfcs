@@ -27,8 +27,7 @@ advanced configuration options.
 [motivation]: #motivation
 
 Currently, <http://docs.rs> provides a basic view of available feature flags on
-a rather simple page: for example,
-<https://docs.rs/crate/tokio/latest/features>. It is helpful as a quick overview
+a rather simple page: for example, [`tokio`]. It is helpful as a quick overview
 of available features, but it is not managed by `rustdoc` (i.e., is not
 available on local) and there is no way to specify a description or other useful
 information.
@@ -39,12 +38,14 @@ attributes. It is expected that there may be further configuration options in
 the future, for specifying things like:
 
 1. Resource manifests (paths to assets, such as `KaTeX` for math rendering)
-2. Non-code instructional pages (such as `clap`'s [derive information]
-   (https://docs.rs/clap/4.2.2/clap/_derive/index.html))
+2. Non-code instructional pages (such as [`clap`'s derive information])
 
 This RFC provides a way to solve both problems: it specifies a way to add
 user-facing metadata to cargo features, and specifies how that and other
 information should be passed to `rustdoc`.
+
+[`tokio`]: https://docs.rs/crate/tokio/latest/features
+[`clap`'s derive information]: https://docs.rs/clap/4.2.2/clap/_derive/index.html
 
 # Guide-level explanation
 
