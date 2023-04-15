@@ -112,7 +112,9 @@ rustdoc --argfoo --argbar . --json-config '{"html-logo-url":
 
 This sort of format has two distinct advantages:
 
-1. Build systems other than `cargo` can easily make use of the configuration
+1. Build systems other than `cargo` can easily make use of the configuration,
+   and a `rustdoc.toml` file isn't required (e.g. if the build system has a
+   single configuration file for all tools)
 2. `rustdoc` does not need to be aware of `cargo`, paths, workspaces, etc.
 3. `rustdoc` can share the same `serde` structs to parse both `rustdoc.toml` or
    this JSON configuration
