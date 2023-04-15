@@ -4,50 +4,66 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
+
 [summary]: #summary
 
 This RFC has three simple goals:
 
-1. Allow adding descriptions to features in `Cargo.toml`
-2. Allow specifying additional `rustdoc` configuration (favicon URL, playground
-   URL, etc) in either `Cargo.toml` or a new `rustdoc.toml`
-3. By combining the two, allow `rustdoc` will be able to document cargo
-   features, and have room to expand its configuratino options.
+1. Add a way to write feature descriptions in `Cargo.toml`
+2. Establish a way for Cargo or other build systems to easily pass advanced
+   configuration information to `rustdoc` (e.g., favicon or playground URLs from
+   `Cargo.toml`)
+3. Allow `rustdoc` to accept this information either from the CLI or from a new
+   `rustdoc.toml` file.
+
+The outcome is that `rustdoc` will gain the ability to document cargo features
+and get its configuration from `Cargo.toml`, without having any awareness of
+Cargo project structure itself. There will also be room to grow for more
+advanced configuration options.
 
 # Motivation
+
 [motivation]: #motivation
 
-Currently, <http://docs.rs> provides a simple view of available feature flags on
+Currently, <http://docs.rs> provides a basic view of available feature flags on
 a rather simple page: for example,
 <https://docs.rs/crate/tokio/latest/features>. It is helpful as a quick overview
-of available features, but means that users must manually maintain a feature
-table if they want them to be documented somehow.
+of available features, but it is not managed by `rustdoc` (i.e., is not
+available on local) and there is no way to specify a description or other useful
+information.
 
 The second problem is that `rustdoc` has some per-crate configuration settings,
 such as relevant URLs, that are awkward to define in Rust source files using
 attributes. It is expected that there may be further configuration options in
-the future.
+the future, for specifying things like:
 
-This RFC provides a way to solve both problems: it will give `rustdoc` the
-ability to document features, and provide room to grow with more configration...
+1. Resource manifests (paths to assets, such as `KaTeX` for math rendering)
+2. Non-code instructional pages (such as `clap`'s [derive information]
+   (https://docs.rs/clap/4.2.2/clap/_derive/index.html))
+
+This RFC provides a way to solve both problems: it specifies a way to add
+user-facing metadata to cargo features, and specifies how that and other
+information should be passed to `rustdoc`.
 
 # Guide-level explanation
+
 [guide-level-explanation]: #guide-level-explanation
 
 Usage is simple: features will be able to be specified in a table (inline or
-separate) with the keys `doc`, `public`, and `requires`. Sample `Cargo.toml`:
+separate) with the keys `doc`, `public`, `deprecated`, and `requires`. Sample
+`Cargo.toml`:
 
 ```toml
 # Cargo.toml
 
 [features]
-# current configuration
+# current configuration will continue to work
 foo = []
-# Add a description to the feature
+# Add a description to the feature. Equivalent to today's `bar = ["foo"]`
 bar = { requires = ["foo"], doc = "simple docstring here"}
-# `public` indicates whether or not the feature should be visible in
-# documentation, and defaults to true
-baz = { requires = ["foo"], public = false }
+# `public` indicates whether or not the feature should be public in
+# documentation and usable by downstream users; defaults to `true`.
+baz = { requires = ["foo"], public = false, deprecated = true }
 
 # Features can also be full tables if descriptions are longer
 [features.qux]
@@ -70,139 +86,229 @@ html-logo-url = "https://example.com/logo.jpg"
 issue-tracker-base-url = "https://github.com/rust-lang/rust/issues/"
 ```
 
-For projects that do not use cargo or want separate configuration, these options
-can also be specified in a `rustdoc.toml` file
+For projects that do not use Cargo or want separate configuration, these options
+can also be specified in a `rustdoc.toml` file using an identical schema
 
 ```toml
 # rustdoc.toml containing the same information as above
-
+# the only difference is that [tools.rustdoc] has become top level
 html-logo-url = "https://example.com/logo.jpg"
 issue-tracker-base-url = "https://github.com/rust-lang/rust/issues/"
 
 [features]
-# current configuration
 foo = []
-# Add a description to the feature
-bar = { requires = ["foo"], doc = "simple docstring here"}
-
-# (baz and qux features clipped)
+bar = { requires = ["foo"], doc = "simple docstring here" }
+# ...
 ```
 
 # Reference-level explanation
+
 [reference-level-explanation]: #reference-level-explanation
 
-What exactly `rustdoc` does with the information is TBD. There are two options 
+At a high level, the following changes will be necessary
 
-## JSON Configuration
+1. Cargo will change its parsing to accept the new format for `features`
+2. `rustdoc` will gain two optional arguments: `--config-file` (for specifying
+   `rustdoc.toml`-style files), and `--config-json` (for specifying the same
+   information via JSON text, or a path to a JSON file). These arguments can be
+   specified more than once
+3. Cargo will naively serialize some information from `Cargo.toml` to pass to
+   `rustdoc`, and make `rustdoc` aware of any `rustdoc.toml` files.
+4. `rustdoc` will parse each of the `--config-*` arguments to create its
+   internal configuration.
 
-`rustdoc` will gain a `--config-json` argument that allows passing a
-JSON-serialized string of the TOML configuration. It is likely that this is what
-Cargo can use when it invokes `rustdoc`: all that is needed is to parse the
-`features` and `tools.rustdoc` table from `Cargo.toml`, serialize to JSON, and
-pass as an argument.
+This is described in more detail in the following sections.
 
-```sh
-rustdoc --argfoo --argbar . --config-json '{"html-logo-url":
-"https://example.com/logo.jpg","issue-tracker-base-url":
-"https://github.com/rust-lang/rust/issues/","features":{"foo":[],"bar":{"doc":
-"simple docstring here","requires":["foo"]},"baz":{"public":false,"requires":
-["foo"]},"qux":{"doc":"# qux\n\nThis could be a longer description of this feature\n"
-,"requires":["bar","baz"]}}}'
+## Changes to Cargo
+
+Cargo will need to parse the new format for `[features]`. For its internal use, it
+can discard all new information.
+
+The `cargo doc` invocation will need to do two new things:
+
+1. Reserialize the `[features]` and `[tools.rustdoc]` tables from any
+   `Cargo.toml` file to JSON. This can be naive, i.e., Cargo does not need to
+   validate the contained information in any way.
+2. Pass this information as a string via `--config-json`. If string length
+   exceeds a limit (e.g., 2000 characters), write this configuration instead to
+   a temporary build JSON file. (this also helps to avoid maximum argument
+   length restrictions).
+3. Find any `rustdoc.toml` files and pass their paths to `rustdoc` using
+   `--config-toml`
+
+Cargo should use the following precedence (later items take priority over
+earlier items):
+
+1. Workspace `Cargo.toml`
+2. Workspace root `rustdoc.toml`
+3. Crate `Cargo.toml`
+4. Crate root `rustdoc.toml`
+
+## Changes to `rustdoc`
+
+`rustdoc` must be aware of two new arguments: `--config-json` and
+`--config-file`. `--config-json` accepts either a JSON file path or a JSON
+string, `--config-file` accepts a path to a TOML file. The JSON and TOML
+share an identical schema:
+
+```json5
+{
+    "html-logo-url": "https://example.com/logo.jpg",
+    "issue-tracker-base-url": "https://github.com/rust-lang/rust/issues/",
+    features: {
+        foo: [],
+        bar: { doc: "simple docstring here", requires: ["foo"] },
+        baz: { public: false, requires: ["bar"] },
+        qux: {
+            doc: "# corge\n\nThis could be a longer description of this feature\n",
+            requires: ["bar", "baz"],
+        },
+    },
+}
 ```
 
-This sort of format has two distinct advantages:
+Spans can also be specified for JSON files for better diagnostics. It is
+expected that Cargo could maintain span information for data extracted from
+`Cargo.toml`, but it is not required that other build systems or handwritten
+configuration provide this information. This is also not required for a minimum
+viable product.
 
-1. Build systems other than `cargo` can easily make use of the configuration,
-   and a `rustdoc.toml` file isn't required (e.g. if the build system has a
-   single configuration file for all tools)
-2. `rustdoc` does not need to be aware of `cargo`, paths, workspaces, etc.
-3. `rustdoc` can share the same `serde` structs to parse both `rustdoc.toml` or
-   this JSON configuration
+```json5
+{
+    "_root-span-path": "/path/to/Cargo.TOML",
+    "html-logo-url": {
+        data: "https://example.com/logo.jpg",
+        start: 100,
+        end: 123,
+    },
+    features: {
+        data: {
+            foo: { data: [], start: 10, end: 15 },
+            bar: {
+                data: {
+                    doc: { data: "simple docstring here", start: 15, end: 20 },
+                    requires: { data: ["foo"], start: 20, end: 25 },
+                },
+                start: 15,
+                end: 30,
+            },
+        },
+        start: 10,
+        end: 100,
+    },
+}
+```
 
-Arguments longer than the allowed limit (8000ish on Windows I think) can use
-`@argfile`.
-
-- Question: could/should this work from stdin?
-- Note: there is a possible precedent to set here that could make it easy for
-  other tools. `cargo-foobar` could receive the JSON-serialized string of the
-  `[tools.foobar]` section. Maybe this would also work for `rustfmt`?
-
-## Configuration file argument
-
-`rustdoc` will gain the `--config-file` argument that can point to a
-`rustdoc.toml` formatted file. The name `rustdoc.toml` is not required.
-
-Alternative for long args: `Cargo` could create a temporary `rustdoc.toml` in
-the target build folder and point `rustdoc` to it.
-
-The arguments `--config-json` and `--config-file` can be specified more than
-once, later invocations will just overwrite previous configuration.
-
-- Question: should rustdoc look for config if it isn't specified?
-
-
-**rest of this RFC todo**
-
----
+`rustdoc` should start with a default configuration and update/overwrite it with
+each `--config-file` or `--config-json` argument. Configuration specified in
+rust source files (e.g. `#![doc(html_favicon_url ="foo.com/favicon")]`) take the
+highest priority.
 
 # Drawbacks
+
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
-
-- It is work
+- This adds complexity to `rustdoc`. In this case, it does seem like it is
+  justified.
+- This adds noise to the Cargo manifest that is not relevant to Cargo itself.
+  This RFC seeks to provide a good middle ground: overly complex configuration
+  or feature descriptions can exist in a separate `rustdoc.toml`, but a separate
+  file also isn't required for simple configuration.
+- If a user chooses to maintain feature descriptions in `rustdoc.toml` instead
+  of `Cargo.toml`, it does add multiple sources of truth for feature data.
 
 # Rationale and alternatives
+
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+- `rustdoc` could accept something like `--cargo-config Cargo.toml` and parse
+  the `Cargo.toml` itself. This is still possible, but there are a couple
+  reasons to prefer this RFC's suggestions:
+  - Cargo will have the discretion for what exactly data to send. For example,
+    `cargo doc --no-default-features` could strip all features that aren't
+    default
+  - Documentation systems other than Cargo maintain flexibility. For example,
+    `doxygen` could invoke `rustdoc` and pass a favicon URL that doesn't need to
+    come from `rustdoc.toml` or `Cargo.toml`.
+  - Reserializing relevant sections of `Cargo.toml` is easy for Cargo to do, as
+    it doesn't have to validate anything.
+- JSON configuration could be skipped entirely, only using TOML. This RFC
+  proposes JSON because:
+  - It is easier to make CLI-safe than TOML
+  - TOML->JSON serialization is trivial. `rustdoc` can also easily handle both
+    schemas using the same serde structures.
+  - Build systems other than Cargo can make use of it easier: plenty of tools
+    are available to serialize JSON, but serializing TOML is less common (e.g.
+    Python's `tomllib` can parse TOML but not recreate it)
+- No information could be provided in `Cargo.toml`, only allowing
+  `rustdoc.toml`. For features, keeping descriptions in `Cargo.toml` is
+  preferable because it provides a single source of truth for all things feature
+  related, rather than requiring that a user maintain two separate files (which
+  is more or less the current status quo).
+- Feature descriptions could be specified somewhere in Rust source files. Like
+  the above, this has the downside of having multiple sources of truth on
+  features.
 
 # Prior art
+
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+- There is an existing crate that uses TOML comments to create a features table:
+  <https://docs.rs/document-features/latest/document_features/>
+- `docs.rs` displays a feature table, but it is fairly limited
 
 # Unresolved questions
+
 [unresolved-questions]: #unresolved-questions
 
-- Anything special for workspaces?
+Implementation blocking:
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- Should `cargo` use the `public` flag to disallow downstream crates from using
+  features (for e.g., functions that provide unstable features or benchmark-only
+  functions). Must be adopted as the same time as parsing, as enabling this
+  later would break compatibility.
+- If the answer to the above is "yes", does it make sense to have separate
+  `hidden` (not documented) and `public` flags (not allowed downstream) flags?
+
+Nonblocking:
+
+- How exactly will `rustdoc` present the feature information? A new section on
+  the module's top-level could be reasonable.
+- Should `rustdoc` allow a header/overview for the features section? This can be
+  done in the future with e.g. a `tools.rustdoc.features-doc` key in TOML.
 
 # Future possibilities
+
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
+- Cargo could parse doc comments in `Cargo.toml`, like the above linked
+  `document-features` crate. This adds some complexity to TOML parsing, but
+  `rustdoc` would not need to do anything different as long as a parser could
+  make the two below examples equivalent:
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+  ```toml
+  [features]
+  foo = { requires = [], doc = "foo feature" }
+  ## foo feature
+  foo = []
+  ```
+- The `deprecated` flag would allow Cargo to warn downstream crates using the
+  feature
+- `[tools.rustdoc]` can grow to hold a resources manifest. For example:
+  ```toml
+  [tools.rustdoc]
+  # cargo would likely have to canonicalize this path
+  resource-root: "../static"
+  
+  [resources]
+  # .rs files can refer to this asset as "intro-video", located at "../static/sample.mp4"
+  intro-video = "sample.mp4"
+  header-include = ["js/katex.js", "js/render-output-graphs.js", "mytheme.css"]
+  ```
+- This could set a precedent for tools receiving information from `Cargo.toml`.
+  For example, the tool `cargo-foo-all-bars` could have a `[tools.foo-all-bars]`
+  table in `Cargo.toml`. Upon `cargo foo-all-bars` invocation, Cargo could pass
+  the contents of this tools table.
+  
+  The ideas in this RFC could also eventually allow `[tools.clippy]`and
+  `[tools.rustfmt]` tables to simplify configuration for other builtin tools.
