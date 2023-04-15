@@ -26,10 +26,10 @@ advanced configuration options.
 
 [motivation]: #motivation
 
-Currently, <http://docs.rs> provides a basic view of available feature flags on
-a rather simple page: for example, [`tokio`]. It is helpful as a quick overview
-of available features, but it is not managed by `rustdoc` (i.e., is not
-available on local) and there is no way to specify a description or other useful
+Currently, `docs.rs` provides a basic view of available feature flags on a
+rather simple page: for example, [`tokio`]. It is helpful as a quick overview of
+available features, but it is not managed by `rustdoc` (i.e., is not available
+on local) and there is no way to specify a description or other useful
 information.
 
 The second problem is that `rustdoc` has some per-crate configuration settings,
@@ -37,8 +37,9 @@ such as relevant URLs, that are awkward to define in Rust source files using
 attributes. It is expected that there may be further configuration options in
 the future, for specifying things like:
 
-1. Resource manifests (paths to assets, such as `KaTeX` for math rendering)
-2. Non-code instructional pages (such as [`clap`'s derive information])
+1. Resource manifests (paths to assets, such as `KaTeX` for math rendering or
+   non-image files)
+2. Non-code informational pages (such as [`clap`'s derive information])
 
 This RFC provides a way to solve both problems: it specifies a way to add
 user-facing metadata to cargo features, and specifies how that and other
@@ -77,8 +78,8 @@ This could be a longer description of this feature
 """
 ```
 
-This RFC will also enable a `[tools.rustdoc]` table where existing configuration
-can be specified
+This RFC will also allow a `[tools.rustdoc]` table where existing configuration
+can be specified:
 
 ```toml
 # Cargo.toml
@@ -89,7 +90,7 @@ issue-tracker-base-url = "https://github.com/rust-lang/rust/issues/"
 ```
 
 For projects that do not use Cargo or want separate configuration, these options
-can also be specified in a `rustdoc.toml` file using an identical schema
+can also be specified in a `rustdoc.toml` file using an identical schema:
 
 ```toml
 # rustdoc.toml containing the same information as above
@@ -107,9 +108,9 @@ bar = { requires = ["foo"], doc = "simple docstring here" }
 
 [reference-level-explanation]: #reference-level-explanation
 
-At a high level, the following changes will be necessary
+At a high level, the following changes will be necessary:
 
-1. Cargo will change its parsing to accept the new format for `features`
+1. Cargo will change its parsing to accept the new format for `[features]`
 2. `rustdoc` will gain two optional arguments: `--config-file` (for specifying
    `rustdoc.toml`-style files), and `--config-json` (for specifying the same
    information via JSON text, or a path to a JSON file). These arguments can be
@@ -123,8 +124,8 @@ This is described in more detail in the following sections.
 
 ## Changes to Cargo
 
-Cargo will need to parse the new format for `[features]`. For its internal use, it
-can discard all new information.
+Cargo will need to parse the new format for `[features]`. For its non-rustdoc
+use, it can discard all new information.
 
 The `cargo doc` invocation will need to do two new things:
 
@@ -133,10 +134,10 @@ The `cargo doc` invocation will need to do two new things:
    validate the contained information in any way.
 2. Pass this information as a string via `--config-json`. If string length
    exceeds a limit (e.g., 2000 characters), write this configuration instead to
-   a temporary build JSON file. (this also helps to avoid maximum argument
-   length restrictions).
-3. Find any `rustdoc.toml` files and pass their paths to `rustdoc` using
-   `--config-toml`
+   a temporary build JSON file. (to avoid maximum argument length restrictions
+   and keep verbose output concise).
+3. Find files named `rustdoc.toml` and pass their paths to `rustdoc` using
+   `--config-toml`; no parsing of these files is necessary.
 
 Cargo should use the following precedence (later items take priority over
 earlier items):
@@ -155,21 +156,21 @@ create an intuitive layering of global options and overrides while keeping
 `rustdoc` must be aware of two new arguments: `--config-json` and
 `--config-file`. `--config-json` accepts either a JSON file path or a JSON
 string, `--config-file` accepts a path to a TOML file. The JSON and TOML
-share an identical schema:
+share an identical schema to what is shown above:
 
 ```json5
 {
     "html-logo-url": "https://example.com/logo.jpg",
     "issue-tracker-base-url": "https://github.com/rust-lang/rust/issues/",
-    features: {
-        foo: [],
-        bar: { doc: "simple docstring here", requires: ["foo"] },
-        baz: { public: false, requires: ["bar"] },
-        qux: {
-            doc: "# corge\n\nThis could be a longer description of this feature\n",
-            requires: ["bar", "baz"],
-        },
-    },
+    "features": {
+        "foo": [],
+        "bar": { "doc": "simple docstring here", "requires": ["foo"] },
+        "baz": { "public": false, "requires": ["bar"] },
+        "qux": {
+            "doc": "# corge\n\nThis could be a longer description of this feature\n",
+            "requires": ["bar", "baz"]
+        }
+    }
 }
 ```
 
@@ -181,27 +182,28 @@ viable product.
 
 ```json5
 {
+    // Indicate the source file that spans are based on
     "_root-span-path": "/path/to/Cargo.TOML",
     "html-logo-url": {
-        data: "https://example.com/logo.jpg",
-        start: 100,
-        end: 123,
+        "data": "https://example.com/logo.jpg",
+        "start": 100,
+        "end": 123
     },
-    features: {
-        data: {
-            foo: { data: [], start: 10, end: 15 },
-            bar: {
-                data: {
-                    doc: { data: "simple docstring here", start: 15, end: 20 },
-                    requires: { data: ["foo"], start: 20, end: 25 },
+    "features": {
+        "data": {
+            "foo": { "data": [], "start": 10, "end": 15 },
+            "bar": {
+                "data": {
+                    "doc": { "data": "simple docstring here", "start": 15, "end": 20 },
+                    "requires": { "data": ["foo"], "start": 20, "end": 25 }
                 },
-                start: 15,
-                end: 30,
-            },
+                "start": 15,
+                "end": 30
+            }
         },
-        start: 10,
-        end: 100,
-    },
+        "start": 10,
+        "end": 100
+    }
 }
 ```
 
@@ -217,9 +219,9 @@ highest priority.
 - This adds complexity to `rustdoc`. In this case, it does seem like it is
   justified.
 - This adds noise to the Cargo manifest that is not relevant to Cargo itself.
-  This RFC seeks to provide a good middle ground: overly complex configuration
-  or feature descriptions can exist in a separate `rustdoc.toml`, but a separate
-  file also isn't required for simple configuration.
+  This RFC seeks to provide a good middle ground: lengthy or complex
+  configuration or feature descriptions can exist in a separate `rustdoc.toml`,
+  but a separate file also isn't required for simple configuration.
 - If a user chooses to maintain feature descriptions in `rustdoc.toml` instead
   of `Cargo.toml`, it does add multiple sources of truth for feature data.
 
@@ -228,11 +230,11 @@ highest priority.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - `rustdoc` could accept something like `--cargo-config Cargo.toml` and parse
-  the `Cargo.toml` itself. This is still possible, but there are a couple
-  reasons to prefer this RFC's suggestions:
+  the `Cargo.toml` itself. This is possible, but there are a couple reasons to
+  prefer this RFC's suggestions:
   - Cargo will have the discretion for what exactly data to send. For example,
     `cargo doc --no-default-features` could strip all features that aren't
-    default
+    default, without `rustdoc` needing to be aware of the argument.
   - Documentation systems other than Cargo maintain flexibility. For example,
     `doxygen` could invoke `rustdoc` and pass a favicon URL that doesn't need to
     come from `rustdoc.toml` or `Cargo.toml`.
@@ -326,4 +328,4 @@ Nonblocking:
   the contents of this tools table.
   
   The ideas in this RFC could also eventually allow `[tools.clippy]`and
-  `[tools.rustfmt]` tables to simplify configuration for other builtin tools.
+  `[tools.rustfmt]` tables to simplify configuration of those tools.
