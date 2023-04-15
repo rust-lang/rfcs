@@ -257,9 +257,11 @@ Therefore, I believe that making lossy conversions more explicit would go a long
 
 6. This could be implemented in an external crate as extension traits, but then the traits must be imported everywhere they are used. Furthermore, to deprecate `as` for numeric conversions, the APIs to replace it should be available in the standard library, so they can be recommended in compiler warnings/errors.
 
-7. Of course we could do nothing about this. Rust's increasing popularity means that this change would impact millions of developers, so we should be sure that the benefits justify the churn. This feature isn't _required_; Rust has worked well until now without it, and Rustaceans have learned to be extra careful when using `as` for numeric conversions.
+7. Another option is to deprecate `as` only for lossy integer-to-integer casts. From what I understand, conversions involving floats are more common, and the implied rounding behaviour is usually desired. Having to spell `.approx()` instead of ` as _` is not a huge deal, but the ecosystem migration may be considered too much of a hassle.
 
-   However, I am convinced that removing this papercut will make Rust safer and prevent more bugs. This is similar in spirit to the `unsafe` keyword, which makes Rust more verbose, but also more explicit about potential problems.
+8. Of course we could do nothing about this. Rust's increasing popularity means that this change would impact millions of developers, so we should be sure that the benefits justify the churn. This feature isn't _required_; Rust has worked well until now without it, and Rustaceans have learned to be extra careful when using `as` for numeric conversions.
+
+   However, I am convinced that removing (or at least reducing) this papercut will make Rust safer and prevent more bugs. This is similar in spirit to the `unsafe` keyword, which makes Rust more verbose, but also more explicit about potential problems.
 
 # Prior art
 
