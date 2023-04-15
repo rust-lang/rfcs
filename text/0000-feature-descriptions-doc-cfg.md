@@ -1,6 +1,6 @@
 - Feature Name: feature-descriptions-doc-cfg
 - Start Date: 2023-04-14
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3416)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -17,11 +17,11 @@ This RFC has three simple goals:
 # Motivation
 [motivation]: #motivation
 
-Currently, <docs.rs> provides a simple view of available feature flags on a
-rather simple page: for example, <https://docs.rs/crate/tokio/latest/features>.
-It is helpful as a quick overview of available features, but means that users
-must manually maintain a feature table if they want them to be documented
-somehow.
+Currently, <http://docs.rs> provides a simple view of available feature flags on
+a rather simple page: for example,
+<https://docs.rs/crate/tokio/latest/features>. It is helpful as a quick overview
+of available features, but means that users must manually maintain a feature
+table if they want them to be documented somehow.
 
 The second problem is that `rustdoc` has some per-crate configuration settings,
 such as relevant URLs, that are awkward to define in Rust source files using
@@ -118,7 +118,7 @@ This sort of format has two distinct advantages:
 - Question: could/should this work from stdin?
 - Note: there is a possible precedent to set here that could make it easy for
   other tools. `cargo-foobar` could receive the JSON-serialized string of the
-  `[tools.foobar]` section.
+  `[tools.foobar]` section. Maybe this would also work for `rustfmt`?
 
 ## Configuration file argument
 
