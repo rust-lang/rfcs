@@ -113,7 +113,10 @@ rustdoc --argfoo --argbar . --json-config '{"html-logo-url":
 This sort of format has two distinct advantages:
 
 1. Build systems other than `cargo` can easily make use of the configuration
-2. `rustdoc` does not need to be aware of `cargo`, workspaces, etc.
+2. `rustdoc` does not need to be aware of `cargo`, paths, workspaces, etc.
+
+Arguments longer than the allowed limit (8000ish on Windows I think) can use
+`@argfile`.
 
 - Question: could/should this work from stdin?
 - Note: there is a possible precedent to set here that could make it easy for
@@ -125,9 +128,8 @@ This sort of format has two distinct advantages:
 `rustdoc` will gain the `--config-file` argument that can point to a
 `rustdoc.toml` formatted file. The name `rustdoc.toml` is not required.
 
-If argument length would be exceeded with the `--json-config` option, `Cargo`
-can create a temporary `rustdoc.toml` in the target build folder and point
-`rustdoc` to it.
+Alternative for long args: `Cargo` could create a temporary `rustdoc.toml` in
+the target build folder and point `rustdoc` to it.
 
 The arguments `--json-config` and `--config-file` can be specified more than
 once, later invocations will just overwrite previous configuration.
