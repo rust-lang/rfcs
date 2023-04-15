@@ -114,6 +114,8 @@ This sort of format has two distinct advantages:
 
 1. Build systems other than `cargo` can easily make use of the configuration
 2. `rustdoc` does not need to be aware of `cargo`, paths, workspaces, etc.
+3. `rustdoc` can share the same `serde` structs to parse both `rustdoc.toml` or
+   this JSON configuration
 
 Arguments longer than the allowed limit (8000ish on Windows I think) can use
 `@argfile`.
