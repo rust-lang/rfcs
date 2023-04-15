@@ -1,4 +1,4 @@
-- Feature Name: feature-descriptions-doc-cfg
+- Feature Name: feature-metadata-doc-cfg
 - Start Date: 2023-04-14
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3416)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -9,7 +9,8 @@
 
 This RFC has three simple goals:
 
-1. Add a way to write feature descriptions in `Cargo.toml`
+1. Add a way to write feature descriptions in `Cargo.toml`, as well some other
+   simple feature attributes.
 2. Establish a way for Cargo or other build systems to easily pass advanced
    configuration information to `rustdoc` (e.g., favicon or playground URLs from
    `Cargo.toml`)
@@ -256,6 +257,10 @@ highest priority.
 - There is an existing crate that uses TOML comments to create a features table:
   <https://docs.rs/document-features/latest/document_features/>
 - `docs.rs` displays a feature table, but it is fairly limited
+- Ivy has a [visibility attribute] for its configuration (mentioned in [cargo #10882])
+
+[visibility attribute]: https://ant.apache.org/ivy/history/latest-milestone/ivyfile/conf.html
+[cargo #10882]: https://github.com/rust-lang/cargo/issues/10882
 
 # Unresolved questions
 
@@ -263,12 +268,14 @@ highest priority.
 
 Implementation blocking:
 
-- Should `cargo` use the `public` flag to disallow downstream crates from using
-  features (for e.g., functions that provide unstable features or benchmark-only
-  functions). Must be adopted as the same time as parsing, as enabling this
-  later would break compatibility.
+- Should `cargo` use the `public` attribute to disallow downstream crates from
+  using features (for e.g., functions that provide unstable features or
+  benchmark-only functions). Must be adopted as the same time as parsing, as
+  enabling this later would break compatibility. See also:
+  <https://github.com/rust-lang/cargo/issues/10882>
 - If the answer to the above is "yes", does it make sense to have separate
-  `hidden` (not documented) and `public` flags (not allowed downstream) flags?
+  `hidden` (not documented) and `public` attribute (not allowed downstream)
+  attribute?
 
 Nonblocking:
 
@@ -292,8 +299,11 @@ Nonblocking:
   ## foo feature
   foo = []
   ```
-- The `deprecated` flag would allow Cargo to warn downstream crates using the
-  feature
+- The `deprecated` attribute would allow Cargo to warn downstream crates using
+  the feature
+- `unstable` or `nightly` attributes for features could provide further
+  informations or restriction on use (see
+  <https://github.com/rust-lang/cargo/issues/10881>)
 - `[tools.rustdoc]` can grow to hold a resources manifest. For example:
   ```toml
   [tools.rustdoc]
