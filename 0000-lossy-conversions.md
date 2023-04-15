@@ -217,13 +217,17 @@ This lint is allow-by-default, and can be enabled with `#[warn(cast_lossy)]`. Th
 
 [drawbacks]: #drawbacks
 
-1. The API surface of this change is rather big: Most numeric types get 3 new methods.
+1. This makes code more verbose.
 
-2. This may change the overall character of the language.
+   I do not think that this is a deal-breaker. Rustaceans have come to accept that you need `.unwrap()` to access an optional value, and `Box::new()` to allocate heap memory: things that many popular languages do automatically. But since Rust had a more concise way of converting integers, and may now abandon it, people might be unhappy because they will have to change their coding habits. Furthermore, the new way isn't _obviously_ better than the old one in every way. Probably only those who have had to deal with integer truncation bugs will fully appreciate this change.
+
+2. The API surface of this change is rather big: Most numeric types get 3 new methods.
+
+3. This may change the overall character of the language.
 
    However, I believe it would make the language feel more consistent, since Rust already leans towards explicitness in most other situations.
 
-3. This may negatively impact compile times _(to be verified)_.
+4. This may negatively impact compile times _(to be verified)_.
 
 # Rationale and alternatives
 
