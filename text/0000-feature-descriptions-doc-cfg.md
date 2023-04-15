@@ -95,14 +95,14 @@ What exactly `rustdoc` does with the information is TBD. There are two options
 
 ## JSON Configuration
 
-`rustdoc` will gain a `--json-config` argument that allows passing a
+`rustdoc` will gain a `--config-json` argument that allows passing a
 JSON-serialized string of the TOML configuration. It is likely that this is what
 Cargo can use when it invokes `rustdoc`: all that is needed is to parse the
 `features` and `tools.rustdoc` table from `Cargo.toml`, serialize to JSON, and
 pass as an argument.
 
 ```sh
-rustdoc --argfoo --argbar . --json-config '{"html-logo-url":
+rustdoc --argfoo --argbar . --config-json '{"html-logo-url":
 "https://example.com/logo.jpg","issue-tracker-base-url":
 "https://github.com/rust-lang/rust/issues/","features":{"foo":[],"bar":{"doc":
 "simple docstring here","requires":["foo"]},"baz":{"public":false,"requires":
@@ -135,7 +135,7 @@ Arguments longer than the allowed limit (8000ish on Windows I think) can use
 Alternative for long args: `Cargo` could create a temporary `rustdoc.toml` in
 the target build folder and point `rustdoc` to it.
 
-The arguments `--json-config` and `--config-file` can be specified more than
+The arguments `--config-json` and `--config-file` can be specified more than
 once, later invocations will just overwrite previous configuration.
 
 - Question: should rustdoc look for config if it isn't specified?
