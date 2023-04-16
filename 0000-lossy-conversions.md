@@ -41,6 +41,8 @@ Conversions between number types can sometimes be lossy. For example, when conve
 
 - `truncate()`: Used for **lossy integer conversions**. This truncates leading bits that don't fit into the output type; the remaining bits are reinterpreted as the output type. This can change the value completely, even turn a negative number into a positive number or vice versa. This conversion is very fast, but should be used with care.
 
+  In mathematical terms, this returns the only result for <code>_value_ (mod 2<sup>_n_</sup>)</code> that lies in the output type's range, where _n_ is the output type's number of bits.
+
 - `saturate()`: Like `truncate()`, this is used for **lossy integer conversions**. It checks if the input fits into the output type, and if not, the closest possible value is used instead. For example, converting `258` to a `u8` with this method results in `255`, which is the highest `u8`.
 
 - `approx()`: This must be used when the input or output type is a **float** (`f32` and `f64`). The value may be both rounded and saturated. When converting from a float to an integer, `NaN` is turned into `0`.
@@ -49,11 +51,7 @@ Although the `as` operator can also be used instead of `truncate()` or `approx()
 
 ## Conversion traits
 
-`into()` and `try_into()` are trait methods from the `Into`/`TryInto` traits, and exist on many types besides numbers. On the other hand, `truncate()`, `saturate()`, and `approx()` are inherent methods that only exist on numeric types in the standard library. They are generic and can convert into any type implementing any of these traits:
-
-- `TruncatingFrom<T>` for `truncate()`
-- `SaturatingFrom<T>` for `saturate()`
-- `ApproxFrom<T>` for `approx()`
+`into()` and `try_into()` are trait methods from the `Into`/`TryInto` traits, and exist on many types besides numbers. On the other hand, `truncate()`, `saturate()`, and `approx()` are inherent methods that only exist on numeric types in the standard library. Their traits are unstable for now, so they ca not be implemented for custom types.
 
 ## Examples
 
@@ -66,9 +64,9 @@ i8::try_from( 42_u8) == Ok(42)
 i8::try_from(-24_u8).is_err()
 
  42_u8.truncate::<i8>()  == 42
--24_i8.truncate::<u8>()  == 232  // u8::MAX + 1 - 24
-232_u8.truncate::<i8>()  == -24  // u8::MAX + 1 - 232
-280_i16.truncate::<u8>() == 24   // 280 % u8::MAX = 24
+-24_i8.truncate::<u8>()  == 232  // 2⁸ - 24
+232_u8.truncate::<i8>()  == -24  // 232 - 2⁸
+536_i16.truncate::<u8>() == 24   // 536 mod 2⁸
 
  42_i8.saturate::<u8>()  == 42
 -14_i8.saturate::<u8>()  == 0    // u8::MIN
@@ -110,20 +108,20 @@ To make potential errors explicit, we can distinguish between these numeric erro
 
 Truncation and Wrapping often occur together; for example, an `i32 → u16` conversion can both truncate and wrap around. To keep the complexity to a minimum, we treat wrapping as a special case of truncation, so we arrive at the following 3 new traits:
 
-- `TruncatingFrom` — truncating conversions between integers
-- `SaturatingFrom` — saturating conversions between integers
-- `ApproxFrom` — lossy conversions that involve floats
+- `TruncatingFrom<T>` — truncating conversions between integers
+- `SaturatingFrom<T>` — saturating conversions between integers
+- `ApproxFrom<T>` — lossy conversions that involve floats
 
 ```rust
-trait TruncatingFrom<T> {
+pub trait TruncatingFrom<T> {
     fn truncating_from(value: T) -> Self;
 }
 
-trait SaturatingFrom<T> {
+pub trait SaturatingFrom<T> {
     fn saturating_from(value: T) -> Self;
 }
 
-trait ApproxFrom<T> {
+pub trait ApproxFrom<T> {
     fn approx_from(value: T) -> Self;
 }
 ```
@@ -163,6 +161,8 @@ impl SaturatingFrom<i16> for i8 {
     }
 }
 ```
+
+These traits are **unstable** for now. Before stabilizing them, we should consider adding `*Into` traits as well, but that discussion is left for the future.
 
 ## Inherent methods
 
@@ -269,6 +269,8 @@ Therefore, I believe that making lossy conversions more explicit would go a long
 
 This proposal was previously discussed in [this internals thread](https://internals.rust-lang.org/t/lets-deprecate-as-for-lossy-numeric-casts/16283).
 
+I'm not aware of a language with explicit integer or float casting methods that distinguish between different numerical errors.
+
 For the proposed lint, there exists prior art in clippy:
 
 - `cast_possible_truncation`
@@ -277,6 +279,8 @@ For the proposed lint, there exists prior art in clippy:
 - `cast_sign_loss`
 
 These lints show that lossy numeric casts can pose enough of a problem to forbid them, even though there is currently no alternative in the cases where truncation/saturation/rounding is desired.
+
+API-wise, the most similar features are the [`FromIterator`](https://doc.rust-lang.org/std/iter/trait.FromIterator.html)/[`IntoIterator`](https://doc.rust-lang.org/std/iter/trait.IntoIterator.html) traits used by [`collect()`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect), and the [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait used by [`parse()`](https://doc.rust-lang.org/std/primitive.str.html#method.parse).
 
 # Unresolved questions
 
