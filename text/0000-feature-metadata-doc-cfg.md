@@ -290,6 +290,9 @@ Nonblocking:
   the module's top-level could be reasonable.
 - Should `rustdoc` allow a header/overview for the features section? This can be
   done in the future with e.g. a `tools.rustdoc.features-doc` key in TOML.
+- Should Cargo also send the contents of the `[dependencies]` table or other
+  information? This could be used to give `rustdoc` a dependencies viewer, like
+  `docs.rs` currently displays in the top bar.
 
 # Future possibilities
 
