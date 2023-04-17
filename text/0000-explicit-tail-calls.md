@@ -542,12 +542,12 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
     - The main uncertainties are regarding the exact restrictions on when backends can offer TCE, this RFC is intentionally strict to try and require as little as possible from the backends.
     - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional.
     - Another point that needs to be decided is if TCE is supported by a backend what exactly should be guaranteed? While the guarantee that there is no stack growth should be necessary, should performance (as in transforming `call` instructions into `jmp`) also be guaranteed? Note that a backend that guarantees performance should do so **always** otherwise the main intent of this RFC seems to be lost.
-    - Migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation
-from `return` to `become` can be done for function calls where all requisites are already fulfilled. However, this lint
-might be confusing and noisy. Decide on if this lint or others should be added.
+    - Migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation from `return` to `become` can be done for function calls where all requisites are already fulfilled. However, this lint might be confusing and noisy. Decide on if this lint or others should be added.
+    - Should a lint be added for functions that are marked to be tail call or use become. See discussion [here](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500620309).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
     - Are all calling-convention used by Rust available for TCE with the proposed restrictions on function signatures?
     - Can the restrictions on function signatures be relaxed?
+        - One option for intra-crate direct calls is to automatically pad the arguments during compilation see [here](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500620309). Does this have an influence on other calls? How much implementation effort is it?
     - Can generic functions be supported?
     - Can async functions be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assessment)
     - Can closures be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assessment)
