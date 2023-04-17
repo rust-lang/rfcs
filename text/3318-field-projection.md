@@ -6,12 +6,15 @@
 # Summary
 [summary]: #summary
 
-Rust often employs the use of wrapper types, for example `Pin<P>`, `NonNull<T>`, `Cell<T>`, `UnsafeCell<T>`, `MaybeUninit<T>` and more. These types provide additional properties for the wrapped type and often also logically affect their fields. For example, if a struct is uninitialized, its fields are also uninitialized. This RFC introduces architecture to make it possible to provide safe projections backed by the type system.
+Introduce ways to refer to fields of structs via the type system.
 
 # Motivation
 [motivation]: #motivation
 
-Some wrapper types provide projection functions, but these are not ergonomic. They also cannot automatically uphold type invariants of the projected struct. The prime example is `Pin`, the projection functions are `unsafe` and accessing fields is natural and often required. This leads to code littered with `unsafe` projections:
+Accessing field information is at the moment only possible for macros. Allowing the type system to also access some information about fields enables writing code that generalizes over fields.
+One important application is field projection. Rust often employs the use of wrapper types, for example `Pin<P>`, `NonNull<T>`, `Cell<T>`, `UnsafeCell<T>`, `MaybeUninit<T>` and more. These types provide additional properties for the wrapped type and often also logically affect their fields. For example, if a struct is uninitialized, its fields are also uninitialized. Giving the type system access to field information allows creating safe projection functions.
+
+Current projection functions cannot be safe, since they take a projection closure that might execute arbitrary code. They also cannot automatically uphold type invariants of the projected struct. A prime example is `Pin`, the projection functions are `unsafe` and accessing fields is natural and often required. This leads to code littered with `unsafe` projections:
 ```rust
 struct RaceFutures<F1, F2> {
     fut1: F1,
@@ -37,28 +40,103 @@ where
 ```
 Since the supplied closures are only allowed to do field projections, it would be natural to add `SAFETY` comments, but that gets even more tedious.
 
-Other types would also greatly benefit from projections, for example raw pointers, since projection could be based on `wrapping_add` and they would not dereference anything. It would reduce syntactic clutter of `(*ptr).field`.
-
-Cell types like `Cell`, `UnsafeCell` would similarly enjoy additional ergonomics, since they also propagate their properties to the fields of structs.
-
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This section will be created when a solution has been agreed upon.
+## Field Information
+
+When defining a struct, the compiler automatically creates types for each field. This allows referencing fields via the type system. For example when we define the following struct:
+```rust
+struct Problem {
+    info: String,
+    count: usize,
+}
+```
+Then the compiler creates two types, one for `info` and one for `count`. We cannot name these types normally, instead we use the `field_of!` macro:
+```rust
+type ProblemInfo<'a> = field_of!(Problem, info);
+```
+This field type also implements the `Field` trait that cannot be manually implemented. This trait provides some information about the field:
+- which struct it belongs to,
+- its own type,
+- the offset at which the field can be found inside of the struct.
+
+Since the trait cannot be implemented manually, you can be sure that a type implementing it actually refers to a field:
+```rust
+fn get_field<F: Field<Struct = Problem>>(problem: &Problem) -> &T::Type {
+    let ptr: *const Problem = problem;
+    // SAFETY: `F` implements the `Field` trait and thus we find `F::Type` at `F::OFFSET` inside
+    // of `ptr` that was derived from a reference.
+    unsafe { &*ptr.cast::<u8>().add(F::OFFSET).cast::<F::Type>() }
+}
+```
+There are a lot more powerful things that one can do using this type. For example field projections can be expressed safely. If we are often working with memory that has to be accessed volatile, then we might write the following wrapper type:
+```rust
+/// A pointer to memory that enforces volatile access.
+pub struct VolatileMem<T> {
+    ptr: NonNull<T>,
+}
+
+impl<T: Copy> VolatileMem<T> {
+    pub fn get(&self) -> T {
+        // SAFETY: `ptr` is always valid for volatile reads.
+        unsafe { ptr::read_volatile(self.ptr.as_ptr()) }
+    }
+
+    pub fn put(&mut self, val: T) {
+        // SAFETY: `ptr` is always valid for volatile writes.
+        unsafe { ptr::write_volatile(self.ptr.as_mut_ptr()) }
+    }
+}
+```
+Now consider the following struct that we would like to put into our `VolatileMem<T>`:
+```rust
+#[repr(C)]
+pub struct Config {
+    mode: u8,
+    reserved: [u8; 128],
+}
+```
+If we want to write a new config, then we always have to write the whole struct, including the `reserved` field that is comparatively big. We can avoid this by providing a field projection:
+```rust
+impl<T> VolatileMem<T> {
+    pub fn map<F: Field<Struct = T>>(self) -> VolatileMem<F::Type> {
+        Self {
+            // SAFETY: `F` implements the `Field` trait and thus we find `F::Type` at `F::OFFSET`
+            // inside of `ptr` that is always valid.
+            ptr: unsafe {
+                NonNull::new_unchecked(
+                    self.ptr.as_ptr().cast::<u8>().add(F::OFFSET).cast::<F::Type>(),
+                )
+            },
+        }
+    }
+}
+```
+Now in the scenario from above we can do:
+```rust
+let mut config: VolatileMem<Config> = ...;
+config.put(Config::default());
+let mut mode: VolatileMem<u8> = config.map::<field_of!(Config, mode)>();
+mode.put(1);
+```
+And we will not have to always overwrite `reserved` with the same data.
+
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Core design
+For every field of every non-packed struct, the compiler creates a unique, unnameable type that represent that field. These generated types will:
+- have meaningful names in error messages (e.g. `Struct::field`), 
+- implement the `Field` with accurate associated types and constants.
 
-For every field of every struct, the compiler creates unnameable unit structs that represent that field. These types will have a meaningful name in error messages (e.g. `Struct::field`). These types implement the `Field` trait holding information about the type of the field and its offset within the struct:
+The `Field` trait will reside in `core::marker` and is:
 ```rust
-// in core::marker:
 /// A type representing a field on a struct.
 pub trait Field {
     /// The type of the struct containing this field.
-    type Base;
+    type Struct;
     /// The type of this field.
     type Type;
     /// The offset of this field from the beginning of the `Base` struct in bytes.
@@ -81,138 +159,39 @@ fn project<F: Field>(base: &F::Base) -> &F::Type {
 
 Importantly, the `Field` trait should only be implemented on non-`packed` structs, since otherwise the above code would not be sound.
 
-Users will be able to name this type by invoking the compiler built-in macro `field_of!` that takes a struct and an identifier/number for the accessed field:
+Users will be able to name this type by invoking the compiler built-in macro `field_of!` residing in `core`. This macro takes a struct type and an identifier/number for the accessed field:
 ```rust
-// in core:
 macro_rules! field_of {
     ($struct:ty, $field:tt) => { /* compiler built-in */ }
 }
 ```
-`Project` trait, this trait permits changing the output type of projections based on properties of the projected field:
+Generics of the struct have to be specified and the field has to be accessible by the calling scope:
 ```rust
-/// Used for projection operations like `expr->field`.
-///
-/// `F` is the projected Field of the inner type.
-pub trait Project<F> {
-    /// The output of the projection.
-    type Output;
-
-    /// Projects this wrapper type to the given field.
-    fn project(self, f: F) -> Self::Output;
+pub mod inner {
+    pub struct Foo<T> {
+        a: usize,
+        pub b: T,
+    }
+    type Ty = field_of!(Foo, a); // Compile error: expected 1 generic argument 
+    type Ty = field_of!(Foo<()>, a); // OK
+    type Ty = field_of!(Foo::<()>, b); // OK
 }
+type Ty = field_of!(Foo<()>, a); // Compile error: private field
+type Ty = field_of!(Foo<()>, b); // OK
+type Ty<T> = field_of!(Foo<T>, b); // OK
 ```
-
-## Improving ergonomics 1: Closures
-
-For improving the ergonomics of getting a field of a specific type, we could leverage specially marked closures:
-```rust
-// in core::marker:
-pub trait FieldClosure<T>: Fn<T> {
-    type Field: Field<Base = T>;
-}
-```
-This trait is also only implementable by the compiler. It is implemented for closures that
-- do not capture variables
-- only do a single field access on the singular parameter they have
-
-Positive example: `|foo| foo.bar`
-Negative examples:
-- `|_| foo.bar`, captures `foo`
-- `|foo| foo.bar.baz`, does two field accesses
-- `|foo| foo.bar()`, calls a function
-- `|foo| &mut foo.bar`, creates a reference to the field
-- `|foo, bar| bar.baz`, takes two parameters
-
-With this trait one could write a function like this:
-```rust
-pub unsafe fn map<T, F>(pin: Pin<&mut T>, f: F) -> Pin<&mut <F::Field as Field>::Type>
-where
-    F: FieldClosure<T>,
-{
-    /* do the offsetting */
-}
-```
-
-To make this function safe, we require the feature discussed in the next section.
-
-## Limited negative reasoning
-
-There is the need to make the output type of the `map` function above depend on a property of the field. In the case of `Pin`, this is whether the field is structurally pinned or not. If it is, then the return type should be as declared above, if it is not, then it should be `&mut <F::Field as Field>::Type` instead.
-
-A way this could be expressed is by allowing some negative reasoning. Here is the solution discussed on the example of `Pin`:
-```rust
-// First we create a marker trait to differ structurally pinned fields:
-#[with_negative_reasoning]
-pub trait StructurallyPinnedField: Field {}
-// This trait needs to then be implemented for every field that should be structurally pinned.
-// Since this is user-decideable at the struct definition, this could be done with a proc-macro akin to `pin-project`.
-
-impl<'a, T, F: FieldClosure> Project<F> for Pin<&'a mut T>
-where
-    F::Field: StructurallyPinnedField,
-{
-    type Output = Pin<&'a mut <F::Field as Field>::Type>;
-    pub fn map(self, f: impl) -> Self::Output
-    { /* do the offsetting */ }
-}
-
-impl<'a, T, F: FieldClosure> Project<F> for Pin<&'a mut T>
-where
-    F::Field: !StructurallyPinnedField,
-{
-    type Output = &'a mut <F::Field as Field>::Type;
-    pub fn map(self, f: F) -> Self::Output
-    { /* do the offsetting */ }
-}
-```
-The `#[with_negative_reasoning]` attribute on a `Trait` result in the following:
-- `!Trait` can be used in where clauses.
-- `T: !Trait` means that there exists an explicit `impl !Trait for T` somewhere.
-- Typechk knows that `Trait` and `!Trait` are mutually exclusive and thus can identify non-overlapping impl blocks.
-- When `Trait` or `!Trait` are implemented, they have to be implemented for the entire type. This behavior is similar to `Drop`. So you are not able to implement it only for `Foo<'static>`.
-
-
-A variation of this feature is `xor` traits, where a type is only ever allowed to implement one from the given set. It could achieve the same thing, while being more flexible when one wants to define more than two different user-specified projections.
-
-## Alternative to negative reasoning
-
-One alternative is to also create an extension trait of `Field`, but then rely on the proc-macro to specify the correct projection-output type in an associated type:
-```rust
-// We have to mark it `unsafe`, because the `ProjOutput` type could be wrongly specified.
-pub unsafe trait PinProjectableField: Field {
-    type ProjOutput<'a>; // this is either `&'a mut Self::Type` or `Pin<&'a mut Self::Type>`.
-}
-
-impl<'a, T> Pin<&'a, mut T> {
-    pub fn map<F: FieldClosure<T>>(self, f: F) -> <F::Field as PinProjectableField>::ProjOutput<'a>
-    where
-        F::Field: PinProjectableField,
-    { /* do the offsetting */ }
-}
-```
-This approach is used by [the field projection example from Gary](https://github.com/nbdd0121/field-projection/).
-
-A big issue that this approach has is that the `map` function cannot have behavior depending on the projection output. This results in practice, that `mem::transmute_copy` has to be used, since the compiler cannot prove that `ProjOutput` always has the same size.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Adds considerable complexity.
+Adds additional complexity.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why specify projections via proc-macros?
+The presented approach is designed to be minimal and extendable. The `Field` trait can be extended and additional information such as the projection output can be added.
 
-In the design meeting the following alternative was brought up:
-```rust
-pub struct NotPin<T>(pub T);
-
-impl<T> Unpin for NotPin<T> {}
-```
-Instead of marking fields with `#[pin]`, they should wrap not structurally pinned fields with the `NotPin` struct. The `map` function of `Pin` would then use `!Unpin`/`Unpin` instead of the `StructurallyPinnedField` field used here.
-
-The problem with this solution is that now users always get reminded that the field is not structurally pinned. They have to wrap a value when they want to assign it and they have to unwrap it when they want to read it. This property is also not something for the type system, rather it is a property of that specific field of the struct.
+The `field_of!` macro avoids adding special syntax to refer to a field of a type and while it is not ergonomic, this can be changed by adding syntax later.
 
 
 # Prior art
@@ -231,7 +210,7 @@ There are some crates that enable field projections via (proc-)macros:
 
 ## Other languages
 
-Other languages generally do not have this feature in the same extend. C++ has `shared_ptr` which allows the creation of another `shared_ptr` pointing at a field of a `shared_ptr`'s pointee. This is possible, because `shared_ptr` is made up of two pointers, one pointing to the data and another pointing at the ref count. While this is not possible to add to `Arc` without introducing a new field, it could be possible to add another `Arc` pointer that allowed field projections. See [the future possibilities section][arc-projection] for more.
+Java has reflection, which gives access to type information at runtime.
 
 ## RFCs
 - [`ptr-to-field`](https://github.com/rust-lang/rfcs/pull/2708)
@@ -249,27 +228,64 @@ Other languages generally do not have this feature in the same extend. C++ has `
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-The whole design, please look at the PR to see the currently open questions.
+None.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Use closures to improve ergonomics
+
+One has to spell out the projected type for every projection. Closures could be used to make use of type inference where possible. We introduce a new closure type in `core::marker`:
+```rust
+pub trait FieldClosure<T>: Fn<T> {
+    type Field: Field<Struct = T>;
+}
+```
+This trait is only implementable by the compiler. It is implemented for closures that
+- do not capture variables
+- only do a single field access on the singular parameter they have
+
+Positive example: `|foo| foo.bar`
+Negative examples:
+- `|_| foo.bar`, captures `foo`
+- `|foo| foo.bar.baz`, does two field accesses
+- `|foo| foo.bar()`, calls a function
+- `|foo| &mut foo.bar`, creates a reference to the field
+- `|foo, bar| bar.baz`, takes two parameters
+
+This trait makes calling a projection function a lot more ergonomic:
+```rust
+wrapper.project(|i| i.field)
+// Instead of:
+wrapper.project::<field_of!(Struct, field)>()
+```
+
+## Limited negative reasoning
+
+There is the need to make the output type of `map` functions depend on properties of the projected field. In the case of `Pin`, this is whether the field is structurally pinned or not. If it is, then the return type should be `Pin<&mut F::Type>`, if it is not, then it should be `&mut F::Type` instead.
+
+Negative reasoning would allow implementing the projection function with the correct type.
+
+
 ## Operator syntax
 
-Introduce a `Project` trait and a binary operator that is syntactic sugar for `Project::project($left, |f| f.$right)`.
-
-## Project multiple field at once
-
-Introduce a `FieldChainClosure` trait that is implemented for closures that contain only a field access chain `|foo| foo.bar.baz`. The chain should not contain `Box`es or other types with `deref`s, since then we could be leaving the allocation of the base struct.
+Introduce a `Project` trait and a binary operator that is syntactic sugar for `Project::project($left, |f| f.$right)`. This would make projections even more ergonomic:
+```rust
+wrapper->field
+// Instead of:
+wrapper.project(|i| i.field)
+// or
+wrapper.project::<field_of!(Struct, field)>()
+```
 
 ## Support misaligned fields and `packed` structs
 
-Create the `MaybeUnalignedField` trait that also has a constant `WELL_ALIGNED: bool`. This trait is also automatically implemented by the compiler even for packed structs.
+Create the `MaybeUnalignedField` trait as a supertrait of `Field` with the constant `WELL_ALIGNED: bool`. This trait is also automatically implemented by the compiler even for packed structs.
 
 ## `enum` and `union` support
 
 Both enums and unions cannot be treated like structs, since some variants might not be currently valid. This makes these fundamentally incompatible with the code that this RFC tries to enable. They could be handled using similar traits, but these would not guarantee the same things. For example, union fields are always allowed to be uninitialized.
 
-## Field marco attributes
+## Field macro attributes
 
 To make things easier for implementing custom projections, we could create a new proc-macro kind that is placed on fields.
