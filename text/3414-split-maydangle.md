@@ -6,10 +6,15 @@
 # Summary
 [summary]: #summary
 
-Add `#[needs_drop]`, ignore `PhantomData` for outlives requirements.
+Refine `#[may_dangle]`, treat `PhantomData` like `ManuallyDrop`.
 
 # Motivation
 [motivation]: #motivation
+
+Forgetting to put `PhantomData` in a type annotated with `#[may_dangle]` has
+caused multiple soundness issues in the past, notably [rust-lang/rust#76367] and
+[rust-lang/rust#99408]. Further, `PhantomData` having dropck behaviour leads to
+"spooky-dropck-at-a-distance":
 
 This fails to compile:
 
@@ -63,12 +68,17 @@ pub fn foo() {
 }
 ```
 
-Since the values in the tuple are unrelated, they should not affect each other.
+`PhantomData`'s dropck behaviour is only checked if the type (in this case, the
+tuple) marks `needs_drop`, which is confusing. Unrelated tuple elements
+shouldn't affect `PhantomData` behaviour.
+
+[rust-lang/rust#76367]: https://github.com/rust-lang/rust/issues/76367
+[rust-lang/rust#99408]: https://github.com/rust-lang/rust/issues/99408
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-A type marked `#[needs_drop]` gets checked for liveness at drop. This is
+A type marked `#[may_dangle(drop)]` gets checked for liveness at drop. This is
 necessary for `Vec`:
 
 ```rust
@@ -76,7 +86,7 @@ struct Vec<T> {
   ...
 }
 
-unsafe impl<#[needs_drop] #[may_dangle] T> Drop for Vec<T> {
+unsafe impl<#[may_dangle(drop)] T> Drop for Vec<T> {
   fn drop(&mut self) {
     ...
   }
@@ -118,11 +128,92 @@ fn main() {
 This RFC removes the dropck/outlives constraints from `PhantomData` and moves
 them into the relevant `Drop` impls instead.
 
+Instead of relying on `PhantomData`, there are now 3 forms of `may_dangle`:
+
+For lifetime parameters: `#[may_dangle] 'a`, places no constraints on `'a`. This
+is unchanged from the current form.
+
+For type parameters that are dropped, they need to be annotated with
+`#[may_dangle(drop)]`. These type parameters will be checked as if in a struct
+like so:
+
+```rust
+struct Foo<T>(T);
+
+struct PrintOnDrop<'s>(&'s str);
+impl<'s> Drop for PrintOnDrop<'s> {
+    fn drop(&mut self) {
+        println!("{}", self.0);
+    }
+}
+
+fn main() {
+  let mut foo;
+  {
+    foo = Foo(PrintOnDrop(&*String::from("temporary")));
+  }
+  // ERROR: Foo dropped here, runs destructor for PrintOnDrop
+}
+```
+
+For type parameters that are not dropped, `#[may_dangle(borrow)]` can be used.
+These are checked as if in a struct like so:
+
+```rust
+struct Foo<T>(*const T);
+
+struct PrintOnDrop<'s>(&'s str);
+impl<'s> Drop for PrintOnDrop<'s> {
+    fn drop(&mut self) {
+        println!("{}", self.0);
+    }
+}
+
+fn main() {
+  let mut foo;
+  {
+    foo = Foo(&PrintOnDrop(&*String::from("temporary")));
+  }
+  // no error here
+}
+```
+
+This removes the need for the soundness-bearing `PhantomData` entirely.
+
+Effectively, a type is checked to be *safe to drop* by the following procedure:
+
+- If the type has no type or lifetime parameters, it is *safe to drop*.
+- If the type is any of the below, it is *safe to drop*:
+    References, raw pointers, function pointers, function items, `PhantomData`
+    and `ManuallyDrop`.
+- If the type has a `Drop` impl, or is a trait object:
+    - For every lifetime parameter:
+        - If the lifetime parameter is marked `#[may_dangle]`, continue.
+        - If the lifetime is dead, the type is not *safe to drop*.
+    - For every type parameter:
+        - If the type parameter is marked `#[may_dangle(borrow)]`, continue.
+        - If the type parameter is marked `#[may_dangle(drop)]`:
+            - If the type parameter is not *safe to drop*, then the type is not
+                *safe to drop*.
+            - Continue.
+        - If the type parameter contains lifetimes which are dead, the type is
+            not *safe to drop*.
+- If the type does not have a `Drop` impl:
+    - For every field:
+        - If the field type is not *safe to drop*, then the type is not *safe to
+            drop*.
+
+(N.B. you cannot add `#[may_dangle]` to a trait object's parameters.)
+
+This is different from the status quo in that 1. we skip checking fields
+entirely in the `Drop` case, and rely only on the `#[may_dangle]`, and 2. we
+always treat `PhantomData` as *safe to drop*.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Requires mild churn to update things to the new way. Failing to update wouldn't
-break existing code, but would allow unsound code to compile.
+Requires mild churn to update things to the new way. Doesn't provide any
+safeguards about getting `drop` vs `borrow` correct.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -132,23 +223,36 @@ but due to the rushed way in which `may_dangle` was implemented, `PhantomData`
 ended up having this unfortunate behaviour. This RFC removes this behaviour and
 allows strictly more code to compile.
 
+Lifetimes cannot be dropped, so it wouldn't make sense to have
+`#[may_dangle(drop)]` for lifetimes. We adopt a single form for them.
+
+This proposal attempts to be as minimal as possible and provides no additional
+checking of the `Drop` impl for correctness. An alternative would be to have
+something like [RFC PR 3390] which does provide a mechanism for checking the
+`Drop` impl for correctness.
+
 # Prior art
 [prior-art]: #prior-art
 
-- Compiler MCP 563: It is the exact same thing as this RFC, but a full RFC
-    seemed appropriate due to observable changes on stable, even if they are
-    fairly obscure.
-- Unsound dropck elaboration for `BTreeMap`: <https://github.com/rust-lang/rust/pull/99413>
+- Compiler MCP 563: Mostly deals with checking the `Drop` impl's correctness,
+    but involves some aspects of this RFC. A full RFC seems appropriate due to
+    the observable changes to stable, namely the `PhantomData` behaviour.
 - `may_dangle`: RFC 1238, RFC 1327
-- This is effectively split from RFC PR 3390 and is not intended for
+- This is effectively split from [RFC PR 3390] and is not intended for
     stabilization.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-N/A
+## `#[may_dangle] T` as alias for `#[may_dangle(drop)] T`.
+
+Most existing uses of `#[may_dangle] T` are actually `#[may_dangle(drop)] T`, so
+to avoid churn we could just make them an alias. This is relevant for e.g.
+`hashbrown`, a crate which is used by `std` to provide `HashMap`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-The full RFC 3390, and stabilization.
+The full [RFC PR 3390], and stabilization.
+
+[RFC PR 3390]: https://github.com/rust-lang/rfcs/pull/3390
