@@ -5,19 +5,18 @@
 
 # Summary
 [summary]: #summary
-
-While tail call optimization (TCO) is already supported by Rust, there is no way to specify when
-it should be guaranteed that a stack frame should be reused.
+While tail call elimination (TCE) is already possible via tail call optimization (TCO) in Rust, there is no way to guaranteed that a stack frame should be reused.
 This RFC describes a language feature providing tail call elimination via the `become` keyword providing this guarantee.
 If this guarantee can not be provided by the compiler a compile time error is generated instead.
 
 # Motivation
 [motivation]: #motivation
-While tail-call optimization (TCO) is already supported there currently is no way to guarantee stack frame reuse. This
-guarantee is interesting for two general goals. One goal is to do function calls without growing the stack, this mainly
-has semantic implications as recursive algorithms can overflow the stack without this optimization.  The other goal is
-to, in simple words, replace `call` instructions by `jmp` instructions, this optimization has performance implications
-and can provide massive speedups for algorithms that have a high density of function calls.
+Tail call elimination (TCE) allows stack frames to be reused.
+While TCE via tail call optimization (TCO) is already supported by Rust, as is normal for optimizations TCE will only be applied if the compiler excpects a improvement by doing so.
+There is currently no way to specify that TCE should be guaranteed.
+This guarantee is interesting for two general goals.
+One goal is to do function calls without growing the stack, this mainly has semantic implications as recursive algorithms can overflow the stack without this optimization.
+The other goal is to avoid paying the cost to create a new stack frame, replacing `call` instructions by `jmp` instructions, this optimization has performance implications and can provide massive speedups for algorithms that have a high density of function calls.
 
 Note that workarounds for the first goal exist by using trampolining which limits the stack depth. However, while this
 functionality can be provided as a library, inclusion in the language can provide greater adoption of a more functional
@@ -53,13 +52,9 @@ Pretending this RFC has already been accepted into Rust, it could be explained t
 ## Tail Call Elimination
 [tail-call-elimination]: #tail-call-elimination
 
-Rust supports a way to specify tail call elimination (TCE) for function calls. 
-If TCE is requested for a call the called function will reuse the stack frame of the calling function,
-assuming all requirements are fulfilled.
-The optimization of reusing the stack frame is also known as tail call optimization (TCO) which Rust already supports.
-The difference between TCE and TCO is that TCE guarantees that the stack frame is reused, while
-with TCO the stack frame is only reused if the compiler expects doing so will be faster (or smaller
-if optimizing for space).
+Rust supports a way to guarantee tail call elimination (TCE) for function calls using the `become` keyword.
+If TCE is requested for a call the called function will reuse the stack frame of the calling function, assuming all requirements are fulfilled.
+Note that TCE can opportunistically also be performed by Rust using tail call optimization (TCO), this will cause TCE to be used if it is deemed to be "better" (as in faster, or smaller if optimizing for space).
 
 TCE is interesting for two groups of programmers: Those that want to use recursive algorithms,
 which can overflow the stack if the stack frame is not reused; and those that want to create highly optimized code,
