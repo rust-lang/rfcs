@@ -6,9 +6,9 @@
 # Summary
 [summary]: #summary
 
-Cleanup the rules for implicit drops by splitting `#[may_dangle]` into two separate attributes:
-`#[only_dropped]` and `#[fully_ignored]`. Change `PhantomData` to get completely ignored
-by dropck as its current behavior is confusing and inconsistent.
+Cleanup the rules for implicit drops by adding an argument for `#[may_dangle]` on type
+parameters: `#[may_dangle(can_drop)]` and `#[may_dangle(must_not_use)]`. Change `PhantomData`
+to get completely ignored by dropck as its current behavior is confusing and inconsistent.
 
 # Motivation
 [motivation]: #motivation
@@ -83,18 +83,20 @@ assumes that all generic parameters of the `Drop` impl are used:
 [playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e604bcaecb7b2b4cf7fd0440faf165ac).
 
 In case a manual `Drop` impl does not access a generic parameter, you can add
-`#[fully_unused]` or `#[only_dropped]` to that parameter. This **unsafely** asserts
+`#[may_dangle]` to that parameter. This **unsafely** asserts
 that the parameter is either completely unused when dropping your type or only
-recursively dropped.
+recursively dropped. For type parameters, you have to declare whether you
+recursively drop instances of `T`. If so, you should use `#[may_dangle(droppable)]`.
+If not, you may use `#[may_dangle(must_not_use)]`.
 
 ```rust
-struct MyType<'s> {
-    reference: &'s str,
+struct MyType<T> {
+    generic: T,
     needs_drop: String,
 }
-// The impl has to be `unsafe` as the compiler does may not check
-// that `'s` is actually unused.
-unsafe impl<#[only_dropped] 's> Drop for MyType<'s> {
+// The impl has to be `unsafe` as the compiler may not check
+// that `T` is actually unused.
+unsafe impl<#[may_dangle(droppable)] T> Drop for MyType<T> {
     fn drop(&mut self) {
         // println!("{}", reference); // this would be unsound
         println!("{}", needs_drop);
@@ -111,13 +113,12 @@ fn can_drop_dead_reference() {
     }
     // We drop `_x` here even though `reference` is no longer live.
     //
-    // This is accepted as `'s` is marked as `#[only_dropped]` in the
+    // This is accepted as `T` is marked as `#[may_dangle(can_drop)]` in the
     // `Drop` impl of `MyType`.
 }
 ```
 
-The ability to differentiate between `#[fully_unused]` and `#[only_dropped]` is significant
-for type parameters:
+`Drop` impls for collections tend to require `#[may_dangle(droppable)]`:
 
 ```rust
 pub struct BTreeMap<K, V> {
@@ -134,7 +135,7 @@ unsafe impl<#[only_dropped] K, #[only_dropped] V> Drop for BTreeMap<K, V> {
 }
 ```
 
-A type where `#[fully_unused]` would be useful is a `Weak` pointer for a variant of `Rc`
+A type where `#[may_dangle(must_not_use)]` would be useful is a `Weak` pointer for a variant of `Rc`
 where the value is dropped when the last `Rc` goes out of scope. Dropping a `Weak` pointer
 would never access `T` in this case.
 
@@ -151,43 +152,47 @@ When implicitly dropping a variable of type `T`, liveness requirements are compu
 - If `T` does not have any drop glue, do not add any requirements.
 - If `T` is a trait object, `T` has to be live.
 - If `T` has an explicit `Drop` impl, require all generic argument to be live, unless
-    - they are marked with `#[fully_unused]`, in which case they are ignored,
-    - or they are marked with `#[only_dropped]`, in which case recurse into the generic argument.
+    - they marked with `#[may_dangle]`:
+        - arguments for lifetime parameters marked `#[may_dangle]` and type parameters
+          marked `#[may_dangle(must_not_use)]` are ignored,
+        - we recurse into arguments for type parameters marked `#[may_dangle(droppable)]`.
 - Regardless of whether `T` implements `Drop`, recurse into all types *owned* by `T`:
     - references, raw pointers, function pointers, function items and scalars do not own
       anything. They can be trivially dropped.
     - tuples and arrays consider their element types to be owned.
     - all fields (of all variants) of ADTs are considered owned. We consider all variants
-      for enums. The only exception here is `ManuallyDrop<U>` which is not considered to own `U`. `PhantomData<U>` does not have any fields and therefore also does not consider
+      for enums. The only exception here is `ManuallyDrop<U>` which is not considered to own `U`.
+      `PhantomData<U>` does not have any fields and therefore also does not consider
       `U` to be owned.
     - closures and generators own their captured upvars.
 
 Checking drop impls may error for generic parameters which are known to be incorrectly marked:
-- `#[fully_unused]` parameters which are recursively owned
-- `#[only_dropped]` parameters which are required to be live by a recursively owned type
+- `#[may_dangle(must_not_use)]` parameters which are recursively owned
+- `#[may_dangle(droppable)]` parameters which are required to be live by a recursively owned type
 
 This cannot catch all misuses, as the parameters can be incorrectly used by the `Drop` impl itself.
 We therefore require the impl to be marked as `unsafe`.
 
 ## How this differs from the status quo
 
-Instead of `#[fully_unused]` and `#[only_dropped]`,there is only the `#[may_dangle]` attribute which
-skips the generic parameter. This is equivalent to the behavior of `#[fully_unused]` and relies on the recursion
-into types owned by `T` to figure out the correct constraints.
+Right now there is only the `#[may_dangle]` attribute which skips the generic parameter.
+This is equivalent to the behavior of `#[may_dangle(must_not_use)]` and relies on the recursion
+into types owned by `T` to figure out the correct constraints. This is now explicitly annotated
+using `#[may_dangle(droppable)]`.
 
 `PhantomData<U>` currently considers `U` to be owned while not having drop glue itself. This means
 that `(PhantomData<PrintOnDrop<'s>>, String)` requires `'s` to be live while
 `(PhantomData<PrintOnDrop<'s>>, u32)` does not. This is required for get the
-behavior of `#[only_dropped]` for parameters otherwise not owned by adding `PhantomData` as a field.
-One can easily forget this, which caused the [unsound](https://github.com/rust-lang/rust/issues/76367)
+behavior of `#[may_dangle(droppable)]` for parameters otherwise not owned by adding `PhantomData`
+as a field. One can easily forget this, which caused the
+[unsound](https://github.com/rust-lang/rust/issues/76367)
 [issues](https://github.com/rust-lang/rust/issues/99408) mentioned above.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It requires an additional attribute when compared with `#[may_dangle]` and also proposes checks that the
-attributes are correctly used. This adds a small amount of implementation complexity to the compiler.
-These new attributes are still not fully checked by the compiler and require `unsafe`.
+This adds a small amount of implementation complexity to the compiler while not not being
+fully checked and therefore requiring `unsafe`.
 
 This RFC does not explicitly exclude stabilizing these two attributes, as they are clearer and far less
 dangerous to use when compared with `#[may_dangle]`. Stabilizing these attributes will make it harder to
@@ -205,7 +210,7 @@ A more general extension to deal with partially invalid types is far from trivia
 assume types to always be well-formed and any approach which generalizes `#[may_dangle]` will
 have major consequences for how well-formedness is handled. This impacts many - often implicit -
 interactions and assumptions. It is highly unlikely that we will have the capacity for any such change
-in the near future. The benefits from such are change are likely to be fairly limited while
+in the near future. The benefits from such are change are also likely to be fairly limited while
 adding significant complexity.
 
 # Prior art
