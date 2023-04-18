@@ -36,8 +36,6 @@ This proposal
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-_**Note**: I didn't comment type explanations (as is needed for compiler) for colorizing purposes only._
-
 ## Partial types by type access
 
 ```rust
@@ -62,8 +60,8 @@ I propose to extend type system by adding type access to sub-type. So, our varia
 
 // case (A5)
 // FROM case (A1)
-foo  : %full i16;
-foo  : i16;
+// foo  : %full i16;
+// foo  : i16;
 ```
 
 Lifetime variants are `'static` (for static lifetime), `'_`(don't care lifetime) and any other `'b`(some "b" lifetime).
@@ -98,8 +96,6 @@ We need detailed access to write non-abstract specific typed parameters in funct
 
 We need for this some new quasi-fields and some field access (which should be soft keywords).
 
-_Note: I do not comment types (as is needed for compiler) for colorizing purposes._
-
 ### Detailed Struct Type
 
 What's about structures?
@@ -115,11 +111,11 @@ struct Point {
 // case (C1)
 let &mut p1 : &mut Point = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
     //
-    p1 : &mut Point;
-    p1 : &mut %full Point;
-    p1 : &mut %{Self::*} Point;
-    p1 : &mut %{Self::x, Self::y, Self::z, Self::t, Self::w} Point;
-    p1 : &mut %{Self::{x, y, z, w}} Point;
+    // p1 : &mut Point;
+    // p1 : &mut %full Point;
+    // p1 : &mut %{Self::*} Point;
+    // p1 : &mut %{Self::x, Self::y, Self::z, Self::t, Self::w} Point;
+    // p1 : &mut %{Self::{x, y, z, w}} Point;
 ```
 
 Where :
@@ -138,9 +134,9 @@ We also must reserve as a keyword a `%miss` field-access for future ReExtendeded
 // FROM case (C1)
 let &mut p1 : &mut Point = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
     //
-    p1 : &mut %{%permit Self::*} Point;
-    p1 : &mut %{%permit Self::*, %deny Self::_};
-    p1 : &mut %{%permit Self::{x, y, z, w}} Point;
+    // p1 : &mut %{%permit Self::*} Point;
+    // p1 : &mut %{%permit Self::*, %deny Self::_};
+    // p1 : &mut %{%permit Self::{x, y, z, w}} Point;
 ```
 
 Where :
@@ -164,11 +160,11 @@ It is a compile error if we try to `%deny` a `::self` field!
 // case (C3)
 let foo = 0i16;
     //
-    foo : i16  
-    foo : %full i16;
-    foo : %{Self::*} i16;
-    foo : %{Self::self} i16;
-    foo : %{%permit Self::self} i16;
+    // foo : i16  
+    // foo : %full i16;
+    // foo : %{Self::*} i16;
+    // foo : %{Self::self} i16;
+    // foo : %{%permit Self::self} i16;
 ```
 
 ### Detailed Tuples
@@ -181,10 +177,10 @@ It is a compile error if we try to `%deny` a `::self` field!
 // case (C4)
 let bar = (0i16, &5i32, "some_string");
     //
-    bar : (i16, &i32, &str);
-    bar : %full (i16, &i32, &str);
-    bar : %{Self::*} (i16, &i32, &str);
-    bar : %{%permit Self::{0,1,2}} (i16, &i32, &str);
+    // bar : (i16, &i32, &str);
+    // bar : %full (i16, &i32, &str);
+    // bar : %{Self::*} (i16, &i32, &str);
+    // bar : %{%permit Self::{0,1,2}} (i16, &i32, &str);
 ```
 
 ### Detailed Arrays
@@ -214,10 +210,10 @@ enum WebEvent {
 // case (C5)
 let a = WebEvent::PageLoad;
     //
-    a : WebEvent;
-    a : %full WebEvent;
-    a : %{Self::*::*} WebEvent;
-    a : %{%permit Self::{PageLoad, PageUnload}::self, %permit Self::{KeyPress, Paste}::0, %permit Self::Click::{x, y}} WebEvent;
+    // a : WebEvent;
+    // a : %full WebEvent;
+    // a : %{Self::*::*} WebEvent;
+    // a : %{%permit Self::{PageLoad, PageUnload}::self, %permit Self::{KeyPress, Paste}::0, %permit Self::Click::{x, y}} WebEvent;
 ```
 where
  - `::self` quasi-field for unit types, since `PageLoad`/`PageUnload` is not a `struct`
@@ -452,11 +448,11 @@ let ref1: &mut String = &mut x.f1;
 //
 let ref_x23 = & %{Self::f2, Self::f3, %deny Self::_} x;
     //
-    ref_x23 : & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
+    // ref_x23 : & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
     //
 let move_x45 = %{Self::{f4, f5}, %cut} x;
     //
-    move_x45 : %{%permit Self::{f4, f5}, %deny Self::{f1, f2, f3}} S5;
+    // move_x45 : %{%permit Self::{f4, f5}, %deny Self::{f1, f2, f3}} S5;
 ```
 
 But `%deny Self::_` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%cut : %deny Self::_`.
@@ -474,12 +470,12 @@ No, we could use `%max`(or `%id`) - qualified safe filter with maximum profit-fi
 Having this we could write next implicitly
 ```rust
 // FROM case (F1)
-    ref_x23: & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
+    // ref_x23: & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
 
 // case (F4)
 let refref_x23 = & %max ref_x23;
 //
-    refref_x23: && %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
+    // refref_x23: && %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
 ```
 
 For function argument we add another filter `%min` - qualified safe filter with minimum profit-fields, but it refers not to variable access, but to parameter access, so we could use it in arguments consumption only! It is an compile error if `%min` is written outside of contents!
@@ -532,17 +528,18 @@ struct Point {
 // case (G1)
 let p1_full = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
     //
-    p1_full : Point  ~  %full Point;
+    // p1_full : Point;
+    // p1_full : %full Point;
 
 // case (G2)
 let p_x = %{Self::x, %cut} Point {x:1.0};
     //
-    p_x : %{%permit Self::x, %deny Self::_} Point;
+    // p_x : %{%permit Self::x, %deny Self::_} Point;
     //
 
 let p_yz = %{Self::{y,z}, %cut} Point {y:1.0, z: 2.0};
     //
-    p_yz : %{%permit Self::{y,z}, %deny Self::_} Point;
+    // p_yz : %{%permit Self::{y,z}, %deny Self::_} Point;
     //
 ```
 
@@ -551,13 +548,13 @@ Also it could be nice if constructor allows several filler variables (which do n
 // case (G3)
 let p_xyz = %max Point {..p_x, ..p_yz};
     //
-    p_xyz : %{%permit Self::{x,y,z}, %deny Self::{t,w}};
+    // p_xyz : %{%permit Self::{x,y,z}, %deny Self::{t,w}};
 
 // case (G4)
 let p2_full = Point {t:1.0, w:2.0, ..p_xyz};
     //
-    p1_full : Point  ~  %full Point;
-    //
+    // p2_full : Point;
+    // p2_fill : %full Point;
 ```
 
 A bit unclear how to fill unused fields, so we write unused values to a fill the type for tuple constructor
@@ -566,7 +563,7 @@ A bit unclear how to fill unused fields, so we write unused values to a fill the
 // case (G5)
 let t4_02 = %{Self::{0,2}, %cut} ("str", 1i32, &0u16, 0.0f32);
     //
-    t4_02 : %{%permit Self::{0,2}, %deny Self::{1,3}} (&str, i32, &u16, f32);
+    // t4_02 : %{%permit Self::{0,2}, %deny Self::{1,3}} (&str, i32, &u16, f32);
 ```
 
 access filter could help to deconstruct types for matching:
@@ -575,7 +572,7 @@ access filter could help to deconstruct types for matching:
 // case (G6)
 let opt_t4_1 = Some (%{Self::1, %cut} ("str", 1i32, &0u16, 0.0f32));
     //
-    opt_t4_1 : Option<%{%permit Self::{1}, %deny Self::{1,3}} (&str, i32, &u16, f32)>;
+    // opt_t4_1 : Option<%{%permit Self::{1}, %deny Self::{1,3}} (&str, i32, &u16, f32)>;
     //
     let Some (%{Self::1, %cut} (_, ref y, _, _)) = opt_t4_1;
 ```
@@ -596,15 +593,15 @@ pub struct HiddenPoint {
 
 // case (H1)
 let p1 : HiddenPoint;
-    p1 : %full HiddenPoint;
-    p1 : %{%permit Self::pub, %private} HiddenPoint;
-    p1 : %{%permit Self::{x, y}, %private} HiddenPoint;
-    p1 : %{%permit Self::{x, y}, %hidden<%full> Self::private} HiddenPoint;
+    // p1 : %full HiddenPoint;
+    // p1 : %{%permit Self::pub, %private} HiddenPoint;
+    // p1 : %{%permit Self::{x, y}, %private} HiddenPoint;
+    // p1 : %{%permit Self::{x, y}, %hidden<%full> Self::private} HiddenPoint;
 ```
 
 Where :
- - `.pub` is a "all public fields" quasi-field
- - `.private` is a "all private fields" quasi-field
+ - `::pub` is a "all public fields" quasi-field
+ - `::private` is a "all private fields" quasi-field
  - `%hidden<%a>` - it is some specific `%a` quasi field access, but we have no access to specify it
  - `%private` is a shortcut for `%hidden<%full> Self::private`
 
@@ -673,11 +670,12 @@ struct SR <T>{
 // case (FP1)
 let x = %{%miss Self::lnk, %permit Self::_} SR {val : 5i32 };
     //
-    x : %{%miss Self::lnk, %permit Self::val} SR<i32>
+    // x : %{%miss Self::lnk, %permit Self::val} SR<i32>
     //
 x.lnk %%= & x.val;
     //
-    x : SR<i32>  ~  %full SR<i32>
+    // x : SR<i32>;
+    // x : %full SR<i32>;
 ```
 And even AlmostFully self-referential types:
 And another shortcut `%unfill : %miss Self::_`
@@ -692,11 +690,12 @@ struct FSR <T>{
 // case (FP2)
 let x = %{Self::val, %unfill} FSR {val : 5i32 };
     //
-    x : %{%miss Self::lnk, %permit Self::val} FSR<i32>
+    // x : %{%miss Self::lnk, %permit Self::val} FSR<i32>;
     //
 x.lnk %%= & %max  x;
     //
-    x : FSR<i32>  ~  %full FSR<i32>
+    // x : FSR<i32>;
+    // x : %full FSR<i32>;
 ```
 
 First difficulty - `%max` is no longer `id`,  `%max(on %miss) ~ %deny`. Both `filter-%permit on %miss` and `filter-%ignore on %miss` must cause a compiler error for 3 main consumers.
@@ -709,7 +708,7 @@ Second and most difficult, that `return` consumption (yes, 6th type of consumers
 fn create_var()-> %{%miss Self::lnk, %permit Self::_} FSR {
     let x = %{Self::val, %unfill} FSR {val : 5i32 };
         //
-        x : %{%miss Self::lnk, %permit Self::val} FSR<i32>
+        // x : %{%miss Self::lnk, %permit Self::val} FSR<i32>
         //
     %max_miss return x; 
     // filter access before 'return' to not to confused with `move` consumer!
@@ -718,6 +717,7 @@ fn create_var()-> %{%miss Self::lnk, %permit Self::_} FSR {
 let y = create_var();
 y.lnk %%= & %max  y;
     //
-    y : FSR<i32>  ~  %full FSR<i32>
+    // y : FSR<i32>;
+    // y : %full FSR<i32>;
 ```
 
