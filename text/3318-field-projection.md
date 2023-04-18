@@ -62,9 +62,11 @@ This field type also implements the `Field` trait that cannot be manually implem
 - its own type,
 - the offset at which the field can be found inside of the struct.
 
-Since the trait cannot be implemented manually, you can be sure that a type implementing it actually refers to a field:
+This is also generated for tuples, so you can use `field_of!((i32, u32), 0)` to get the type describing the `i32` element.
+
+Since the `Field` trait cannot be implemented manually, you can be sure that a type implementing it actually refers to a field:
 ```rust
-fn get_field<F: Field<Struct = Problem>>(problem: &Problem) -> &T::Type {
+fn get_field<F: Field<Base = Problem>>(problem: &Problem) -> &F::Type {
     let ptr: *const Problem = problem;
     // SAFETY: `F` implements the `Field` trait and thus we find `F::Type` at `F::OFFSET` inside
     // of `ptr` that was derived from a reference.
@@ -101,7 +103,7 @@ pub struct Config {
 If we want to write a new config, then we always have to write the whole struct, including the `reserved` field that is comparatively big. We can avoid this by providing a field projection:
 ```rust
 impl<T> VolatileMem<T> {
-    pub fn map<F: Field<Struct = T>>(self) -> VolatileMem<F::Type> {
+    pub fn map<F: Field<Base = T>>(self) -> VolatileMem<F::Type> {
         Self {
             // SAFETY: `F` implements the `Field` trait and thus we find `F::Type` at `F::OFFSET`
             // inside of `ptr` that is always valid.
@@ -127,19 +129,19 @@ And we will not have to always overwrite `reserved` with the same data.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-For every field of every non-packed struct, the compiler creates a unique, unnameable type that represent that field. These generated types will:
-- have meaningful names in error messages (e.g. `Struct::field`), 
+For every field of every non-packed struct and tuple, the compiler creates a unique, unnameable type that represent that field. These generated types will:
+- have meaningful names in error messages (e.g. `Struct::field`, `(i32, u32)::0`), 
 - implement the `Field` with accurate associated types and constants.
 
 The `Field` trait will reside in `core::marker` and is:
 ```rust
 /// A type representing a field on a struct.
 pub trait Field {
-    /// The type of the struct containing this field.
-    type Struct;
+    /// The type (struct or tuple) containing this field.
+    type Base;
     /// The type of this field.
     type Type;
-    /// The offset of this field from the beginning of the `Base` struct in bytes.
+    /// The offset of this field from the beginning of the `Base` type in bytes.
     const OFFSET: usize;
 }
 ```
@@ -157,28 +159,30 @@ fn project<F: Field>(base: &F::Base) -> &F::Type {
 }
 ```
 
-Importantly, the `Field` trait should only be implemented on non-`packed` structs, since otherwise the above code would not be sound.
+Importantly, the `Field` trait should only be implemented on fields of non-`packed` types, since otherwise the above code would not be sound.
 
-Users will be able to name this type by invoking the compiler built-in macro `field_of!` residing in `core`. This macro takes a struct type and an identifier/number for the accessed field:
+Users will be able to name this type by invoking the compiler built-in macro `field_of!` residing in `core`. This macro takes a type and an identifier/number for the accessed field:
 ```rust
 macro_rules! field_of {
     ($struct:ty, $field:tt) => { /* compiler built-in */ }
 }
 ```
-Generics of the struct have to be specified and the field has to be accessible by the calling scope:
+Generics of the type have to be specified and the field has to be accessible by the calling scope:
 ```rust
 pub mod inner {
     pub struct Foo<T> {
         a: usize,
         pub b: T,
     }
-    type Ty = field_of!(Foo, a); // Compile error: expected 1 generic argument 
+    type Ty = field_of!(Foo, a); // Compile error: missing generics for struct `Foo`
     type Ty = field_of!(Foo<()>, a); // OK
     type Ty = field_of!(Foo::<()>, b); // OK
+    type Ty = field_of!(Foo<()>, c); // Compile error: no field `c` on type `Foo<()>`
 }
-type Ty = field_of!(Foo<()>, a); // Compile error: private field
+type Ty = field_of!(Foo<()>, a); // Compile error: field `a` of struct `inner::Foo` is private
 type Ty = field_of!(Foo<()>, b); // OK
 type Ty<T> = field_of!(Foo<T>, b); // OK
+type Ty<T> = field_of!((T, T, i32), 1); // OK
 ```
 
 # Drawbacks
@@ -238,7 +242,7 @@ None.
 One has to spell out the projected type for every projection. Closures could be used to make use of type inference where possible. We introduce a new closure type in `core::marker`:
 ```rust
 pub trait FieldClosure<T>: Fn<T> {
-    type Field: Field<Struct = T>;
+    type Field: Field<Base = T>;
 }
 ```
 This trait is only implementable by the compiler. It is implemented for closures that
