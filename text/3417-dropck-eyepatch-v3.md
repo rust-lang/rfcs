@@ -98,8 +98,8 @@ struct MyType<T> {
 // that `T` is actually unused.
 unsafe impl<#[may_dangle(droppable)] T> Drop for MyType<T> {
     fn drop(&mut self) {
-        // println!("{}", reference); // this would be unsound
-        println!("{}", needs_drop);
+        // println!("{}", self.generic); // this would be unsound
+        println!("{}", self.needs_drop);
     }
 }
 fn can_drop_dead_reference() {
@@ -107,7 +107,7 @@ fn can_drop_dead_reference() {
     {
         let temp = String::from("I am only temporary");
         _x = MyType {
-            reference: &temp,
+            generic: &temp,
             needs_drop: String::from("I have to get dropped"),
         };
     }
@@ -126,7 +126,7 @@ pub struct BTreeMap<K, V> {
     length: usize,
 }
 
-unsafe impl<#[only_dropped] K, #[only_dropped] V> Drop for BTreeMap<K, V> {
+unsafe impl<#[may_dangle(droppable)] K, <#[may_dangle(droppable)] V> Drop for BTreeMap<K, V> {
     fn drop(&mut self) {
         // Recursively drops the key-value pairs but doesn't otherwise
         // inspect them, so we can use `#[only_dropped]` here.
