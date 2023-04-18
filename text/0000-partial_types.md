@@ -58,9 +58,10 @@ foo  : value 'static const i16;
 
 That mean, that variable `foo` has the `i16` (sub-)type with next type-clarification: `const`(not `mut`) mutability, `value`(not `&`) sharing and `'static` lifetime.
 
-I propose to extend type system by adding type integrity to clarification sub-type. So, our variable will have next full type:
+I propose to extend type system by adding type integrity to sub-type. So, our variable will have next full type:
 ```rust
 // case (A4)
+<variable>  : <type_clarification> <%integrity> <type>;
 <variable>  : <sharing> <'lifetime> <mutability> <%integrity> <type>;
 
 // case (A5)
