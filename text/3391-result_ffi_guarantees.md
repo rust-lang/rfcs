@@ -2,8 +2,8 @@
 
 - Feature Name: `result_ffi_guarantees`
 - Start Date: 2023-02-15
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3391](https://github.com/rust-lang/rfcs/pull/3391)
+- Rust Issue: [rust-lang/rust#110503](https://github.com/rust-lang/rust/issues/110503)
 
 # Summary
 [summary]: #summary
