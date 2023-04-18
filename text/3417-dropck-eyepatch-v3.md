@@ -152,7 +152,7 @@ When implicitly dropping a variable of type `T`, liveness requirements are compu
 - If `T` does not have any drop glue, do not add any requirements.
 - If `T` is a trait object, `T` has to be live.
 - If `T` has an explicit `Drop` impl, require all generic argument to be live, unless
-    - they marked with `#[may_dangle]`:
+    - they are marked with `#[may_dangle]`:
         - arguments for lifetime parameters marked `#[may_dangle]` and type parameters
           marked `#[may_dangle(must_not_use)]` are ignored,
         - we recurse into arguments for type parameters marked `#[may_dangle(droppable)]`.
