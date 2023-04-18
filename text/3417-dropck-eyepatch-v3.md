@@ -7,7 +7,7 @@
 [summary]: #summary
 
 Cleanup the rules for implicit drops by adding an argument for `#[may_dangle]` on type
-parameters: `#[may_dangle(can_drop)]` and `#[may_dangle(must_not_use)]`. Change `PhantomData`
+parameters: `#[may_dangle(droppable)]` and `#[may_dangle(must_not_use)]`. Change `PhantomData`
 to get completely ignored by dropck as its current behavior is confusing and inconsistent.
 
 # Motivation
@@ -113,7 +113,7 @@ fn can_drop_dead_reference() {
     }
     // We drop `_x` here even though `reference` is no longer live.
     //
-    // This is accepted as `T` is marked as `#[may_dangle(can_drop)]` in the
+    // This is accepted as `T` is marked as `#[may_dangle(droppable)]` in the
     // `Drop` impl of `MyType`.
 }
 ```
