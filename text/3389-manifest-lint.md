@@ -466,6 +466,11 @@ Ruby
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+Blocking for stablization
+- Are we still comfortable with our schema choice?
+- Are we still comfortable with our precedence choice?
+- Can we fingerprint only the lints for the tool being run?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
