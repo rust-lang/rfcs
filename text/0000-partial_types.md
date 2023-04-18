@@ -107,9 +107,9 @@ An abstractions is added for integrity detailing, we assume that **every** varia
 
 We need for this some new quasi-fields and some field integrity (which should be soft keywords).
 
-_Note_: I do not comment types (as is needed for compiler) for colorizing purposes.
+_Note: I do not comment types (as is needed for compiler) for colorizing purposes._
 
-_Note_: I use symbol `~` as synonym of "equivalent" word only. It is not a Rust operator.
+_Note: I use symbol `~` as a synonym of "equivalent" word only. It is not a Rust operator._
 ```rust
 // case (C1)
 let foo = 0i16;
@@ -146,9 +146,9 @@ Where :
 
 We assume, that each field could be in one of 2 specific field-integrity - `%fit` and `%deny`. 
 
-We also must reserve as a keyword a `%miss` field-integrity for future Reintegrated Partial Types, which allows to create **safe** self-referential types.
+We also must reserve as a keyword a `%miss` field-integrity for future ReExtendeded Partial Types, which allows to create **safe** self-referential types.
 
-`%fit` is default field-integrity and it means we nave an access to this field and could use it as we wish. But if we try to access `%deny` field it cause a compiler error.
+`%fit` is default field-integrity and it means we have an access to this field and could use it as we wish. But if we try to access `%deny` field it cause a compiler error.
 
 ```rust
 // case (C3)
@@ -216,11 +216,11 @@ struct PointExtra {
     saved_y: f64,
 }
 
-fn x_store(&mut p1 : &mut %{self.saved_x, %any} PointExtra, & p2 : &mut %{self.x, %any} PointExtra) {
+fn x_store(&mut p1 : &mut %{self.saved_x, %any} PointExtra, & p2 : & %{self.x, %any} PointExtra) {
     *p1.saved_x = *p2.x
 }
 
-fn x_restore(&mut p1 : &mut %{self.x, %any} PointExtra, & p2 : &mut %{self.saved_x, %any} PointExtra) {
+fn x_restore(&mut p1 : &mut %{self.x, %any} PointExtra, & p2 : & %{self.saved_x, %any} PointExtra) {
     *p1.x = *p2.saved_x;
 }
 ```
@@ -230,14 +230,14 @@ or use `where` clause if integrity is extra verbose:
 // case (D6)
 // FROM case (D5)
 
-fn x_store(&mut p1 : &mut %fit_sv_x PointExtra, & p2 : &mut %fit_x PointExtra) 
+fn x_store(&mut p1 : &mut %fit_sv_x PointExtra, & p2 : & %fit_x PointExtra) 
     where %fit_sv_x : %{self.saved_x, %any},
           %fit_x : %{self.x, %any}
 {
     *p1.saved_x = *p2.x
 }
 
-fn x_restore(&mut p1 : &mut %fit_x PointExtra, & p2 : &mut %fit_sv_x PointExtra) 
+fn x_restore(&mut p1 : &mut %fit_x PointExtra, & p2 : & %fit_sv_x PointExtra) 
     where %fit_sv_x : %{self.saved_x, %any},
           %fit_x : %{self.x, %any}
 {
@@ -617,6 +617,7 @@ x.lnk %%= & x.val;
     x : SR<i32>  ~  %full SR<i32>
 ```
 And even AlmostFully self-referential types:
+And another shortcut `%unfill : %miss self._`
 
 ```rust
 struct FSR <T>{
@@ -626,7 +627,7 @@ struct FSR <T>{
 }
 
 // case (FP2)
-let x = %{%miss self.lnk, %fit self.val} FSR {val : 5i32 };
+let x = %{self.val, %unfill} FSR {val : 5i32 };
     //
     x : %{%miss self.lnk, %fit self.val} FSR<i32>
     //
@@ -639,7 +640,6 @@ First difficulty - `%max` is no longer `id`,  `%max(on %miss) ~ %deny`. Both `fi
 
 Second and most difficult, that `return` consumption (yes, 6th type of consumers) from function could preserve `%miss`, so also we need filter `%max_miss`, where `%max_miss(on %miss) ~ %miss`!
 
-And another shortcut `%unfill : %miss self._`
 
 ```rust
 // case (FP3)
