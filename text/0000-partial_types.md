@@ -9,7 +9,7 @@
 
 Partial types proposal is a generalization on "partial borrowing"-like proposals (more correct name is "partial not borrowing" or "qualified borrowing" since Rust allows partial borrowing already).
 
-This proposal is a roadmap "how to do partial not consumption (including partial not borrowing) right", and not under the hood of the Rust compiler.
+This proposal is a universal roadmap "how to do partial not consumption (including partial not borrowing) right", and not under the hood of the Rust compiler.
 
 Partial Types is a **minimal** and full extension to the Rust Type System, which allows to safe control easily partial parameters and all kinds of partial not consumption.
 
@@ -517,6 +517,17 @@ A bit unclear how to fill unused fields, so we write unused values to a fill the
 let t4_02 = %{self.{0,2}, %cut} ("str", 1i32, &0u16, 0.0f32);
     //
     t4_02 : %{%fit self.{0,2}, %deny self.{1,3}} (&str, i32, &u16, f32);
+```
+
+Integrity filter could help to deconstruct types for matching:
+
+```rust
+// case (G6)
+let opt_t4_1 = Some (%{self.1, %cut} ("str", 1i32, &0u16, 0.0f32));
+    //
+    opt_t4_1 : Option<%{%fit self.{1}, %deny self.{1,3}} (&str, i32, &u16, f32)>;
+    //
+    let Some (%{self.1, %cut} (_, ref y, _, _)) = opt_t4_1;
 ```
 
 ## Private fields
