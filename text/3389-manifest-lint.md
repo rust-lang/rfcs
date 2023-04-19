@@ -198,7 +198,7 @@ This does not allow sharing lints across workspaces.
 
 When designing this, we wanted to keep in mind how things work today, including
 - `clippy` defines all configuration as linter/tool config and not lint config (linter/lint config is a future possibility)
-- All `clippy` lints are disjoint
+- All `clippy` lint groups are disjoint
 - `rustdoc` has no plans for groups outside of `all`
 - `rustc` today has some intersecting groups
 
