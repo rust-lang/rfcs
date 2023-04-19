@@ -68,7 +68,7 @@ The main restriction is that the argument to `become` can be simplified to a tai
 the call is the last action that happens in the function.
 Supported are calls such as `become foo()`, `become foo(a)`, `become foo(a, b)`, `become foo(1 + 1)`,
 `become foo(bar())`, `become foo.method()`, or `become function_table[idx](arg)`.
-Calls that are not in the tail position can **not** be used for example `become foo() + 1` is not allowed.
+Calls that are not in the tail position can **not** be used, for example, `become foo() + 1` is not allowed.
 The function would need to be evaluated and then the addition would need to take place.
 
 A further restriction is on the function signature of the caller and callee.
@@ -259,14 +259,26 @@ possible ways to relax the requirements for TCE.
 [syntax]: #syntax
 
 A function call can be specified to be TCE by using the `become` keyword in place of `return`.  The `become` keyword is
-already reserved, so there is no backwards-compatibility break. The `become` keyword must be followed by a plain
-function call or method calls, that is supported are calls like: `become foo()`, `become foo(a)`, `become foo(a, b)`,
-and so on, or `become foo.bar()` with plain arguments. Neither the function call nor any arguments can be part of a
-larger expression such as `become foo() + 1`, `become foo(1 + 1)`, `become foo(bar())`. Additionally, there is a further
-restriction on the tail-callable functions: the function signature must exactly match that of the calling function. 
+already reserved, so there is no backwards-compatibility break. The `become` keyword must be followed by a
+function or method call, see the section on [tail-call-elimination](#tail-call-elimination) for examples.
+Additionally, there is a further restriction on the tail-callable functions: the function signature must exactly match
+that of the calling function. 
 
-Invocations of overloaded operators with at least one non-primitive argument were considered as valid targets, but were
-rejected on grounds of being too error-prone. In any case, these can still be called as methods.
+Invocations of overloaded operators were considered as valid targets, but were rejected on grounds of being too error-prone.
+In any case, these can still be called as methods. One example of their error-prone nature ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1167112296)):
+```rust
+pub fn fibonacci(n: u64) -> u64 {
+    if n < 2 {
+        return n
+    }
+    become fibonacci(n - 2) + fibonacci(n - 1)
+}
+```
+In this case a naive author might assume that this is going to be a stack space efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more of less the same since the critical recursive calls are not actually in tail call position.
+
+Further confusion could result from the same-signature restriction where the Rust compilers complains that fibonacci and <u64 as Add>::add do not share a common signature.
+
+
 
 ## Type checking
 [typechecking]: #typechecking
