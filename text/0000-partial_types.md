@@ -37,7 +37,6 @@ This proposal
 [guide-level-explanation]: #guide-level-explanation
 
   - [Partial types by type access]
-  - [Access variants and parameters in Trait]
   - [Detailed access]
      - [Detailed Struct Type]
      - [Detailed Primitive Types]
@@ -48,6 +47,7 @@ This proposal
      - [Partial parameter styles]
      - [Partial parameters on implementations]
      - [Several selfs]
+     - [Partial parameters via Access variants]
      - [Partial parameter errors]
   - [Partial not consumption]
      - [Max access filter]
@@ -59,10 +59,10 @@ This proposal
 
 ```rust
 // case (A1)
-let foo : i16 = 0;
+let mut foo : mut i16 = 0;
 ```
 
-What is a **full type** of `foo`? Is it the `i16`? No, the `i16` is a sub-full_type in Rust type-system.
+The **full type** in Rust is next:
 ```rust
 // case (A2)
 <variable>  : <full_type>;
@@ -79,39 +79,25 @@ I propose to extend type system by adding type access to sub-type. So, our varia
 
 // case (A5)
 // FROM case (A1)
-// foo  : %full i16;
-// foo  : i16;
+// foo  : mut %full i16;
+// foo  : mut i16;
 ```
 
 Lifetime variants are `'static` (for static lifetime), `'_`(don't care lifetime) and any other `'b`(some "b" lifetime).
 
 By the same analogy, access has similar names and meanings: `%full`(full access, soft keyword), `%_`(don't care how partial access is, soft keyword), `%empty` or `%!` (no access, soft keyword) and any other `%a`(some "a" access).
 
+If we omit to write type access, it means `%full` access.
+
 Symbol `%` percent mean percent or part of the whole thing (variable in our case).
 
-_Note: It is highly recommended to deprecate operator `%` as a remainder function (it is still no ambiguities to write "`\s+%\s+`"), and replace it with another operator (for example: `%mod` / `%rem` / `mod` / `rem`) to not to be confused by type access._
+_Note: It is highly recommended to deprecate operator `%` as a remainder function (it is still no ambiguities to write "`\s+%\s+`"), and replace it with another operator (for example: `%mod` / `%rem` / `mod` / `rem`) to not to be confused by type access. But it is not a mandatory._
 
-
-## Access variants and parameters in Trait
-
-We could already write Traits with **safe** abstract functions (with no body), which consumes partial access type having only variants of type access.
-```rust
-// case (B1)
-pub trait Upd {
-    type UpdType;
-
-    fn summarize<%a>(&self: & %a Self) -> String;
-
-    fn update_value<%a>(&mut self : &mut %a Self, newvalue: UpdType);
-
-    fn update_sametype<%a, %b>(&mut self : &mut %a Self, &another: & %b Self);
-}
-```
+## Detailed access
 
 Unfortunately, having variants of type access is not enough to write **safe** implementations or other non-abstract function declarations.
 
-## Detailed access
-We need to have detailed access to write non-abstract specific type parameters in function, including trait implementation.
+We need to have more specific access by detailed access.
 
 ### Detailed Struct Type
 
@@ -142,11 +128,11 @@ Where :
  - `::*` is an "every field" quasi-field
  - `::{<fld1>, <fld2>, }` is an field-set quasi-field
 
-We assume, that each field could be in one of two specific field-accesss - `%permit` and `%deny`.
+We assume, that each field could be in one of two specific field-access - `%permit` and `%deny`.
 
 We also must reserve as a keyword a `%miss` field-access for future ReExtendeded Partial Types, which allows to create **safe** self-referential types.
 
-`%permit` is default field-access and it means we have an access to this field and could use it as we wish. But if we try to access to `%deny` field it cause a compiler error.
+`%permit` is default field-access (if we omit to write specific field-access) and it means we have an access to this field and could use it as we wish. But if we try to access to `%deny` field it cause a compiler error.
 
 ```rust
 // case (C2)
@@ -210,37 +196,15 @@ Unfortunately, Arrays are a bit magical, so it is _unclear_ if we could represen
 
 What's about Enums?
 
-It is more complicated, then `struct` types, because we grant some **type** access, not **value** access!
+It is more complicated then `struct` types, because we grant some **type** access, not a **value** access!
 
-So, all possible constructors are permitted! But, we could deny sub-fields!
-```rust
-enum WebEvent {
-    PageLoad,
-    PageUnload,
-    
-    KeyPress(char),
-    Paste(String),
-    
-    Click { x: i64, y: i64 },
-}
+Enum is not a "Product" Type, but a "Sum" Type.
 
-// case (C5)
-let a = WebEvent::PageLoad;
-    //
-    // a : WebEvent;
-    // a : %full WebEvent;
-    // a : %{Self::*::*} WebEvent;
-    // a : %{%permit Self::{PageLoad, PageUnload}::self, %permit Self::{KeyPress, Paste}::0, %permit Self::Click::{x, y}} WebEvent;
-```
-where
- - `::self` quasi-field for unit types, since `PageLoad`/`PageUnload` is not a `struct`
- - `::0` is like mono-tuple field for `KeyPress(char)` and `Paste(String)`
- 
- It is a compile error if we try to `%deny` a `::self` field!
+So, all possible constructors are permitted!
  
 ## Partial parameters
 
-We add enough access, and could write partial parameters for non-abstract function declarations:
+We add enough access, and could write partial parameters for function declarations:
 ```rust
 // case (D1)
 fn re_ref_t (& p : & %{Self::t, %ignore Self::_} Point) -> &f64 {
@@ -258,9 +222,16 @@ Where :
 
 But `%ignore Self::_` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%any : %ignore Self::_`.
 
+Since using `%ignore` filed in the function body is **unsafe by type** (we have no guarantee, that some field is permitted), trying to use ignoring field is a compile error.
+
+Now type access guarantee to compiler, that only some fields has an access inside function, but not the rest of them.
+So, no extra lock on `self` is needed, only for `%permit` fields.
+
 ### Partial parameter styles
 
-We could write partial parameters using different style. Ordinary one:
+We could write partial parameters using different styles. 
+
+Default one:
 
 ```rust
 // case (D3)
@@ -326,7 +297,7 @@ fn x_restore(&mut p1 : &mut PointX, & p2 : & PointSaveX) {
 
 ### Partial parameters on implementations
 
-Implementation parameters are mostly same, but we use Self as "outer Self" type:
+Writing Implementation parameters is mostly the same, but we use Self type as "outer Self" type:
 ```rust
 // case (D8)
 impl Point {
@@ -376,21 +347,34 @@ trait St {
     }
 ```
 
-Sure, if we use several `self`s, their fit fileds access cannot overlap!
+Sure, if we use several `self`s, their permit fileds access cannot overlap!
 
 ```rust
 // case (E3)
     pub fn x2_store(&mut self1 : &mut %{Self::x, %any} Self, &self2 : & %{Self::x, %any} Self) {
         //                                 ^~~~~~                         ^~~~~
-        // error: cannot overlap fit-field 'Self::x' on self1 and self2
+        // error: cannot overlap permit-field 'Self::x' on self1 and self2
         *self1.x = *self2.x;
     }
 ```
 
-### Partial parameter errors
+### Partial parameters via Access variants
 
-Now type access guarantee to compiler, that only some fields has an access inside function, but not the rest of them.
-So, no extra lock on `self` is needed, only for `%permit` fields.
+We could write Traits with **safe** abstract functions (with no body), which consumes partial access type having only variants of type access.
+```rust
+// case (B1)
+pub trait Upd {
+    type UpdType;
+
+    fn summarize<%a>(&self: & %a Self) -> String;
+
+    fn update_value<%a>(&mut self : &mut %a Self, newvalue: UpdType);
+
+    fn update_sametype<%a, %b>(&mut self : &mut %a Self, &another: & %b Self);
+}
+```
+
+### Partial parameter errors
 
 Now compiler can catch "out of scope parameter" errors
 ```rust
@@ -498,7 +482,7 @@ But `%deny Self::_` quasi-filed-access of quasi-field looks annoying, so we simp
 
 What to do if we wish to create a reference to `ref_x23`. Do we need to write explicitly an access or exists implicit way?
 
-No, we could use `%max`(or `%id`) - qualified safe filter with maximum profit-fields, but technically is an `id` filter to variable access:
+No, we could use `%max`(or `%id`) - qualified safe filter with maximum permit-fields, but technically is an `id` filter to variable access:
 
 | var access   | `%max`    |
 |--------------|-----------|
@@ -519,7 +503,7 @@ let refref_x23 = & %max ref_x23;
 
 ### Min access filter
 
-For function argument we add another filter `%min` - qualified safe filter with minimum profit-fields, but it refers not to variable access, but to parameter access, so we could use it in arguments consumption only! It is an compile error if `%min` is written outside of contents!
+For function argument we add another filter `%min` - qualified safe filter with minimum permit-fields, but it refers not to variable access, but to parameter access, so we could use it in arguments consumption only! It is an compile error if `%min` is written outside of contents!
 
 | param access  | `%min`    |
 |---------------|-----------|
@@ -555,7 +539,7 @@ p3.update_sametype(&mut %min p2);
 
 ### Partially Initialized Variables
 
-We must have an ability to create partially initilized variables. So we need to add a filter-access to a constructor
+We must have an ability to create partially initialized variables. So we need to add a filter-access to a constructor
 
 ```rust
 struct Point {
@@ -584,7 +568,7 @@ let p_yz = %{Self::{y,z}, %cut} Point {y:1.0, z: 2.0};
     //
 ```
 
-Also it could be nice if constructor allows several filler variables (which do not overlap fit-fields)
+Also it would be nice if constructor allows several filler variables (which do not overlap permit-fields)
 ```rust
 // case (G3)
 let p_xyz = %max Point {..p_x, ..p_yz};
@@ -611,18 +595,20 @@ access filter could help to deconstruct types for matching:
 
 ```rust
 // case (G6)
-let opt_t4_1 = Some (%{Self::1, %cut} ("str", 1i32, &0u16, 0.0f32));
+let opt_t4_1 = Some ( %{Self::1, %cut} ("str", 1i32, &0u16, 0.0f32));
     //
     // opt_t4_1 : Option<%{%permit Self::{1}, %deny Self::{1,3}} (&str, i32, &u16, f32)>;
     //
     let Some (%{Self::1, %cut} (_, ref y, _, _)) = opt_t4_1;
 ```
 
+If we try to write not "`_`" on deny accessed fields, but a variable - it is a compile error.
+
 ## Private fields
 
 And finally, what to do with private fields?
 
-If variable has private field, it is an  always `%hidden Self::private` quasi-field.
+If variable has private fields, it has always at access `%hidden Self::private` quasi-field.
 ```rust
 pub struct HiddenPoint {
     pub x: f64,
@@ -646,7 +632,7 @@ Where :
  - `%hidden<%a>` - it is some specific `%a` quasi field access, but we have no access to specify it
  - `%private` is a shortcut for `%hidden<%full> Self::private`
 
-So, more fully we could write for struct witj private fields:
+So, more fully we could write for struct with private fields:
  - `%empty : %{%deny Self::pub, %hidden<%empty> Self::private}` access
  - `%full  : %{%permit  Self::pub, %hidden<%full>  Self::private}` access
 
