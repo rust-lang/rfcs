@@ -291,9 +291,27 @@ fn x_restore(&mut p1 : &mut %permit_x PointExtra, & p2 : & %permit_sv_x PointExt
 }
 ```
 
-Implementation parameters are mostly same:
+or add `type`
 ```rust
 // case (D7)
+// FROM case (D5)
+
+type PointSaveX = %{Self::saved_x, %any} PointExtra;
+type PointX = %{Self::x, %any} PointExtra;
+
+
+fn x_store(&mut p1 : &mut PointSaveX, & p2 : & PointX) {
+    *p1.saved_x = *p2.x
+}
+
+fn x_restore(&mut p1 : &mut PointX, & p2 : & PointSaveX) {
+    *p1.x = *p2.saved_x;
+}
+```
+
+Implementation parameters are mostly same:
+```rust
+// case (D8)
 impl Point {
     pub fn x_refmut(&mut self : &mut %{Self::x, %any} Self) -> &mut f64 {
         &mut self.x
@@ -307,7 +325,7 @@ impl Point {
 
 We could also use multiple sub-parameters of same parameter
 ```rust
-// case (D8)
+// case (D9)
     pub fn xy_swich(&mut self : &mut %{Self::{x, y}, %any} Self) {
         let tmp = *self.x;
         *self.x = *self.y;
@@ -320,7 +338,7 @@ So, no extra lock on `self` is needed, only for `%permit` fields.
 
 Now compiler can catch "out of scope parameter" errors
 ```rust
-// case (D9)
+// case (D10)
     pub fn xt_refmut(&self : &mut %{Self::xt, %any} Self) -> &mut f64 {
         //                               ^~~~~~
         // error: no field 'Self::xt' on type `Self`
@@ -330,7 +348,7 @@ Now compiler can catch "out of scope parameter" errors
 
 Since using `%ignore` filed is **unsafe by type** (we have no guarantee, that some field is permitted), trying to use ignoring field is a compile error:
 ```rust
-// case (D10)
+// case (D11)
     pub fn t_refmut(&self : &mut %{Self::t, %any} Self) -> &mut f64 {
         &mut self.x
         //   ^~~~~~
@@ -340,7 +358,7 @@ Since using `%ignore` filed is **unsafe by type** (we have no guarantee, that so
 
 Compile could catch more dead code warnings
 ```rust
-// case (D11)
+// case (D12)
     pub fn x_refmut(&self : &mut %{Self::x, Self::y, %any} Self) -> &mut f64 {
         //                                   ^~~~~~
         // warning: '#[warn(dead_code)]' field is never read: `Self::y`
