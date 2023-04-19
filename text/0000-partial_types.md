@@ -36,6 +36,25 @@ This proposal
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+  - [Partial types by type access]
+  - [Access variants and parameters in Trait]
+  - [Detailed access]
+     - [Detailed Struct Type]
+     - [Detailed Primitive Types]
+     - [Detailed Tuples]
+     - [Detailed Arrays]
+     - [Detailed Enum Type]
+  - [Partial parameters]
+     - [Partial parameter styles]
+     - [Partial parameters on implementations]
+     - [Several selfs]
+     - [Partial parameter errors]
+  - [Partial not consumption]
+     - [Max access filter]
+     - [Min access filter]
+     - [Partially Initialized Variables]
+  - [Private fields]
+
 ## Partial types by type access
 
 ```rust
@@ -73,9 +92,9 @@ Symbol `%` percent mean percent or part of the whole thing (variable in our case
 _Note: It is highly recommended to deprecate operator `%` as a remainder function (it is still no ambiguities to write "`\s+%\s+`"), and replace it with another operator (for example: `%mod` / `%rem` / `mod` / `rem`) to not to be confused by type access._
 
 
-## Traits with access variants
+## Access variants and parameters in Trait
 
-We could already write Traits with **safe** abstract functions (with no body), that consumes partial types having only variants of type access in Trait declaration
+We could already write Traits with **safe** abstract functions (with no body), which consumes partial access type having only variants of type access.
 ```rust
 // case (B1)
 pub trait Upd {
@@ -92,13 +111,13 @@ pub trait Upd {
 Unfortunately, having variants of type access is not enough to write **safe** implementations or other non-abstract function declarations.
 
 ## Detailed access
-We need detailed access to write non-abstract specific typed parameters in function, including trait implementation.
-
-We need for this some new quasi-fields and some field access (which should be soft keywords).
+We need to have detailed access to write non-abstract specific type parameters in function, including trait implementation.
 
 ### Detailed Struct Type
 
 What's about structures?
+
+We need for this some new quasi-fields and some field access (which should be soft keywords).
 ```rust
 struct Point {
     x: f64,
@@ -150,9 +169,9 @@ As we see,
 
 ### Detailed Primitive Types
 
-Primitive types (numbers, units) do not have internal structures. Their access is always `%full`
+Primitive types (numbers, units) and not-detailed yet types do not have internal structure. Their access is always `%full`
 
-For Primitive Partial Types we assume that **every** variable is a `struct`-like objects (even if it is not) and has a single quasi-field - `::self`.
+For them we assume that **every** variable is a `struct`-like objects (even if it is not) and has a single quasi-field - `::self`.
 
 It is a compile error if we try to `%deny` a `::self` field!
 
@@ -171,8 +190,6 @@ let foo = 0i16;
 
 For Tuples we assume that **every** variable is a `struct`-like objects (even if it is not) and has unnamed numbered fields.
 
-It is a compile error if we try to `%deny` a `::self` field!
-
 ```rust
 // case (C4)
 let bar = (0i16, &5i32, "some_string");
@@ -185,7 +202,7 @@ let bar = (0i16, &5i32, "some_string");
 
 ### Detailed Arrays
 
-For Arrays we assume that **every** variable is a `tuple`-like objects (even if it is not) and has unnamed numbered fields.
+For Arrays we wish to assume that **every** variable is a `tuple`-like objects (even if it is not) and has unnamed numbered fields.
 
 Unfortunately, Arrays are a bit magical, so it is _unclear_ if we could represent it access like a tuple access.
 
@@ -231,7 +248,7 @@ fn re_ref_t (& p : & %{Self::t, %ignore Self::_} Point) -> &f64 {
 }
 
 // case (D2)
-fn refmut_w (&mut p : &mut %{Self::w, %ignore Self::_} Point) -> &mut f64 {
+fn refmut_w (&mut p : &mut %{Self::w, %any} Point) -> &mut f64 {
    &mut p.w
 }
 ```
@@ -241,17 +258,15 @@ Where :
 
 But `%ignore Self::_` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%any : %ignore Self::_`.
 
+### Partial parameter styles
+
+We could write partial parameters using different style. Ordinary one:
+
 ```rust
 // case (D3)
 // FROM case (D1)
 fn re_ref_t (& p : & %{Self::t, %any} Point) -> &f64 {
    &p.t
-}
-
-// case (D4)
-// FROM case (D2)
-fn refmut_w (&mut p : &mut %{Self::w, %any} Point) -> &mut f64 {
-   &mut p.w
 }
 
 // case (D5)
@@ -263,7 +278,7 @@ struct PointExtra {
 }
 
 fn x_store(&mut p1 : &mut %{Self::saved_x, %any} PointExtra, & p2 : & %{Self::x, %any} PointExtra) {
-    *p1.saved_x = *p2.x
+    *p1.saved_x = *p2.x;
 }
 
 fn x_restore(&mut p1 : &mut %{Self::x, %any} PointExtra, & p2 : & %{Self::saved_x, %any} PointExtra) {
@@ -271,7 +286,7 @@ fn x_restore(&mut p1 : &mut %{Self::x, %any} PointExtra, & p2 : & %{Self::saved_
 }
 ```
 
-or use `where` clause if access is extra verbose:
+or use `where` clauses if access is extra verbose:
 ```rust
 // case (D6)
 // FROM case (D5)
@@ -280,7 +295,7 @@ fn x_store(&mut p1 : &mut %permit_sv_x PointExtra, & p2 : & %permit_x PointExtra
     where %permit_sv_x : %{Self::saved_x, %any},
           %permit_x : %{Self::x, %any}
 {
-    *p1.saved_x = *p2.x
+    *p1.saved_x = *p2.x;
 }
 
 fn x_restore(&mut p1 : &mut %permit_x PointExtra, & p2 : & %permit_sv_x PointExtra) 
@@ -291,7 +306,7 @@ fn x_restore(&mut p1 : &mut %permit_x PointExtra, & p2 : & %permit_sv_x PointExt
 }
 ```
 
-or add `type`
+or add `type` synonym
 ```rust
 // case (D7)
 // FROM case (D5)
@@ -301,7 +316,7 @@ type PointX = %{Self::x, %any} PointExtra;
 
 
 fn x_store(&mut p1 : &mut PointSaveX, & p2 : & PointX) {
-    *p1.saved_x = *p2.x
+    *p1.saved_x = *p2.x;
 }
 
 fn x_restore(&mut p1 : &mut PointX, & p2 : & PointSaveX) {
@@ -309,7 +324,9 @@ fn x_restore(&mut p1 : &mut PointX, & p2 : & PointSaveX) {
 }
 ```
 
-Implementation parameters are mostly same:
+### Partial parameters on implementations
+
+Implementation parameters are mostly same, but we use Self as "outer Self" type:
 ```rust
 // case (D8)
 impl Point {
@@ -330,39 +347,6 @@ We could also use multiple sub-parameters of same parameter
         let tmp = *self.x;
         *self.x = *self.y;
         *self.y = tmp;
-    }
-```
-
-Now type access guarantee to compiler, that only some fields has an access inside function, but not the rest of them.
-So, no extra lock on `self` is needed, only for `%permit` fields.
-
-Now compiler can catch "out of scope parameter" errors
-```rust
-// case (D10)
-    pub fn xt_refmut(&self : &mut %{Self::xt, %any} Self) -> &mut f64 {
-        //                               ^~~~~~
-        // error: no field 'Self::xt' on type `Self`
-        &mut self.xt
-    }
-```
-
-Since using `%ignore` filed is **unsafe by type** (we have no guarantee, that some field is permitted), trying to use ignoring field is a compile error:
-```rust
-// case (D11)
-    pub fn t_refmut(&self : &mut %{Self::t, %any} Self) -> &mut f64 {
-        &mut self.x
-        //   ^~~~~~
-        // error: cannot find value 'Self::x' in this scope
-    }
-```
-
-Compile could catch more dead code warnings
-```rust
-// case (D12)
-    pub fn x_refmut(&self : &mut %{Self::x, Self::y, %any} Self) -> &mut f64 {
-        //                                   ^~~~~~
-        // warning: '#[warn(dead_code)]' field is never read: `Self::y`
-        &mut self.x
     }
 ```
 
@@ -400,6 +384,41 @@ Sure, if we use several `self`s, their fit fileds access cannot overlap!
         //                                 ^~~~~~                         ^~~~~
         // error: cannot overlap fit-field 'Self::x' on self1 and self2
         *self1.x = *self2.x;
+    }
+```
+
+### Partial parameter errors
+
+Now type access guarantee to compiler, that only some fields has an access inside function, but not the rest of them.
+So, no extra lock on `self` is needed, only for `%permit` fields.
+
+Now compiler can catch "out of scope parameter" errors
+```rust
+// case (D10)
+    pub fn xt_refmut(&self : &mut %{Self::xt, %any} Self) -> &mut f64 {
+        //                               ^~~~~~
+        // error: no field 'Self::xt' on type `Self`
+        &mut self.xt
+    }
+```
+
+Since using `%ignore` filed is **unsafe by type** (we have no guarantee, that some field is permitted), trying to use ignoring field is a compile error:
+```rust
+// case (D11)
+    pub fn t_refmut(&self : &mut %{Self::t, %any} Self) -> &mut f64 {
+        &mut self.x
+        //   ^~~~~~
+        // error: cannot find value 'Self::x' in this scope
+    }
+```
+
+Compile could catch more dead code warnings
+```rust
+// case (D12)
+    pub fn x_refmut(&self : &mut %{Self::x, Self::y, %any} Self) -> &mut f64 {
+        //                                   ^~~~~~
+        // warning: '#[warn(dead_code)]' field is never read: `Self::y`
+        &mut self.x
     }
 ```
 
@@ -475,6 +494,8 @@ let move_x45 = %{Self::{f4, f5}, %cut} x;
 
 But `%deny Self::_` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%cut : %deny Self::_`.
 
+### Max access filter
+
 What to do if we wish to create a reference to `ref_x23`. Do we need to write explicitly an access or exists implicit way?
 
 No, we could use `%max`(or `%id`) - qualified safe filter with maximum profit-fields, but technically is an `id` filter to variable access:
@@ -495,6 +516,8 @@ let refref_x23 = & %max ref_x23;
 //
     // refref_x23: && %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
 ```
+
+### Min access filter
 
 For function argument we add another filter `%min` - qualified safe filter with minimum profit-fields, but it refers not to variable access, but to parameter access, so we could use it in arguments consumption only! It is an compile error if `%min` is written outside of contents!
 
@@ -530,7 +553,7 @@ p3.update_sametype(&mut %min p2);
 ```
 
 
-## Partially Initialized Variables
+### Partially Initialized Variables
 
 We must have an ability to create partially initilized variables. So we need to add a filter-access to a constructor
 
