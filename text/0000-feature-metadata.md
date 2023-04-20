@@ -99,6 +99,8 @@ following sections:
 `requires` will take the place of the feature dependency array that currently
 exists. Semantics will remain unchanged.
 
+This is a required key.
+
 ## `doc`
 
 `doc` is the most straightforward: it accepts markdown-flavored text, and should
@@ -127,8 +129,15 @@ attribute in Rust source. The value can be a boolean, string, or an object with
 -   If not specified, the default is `false`
 
 If a downstream crate attempts to use a feature marked `deprecated`, Cargo
-should produce a warning. However, if a `since` is specified that is later than
-the crate's current version, this warning should be ignored.
+should produce a warning. There are two exceptions to this:
+
+-   If a `since` is specified that is later than the crate's current version,
+    this warning should not be emitted.
+-   This warning should not be emitted for crates that reexport the feature
+    under a feature also marked deprecated. For example: crate `foo` exports
+    feature `phooey`, and crate `bar` exports feature `barred = ["foo/phooey"]`.
+    If `foo` markes `bar` as deprecated, checking `bar` will emit a warning
+    unless `barred` is also marked `deprecated.
 
 ## `public`
 
@@ -230,25 +239,13 @@ false` since they aren't listed on the crate landing page.
 
 -   There is an existing crate that uses TOML comments to create a features table:
     <https://docs.rs/document-features/latest/document_features/>
--   `docs.rs` displays a feature table, but it is fairly limited
+-   `docs.rs` displays a feature table, but it is fairly limited. If features
+    start with `_`, they are hidden from this table.
 -   Ivy has a [visibility attribute] for its configuration (mentioned in [cargo #10882])
 
 # Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
-
--   Should `foo = {}` be allowed, or is `foo = { requires = [] }` the minimum if
-    only using this field? I am leaning toward having it required to avoid
-    inconsistency like
-
-    ```toml
-    foo = {}
-    bar = []
-    baz = {}
-    ```
-
-    However, I would also say that `foo = { deprecated = true }` (no `requires`
-    key) could be valid.
 
 -   Do we want all the proposed keys? Specifically, `public` and `unstable` may be
     more than what is needed.
@@ -272,8 +269,8 @@ stabilized immediately and other features could be postponed.
 
 [future-possibilities]: #future-possibilities
 
--   Rustdoc will gain the ability to document features. This is planned in an
-    associated RFC.
+-   Rustdoc will gain the ability to document features. This is planned in the
+    [`rustdoc-cargo-configuration`] RFC.
 -   Somehow inform users if they are using to-be-deprecated features, i.e.,
     deprecated `since` is set but is later than the current dependancy version.
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
@@ -291,6 +288,7 @@ stabilized immediately and other features could be postponed.
     ```
 
 
+[`rustdoc-cargo-configuration`]: https://github.com/rust-lang/rfcs/pull/3421
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
 [`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
 [visibility attribute]: https://ant.apache.org/ivy/history/latest-milestone/ivyfile/conf.html
