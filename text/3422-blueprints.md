@@ -1,6 +1,6 @@
 - Feature Name: `blueprints`
 - Start Date: 2032-04-20
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3422](https://github.com/rust-lang/rfcs/pull/3422)
 
 # Summary
 [summary]: #summary
