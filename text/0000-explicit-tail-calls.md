@@ -239,7 +239,6 @@ fn bar(n: i32) {
 }
 ```
 
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 <!-- This is the technical portion of the RFC. Explain the design in sufficient detail that:
@@ -249,43 +248,25 @@ fn bar(n: i32) {
 - Corner cases are dissected by example.
 
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work. -->
-This explanation is mostly based on the [previous RFC](https://github.com/DemiMarie/rfcs/blob/become/0000-proper-tail-calls.md#detailed-design)
-though is more restricted as the current RFC does not target general tail calls anymore.
+Implementation of this feature requires checks that all prerequisites to guarantee TCE are fulfilled.
+These checks are:
+- The `become` keyword is only used in place of `return`. The intend is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
+- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intend is to assure a compatible stack frame layout.
+- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no local variables are passed to the called function, and no further cleanup is necessary. These checks can be done by using the borrowchecker as described in the [Borrowchecking](#semantics) section below.
 
-The goal of this RFC is to describe a first implementation that is already useful while providing a basis to explore
-possible ways to relax the requirements for TCE.
+If any of these checks fail a compiler error is issued.
 
-## Syntax
-[syntax]: #syntax
+One additional check must be done, if the backend cannot guarantee TCE to be performed a ICE is issued. It is also suggested to ensure that the invariants provided by the prerequisites are maintained during compilation and raising a ICE if this is not the case.
 
-A function call can be specified to be TCE by using the `become` keyword in place of `return`.  The `become` keyword is
-already reserved, so there is no backwards-compatibility break. The `become` keyword must be followed by a
-function or method call, see the section on [tail-call-elimination](#tail-call-elimination) for examples.
-Additionally, there is a further restriction on the tail-callable functions: the function signature must exactly match
-that of the calling function. 
+Note that as `become` is a keyword reserved for exactly the use-case described in this RFC there is no backwards-compatibility break.
 
-Invocations of overloaded operators were considered as valid targets, but were rejected on grounds of being too error-prone.
-In any case, these can still be called as methods. One example of their error-prone nature ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1167112296)):
-```rust
-pub fn fibonacci(n: u64) -> u64 {
-    if n < 2 {
-        return n
-    }
-    become fibonacci(n - 2) + fibonacci(n - 1)
-}
-```
-In this case a naive author might assume that this is going to be a stack space efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more of less the same since the critical recursive calls are not actually in tail call position.
+This feature will have interactions with other features that depend on stack frames, for example, debugging and backtraces. As omitting stack frames is fundamental to the feature described in this RFC, it is suggested to warn a user of this interaction. It might also be possible to add special handling for some features, for example storing a constant number of stack frames separately during debugging.
 
-Further confusion could result from the same-signature restriction where the Rust compilers complains that fibonacci and <u64 as Add>::add do not share a common signature.
+Features that depend on drop order can also be impacted by this feature, for example locking mechanisms.
 
+See below for how borrowchecking can be used to implement this feature and the reasoning why operators are not supported.
 
-
-## Type checking
-[typechecking]: #typechecking
-A `become` statement is type-checked like a `return` statement, with the added restriction that the function signatures of the caller and callee must match exactly. Additionally, the caller and callee **must** use the same calling
-convention.
-
-## Borrowchecking and Runtime Semantics
+## Borrowchecking
 [semantics]: #semantics
 A `become` expression acts as if the following events occurred in-order:
 
@@ -302,37 +283,20 @@ fulfilled.
 
 See this earlier [example](#the-difference-between-return-and-become) on how become causes drops to be elaborated.
 
-## Implementation
-[implementation]: #implementation
+## Operators are not supported
+Invocations of operators were considered as valid targets, but were rejected on grounds of being too error-prone.
+In any case, these can still be called as methods. One example of their error-prone nature ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1167112296)):
+```rust
+pub fn fibonacci(n: u64) -> u64 {
+    if n < 2 {
+        return n
+    }
+    become fibonacci(n - 2) + fibonacci(n - 1)
+}
+```
+In this case a naive author might assume that this is going to be a stack space efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more of less the same since the critical recursive calls are not actually in tail call position.
 
-A now six years old implementation for the earlier mentioned
-[RFC](https://github.com/DemiMarie/rfcs/blob/become/0000-proper-tail-calls.md) can be found at
-[DemiMarie/rust/tree/explicit-tailcalls](https://github.com/DemiMarie/rust/tree/explicit-tailcalls).
-A new implementation is planned as part of this RFC.
-
-The parser parses `become` exactly how it parses the `return` keyword. The difference in semantics is handled later.
-
-During type checking, the following are checked:
-
-1. The target of the tail call is, in fact, a simple call.
-2. The target of the tail call has the proper ABI.
-
-Should any of these checks fail a compiler error should be issued.
-
-
-New nodes are added in HIR and THIR to correspond to `become`. In MIR, the function call is checked that:
-1. The returned value is directly returned.
-2. There are no cleanups.
-3. The basic block being branched into has length zero.
-4. The basic block being branched into terminates with a return.
-
-If these conditions are fulfilled the function call and the `become` are merged into a `TailCall` MIR node,
-this guarantees that nothing can be inserted between the call and `become`. Additionally, this node indicates
-the request for TCE for the call which is then propagated to the corresponding backend. In the backend,
-there is an additional check if TCE can be performed.
-
-Should any of these checks fail an ICE should be issued.
-
+Further confusion could result from the same-signature restriction where the Rust compilers complains that fibonacci and <u64 as Add>::add do not share a common signature.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -551,7 +515,7 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
     - The main uncertainties are regarding the exact restrictions on when backends can offer TCE, this RFC is intentionally strict to try and require as little as possible from the backends.
-    - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional.
+    - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional. Currently the RFC specifies that a ICE should be issued if a backend cannot guarantee that TCE will be performed.
     - Another point that needs to be decided is if TCE is supported by a backend what exactly should be guaranteed? While the guarantee that there is no stack growth should be necessary, should performance (as in transforming `call` instructions into `jmp`) also be guaranteed? Note that a backend that guarantees performance should do so **always** otherwise the main intent of this RFC seems to be lost.
     - Migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation from `return` to `become` can be done for function calls where all requisites are already fulfilled. However, this lint might be confusing and noisy. Decide on if this lint or others should be added.
     - Should a lint be added for functions that are marked to be tail call or use become. See discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
