@@ -127,7 +127,8 @@ attribute in Rust source. The value can be a boolean, string, or an object with
 -   If not specified, the default is `false`
 
 If a downstream crate attempts to use a feature marked `deprecated`, Cargo
-should produce a warning.
+should produce a warning. However, if a `since` is specified that is later than
+the crate's current version, this warning should be ignored.
 
 ## `public`
 
@@ -183,6 +184,9 @@ false` since they aren't listed on the crate landing page.
 -   Docstrings can be lengthy, adding noise to `Cargo.toml`. This could
     potentially be solved with the below mentioned `doc-file` key.
 -   `unstable` and `public` uses may not be common enough to be worth including
+-   A markdown parser will eventaully be required to properly parse the `doc`
+    field. Cargo can likely get away without one for basic functionality, such
+    as printing the summary with `cargo add`.
 
 # Rationale and alternatives
 
@@ -194,6 +198,18 @@ false` since they aren't listed on the crate landing page.
     to parse standard TOML.
 -   Feature descriptions could be specified somewhere in Rust source files. This
     has the downside of creating multiple sources of truth on features.
+-   Cargo could parse doc comments in `Cargo.toml`, like the `document-features`
+    crate (linked below).
+
+    ```toml
+    [features]
+    foo = { requires = [], doc = "foo feature" }
+    ## foo feature
+    foo = []
+    ```
+
+    This was decided against as part of this RFC because it would mean that
+    standard TOML parsers cannot extract all the information in `Cargo.toml`.
 
 # Prior art
 
@@ -245,6 +261,13 @@ stabilized immediately and other features could be postponed.
 
 -   Rustdoc will gain the ability to document features. This is planned in an
     associated RFC.
+-   Somehow inform users if they are using to-be-deprecated features, i.e.,
+    deprecated `since` is set but is later than the current dependancy version.
+-   `cargo add` can show the `doc` and `deprecated` summary with the listed
+    features.
+-   [`cargo-info`] can use this information to provide feature descriptions.
+-   `deprecated` could take a `replace-with` key that indicates features have
+    moved to a different name
 -   One option is to allow giving the feature documentation in a separate file,
     allowing a markdown section specifier. This could be a good option for
     features requiring long descriptions.
@@ -254,19 +277,6 @@ stabilized immediately and other features could be postponed.
     bar = { requires = [], doc-file = "features.md#bar" }
     ```
 
--   Cargo could parse doc comments in `Cargo.toml`, like the above linked
-    `document-features` crate. This would add complexity to TOML parsing, so it is
-    not included as part of the initial proposal.
-
-    ```toml
-    [features]
-    foo = { requires = [], doc = "foo feature" }
-    ## foo feature
-    foo = []
-    ```
-
-    If this is accepted in the future, any doc comments would simply be
-    concatenated with the `doc` key.
 
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
 [`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
