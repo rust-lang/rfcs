@@ -240,7 +240,10 @@ Another thing to note is sort order. In general, any tool that renders features
     ```
 
     This was decided against as part of this RFC because it would mean that
-    standard TOML parsers cannot extract all the information in `Cargo.toml`.
+    standard TOML parsers (including anything `serde`-based) cannot extract all
+    the information in `Cargo.toml` - a format-preserving parser would be
+    required. This differs from documentation in Rust source, where a custom
+    parser already has to be used.
 
 # Prior art
 
