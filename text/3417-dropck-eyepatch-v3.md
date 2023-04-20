@@ -13,10 +13,9 @@ to get completely ignored by dropck as its current behavior is confusing and inc
 # Motivation
 [motivation]: #motivation
 
-The current rules around dropck and `#[may_dangle]` are confusing and have even resulted in
-unsoundness [multiple](https://github.com/rust-lang/rust/issues/76367)
-[times](https://github.com/rust-lang/rust/issues/99408). Even without `#[may_dangle]`,
-dropping `PhantomData` is currently quite weird as you get "spooky-dropck-at-a-distance":
+`PhantomData` is `Copy` but still adds outlives requirements when dropped as a part of
+a larger value. This behavior is inconsistent and results in "spooky-dropck-at-a-distance" 
+even without `#[may_dangle]`:
 
 ```rust
 use std::marker::PhantomData;
@@ -52,6 +51,13 @@ fn phantom_data_adt_needs_drop() {
 }
 ```
 [playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=9ce9d368d2f13df9ddcbfaf9580721e0)
+
+`#[may_dangle]` is currently difficult to use correctly. It has resulted in
+unsoundness [multiple](https://github.com/rust-lang/rust/issues/76367)
+[times](https://github.com/rust-lang/rust/issues/99408). `#[may_dangle]` restricts
+the impl of `fn Drop::drop`. Whether this method is allowed to drop `T` depends
+on the fields of the ADT. While changing `#[may_dangle]` to explicitly state its intended
+behavior is necessary due to the change to `PhantomData`, this also simplify its usage.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -233,6 +239,11 @@ to provide them to stable users?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+Part of the motivation for this RFC is that reasoning about `#[may_dangle]` through field
+ownership is subtle and easy to get wrong. This applies equally to other
+properties of types: variance and auto traits. We may want to look into reducing our
+reliance on this kind of reasoning, at least in the presence of unsafe code.
 
 Extending or generalizing the dropck eyepatch... something something type state.
 
