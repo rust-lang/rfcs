@@ -356,6 +356,9 @@ Blocking:
 
 -   Should inheritance be handled at all? Explicit vs. implicit? (See rationale
     section)
+-   Should Cargo search for files? This was chosen because it is fairly
+    straightforward for Cargo to do if there are strict rules, but it could be
+    easier to just pass a `--config-search-path` for workspace and crate roots.
 
 Nonblocking:
 
