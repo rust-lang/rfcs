@@ -215,12 +215,13 @@ Another thing to note is sort order. In general, any tool that renders features
     potentially be solved with the below mentioned `doc-file` key.
 -   `unstable` and `public` uses may not be common enough to be worth including
 -   A markdown parser will eventaully be required to properly parse the `doc`
-    field. Cargo can likely get away without one for basic functionality, such
-    as printing the summary with `cargo add`.
+    field. Presenting unrendered markdown is likely suitable as a first step,
+    but in general, markdown is required to fully interpret the field.
 -   This RFC does not provide any way for `rustdoc` to get the information it
     requires. This will require separate design work.
 -   There is no way to structure features in a way that they are split into
     sections, unlike with the `document-features` crate.
+-   Features cannot be ordered since the TOML specification does not allow it.
 
 # Rationale and alternatives
 
@@ -269,6 +270,8 @@ Another thing to note is sort order. In general, any tool that renders features
 -   Does it make sense to have separate `hidden` (not documented) and `public`
     (feature not allowed downstream) attribute? I think probably not
 -   Should there be a way to deny deprecated features?
+-   The Cargo index may need a way to be aware of deprecated features, so it can
+    properly report them during resolution. What would be needed here?
 
 It is worth noting that simpler keys (`requires`, `doc`, `deprecated`) could be
 stabilized immediately and other features could be postponed.
