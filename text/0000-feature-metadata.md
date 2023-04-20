@@ -137,6 +137,17 @@ the crate's current version, this warning should be ignored.
 to `false`, Cargo should forbid its use with an error message on any downstream
 crates.
 
+In general, marking a feature `public = false` should make tooling treat the
+feature as non-public API. That includes:
+
+-   The feature should not be accepted by `cargo add --features`
+-   The feature should not be reported from the feature output report of `cargo
+    add`
+-   In the future, `rustdoc` should not document these features unless
+    `--document-private-items` is specified
+-   A future tool like `cargo info` shouldn't display information about these
+    features
+
 There needs to be an escape hatch for this for things like benchmarks - RFC TBD
 on how this works.
 
@@ -187,6 +198,8 @@ false` since they aren't listed on the crate landing page.
 -   A markdown parser will eventaully be required to properly parse the `doc`
     field. Cargo can likely get away without one for basic functionality, such
     as printing the summary with `cargo add`.
+-   This RFC does not provide any way for `rustdoc` to get the information it
+    requires. This will require separate design work.
 
 # Rationale and alternatives
 
