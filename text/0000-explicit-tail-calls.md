@@ -249,7 +249,7 @@ Implementation of this feature requires checks that all prerequisites to guarant
 These checks are:
 - The `become` keyword is only used in place of `return`. The intend is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
 - The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intend is to assure a compatible stack frame layout.
-- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no local variables are passed to the called function, and no further cleanup is necessary. These checks can be done by using the borrowchecker as described in the [Borrowchecking](#semantics) section below.
+- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok, since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrowchecker as described in the [Borrowchecking](#semantics) section below.
 
 If any of these checks fail a compiler error is issued.
 
