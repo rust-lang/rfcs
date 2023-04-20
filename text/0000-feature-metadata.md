@@ -151,7 +151,7 @@ feature as non-public API. That includes:
 
 -   The feature should not be accepted by `cargo add --features`
 -   The feature should not be reported from the feature output report of `cargo
-    add`
+add`
 -   In the future, `rustdoc` should not document these features unless
     `--document-private-items` is specified
 -   A future tool like `cargo info` shouldn't display information about these
@@ -194,6 +194,16 @@ crab@rust foobar % cargo add regex
 Features like `aho-corasick`, `memchr`, or `use_std` would likely be `public =
 false` since they aren't listed on the crate landing page.
 
+Another thing to note is sort order. In general, any tool that renders features
+(`rustdoc`, `cargo add`) should attempt to present them in the following way:
+
+-   Display default features first
+-   Display non-default but stable features next (can be in a separate section)
+-   Display unstable or deprecated features last (can be in a separate section)
+-   Do not display private features unless receiving a flag saying to do so (e.g.
+    `--document-private-items` with `rustdoc`)
+-   If ordering is not preserved, present the features alphabetically
+
 # Drawbacks
 
 [drawbacks]: #drawbacks
@@ -209,15 +219,13 @@ false` since they aren't listed on the crate landing page.
     as printing the summary with `cargo add`.
 -   This RFC does not provide any way for `rustdoc` to get the information it
     requires. This will require separate design work.
+-   There is no way to structure features in a way that they are split into
+    sections, unlike with the `document-features` crate.
 
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
--   TOML-docstrings (`## Some doc comment`) and attributes that mimic Rust
-    docstrings could be used instead of a `doc` key. This is discussed in
-    [future-possibilities], but decided against to start since it is much simpler
-    to parse standard TOML.
 -   Feature descriptions could be specified somewhere in Rust source files. This
     has the downside of creating multiple sources of truth on features.
 -   Cargo could parse doc comments in `Cargo.toml`, like the `document-features`
@@ -286,7 +294,6 @@ stabilized immediately and other features could be postponed.
     foo = { requires = [], doc-file = "features.md#foo" }
     bar = { requires = [], doc-file = "features.md#bar" }
     ```
-
 
 [`rustdoc-cargo-configuration`]: https://github.com/rust-lang/rfcs/pull/3421
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
