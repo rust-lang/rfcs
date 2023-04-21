@@ -1,20 +1,18 @@
-- Feature Name: `split_maydangle`
+- Feature Name: `deprecate_spooky_dropck_at_a_distance`
 - Start Date: 2023-02-13
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3414](https://github.com/rust-lang/rfcs/pull/3414)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-Refine `#[may_dangle]`, treat `PhantomData` like `ManuallyDrop`.
+Never add outlives requirements for a non-`needs_drop` type. Adjust
+`#[may_dangle]` for the required semantics.
 
 # Motivation
 [motivation]: #motivation
 
-Forgetting to put `PhantomData` in a type annotated with `#[may_dangle]` has
-caused multiple soundness issues in the past, notably [rust-lang/rust#76367] and
-[rust-lang/rust#99408]. Further, `PhantomData` having dropck behaviour leads to
-"spooky-dropck-at-a-distance":
+`PhantomData` having dropck behaviour leads to "spooky-dropck-at-a-distance":
 
 This fails to compile:
 
@@ -70,13 +68,117 @@ pub fn foo() {
 
 `PhantomData`'s dropck behaviour is only checked if the type (in this case, the
 tuple) marks `needs_drop`, which is confusing. Unrelated tuple elements
-shouldn't affect `PhantomData` behaviour.
+shouldn't affect `PhantomData` behaviour, but the above example shows that they
+do. This RFC makes it so they don't.
 
-[rust-lang/rust#76367]: https://github.com/rust-lang/rust/issues/76367
-[rust-lang/rust#99408]: https://github.com/rust-lang/rust/issues/99408
+Likewise, `[T; 0]` produces the same effect: it is not `needs_drop`, but adds
+outlive requirements, thus also exhibiting "spooky-dropck-at-a-distance".
+
+Simply defining every non-`needs_drop` type as being pure w.r.t. drop would,
+however, break `#[may_dangle]`, so we need to adapt it.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+## Changes to dropck (stable)
+
+Types like `fn(T)`, `ManuallyDrop<T>`, `PhantomData<T>`, `[T; 0]` and `&'a T`,
+that don't need to be dropped, place no liveness requirements on `'a` or `T`
+when they go out of scope - even if `T` would otherwise introduce liveness
+requirements.
+
+In other words, this compiles:
+
+```rust
+fn main() {
+    let mut x;
+    {
+        x = &String::new();
+        // String implicitly dropped here
+    }
+    // x implicitly dropped here
+}
+```
+
+But a type which does need to be dropped, introduces liveness requirements:
+
+```rust
+struct PrintOnDrop<'s>(&'s str);
+impl<'s> Drop for PrintOnDrop<'s> {
+    fn drop(&mut self) {
+        println!("{}", self.0);
+    }
+}
+
+fn main() {
+    let mut x;
+    {
+        x = PrintOnDrop(&*String::new());
+        // String implicitly dropped here
+    }
+    // x implicitly dropped here
+    // ERROR: temporary may not live long enough
+}
+```
+
+Unless it's in one of the above types:
+
+```rust
+struct PrintOnDrop<'s>(&'s str);
+impl<'s> Drop for PrintOnDrop<'s> {
+    fn drop(&mut self) {
+        println!("{}", self.0);
+    }
+}
+
+fn main() {
+    let mut x;
+    {
+        x = &PrintOnDrop(&*String::new());
+        // PrintOnDrop implicitly dropped here
+        // String implicitly dropped here
+    }
+    // x implicitly dropped here
+}
+```
+
+As a special case, some built-in types, like `Vec`, `Box`, `Rc`, `Arc`,
+`HashMap`, among others, despite needing to be dropped, do not place liveness
+requirements unless `T` demands liveness requirements. This is okay:
+
+```rust
+fn main() {
+    let mut x = vec![];
+    {
+        x.push(&String::new());
+        // String implicitly dropped here
+    }
+    // x implicitly dropped here
+}
+```
+
+But this isn't:
+
+```rust
+struct PrintOnDrop<'s>(&'s str);
+impl<'s> Drop for PrintOnDrop<'s> {
+    fn drop(&mut self) {
+        println!("{}", self.0);
+    }
+}
+
+fn main() {
+    let mut x = vec![];
+    {
+        x.push(PrintOnDrop(&*String::new()));
+        // String implicitly dropped here
+    }
+    // x implicitly dropped here
+    // ERROR: temporary may not live long enough
+}
+```
+
+## Changes to `#[may_dangle]` (unstable)
 
 A type marked `#[may_dangle(drop)]` gets checked for liveness at drop. This is
 necessary for `Vec`:
@@ -125,8 +227,8 @@ fn main() {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC removes the dropck/outlives constraints from `PhantomData` and moves
-them into the relevant `Drop` impls instead.
+This RFC removes the dropck/outlives constraints from `PhantomData` and `[T; 0]`
+and moves them into the relevant `Drop` impls instead.
 
 Instead of relying on `PhantomData`, there are now 3 forms of `may_dangle`:
 
@@ -178,14 +280,13 @@ fn main() {
 }
 ```
 
-This removes the need for the soundness-bearing `PhantomData` entirely.
-
 Effectively, a type is checked to be *safe to drop* by the following procedure:
 
 - If the type has no type or lifetime parameters, it is *safe to drop*.
 - If the type is any of the below, it is *safe to drop*:
-    References, raw pointers, function pointers, function items, `PhantomData`
-    and `ManuallyDrop`.
+    References, raw pointers, function pointers, function items, `PhantomData`,
+    `ManuallyDrop` and empty arrays. In other words, all (at the time of
+    writing) non-`needs_drop` types.
 - If the type has a `Drop` impl, or is a trait object:
     - For every lifetime parameter:
         - If the lifetime parameter is marked `#[may_dangle]`, continue.
@@ -212,24 +313,27 @@ always treat `PhantomData` as *safe to drop*.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Requires mild churn to update things to the new way. Doesn't provide any
-safeguards about getting `drop` vs `borrow` correct.
+Due to `#[may_dangle]` changes, this requires mild churn to update things to the
+new way.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 A type which doesn't need drop should never have dropck/outlives contraints,
 but due to the rushed way in which `may_dangle` was implemented, `PhantomData`
-ended up having this unfortunate behaviour. This RFC removes this behaviour and
-allows strictly more code to compile.
+ended up having this unfortunate "spooky-dropck-at-a-distance" behaviour. This
+RFC removes this behaviour and allows strictly more code to compile.
 
 Lifetimes cannot be dropped, so it wouldn't make sense to have
 `#[may_dangle(drop)]` for lifetimes. We adopt a single form for them.
 
-This proposal attempts to be as minimal as possible and provides no additional
-checking of the `Drop` impl for correctness. An alternative would be to have
-something like [RFC PR 3390] which does provide a mechanism for checking the
-`Drop` impl for correctness.
+This proposal attempts to be as minimal as possible and focuses entirely on the
+"spooky-dropck-at-a-distance" behaviour. It also distinguishes between stable
+behaviour and unstable behaviour, opting *not* to document unstable behaviour,
+which is subject to change, as part of stable behaviour. While the unstable
+behaviour *is* relevant to dropck, particularly where collection types (`Vec`,
+`HashMap`, etc) expose some details about it to stable code, we opt to document
+it separately instead.
 
 # Prior art
 [prior-art]: #prior-art
