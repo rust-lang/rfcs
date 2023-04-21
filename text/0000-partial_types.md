@@ -45,7 +45,7 @@ struct Point {
 let mut pfull = Point {x: 1.0, y: 2.0, was_x: 4.0, was_y: 5.0};
 ```
 
-If we need to write a function, that use partial parameters we write:
+If we need to write a function, which use partial parameters:
 ```rust
 // partial parameters
 type PointJustX = %{Self::x, %any} Point;
