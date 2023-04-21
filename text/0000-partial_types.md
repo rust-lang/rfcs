@@ -11,8 +11,6 @@ Partial types proposal is a generalization on "partial borrowing"-like proposals
 
 This proposal is a universal road-map "how to do partial not consumption (including partial not borrowing) right", and not under the hood of the Rust compiler.
 
-Partial Types is a **minimal** and full extension to the Rust Type System, which allows to safe control easily partial parameters and all kinds of partial not consumption.
-
 Advantages: maximum type safety, maximum type control guarantee, no ambiguities, flexibility, usability and universality.
 
 
@@ -21,20 +19,79 @@ Advantages: maximum type safety, maximum type control guarantee, no ambiguities,
 
 Safe, Flexible controllable partial parameters for functions and partial not consumption (including partial not borrowing) are highly needed and this feature unlock huge amount of possibilities.
 
-Partial borrowing is already possible in Rust, as partial referencing and partial moves.
-
 But partial parameters are forbidden now, as qualified consumption: partial not borrowing, partial not referencing, partial not moving and partial initializing.
 
-This proposal
-1) It is full backward-compatible.
-2) It adds some **safe** flexibility to **safe** code by **safe** methods.
-3) It has simplicity in binary - Type access just say by type to compiler, that some fields are forbidden to use _for everyone ever_. And that allows to use ordinary references as "partial" and ordinal variables as "partial". No extra actions with variables or pointers are needed.
-4) Any type error is a compiler error, all types are erased after type-check, so no extra-cost in binary is needed.
-5) It has universal rule - that mean minimal special cases on implementation.
-6) It is minimal universal-extension - all other proposals propose less than this with  more or same cost
+Partial Types extension gives to type-checker a **mathematical guarantee** that using simultaneously partial typed variable, it multiple references and borrowing is as  **safe** as using them at a sequence.
+
+And since it is guarantee by **type**, not by **values**, it has _zero cost_ in binary.
+
+Any type error is a compiler error, so no errors in runtime.
+
+We could apply _theoretically_ this extension to all Product Types (`PT = T1 and T2 and T3  and ...`). 
+
+So, most promised candidates are Structs and Tuples.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+Let we have a structure:
+```rust
+struct Point {
+  x: f64,
+  y: f64, 
+  was_x: f64, 
+  was_y: f64
+}
+let mut pfull = Point {x: 1.0, y: 2.0, was_x: 4.0, was_y: 5.0};
+```
+
+If we need to write a function, that use partial parameters we write:
+```rust
+// partial parameters
+type PointJustX = %{Self::x, %any} Point;
+type PointJustWasX = %{Self::was_x, %any} Point;
+
+fn x_restore(&mut p1 : &mut PointJustWasX, & p2 : & PointJustX) {
+    *p1.x = *p2.was_x;
+}
+```
+Which mean that `p1` parameters could use variables with any partial type of `Point`, which has permit access to field `was_x` and we don't care of rest fields. And `p2` parameters could use variables with any partial type of `Point`, which has permit access to field `x` and we don't care of rest fields.
+
+If we try to use same variable simultaneously for that, we must insert arguments partially - we cut type by `%min` access-filter:
+```rust
+x_restore(&mut %min pfull, & %min pfull);
+```
+If we wish to write same function via implementation, we need several selves!
+```rust
+impl Point {
+    pub fn x_restore(&mut self1 : &mut %{Self::saved_x, %any} Self, &self2 : & %{Self::x, %any} Self) {
+        *self1.x = *self2.saved_x;
+    }
+```
+Why it is useful? If we need several functions which read common field, but mutually write different fields we could use them together!
+```rust
+pub fn mf1_rfc(&mut self1 : &mut %{Self::fld1, %any} Self, &self2 : & %{Self::common, %any} Self)  
+{ /* ... */ }
+    
+pub fn mf2_rfc(&mut self1 : &mut %{Self::fld2, %any} Self, &self2 : & %{Self::common, %any} Self)  
+{ /* ... */ }
+```
+
+And Partial Types have more. They are not limited to parameters/arguments only.
+
+```rust
+let ref_was = & %{Self::was_x, Self::was_y, %cut} pfull;
+
+let brwd_now = &mut %{Self::x, Self::y, %cut} pfull;
+
+let refref_was = & %max ref_was;
+```
+So we have a read-only reference to "was"-fields and mutable "now"-fields.
+
+It is easy, useful and universal!
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
 
   - [Partial types by type access]
   - [Detailed access]
@@ -55,32 +112,26 @@ This proposal
      - [Partially Initialized Variables]
   - [Private fields]
 
+
 ## Partial types by type access
 
 ```rust
+struct PointXY {
+    x: f64,
+    y: f64,
+}
 // case (A1)
-let mut foo : mut i16 = 0;
+let mut foo : mut PointXY = PointXY {x:11.0, y:2.0};
 ```
 
-The **full type** in Rust is next:
+I propose to extend type system by adding type access to sub-type. So, our variable will have next type:
+
 ```rust
 // case (A2)
-<variable>  : <full_type>;
-<variable>  : <type_clarification> <type>;
-<variable>  : <sharing> <'lifetime> <mutability> <type>;
-```
-
-I propose to extend type system by adding type access to sub-type. So, our variable will have next full type:
-
-```rust
-// case (A4)
-<variable>  : <type_clarification> <%access> <type>;
-<variable>  : <sharing> <'lifetime> <mutability> <%access> <type>;
-
-// case (A5)
 // FROM case (A1)
-// foo  : mut %full i16;
-// foo  : mut i16;
+// foo  : mut PointXY;
+// foo  : mut %a PointXY;
+// foo  : mut %full PointXY;
 ```
 
 Lifetime variants are `'static` (for static lifetime), `'_`(don't care lifetime) and any other `'b`(some "b" lifetime).
@@ -100,8 +151,7 @@ Unfortunately, having variants of type access is not enough to write **safe** im
 We need to have more specific access by detailed access.
 
 ### Detailed Struct Type
-
-What's about structures?
+Let's try simple uninhabited type
 
 We need for this some new quasi-fields and some field access (which should be soft keywords).
 ```rust
@@ -128,9 +178,26 @@ Where :
  - `::*` is an "every field" quasi-field
  - `::{<fld1>, <fld2>, }` is an field-set quasi-field
 
+```rust
+// case (B1)
+struct Nothing {}
+
+let mut bar : mut Nothing = Nothing {};
+    //
+    // bar : Nothing  
+    // bar : %full Nothing;
+    // bar : %{Self::*} Nothing;
+    // bar : %{Self::self} Nothing;
+    // bar : %{%permit Self::self} Nothing;
+```
+Where :
+ -  `::self` a single quasi-field for uninhabited structs
+
+It is a compile error if we try to %deny a ::self field!
+ 
 We assume, that each field could be in one of two specific field-access - `%permit` and `%deny`.
 
-We also must reserve as a keyword a `%miss` field-access for future ReExtendeded Partial Types, which allows to create **safe** self-referential types.
+_We also must reserve as a keyword a `%miss` field-access for future ReExtendeded Partial Types, which allows to create **safe** self-referential types._
 
 `%permit` is default field-access (if we omit to write specific field-access) and it means we have an access to this field and could use it as we wish. But if we try to access to `%deny` field it cause a compiler error.
 
@@ -152,25 +219,6 @@ Where :
 As we see, 
  - `%empty : %{%deny Self::*}` or `%empty : %{}` access
  - `%full  : %{%permit Self::*}` or `%full  : %{Self::*}` access
-
-### Detailed Primitive Types
-
-Primitive types (numbers, units) and not-detailed yet types do not have internal structure. Their access is always `%full`
-
-For them we assume that **every** variable is a `struct`-like objects (even if it is not) and has a single quasi-field - `::self`.
-
-It is a compile error if we try to `%deny` a `::self` field!
-
-```rust
-// case (C3)
-let foo = 0i16;
-    //
-    // foo : i16  
-    // foo : %full i16;
-    // foo : %{Self::*} i16;
-    // foo : %{Self::self} i16;
-    // foo : %{%permit Self::self} i16;
-```
 
 ### Detailed Tuples
 
@@ -194,11 +242,9 @@ Unfortunately, Arrays are a bit magical, so it is _unclear_ if we could represen
 
 ### Detailed Enum Type
 
-What's about Enums?
+What's about Enums? Enum is not a "Product" Type, but a "Sum" Type (`ST = T1 or T2 or T3 or ..`).
 
-It is more complicated then `struct` types, because we grant some **type** access, not a **value** access!
-
-Enum is not a "Product" Type, but a "Sum" Type.
+But this proposal grant some **type** access, not a **value** access!
 
 So, all possible constructors are permitted!
  
@@ -635,10 +681,6 @@ Where :
 So, more fully we could write for struct with private fields:
  - `%empty : %{%deny Self::pub, %hidden<%empty> Self::private}` access
  - `%full  : %{%permit  Self::pub, %hidden<%full>  Self::private}` access
-
-
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
 
 
 # Drawbacks
