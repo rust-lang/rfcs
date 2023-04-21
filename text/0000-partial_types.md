@@ -84,7 +84,7 @@ let ref_was = & %{Self::was_x, Self::was_y, %cut} pfull;
 
 let brwd_now = &mut %{Self::x, Self::y, %cut} pfull;
 
-let refref_was = & %max ref_was;
+let refref_was = & ref_was;
 ```
 So we have a read-only reference to "was"-fields and mutable "now"-fields.
 
@@ -474,9 +474,9 @@ Partial access to the field is already granted (exept arrays).
 
 Rust consumer use same names for action and for type clarifications, so we follow this style.
 
-We need to add access filter to them, ignoring it mean `%full` filter (Ok, it is a bit unclear which is a default filter - `%full` or `%max`)!
+We need to add access filter to them, omiting it mean `%max` filter. Since it is not possibe to consume more than `%max`, it has no sence to use `%full` instead!
 
-`%full` means consumer consume all fields.
+`%full` means consumer consume all fields, `%max` consume all permited fields.
 
 ```rust
 struct A { f1: String, f2: String, f3: String }
@@ -542,7 +542,8 @@ Having this we could write next implicitly
     // ref_x23: & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
 
 // case (F4)
-let refref_x23 = & %max ref_x23;
+let refref_x23 = & ref_x23;
+// it mean '& %max ref_x23', not '& %full ref_x23'
 //
     // refref_x23: && %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
 ```
@@ -585,7 +586,8 @@ p3.update_sametype(&mut %min p2);
 
 ### Partially Initialized Variables
 
-We must have an ability to create partially initialized variables. So we need to add a filter-access to a constructor
+We must have an ability to create partially initialized variables. So we need to add a filter-access to a constructor.
+Default access-fiter to constructor is `%full`, not `%max`.
 
 ```rust
 struct Point {
@@ -645,7 +647,8 @@ let opt_t4_1 = Some ( %{Self::1, %cut} ("str", 1i32, &0u16, 0.0f32));
     //
     // opt_t4_1 : Option<%{%permit Self::{1}, %deny Self::{1,3}} (&str, i32, &u16, f32)>;
     //
-    let Some (%{Self::1, %cut} (_, ref y, _, _)) = opt_t4_1;
+    let Some (%max (_, ref y, _, _)) = opt_t4_1;
+    //              ^~~~~~~~~~^~~^~~~ if we writee variables here, it cause an error
 ```
 
 If we try to write not "`_`" on deny accessed fields, but a variable - it is a compile error.
@@ -715,8 +718,7 @@ Most languages don't have such strict rules for references and links as Rust, so
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Default qualified consumption is `%full` on Stage 1. It fully backward compatible and allow to switch cost-less to `%max` default!
-But maybe it is not a good choice. As default argument consumption is `%full`, but not `%min`.
+None known.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
