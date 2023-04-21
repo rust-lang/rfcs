@@ -48,8 +48,8 @@ let mut pfull = Point {x: 1.0, y: 2.0, was_x: 4.0, was_y: 5.0};
 If we need to write a function, which use partial parameters:
 ```rust
 // partial parameters
-type PointJustX = %{Self::x, %any} Point;
-type PointJustWasX = %{Self::was_x, %any} Point;
+type PointJustX = %{x, %any} Point;
+type PointJustWasX = %{was_x, %any} Point;
 
 fn x_restore(&mut p1 : &mut PointJustWasX, & p2 : & PointJustX) {
     *p1.x = *p2.was_x;
@@ -64,25 +64,25 @@ x_restore(&mut %min pfull, & %min pfull);
 If we wish to write same function via implementation, we need several selves!
 ```rust
 impl Point {
-    pub fn x_restore(&mut self1 : &mut %{Self::saved_x, %any} Self, &self2 : & %{Self::x, %any} Self) {
+    pub fn x_restore(&mut self1 : &mut %{saved_x, %any} Self, &self2 : & %{x, %any} Self) {
         *self1.x = *self2.saved_x;
     }
 ```
 Why it is useful? If we need several functions which read common field, but mutually write different fields we could use them together!
 ```rust
-pub fn mf1_rfc(&mut self1 : &mut %{Self::fld1, %any} Self, &self2 : & %{Self::common, %any} Self)  
+pub fn mf1_rfc(&mut self1 : &mut %{fld1, %any} Self, &self2 : & %{common, %any} Self)  
 { /* ... */ }
     
-pub fn mf2_rfc(&mut self1 : &mut %{Self::fld2, %any} Self, &self2 : & %{Self::common, %any} Self)  
+pub fn mf2_rfc(&mut self1 : &mut %{fld2, %any} Self, &self2 : & %{common, %any} Self)  
 { /* ... */ }
 ```
 
 And Partial Types have more. They are not limited to parameters/arguments only.
 
 ```rust
-let ref_was = & %{Self::was_x, Self::was_y, %cut} pfull;
+let ref_was = & %{was_x, was_y, %cut} pfull;
 
-let brwd_now = &mut %{Self::x, Self::y, %cut} pfull;
+let brwd_now = &mut %{x, y, %cut} pfull;
 
 let refref_was = & ref_was;
 ```
@@ -168,15 +168,12 @@ let &mut p1 : &mut Point = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
     //
     // p1 : &mut Point;
     // p1 : &mut %full Point;
-    // p1 : &mut %{Self::*} Point;
-    // p1 : &mut %{Self::x, Self::y, Self::z, Self::t, Self::w} Point;
-    // p1 : &mut %{Self::{x, y, z, w}} Point;
+    // p1 : &mut %{*} Point;
+    // p1 : &mut %{x, y, z, t, w} Point;
 ```
 
 Where :
- - `Self` is an "link" to variable type itself
- - `::*` is an "every field" quasi-field
- - `::{<fld1>, <fld2>, }` is an field-set quasi-field
+ - `*` is an "every field" quasi-field
 
 ```rust
 // case (B1)
@@ -186,12 +183,12 @@ let mut bar : mut Nothing = Nothing {};
     //
     // bar : Nothing  
     // bar : %full Nothing;
-    // bar : %{Self::*} Nothing;
-    // bar : %{Self::self} Nothing;
-    // bar : %{%permit Self::self} Nothing;
+    // bar : %{*} Nothing;
+    // bar : %{self} Nothing;
+    // bar : %{%permit self} Nothing;
 ```
 Where :
- -  `::self` a single quasi-field for uninhabited structs
+ -  `self` a single quasi-field for uninhabited structs
 
 It is a compile error if we try to %deny a ::self field!
  
@@ -206,19 +203,20 @@ _We also must reserve as a keyword a `%miss` field-access for future ReExtendede
 // FROM case (C1)
 let &mut p1 : &mut Point = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
     //
-    // p1 : &mut %{%permit Self::*} Point;
-    // p1 : &mut %{%permit Self::*, %deny Self::_};
-    // p1 : &mut %{%permit Self::{x, y, z, w}} Point;
+    // p1 : &mut %{%permit *} Point;
+    // p1 : &mut %{%permit *, %deny _};
+    // p1 : &mut %{%permit {x, y, z, w}} Point;
 ```
 
 Where :
  - `%permit` access
  - `%deny` access
- - `::_` is a "rest of fields" quasi-field
+ - `{<fld1>, <fld2>, }` is an field-set quasi-field
+ - `_` is a "rest of fields" quasi-field
 
 As we see, 
- - `%empty : %{%deny Self::*}` or `%empty : %{}` access
- - `%full  : %{%permit Self::*}` or `%full  : %{Self::*}` access
+ - `%empty : %{%deny *}` or `%empty : %{}` access
+ - `%full  : %{%permit *}` or `%full  : %{*}` access
 
 ### Detailed Tuples
 
@@ -230,8 +228,8 @@ let bar = (0i16, &5i32, "some_string");
     //
     // bar : (i16, &i32, &str);
     // bar : %full (i16, &i32, &str);
-    // bar : %{Self::*} (i16, &i32, &str);
-    // bar : %{%permit Self::{0,1,2}} (i16, &i32, &str);
+    // bar : %{*} (i16, &i32, &str);
+    // bar : %{%permit {0,1,2}} (i16, &i32, &str);
 ```
 
 ### Detailed Arrays
@@ -253,12 +251,12 @@ So, all possible constructors are permitted!
 We add enough access, and could write partial parameters for function declarations:
 ```rust
 // case (D1)
-fn re_ref_t (& p : & %{Self::t, %ignore Self::_} Point) -> &f64 {
+fn re_ref_t (& p : & %{t, %ignore _} Point) -> &f64 {
    &p.t
 }
 
 // case (D2)
-fn refmut_w (&mut p : &mut %{Self::w, %any} Point) -> &mut f64 {
+fn refmut_w (&mut p : &mut %{w, %any} Point) -> &mut f64 {
    &mut p.w
 }
 ```
@@ -266,7 +264,7 @@ fn refmut_w (&mut p : &mut %{Self::w, %any} Point) -> &mut f64 {
 Where :
  - `%ignore` is a "don't care which exactly" quasi filed-access (`%_` is a whole type access and it is unclear if we could use it in both contents)
 
-But `%ignore Self::_` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%any : %ignore Self::_`.
+But `%ignore _` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%any : %ignore _`.
 
 Since using `%ignore` filed in the function body is **unsafe by type** (we have no guarantee, that some field is permitted), trying to use ignoring field is a compile error.
 
@@ -282,7 +280,7 @@ Default one:
 ```rust
 // case (D3)
 // FROM case (D1)
-fn re_ref_t (& p : & %{Self::t, %any} Point) -> &f64 {
+fn re_ref_t (& p : & %{t, %any} Point) -> &f64 {
    &p.t
 }
 
@@ -294,11 +292,11 @@ struct PointExtra {
     saved_y: f64,
 }
 
-fn x_store(&mut p1 : &mut %{Self::saved_x, %any} PointExtra, & p2 : & %{Self::x, %any} PointExtra) {
+fn x_store(&mut p1 : &mut %{saved_x, %any} PointExtra, & p2 : & %{x, %any} PointExtra) {
     *p1.saved_x = *p2.x;
 }
 
-fn x_restore(&mut p1 : &mut %{Self::x, %any} PointExtra, & p2 : & %{Self::saved_x, %any} PointExtra) {
+fn x_restore(&mut p1 : &mut %{x, %any} PointExtra, & p2 : & %{saved_x, %any} PointExtra) {
     *p1.x = *p2.saved_x;
 }
 ```
@@ -309,15 +307,15 @@ or use `where` clauses if access is extra verbose:
 // FROM case (D5)
 
 fn x_store(&mut p1 : &mut %permit_sv_x PointExtra, & p2 : & %permit_x PointExtra) 
-    where %permit_sv_x : %{Self::saved_x, %any},
-          %permit_x : %{Self::x, %any}
+    where %permit_sv_x : %{saved_x, %any},
+          %permit_x : %{x, %any}
 {
     *p1.saved_x = *p2.x;
 }
 
 fn x_restore(&mut p1 : &mut %permit_x PointExtra, & p2 : & %permit_sv_x PointExtra) 
-    where %permit_sv_x : %{Self::saved_x, %any},
-          %permit_x : %{Self::x, %any}
+    where %permit_sv_x : %{saved_x, %any},
+          %permit_x : %{x, %any}
 {
     *p1.x = *p2.saved_x;
 }
@@ -328,8 +326,8 @@ or add `type` synonym
 // case (D7)
 // FROM case (D5)
 
-type PointSaveX = %{Self::saved_x, %any} PointExtra;
-type PointX = %{Self::x, %any} PointExtra;
+type PointSaveX = %{saved_x, %any} PointExtra;
+type PointX = %{x, %any} PointExtra;
 
 
 fn x_store(&mut p1 : &mut PointSaveX, & p2 : & PointX) {
@@ -347,11 +345,11 @@ Writing Implementation parameters is mostly the same, but we use Self type as "o
 ```rust
 // case (D8)
 impl Point {
-    pub fn x_refmut(&mut self : &mut %{Self::x, %any} Self) -> &mut f64 {
+    pub fn x_refmut(&mut self : &mut %{x, %any} Self) -> &mut f64 {
         &mut self.x
     }
 
-    pub fn y_refmut(&mut self : &mut %{Self::y, %any} Self) -> &mut f64 {
+    pub fn y_refmut(&mut self : &mut %{y, %any} Self) -> &mut f64 {
         &mut self.y
     }
 }
@@ -360,7 +358,7 @@ impl Point {
 We could also use multiple sub-parameters of same parameter
 ```rust
 // case (D9)
-    pub fn xy_swich(&mut self : &mut %{Self::{x, y}, %any} Self) {
+    pub fn xy_swich(&mut self : &mut %{{x, y}, %any} Self) {
         let tmp = *self.x;
         *self.x = *self.y;
         *self.y = tmp;
@@ -383,12 +381,12 @@ trait St {
 }
 
 // case (E2)
-    pub fn x_store(&mut self1 : &mut %{Self::x, %any} Self, &self2 : & %{Self::saved_x, %any} Self) 
+    pub fn x_store(&mut self1 : &mut %{x, %any} Self, &self2 : & %{saved_x, %any} Self) 
     {
         *self1.saved_x = *self2.x
     }
 
-    pub fn x_restore(&mut self1 : &mut %{Self::saved_x, %any} Self, &self2 : & %{Self::x, %any} Self) {
+    pub fn x_restore(&mut self1 : &mut %{saved_x, %any} Self, &self2 : & %{x, %any} Self) {
         *self1.x = *self2.saved_x;
     }
 ```
@@ -397,9 +395,9 @@ Sure, if we use several `self`s, their permit fileds access cannot overlap!
 
 ```rust
 // case (E3)
-    pub fn x2_store(&mut self1 : &mut %{Self::x, %any} Self, &self2 : & %{Self::x, %any} Self) {
+    pub fn x2_store(&mut self1 : &mut %{x, %any} Self, &self2 : & %{x, %any} Self) {
         //                                 ^~~~~~                         ^~~~~
-        // error: cannot overlap permit-field 'Self::x' on self1 and self2
+        // error: cannot overlap permit-field 'x' on self1 and self2
         *self1.x = *self2.x;
     }
 ```
@@ -425,9 +423,9 @@ pub trait Upd {
 Now compiler can catch "out of scope parameter" errors
 ```rust
 // case (D10)
-    pub fn xt_refmut(&self : &mut %{Self::xt, %any} Self) -> &mut f64 {
+    pub fn xt_refmut(&self : &mut %{xt, %any} Self) -> &mut f64 {
         //                               ^~~~~~
-        // error: no field 'Self::xt' on type `Self`
+        // error: no field 'xt' on type `Self`
         &mut self.xt
     }
 ```
@@ -435,19 +433,19 @@ Now compiler can catch "out of scope parameter" errors
 Since using `%ignore` filed is **unsafe by type** (we have no guarantee, that some field is permitted), trying to use ignoring field is a compile error:
 ```rust
 // case (D11)
-    pub fn t_refmut(&self : &mut %{Self::t, %any} Self) -> &mut f64 {
+    pub fn t_refmut(&self : &mut %{t, %any} Self) -> &mut f64 {
         &mut self.x
         //   ^~~~~~
-        // error: cannot find value 'Self::x' in this scope
+        // error: cannot find value 'x' in this scope
     }
 ```
 
 Compile could catch more dead code warnings
 ```rust
 // case (D12)
-    pub fn x_refmut(&self : &mut %{Self::x, Self::y, %any} Self) -> &mut f64 {
+    pub fn x_refmut(&self : &mut %{x, y, %any} Self) -> &mut f64 {
         //                                   ^~~~~~
-        // warning: '#[warn(dead_code)]' field is never read: `Self::y`
+        // warning: '#[warn(dead_code)]' field is never read: `y`
         &mut self.x
     }
 ```
@@ -500,11 +498,11 @@ Trying to consume `%deny` field is a compile error! The consumer DO NOT consume 
 
 Resulted field access is the following:
 
-| ↓filter / →access | `%permit` | `%deny`   | `%hidden` |
-|-------------------|-----------|-----------|-----------|
-| `%permit`         | `%permit` | !ERROR    | !ERROR    |
-| `%deny`           | `%deny`   | `%deny`   | !ERROR    |
-| `%hidden`         | !ERROR    | !ERROR    | `%hidden` |
+| ↓filter / →access | `%permit` | `%deny`   |
+|-------------------|-----------|-----------|
+| `%permit`         | `%permit` | !ERROR    |
+| `%deny`           | `%deny`   | `%deny`   |
+
 
 ```rust
 struct S5 { f1: String, f2: String, f3: String, f4: String, f5: String }
@@ -513,16 +511,16 @@ let mut x: S5;
 // case (F3)
 let ref1: &mut String = &mut x.f1;
 //
-let ref_x23 = & %{Self::f2, Self::f3, %deny Self::_} x;
+let ref_x23 = & %{f2, f3, %deny _} x;
     //
-    // ref_x23 : & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
+    // ref_x23 : & %{%permit {f2, f3}, %deny {f1, f4, f5}} S5;
     //
-let move_x45 = %{Self::{f4, f5}, %cut} x;
+let move_x45 = %{{f4, f5}, %cut} x;
     //
-    // move_x45 : %{%permit Self::{f4, f5}, %deny Self::{f1, f2, f3}} S5;
+    // move_x45 : %{%permit {f4, f5}, %deny {f1, f2, f3}} S5;
 ```
 
-But `%deny Self::_` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%cut : %deny Self::_`.
+But `%deny _` quasi-filed-access of quasi-field looks annoying, so we simplify a bit adding `%cut : %deny _`.
 
 ### Max access filter
 
@@ -534,18 +532,17 @@ No, we could use `%max`(or `%id`) - qualified safe filter with maximum permit-fi
 |--------------|-----------|
 | `%permit`    | `%permit` |
 | `%deny`      | `%deny`   |
-| `%hidden`    | `%hidden` |
 
 Having this we could write next implicitly
 ```rust
 // FROM case (F1)
-    // ref_x23: & %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
+    // ref_x23: & %{%permit {f2, f3}, %deny {f1, f4, f5}} S5;
 
 // case (F4)
 let refref_x23 = & ref_x23;
 // it mean '& %max ref_x23', not '& %full ref_x23'
 //
-    // refref_x23: && %{%permit Self::{f2, f3}, %deny Self::{f1, f4, f5}} S5;
+    // refref_x23: && %{%permit {f2, f3}, %deny {f1, f4, f5}} S5;
 ```
 
 ### Min access filter
@@ -557,13 +554,12 @@ For function argument we add another filter `%min` - qualified safe filter with 
 | `%permit`     | `%permit` |
 | `%deny`       | `%deny`   | 
 | `%ignore`     | `%deny`   | 
-| `%hidden`     | `%hidden` | 
 
 Implementations always consumes `self` by `%min` filter!
 
 ```rust
 // FROM case (D3)
-fn re_ref_t (& p : & %{Self::t, %any} Point) -> &f64 {
+fn re_ref_t (& p : & %{t, %any} Point) -> &f64 {
    &p.t
 }
 let mut p1 : mut Point = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
@@ -605,14 +601,14 @@ let p1_full = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
     // p1_full : %full Point;
 
 // case (G2)
-let p_x = %{Self::x, %cut} Point {x:1.0};
+let p_x = %{x, %cut} Point {x:1.0};
     //
-    // p_x : %{%permit Self::x, %deny Self::_} Point;
+    // p_x : %{%permit x, %deny _} Point;
     //
 
-let p_yz = %{Self::{y,z}, %cut} Point {y:1.0, z: 2.0};
+let p_yz = %{{y,z}, %cut} Point {y:1.0, z: 2.0};
     //
-    // p_yz : %{%permit Self::{y,z}, %deny Self::_} Point;
+    // p_yz : %{%permit {y,z}, %deny _} Point;
     //
 ```
 
@@ -621,7 +617,7 @@ Also it would be nice if constructor allows several filler variables (which do n
 // case (G3)
 let p_xyz = %max Point {..p_x, ..p_yz};
     //
-    // p_xyz : %{%permit Self::{x,y,z}, %deny Self::{t,w}};
+    // p_xyz : %{%permit {x,y,z}, %deny {t,w}};
 
 // case (G4)
 let p2_full = Point {t:1.0, w:2.0, ..p_xyz};
@@ -634,18 +630,18 @@ A bit unclear how to fill unused fields, so we write unused values to a fill the
 
 ```rust
 // case (G5)
-let t4_02 = %{Self::{0,2}, %cut} ("str", 1i32, &0u16, 0.0f32);
+let t4_02 = %{{0,2}, %cut} ("str", 1i32, &0u16, 0.0f32);
     //
-    // t4_02 : %{%permit Self::{0,2}, %deny Self::{1,3}} (&str, i32, &u16, f32);
+    // t4_02 : %{%permit {0,2}, %deny {1,3}} (&str, i32, &u16, f32);
 ```
 
 access filter could help to deconstruct types for matching:
 
 ```rust
 // case (G6)
-let opt_t4_1 = Some ( %{Self::1, %cut} ("str", 1i32, &0u16, 0.0f32));
+let opt_t4_1 = Some ( %{1, %cut} ("str", 1i32, &0u16, 0.0f32));
     //
-    // opt_t4_1 : Option<%{%permit Self::{1}, %deny Self::{1,3}} (&str, i32, &u16, f32)>;
+    // opt_t4_1 : Option<%{%permit {1}, %deny {1,3}} (&str, i32, &u16, f32)>;
     //
     let Some (%max (_, ref y, _, _)) = opt_t4_1;
     //              ^~~~~~~~~~^~~^~~~ if we writee variables here, it cause an error
@@ -657,34 +653,25 @@ If we try to write not "`_`" on deny accessed fields, but a variable - it is a c
 
 And finally, what to do with private fields?
 
-If variable has private fields, it has always at access `%hidden Self::private` quasi-field.
+If variable has private fields, it has always at access `%hidden private` quasi-field.
 ```rust
-pub struct HiddenPoint {
-    pub x: f64,
-    pub y: f64,
-    z: f64,
-    t: f64,
-    w: f64,
+mod hp {
+    pub struct HiddenPoint {
+        pub x: f64,
+        pub y: f64,
+        z: f64,
+        t: f64,
+        w: f64,
+    }
 }
+
+use hp::HiddenPoint;
 
 // case (H1)
 let p1 : HiddenPoint;
     // p1 : %full HiddenPoint;
-    // p1 : %{%permit Self::pub, %private} HiddenPoint;
-    // p1 : %{%permit Self::{x, y}, %private} HiddenPoint;
-    // p1 : %{%permit Self::{x, y}, %hidden<%full> Self::private} HiddenPoint;
+    // p1 : %{%permit *} HiddenPoint;
 ```
-
-Where :
- - `::pub` is a "all public fields" quasi-field
- - `::private` is a "all private fields" quasi-field
- - `%hidden<%a>` - it is some specific `%a` quasi field access, but we have no access to specify it
- - `%private` is a shortcut for `%hidden<%full> Self::private`
-
-So, more fully we could write for struct with private fields:
- - `%empty : %{%deny Self::pub, %hidden<%empty> Self::private}` access
- - `%full  : %{%permit  Self::pub, %hidden<%full>  Self::private}` access
-
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -735,13 +722,13 @@ Partly self-referential types example:
 ```rust
 struct SR <T>{
     val : T,
-    lnk : & T, // reference to Self::val
+    lnk : & T, // reference to val
 }
 
 // case (FP1)
-let x = %{%miss Self::lnk, %permit Self::_} SR {val : 5i32 };
+let x = %{%miss lnk, %permit _} SR {val : 5i32 };
     //
-    // x : %{%miss Self::lnk, %permit Self::val} SR<i32>
+    // x : %{%miss lnk, %permit val} SR<i32>
     //
 x.lnk %%= & x.val;
     //
@@ -749,19 +736,19 @@ x.lnk %%= & x.val;
     // x : %full SR<i32>;
 ```
 And even AlmostFully self-referential types:
-And another shortcut `%unfill : %miss Self::_`
+And another shortcut `%unfill : %miss _`
 
 ```rust
 struct FSR <T>{
     val : T,
-    lnk : & %{%deny Self::lnk, %permit Self::val} FSR<T>, 
+    lnk : & %{%deny lnk, %permit val} FSR<T>, 
     // reference to almost self!
 }
 
 // case (FP2)
-let x = %{Self::val, %unfill} FSR {val : 5i32 };
+let x = %{val, %unfill} FSR {val : 5i32 };
     //
-    // x : %{%miss Self::lnk, %permit Self::val} FSR<i32>;
+    // x : %{%miss lnk, %permit val} FSR<i32>;
     //
 x.lnk %%= & %max  x;
     //
@@ -776,10 +763,10 @@ Second and most difficult, that `return` consumption (yes, 6th type of consumers
 ```rust
 // case (FP3)
 // FROM case (FP2)
-fn create_var()-> %{%miss Self::lnk, %permit Self::_} FSR {
-    let x = %{Self::val, %unfill} FSR {val : 5i32 };
+fn create_var()-> %{%miss lnk, %permit _} FSR {
+    let x = %{val, %unfill} FSR {val : 5i32 };
         //
-        // x : %{%miss Self::lnk, %permit Self::val} FSR<i32>
+        // x : %{%miss lnk, %permit val} FSR<i32>
         //
     %max_miss return x; 
     // filter access before 'return' to not to confused with `move` consumer!
