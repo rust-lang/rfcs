@@ -142,7 +142,7 @@ fn x(_arg_zero: Box<()>, _arg_one: ()) {
     let tmp_arg1 = foo(b);
 
     // End of the function, all variables not used in the `become` call are dropped, as would be done after a `return`.
-    // Return value of foo() is *not* dropped as it is used in the become call to y().
+    // Return value of foo() is *not* dropped as it is moved in the become call to y().
     drop(c);
     // `b` is *not* dropped because it is moved due to the call to foo().
     // `a` is *not* dropped as it is used in the become call to y().
@@ -162,7 +162,7 @@ fn x(_arg_zero: Box<()>, _arg_one: ()) {
     let c = Box::new(());
     return y(a, foo(b));
     // Normal drop order:
-    // Return value of foo() is dropped.
+    // Return value of foo() is *not* dropped as it is moved in the call to y().
     // drop(c);
     // `b` is *not* dropped because it is moved due to the call to foo().
     // `a` is *not* dropped because it is moved to the callee y().
