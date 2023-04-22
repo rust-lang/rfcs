@@ -1,6 +1,6 @@
 - Feature Name: `ignore_result`
 - Start Date: 2023-04-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3423](https://github.com/rust-lang/rfcs/pull/3423)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
