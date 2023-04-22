@@ -105,37 +105,71 @@ pitfalls.
 
 ### The difference between `return` and `become`
 [difference]: #difference
-The difference to `return` is that `become` drops function local variables **before** the function call
-instead of after. So the following function ([original example](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1136728427)):
+The difference to `return` is that `become` drops function local variables **before** the `become` function call
+instead of after. To be more specific a `become` expression acts as if the following events occurred in-order:
+
+1. All variables that are being passed by-value are moved to temporary storage.
+2. All local variables in the caller are destroyed according to usual Rust semantics. Destructors are called where
+   necessary. Note that values moved from in step 1 are _not_ dropped.
+3. The caller's stack frame is removed from the stack.
+4. Control is transferred to the callee's entry point.
+
+This implies that it is invalid for any references into the caller's stack frame to outlive the call. The borrow checker ensures that none of the above steps will result in the use of a value that has gone out of scope.
+
+See the [example](#the-difference-between-return-and-become) below on how `become` causes drops to be elaborated.
+<!-- ([original example](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1136728427)) -->
+
 ```rust
-fn x() {
+fn x(_arg_zero: Box<()>, _arg_one: ()) {
     let a = Box::new(());
     let b = Box::new(());
-    become y(a);
+    let c = Box::new(());
+
+    become y(a, foo(b));
 }
 ```
 
 The drops will be elaborated by the compiler like this:
 ```rust
-fn x() {
+fn x(_arg_zero: Box<()>, _arg_one: ()) {
     let a = Box::new(());
     let b = Box::new(());
-    drop(b); // `a` is not dropped because it is moved to the callee
-    become y(a);
+    let c = Box::new(());
+
+    // Move become arguments to temporary variables.
+    let function_ptr = y; // The function pointer could be the result of an expression like: fn_list[fn_idx];
+    let tmp_arg0 = a;
+    let tmp_arg1 = foo(b);
+
+    // End of the function, all variables not used in the `become` call are dropped, as would be done after a `return`.
+    // Return value of foo() is *not* dropped as it is used in the become call to y().
+    drop(c);
+    // `b` is *not* dropped because it is moved due to the call to foo().
+    // `a` is *not* dropped as it is used in the become call to y().
+    drop(_arg_one);
+    drop(_arg_zero);
+
+    // Finally, `become` the called function.
+    become function_ptr(tmp_arg0, tmp_arg1);
 }
 ```
 
 If we used `return` instead, the drops would happen after the call:
 ```rust
-fn x() {
+fn x(_arg_zero: Box<()>, _arg_one: ()) {
     let a = Box::new(());
     let b = Box::new(());
-    let tmp = y(a);
-    drop(b); // `a` is not dropped because it is moved to the callee
-    return tmp;  
+    let c = Box::new(());
+    return y(a, foo(b));
+    // Normal drop order:
+    // Return value of foo() is dropped.
+    // drop(c);
+    // `b` is *not* dropped because it is moved due to the call to foo().
+    // `a` is *not* dropped because it is moved to the callee y().
+    // drop(_arg_one);
+    // drop(_arg_zero);
 }
 ```
-
 
 This early dropping allows the compiler to avoid many complexities associated with deciding if the stack frame can be
 reused. Instead, the heavy lifting is done by the borrow checker, which will produce a lifetime error if references to
@@ -273,7 +307,7 @@ Implementation of this feature requires checks that all prerequisites to guarant
 These checks are:
 - The `become` keyword is only used in place of `return`. The intend is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
 - The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intend is to assure a compatible stack frame layout.
-- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok, since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrowchecker as described in the [Borrowchecking](#semantics) section below.
+- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok, since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
 
 If any of these checks fail a compiler error is issued.
 
@@ -283,24 +317,7 @@ Note that as `become` is a keyword reserved for exactly the use-case described i
 
 This feature will have interactions with other features that depend on stack frames, for example, debugging and backtraces. See [drawbacks](#drawbacks) for further discussion.
 
-See below for how borrowchecking can be used to implement this feature and the reasoning why operators are not supported.
-
-## Borrowchecking
-[semantics]: #semantics
-A `become` expression acts as if the following events occurred in-order:
-
-1. All variables that are being passed by-value are moved to temporary storage.
-2. All local variables in the caller are destroyed according to usual Rust semantics. Destructors are called where
-   necessary. Note that values moved from in step 1 are _not_ dropped.
-3. The caller's stack frame is removed from the stack.
-4. Control is transferred to the callee's entry point.
-
-This implies that it is invalid for any references into the caller's stack frame to outlive the call. The borrow checker ensures that none of the above steps will result in the use of a value that has gone out of scope.
-
-As `become` is always in a tail position (due to being used in place of `return`), this requirement for TCE is already
-fulfilled.
-
-See this earlier [example](#the-difference-between-return-and-become) on how become causes drops to be elaborated.
+See below for the reasoning why operators are not supported.
 
 ## Operators are not supported
 Invocations of operators were considered as valid targets, but were rejected on grounds of being too error-prone.
