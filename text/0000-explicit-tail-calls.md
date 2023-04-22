@@ -198,6 +198,30 @@ fn next_instruction(mut self) {
 }
 ```
 
+### Function calls as arguments are not tail call eliminated.
+([original example](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1516477758))
+
+The guarantee of TCE is only provided to the function call that is an argument to `become`,
+it is not given to calls that are arguments, see the following example:
+
+```rust
+fn add(a: u64, b: u64) -> u64 {
+    a + b
+}
+
+pub fn calc(a: u64, b: u64) -> u64 {
+    if a < b {
+        return a
+    }
+
+    let n = a - b;
+    become add(calc(n, 2), calc(n, 1));
+}
+```
+
+In this example `become` will guarantee TCE only for the call to `add()` but not for the `calc()` calls.
+Running this code will likely end up in a stack overflow as the recursive calls are to `calc()` which are not TCE'd.
+
 ### Omission of the `become` keyword causes the call to be `return` instead.
 ([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-278988088))
 
