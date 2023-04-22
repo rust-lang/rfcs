@@ -5,18 +5,18 @@
 
 # Summary
 [summary]: #summary
-While tail call elimination (TCE) is already possible via tail call optimization (TCO) in Rust, there is no way to guaranteed that a stack frame should be reused.
+While tail call elimination (TCE) is already possible via tail call optimization (TCO) in Rust, there is no way to guarantee that a stack frame should be reused.
 This RFC describes a language feature providing tail call elimination via the `become` keyword providing this guarantee.
 If this guarantee can not be provided by the compiler a compile time error is generated instead.
 
 # Motivation
 [motivation]: #motivation
 Tail call elimination (TCE) allows stack frames to be reused.
-While TCE via tail call optimization (TCO) is already supported by Rust, as is normal for optimizations TCE will only be applied if the compiler expects a improvement by doing so.
+While TCE via tail call optimization (TCO) is already supported by Rust, as is normal for optimizations TCE will only be applied if the compiler expects an improvement by doing so.
 There is currently no way to specify that TCE should be guaranteed.
 This guarantee is interesting for two general goals.
 One goal is to do function calls without growing the stack, this mainly has semantic implications as recursive algorithms can overflow the stack without this guarantee.
-The other goal is to avoid paying the cost to create a new stack frame, replacing `call` instructions by `jmp` instructions, this optimization has performance implications and can provide massive speedups for algorithms that have a high density of function calls. This goal also depend on the guarantee as otherwise a subtle change or a new compiler version can have a unexpected impact on performance.
+The other goal is to avoid paying the cost to create a new stack frame, replacing `call` instructions by `jmp` instructions, this optimization has performance implications and can provide massive speedups for algorithms that have a high density of function calls. This goal also depends on the guarantee as otherwise a subtle change or a new compiler version can have an unexpected impact on performance.
 
 Note that workarounds for the first goal exist by using trampolining which limits the stack depth. However, while this
 functionality can be provided as a library, inclusion in the language can provide greater adoption of a more functional
@@ -26,8 +26,8 @@ For the second goal, TCO can have the intended effect, however, there is no guar
 
 Some specific use cases that are supported by this feature are new ways to encode state machines and jump tables,
 allowing code to be written in a continuation-passing style, using recursive algorithms without the danger of
-overflowing the stack, or guaranteeing significantly faster interpreters / emulators. One common example of the
-usefulness of tail calls in C is improving performance of Protobuf parsing as described in this
+overflowing the stack or guaranteeing significantly faster interpreters/emulators. One common example of the
+usefulness of tail calls in C is improving the performance of Protobuf parsing as described in this
 [blog post](https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html),
 this approach would then also be possible in Rust.
 
@@ -76,7 +76,7 @@ This requires that the function signature and calling convention of the calling 
 
 Additionally, there is a further restriction on the arguments.
 The stack frame of the calling function is reused, it is essentially cleaned up and the called function takes the space.
-As a result it is not possible to pass references to local variables, neither will the called function "return" to the calling function. So all variables not used as an argument are dropped before the call and no cleanup will be done after the call.
+As a result, it is not possible to pass references to local variables, nor will the called function "return" to the calling function. So all variables not used as an argument are dropped before the call and no cleanup will be done after the call.
 
 If any of these restrictions are not met when using `become` a compilation error is thrown.
 
@@ -110,7 +110,7 @@ instead of after. To be more specific a `become` expression acts as if the follo
 
 1. All variables that are being passed by-value are moved to temporary storage.
 2. All local variables in the caller are destroyed according to usual Rust semantics. Destructors are called where
-   necessary. Note that values moved from in step 1 are _not_ dropped.
+   necessary. Note that values moved from step 1 are _not_ dropped.
 3. The caller's stack frame is removed from the stack.
 4. Control is transferred to the callee's entry point.
 
@@ -194,7 +194,7 @@ fn sum_list(data: Vec<u64>, mut offset: usize, mut accum: u64) -> u64 {
 
 
 ### Use Case 2: Interpreter
-In an interpreter the usual loop is to get an instruction, match on that instruction to find the corresponding function, **call** that function, and finally return to the loop to get the next instruction. (This is a simplified example.)
+For an interpreter, the usual loop is to get an instruction, match on that instruction to find the corresponding function, **call** that function, and finally return to the loop to get the next instruction. (This is a simplified example.)
 
 ```rust
 fn exec_instruction(mut self) {
@@ -305,22 +305,22 @@ fn bar(n: i32) {
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work. -->
 Implementation of this feature requires checks that all prerequisites to guarantee TCE are fulfilled.
 These checks are:
-- The `become` keyword is only used in place of `return`. The intend is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
-- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intend is to assure a compatible stack frame layout.
-- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok, since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
+- The `become` keyword is only used in place of `return`. The intent is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
+- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to assure a compatible stack frame layout.
+- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
 
 If any of these checks fail a compiler error is issued.
 
-One additional check must be done, if the backend cannot guarantee that TCE will be performed a ICE is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising a ICE if this is not the case.
+One additional check must be done, if the backend cannot guarantee that TCE will be performed an ICE is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising an ICE if this is not the case.
 
-Note that as `become` is a keyword reserved for exactly the use-case described in this RFC there is no backwards-compatibility break.
+Note that as `become` is a keyword reserved for exactly the use-case described in this RFC there is no backward-compatibility break.
 
 This feature will have interactions with other features that depend on stack frames, for example, debugging and backtraces. See [drawbacks](#drawbacks) for further discussion.
 
 See below for the reasoning why operators are not supported.
 
 ## Operators are not supported
-Invocations of operators were considered as valid targets, but were rejected on grounds of being too error-prone.
+Invocations of operators were considered as valid targets but were rejected on grounds of being too error-prone.
 In any case, these can still be called as methods. One example of their error-prone nature ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1167112296)):
 ```rust
 pub fn fibonacci(n: u64) -> u64 {
@@ -330,9 +330,9 @@ pub fn fibonacci(n: u64) -> u64 {
     become fibonacci(n - 2) + fibonacci(n - 1)
 }
 ```
-In this case a naive author might assume that this is going to be a stack space efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more or less the same since the critical recursive calls are not actually in tail call position.
+In this case, a naive author might assume that this is going to be a stack space-efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more or less the same since the critical recursive calls are not actually in tail call position.
 
-Further confusion could result from the same-signature restriction where the Rust compilers complains that fibonacci and <u64 as Add>::add do not share a common signature.
+Further confusion could result from the same-signature restriction where the Rust compiler raises an error since fibonacci and <u64 as Add>::add do not share a common signature.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -340,13 +340,13 @@ Further confusion could result from the same-signature restriction where the Rus
 As this feature should be mostly independent of other features the main drawback lies in the implementation and
 maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other
 tooling. The primary effort, however, lies in supporting this feature in the backends:
-- LLVM supports a `musttail` marker to indicate that TCE should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature, seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 30.03.23).
+- LLVM supports a `musttail` marker to indicate that TCE should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 30.03.23).
 - GCC does seem to support an equivalent `musttail` marker, though it is only accessible via the [libgccjit API](https://gcc.gnu.org/onlinedocs/gcc-7.3.0/jit/topics/expressions.html#gcc_jit_rvalue_set_bool_require_tail_call) ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1160013809)).
-- WebAssembly accepted tail-calls into the [standard](https://github.com/WebAssembly/proposals/pull/157/) and Cranelift is now [working](https://github.com/bytecodealliance/rfcs/pull/29) towards supporting it.
+- WebAssembly accepted tail calls into the [standard](https://github.com/WebAssembly/proposals/pull/157/) and Cranelift is now [working](https://github.com/bytecodealliance/rfcs/pull/29) towards supporting it.
 
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
-There is also an unwanted interaction between TCE and debugging. As TCE by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCE provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCE for debugging builds as then the stack could overflow. (Still maybe a compiler flag could be provided to temporarily disable TCE for debugging builds. As suggested [here](https://github.com/rust-lang/rfcs/pull/3407/files#r1159817279), another option would be special support for `become` by a debugger. With this support the debugger would keep track of the N most recent calls providing at least some context to the bug.)
+There is also an unwanted interaction between TCE and debugging. As TCE by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCE provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCE for debugging builds as then the stack could overflow. (Still, maybe a compiler flag could be provided to temporarily disable TCE for debugging builds. As suggested [here](https://github.com/rust-lang/rfcs/pull/3407/files#r1159817279), another option would be special support for `become` by a debugger. With this support the debugger would keep track of the N most recent calls providing at least some context to the bug.)
 
 
 # Rationale and alternatives
@@ -371,10 +371,10 @@ of.
 
 ### Principled Local Goto
 One alternative would be to support some kind of local goto natively, indeed there exists a
-[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)). This design should be able to achieve the same performance and stack usage, though it seems to be quite difficult to implement and does not seem to be as flexible as the chosen design especially regarding indirect calls and external functions.
+[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)). This design should be able to achieve the same performance and stack usage, though it seems to be quite difficult to implement and does not seem to be as flexible as the chosen design, especially regarding indirect calls and external functions.
 
 ### Attribute on Function Declaration
-One alternative is to mark a group of functions that should be mutually tail-callable [example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1161525527) with some follow up [discussion](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1185828948).
+One alternative is to mark a group of functions that should be mutually tail-callable [example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1161525527) with some follow-up [discussion](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1185828948).
 
 The goal behind this design is to allow TCE of functions that do not have exactly matching function signatures, in
 theory, this just requires that tail-called functions are callee cleanup, which is a mismatch to the default calling
@@ -382,7 +382,7 @@ convention used by Rust. To limit the impact of this change all functions that s
 an attribute.
 
 While quite noisy it is also less flexible than the chosen approach. Indeed, TCE is a property of the call and not a
-function definition, sometimes a call should be guaranteed to be TCE and sometimes not, marking a function would
+function definition, sometimes a call should be guaranteed to be TCE, and sometimes not, marking a function would
 be less flexible.
 
 ### Attribute on `return`
@@ -399,7 +399,7 @@ fn a() {
 
 This alternative mostly comes down to taste (or bikeshedding) and `become` was chosen as it is [reserved](https://rust-lang.github.io/rfcs/0601-replace-be-with-become.html) for this use, shorter to write, and as drop order changes compared to `return` a new keyword seems warranted.
 
-### Custom compiler or MIR passes
+### Custom Compiler or MIR Passes
 One more distant alternative would be to support a custom compiler or MIR pass so that this optimization can be done externally. While supported for LLVM [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/187780-t-compiler.2Fwg-llvm/topic/.E2.9C.94.20Running.20Custom.20LLVM.20Pass/near/320275483), for MIR this is not supported [discussion](https://internals.rust-lang.org/t/mir-compiler-plugins-for-custom-mir-passes/3166/10).
 
 This would be an error-prone and unergonomic approach to solving this problem.
@@ -439,12 +439,12 @@ Note that while precedent set by other languages is some motivation, it does not
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
 -->
 Functional languages (such as OCaml, SML, Haskell, Scheme, and F#) usually depend on proper tail calls as a language
-feature (TCE for general calls). For system-level languages TCE is usually wanted but implementation
+feature (TCE for general calls). For system-level languages, TCE is usually wanted but implementation
 effort is a common reason this is not yet done. Even languages with managed code such as .Net or ECMAScript (as per the
 standard) also support TCE, again performance and resource usage were the main motivators for their
 implementation.
 
-See below for a more detailed description on select compilers and languages.
+See below for a more detailed description of select compilers and languages.
 
 
 ## Clang
@@ -495,11 +495,11 @@ There is also a [proposal](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n292
 
 
 ## GCC
-GCC does not support a feature equivalent to Clang's `musttail`, there also does not seem to be push to implement it ([pipermail](https://gcc.gnu.org/pipermail/gcc/2021-April/235882.html)) (as of 2021). However, there also exists a experimental [plugin](https://github.com/pietro/gcc-musttail-plugin) for GCC last updated in 2021.
+GCC does not support a feature equivalent to Clang's `musttail`, there also does not seem to be a push to implement it ([pipermail](https://gcc.gnu.org/pipermail/gcc/2021-April/235882.html)) (as of 2021). However, there also exists an experimental [plugin](https://github.com/pietro/gcc-musttail-plugin) for GCC last updated in 2021.
 
 
 ## Zig
-Zig provides separate syntax to allow more flexibility than normal function calls. There are options for async calls, inlining, compile time evaluation of the called function, or specifying TCE on the call.
+Zig provides separate syntax to allow more flexibility than normal function calls. There are options for async calls, inlining, compile-time evaluation of the called function, or specifying TCE on the call.
 ([source](https://ziglang.org/documentation/master/#call))
 ```zig
 const expect = @import("std").testing.expect;
@@ -551,10 +551,10 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC? -->
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
-    - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional. Currently the RFC specifies that a ICE should be issued if a backend cannot guarantee that TCE will be performed.
+    - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional. Currently, the RFC specifies that an ICE should be issued if a backend cannot guarantee that TCE will be performed.
     - Another point that needs to be decided is if TCE is supported by a backend what exactly should be guaranteed? While the guarantee that there is no stack growth should be necessary, should performance (as in transforming `call` instructions into `jmp`) also be guaranteed? Note that a backend that guarantees performance should do so **always** otherwise the main intent of this RFC seems to be lost.
     - Migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation from `return` to `become` can be done for function calls where all requisites are already fulfilled. However, this lint might be confusing and noisy. Decide on if this lint or others should be added.
-    - Should a lint be added for functions that are marked to be tail call or use become. See discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
+    - Should a lint be added for functions that are marked to be a tail call or use become. See the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
     - Are all calling-convention used by Rust available for TCE with the proposed restrictions on function signatures?
     - Can the restrictions on function signatures be relaxed?
