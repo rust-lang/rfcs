@@ -40,7 +40,7 @@ pub fn foo() {
 }
 ```
 
-And yet, this compiles:
+And yet, this compiles, because now the tuple has a `()` and not a `String`:
 
 ```rust
 use core::marker::PhantomData;
@@ -61,7 +61,7 @@ pub fn foo() {
     {
         let s = String::from("temporary");
         let p = PrintOnDrop(&s);
-        x = (to_pd(p), ());
+        x = (to_pd(p), ()); // changed from `String::new()` to `()`.
     }
 }
 ```
@@ -93,7 +93,8 @@ In other words, this compiles:
 fn main() {
     let mut x;
     {
-        x = &String::new();
+        let s = String::new();
+        x = &s;
         // String implicitly dropped here
     }
     // x implicitly dropped here
@@ -113,7 +114,8 @@ impl<'s> Drop for PrintOnDrop<'s> {
 fn main() {
     let mut x;
     {
-        x = PrintOnDrop(&*String::new());
+        let s = String::new();
+        x = PrintOnDrop(&*s);
         // String implicitly dropped here
     }
     // x implicitly dropped here
@@ -121,7 +123,7 @@ fn main() {
 }
 ```
 
-Unless it's in one of the above types:
+Unless it's in one of the previously mentioned types:
 
 ```rust
 struct PrintOnDrop<'s>(&'s str);
@@ -134,30 +136,35 @@ impl<'s> Drop for PrintOnDrop<'s> {
 fn main() {
     let mut x;
     {
-        x = &PrintOnDrop(&*String::new());
+        let s = String::new();
+        let p = PrintOnDrop(&*s);
+        x = &p;
         // PrintOnDrop implicitly dropped here
         // String implicitly dropped here
     }
-    // x implicitly dropped here
+    // x implicitly dropped here, with type &'p PrintOnDrop<'s>
 }
 ```
 
 As a special case, some built-in types, like `Vec`, `Box`, `Rc`, `Arc`,
 `HashMap`, among others, despite needing to be dropped, do not place liveness
-requirements unless `T` demands liveness requirements. This is okay:
+requirements unless `T` demands liveness requirements. This is okay, as the
+contained type is a reference, which does not have liveness requirements:
 
 ```rust
 fn main() {
     let mut x = vec![];
     {
-        x.push(&String::new());
+        let s = String::new();
+        x.push(&s);
         // String implicitly dropped here
     }
     // x implicitly dropped here
 }
 ```
 
-But this isn't:
+But this isn't, as it now contains a `PrintOnDrop<'_>`, which does have liveness
+requirements:
 
 ```rust
 struct PrintOnDrop<'s>(&'s str);
@@ -170,11 +177,14 @@ impl<'s> Drop for PrintOnDrop<'s> {
 fn main() {
     let mut x = vec![];
     {
-        x.push(PrintOnDrop(&*String::new()));
+        let s = String::new();
+        x.push(PrintOnDrop(&*s));
         // String implicitly dropped here
     }
-    // x implicitly dropped here
-    // ERROR: temporary may not live long enough
+    // x implicitly dropped here, as are any `PrintOnDrop<'_>` values contained
+    // within.
+    // ERROR: `s` may not live long enough (required by the `Drop` impl of
+    // `PrintOnDrop<'_>`, which may be called when `Vec<_>` goes out of scope)
 }
 ```
 
@@ -201,12 +211,16 @@ So that this compiles:
 fn main() {
   let mut v = vec![];
   {
-    v.push(&String::from("temporary"));
+    let s = String::from("dropped before Vec");
+    v.push(&s);
   }
 }
 ```
 
-But this cannot compile, as it would be unsound:
+(References stored in `Vec` do not need to be live when `Vec` is dropped.)
+
+But this cannot compile, for it would be unsound to drop a `PrintOnDrop` after
+its borrowee, as it would try to print the borrowee and cause an use-after-free:
 
 ```rust
 struct PrintOnDrop<'s>(&'s str);
@@ -219,10 +233,13 @@ impl<'s> Drop for PrintOnDrop<'s> {
 fn main() {
   let mut v = vec![];
   {
-    v.push(PrintOnDrop(&*String::from("temporary")));
+    let s = String::from("dropped before Vec");
+    v.push(PrintOnDrop(&*s));
   }
 }
 ```
+
+(`PrintOnDrop<'_>` stored in `Vec` do need to be live when `Vec` is dropped.)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -236,47 +253,88 @@ For lifetime parameters: `#[may_dangle] 'a`, places no constraints on `'a`. This
 is unchanged from the current form.
 
 For type parameters that are dropped, they need to be annotated with
-`#[may_dangle(drop)]`. These type parameters will be checked as if in a struct
-like so:
+`#[may_dangle(drop)]`. This is correct for types which call
+`core::ptr::drop_in_place::<T>`, directly or indirectly, e.g. `Vec<T>`,
+`Box<T>`, etc.
+
+For type parameters that are not dropped, `#[may_dangle(borrow)]` can be used.
+This is correct for types that never drop `T`, such as `Weak<T>`. This must
+never be used for types which call `drop_in_place::<T>`.
+
+These are okay:
 
 ```rust
-struct Foo<T>(T);
+struct Weak<T> {
+    inner: *const RcBox<T>
+}
 
-struct PrintOnDrop<'s>(&'s str);
-impl<'s> Drop for PrintOnDrop<'s> {
+unsafe impl<#[may_dangle(borrow)] T> Drop for Weak<T> {
     fn drop(&mut self) {
-        println!("{}", self.0);
+        if ... {
+            // SAFETY: deallocates the `RcBox<T>`, but does not drop `T`.
+            unsafe {
+                self.deallocate_inner()
+            }
+        }
     }
 }
 
-fn main() {
-  let mut foo;
-  {
-    foo = Foo(PrintOnDrop(&*String::from("temporary")));
-  }
-  // ERROR: Foo dropped here, runs destructor for PrintOnDrop
+struct Vec<T> {
+    len: usize,
+    capacity: usize,
+    buf: *const T,
+}
+
+unsafe impl<#[may_dangle(drop)] T> Drop for Vec<T> {
+    fn drop(&mut self) {
+        for i in (0..self.len) {
+            // SAFETY: `#[may_dangle(drop)]` allows us to call `drop_in_place`.
+            unsafe {
+                drop_in_place(self.buf.offset(i));
+            }
+        }
+    }
+}
+
+struct PrintOnDrop<T: Display>(T);
+
+impl<T> Drop for PrintOnDrop<T> {
+    fn drop(&mut self) {
+        println!("{}", self.0);
+    }
 }
 ```
 
-For type parameters that are not dropped, `#[may_dangle(borrow)]` can be used.
-These are checked as if in a struct like so:
+These are unsound:
 
 ```rust
-struct Foo<T>(*const T);
+struct Vec<T> {
+    len: usize,
+    capacity: usize,
+    buf: *const T,
+}
 
-struct PrintOnDrop<'s>(&'s str);
-impl<'s> Drop for PrintOnDrop<'s> {
+unsafe impl<#[may_dangle(borrow)] T> Drop for Vec<T> {
     fn drop(&mut self) {
-        println!("{}", self.0);
+        for i in (0..self.len) {
+            // UNSOUND: `#[may_dangle(borrow)]` does NOT allow us to call
+            // `drop_in_place`. this can lead to use-after-frees.
+            unsafe {
+                drop_in_place(self.buf.offset(i));
+            }
+        }
     }
 }
 
-fn main() {
-  let mut foo;
-  {
-    foo = Foo(&PrintOnDrop(&*String::from("temporary")));
-  }
-  // no error here
+struct PrintOnDrop<T: Display>(T);
+
+unsafe impl<#[may_dangle(drop)] T> Drop for PrintOnDrop<T> {
+    fn drop(&mut self) {
+        // UNSOUND: `#[may_dangle(drop)]` only allows us to call `drop_in_place`
+        // but we're printing the value instead. this can lead to
+        // use-after-frees.
+        println!("{}", self.0);
+    }
 }
 ```
 
