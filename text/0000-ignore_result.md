@@ -73,6 +73,8 @@ It wouldn't have any corner cases due to the simplicity of the function.
 
 It's clearer, using a `match` statement not only is unnecessarily verbose in these cases, but also may seem like there's unimplemented logic, when it's intended.
 
+A possible alternative would be using `let _ = ...`, this silences alerts about not using `Result`(s) or `Options`(s), but it is unclear to newer Rustaceans, confusing in general and doesn't benefit from IDE auto-completion as much as a method would do.
+
 Not implementing this method wouldn't be a big deal, but it would mean less convenience for Rust users.
 
 Note that there are some posts [in the Forums](https://users.rust-lang.org/t/what-is-the-best-way-to-ignore-a-result/55187) and [StackOverflow](https://stackoverflow.com/questions/51141672/how-do-i-ignore-an-error-returned-from-a-rust-function-and-proceed-regardless) asking how to ignore a Result. This method would solve those issues.
