@@ -277,7 +277,7 @@ These checks are:
 
 If any of these checks fail a compiler error is issued.
 
-One additional check must be done, if the backend cannot guarantee TCE to be performed a ICE is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising a ICE if this is not the case.
+One additional check must be done, if the backend cannot guarantee that TCE will be performed a ICE is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising a ICE if this is not the case.
 
 Note that as `become` is a keyword reserved for exactly the use-case described in this RFC there is no backwards-compatibility break.
 
