@@ -232,7 +232,7 @@ fn foo(x: i32) -> i32 {
     if x % 2 {
         let x = x / 2;
         // one branch uses `become`
-        become foo(new_x);
+        become foo(x);
     } else {
         let x = x + 3;
         // the other does not
