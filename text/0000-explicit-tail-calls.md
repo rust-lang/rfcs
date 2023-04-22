@@ -108,7 +108,7 @@ pitfalls.
 The difference to `return` is that `become` drops function local variables **before** the `become` function call
 instead of after. To be more specific a `become` expression acts as if the following events occurred in-order:
 
-1. All variables that are being passed by-value are moved to temporary storage.
+1. Function call arguments are evaluated into temporary storage. If a local variable is used as a value in the arguments, it is moved.
 2. All local variables in the caller are destroyed according to usual Rust semantics. Destructors are called where
    necessary. Note that values moved from step 1 are _not_ dropped.
 3. The caller's stack frame is removed from the stack.
