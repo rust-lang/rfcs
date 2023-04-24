@@ -59,7 +59,7 @@ which can overflow the stack if the stack frame is not reused; and those that wa
 as creating new stack frames can be expensive.
 
 To request TCE the `become` keyword can be used instead of `return`.
-Note that, as both keywords act the same in terms of *control flow*,
+Note that, as both keywords act as the end of the function,
 `become` can be used everywhere that `return` is used.
 However, there are several requirements on the called function which need to be fulfilled for TCE (and TCO) to work.
 
