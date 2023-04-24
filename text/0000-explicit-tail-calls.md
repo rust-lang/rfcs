@@ -387,19 +387,31 @@ While quite noisy it is also less flexible than the chosen approach. Indeed, TCE
 function definition, sometimes a call should be guaranteed to be TCE, and sometimes not, marking a function would
 be less flexible.
 
-### Attribute on `return`
-One alternative could be to use an attribute instead of the `become` keyword for function calls. Example:
+### Adding a mark to `return`.
+
+The return keyword could be marked using an attribute or an extra keyword as in the example below.
 
 ```rust
 fn a() {
+    // The chosen variant.
     become b();
-    // or
+
+    // Using an attribute.
     #[become]
     return b();
+
+    // Adding an extra keyword.
+    return become b();
 }
 ```
 
-This alternative mostly comes down to taste (or bikeshedding) and `become` was chosen as it is [reserved](https://rust-lang.github.io/rfcs/0601-replace-be-with-become.html) for this use, shorter to write, and as drop order changes compared to `return` a new keyword seems warranted.
+These alternatives mostly come down to personal taste (or bikeshedding) and the plain keyword `become` was chosen because of the following reasons:
+
+- It is [reserved](https://rust-lang.github.io/rfcs/0601-replace-be-with-become.html) exactly this use case.
+- It is shorter to write.
+- The behavior changes in subtle ways compared to a plain `return`. To clearly indicate this change in behavior a stronger distinction from `return` than adding a mark seems warranted.
+  - TCE as proposed in this RFC requires dropping local variables before the function call instead of after with `return`.
+  - From a type system perspective the type of the `return` expression (`!`, the never type, see [here](https://doc.rust-lang.org/std/primitive.never.html) for an example) stays the same even when adding one of the markings. This means that type-checking can not help if the marking is forgotten or added mistakenly. (Note that the argument, the function call, can still be type checked, just not the `return` expression.)
 
 ### Custom Compiler or MIR Passes
 One more distant alternative would be to support a custom compiler or MIR pass so that this optimization can be done externally. While supported for LLVM [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/187780-t-compiler.2Fwg-llvm/topic/.E2.9C.94.20Running.20Custom.20LLVM.20Pass/near/320275483), for MIR this is not supported [discussion](https://internals.rust-lang.org/t/mir-compiler-plugins-for-custom-mir-passes/3166/10).
