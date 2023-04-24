@@ -58,8 +58,10 @@ TCE is interesting for two groups of programmers: Those that want to use recursi
 which can overflow the stack if the stack frame is not reused; and those that want to create highly optimized code
 as creating new stack frames can be expensive.
 
-To request TCE the `become` keyword can be used instead of `return` and only there.
-However, several requirements need to be fulfilled for TCE (and TCO) to work.
+To request TCE the `become` keyword can be used instead of `return`.
+Note that, as both keywords act the same in terms of *control flow*,
+`become` can be used everywhere that `return` is used.
+However, there are several requirements on the called function which need to be fulfilled for TCE (and TCO) to work.
 
 The main restriction is that the argument to `become` is a tail call,
 a call that is the last action performed in the function.
@@ -275,7 +277,7 @@ fn foo(x: i32) -> i32 {
 }
 ```
 
-### Alternating `become` and `return` calls
+### Alternating `become` and `return` calls still grows the stack.
 ([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-279062656))
 
 Here one function uses `become` the other `return`, this is another potential source of confusion. This mutual recursion
