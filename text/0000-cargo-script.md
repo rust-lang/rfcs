@@ -61,8 +61,8 @@ This similarly makes it easier to share code samples with coworkers or in books
 
 **Interoperability:**
 
-One angle to look at including something is if there is a single obvious
-solution.  While there isn't in the case for single-file packages, there is enough of
+One angle to look at proposals is if there is a single obvious
+solution.  While this isn't the case for single-file packages, there is enough of
 a subset of one. By standardizing that subset, we allow greater
 interoperability between solutions (e.g.
 [playground could gain support](https://users.rust-lang.org/t/call-for-contributors-to-the-rust-playground-for-upcoming-features/87110/14?u=epage)
@@ -511,6 +511,9 @@ How to keep build-times down for the best exploratory experience?
 - e.g. using a central `CARGO_TARGET_DIR`
 - e.g. locking to similar dependencies across scripts for reusing more of the cache in `CARGO_TARGET_DIR``
 
+How the default `RUST_BACKTRACE` setting affects the use cases for single-file
+packages if working around it is worth it?
+
 Whether single-file packages should be run within the
 environment (`.cargo/config.toml`, `rust-toolchain.toml`) of
 the current working directory (like `cargo run`) or a fixed
@@ -556,6 +559,11 @@ Smaller questions include:
 - Should we support workspaces as part of the initial MVP?
 - Whether single-file packages need a distinct file extension or not?
 - What, if any, file associations should be registered on Windows?
+
+Potential answers to these questions were intentionally left out to help focus
+the conversation on the proposed experiment.  For a previous enumeration of
+potential answers to these questions, see the [Pre-RFC on
+Internals](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
