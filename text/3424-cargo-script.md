@@ -547,6 +547,9 @@ Smaller questions include:
 - Should we support workspaces as part of the initial MVP?
 - Whether single-file packages need a distinct file extension or not?
 - What, if any, file associations should be registered on Windows?
+- As single-file packages aren't auto discovered (e.g. `cargo test` being short
+  for `cargo test --manifest-path Cargo.toml`), is there a way we can make
+  running cargo commands on single-file packages more convenient?
 
 Potential answers to these questions were intentionally left out to help focus
 the conversation on the proposed experiment.  For a previous enumeration of
