@@ -146,7 +146,7 @@ fn main() {
 }
 ```
 
-The `cargo` section in the doc-comment (any doc-comment style is supported) is
+The `cargo` section in the doc-comment (any module inner doc-comment style is supported) is
 called a [***manifest***][def-manifest], and it contains all of the metadata
 that Cargo needs to compile your package. This is written in the [TOML] format
 (pronounced /tɑməl/).
