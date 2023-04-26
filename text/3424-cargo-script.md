@@ -176,7 +176,7 @@ fn main() {
 
 You can then re-run this and Cargo will fetch the new dependencies and all of their dependencies.  You can see this by passing in `--verbose`:
 ```console
-$ cargo eval --verbose ./hello_world.rs
+$ cargo --verbose ./hello_world.rs
       Updating crates.io index
    Downloading memchr v0.1.5
    Downloading libc v0.1.10
