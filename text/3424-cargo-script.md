@@ -404,7 +404,7 @@ Existing Rust solutions:
 - [`cargo-script`](https://github.com/DanielKeep/cargo-script)
   - Single-file (`.crs` extension) rust code
     - Partial manifests in a `cargo` doc comment code fence or dependencies in a comment directive
-    - `run-cargo-script` for she-bangs and setting up file associations on Windows
+    - `run-cargo-script` for shebangs and setting up file associations on Windows
   - Performance: Shares a `CARGO_TARGET_DIR`, reusing dependency builds
   - `--expr <expr>` for expressions as args (wraps in a block and prints blocks value as `{:?}` )
      - `--dep` flags since directives don't work as easily
