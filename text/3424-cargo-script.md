@@ -146,9 +146,10 @@ fn main() {
 }
 ```
 
-The `cargo` section is called a [***manifest***][def-manifest], and it contains all of the
-metadata that Cargo needs to compile your package. This is written in the
-[TOML] format (pronounced /tɑməl/).
+The `cargo` section in the doc-comment (any doc-comment style is supported) is
+called a [***manifest***][def-manifest], and it contains all of the metadata
+that Cargo needs to compile your package. This is written in the [TOML] format
+(pronounced /tɑməl/).
 
 `regex = "1.8.0"` is the name of the [crate][def-crate] and a [SemVer] version
 requirement. The [specifying
