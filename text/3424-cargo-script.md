@@ -176,7 +176,8 @@ $ cargo --verbose ./hello_world.rs
 Did our date match? true
 ```
 
-Cargo will cache the exact information about which revision of all of these dependencies we used.
+Cargo will cache the exact information (in a location referred to as
+`CARGO_HOME`) about which revision of all of these dependencies we used.
 
 Now, if `regex` gets updated, we will still build with the same revision until
 we choose to `cargo update --manifest-path hello_world.rs`.
