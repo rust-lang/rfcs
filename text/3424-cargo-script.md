@@ -137,35 +137,7 @@ To depend on a library hosted on [crates.io], you modify `hello_world.rs`:
 
 //! ```cargo
 //! [dependencies]
-//! time = "0.1.12"
-//! ```
-
-fn main() {
-    println!("Hello, world!");
-}
-```
-
-The `cargo` section is called a [***manifest***][def-manifest], and it contains all of the
-metadata that Cargo needs to compile your package. This is written in the
-[TOML] format (pronounced /tɑməl/).
-
-`time = "0.1.12"` is the name of the [crate][def-crate] and a [SemVer] version
-requirement. The [specifying
-dependencies](https://doc.rust-lang.org/cargo/guide/../reference/specifying-dependencies.html) docs have more
-information about the options you have here.
-
-If we also wanted to add a dependency on the `regex` crate, we would not need
-to add `[dependencies]` for each crate listed. Here's what your whole
-`hello_world.rs` file would look like with dependencies on the `time` and `regex`
-crates:
-
-```rust
-#!/usr/bin/env cargo
-
-//! ```cargo
-//! [dependencies]
-//! time = "0.1.12"
-//! regex = "0.1.41"
+//! regex = "1.8.0"
 //! ```
 
 fn main() {
@@ -174,7 +146,17 @@ fn main() {
 }
 ```
 
-You can then re-run this and Cargo will fetch the new dependencies and all of their dependencies.  You can see this by passing in `--verbose`:
+The `cargo` section is called a [***manifest***][def-manifest], and it contains all of the
+metadata that Cargo needs to compile your package. This is written in the
+[TOML] format (pronounced /tɑməl/).
+
+`regex = "1.8.0"` is the name of the [crate][def-crate] and a [SemVer] version
+requirement. The [specifying
+dependencies](https://doc.rust-lang.org/cargo/guide/../reference/specifying-dependencies.html) docs have more
+information about the options you have here.
+
+You can then re-run this and Cargo will fetch the new dependencies and all of
+their dependencies.  You can see this by passing in `--verbose`:
 ```console
 $ cargo --verbose ./hello_world.rs
       Updating crates.io index
@@ -193,6 +175,11 @@ $ cargo --verbose ./hello_world.rs
      Compiling hello_world v0.1.0 (file:///path/to/package/hello_world)
 Did our date match? true
 ```
+
+Cargo will cache the exact information about which revision of all of these dependencies we used.
+
+Now, if `regex` gets updated, we will still build with the same revision until
+we choose to `cargo update --manifest-path hello_world.rs`.
 
 ## Package Layout
 
