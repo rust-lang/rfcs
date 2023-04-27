@@ -142,8 +142,12 @@ cargo will:
   - These flags will be fingerprinted so changing them will cause a rebuild only
     for the commands where they are used.
 
-Note that this means that `[lints]` does not affect dependencies which is
-normally not an issue due to `--cap-lints` being used for dependencies.
+Note that this means that `[lints]` is only applied to the package where its
+defined and not to its dependencies, local or not.  This avoids having to unify
+`[lints]` tables across local packages.  Normally, lints for non-local
+dependencies won't be shown anyways because of `--cap-lints`.  As for local
+dependencies, they will likely have their own `[lints]` table, most the same
+one, inherited from the workspace.
 
 Initially, the only supported tools will be:
 - `rust`
