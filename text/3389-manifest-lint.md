@@ -140,7 +140,9 @@ cargo will:
 3. Pass them on the command line before other configuration like
 `RUSTFLAGS`, allowing user configuration to override package configuration.
   - These flags will be fingerprinted so changing them will cause a rebuild only
-    for the commands where they are used.
+    for the commands where they are used.  By only including the lints for the
+    command in question, we reduce what is fingerprinted, reducing what gets
+    rebuilt when `[lints]` is changed.
 
 Note that this means that `[lints]` is only applied to the package where its
 defined and not to its dependencies, local or not.  This avoids having to unify
