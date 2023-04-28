@@ -381,7 +381,21 @@ pxy.{was_x, was_y} let= pfull.{was_x, was_y};
 ```
 
 I assumed, that `%miss` field-access could preserve at move action, but maybe it was my over-optimistic guess.
+
 Is is possible after creating one variable with missed field, move (partly) it into another variable, and then independently extend same field at both variables?
+```rust
+let p = Point{x : 1.0, y: 2.0};
+let rp = & p.{x};
+    // rp : & Point.%{x}  not  rp : & Point.%{x, %miss y}
+
+rp.y let= &8.0;
+// or
+*rp.y let= 8.0;
+// error : cannot extend denied field by let=
+```
+By theory of types it is not forbidden, but in reality due Rust variable representations this "extender" rewrites `p.y`.
+
+That's why we need to distinguish `%deny` from `%miss`.
 
 ## Partial Parameters
 
