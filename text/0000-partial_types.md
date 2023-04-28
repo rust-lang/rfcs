@@ -35,7 +35,7 @@ This extension is not only fully backward-compatible, but is fully forward-compa
 
 For Product Types `PT = T1 and T2 and T3  and ...` (structs, tuples) we assume they are like structs with controllable field-access.
 
-`%permit` - field is accessible, `%deny` - field is forbidden to use, `%miss` - it is uninitialized field, field is forbidden to use.
+`<%permit>` - field is accessible (always implicit), `%deny` - field is forbidden to use, `%miss` - it is uninitialized field, field is forbidden to use.
 
 Let we wish to have next structure:
 ```rust
@@ -48,27 +48,28 @@ Now it is impossible to write immutable self-referential types. But with partial
 ```rust
 let x = SR {val : 5i32 };
     // omitted field is uninitialized, it has %miss field-access
-    // x : %{%permit val, %miss lnk} SR<i32>
+    // x : SR<i32>.{val, miss lnk}
 
 x.lnk %%= & x.val;
     // (%%=) "extender", late initialized field
     // x : SR<i32>;
-    // x : %full SR<i32>;
+    // x : SR<i32>.%full;
 ```
 Easy-peasy! We create partial type and extend by late initializing fields!
 
 ```rust
-let bar = (%miss 0i16, &5i32, "some_string");
-    // in tuple constructor we cannot omit a field, set '%miss' explicitly on field
-    // bar : %{%miss 0, %permit 1,2} (i16, &i32, &str);
-let baz = %{1,2} (7i16, &51i32, "some_other_string");
+let baz = (7i16, &51i32, "some_other_string").{1, 2, %unfill};
     // or set access-filer before tuple constructor 
-    // baz : %{%miss 0, %permit 1,2} (i16, &i32, &str);
-	
-bar.0 %%= 6;
+    // baz : (i16, &i32, &str).{1, 2, %miss 0};
+
+let bar = (%miss 7i16, &51i32, "some_other_string");
+    // or set access-filer before tuple constructor 
+    // baz : (i16, &i32, &str).{1, 2, %miss 0};
+
+bar.0 %%= 68;
 	// (%%=) "extender", late initialized field
 	// bar : (i16, &i32, &str);
-	// bar : %full (i16, &i32, &str);
+	// bar : (i16, &i32, &str).%full;
 ```
 Same with tuples.
 
@@ -86,11 +87,10 @@ let mut p1 = Point {x:1.0, y:2.0, was_x: 4.0, was_y: 5.0, state: 12.0};
 	
 let ref_p1was = &mut p1.{wax_x, was_y};
 	// ".{}" is a getter several fields, similar to "." get 1 field 
-	// pfull : &mut %{was_x, was_y, %deny x, y, state} Point
+	// pfull : &mut Point.%{was_x, was_y, %unfill}
 	
-let ref_p1now = &mut %{x, y} p1;
-	// or set access-filter before variable
-	// pfull : &mut %{x, y, %deny was_x, was_y, state} Point
+let ref_p1now = &mut p1.{x, y};
+	// pfull : &mut Point.%{x, y, %unfill}
 	
 let Point {%deny x, %deny y, was_x: upd_x, was_y: upd_y, %deny state} = ref_p1was;
 	// similar with binding deconstruction
@@ -99,11 +99,11 @@ It is simple and will be possible.
 
 Same easy to write functions, which consume partial parameters:
 ```rust
-fn re_ref_t (& self : & %{t, %any} Self) -> &f64 {
+fn re_ref_t (& self : & Self.%{t, %any}) -> &f64 {
    &self.t
 }
 
-fn refmut_w (&mut self : &mut %{w, %any} Self) -> &mut f64 {
+fn refmut_w (&mut self : &mut Self.%{w, %any}) -> &mut f64 {
    &mut self.w
 }
 ```
@@ -111,14 +111,14 @@ fn refmut_w (&mut self : &mut %{w, %any} Self) -> &mut f64 {
 We could do much harder things: we wish parallel using function implementation, which update either `x` or `y` and both read `state` field.
 ```rust
 impl {
-	pub fn mx_rstate(&mut self1 : &mut %{x, %any} Self, & self2 : & %{state, %any} Self)
+	pub fn mx_rstate(&mut self1 : &mut Self.%{x, %any}, & self2 : & Self.{state, %any})
 	{ /* ... */ }
 		
-	pub fn my_rstate(&mut self1 : &mut %{y, %any} Self, & self2 : & %{state, %any} Self)  
+	pub fn my_rstate(&mut self1 : &mut Self.%{y, %any}, & self2 : & Self.{state, %any})  
 	{ /* ... */ }
 
 	// Unfortunately it is a mandatory to extensive mut-borrow 'state' field!
-	pub fn mxystate(&mut self : &mut %{x, y, state, %any} Self)  
+	pub fn mxystate(&mut self : &mut Self.%{x, y, state, %any})  
 	{ 
 		/* ... */
 		self.{x, state}.mx_rstate();
@@ -137,9 +137,9 @@ Anyway, it is easy, useful and universal!
 
 This proposal of Partial Types (A) for full control on parameters and arguments requires mixed-mutable (B) references and mixed-mutable dereference (of mixed-mutable references).
 
-Full implementation of mixed-mutable types (B) is welcomed, but minimal requirement is 2-links only of partly type variables as representative one variable of mixed-mutable type.
+Full implementation of mixed-mutable variables (B) is welcomed, but minimal requirement is 2-links only of partly type variables as representative one variable of mixed-mutable type.
 
-If mixed mutable types (B) is hard to implement, simple Multi-Selfs (C) alternative without mixed mutable types is possible, but it covers only part of problems.
+If mixed mutable variables (B) is hard to implement, simple Multi-Selfs (C) alternative without mixed mutable variables is possible, but it covers only part of problems.
 
 It is totally Ok if on "Stage 1" implements (A + C), then on "Stage 2" implements (B).
 
@@ -160,11 +160,11 @@ It is totally Ok if on "Stage 1" implements (A + C), then on "Stage 2" implement
 
 ## Partial type access
 
-I propose to extend type system by adding type access before type (for Product Types), like `%full (i16, &i32, &str)`.
+I propose to extend type system by adding type access after type name (for Product Types), like `(i16, &i32, &str).%full`.
 
-If we omit to write type access, it means `%full` access. Symbol (`%` percent) mean percent or part of the whole thing (variable in our case).
+If we omit to write type access, it means `.%full` access. Symbol (`%` percent) mean percent or part of the whole thing (variable in our case).
 
-Access has similar names and meanings as lifetimes: `%full`(full access, soft keyword), `%_`(don't care how partial access is, soft keyword) and any other `%a`(some "a" access). But in most cases we use detailed access `%{}`.
+Access has similar names and meanings as lifetimes: `.%full`(full access, soft keyword), `.%_`(don't care how partial access is, soft keyword) and any other `.%a`(some "a" access). But in most cases we use detailed access `.%{}`.
 
 ## Fields names and field-access
 
@@ -176,8 +176,8 @@ Fields names inside detailed access:
 - `self` pseudo-field for unsupported types
 
 Filed-access can be in 4 values:
-- `%permit` - field is accessible,
-- `%deny` - field is forbidden to use,
+- `<nothing>` or `%permit` - field is accessible,
+- `<omitting>` or %deny` - field is forbidden to use,
 - `%miss` (E) - it is uninitialized field, field is forbidden to use,
 - `%ignore` (F) - quasi-field access, which hides truthful field access.
 
@@ -187,7 +187,7 @@ Filed-access can be in 4 values:
 
 ## Detailed access and mutability
 
-Detailed field-access has next structure: `%{%field-access1 field-name1, %field-access2 field-name2, ..}` 
+Detailed field-access has next structure: `.%{%field-access1 field-name1, %field-access2 field-name2, ..}` 
 
 Detailed access is a set of unordered and unsorted field-names and their filed-accesses.
 
@@ -206,14 +206,12 @@ Examples:
 struct Point {x: f64, y: f64, was_x: f64, was_y: f64}
 
 let pfull = Point {was_x: 4.0, was_y: 5.0};
-	// pfull : %{was_x, was_y, %miss x, y} Point
-	//   same as
-	// pfull : %{%miss x, %miss y, %permit was_x, %permit was_y} Point
+	// pfull : Point.%{was_x, was_y, %miss x, y}
 ```
 
-Type access `%full` is a shortcut for `%{%permit *}`.
+Type access `.%full` is a shortcut for `.%{*}`.
 
-It is forbidden to have `%{%deny *}` values and `%{%deny *}` references (but who knows, maybe they are suitable uninhabited types, phantom types or proxy types).
+It is forbidden to have `.%{%deny *}` values and `.%{%deny *}` references (but who knows, maybe they are suitable uninhabited types, phantom types or proxy types).
 
 ## Access-filter and Mutable Filter
 
@@ -231,23 +229,23 @@ Access-filter is an action, which is looks like detailed access and it is writte
 It is allowed to write explicitly specific access-filter with same rules as detailed access.
 
 Default filter on consumption if filter is omitted for:
- - `var  ~  %max var`
- - `& var  ~  & %max var`
- - `&mut var  ~  &mut %max var`
+ - `var  ~  var.%max`
+ - `& var  ~  & var.%max`
+ - `&mut var  ~  &mut var.%max`
  
 (A + D)
- - `return var  ~  return %exact var`
- - `return & var  ~  return & %exact var`
- - `return &mut var  ~ return &mut %exact var`
+ - `return var  ~  return var.%exact`
+ - `return & var  ~  return & var.%exact`
+ - `return &mut var  ~ return &mut var.%exact`
  
  where filters are based on variable field-access:
 
-| ↓var access  | `%max`    | `%exact` (D) |
-|--------------|-----------|--------------|
-| `%permit`    | `%permit` | `%permit`    |
-| `%deny`      | `%deny`   | `%deny`      |
-| `%miss` (E)  | `%miss`   | `%miss`      |
-| `%ignore`    | `%deny`   | `%ignore`    |
+| ↓var access  | `.%max`   | `.%exact` (D) |
+|--------------|-----------|---------------|
+| `%permit`    | `%permit` | `%permit`     |
+| `%deny`      | `%deny`   | `%deny`       |
+| `%miss` (E)  | `%miss`   | `%miss`       |
+| `%ignore`    | `%deny`   | `%ignore`     |
 
 ## New Picker several fields
 
@@ -264,50 +262,54 @@ let bpwasx = &mut pfull.was_x;
 
 But it is still impossible to "pick several fields". With partial types it become possible. 
 
-I suggest to add additional picker `var.{fld1, fld2, ..}`:
+I suggest to add additional picker for variables `var.{fld1, fld2, ..}` (similar to partiality `var.%{fld1, fld2}`):
 ```rust
 let pxy = pfull.{x, y};
-//    same as 
-let pxy = %{x, y} pfull;
+//   same as
+let pxy = pfull.%{x, y};
 
 let rpxy = & pfull.{x,y};
-//    same as
-let rpxy = & %{x, y} pfull;
+//   same as
+let rpxy = & pfull.%{x,y};
 
-let rpwas = & pfull.{was_x,was_y};
-//    same as
-let rpwas = & %{was_x, was_y} pfull;
+let rpwas = & pfull.{was_x, was_y};
+//   same as
+let rpwas = & pfull.%{was_x, was_y};
 ```
+
+
 
 ## Partially Initialized Variables
 
 Partially Initialized Variable has next structure:
-- for structs: `%access-filter Construct{%field-access1 field-name1: value1, %field-access2 field-name2: value1, ..};` 
-- for tuples:  `%access-filter (%field-access1 field-name1: value1, %field-access2 field-name2: value1, ..);` 
+- for structs: `Construct{%field-access1 field-name1: value1, %field-access1 field-name2: value2, ..}.%access-filter;` 
+- for tuples:  `(%field-access1 value1, %field-access1 value2, ..).%access-filter;` 
 
-Access filter `%access-filter` if it is omitted means `%max`.
+Access filter `%access-filter` if it is omitted means `.%max`.
 
 All `%field-accessN` field-access in tuples if they are omitted mean `%permit`. 
 
 All `%field-accessN` field-accesses (for explicit filed-names in structs) if they are omitted mean `%permit`. All `%field-accessM` field-accesses for omitted filed-names in structs mean `%miss`.
 
-Now it is impossible to initialize outside a new struct with private fields. With partial types it is possible, but variable type access cannot be `%full` in that case.
+Now it is impossible to initialize outside a new struct with private fields. With partial types it is possible, but variable type access cannot be `.%full` in that case.
 
 Also, constructor could copy "rest of fields" not from single variable, but from several variables (if they don't overlap permitted fields) and even fill empty constructor:
 ```rust
 struct Point {x: f64, y: f64, was_x: f64, was_y: f64}
 
 let pwas = Point {was_x: 4.0, was_y: 5.0};
-	// pwas : %{was_x, was_y} Point
+	// pwas : Point.%{was_x, was_y}
 
 let pnow = Point {x: 1.0, y: 2.0};
-	// pnow : %{x, y} Point
+	// pnow : Point.%{x, y}
 	
 let pfull1 = Point {..p1, ..p2};
 	// pfull1 : Point
+    // pfull1 : Point.%full
 
 let pfull2 = Point {x: 42.0, was_x: -5.0, ..p1, ..p2};
 	// pfull2 : Point
+    // pfull2 : Point.%full
 ```
 
 ## miss field-access
@@ -329,10 +331,10 @@ Theory of types do not forbid extension of Partial Type, but internal Rust repre
 Mutable and immutable borrowing (but not moving) automatically convert `%miss` field access into `%deny` for reference.
 ```rust
 let pfull = Point {was_x: 4.0, was_y: 5.0};
-	// pfull : %{was_x, was_y, %miss x, y} Point
+	// pfull : Point.%{was_x, was_y, %unfill}
 
 let ref_pful = & pfull;
-	// ref_pful : %{was_x, was_y, %deny x, y} Point
+	// ref_pful : Point.%{was_x, was_y}
 ```
 
 ### Late initialized permit field from miss field
@@ -347,13 +349,13 @@ struct SR <T>{
 }
 
 let x = SR {val : 5i32 };
-    // x : %{val, %miss lnk} SR<i32>
+    // x : SR<i32>.%{val, %miss lnk}
 
 x.lnk %%= & x.val;
     // (%%=) "extender", late initialized field
-	// change from %{%miss lnk, ..} to %{%permit lnk, ..}
+	// change from .%{%miss lnk, ..} to .%{%permit lnk, ..}
     // x : SR<i32>;
-    // x : %full SR<i32>;
+    // x : SR<i32>.%full;
 ```
 
 It is an compiler error if `%%=` operator tries to extend not `%miss` filed-accessed fields (`%permit` or `%deny` or `%ignore`).
@@ -364,10 +366,11 @@ let pfull = Point {x : 5.0, y : 6.0, was_x : 7.0, was_y : 13.0};
     // pfull : Point
 	
 let pxy = Point {x : 5.0, y : 6.0 };
-    // pxy : %{x, y} Point
+    // pxy : Point.%{x, y}
 
 pxy.{was_x, was_y} %%= pfull.{was_x, was_y};
     // pxy : Point;
+    // pxy : Point.%full;
 ```
 
 I assumed, that `%miss` field-access could preserve at move action, but maybe it was my over-optimistic guess.
@@ -383,7 +386,7 @@ Inside function body all `%ignore` fields of parameter hide filter-access of inc
 
 No one could consume `%ignore` fields (except return-consumer) because we have no guarantee, that some field is permitted. It is a compiler error!
 ```rust
-    pub fn t_refmut(&self : &mut %{t, %any} Self) -> &mut f64 {
+    pub fn t_refmut(&self : &mut Self.%{t, %any}) -> &mut f64 {
         &mut self.x
         //   ^~~~~~
         // error: 'x' is an ignored field
@@ -398,11 +401,11 @@ Return consumers (omitted or explicit) could consume `%ignore` field, that's why
 
 Fill the difference:
 ```rust
-    pub fn t_refmut1(&self : &mut %{t, %any} Self) -> &mut %{t} Self {
+    pub fn t_refmut1(&self : &mut Self.%{t, %any}) -> &mut %{t} Self {
         &mut %max self
     }
 
-    pub fn t_refmut2(&self : &mut %a@%{t, %any} Self) -> &mut %a Self {
+    pub fn t_refmut2(&self : &mut Self.%a@%{t, %any}) -> &mut Self.%a {
         &mut self
         // same as
         &mut %exact self
@@ -415,15 +418,15 @@ Multi-Sefs of Partial types partly allows to write controllable access to parame
 ```rust
 impl {
 	// we could accurate write this function
-	pub fn mx_rstate(&mut self1 : &mut %{x, %any} Self, & self2 : & %{state, %any} Self)
+	pub fn mx_rstate(&mut self1 : &mut Self.%{x, %any}, & self2 : & Self.%{state, %any})
 	{ /* ... */ }
 		
 	// we could accurate write this function
-	pub fn my_rstate(&mut self1 : &mut %{y, %any} Self, & self2 : & %{state, %any} Self)  
+	pub fn my_rstate(&mut self1 : &mut Self.%{y, %any}, & self2 : & Self.%{state, %any})  
 	{ /* ... */ }
 
 	// Unfortunately it is a mandatory to extensive mut-borrow 'state' field!
-	pub fn mxystate(&mut self : &mut %{x, y, state, %any} Self)  
+	pub fn mxystate(&mut self : &mut Self.%{x, y, state, %any})  
 	{ 
 		/* ... */
 		self.{x, state}.mx_rstate();
@@ -438,63 +441,63 @@ impl {
 
 For function argument we add another default omitted access filter `%arg` - qualified safe filter with minimum permit-fields, but it refers not to variable access, but to parameter accesses, so we could use it in arguments consumption only! It is an compile error if `%arg` is written outside of contents!
 
-| param access  | `%arg`    |
+| param access  | `.%arg`   |
 |---------------|-----------|
 | `%permit`     | `%permit` |
 | `%deny`       | `%deny`   |
 | `%ignore` (F) | `%deny`   | 
 
-Implementations always consumes `self` by `%arg` filter!
+Implementations always consumes `self` by `.%arg` filter!
 
 ```rust
 let mut p1 : Point = Point {x:1.0, y:2.0, z:3.0, t:4.0, w:5.0};
 
-fn re_ref_t (& p : & %{t, %any} Point) -> &f64 {
+fn re_ref_t (& p : & Point.%{t, %any}) -> &f64 {
    &p.t
 }
 
 let reft = re_ref_t(& p1);
 //    same as
-let reft = re_ref_t(& %arg p1);
+let reft = re_ref_t(& p1.%arg);
 
 let mut p2 : Point2 = Point {x:1.0, was_x:2.0};
 
-fn pntp_store (&mut p1 : &mut %{was_x, %any} Point2, & p2 : & %{x, %any} Point2)  {
+fn pntp_store (&mut p1 : &mut Point2.%{was_x, %any}, & p2 : & Point2.%{x, %any})  {
    *p1.was_x = *p2.x;
 }
 
 pntp_store(&mut p2, & p2);
 //    same as
-pntp_store(&mut %arg p2, & %arg p2);
+pntp_store(&mut p2.%arg, & p2.%arg);
 ```
 (F)
 
 The difference in argument use for parameters with ignored fields and without:
 ```rust
-fn pnewx_with (&mut p : &mut %{x, %any} Point, newx : f64) {
+fn pnewx_with (&mut p : &mut Point.%{x, %any}, newx : f64) {
    *p.x = newx;
 }
 
-fn pnewx_without (&mut p : &mut %{x} Point, newx : f64) {
+fn pnewx_without (&mut p : &mut Point.%{x}, newx : f64) {
    *p.x = newx;
 }
 
 pnewx_with(&mut p2, 6.0); // Ok
 //    same as
-pnewx_with(&mut %arg p2, 6.0); // Ok
+pnewx_with(&mut p2.%arg, 6.0); // Ok
 
-pnewx_with(&mut %max p2, 6.0); // still Ok
+pnewx_with(&mut p2.%max, 6.0); // still Ok
 
-pnewx_with(&mut %full p2, 6.0); // almost Ok
+pnewx_with(&mut p2.%full, 6.0); // almost Ok
 
 
 pnewx_without(&mut p2, 6.0); // Ok
 //    same as
-pnewx_without(&mut %arg p2, 6.0); // Ok
+pnewx_without(&mut p2.%arg, 6.0); // Ok
 
-pnewx_without(&mut %max p2, 6.0); // error
+pnewx_without(&mut p2.%max, 6.0); // error
 
-pnewx_without(&mut %full p2, 6.0); // error
+pnewx_without(&mut p2.%full, 6.0); // error
 ```
 
 ## Partial Parameters and Mixed Parameters in Traits
@@ -504,7 +507,7 @@ Partial Parameters in Traits could have generalized type access variants:
 trait Getable {
 	type Target;
 
-    fn get_val<%a>(& self: & %a Self) -> Self::Target;
+    fn get_val<%a>(& self: & Self.%a) -> Self::Target;
 }
 ```
 
@@ -526,7 +529,6 @@ So, this proposal ignore this type!
 
 - it is definitely not a minor change
 - type system became much more complicated
-- It is highly recommended to deprecate operator `%` as a remainder function (it is still no ambiguities to write "`\s+%\s+`"), and replace it with another operator (for example: `%mod` / `%rem` / `mod` / `rem`) to not to be confused by type access. But it is not a mandatory.
 
 
 # Rationale and alternatives
