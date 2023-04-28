@@ -69,48 +69,41 @@ I expect the new attributes to be documented on the existing [Diagnostics](https
 
 ## The `#[diagnostic]` attribute namespace
 
-This RFC proposes to introduce a new `#[diagnostic]` attribute namespace. This namespace is supposed to contain different attributes, which allow users to hint the compiler to emit specific error messages in certain cases like type mismatches, unsatisfied trait bounds or similar situations. By collecting such attributes in a common namespace it is easier for users to find useful attributes and it is easier for the language team to establish a set of common rules for these attributes.
+This RFC proposes to introduce a new `#[diagnostic]` attribute namespace. This namespace is supposed to contain different attributes, which allow users to hint the compiler to emit specific diagnostic messages in certain cases like type mismatches, unsatisfied trait bounds or similar situations. By collecting such attributes in a common namespace it is easier for users to find useful attributes and it is easier for the language team to establish a set of common rules for these attributes.
 
 Attributes in this namespace are generally expected to be formed like:
 ```rust
 #[diagnostic::attribute(option)]
 ```
-where several `option` entries can appear in the same attribute. `option` is expected to be a valid attribute argument in this position. Attributes in this namespace are versioned. Any incompatible change to an existing stable attribute in this namespace requires bumping the version of the diagnostic attribute namespace. Crates using these attributes must specify the expected version of the diagnostic namespace via a `#![diagnostic::v{version_number}]` crate top-level attribute. If multiple such attributes are present the compiler will choose the highest version number and ignore the rest. The compiler is encouraged to provide a lint for outdated versions of the diagnostic attribute namespace. This mechanism exists so that a third party crate can provide a shim implementation of the corresponding attributes to translate between different versions of the diagnostic attribute namespace on different rust versions.
+where several `option` entries can appear in the same attribute. `option` is expected to be a valid attribute argument in this position. 
 
 Any attribute in this namespace may:
 
-* Hint the compiler to emit a specific error message in a specific situation
-* Only affect the messages emitted by a compiler in case of a failed compilation
+* Hint the compiler to emit a specific diagnostic message in a specific situation
+* Only affect the messages emitted by a compiler 
 
 Any attribute in this namespace is not allowed to:
 
-* Change the result of the compilation, which means applying such an attribute should never cause an error as long as they are syntactically valid
-* pass-through information from the source of the diagnostic in a way that users can rely on. E.g. Such an attribute should not allow users to keep the compilation successful and dump information about `extern` blocks to generate C header files
+* Change the result of the compilation, which means applying such an attribute should never cause a compilation error as long as they are syntactically valid
+* Pass-through information from the source of the diagnostic in a way that users can rely on. E.g. Such an attribute should not allow users to keep the compilation successful and dump information about `extern` blocks to generate C header files
 
 The compiler is allowed to:
 
 * Ignore the hints provided by:
     + A specific attribute
     + A specific option 
-* Change the set of supported attributes and options at any time
-* Provide warning lints for malformed or otherwise not accepted attributes 
+* Change the support for a specific attribute or option at any time
 
 The compiler must not:
 
-* Change the semantic of an attribute or option, these kind of change requires a bump of the diagnostic attribute space version number
-* Emit an hard error on malformed attribute, although emitting lints is fine
+* Change the semantic of an attribute or option
+* Emit an hard error on malformed attribute
 
-Adding a new attribute or option to the `#[diagnostic]` namespace is a decision of the compiler team. The envisioned procedure for this is as following:
+The compiler should:
 
-1. The new attribute lands on nightly without a feature gate. It gets ignored on stable/beta until its explicitly activated there.
-2. The time as nightly only attribute is used to verify that:
-    * The attribute solves a real problem
-    * The implemented syntax matches the expectations
-3. To enable a certain attribute in stable release the following steps are required:
-    * The attribute is documented in the rust reference
-    * T-lang is informed
-    * T-compiler performs a FCP, where a simple majority (>50%) accepts the attribute
-    
+* Emit implement a warn-by-default lint for unrecognised attributes or options 
+
+Adding a new attribute or option to the `#[diagnostic]` namespace is for now a decision of the language team. The language team can delegate these decisions partially or completely to a different team without requiring a new RFC. 
 
 ## The `#[diagnostic::on_unimplemented]` attribute
 
@@ -128,13 +121,13 @@ trait MyIterator<A> {
 ```
 
 
-Each of the options `message`, `label` and `note` are optional. They are separated by comma. The trailing comma is optional. Specifying any of these options hints the compiler to replace the normally emitted part of the error message with the provided string. At least one of these options needs to exist. Each option can appear at most once. The error message can include type information for the `Self` type or any generic type by using `{Self}` or `{A}` (where `A` refers to the generic type name in the definition). These placeholders are replaced by the actual type name.
+Each of the options `message`, `label` and `note` are optional. They are separated by comma. The trailing comma is optional. Specifying any of these options hints the compiler to replace the normally emitted part of the error message with the provided string. At least one of these options needs to exist. Each option can appear at most once. These options can include type information for the `Self` type or any generic type by using `{Self}` or `{A}` (where `A` refers to the generic type name in the definition). These placeholders are replaced by the compiler with the actual type name.
 
 In addition the `on_unimplemented` attribute provides mechanisms to specify for which exact types a certain message should be emitted via an `if()` option. It accepts a set of filter options. A filter option consists of the generic parameter name from the trait definition and a type path against which the parameter should be checked. This type path could either be a fully qualified path or refer to any type in the current scope. As a special generic parameter name `Self` is added to refer to the `Self` type of the trait implementation. A filter option evaluates to `true` if the corresponding generic parameter in the trait definition matches the specified type. The provided `message`/`note`/`label` options are only emitted if the filter operation evaluates to `true`.
 
 The `any` and `all` options allow to combine multiple filter options. The `any` option matches if one of the supplied filter options evaluates to `true`, the `all` option requires that all supplied filter options evaluate to true. `not` allows to negate a given filter option. It evaluates to `true` if the inner filter option evaluates to `false`. These options can be nested to construct complex filters.
 
-The `on_unimplemented` attribute can be applied multiple times to the same trait definition. Multiple attributes are evaluated in order. The first matching instance for each of the `message`/`label`/`note` options is emitted. The compiler may lint against ignored variants as this is the case for `match` arms for example.
+The `on_unimplemented` attribute can be applied multiple times to the same trait definition. Multiple attributes are evaluated in order. The first matching instance for each of the `message`/`label`/`note` options is emitted. The compiler should provide a warn-by-default lint for ignored variants as this is the case for `match` arms.
 ```rust
 #[diagnostic::on_unimplemented(
     if(Self = std::string::String),
@@ -225,6 +218,11 @@ Clarify the procedure of various potential changes prior stabilisation of the at
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+* Add a versioning scheme
+   + For specific attributes
+   + For the namespace
+   + Based on editions
+   + Custom versioning scheme
 * More attributes like `#[diagnostics::on_type_error]`
 * Extend the `#[diagnostics::on_unimplemented]` attribute to incorporate the semantics of `#[do_not_recommend]` or 
 provide a distinct `#[diagnostics::do_not_recommend]` attribute
