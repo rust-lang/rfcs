@@ -32,8 +32,9 @@ Mixed mutable variables are similar to partial types, we add partial access to m
 
 Its is possible to have partial mutable variables and partial mutable borrowing and (immutable)references:
 ```rust
+struct Point {x : f32, y : f32, was_x : f32, was_y : f32, state : f32};
 
-let mut p2 : mut.%{x} Point = Point {x:1.0, y:2.0, was_x: 4.0, was_y: 5.0, state: 12.0};
+let mut p2 : mut.%{x,y} Point = Point {x:1.0, y:2.0, was_x: 4.0, was_y: 5.0, state: 12.0};
 	// infer mutability from mutability, lifted to type
 	// p2 : mut.%{x,y} Point
 
@@ -53,6 +54,8 @@ let refnr2_p2 = & refnr_p2;
 
 We could write effective mixed-mutable references-arguments:
 ```rust
+struct Point2 {x : f32, was_x : f32};
+
 let mut p1 : Point2 = Point2 {x:1.0, was_x:2.0};
 
 fn vx_store (&mut p : &mut.%{was_x} Point2) {
@@ -64,7 +67,7 @@ vx_store(&mut p1); // effective reference
 
 We could get full control with Partial Types (A) together: we could write parallel using function implementation, which update either `x` or `y` and both read `state` field.
 ```rust
-impl {
+impl Point {
 	pub fn mx_rstate(&mut self : &mix Self.%{mut x, state, %any})
 	// infer mutability from mutability, lifted to type
 	{ /* ... */ }
@@ -114,12 +117,10 @@ If we wish to **mix** partial mutuality and partial types, we need to use `mix` 
 
 Mixed detail partiality is mix of partial type with mutability
 ```rust
-	pub fn mx_rstate(&mut self : &mix Self.%{mut x, state, %any});
+	pub fn mx_rstate(&mut self : &mix Self.%{mut x, state, %any}) { /* ... */ }
 	// infer mutability from mutability, lifted to type
-	{ /* ... */ }
 
-	pub fn mxy_rstate(&mut self : &mix Self.%{mut x, mut y, state, %any})
-	{ /* ... */ }
+	pub fn mxy_rstate(&mut self : &mix Self.%{mut x, mut y, state, %any}) { /* ... */ }
 ```
 Where we fix each field is mutable or not.
 
