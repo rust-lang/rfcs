@@ -44,11 +44,11 @@ struct SR <T>{
     lnk : & T, // reference to val
 }
 ```
-Now it is impossible to write immutable self-referential types. But with partial initializer it becomes easy:
+Now it is impossible to write immutable self-referential types. But with partial initialization it becomes easy:
 ```rust
 let x = SR {val : 5i32 };
     // omitted field is uninitialized, it has %miss field-access
-    // x : SR<i32>.{val, miss lnk}
+    // x : SR<i32>.{val, %miss lnk}
 
 x.lnk %%= & x.val;
     // (%%=) "extender", late initialized field
