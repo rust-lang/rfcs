@@ -50,8 +50,8 @@ let x = SR {val : 5i32 };
     // omitted field is uninitialized, it has %miss field-access
     // x : SR<i32>.{val, %miss lnk}
 
-x.lnk %%= & x.val;
-    // (%%=) "extender", late initialized field
+x.lnk let= & x.val;
+    // (let=) "extender", late initialized field
     // x : SR<i32>;
     // x : SR<i32>.%full;
 ```
@@ -66,8 +66,8 @@ let bar = (%miss 7i16, &51i32, "some_other_string");
     // or set access-filer before tuple constructor 
     // baz : (i16, &i32, &str).{1, 2, %miss 0};
 
-bar.0 %%= 68;
-	// (%%=) "extender", late initialized field
+bar.0 let= 68;
+	// (let=) "extender", late initialized field
 	// bar : (i16, &i32, &str);
 	// bar : (i16, &i32, &str).%full;
 ```
@@ -93,13 +93,14 @@ let ref_p1now = &mut p1.{x, y};
 	// pfull : &mut Point.%{x, y, %unfill}
 	
 let Point {%deny x, %deny y, was_x: upd_x, was_y: upd_y, %deny state} = ref_p1was;
+    // all %deny and %miss fields must be '_', error in other case
 	// similar with binding deconstruction
 ```
 It is simple and will be possible. 
 
 Same easy to write functions, which consume partial parameters:
 ```rust
-fn re_ref_t (& self : & Self.%{t, %any}) -> &f64 {
+fn re_ref_t (&self : & Self.%{t, %any}) -> &f64 {
    &self.t
 }
 
@@ -111,10 +112,10 @@ fn refmut_w (&mut self : &mut Self.%{w, %any}) -> &mut f64 {
 We could do much harder things: we wish parallel using function implementation, which update either `x` or `y` and both read `state` field.
 ```rust
 impl {
-	pub fn mx_rstate(&mut self1 : &mut Self.%{x, %any}, & self2 : & Self.{state, %any})
+	pub fn mx_rstate(&mut self1 : &mut Self.%{x, %any}, &self2 : & Self.{state, %any})
 	{ /* ... */ }
 		
-	pub fn my_rstate(&mut self1 : &mut Self.%{y, %any}, & self2 : & Self.{state, %any})  
+	pub fn my_rstate(&mut self1 : &mut Self.%{y, %any}, &self2 : & Self.{state, %any})  
 	{ /* ... */ }
 
 	// Unfortunately it is a mandatory to extensive mut-borrow 'state' field!
@@ -181,9 +182,17 @@ Filed-access can be in 4 values:
 - `%miss` (E) - it is uninitialized field, field is forbidden to use,
 - `%ignore` (F) - quasi-field access, which hides truthful field access.
 
-`%permit` filed-access is a default behavior: permit to read, to write, to borrow, to move.
+`%permit` filed-access is a default behavior: permit to read, to write, to borrow, to move. 
+
+_A word %permit is need **for explanations only**, just use default `<nothing>` access._
 
 `%deny` filed-access forbids to have an access to read, to write, to borrow, to move (like outside access to private field). It is a compile error if someone try to access.
+
+_A word %deny is need **for explanations mostly**, just use default `<omitted field>` access._ It can be used explicitly in tuple initialization and binding deconstructions.
+
+`%unfill` is a shortcut for `%miss _`.
+
+`%any` is a shortcut for `%ignore _`.
 
 ## Detailed access and mutability
 
@@ -219,7 +228,7 @@ Rust consumer use same names for action and for type clarifications, so we follo
 
 Access-filter is an action, which is looks like detailed access and it is written left to variable at consuming (moving, borrowing, referencing, initializing, returning, pick fields).
 
-| ↓filter / →var access | `%permit` | `%deny`   | `%miss` (E) | `%ignore` (F) |
+| ↓filter / →var access | `%permit` | `%deny`   | `%miss` (E) | `%ignore` (D) |
 |-----------------------|-----------|-----------|-------------|---------------|
 | `%permit`             | `%permit` | !ERROR    | !ERROR      | !ERROR        |
 | `%deny`               | `%deny`   | `%deny`   | `%deny`     | `%deny`       |
@@ -276,8 +285,6 @@ let rpwas = & pfull.{was_x, was_y};
 //   same as
 let rpwas = & pfull.%{was_x, was_y};
 ```
-
-
 
 ## Partially Initialized Variables
 
@@ -341,7 +348,7 @@ let ref_pful = & pfull;
 
 (A + E)
 
-If field  has `%miss` field-access we could change it to `%permit` together with initializing the field by `%%=` operator (since `%=` is already in use).
+If field  has `%miss` field-access we could change it to `%permit` together with initializing the field by `let=` operator.
 ```rust
 struct SR <T>{
     val : T,
@@ -351,8 +358,8 @@ struct SR <T>{
 let x = SR {val : 5i32 };
     // x : SR<i32>.%{val, %miss lnk}
 
-x.lnk %%= & x.val;
-    // (%%=) "extender", late initialized field
+x.lnk let= & x.val;
+    // (let=) "extender", late initialized field
 	// change from .%{%miss lnk, ..} to .%{%permit lnk, ..}
     // x : SR<i32>;
     // x : SR<i32>.%full;
@@ -368,7 +375,7 @@ let pfull = Point {x : 5.0, y : 6.0, was_x : 7.0, was_y : 13.0};
 let pxy = Point {x : 5.0, y : 6.0 };
     // pxy : Point.%{x, y}
 
-pxy.{was_x, was_y} %%= pfull.{was_x, was_y};
+pxy.{was_x, was_y} let= pfull.{was_x, was_y};
     // pxy : Point;
     // pxy : Point.%full;
 ```
@@ -401,14 +408,14 @@ Return consumers (omitted or explicit) could consume `%ignore` field, that's why
 
 Fill the difference:
 ```rust
-    pub fn t_refmut1(&self : &mut Self.%{t, %any}) -> &mut %{t} Self {
-        &mut %max self
+    pub fn t_refmut1(&self : &mut Self.%{t, %any}) -> &mut Self.%{t} {
+        &mut self.%max
     }
 
     pub fn t_refmut2(&self : &mut Self.%a@%{t, %any}) -> &mut Self.%a {
         &mut self
         // same as
-        &mut %exact self
+        &mut self.%exact
     }
 ```
 
@@ -462,42 +469,44 @@ let reft = re_ref_t(& p1.%arg);
 
 let mut p2 : Point2 = Point {x:1.0, was_x:2.0};
 
-fn pntp_store (&mut p1 : &mut Point2.%{was_x, %any}, & p2 : & Point2.%{x, %any})  {
+fn px_store (&mut p1 : &mut Point2.%{was_x, %any}, &p2 : & Point2.%{x, %any})  {
    *p1.was_x = *p2.x;
 }
 
-pntp_store(&mut p2, & p2);
+px_store(&mut p2, & p2);
 //    same as
-pntp_store(&mut p2.%arg, & p2.%arg);
+px_store(&mut p2.%arg, & p2.%arg);
 ```
 (F)
 
 The difference in argument use for parameters with ignored fields and without:
 ```rust
-fn pnewx_with (&mut p : &mut Point.%{x, %any}, newx : f64) {
+fn updx_with_ignore (&mut p : &mut Point.%{x, %any}, newx : f64) {
    *p.x = newx;
 }
 
-fn pnewx_without (&mut p : &mut Point.%{x}, newx : f64) {
+fn updx_without (&mut p : &mut Point.%{x}, newx : f64) {
    *p.x = newx;
 }
 
-pnewx_with(&mut p2, 6.0); // Ok
+updx_with_ignore(&mut p2, 6.0); // Ok
 //    same as
-pnewx_with(&mut p2.%arg, 6.0); // Ok
+updx_with_ignore(&mut p2.%arg, 6.0); // Ok
 
-pnewx_with(&mut p2.%max, 6.0); // still Ok
+updx_with_ignore(&mut p2.{x,y}, 6.0); // still Ok
+updx_with_ignore(&mut p2.{x,y,z}, 6.0); // still Ok
+updx_with_ignore(&mut p2.%max, 6.0); // still Ok
+updx_with_ignore(&mut p2.%full, 6.0); // almost Ok
 
-pnewx_with(&mut p2.%full, 6.0); // almost Ok
 
-
-pnewx_without(&mut p2, 6.0); // Ok
+updx_without(&mut p2, 6.0); // Ok
 //    same as
-pnewx_without(&mut p2.%arg, 6.0); // Ok
+updx_without(&mut p2.%arg, 6.0); // Ok
 
-pnewx_without(&mut p2.%max, 6.0); // error
-
-pnewx_without(&mut p2.%full, 6.0); // error
+updx_without(&mut p2.{x,y}, 6.0); // error
+updx_without(&mut p2.{x,y,z}, 6.0); // error
+updx_without(&mut p2.%max, 6.0); // error
+updx_without(&mut p2.%full, 6.0); // error
 ```
 
 ## Partial Parameters and Mixed Parameters in Traits
