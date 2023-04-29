@@ -159,6 +159,20 @@ It is totally Ok if on "Stage 1" implements (A + C), then on "Stage 2" implement
 - [Private fields]
 - [Enum Type]
 
+In brief, simple rules are:
+| context Partial types       | desugar                                  |
+| ----------------------------|------------------------------------------|
+| `let r : Type = ...`        | `let r : Type.%full = ...`               |
+| `let r  = var`              | `let r  = var.%max`                      |
+| `let r  = & var`            | `let r  = & var.%max`                    |
+| `let r  = &mut var`         | `let r  = &mut var.%max`                 |
+| `return var`                | `return  var.%exact`                     |
+| `return & var`              | `return  & var.%exact`                   |
+| `return  &mut var`          | `return  &mut var.%exact`                |
+| `self.call(&mut var)`       | `self.call(&mut var.%arg)`               |
+| `let var = S{fld1:val1,..}` | `let var = S{%permit fld1:val1,..}.%max` |
+| `let var = S{}`             | `let var = S{%miss fld1,..}.%max`        |
+
 ## Partial type access
 
 I propose to extend type system by adding type access after type name (for Product Types), like `(i16, &i32, &str).%full`.
