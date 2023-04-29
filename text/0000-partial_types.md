@@ -19,7 +19,7 @@ Advantages: maximum type safety, maximum type control guarantee, no ambiguities,
 
 Safe, Flexible controllable partial parameters for functions and partial consumption (including partial not borrowing) are highly needed.
 
-Partial Types extension gives to type-checker a **mathematical guarantee** that using _simultaneously_ partial typed variable, it multiple partial references and partial borrowing is as  **safe** as using them _at a sequence_.
+Partial Types extension gives to type-checker a **mathematical guarantee** that using _simultaneously_ partial typed variable, it multiple partial references and partial borrowing is as  **safe** as using them _at a sequence_. A guarantee to borrow-checker that by & var.{x,y} or &mut var.{z,t} borrowing the whole variable and pretending to borrow just several fields is **fully safe**.
 
 And since it is a guarantee by **type**, not by **values**, it has _zero cost_ in binary! Any type error is a compiler error, so no errors in the runtime.
 
