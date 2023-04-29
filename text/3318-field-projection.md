@@ -40,6 +40,25 @@ where
 ```
 Since the supplied closures are only allowed to do field projections, it would be natural to add `SAFETY` comments, but that gets even more tedious.
 
+This feature is one important piece in the puzzle of safe and ergonomic pin projections. While it is not sufficient by itself, it enables experimentation with proc-macro-based implementations to solve the rest of the puzzle. Additionally this feature paves the way for general custom field projection which is useful for the following situations:
+- volatile-only memory access (see example below),
+- accessing fields of structs inside of raw pointers, `NonNull<T>`, `Cell<T>`, `UnsafeCell<T>`, `MaybeUninit<T>`,
+- RCU interactions with locks (see [appendix][#rcu-interactions-with-locks]),
+
+
+## RFC History
+
+This RFC went through a couple of iterations and changed considerably from the initial proposal. The problem that the author intended to solve were `Pin` projections. In the Rust support for the Linux kernel, lots of types are self referential, because they contain circular, intrusive doubly linked lists. These lists have to be pinned, since list elements own pointers to the next and previous elements. Other datastructures are also implemented this way. Overall this results in most types having to be pinned and thus we have to deal with `Pin<&mut T>` constantly. Whenever one wants to access a field, they have to use the `unsafe` projection functions.
+
+The currently preferred solution for this problem from the Rust ecosystem are [pin-project] and [pin-project-lite]. These are however unsuitable for use in the kernel. 
+- [pin-project] cannot be used, since it requires `syn` and that is currently not used by the kernel which would add over 50k lines of Rust code.
+- [pin-project-lite] does not depend on `syn`, but it has other problems: error messages are not useful, some use cases are not supported. Additionally the declarative macro is very complex and would be difficult to maintain.
+
+Also, these solutions require the user to write `let this = self.project();` at the beginning of every function where one wants to project.
+
+While exploring this problem, the Rust-for-Linux team discovered that they would like to use custom projections for using RCU together with locks. The author also discovered that these projections could be useful for other types.
+
+The very first design only supported transparent wrapper types (i.e. only with a single field). The current version is the most general and minimal of all of the earlier designs.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -223,6 +242,7 @@ Java has reflection, which gives access to type information at runtime.
 - https://internals.rust-lang.org/t/cell-references-and-struct-layout/11564
 
 [pin-project]: https://crates.io/crates/pin-project
+[pin-project-lite]: https://crates.io/crates/pin-project-lite
 [field-project]: https://crates.io/crates/field-project
 [cell-project]: https://crates.io/crates/cell-project
 [pin-projections]: https://crates.io/crates/pin-projections
@@ -264,6 +284,7 @@ wrapper.project(|i| i.field)
 wrapper.project::<field_of!(Struct, field)>()
 ```
 
+
 ## Limited negative reasoning
 
 There is the need to make the output type of `map` functions depend on properties of the projected field. In the case of `Pin`, this is whether the field is structurally pinned or not. If it is, then the return type should be `Pin<&mut F::Type>`, if it is not, then it should be `&mut F::Type` instead.
@@ -290,6 +311,88 @@ Create the `MaybeUnalignedField` trait as a supertrait of `Field` with the const
 
 Both enums and unions cannot be treated like structs, since some variants might not be currently valid. This makes these fundamentally incompatible with the code that this RFC tries to enable. They could be handled using similar traits, but these would not guarantee the same things. For example, union fields are always allowed to be uninitialized.
 
+If enums had variant types, then these variant types could be easily supported, as they are essentially just structs. Unions could generally support the `Field` trait, but calling `field_of!(Union, field)` must be `unsafe`, since projections might rely on the field being active.
+
 ## Field macro attributes
 
 To make things easier for implementing custom projections, we could create a new proc-macro kind that is placed on fields.
+
+## Make the `Field` trait `unsafe` and implementable by users
+
+We could make the `Field` trait `unsafe` and allow custom implementations.
+
+# Appendix
+
+## Field projections for Rust-for-Linux
+
+### RCU interactions with locks
+
+RCU (read-copy-update) is a special kind of synchronization mechanism used in the Linux kernel. It is mainly used with data structures based on pointers. These pointers need to be explicitly annotated (even in C). Further, the data structure must be constructed such that elements can be added/removed via a single atomic operation (e.g. swapping a pointer).
+
+Readers and writers can access the data structure concurrently. Readers need to acquire the read lock before they read any RCU pointers. Writers can freely swap the pointers atomically, but when they want to free any objects that were in the data structure protected by RCU, they need to call `rcu_synchronize`. This function waits for all readers to relinquish any currently held locks, since then no reader can access the removed object. After `rcu_synchronize` returns, the writer can free the object.
+
+The motivation for using RCU is performance. The way RCU is implemented in the kernel, acquiring the read lock is extremely cheap, it does not involve any atomics and in some cases even is a no-op. Additionally it never needs to wait. If writes are rare and reads are common, this improves performance significantly. To learn more about RCU, you can read [this](https://lwn.net/Articles/262464/) article.
+
+Now onto a simple example that shows how using RCU could look like in Rust. In the example, we have a `Process` struct that contains a file descriptor table (fdt). This table is stored in a different allocation (via a `Box`) and the `Rcu` pointer wrapper struct marks that this pointer can only be accessed via RCU operations. Access to an instance of `Process` is serialized via a `Mutex`. But certain operations have to be executed very often and so locking and unlocking the mutex can get very expensive. In our case, we want to optimize fetching the current length of the FDT.
+```rust
+pub struct Process {
+    fdt: Rcu<Box<FDT>>,
+    id: usize,
+    // other fields ...
+}
+
+pub struct FileDescriptorTable {
+    len: usize,
+    // other implementation details not important
+}
+
+impl Process {
+    pub fn current() -> &'static RcuLock<Mutex<Process>> { todo!() }
+
+    // Note the parameter type, an RcuLock is a lock wrapper providing
+    // Rcu support for some lock types.
+    pub fn get_fdt_len(self: &RcuLock<Mutex<Process>>) -> usize {
+        // RcuLock only allows projections to fields of type `Rcu<T>`.
+        let fdt: &Rcu<Box<FDT>> = RcuLock::project::<field_of!(Self, fdt)>(self);
+        // Next we acquire the read lock.
+        let rcu_guard: RcuGuard = rcu::read_lock();
+        // To read an `Rcu` pointer, we need an `RcuGuard`.
+        let fdt: &FDT = fdt.get(&rcu_guard);
+        let len = fdt.len;
+        // Dropping it explicitly ends the borrow of `fdt`.
+        drop(rcu_guard);
+        len
+    }
+
+    pub fn id(self: &RcuLock<Mutex<Process>>) -> usize {
+        // When reading/writing a normal field, we have to use the `Mutex`:
+        let guard: RcuLockGuard<MutexGuard<Process>> = self.lock();
+        // We cannot give out `&mut` to `Rcu<T>` fields, since those are always
+        // accessible immutably via the RcuLock projections, so we again have to
+        // rely on projections here to guarantee soundness.
+        let id: &mut usize = guard.project::<field_of!(Self, id)>();
+        *id
+    }
+
+    pub fn replace_fdt(self: &RcuLock<Mutex<Process>>, new_fdt: Box<FDT>) {
+        // We again obtain the `Rcu` pointer:
+        let fdt: &Rcu<Box<FDT>> = RcuLock::project::<field_of!(Self, fdt)>(self);
+        // When we want to overwrite an `Rcu` pointer, we can do so by just calling `set`:
+        let old: RcuOldValue<Box<FDT>> = fdt.set(new_fdt);
+        // Since readers might still be reading the old value (we have not yet called
+        // `rcu_synchronize`) we must hold onto this object until we call `rcu_synchronize`.
+        // However reading the old value is fine (i.e. `RcuOldValue<T>` implements `Deref<Target = T>`):
+        let len = old.len;
+        // But it does not implement `DerefMut`. On dropping an `RcuOldValue<T>`, `rcu_synchronize`
+        // is called. But we can also get the old value out now:
+        let old: Box<FDT> = old.sync(); // this will call `rcu_synchronize`.
+    }
+
+    // When the caller already owns the Rcu lock, then we can give out our FDT. Note that
+    // the lifetime of the returned reference is the same as the guard and not of `self`.
+    pub fn get_fdt<'a>(self: &RcuLock<Mutex<Process>>, guard: &'a RcuGuard) -> &'a FDT {
+        let fdt: &Rcu<Box<FDT>> = RcuLock::project::<field_of!(Self, fdt)>(self);
+        fdt.get(&guard)
+    }
+}
+```
