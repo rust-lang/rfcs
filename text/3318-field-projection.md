@@ -283,7 +283,9 @@ wrapper.project(|i| i.field)
 // Instead of:
 wrapper.project::<field_of!(Struct, field)>()
 ```
+## Refer to fields via `Struct::field#foo`
 
+We could make `Struct::field#foo` be equivalent to `field_of!(Struct, foo)`. In cases where there is no ambiguity, it would just be `Struct::foo`.
 
 ## Limited negative reasoning
 
