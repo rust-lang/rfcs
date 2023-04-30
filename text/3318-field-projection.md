@@ -180,6 +180,8 @@ fn project<F: Field>(base: &F::Base) -> &F::Type {
 
 Importantly, the `Field` trait should only be implemented on fields of non-`packed` types, since otherwise the above code would not be sound.
 
+Another restriction is that unsized fields have dynamic offsets and thus cannot be statically known. So these fields types do not implement the `Field` trait, but the compiler generated type for the field still exists.
+
 Users will be able to name this type by invoking the compiler built-in macro `field_of!` residing in `core`. This macro takes a type and an identifier/number for the accessed field:
 ```rust
 macro_rules! field_of {
