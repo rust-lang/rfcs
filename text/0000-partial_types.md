@@ -187,7 +187,7 @@ Fields names inside detailed access:
 - named field-names for structs(and units)
 - unnamed numbered for tuples
 - `*` "all fields" quasi-field
-- `_` "rest of fields" quasi-field
+- `..` "rest of fields" quasi-field
 - `self` pseudo-field for unsupported types
 
 Filed-access can be in 4 values:
@@ -343,7 +343,7 @@ Theory of types do not forbid extension of Partial Type, but internal Rust repre
 
 `%miss` filed-access like `%deny` filed-access forbids to have an access to read, to write, to borrow, to move like access to private field. It is a compile error if someone try to access.
 
-`%unfill` is a shortcut for `%miss _`.
+`%unfill` is a shortcut for `%miss ..`.
 
 ### Auto converting miss by borrowing
 
@@ -379,7 +379,7 @@ x.lnk let= & x.val;
     // x : SR<i32>.%full;
 ```
 
-It is an compiler error if `%%=` operator tries to extend not `%miss` filed-accessed fields (`%permit` or `%deny` or `%ignore`).
+It is an compiler error if `let=` operator tries to extend not `%miss` filed-accessed fields (`%permit` or `%deny` or `%ignore`).
 
 We could also extend several fields in single expression:
 ```rust
@@ -428,7 +428,7 @@ No one could consume `%ignore` fields (except return-consumer) because we have n
     }
 ```
 
-`%any` is a shortcut to `%any = %ignore _`.
+`%any` is a shortcut to `%any = %ignore ..`.
 
 (A + D)
 
