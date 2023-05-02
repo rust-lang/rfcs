@@ -558,7 +558,33 @@ What's about Enums? Enum is not a "Product" Type, but a "Sum" Type (`ST = T1 or 
 
 But this proposal grant some **type** access, not a **value** access!
 
-So, this proposal ignore this type!
+So, this proposal ignore this type! But Partial Tyes could be used anyway, in a differnt contenxt. 
+
+Emums becomes partial in patterns.
+
+Partial Enums could used in function pamaters and inner patterns.
+
+```rust
+enum MyEnum {
+  A(u32),
+  B { x: u32 },
+}
+
+fn print_A(a: MyEnum.%{A}) {
+    println!("a is {}", a.0);
+}
+
+fn print_B(b: MyEnum.%{B}) {
+    println!("b is {}", b.x);
+}
+
+fn print_no_pattern(e: MyEnum) {
+  match e {
+    MyEnum::A(_)  => print_A(e); // e.%{A}
+    MyEnum::B(..) => print_B(e); // e.%{B}
+  }
+}
+```
 
 
 # Drawbacks
@@ -571,7 +597,7 @@ So, this proposal ignore this type!
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-(A) A lot of proposals that are alternatives to Partial Types in a whole:
+(A) A lot of proposals that are alternatives to Partial Product Types in a whole:
  - Partial Types [#3420](https://github.com/rust-lang/rfcs/pull/3420)
  - Partial borrowing [issue#1215](https://github.com/rust-lang/rfcs/issues/1215)
  - View patterns [internals#16879](https://internals.rust-lang.org/t/view-types-based-on-pattern-matching/16879)
@@ -579,6 +605,10 @@ So, this proposal ignore this type!
  - Field projection [#3318](https://github.com/rust-lang/rfcs/pull/3318)
  - Fields in Traits [#1546](https://github.com/rust-lang/rfcs/pull/1546)
  - ImplFields [issue#3269](https://github.com/rust-lang/rfcs/issues/3269)
+
+(A) A lot of proposals that are alternatives to Partial Sum Types in a whole:
+ - Enum variant types [#2593](https://github.com/rust-lang/rfcs/pull/2593)
+ - Enum Variant Types [lang_t#122](https://github.com/rust-lang/lang-team/issues/122)
 
 (C), not (B): Instead of implementing (or before implementing) mixed mutable types, multi-selfs is quite simple alternative
 
