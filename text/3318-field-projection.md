@@ -295,6 +295,11 @@ There is the need to make the output type of `map` functions depend on propertie
 
 Negative reasoning would allow implementing the projection function with the correct type.
 
+There have been some earlier RFCs about this topic. These cover more than is needed for making projections work:
+- #1148
+- #586
+
+More information is also found in issue #1053.
 
 ## Operator syntax
 
