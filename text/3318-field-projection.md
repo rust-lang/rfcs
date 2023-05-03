@@ -320,7 +320,9 @@ Create the `MaybeUnalignedField` trait as a supertrait of `Field` with the const
 
 Both enums and unions cannot be treated like structs, since some variants might not be currently valid. This makes these fundamentally incompatible with the code that this RFC tries to enable. They could be handled using similar traits, but these would not guarantee the same things. For example, union fields are always allowed to be uninitialized.
 
-If enums had variant types, then these variant types could be easily supported, as they are essentially just structs. Unions could generally support the `Field` trait, but calling `field_of!(Union, field)` must be `unsafe`, since projections might rely on the field being active.
+If enums had variant types, then these variant types could be easily supported, as they are essentially just structs.
+
+For unions we could add a supertrait of `Field` named `MaybeUninitField` that is implemented instead of the `Field` trait. Projection authors now can choose to allow these where it makes sense (e.g. `MaybeUninit`).
 
 ## Field macro attributes
 
