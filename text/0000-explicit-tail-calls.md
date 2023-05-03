@@ -412,6 +412,25 @@ These alternatives mostly come down to personal taste (or bikeshedding) and the 
 - The behavior changes in subtle ways compared to a plain `return`. To clearly indicate this change in behavior a stronger distinction from `return` than adding a mark seems warranted.
   - TCE as proposed in this RFC requires dropping local variables before the function call instead of after with `return`.
   - From a type system perspective the type of the `return` expression (`!`, the never type, see [here](https://doc.rust-lang.org/std/primitive.never.html) for an example) stays the same even when adding one of the markings. This means that type-checking can not help if the marking is forgotten or added mistakenly. (Note that the argument, the function call, can still be type checked, just not the `return` expression.)
+   
+### Require Explicit Dropping of Variables
+
+(Based on this [comment](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1532841475))
+
+An alternative approach could be to refuse to compile functions that would need to run destructors before `become`.
+This would force code to not rely on implicit drops and require calls to `drop(variable)`, as in the following example:
+
+```rust
+fn f(x: String) {
+    drop(x); // necessary
+    become g();
+}
+```
+
+This approach would result in more verbose code but would also be easier to read for people not familiar with tail calls.
+Also, it is forwards compatible with implicit dropping before `become`.
+
+The reason this approach is not chosen is that the tradeoff between increased verbosity and the reduction of initial learning time seems to not be worth it.
 
 ### Custom Compiler or MIR Passes
 One more distant alternative would be to support a custom compiler or MIR pass so that this optimization can be done externally. While supported for LLVM [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/187780-t-compiler.2Fwg-llvm/topic/.E2.9C.94.20Running.20Custom.20LLVM.20Pass/near/320275483), for MIR this is not supported [discussion](https://internals.rust-lang.org/t/mir-compiler-plugins-for-custom-mir-passes/3166/10).
