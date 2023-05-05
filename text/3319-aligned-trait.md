@@ -28,6 +28,8 @@ Implied `Sized` bounds also imply `Aligned`, because `Aligned` is a supertrait o
 `Aligned` is not object-safe. Trait methods bounded by `Self: Aligned` can't be called from a vtable, but don't affect the object safety of the trait as a whole, just like `Self: Sized` currently.
 Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing those methods when `Self` is a slice, while preserving object safety.
 
+`core::mem::offset_of!` supports any `Aligned` field.
+
 # Drawbacks
 
 - Slightly complicates situation around implied `Sized` bounds.
@@ -38,7 +40,6 @@ Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing those metho
 - `core::mem::align_of<T>()` for slices could be implemented with a library. However, a library would be unable to support records that contain a slice as the last field. Also, relaxing the trait dyn safety requirements can only be done with a language feature.
 - `?Aligned` could be accepted as new syntax, equivalent to `?Sized`. However, I don't think it's worth it to have two ways to spell the exact same concept in the same edition.
 - There may be a use-case for types that are `Sized` but not `Aligned`. However, I don't know of such, and allowing it would likely cause backward-compatibility issues.
-- Traits with methods bounded by `where Self: Aligned` could be made fully object unsafe, instead of making it impossible just to call that specific method from a trait object. However, this would make the language strictly less useful, without gaining any simplicity (as `Sized` would remain special-cased).
 
 # Prior art
 
@@ -52,8 +53,7 @@ None that I am aware of.
 
 - Relaxing `NonNull::<T>::dangling()`'s trait bound from `T: Sized` to `T: ?Sized + Aligned + Pointee<Metadata: ~const Default>` may be desirable once the necessary library and language features are stabilized.
 - `extern type`s may want to be able to implement `Aligned`.
-- Also in a future edition, `?Sized` could be replaced with `?Aligned`, with `?Sized` then meaning "opt out of `Sized` bound only, not `Aligned`."
+- In a future edition, `?Sized` could be replaced with `?Aligned`, with `?Sized` then meaning "opt out of `Sized` bound only, not `Aligned`."
 - Certain `Self: Sized` bounds in the standard library could be relaxed to `Self: Aligned`. However, this might cause backward-compatibility issues.
   - [IRLO topic](https://internals.rust-lang.org/t/removing-self-sized-and-backward-compatibility/17456) on how the issues could be addressed.
-- [RFC 3308: `core::mem::offset_of`](https://github.com/rust-lang/rfcs/pull/3308) could, if accepted, be made to work on any `Aligned` type. One caveat is that if Rust ever gets structs with multiple unsized fields, those could be `Aligned` but not support `offset_of` for every field.
 - There has been discussion about adding other traits into the `Sized` hierarchy, like `DynSized`. If both `Aligned` and these other traits are integrated into Rust, their relative positions in the trait hierarchy will need to be determined.
