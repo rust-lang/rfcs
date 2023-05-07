@@ -9,7 +9,7 @@ Add an `Aligned` marker trait to `core::marker`, and the prelude, as a supertrai
 
 # Motivation
 
-Data structures and containers may be able to store unsized types only if their alignment can be known at compile-time. Alternatively, compile-time known alignment might enable more efficient algorithms or additional APIs. A built-in `Aligned` trait allows Rust code to implement APIs that that are fully usable with all aligned types. (For an example, see the [unsized-vec crate](https://crates.io/crates/unsized-vec)).
+Data structures and containers may be able to store unsized types only if their alignment can be known at compile-time. Alternatively, compile-time known alignment might enable more efficient algorithms or additional APIs. A built-in `Aligned` trait allows Rust code to implement APIs that that are fully usable with all aligned types.
 
 In addition, this RFC allows implementing certain object-safe traits for slices, in a more complete fashion than was possible before.
 
@@ -43,7 +43,10 @@ Relaxing `Self: Sized` bounds to `Self: Aligned` allows implementing those metho
 
 # Prior art
 
-None that I am aware of.
+In libraries:
+
+- [`rustc`](https://github.com/rust-lang/rust/blob/f9a6b71580cd53dd4491d9bb6400f7ee841d9c22/compiler/rustc_data_structures/src/aligned.rs#L22)
+- [`unsized-vec`](https://github.com/Jules-Bertholet/unsized-vec/blob/278befae4c08db42ff77461e9d7ce30eccf0c5bc/src/marker.rs#L16)
 
 # Unresolved questions
 
