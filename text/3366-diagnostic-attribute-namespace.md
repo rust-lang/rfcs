@@ -181,7 +181,7 @@ There are alternatives for the naming of the `#[diagnostic]` namespace:
 
 There are alternative designs for the proposed `on_unimplemented` attribute:
 
-* The `on()` based filtering might be replaceable by placing the attribute on negative trait impls. This would turn a filter like
+* The `if()` based filtering might be replaceable by placing the attribute on negative trait impls. This would turn a filter like
 ```rust
 #[diagnostic::on_unimplemented(
     on(Self = `String`, message = "Strings do not implement `IntoIterator` directly")
