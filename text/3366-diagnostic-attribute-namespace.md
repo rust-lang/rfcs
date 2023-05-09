@@ -219,10 +219,11 @@ Clarify the procedure of various potential changes prior stabilisation of the at
 [future-possibilities]: #future-possibilities
 
 * Add a versioning scheme
-   + For specific attributes
-   + For the namespace
+   + For specific attributes via `#[diagnostic::attribute(version = 42)]`
+   + For the namespace via a crate level `#[diagnostic::v{version_number}]` attribute
    + Based on editions
    + Custom versioning scheme
+   + (Each of these variants can be added in a backward compatible way if needed)
 * More attributes like `#[diagnostics::on_type_error]`
 * Extend the `#[diagnostics::on_unimplemented]` attribute to incorporate the semantics of `#[do_not_recommend]` or 
 provide a distinct `#[diagnostics::do_not_recommend]` attribute
