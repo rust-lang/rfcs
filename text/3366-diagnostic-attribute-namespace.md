@@ -69,7 +69,7 @@ I expect the new attributes to be documented on the existing [Diagnostics](https
 
 ## The `#[diagnostic]` attribute namespace
 
-This RFC proposes to introduce a new `#[diagnostic]` attribute namespace. This namespace is supposed to contain different attributes, which allow users to hint the compiler to emit specific diagnostic messages in certain cases like type mismatches, unsatisfied trait bounds or similar situations. By collecting such attributes in a common namespace it is easier for users to find useful attributes and it is easier for the language team to establish a set of common rules for these attributes.
+This RFC proposes to introduce a new built-in `#[diagnostic]` tool attribute namespace. This namespace is supposed to contain different attributes, which allow users to hint the compiler to emit specific diagnostic messages in certain cases like type mismatches, unsatisfied trait bounds or similar situations. By collecting such attributes in a common namespace it is easier for users to find useful attributes and it is easier for the language team to establish a set of common rules for these attributes. This opens the possibility to delegate the design of specific attributes to other teams later on.
 
 Attributes in this namespace are generally expected to be formed like:
 ```rust
