@@ -200,3 +200,9 @@ attributes.
   to consistently support non-builtin unsafe attributes in the future, so the
   RFC proposes to not do that yet. The current approach is forward-compatible
   with allowing lists and nesting in the future.
+- **Unsafe crates.** Some attributes' requirements cannot be fully discharged
+  locally. For instance, if a lib crate uses `no_mangle`, this really puts a
+  burden on *the author of the final binary* to ensure that the symbol dos not
+  conflict. In the future it would be better if rust tooling could automatically
+  surface a such requirements to downstream code, for example by an automatic
+  "unsafe attributes used" listing in a crate's generated rustdoc.
