@@ -53,17 +53,17 @@ Pretending this RFC has already been accepted into Rust, it could be explained t
 [tail-call-elimination]: #tail-call-elimination
 
 Rust supports a way to guarantee tail call elimination (TCE) for function calls using the `become` keyword.
-If TCE is requested for a call the called function will reuse the stack frame of the calling function, assuming all requirements are fulfilled.
+If TCE is requested for a call, and all requirements are fulfilled, the called function will reuse the stack frame of the calling function.
+The requirements, described in detail below, are checked by the compiler and a compiler error will be raised if they are not met.
 Note that TCE can opportunistically also be performed by Rust using tail call optimization (TCO), this will cause TCE to be used if it is deemed to be "better" (as in faster, or smaller if optimizing for space).
 
 TCE is interesting for two groups of programmers: Those that want to use recursive algorithms,
 which can overflow the stack if the stack frame is not reused; and those that want to create highly optimized code
 as creating new stack frames can be expensive.
 
-To request TCE the `become` keyword can be used instead of `return`.
-Note that, as both keywords act as the end of the function,
-`become` can be used everywhere that `return` is used.
-However, there are several requirements on the called function which need to be fulfilled for TCE (and TCO) to work.
+The `become` keyword can be thought of similarly as `return` as both keywords act as the end of the current function.
+The main difference is that the argument to `become` needs to be a function call.
+However, there are several requirements on the called function which need to be fulfilled for TCE to be guaranteed, these are checked by the compiler.
 
 The main restriction is that the argument to `become` is a tail call,
 a call that is the last action performed in the function.
@@ -79,8 +79,11 @@ As the stack frame is to be reused it needs to be similar enough for both functi
 This requires that the function signature and calling convention of the calling and called function need to match exactly.
 
 Additionally, there is a further restriction on the arguments.
-The stack frame of the calling function is reused, it is essentially cleaned up and the called function takes the space.
-As a result, it is not possible to pass references to local variables, nor will the called function "return" to the calling function. So all variables not used as an argument are dropped before the call and no cleanup will be done after the call.
+As the stack frame of the calling function is reused, it needs to be cleaned up, so that the called function can take the space.
+This is nearly identical to the clean up that happens when returning from a function,
+all local variables, that are not returned or in the case of `become` used in the function call, are dropped.
+For `become`, however, dropping necessarily happens before entering the called function.
+As a result, it is not possible to pass references to local variables, nor will the called function "return" to the calling function.
 
 If any of these restrictions are not met when using `become` a compilation error is thrown.
 
