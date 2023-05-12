@@ -284,7 +284,7 @@ fn foo(x: i32) -> i32 {
 
 Here one function uses `become` the other `return`, this is another potential source of confusion. This mutual recursion
 would eventually overflow the stack. As mutual recursion can also happen across more functions, `become` needs to be
-used consistently in all functions if TCO should be guaranteed. (Maybe it is also possible to create a lint for these
+used consistently in all functions if TCE is desired. (Maybe it is also possible to create a lint for these
 use cases as well.)
 
 ```rust
