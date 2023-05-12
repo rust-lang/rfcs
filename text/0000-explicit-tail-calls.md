@@ -433,6 +433,7 @@ This approach would result in more verbose code but would also be easier to read
 Also, it is forwards compatible with implicit dropping before `become`.
 
 The reason this approach is not chosen is that the tradeoff between increased verbosity and the reduction of initial learning time seems to not be worth it.
+Additionally, implementing the diagnostic for forgotten drops can be expected to be more effort than for correct drop elaboration.
 
 ### Custom Compiler or MIR Passes
 One more distant alternative would be to support a custom compiler or MIR pass so that this optimization can be done externally. While supported for LLVM [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/187780-t-compiler.2Fwg-llvm/topic/.E2.9C.94.20Running.20Custom.20LLVM.20Pass/near/320275483), for MIR this is not supported [discussion](https://internals.rust-lang.org/t/mir-compiler-plugins-for-custom-mir-passes/3166/10).
