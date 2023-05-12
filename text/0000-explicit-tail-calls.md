@@ -185,7 +185,7 @@ local variables to be passed.  Indeed, this difference in the handling of local 
 between `return` and `become`.
 
 ### Use Case 1: Recursive Algorithm
-A simple example is the following algorithm for summing the elements of a `Vec`.  While this would usually be done with iteration in Rust, this example illustrates a simple use of `become`.  Without TCE, this example could overflow the stack.
+A simple example is the following algorithm for summing the elements of a slice.  While this would usually be done with iteration in Rust, this example illustrates a simple use of `become`.  Without guaranteed TCE, this example could overflow the stack if TCO is not applied.
 
 ```rust
 fn sum_slice(data: &[u64], accumulator: u64) -> u64 {
