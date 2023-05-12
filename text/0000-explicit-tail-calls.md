@@ -5,16 +5,18 @@
 
 # Summary
 [summary]: #summary
-While tail call elimination (TCE) is already possible via tail call optimization (TCO) in Rust, there is no way to guarantee that a stack frame should be reused.
+While tail call elimination (TCE) is already possible via tail call optimization (TCO) in Rust, there is no way to guarantee that a stack frame must be reused.
 This RFC describes a language feature providing tail call elimination via the `become` keyword providing this guarantee.
 If this guarantee can not be provided by the compiler a compile time error is generated instead.
 
 # Motivation
 [motivation]: #motivation
 Tail call elimination (TCE) allows stack frames to be reused.
-While TCE via tail call optimization (TCO) is already supported by Rust, as is normal for optimizations TCE will only be applied if the compiler expects an improvement by doing so.
-There is currently no way to specify that TCE should be guaranteed.
-This guarantee is interesting for two general goals.
+While TCE via tail call optimization (TCO) is already supported by Rust, as is normal for optimizations, TCO will only be applied if the compiler expects an improvement by doing so.
+However, the compiler can't have ideal analysis and thus will not always be correct in judging if a optimization should be applied.
+This RFC, shows an approach how TCE can be guaranteed.
+
+The guarantee for TCE is interesting for two general goals.
 One goal is to do function calls without growing the stack, this mainly has semantic implications as recursive algorithms can overflow the stack without this guarantee.
 The other goal is to avoid paying the cost to create a new stack frame, replacing `call` instructions by `jmp` instructions, this optimization has performance implications and can provide massive speedups for algorithms that have a high density of function calls. This goal also depends on the guarantee as otherwise a subtle change or a new compiler version can have an unexpected impact on performance.
 
