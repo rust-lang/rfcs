@@ -188,13 +188,10 @@ between `return` and `become`.
 A simple example is the following algorithm for summing the elements of a `Vec`.  While this would usually be done with iteration in Rust, this example illustrates a simple use of `become`.  Without TCE, this example could overflow the stack.
 
 ```rust
-fn sum_list(data: Vec<u64>, mut offset: usize, mut accum: u64) -> u64 {
-    if offset < data.len() {
-        accum += data[offset];
-        offset += 1;
-        become sum_list(data, offset, accum); // <- become here
-    } else {
-        accum // <- equivalent to `return accum;`
+fn sum_slice(data: &[u64], accumulator: u64) -> u64 {
+    match data {
+        [first, rest @ ..] => become sum_slice(rest, accumulator + first),
+        [] => accumulator,
     }
 }
 ```
