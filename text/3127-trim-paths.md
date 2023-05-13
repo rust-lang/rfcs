@@ -1,7 +1,7 @@
 - Feature Name: trim-paths
 - Start Date: 2021-05-24
 - RFC PR: [rust-lang/rfcs#3127](https://github.com/rust-lang/rfcs/pull/3127)
-- Rust Issue: N/A
+- Rust Issue: [rust-lang/rust#111540](https://github.com/rust-lang/rust/issues/111540)
 
 # Summary
 [summary]: #summary
