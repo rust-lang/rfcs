@@ -603,6 +603,15 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
   the solution that comes out of this RFC?
   - Supporting general tail calls, the current RFC restricts function signatures which can be loosened independently in the future.
 
+## Resolved Questions
+
+- Can generic functions be supported?
+  - As Rust uses Monomophization, generic functions are not a problem.
+- Can dynamic function calls be supported?
+  - Dynamic function calls are supported ([confirmation](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1191600480)).
+- Can functions outside the current crate be supported, functions from dynamically loaded libraries?
+  - Same as dynamic function calls these function calls are supported ([confirmed for LLVM](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1191602364)).
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 <!-- Think about what the natural extension and evolution of your proposal would
