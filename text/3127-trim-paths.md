@@ -296,9 +296,9 @@ scoping rules to be explicitly applied to each remapping. This can co-exist with
 
 ## Rationale for the `--remap-path-scope` options
 There are quite a few options available for `--remap-path-scope`. Not all of them are expected to have meaningful use-cases in their own right.
-Some are only added for completeness, that is, the behaviour of `--remap-path-prefix=all` (or the original `--remap-path-prefix` on its own) is
+Some are only added for completeness, that is, the behaviour of `--remap-path-scope=all` (or the original `--remap-path-prefix` on its own) is
 the same as specifying all individual scopes. In the future, we expect some of the scopes to be removed as independent options, while preserving
-the behaviour of `--remap-path-prefix=all` and the stable `--remap-path-prefix`, which is "Remap source names in all output".
+the behaviour of `--remap-path-scope=all` and the stable `--remap-path-prefix`, which is "Remap source names in all output".
 
 - `macro` is primarily meant for panic messages embedded in binaries.
 - `diagnostics` is unlikely to be used on its own as it only affects console outputs, but is required for completeness. See [#87745](https://github.com/rust-lang/rust/issues/87745).
