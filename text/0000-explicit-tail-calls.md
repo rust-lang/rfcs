@@ -350,9 +350,9 @@ See below for specifics on interations with other features.
 All coercions that do any work (like deref coercion, unsize coercion, etc) are prohibited.
 Lifetime-shortening coercions (`&'static T` -> `&'a T`) are allowed but will be checked by the borrow checker.
 
-Note that, while in theory, never-to-any coercions (`! -> T`) could be allowed, they are difficult to implement and require backend support. As a result they are not allowed as per this RFC.
+Reference/pointer coercions of the return type are **not** supported to minimize implementation effort. Though, coercions which don't change the pointee (`&mut T -> &T`, `*mut T -> *const T`, `&T -> *const T`, `&mut T -> *mut T`) could be added in the future.
 
-To be clear, this only concerns functions that have the never return type like the following example:
+Never-to-any coercions (`! -> T`) of the return type are **not** supported to minimize implementation effort. They are difficult to implement and require backend support. To be clear, this only concerns functions that have the never return type like the following example:
 
 ```rust
 fn never() -> ! {
