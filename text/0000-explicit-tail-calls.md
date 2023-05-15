@@ -350,7 +350,9 @@ See below for specifics on interations with other features.
 All coercions that do any work (like deref coercion, unsize coercion, etc) are prohibited.
 Lifetime-shortening coercions (`&'static T` -> `&'a T`) are allowed but will be checked by the borrow checker.
 
-Note that, while in theory, never-to-any coercions (`! -> T`) could be allowed, they are difficult to implement and require backend support. As a result they are not allowed as per this RFC. This has no effect on using macros like `panic!()` as they are not functions, affected are only functions like the following:
+Note that, while in theory, never-to-any coercions (`! -> T`) could be allowed, they are difficult to implement and require backend support. As a result they are not allowed as per this RFC.
+
+To be clear, this only concerns functions that have the never return type like the following example:
 
 ```rust
 fn never() -> ! {
