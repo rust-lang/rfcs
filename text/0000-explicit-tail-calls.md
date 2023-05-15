@@ -358,7 +358,7 @@ fn never() -> ! {
 }
 
 fn tail_call_never_type() -> usize {
-    become never();
+    become never(); //~ error: mismatched types
 }
 ```
 
