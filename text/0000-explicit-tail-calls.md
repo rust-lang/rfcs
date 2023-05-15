@@ -236,7 +236,7 @@ fn next_instruction(mut self) {
 }
 ```
 
-### Function calls as arguments are not tail call eliminated.
+### Pitfall 1: Function calls as arguments are not tail call eliminated.
 ([original example](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1516477758))
 
 The guarantee of TCE is only provided to the function call that is an argument to `become`,
@@ -260,7 +260,7 @@ pub fn calc(a: u64, b: u64) -> u64 {
 In this example `become` will guarantee TCE only for the call to `add()` but not for the `calc()` calls.
 Running this code will likely end up in a stack overflow as the recursive calls are to `calc()` which are not TCE'd.
 
-### Omission of the `become` keyword causes the call to be `return` instead.
+### Pitfall 2: Omission of the `become` keyword causes the call to be `return` instead.
 ([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-278988088))
 
 This is a potential source of confusion, indeed in a functional language where calls are expected to be TCE this would be quite unexpected. (Maybe in functions that use `become` a lint should be applied that enforces usage of either `return` or `become` in functions where at least one `become` is used.)
@@ -279,7 +279,7 @@ fn foo(x: i32) -> i32 {
 }
 ```
 
-### Alternating `become` and `return` calls still grows the stack.
+### Pitfall 3: Alternating `become` and `return` calls still grows the stack.
 ([original example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-279062656))
 
 Here one function uses `become` the other `return`, this is another potential source of confusion. This mutual recursion
@@ -298,6 +298,25 @@ fn bar(n: i32) {
 }
 ```
 
+### Pitfall 4: Caller location aka [`panic::Location::caller`](https://doc.rust-lang.org/std/panic/struct.Location.html#method.caller) and `#[track_caller]`
+
+Since `#[track_caller]` adds an argument, `#[track_caller]` functions can only tail call other `#[track_caller]` functions. So the following example will not compile.
+
+```rust
+use std::panic::Location;
+
+/// Returns the [`Location`] at which it is called.
+#[track_caller]
+fn get_caller_location() -> &'static Location<'static> {
+    Location::caller()
+}
+
+/// Returns a [`Location`] from within this function's definition.
+fn get_just_one_location() -> &'static Location<'static> {
+    become get_caller_location();
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 <!-- This is the technical portion of the RFC. Explain the design in sufficient detail that:
@@ -309,21 +328,67 @@ fn bar(n: i32) {
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work. -->
 Implementation of this feature requires checks that all prerequisites to guarantee TCE are fulfilled.
 These checks are:
+
 - The `become` keyword is only used in place of `return`. The intent is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
-- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to assure a compatible stack frame layout.
+- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to ensure a matching ABI. Note that mutability and lifetimes may differ as long as they pass borrow checking.
 - The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
 
 If any of these checks fail a compiler error is issued.
 
 One additional check must be done, if the backend cannot guarantee that TCE will be performed an ICE is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising an ICE if this is not the case.
 
-Note that as `become` is a keyword reserved for exactly the use-case described in this RFC there is no backward-compatibility break.
+The type of the expression `become <call>` is `!` (the never type, see [here](https://doc.rust-lang.org/std/primitive.never.html)). This is consistent with other control flow constructs such as `return`, which also have the type of `!`.
+
+Note that as `become` is a keyword reserved for exactly the use-case described in this RFC there is no backward-compatibility break. This RFC only specifies the use of `become` inside of functions and instead leaves usage outside of functions unspecfied for use by other features.
 
 This feature will have interactions with other features that depend on stack frames, for example, debugging and backtraces. See [drawbacks](#drawbacks) for further discussion.
 
-See below for the reasoning why operators are not supported.
+See below for specifics on interations with other features.
+
+## Coercions of the Tail Called Function's Return Type
+
+All coercions that do any work (like deref coercion, unsize coercion, etc) are prohibited.
+Lifetime-shortening coercions (`&'static T` -> `&'a T`) are allowed but will be checked by the borrow checker.
+
+Note that, while in theory, never-to-any coercions (`! -> T`) could be allowed, they are difficult to implement and require backend support. As a result they are not allowed as per this RFC. This has no effect on using macros like `panic!()` as they are not functions, affected are only functions like the following:
+
+```rust
+fn never() -> ! {
+    loop {}
+}
+
+fn tail_call_never_type() -> usize {
+    become never();
+}
+```
+
+## Closures
+[closures]: #closures
+
+Tail calling closures _and_ tail calling _from_ closures is **not** allowed.
+This is due to the high implementation effort, see below, this restriction can be lifted by a future RFC.
+
+Closures use the `rust-call` unstable calling convention, which would need to be adapted to guarantee TCE.
+Additionally, any closure that has captures would need special handling, since the captures would currently be dropped before the tail call.
+
+## Variadic functions using `c_variadic`
+
+Tail calling [variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html) _and_ tail calling _from_ variadic functions is **not** allowed.
+As support for variadic function is stabilized on a per target level, support for tail-calls regarding variadic functions would need to follow a similar approach. To avoid this complexity and to minimize implementation effort for backends, this interaction is currently not allowed but supported can be added with a future RFC.
+
+## Generators
+
+Tail calling [generators](https://doc.rust-lang.org/beta/unstable-book/language-features/generators.html) is **not** allowed as it is a fundamental mismatch of functionality. Generators expect to be called multiple times `yield`ing values, however, when using a tail call control would never be returned to the calling function.
+
+Tail calling from generators is also **not** allowed, as the generator state is stored internally, tail calling from the generator function would require additional support to function correctly. To limit implementation effort this is not supported but can be supported by a future RFC.
+
+## Async
+
+Tail calling async functions is **not** allowed as it requires special support for the async state machine.
+To minimize implementation effort this interaction is currently not allowed but can be supported by a future RFC.
 
 ## Operators are not supported
+
 Invocations of operators were considered as valid targets but were rejected on grounds of being too error-prone.
 In any case, these can still be called as methods. One example of their error-prone nature ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1167112296)):
 ```rust
@@ -414,7 +479,7 @@ These alternatives mostly come down to personal taste (or bikeshedding) and the 
 - The behavior changes in subtle ways compared to a plain `return`. To clearly indicate this change in behavior a stronger distinction from `return` than adding a mark seems warranted.
   - TCE as proposed in this RFC requires dropping local variables before the function call instead of after with `return`.
   - From a type system perspective the type of the `return` expression (`!`, the never type, see [here](https://doc.rust-lang.org/std/primitive.never.html) for an example) stays the same even when adding one of the markings. This means that type-checking can not help if the marking is forgotten or added mistakenly. (Note that the argument, the function call, can still be type checked, just not the `return` expression.)
-   
+
 ### Require Explicit Dropping of Variables
 
 (Based on this [comment](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1532841475))
@@ -596,7 +661,6 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
     - Can the restrictions on function signatures be relaxed?
         - One option for intra-crate direct calls is to automatically pad the arguments during compilation see [here](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500620309). Does this have an influence on other calls? How much implementation effort is it?
     - Can async functions be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assessment)
-    - Can closures be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assessment)
     - Can functions that abort be supported?
     - Is there some way to reduce the impact on debugging and other features?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of
@@ -611,6 +675,8 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
   - Dynamic function calls are supported ([confirmation](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1191600480)).
 - Can functions outside the current crate be supported, functions from dynamically loaded libraries?
   - Same as dynamic function calls these function calls are supported ([confirmed for LLVM](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1191602364)).
+- Can closures be supported?
+  - Closures are **not** supported see [here](#closures).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
