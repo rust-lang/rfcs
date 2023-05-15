@@ -228,7 +228,7 @@ fn execute_instruction_bar(mut self) {
 }
 
 fn next_instruction(mut self) {
-    let next_instruction = self.read_instr(); // this call can be inlined
+    let next_instruction = self.read_instr();
     match next_instruction {
         Instruction::Foo => become self.execute_instruction_foo(),
         Instruction::Bar => become self.execute_instruction_bar(),
