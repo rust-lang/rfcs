@@ -381,9 +381,7 @@ As support for variadic function is stabilized on a per target level, support fo
 
 ## Generators
 
-Tail calling [generators](https://doc.rust-lang.org/beta/unstable-book/language-features/generators.html) is **not** allowed as it is a fundamental mismatch of functionality. Generators expect to be called multiple times `yield`ing values, however, when using a tail call control would never be returned to the calling function.
-
-Tail calling from generators is also **not** allowed, as the generator state is stored internally, tail calling from the generator function would require additional support to function correctly. To limit implementation effort this is not supported but can be supported by a future RFC.
+Tail calling from [generators](https://doc.rust-lang.org/beta/unstable-book/language-features/generators.html) is **not** allowed. As the generator state is stored internally, tail calling from the generator function would require additional support to function correctly. To limit implementation effort this is not supported but can be supported by a future RFC.
 
 ## Async
 
