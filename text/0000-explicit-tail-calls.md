@@ -330,7 +330,7 @@ Implementation of this feature requires checks that all prerequisites to guarant
 These checks are:
 
 - The `become` keyword is only used in place of `return`. The intent is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
-- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to ensure a matching ABI. Note that mutability and lifetimes may differ as long as they pass borrow checking.
+- The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to ensure a matching ABI. Note that lifetimes may differ as long as they pass borrow checking, see [below](#return-type-coercion) for specifics on the return type.
 - The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
 
 If any of these checks fail a compiler error is issued.
@@ -346,6 +346,7 @@ This feature will have interactions with other features that depend on stack fra
 See below for specifics on interations with other features.
 
 ## Coercions of the Tail Called Function's Return Type
+[return-type-coercion]: #return-type-coercion
 
 All coercions that do any work (like deref coercion, unsize coercion, etc) are prohibited.
 Lifetime-shortening coercions (`&'static T` -> `&'a T`) are allowed but will be checked by the borrow checker.
@@ -665,6 +666,7 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
     - Can async functions be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assessment)
     - Can functions that abort be supported?
     - Is there some way to reduce the impact on debugging and other features?
+    - Can mismatches in mutability be supported for the arguments and return type of the function signatures?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of
   the solution that comes out of this RFC?
   - Supporting general tail calls, the current RFC restricts function signatures which can be loosened independently in the future.
