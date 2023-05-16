@@ -385,8 +385,11 @@ Tail calling from [generators](https://doc.rust-lang.org/beta/unstable-book/lang
 
 ## Async
 
-Tail calling async functions is **not** allowed as it requires special support for the async state machine.
-To minimize implementation effort this interaction is currently not allowed but can be supported by a future RFC.
+Tail calling _from_ async functions is **not** allowed, neither calling async nor calling sync functions is supported. This is due to the high implementation effort as it requires special handling for the async state machine. This restriction can be relaxed by a future RFC.
+
+Using `become` on a `.await` call, such as `become f().await`, is also **not** allowed. This is because when using `.await`, the `Future` returned by `f()` is not "called" but run by the executor, thus, tail calls do not apply here.
+
+Note that tail calling async functions from sync code is possible but the return type for async functions is `std::future::Future`, which is unlikely to be interesting.
 
 ## Operators are not supported
 
