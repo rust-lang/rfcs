@@ -1,4 +1,4 @@
-- Feature Name: `deprecate_spooky_dropck_at_a_distance`
+- Feature Name: `tweak_phantomdata_drop`
 - Start Date: 2023-02-13
 - RFC PR: [rust-lang/rfcs#3414](https://github.com/rust-lang/rfcs/pull/3414)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,13 +6,14 @@
 # Summary
 [summary]: #summary
 
-Never add outlives requirements for a non-`needs_drop` type. Adjust
-`#[may_dangle]` for the required semantics.
+Never add outlives requirements for a non-`needs_drop` type, particularly
+`PhantomData` but also `[T; 0]`. Adjust `#[may_dangle]` for the required
+semantics.
 
 # Motivation
 [motivation]: #motivation
 
-`PhantomData` having dropck behaviour leads to "spooky-dropck-at-a-distance":
+`PhantomData` having dropck behaviour leads to somewhat surprising behaviour:
 
 This fails to compile:
 
@@ -72,7 +73,7 @@ shouldn't affect `PhantomData` behaviour, but the above example shows that they
 do. This RFC makes it so they don't.
 
 Likewise, `[T; 0]` produces the same effect: it is not `needs_drop`, but adds
-outlive requirements, thus also exhibiting "spooky-dropck-at-a-distance".
+outlive requirements, thus also exhibiting the surprising behaviour.
 
 Simply defining every non-`needs_drop` type as being pure w.r.t. drop would,
 however, break `#[may_dangle]`, so we need to adapt it.
@@ -379,14 +380,14 @@ new way.
 
 A type which doesn't need drop should never have dropck/outlives contraints,
 but due to the rushed way in which `may_dangle` was implemented, `PhantomData`
-ended up having this unfortunate "spooky-dropck-at-a-distance" behaviour. This
-RFC removes this behaviour and allows strictly more code to compile.
+ended up having this unfortunate behaviour. This RFC removes this behaviour and
+allows strictly more code to compile.
 
 Lifetimes cannot be dropped, so it wouldn't make sense to have
 `#[may_dangle(drop)]` for lifetimes. We adopt a single form for them.
 
 This proposal attempts to be as minimal as possible and focuses entirely on the
-"spooky-dropck-at-a-distance" behaviour. It also distinguishes between stable
+phantomdata-needsdrop-dropck interaction. It also distinguishes between stable
 behaviour and unstable behaviour, opting *not* to document unstable behaviour,
 which is subject to change, as part of stable behaviour. While the unstable
 behaviour *is* relevant to dropck, particularly where collection types (`Vec`,
