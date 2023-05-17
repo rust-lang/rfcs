@@ -123,15 +123,15 @@ The binding mode of a binding depends on the default mode and
 the binding mode specifier (`mut`, `move`, `ref`, or `ref mut`)
 and is described by the following table. If the entry into the table is 
 followed by an exclamation mark in parentheses (“(!)”), a lint is triggered.
-The symbol “〃” indicates that the entry is the same as the entry to the left,
+The symbol “"” indicates that the entry is the same as the entry to the left,
 excluding whether it triggers the lint.
 
 | ↓specifier | →default = move       | reference | mutable reference |
 |------------|-----------------------|-----------|-------------------|
-| `mut`      | move mutable          | 〃        | 〃                |
-| `ref mut`  | mutable reference     | 〃        | 〃 (!)            |
-| `ref`      | reference             | 〃 (!)    | 〃                |
-| `move`     | move (!)              | 〃        | 〃                |
+| `mut`      | move mutable          | "         | "                 |
+| `ref mut`  | mutable reference     | "         | "  (!)            |
+| `ref`      | reference             | "  (!)    | "                 |
+| `move`     | move (!)              | "         | "                 |
 | _none_     | move                  | reference | mutable reference |
 
 The lint is controlled by `unnecessary_binding_mode`. It is warn-by-default.
