@@ -412,15 +412,34 @@ Yes, so long as the compiler has enough type information to figure out which imp
 
 ### Can traits migrate from a named associated type to `impl Trait`?
 
-Not compatibly, no, because they would no longer have a named associated type.
+Not compatibly, no, because they would no longer have a named associated type. The "future directions" section discusses the possibility of allowing users to explicitly give a name for the associated type created, which would enable this use case.
 
 ### Can traits migrate from `impl Trait` to a named associated type?
 
-Generally yes, but all impls would have to be rewritten.
+Generally yes, but all impls would have to be rewritten to include the definition of the associated type. In many cases, some form of type-alias impl trait (or impl trait in associated type values) would also be required. For example, if we changed the `IntoIntIterator` trait from the motivation to use an explicit associated type..
+
+```rust
+trait IntoIntIterator {
+    type IntIter: Iterator<Item = u32>;
+    fn into_iter(self) -> Self::IntIter;
+}
+```
+
+...then impls like...
+
+```rust
+impl IntoIntIterator for MyType {
+    fn into_int_iter(self) -> impl Iterator<Item = u32> {
+        (0..self.len()).map(|x| x * 2)
+    }
+}
+```
+
+...would no longer compile, because they are not specifying the value of the `IntIter` associated type. Moreover, the value for this type would be impossible to express without `impl Trait` notation, as it embeds a closure type.
 
 ### Would there be any way to make it possible to migrate from `impl Trait` to a named associated type compatibly?
 
-Potentially! There have been proposals to allow the values of associated types that appear in function return types to be inferred from the function declaration. So the trait has `fn method(&self) -> Self::Iter` and the impl has `fn method(&self) -> impl Iterator`, then the impl would also be inferred to have `type Iter = impl Iterator` (and the return type rewritten to reference it). This may be a good idea, but it is not proposed as part of this RFC.
+Potentially! There have been proposals to allow the values of associated types that appear in function return types to be inferred from the function declaration. So, using the example from the previous question, the impl for `IntoIntIterator` could infer the value of `IntIter` based on the return type of `into_int_iter`. This may be a good idea, but it is not proposed as part of this RFC.
 
 ### What about using a named associated type?
 
@@ -468,6 +487,10 @@ Therefore, if we were writing `IntoIterator` today, it would probably use `-> im
 The same is not true for `Iterator::Item`: because `Item` is so central to what an `Iterator` is, and because it rarely makes sense to use an opaque type for the item, it would remain an explicit associated type.
 
 # Prior art
+
+## Should library traits migrate to use `impl Trait`?
+
+Potentially, but not necessarily. Using `impl Trait` in traits imposes some limitations on generic code referencing those traits. While `impl Trait `desugars internally to an associated type, that associated type is anonymous and cannot be directly referenced by users, which prevents them from putting bounds on it or naming it for use in struct declarations. This is similar to `-> impl Trait` in free and inherent functions, which also returns an anonymous type that cannot be directly named. Just as in those cases, this likely means that widely used libraries should avoid the use of `-> impl Trait` and prefer to use an explicit named associated type, at least until some of the "future possibilities" are completed. However, this decision is best reached on a case-by-case basis: the real question is whether the bounds named in the trait will be sufficient, or whether users will wish to put additional bounds. In a trait like `IntoIterator`, for example, it is common to wish to bound the resulting iterator with additional traits, like `ExactLenIterator`. But given a trait that returns `-> impl Debug`, this concern may not apply.
 [prior-art]: #prior-art
 
 There are a number of crates that do desugaring like this manually or with procedural macros. One notable example is [real-async-trait](https://crates.io/crates/real-async-trait).
@@ -482,7 +505,7 @@ There are a number of crates that do desugaring like this manually or with proce
 
 ### Naming return types
 
-We expect to introduce a mechanism for naming the result of `-> impl Trait` return types in a follow-up RFC.
+This RFC does not include a way for generic code to name or bound the result of `-> impl Trait` return types. This means, for example, that for the `IntoIntIterator` trait introduced in the motivation, it is not possible to write a function that takes a `T: IntoIntIterator` which returns an `ExactLenIterator`; for async functions, the most common time this comes up is code that wishes to take an async function that returns a `Send` future. We expect future RFCs will address these use cases. 
 
 ### Dynamic dispatch
 
