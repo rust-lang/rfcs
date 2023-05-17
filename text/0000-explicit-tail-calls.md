@@ -613,19 +613,21 @@ GCC does not support a feature equivalent to Clang's `musttail`, there also does
 ## Zig
 Zig provides separate syntax to allow more flexibility than normal function calls. There are options for async calls, inlining, compile-time evaluation of the called function, or specifying TCE on the call.
 ([source](https://ziglang.org/documentation/master/#call))
+
+The following is an example taken from here (https://zig.godbolt.org/z/v13vrjxG4, a toy lexer using tail calls in Zig):
+
 ```zig
-const expect = @import("std").testing.expect;
-
-test "noinline function call" {
-    try expect(@call(.auto, add, .{3, 9}) == 12);
-}
-
-fn add(a: i32, b: i32) i32 {
-    return a + b;
+export fn lex(data: *Data) callconv(.C) u32
+{
+    if(data.cursor >= data.input.len)
+        return data.tokens;
+    switch(data.input[data.cursor]) {
+        'a' => return @call(.always_tail, lex_a, .{data}),
+        'b' => return @call(.always_tail, lex_b, .{data}),
+        else => return @call(.always_tail, lex_err, .{data}),
+    }
 }
 ```
-
-<!-- (TODO: What is the community sentiment regarding this feature? Except for some bug reports I did not find anything.) -->
 
 ## Carbon
 As per this [issue](https://github.com/carbon-language/carbon-lang/issues/1761) it seems providing TCE is of interest even if the implementation is difficult
