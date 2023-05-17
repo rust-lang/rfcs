@@ -345,6 +345,10 @@ This feature will have interactions with other features that depend on stack fra
 
 See below for specifics on interations with other features.
 
+## Mismatches in Mutability
+
+Mismatches in mutability (like `&T` <-> `&mut T`) for arguments and return type of the function signatures are **not** supported. This support requires a guarantee that mutability has no effect on ABI.
+
 ## Coercions of the Tail Called Function's Return Type
 [return-type-coercion]: #return-type-coercion
 
@@ -447,6 +451,8 @@ One alternative would be to support some kind of local goto natively, indeed the
 [pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)). This design should be able to achieve the same performance and stack usage, though it seems to be quite difficult to implement and does not seem to be as flexible as the chosen design, especially regarding indirect calls and external functions.
 
 ### Attribute on Function Declaration
+[attribute-on-function-declaration]: #attribute-on-function-declaration
+
 One alternative is to mark a group of functions that should be mutually tail-callable [example](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1161525527) with some follow-up [discussion](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1185828948).
 
 The goal behind this design is to allow TCE of functions that do not have exactly matching function signatures, in
@@ -662,12 +668,9 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
     - Should a lint be added for functions that are marked to be a tail call or use become. See the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
     - Are all calling-convention used by Rust available for TCE with the proposed restrictions on function signatures?
-    - Can the restrictions on function signatures be relaxed?
-        - One option for intra-crate direct calls is to automatically pad the arguments during compilation see [here](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500620309). Does this have an influence on other calls? How much implementation effort is it?
     - Can async functions be supported? (see [here](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-1186604115) for an initial assessment)
     - Can functions that abort be supported?
     - Is there some way to reduce the impact on debugging and other features?
-    - Can mismatches in mutability be supported for the arguments and return type of the function signatures?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of
   the solution that comes out of this RFC?
   - Supporting general tail calls, the current RFC restricts function signatures which can be loosened independently in the future.
@@ -702,9 +705,13 @@ Note that having something written down in the future-possibilities section
 is not a reason to accept the current or a future RFC; such notes should be
 in the section on motivation or rationale in this or subsequent RFCs.
 The section merely provides additional information. -->
+
 ## Helpers
+[helpers]: #helpers
+
 It seems possible to keep the restriction on exactly matching function signatures by offering some kind of placeholder
 arguments to pad out the differences. For example:
+
 ```rust
 foo(a: u32, b: u32) {
     // uses `a` and `b`
@@ -714,7 +721,9 @@ bar(a: u32, _b: u32) {
     // only uses `a`
 }
 ```
+
 Maybe it is useful to provide a macro or attribute that inserts missing arguments.
+
 ```rust
 #[pad_args(foo)]
 bar(a: u32) {
@@ -722,7 +731,16 @@ bar(a: u32) {
 }
 ```
 
+## Relaxing the Requirement of Strictly Matching Function Signatures for Static Calls
+
+It should be possible to automatically pad the arguments of static tail calls, similar to the [helpers section](#helpers) above. See this [comment](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500620309) for details. Note that this approach does not relax requirements for dynamic calls.
+
+## Relaxing the Requirement of Strictly Matching Function Signatures using 
+
+In the future a calling convention could be added to allow `become` to be used with functions that have a mismatched function signatures. This approach is close to the alternative of [adding a marker to the function declaration](#attribute-on-function-declaration). Same as the alternative, a requirement needs to be added that backends provide a calling convention that support tail calling.
+
 ## Functional Programming
+
 This might be wishful thinking but if TCE is supported there could be further language extensions to make Rust
 more attractive for functional programming paradigms. Though it is unclear to me how far this should be taken or what
 changes exactly would be a benefit.
