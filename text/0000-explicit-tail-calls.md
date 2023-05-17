@@ -669,7 +669,6 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
     - Should a lint be added for functions that are marked to be a tail call or use become. See the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
     - Are all calling-convention used by Rust available for TCE with the proposed restrictions on function signatures?
-    - Can functions that abort be supported?
     - Is there some way to reduce the impact on debugging and other features?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of
   the solution that comes out of this RFC?
