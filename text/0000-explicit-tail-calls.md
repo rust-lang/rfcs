@@ -465,7 +465,7 @@ While quite noisy it is also less flexible than the chosen approach. Indeed, TCE
 function definition, sometimes a call should be guaranteed to be TCE, and sometimes not, marking a function would
 be less flexible.
 
-### Adding a mark to `return`.
+### Adding a mark to `return`
 
 The return keyword could be marked using an attribute or an extra keyword as in the example below.
 
@@ -736,7 +736,7 @@ bar(a: u32) {
 
 It should be possible to automatically pad the arguments of static tail calls, similar to the [helpers section](#helpers) above. See this [comment](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500620309) for details. Note that this approach does not relax requirements for dynamic calls.
 
-## Relaxing the Requirement of Strictly Matching Function Signatures using 
+## Relaxing the Requirement of Strictly Matching Function Signatures with a new Calling Convention
 
 In the future a calling convention could be added to allow `become` to be used with functions that have a mismatched function signatures. This approach is close to the alternative of [adding a marker to the function declaration](#attribute-on-function-declaration). Same as the alternative, a requirement needs to be added that backends provide a calling convention that support tail calling.
 
