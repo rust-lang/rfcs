@@ -179,7 +179,6 @@ impl NewIntoIterator for Vec<u32> {
 }
 ```
 
-
 ## Generic parameter capture and GATs
 
 Given a trait method with a return type like `-> impl A + ... + Z` and an implementation of that trait, the hidden type for that implementation is allowed to reference:
@@ -239,6 +238,7 @@ trait Trait {
 where `T_0 + ... + T_m` are bounds, for any impl of that trait to be valid, the following conditions must hold:
 
 * The return type named in the corresponding impl method must implement all bounds `T_0 + ... + T_m` specified in the trait.
+    * This must be proven using only the information in the signature, with the exception that if the impl uses `impl Trait` syntax for the return type, the usual auto trait leakage rules apply.
 * Either the impl method must have `#[refine]`,[^refine] OR
     * The impl must use `impl Trait` syntax to name the corresponding type, and
     * The return type in the trait must implement all bounds `I_0 + ... + I_n` specified in the impl return type. (Taken with the first outer bullet point, we can say that the bounds in the trait and the bounds in the impl imply each other.)
@@ -283,6 +283,49 @@ impl NewIntoIterator for Vec<u32> {
 impl NewIntoIterator for Vec<u32> {
     type Item = u32;
     fn into_iter(self) -> std::vec::IntoIter<u32> {
+        self.into_iter()
+    }
+}
+```
+
+An interesting consequence of auto trait leakage is that a trait is allowed to specify an auto trait in its return type bounds, but the impl does not have to _repeat_ that auto trait in its signature, as long as its return type actually implements the required bound. For example:
+
+```rust
+/// Converts `self` into an iterator that is always `Send`.
+trait IntoSendIterator {
+    type Item;
+    fn into_iter(self) -> impl Iterator<Item = Self::Item> + Send;
+}
+
+// OK (signatures match exactly):
+impl IntoSendIterator for Vec<u32> {
+    type Item = u32;
+    fn into_iter(self) -> impl Iterator<Item = u32> + Send {
+        self.into_iter()
+    }
+}
+
+// OK (auto traits leak, so adding `+ Send` here is NOT required):
+impl IntoSendIterator for Vec<u32> {
+    type Item = u32;
+    fn into_iter(self) -> impl Iterator<Item = u32> {
+        self.into_iter()
+    }
+}
+
+// OK:
+impl<T: Send> IntoSendIterator for Vec<T> {
+    //  ^^^^ Required for our iterator to be Send!
+    type Item = T;
+    fn into_iter(self) -> impl Iterator<Item = T> {
+        self.into_iter()
+    }
+}
+
+// Not OK (returned iterator is not known to be `Send`):
+impl<T> IntoSendIterator for Vec<T> {
+    type Item = T;
+    fn into_iter(self) -> impl Iterator<Item = T> {
         self.into_iter()
     }
 }
