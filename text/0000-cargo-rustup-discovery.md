@@ -212,8 +212,6 @@ The specifics of how ownership will be checked are:
 
       This exception matches the behavior of git-for-windows.
 
-
-> Note: There should be no concerns about time-of-check to time-of-use (TOCTOU) since exploiting requires writing to the file owned by the current user, which indicates an intrusion that is already out of scope of what this RFC aims to fix.
 The ownership check does not follow symlinks, since the owner of the symlink itself is what is important.
 
 [`geteuid`]: https://man7.org/linux/man-pages/man2/geteuid.2.html
@@ -224,6 +222,28 @@ The ownership check does not follow symlinks, since the owner of the symlink its
 
 This RFC does not propose checking ownership and permissions of any ancestor directory at or above the Cargo/Rustup files, or the permissions of the files themselves.
 It is assumed that it is the user's responsibility to make sure that the ownership and permissions are configured properly.
+
+### TOCTOU
+
+The following section addresses concerns about time-of-check to time-of-use ([TOCTOU]) races.
+There are some scenarios where there may be a race, but we believe these are out of scope for this RFC.
+
+The implementation will not implement particular measures to avoid races with verifying the ownership and loading the respective files.
+Protecting against an attacker that has the ability to create files owned by the victim, or to replace an ancestor directory is out of scope for this RFC.
+
+Races with symlinks within the current path's ancestry is out of scope for this RFC.
+If an attacker has the ability to modify the symlink, they will be able to circumvent the ownership checks of this RFC.
+At this time we do not consider this to be a likely configuration, and may be considered in improperly configured system.
+It likely takes a considerably high level of access to be able to make such a change, which is beyond what this RFC can address.
+
+The Linux sysctls [`fs.protected_hardlinks`] and [`fs.protected_symlinks`] provides mechanisms to prevent TOCTOU races.
+For example, without the hardlink protection, an attacker can create a hardlink to a file owned by the user, though that would require the target file to have contents that could be exploited.
+If these are disabled, or running on a system that does not have these protections, it may expose Cargo and Rustup to be vulnerable to a TOCTOU race involving hard or soft links.
+
+[TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
+[`fs.protected_hardlinks`]: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/fs.html#protected-hardlinks
+[`fs.protected_symlinks`]: https://www.kernel.org/doc/html/latest/admin-guide/sysctl/fs.html#protected-symlinks
+
 
 ## Implementation details
 
@@ -373,6 +393,7 @@ However, that presents several drawbacks:
 This fix assumes that a user can't in any way create a file owned by another user
 (unless they have elevated permissions like root).
 I believe this is the case for all major operating systems and filesystems.
+See also the [TOCTOU](#toctou) section for a caveat about protected links.
 
 Some exceptions that present risks to this RFC:
 
