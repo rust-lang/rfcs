@@ -220,6 +220,11 @@ The ownership check does not follow symlinks, since the owner of the symlink its
 [SID]: https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
 [Administrators Group]: https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/local-accounts#administrator-account
 
+### ACL verification
+
+This RFC does not propose checking ownership and permissions of any ancestor directory at or above the Cargo/Rustup files, or the permissions of the files themselves.
+It is assumed that it is the user's responsibility to make sure that the ownership and permissions are configured properly.
+
 ## Implementation details
 
 The Cargo and Rustup teams are working together to implement this change.
