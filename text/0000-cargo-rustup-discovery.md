@@ -476,7 +476,7 @@ This is particularly problematic as many users place `git` commands in their she
 causing it to open repositories from every directory the user enters.
 
 `git` has been changed so that it will not open a repository owned by a different user, and instead return an error.
-For most cases, it will check that the ownership of the directory *containing* the `.git` directory matches the current user.
+For most cases, it will check that the ownership of the directory *containing* the `.git` directory matches the current user (see also [CVE-2022-29187](#cve-2022-29187) below).
 
 There are some workarounds:
 * `GIT_CEILING_DIRECTORIES` environment variable defines paths where git will stop searching upwards. This has been in `git` for a long time.
@@ -484,8 +484,8 @@ There are some workarounds:
     * Does not apply to the current directory or `GIT_DIR`
     * Supports a list of directories. An empty entry in the list will mean that the following entries won't be checked for symlinks (for performance).
 * `safe.directory` config option (added for this CVE): A list of git repositories that are allowed to be opened, even if they are owned by someone else.
-    * Can only be set in system or global config, not repo or `-c` on the command-line.
-        * command-line restriction might just be a consequence of how git is implemented, in regards to doing a search before parsing the command-line.
+    * Can only be set in system or global config, not the repo config.
+        * Support for `-c` CLI settings was implemented later, in 2.38.0.
     * Interpolated:
         * `~` is home directory
             * `~user` for a specific user
@@ -495,11 +495,61 @@ There are some workarounds:
         Can be overridden by adding an empty entry to the list, following entries will ignore the `*`
 * git-for-windows allows opening a repository owned by the `BUILTIN\Administrators` group if the current user is also a member of that group. This is necessary because the "Run as Administrator" functionality causes files created by the current user to be owned by that group.
 
-The original commits introducing this change are:
-* <https://github.com/git/git/commit/bdc77d1d685be9c10b88abb281a42bc620548595>
-* <https://github.com/git/git/commit/8959555cee7ec045958f9b6dd62e541affb7e7d9>
+### CVE-2022-29187
+
+[CVE-2022-29187] was released in July 2022 which addressed an issue with the way `safe.directory` was originally implemented.
+The original fix checked the ownership of the directory *containing* the git repository.
+This is vulnerable in the situation where the victim owns the directory, but the attacker is able to write to it.
+For example, on some Unix-like systems, if the root user is running `git` commands in the `/tmp` directory, it would trust a git repository at `/tmp/.git` (since root owns `/tmp`).
+That git repository can be created by any user that can write to `/tmp`, and thus execute commands as root.
+
+The solution is to verify the ownership of the worktree root directory (or bare repo directory), the `.git` file (for a worktree), and the `.git` directory.
+
+#### sudo relaxation
+
+Along with the fix for [CVE-2022-29187], additional changes were applied to relax the restrictions when running under sudo.
+When running as root on non-Windows systems, it will trust directories owned by the UID indicated by the `SUDO_UID` environment variable.
+This allows running `sudo` commands in a directory you own without needing to configure a safe directory.
+
+### safe.bareRepository
+
+Git v2.38.0 introduced the [`safe.bareRepository`] configuration setting to control the behavior around bare repositories.
+This addresses a security concern when running `git` commands within a git repository that also contains a bare repository.
+The concern is that users may assume the configuration of only the outer git repository is used (which is normally defined by the user), but git will use the config within the bare repository (which is under the control of the authors of the original repo).
+This is a concern if you clone some external repository, and then naively navigate into a directory with a bare repo and run git commands (such as in a shell prompt).
+
+This configuration setting supports the values "all" (the default) which allows access to any bare repository, which is the same behavior before this option was added.
+The other setting is "explicit" which means it only allows access to bare repositories specified by the `--git-dir` CLI option or the `GIT_DIR` environment variable.
+
+The current default is insecure, and it is intended to introduce a more secure option in the future.
+The "explicit" setting was deemed too restrictive for most bare repository use cases.
+A future enhancement may add a restriction where it only restricts bare repositories *inside* another git repository, but detecting this scenario is nontrivial.
+
+This release also fixed the issue where `safe.directory` can now be set via the `-c` command-line option.
+
+### Git history
+
+* 2022-04-12 v2.35.2 — introduced original fix for [CVE-2022-24765].
+  This was backported to 2.30.4, 2.31.2, 2.32.2, 2.33.3, 2.34.2.
+  * <https://github.com/git/git/commit/bdc77d1d685be9c10b88abb281a42bc620548595>
+  * <https://github.com/git/git/commit/8959555cee7ec045958f9b6dd62e541affb7e7d9>
+* 2022-07-12 v2.37.1 — introduced the fix for [CVE-2022-29187] to handle parent directory ownership.
+  This also changed how sudo support was handled.
+  This was backported to 2.30.5, 2.31.4, 2.32.3, 2.33.4, 2.34.4, 2.35.4, 2.36.2.
+  * <https://github.com/git/git/commit/3b0bf2704980b1ed6018622bdf5377ec22289688>
+  * <https://github.com/git/git/commit/b779214eafe7fa6933524737f166ecca99bdf468>
+* 2022-08-30 v2.37.3 — Windows was changed to also check for the Administrators group.
+  * <https://github.com/git/git/commit/3f7207e2ea967fd2b46d9e0ae85246e93b38ed58>
+* 2022-08-30 v2.37.3 — Added more diagnostic information, in particular informing Windows users about filesystems that don't support ACLs, such as FAT32.
+  * <https://github.com/git/git/commit/7c83470e64eadab74689427fcd95e72f0a772ab5>
+* 2022-10-03 v2.38.0 — introduced `safe.bareRepository`, and fixed the `-c` behavior.
+  * <https://github.com/git/git/commit/6061601d9f1f1c95da5f9304c319218f7cc3ec75>
+  * <https://github.com/git/git/commit/8d1a7448206e11cdea657c35b04cc49db39be933>
+  * <https://github.com/git/git/commit/e35f202b4503256db148ad61487fe13aa75960f2>
 
 [CVE-2022-24765]: https://nvd.nist.gov/vuln/detail/CVE-2022-24765
-[`safe.directory`]: https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-safedirectory
-[`core.fsmonitor`]: https://git-scm.com/docs/git-config/2.35.2#Documentation/git-config.txt-corefsmonitor
+[CVE-2022-29187]: https://nvd.nist.gov/vuln/detail/CVE-2022-29187
+[`safe.directory`]: https://git-scm.com/docs/git-config/#Documentation/git-config.txt-safedirectory
+[`safe.bareRepository`]: https://git-scm.com/docs/git-config/#Documentation/git-config.txt-safebareRepository
+[`core.fsmonitor`]: https://git-scm.com/docs/git-config/#Documentation/git-config.txt-corefsmonitor
 [GitHub blog post]: https://github.blog/2022-04-12-git-security-vulnerability-announced/
