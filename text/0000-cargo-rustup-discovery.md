@@ -212,9 +212,9 @@ The specifics of how ownership will be checked are:
 
       This exception matches the behavior of git-for-windows.
 
-The ownership check does not follow symlinks.
 
 > Note: There should be no concerns about time-of-check to time-of-use (TOCTOU) since exploiting requires writing to the file owned by the current user, which indicates an intrusion that is already out of scope of what this RFC aims to fix.
+The ownership check does not follow symlinks, since the owner of the symlink itself is what is important.
 
 [`geteuid`]: https://man7.org/linux/man-pages/man2/geteuid.2.html
 [SID]: https://docs.microsoft.com/en-us/windows/security/identity-protection/access-control/security-identifiers
