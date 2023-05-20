@@ -132,10 +132,12 @@ The following is an example of what the error may look like:
 
 ```text
 error: `C:\Projects\MyProject\Cargo.toml` is owned by a different user
-    For safety reasons, Cargo does not allow opening manifests owned by
-    a different user, unless explicitly approved.
+    For safety reasons, Cargo does not allow opening manifests owned by a
+    different user, unless explicitly approved. Cargo may run executables as
+    instructed by that file, which would grant permissions to the other user
+    to run arbitrary executables under your account.
 
-    To approve this directory, run:
+    To approve this directory and disable this error, run:
 
         rustup set safe-directories add "C:\Projects\MyProject"
 
