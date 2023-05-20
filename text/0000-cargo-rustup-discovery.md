@@ -201,6 +201,7 @@ If both `rust-toolchain` and `rust-toolchain.toml` exist, the ownership of both 
 The specifics of how ownership will be checked are:
 
 * Unix: The user as reported by [`geteuid`] will be compared with the owner of the file.
+    * If the effective UID is the root user, it will also allow files owned by the uid specified in `SUDO_UID` to make it easier to use `sudo` operations.
 * Windows: The user [SID] of the current token will be compared with the SID of the file.
     * A file owned by the [Administrators Group] is also allowed to be accessed if the current user is also in the Administrators Group.
 
@@ -277,7 +278,6 @@ However, there are several differences:
 There are quite a few scenarios where this will cause a false-positive, likely causing frustration for users.
 Some examples:
 
-* Running cargo under `sudo` within a project created by the local user.
 * Running cargo in a Docker container where the project or a config is mounted via a volume.
 * Running cargo in a Docker container which calls `useradd` and then the USER instruction to switch users after fetching a Cargo project.
 
