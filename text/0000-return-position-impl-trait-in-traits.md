@@ -337,20 +337,116 @@ This RFC modifies the “Static async fn in traits” RFC so that async fn in tr
 
 ```rust
 trait Trait {
-  async fn async_fn();
+  async fn async_fn(&self);
 
-  async fn async_fn_refined();
+  async fn async_fn_refined(&self);
 }
 
 impl Trait for MyType {
-  fn async_fn() -> impl Future<Output = ()> + '_ { .. }
+  fn async_fn(&self) -> impl Future<Output = ()> + '_ { .. }
 
   #[refine]
-  fn async_fn_refined() -> BoxFuture<'_, ()> { .. }
+  fn async_fn_refined(&self) -> BoxFuture<'_, ()> { .. }
 }
 ```
 
 Similarly, the equivalent `-> impl Future` signature in a trait can be satisfied by using `async fn` in an impl of that trait.
+
+## Scoping rules for `impl Trait`
+
+We say a generic parameter is "in scope" for an `impl Trait` type if the actual revealed type is allowed to name that parameter. The scoping rules for return position `impl Trait` in traits are the same as [those for return position `impl Trait` generally][scoping]. Specifically:
+
+[scoping]: https://rust-lang.github.io/rfcs/1951-expand-impl-trait.html#scoping-for-type-and-lifetime-parameters
+
+1. All types nameable at the site of the `impl Trait` are in scope, including argument-position `impl Trait` types.
+2. All lifetime parameters directly named in the `impl Trait` type are in scope.
+
+Lifetime parameters not in scope may still be indirectly named by one of the type parameters in scope.
+
+_Note_: The term "captured" is sometimes used as an alternative to "in scope".
+
+### Implication for `async fn` in trait
+
+`async fn` behaves [slightly differently][ref-async-captures] than return-position `impl Trait` when it comes to scoping rules. It considers _all_ lifetime parameters in-scope for the returned future.
+
+[ref-async-captures]: https://doc.rust-lang.org/reference/items/functions.html#async-functions
+
+In the case of there being one lifetime in scope (usually for `self`), the desugaring we've shown above is exactly equivalent:
+
+```rust
+trait Trait {
+    async fn async_fn(&self);
+}
+
+impl Trait for MyType {
+    fn async_fn(&self) -> impl Future<Output = ()> + '_ { .. }
+}
+```
+
+It's worth taking a moment to discuss _why_ this works. The `+ '_` syntax here does two things:
+
+1. It brings the lifetime of the `self` borrow into scope for the return type.
+2. It promises that the return type will outlive the borrow of `self`.
+
+In reality, the second point is not part of the `async fn` desugaring, but it does not matter: We can already reason that because our return type has only one lifetime in scope, it must outlive that lifetime.[^OutlivesProjectionComponents]
+
+[^OutlivesProjectionComponents]: After all, the return type cannot possibly reference any lifetimes *shorter* than the one lifetime it is allowed to reference. This behavior is specified as the rule `OutlivesProjectionComponents` in [RFC 1214](https://rust-lang.github.io/rfcs/1214-projections-lifetimes-and-wf.html#outlives-for-projections). Note that it only works when there are no type parameters in scope.
+
+When there are multiple lifetimes however, writing an equivalent desugaring becomes awkward.
+
+```rust
+trait Trait {
+    async fn async_fn(&self, num: &u32);
+}
+```
+
+We might be tempted to add another outlives bound:
+
+```rust
+impl Trait for MyType {
+    fn async_fn<'b>(&self, num: &'b u32) -> impl Future<Output = ()> + '_ + 'b { .. }
+}
+```
+
+But this signature actually promises *more* than the original trait does, and would require `#[refine]`. The `async fn` desugaring allows the returned future to name both lifetimes, but does not promise that it *outlives* both lifetimes.[^intersection]
+
+[^intersection]: Technically speaking, we can reason that the returned future outlives the *intersection* of all named lifetimes. In other words, when all lifetimes the future is allowed to name are valid, we can reason that the future must also be valid. But at the time of this RFC, Rust has no syntax for intersection lifetimes.
+
+One way to get around this is to "collapse" the lifetimes together:
+
+```rust
+impl Trait for MyType {
+    fn async_fn<'a>(&'a self, num: &'a u32) -> impl Future<Output = ()> + 'a { .. }
+}
+```
+
+In most cases[^lifetime-collapse] the type system actually recognizes these signatures as equivalent. This means it should be possible to write this trait with RPITIT now and move to async fn in the future. In the general case where these are not equivalent, it is possible to write an equivalent desugaring with a bit of a hack:
+
+[^lifetime-collapse]: Both lifetimes must be [late-bound] and the type checker must be able to pick a lifetime that is the intersection of all input lifetimes, which is the case when either both are [covariant] or both are contravariant. The reason for this is described in more detail in [this comment](https://github.com/rust-lang/rust/issues/32330#issuecomment-202536977). In practice the equivalence can be checked [using the compiler](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=56faadfc236bb9acfb4af1b51a214a79). (Note that at the time of writing, a bug in the nightly compiler prevents it from accepting the example.)
+
+[late-bound]: https://rust-lang.github.io/rfcs/0387-higher-ranked-trait-bounds.html#distinguishing-early-vs-late-bound-lifetimes-in-impls
+[covariant]: https://doc.rust-lang.org/reference/subtyping.html#variance
+
+```rust
+trait Trait {
+    async fn async_fn(&self, num_ref: &mut &u32);
+    //                                     ^^^^
+    // The lifetime of this inner reference is invariant!
+}
+
+impl Trait for MyType {
+    // Let's say we do not want to use `async fn` here.
+    // We cannot use the `+ 'a` syntax in this case,
+    // so we use `Captures` to bring the lifetimes in scope.
+    fn async_fn<'a, 'b>(&'a self, num_ref: &'a mut &'b u32)
+    -> impl Future<Output = ()> + Captures<(&'a (), &'b ())> { .. }
+}
+
+trait Captures<T> {}
+impl<T, U> Captures<T> for U {}
+```
+
+The `Captures` trait doesn't promise anything at all; its sole purpose is to give you a place to name lifetime parameters you would like to be in scope for the return type. In the future we can provide a nicer syntax for dealing with these cases, or remove the difference in scoping rules altogether.
 
 ## Legal positions for `impl Trait` to appear
 
@@ -497,7 +593,7 @@ impl IntoIntIterator for MyType {
 
 Potentially! There have been proposals to allow the values of associated types that appear in function return types to be inferred from the function declaration. So, using the example from the previous question, the impl for `IntoIntIterator` could infer the value of `IntIter` based on the return type of `into_int_iter`. This may be a good idea, but it is not proposed as part of this RFC.
 
-### What about using a named associated type?
+### What about using an implicitly-defined associated type?
 
 One alternative under consideration was to use a named associated type instead of the anonymous `$` type. The name could be derived by converting "snake case" methods to "camel case", for example. This has the advantage that users of the trait can refer to the return type by name.
 
@@ -511,7 +607,7 @@ There is a need to introduce a mechanism for naming the return type for function
 
 As a backwards compatibility note, named associated types could likely be introduced later, although there is always the possibility of users having introduced associated types with the same name.
 
-### What about using an explicit associated type?
+### What about using a normal associated type?
 
 Giving users the ability to write an explicit `type Foo = impl Bar;` is already covered as part of the `type_alias_impl_trait` feature, which is not yet stable at the time of writing, and which represents an extension to the Rust language both inside and outside of traits. This RFC is about making trait methods consistent with normal free functions and inherent methods.
 
