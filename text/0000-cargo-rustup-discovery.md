@@ -28,6 +28,27 @@ This proposal is based on the recent changes to git in response to [CVE-2022-247
 [toolchain overrides]: https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
 [configuration files]: https://doc.rust-lang.org/cargo/reference/config.html#hierarchical-structure
 
+## Threat examples
+
+The primary threat this RFC is aiming to address is the situation where `cargo` or `rustc` enables other users or malicious programs to elevate their access by running arbitrary programs under your account.
+This can happen with seemingly innocuous actions such as:
+
+* Running `cargo` commands in directories that are at or below a directory that is writeable by other users.
+  Some examples of this are:
+  * using a typical Windows installation which has writeable root directories.
+  * using `cargo install` which uses `/tmp` on some Unix-like environments.
+  * trying out building a cargo project from within a directory you created in `/tmp`.
+  * using a network-mounted filesystem, where other users have write access to the root of that network mount (for example, some classroom environments).
+  * using a network-mounted filesystem, where the default behavior is to map all files to be owned by the user mounting it, disregarding the ownership on the individual files on the network drive.
+* Running `rustc -V` in your shell prompt to show the current Rust version in the current directory (such as for Rustup overrides).
+
+These actions require trusting every directory that these commands run in, *and* every directory above them.
+
+We think most users will not be aware of these implicit trust requirements, and present a security hazard.
+
+This RFC is not aiming to address the general threats of arbitrary execution of code defined in dependencies (such as build scripts or proc-macros) intentionally added by the user.
+Those threats still require reviewing the code and trust relationship with those dependencies.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
