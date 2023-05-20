@@ -188,7 +188,7 @@ This ownership check does not apply to:
 
 * Loading `$CARGO_HOME/config.toml`
 * Loading configs from includes (currently an unstable option)
-* Loading configs passed on the command-line with `--config` (currently an unstable option)
+* Loading configs passed on the command-line with `--config`
 
 ## Rustup toolchain override discovery
 
