@@ -424,10 +424,7 @@ I am not aware of an easy way to detect if a filesystem is case-sensitive.
 Cargo does git repo discovery in several places.
 At this time, I do not consider it a security concern because libgit2 does not launch executables.
 
-libgit2 has been patched to have similar behavior as the git CLI, but Cargo has not picked up this patch.
-Cargo will eventually need to pick it up, but there are some implementation concerns.
-This update can happen at any time in the future.
-We will likely use the `GIT_OPT_SET_OWNER_VALIDATION` libgit2 option to disable ownership checking.
+libgit2 has been patched to have similar behavior as the git CLI, but Cargo has disabled the libgit2 owner validation.
 Issues with refusing to load git repos in `CARGO_HOME` for example will likely be very frustrating for users.
 
 #### Current git discovery
