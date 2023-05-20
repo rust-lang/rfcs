@@ -23,7 +23,7 @@ This affects the following file searches:
 * `rust-toolchain`/`rust-toolchain.toml` [toolchain overrides]
 
 This RFC proposes a new mechanism to constrain how Cargo and Rustup search for their files.
-This proposal is based on the recent changes to git in response to CVE-2022-24765 described in Appendix [Git behavior](#git-behavior).
+This proposal is based on the recent changes to git in response to [CVE-2022-24765] described in Appendix [Git behavior](#git-behavior).
 
 [toolchain overrides]: https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
 [configuration files]: https://doc.rust-lang.org/cargo/reference/config.html#hierarchical-structure
@@ -158,7 +158,7 @@ The ownership check does not apply to other situations, such as:
 
 ## Cargo config discovery
 
-Cargo searches from the current directory and upwards for `cargo/config.toml` files.
+Cargo searches from the current directory and upwards for `.cargo/config.toml` files.
 When it discovers one, it will check that the ownership of the file matches the current user.
 
 This ownership check does not apply to:
@@ -411,7 +411,7 @@ Issues with refusing to load git repos in `CARGO_HOME` for example will likely b
 
 The following is a list of places where Cargo uses git repositories:
 
-- Uses repo path discovery:
+- Places where Cargo uses repo path discovery:
     - Package listing: Determines the list of files in the package.
         - Used in several places:
             - `cargo package`, `cargo publish`
@@ -425,7 +425,7 @@ The following is a list of places where Cargo uses git repositories:
     - `cargo new`:
         - Uses discovery to determine if already inside a git repository. Failure is silently ignored and assumes that it is not in a pre-existing repository.
         - Uses libgit2 to initialize a new repository.
-- Loads directly from a specific path:
+- Places where Cargo loads directly from a specific path:
     - Loading the registry index.
         - Currently Cargo will silently try to delete the index if it fails to open, and reinitialize it. If there is a permission error, it will fail.
     - Loading a git dependency.
