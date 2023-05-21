@@ -428,17 +428,40 @@ There is also an unwanted interaction between TCE and debugging. As TCE by desig
 
 
 # Rationale and alternatives
+
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+In this section, the reason for choosing the design is discussed as well as possible alternatives that have been considered.
+
 ## Why is this design the best in the space of possible designs?
-This design is the best tradeoff between implementation effort and functionality while also offering a good starting
-point toward further exploration of a more general implementation. To expand on this, compared to other options
-creating a function local scope with the use of `become` greatly reduces implementation effort. Additionally, limiting
-tail-callable functions to those with exactly matching function signatures and calling conventions enforces a common
-stack layout across all functions. This should in theory, depending on the backend, allow tail calls to be performed 
-without any stack shuffling, indeed it is even possible to do so for indirect calls or external functions.
+
+Of all possible alternatives, this design best fits the tradeoff between implementation effort and functionality while also offering a starting point toward further exploration of a more general implementation. Regarding implementation effort, this design requires the least of backends while not already implementable via a library, see [here](#backend-requirements). Regarding functionality, the proposed design requires function signatures to match, however, this restriction still allows tail calls between functions that _use_ different arguments. This can be done by requiring the programmer to add (unused) arguments to both function definitions so that they match. Additionally, the chosen design allows tail calls for dynamic calls and other variations.
+
+### Creating a Function Local Scope
+
+Using the `become` keyword creates a function local scope that drops all variables not used in the tail call, as would be done for `return`. There is no alternative to this approach as the stack frame needs to be prepared for the tail call.
+
+### Backend Requirements
+
+The main hurdle to implementing this feature is the required work to be done by the backends (e.g. LLVM). See the following list for an overview of approaches that have been considered for this RFC, going by increasing demand on the backends:
+
+1. **Internal Transformation** - Use a MIR transformation to implement tail calls without any backend requirements, possible implementations are: Defunctionalization and [Trampolines](#trampoline-based-approach). However, all proposed options can only support static function calls. This is one reason this option is not chosen, as dynamic function calls seem too important to ignore, see [here](#what-should-be-tail-callable). Another reason is that this approach can already be done by libraries.
+2. **Matching Function Signatures** (this RFC) - Require that the caller and callee have matching function signatures. With this restriction, it is possible to do tail calls regardless of the calling convention used, see the next point for why this is important. Though the calling convention needs to match between caller and callee. All that needs to be done by the backends is to overwrite the arguments in place with the values for the tail call. By requiring a matching calling convention and function signature between caller and callee the ABI is guaranteed to match as well. This is also quite similar to how `musttail` is used in practice for Clang: "Implementor experience with Clang shows that the ABI of the caller and callee must be identical for the feature to work [...]" (see [here](#clang)).
+3. **Mark Function Definition** - One hurdle to guaranteeing tail calls is that the default calling conventions used by backends usually do not support tail calls and instead another calling convention needs to be used. As it is unreasonable to expect changing the default calling convention, one [option](#attribute-on-function-declaration) is to mark functions that should use a calling convention amenable to tail calls. This requires that backends can support tail calls when allowed to change the calling convention. This requirement, however, already seems quite difficult to establish. For example, this [thread](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1186003262) discusses why this approach is not reasonable.
+4. **Backend Specific** - Depend on the backend to decide if a tail call can be performed. While this approach allows gradual advancements it also seems the most unstable and difficult to use.
+
+As described by the list of approaches above, this RFC specifies the approach that is most attainable and still useful in practice while not already implementable via a library.
+
+### What should be Tail Callable
+
+Tail calls can be implemented without backend support if only static calls are supported, see the following list for reasons why other calls should be supported:
+
+- **Dynamic Calls** One example that depends on dynamic tail calls is a C implementation of a Protobuf parser, see [here](https://github.com/rust-lang/rfcs/pull/3407#issuecomment-1500291721).
+- **Calls across Crates** This will allow tail calls to library functions, enabling libraries to support code that requires constant stack usage or make calls more performant.
+- **Calls to Dynamically Loaded Functions** As an example this would be useful to improve performance for an emulator that uses a JIT.
 
 ## What other designs have been considered and what is the rationale for not choosing them?
+
 There are some designs that either can not achieve the same performance or functionality as the chosen approach. Though most other designs evolve around how to mark what should be a tail-call or marking what functions can be tail called. There is also the possibility of providing support for a custom backend (e.g. LLVM) or MIR pass.
 
 ### Trampoline based Approach
@@ -446,6 +469,8 @@ There could be a trampoline-based approach
 ([comment](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-326952763)) that can fulfill the semantic guarantee
 of using constant stack space, though they can not be used to achieve the performance that the chosen design is capable
 of.
+
+Similarly, as mentioned [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1190464739), an approach used by Chicken Scheme is to do normal calls and handle stack overflows by cleaning up the stack.
 
 ### Principled Local Goto
 One alternative would be to support some kind of local goto natively, indeed there exists a
@@ -630,7 +655,7 @@ export fn lex(data: *Data) callconv(.C) u32
 ```
 
 ## Carbon
-As per this [issue](https://github.com/carbon-language/carbon-lang/issues/1761) it seems providing TCE is of interest even if the implementation is difficult
+As per this [issue](https://github.com/carbon-language/carbon-lang/issues/1761) it seems providing TCE is of interest even if the implementation is difficult.
 
 
 ## .Net
@@ -740,7 +765,7 @@ It should be possible to automatically pad the arguments of static tail calls, s
 
 ## Relaxing the Requirement of Strictly Matching Function Signatures with a new Calling Convention
 
-In the future a calling convention could be added to allow `become` to be used with functions that have a mismatched function signatures. This approach is close to the alternative of [adding a marker to the function declaration](#attribute-on-function-declaration). Same as the alternative, a requirement needs to be added that backends provide a calling convention that support tail calling.
+In the future, a calling convention could be added to allow `become` to be used with functions that have mismatched function signatures. This approach is close to the alternative of [adding a marker to the function declaration](#attribute-on-function-declaration). Same as the alternative, a requirement needs to be added that backends provide a calling convention that support tail calling.
 
 ## Functional Programming
 
