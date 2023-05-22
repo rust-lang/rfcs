@@ -66,7 +66,7 @@ parameter itself but rather a type that includes the type parameter.
 
 #### Partially generic types
 
-One situation where this is occurs is when you want to write functions
+One situation where this occurs is when you want to write functions
 where types are partially known and have those interact with other
 functions that are fully generic. To explain the situation, let's
 examine some code adapted from rustc.
@@ -83,7 +83,7 @@ value:
 Now, imagine I want to write some code that operates over all keys
 whose value is an `Option<T>` for some `T`:
 
-    fn example<T,K:Key<Option<T>>(table: &Table<Option<T>, K>) { ... }
+    fn example<T,K:Key<Option<T>>>(table: &Table<Option<T>, K>) { ... }
     
 This seems reasonable, but this code will not compile. The problem is
 that the compiler needs to know that the value type implements
@@ -98,7 +98,7 @@ There are workarounds. I might write a new trait `OptionalValue`:
 
 and then I could write my example as:
 
-    fn example<T,O:OptionalValue<T>,K:Key<O>(table: &Table<O, K>) { ... }
+    fn example<T,O:OptionalValue<T>,K:Key<O>>(table: &Table<O, K>) { ... }
 
 But this is making my example function, already a bit complicated,
 become quite obscure.
