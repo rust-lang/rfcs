@@ -14,7 +14,7 @@ This RFC proposes adding a (defaulted) generic parameter to the `core::future::F
 With the introduction of the async/await syntax (and one could argue, before that), futures have become a core aspect of Rust. However, the current signature poses a few issues:
 - The context (and the types it's built from) is not ABI-stable: this is a big problem for plugin systems that wish to expose asynchronous methods, as the futures need to be wrapped in ABI-safe adapters that often impose allocating a new waker for every call to `poll`.
 - Asynchronous frameworks such as `tokio` must resort to side-channels to allow futures to access the executor to perform certain tasks, such as spawning new tasks (the use-case is picked from [`feature(waker_getters)`](https://github.com/rust-lang/rust/issues/96992) which considers using the access to raw vtables to downcast the waker into a specialised waker that can accomplish such tasks). 
-- The `core::task::Waker` type becomes the common denominator to all interactions with futures, making adjusting its API and implementation especially trying, as it affects the whole ecosystem indiscriminately.
+- The `core::task::Waker` type is the common denominator to all interactions with futures, making adjusting its API and implementation especially trying, as it affects the whole ecosystem indiscriminately. It also imposes its vtable/pointer pair layout to every executor that would wish to construct wakers, regardless of whether this structure is desirable to them.
 
 
 # Guide-level explanation
