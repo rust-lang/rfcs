@@ -365,7 +365,7 @@ and many others are good candidates for `#[export(unsafe_stable_abi)]`
 - Next to the hash of the type information,
   additionally and optionally include the full type information in an extra section,
   to allow for (debug) tools to accurately diagnose mismatched symbol errors.
-- Some kind of `#[export_inline]` feature to for functions that will be inlined into the crate that calls it,
+- Some kind of `#[export_inline]` feature to allow for functions that will be inlined into the calling crate,
   rather than being part of the dynamic library, which will only be able to call exported items.
 
 ## Alternatives
