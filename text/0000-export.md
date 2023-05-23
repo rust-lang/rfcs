@@ -356,7 +356,10 @@ and many others are good candidates for `#[export(unsafe_stable_abi)]`
 - Exportable `static`s.
 - Exportable `trait`s, for e.g. dynamic trait objects. (See also https://github.com/rust-lang/rust/pull/105586.)
 - A tool to create a stripped, 'dynamic import only' version of the crate source code,
-  with only the exported items, without the function bodies.
+  with only the exported items, without the function bodies. (Essentially a "header file" or "bindings-only crate".)
+  - Alternatively or in addition to that, a way to optionally include such a "header file" or "bindings"
+    (or the same metadata in some other (perhaps Rust-agnostic) format)
+    inside the resulting dynamic library file.
 - Allow exporting two identically named items to create a dynamic library that is backwards compatible with an older interface,
   including both a symbol for the old and new interface.
 - Next to the hash of the type information,
