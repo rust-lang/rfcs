@@ -738,11 +738,11 @@ It seems possible to keep the restriction on exactly matching function signature
 arguments to pad out the differences. For example:
 
 ```rust
-foo(a: u32, b: u32) {
+fn foo(a: u32, b: u32) {
     // uses `a` and `b`
 }
 
-bar(a: u32, _b: u32) {
+fn bar(a: u32, _b: u32) {
     // only uses `a`
 }
 ```
@@ -751,7 +751,7 @@ Maybe it is useful to provide a macro or attribute that inserts missing argument
 
 ```rust
 #[pad_args(foo)]
-bar(a: u32) {
+fn bar(a: u32) {
     // ...
 }
 ```
