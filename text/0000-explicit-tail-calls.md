@@ -390,7 +390,7 @@ Tail calling from [generators](https://doc.rust-lang.org/beta/unstable-book/lang
 ## Async
 [async]: #async
 
-Tail calling _from_ async functions is **not** allowed, neither calling async nor calling sync functions is supported. This is due to the high implementation effort as it requires special handling for the async state machine. This restriction can be relaxed by a future RFC.
+Tail calling _from_ async functions or async blocks is **not** allowed. This is due to the high implementation effort as it requires special handling for the async state machine. This restriction can be relaxed by a future RFC.
 
 Using `become` on a `.await` expression, such as `become f().await`, is also **not** allowed. This is because `become` requires a function call and `.await` is not a function call, but is a special construct.
 
