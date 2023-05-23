@@ -334,7 +334,7 @@ pub struct ListNode {
 ```
 
 In this case, using the type as part of a function signature will not result in a hash based on the full (recursive) type definition,
-but will instead be based on the user provided hash.
+but will instead be based on the user provided hash (and the size and alignment of the type).
 
 ### Standard Library
 
