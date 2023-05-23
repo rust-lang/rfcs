@@ -340,7 +340,7 @@ but will instead be based on the user provided hash.
 
 Once the ["crabi"](https://github.com/rust-lang/rust/pull/105586) feature has progressed far enough,
 we should consider adding `#[export]` attributes to some standard library types, effectively committing to a stable ABI for those.
-For example, `Box`, `Vec`, `Option`, `String`, `NonZero`, `File`,
+For example, `Option`, `NonZero`, `File`,
 and many others are good candidates for `#[export(unsafe_stable_abi)]`
 (if the "crabi" ABI doesn't already handle them specially).
 
