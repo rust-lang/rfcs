@@ -346,10 +346,6 @@ This feature will have interactions with other features that depend on stack fra
 
 See below for specifics on interations with other features.
 
-## Mismatches in Mutability
-
-Mismatches in mutability (like `&T` <-> `&mut T`) for arguments and return type of the function signatures are **not** supported. This support requires a guarantee that mutability has no effect on ABI.
-
 ## Coercions of the Tail Called Function's Return Type
 [return-type-coercion]: #return-type-coercion
 
@@ -767,6 +763,10 @@ It should be possible to automatically pad the arguments of static tail calls, s
 ## Relaxing the Requirement of Strictly Matching Function Signatures with a new Calling Convention
 
 In the future, a calling convention could be added to allow `become` to be used with functions that have mismatched function signatures. This approach is close to the alternative of [adding a marker to the function declaration](#attribute-on-function-declaration). Same as the alternative, a requirement needs to be added that backends provide a calling convention that support tail calling.
+
+## Mismatches in Mutability
+
+Mismatches in mutability (like `&T` <-> `&mut T`) for arguments and return type of the function signatures are currently not supported as they are different types. However, this mismatch could be supported if there is a guarantee that mutability has no effect on ABI. For more details, see [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1193897615).
 
 ## Functional Programming
 
