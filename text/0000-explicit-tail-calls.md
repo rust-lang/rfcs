@@ -331,7 +331,8 @@ These checks are:
 
 - The `become` keyword is only used in place of `return`. The intent is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
 - The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to ensure a matching ABI. Note that lifetimes may differ as long as they pass borrow checking, see [below](#return-type-coercion) for specifics on the return type.
-- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
+- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above. 
+- The restrictions, caused by interactions with other features, are followed. See below for details, the restrictions mostly concern caller context and callee signatures.
 
 If any of these checks fail a compiler error is issued.
 
