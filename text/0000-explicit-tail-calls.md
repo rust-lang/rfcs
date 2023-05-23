@@ -410,7 +410,7 @@ pub fn fibonacci(n: u64) -> u64 {
 ```
 In this case, a naive author might assume that this is going to be a stack space-efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more or less the same since the critical recursive calls are not actually in tail call position.
 
-Further confusion could result from the same-signature restriction where the Rust compiler raises an error since fibonacci and <u64 as Add>::add do not share a common signature.
+Further confusion could result from the same-signature restriction where the Rust compiler raises an error since fibonacci and `<u64 as Add>::add` do not share a common signature.
 
 # Drawbacks
 [drawbacks]: #drawbacks
