@@ -263,7 +263,7 @@ _RNvNtC_7mycrate3foo3bar_f8771d213159376fafbff1d3b93bb212
 ```
 
 Where the first part is the (mangled) path and name of the item,
-and the second part is the hexadecimal representation of a 128 hash of all relevant signature and type information.
+and the second part is the hexadecimal representation of a 128-bit hash of all relevant signature and type information.
 The hash algorithm is still to be determined.
 
 (See also the "alternatives" section below.)
