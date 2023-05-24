@@ -688,8 +688,6 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
     - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional. Currently, the RFC specifies that an ICE should be issued if a backend cannot guarantee that TCE will be performed.
-    - Migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation from `return` to `become` can be done for function calls where all requisites are already fulfilled. However, this lint might be confusing and noisy. Decide on if this lint or others should be added.
-    - Should a lint be added for functions that are marked to be a tail call or use become. See the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
     - Are all calling-convention used by Rust available for TCE with the proposed restrictions on function signatures?
     - Is there some way to reduce the impact on debugging and other features?
@@ -731,6 +729,13 @@ Note that having something written down in the future-possibilities section
 is not a reason to accept the current or a future RFC; such notes should be
 in the section on motivation or rationale in this or subsequent RFCs.
 The section merely provides additional information. -->
+
+## Lints
+
+The functionality introduced by RFC also has possible pitfalls, it is likely worthwhile to provide lints that warn of these issues. See the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824) for possible lints.
+
+Additionally, there can be another class of lints, those that guide migration to using `become`.
+For example, provide a lint that indicates if a trivial transformation from `return` to `become` can be done for function calls where all requisites are already fulfilled. Note that, this lint might be confusing and noisy.
 
 ## Helpers
 [helpers]: #helpers
