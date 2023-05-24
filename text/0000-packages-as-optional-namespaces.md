@@ -60,7 +60,7 @@ Only the owners of `foo` may _create_ the `foo::bar` crate (and all owners of `f
 
 # Reference-level explanation
 
-`::` is now considered valid inside crate names on Crates.io. For now, we will restrict crate names to having a single `::` in them, not at the beginning or end of the name, but this can be changed in the future.
+`::` is now considered valid inside crate names on Crates.io and Cargo. For now, we will restrict crate names to having a single `::` in them, not at the beginning or end of the name, but this can be changed in the future.
 
 When publishing a crate `foo::bar`, if the crate does not exist, the following must be true:
 
@@ -71,7 +71,7 @@ For the crate `foo::bar`, all owners of `foo` are always considered owners of `f
 
 Crates.io displays `foo::bar` crates with the name `foo::bar`, though it may stylistically make the `foo` part link to the `foo` crate.
 
-The [registry index trie](https://doc.rust-lang.org/nightly/cargo/reference/registries.html#index-format) may represent subpackages by placing `foo::bar` as just `foo::bar`.
+The [registry index trie](https://doc.rust-lang.org/nightly/cargo/reference/registries.html#index-format) may represent subpackages by placing `foo::bar` as just `foo/bar` or using some special character..
 
 `rustc` will need some changes. When `--extern foo::bar=crate.rlib` is passed in, `rustc` will include this crate during resolution as if it were a module `bar` living under crate `foo`. If crate `foo` is _also_ in scope, this will not automatically trigger any errors unless `foo::bar` is referenced, `foo` has a module `bar`, and that module is not just a reexport of crate `foo::bar`.
 
