@@ -254,7 +254,7 @@ impl IntIterator for Baz {
 }
 ```
 
-Trait aliases also allow omitting implied `#[refine]`s:
+Alias `impl`s also allow omitting implied `#[refine]`s:
 
 ```rust
 //! crate frob-lib
