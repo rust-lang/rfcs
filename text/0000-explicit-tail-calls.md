@@ -331,12 +331,12 @@ These checks are:
 
 - The `become` keyword is only used in place of `return`. The intent is to reuse the semantics of a `return` signifying "the end of a function". See the section on [tail-call-elimination](#tail-call-elimination) for examples.
 - The argument to `become` is a function (or method) call, that exactly matches the function signature and calling convention of the callee. The intent is to ensure a matching ABI. Note that lifetimes may differ as long as they pass borrow checking, see [below](#return-type-coercion) for specifics on the return type.
-- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above. 
+- The stack frame of the calling function is reused, this also implies that the function is never returned to. The required checks to ensure this is possible are: no borrows of local variables are passed to the called function (passing local variables by copy/move is ok since that doesn't require the local variable to continue existing after the call), and no further cleanup is necessary. These checks can be done by using the borrow checker as already described in the [section](#difference) showing the difference between `return` and `become` above.
 - The restrictions, caused by interactions with other features, are followed. See below for details, the restrictions mostly concern caller context and callee signatures.
 
-If any of these checks fail a compiler error is issued.
+If any of these checks fail a compiler error is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising an ICE if this is not the case.
 
-One additional check must be done, if the backend cannot guarantee that TCE will be performed an ICE is issued. It is also suggested to ensure that the invariants provided by the pre-requisites are maintained during compilation, raising an ICE if this is not the case.
+One additional check must be done, if the backend cannot guarantee that TCE will be performed an ICE is issued. To be specific the backend is required that: "A tail call will not cause unbounded stack growth if it is part of a recursive cycle in the call graph".
 
 The type of the expression `become <call>` is `!` (the never type, see [here](https://doc.rust-lang.org/std/primitive.never.html)). This is consistent with other control flow constructs such as `return`, which also have the type of `!`.
 
@@ -344,7 +344,7 @@ Note that as `become` is a keyword reserved for exactly the use-case described i
 
 This feature will have interactions with other features that depend on stack frames, for example, debugging and backtraces. See [drawbacks](#drawbacks) for further discussion.
 
-See below for specifics on interations with other features.
+See below for specifics on interactions with other features.
 
 ## Coercions of the Tail Called Function's Return Type
 [return-type-coercion]: #return-type-coercion
@@ -688,7 +688,6 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
     - One point that needs to be decided is if TCE should be a feature that needs to be required from all backends or if it can be optional. Currently, the RFC specifies that an ICE should be issued if a backend cannot guarantee that TCE will be performed.
-    - Another point that needs to be decided is if TCE is supported by a backend what exactly should be guaranteed? While the guarantee that there is no stack growth should be necessary, should performance (as in transforming `call` instructions into `jmp`) also be guaranteed? Note that a backend that guarantees performance should do so **always** otherwise the main intent of this RFC seems to be lost.
     - Migration guidance, it might be interesting to provide a lint that indicates that a trivial transformation from `return` to `become` can be done for function calls where all requisites are already fulfilled. However, this lint might be confusing and noisy. Decide on if this lint or others should be added.
     - Should a lint be added for functions that are marked to be a tail call or use become. See the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1159822824), as well as, the clippy and rustfmt changes of an initial [implementation](https://github.com/semtexzv/rust/commit/29f430976542011d53e149650f8e6c7221545207#diff-6c8f5168858fed7066e1b6c8badaca8b4a033d0204007b3e3025bf7dd33fffcb) (2022).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
@@ -710,6 +709,8 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
   - Closures are **not** supported see [here](#closures).
 - Can async functions be supported?
   - Async functions are **not** supported see [here](#async).
+- Should "performance" be guaranteed by the backends?
+  - "Performance" is **not** guaranteed by the backends, see [here](#performance-guarantee).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -767,6 +768,14 @@ In the future, a calling convention could be added to allow `become` to be used 
 ## Mismatches in Mutability
 
 Mismatches in mutability (like `&T` <-> `&mut T`) for arguments and return type of the function signatures are currently not supported as they are different types. However, this mismatch could be supported if there is a guarantee that mutability has no effect on ABI. For more details, see [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1193897615).
+
+## Performance Guarantee
+
+First of all, performance is ambiguous. As the stand in we use the requirement that no new stack frame is created for a tail call. The reason for this choice is that creating a new stack frame can be a large part of computation time in hot loops that do calls, this is a code construct that can likely be optimized with tail calls.
+
+Can the requirement to not create new stack frames when using tail calls be imposed on backends? This answer seems to be no, even for LLVM. LLVM provides some [guarantees](https://llvm.org/docs/LangRef.html#call-instruction) for tail calls, however, none do ensure that no new stack frame is created (as of 24-05-2023).
+
+If it turns out that in practice the no new stack frame requirement is not already kept it might be worthwhile to revisit this performance requirement.
 
 ## Functional Programming
 
