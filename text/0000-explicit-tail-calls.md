@@ -59,7 +59,7 @@ The resulting list of notable projects using [`musttail`](https://clang.llvm.org
 - [CHERIoT RTOS](https://github.com/microsoft/cheriot-rtos/blob/3e6811279fedd0195e105eb3b7ac77db93d67ec5/sdk/core/allocator/alloc.h#L1460) (a realtime operating system with memory safety)
 - [Pyston](https://github.com/pyston/pyston/blob/6103fc013e9dd726efca9100a22be1ac08c58591/pyston/aot/aot_gen.py#L276) (a performance-optimizing JIT for Python)
 - [upb](https://github.com/classicvalues/upb/blob/2effcce774ce05d08af635ba02b1733873e73757/upb/port_def.inc#L177) (a small protobuf implementation in C)
-- Robbepop's [wasm3](https://github.com/Robbepop/wasm3/blob/1a6ca56ee1250d95363424cc3a60f8fd14f24fa7/source/m3_config_platforms.h#L86) ("the fastest WebASsembly interpreter")
+- [wasm3](https://github.com/Robbepop/wasm3/blob/1a6ca56ee1250d95363424cc3a60f8fd14f24fa7/source/m3_config_platforms.h#L86) ("the self-proclaimed fastest WebAssembly interpreter")
 
 
 The resulting list of notable projects using [computed goto](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html):
