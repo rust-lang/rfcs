@@ -4,6 +4,7 @@ title = "The Rust RFC Book"
 [output.html]
 no-section-label = true
 git-repository-url = "https://github.com/rust-lang/rfcs"
+site-url = "/rfcs/"
 
 [output.html.search]
 heading-split-level = 0
