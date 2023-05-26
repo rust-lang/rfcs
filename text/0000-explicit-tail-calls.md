@@ -40,27 +40,21 @@ The list of programs is generated as follows:
 - GitHub was searched for [uses of `musttail`](https://github.com/search?q=%2Fclang%3A%3Amusttail%7C__attribute__%5C%28%5C%28musttail%5C%29%5C%29%2F&type=code) and [uses of computed goto](https://github.com/search?q=%2Fgoto+%5C*%5Ba-zA-Z%28%5D%2F&type=code). GitHub's search only returns five pages, so this is only a sampling.
 - The most popular projects are picked and each result is checked to confirm that `musttail` or computed gotos are used.
 - Additionally, for `musttail`, which was only introduced in Clang 13, projects that have comments which indicate the desire to use `musttail` once legacy compiler support can be dropped are included as well. (Of which, there are two: FreeRADIUS and Pyston).
+- Some projects use `musttail` (either Clang's or LLVM's) for code generation only, these are placed in a separate section. It is noted which of these projects expose guaranteed TCE to user code. (One project, Swift, uses it both internally and for code generation.)  
 
 The resulting list of notable projects using [`musttail`](https://clang.llvm.org/docs/AttributeReference.html#musttail):
 
 - [Protobuf](https://github.com/protocolbuffers/protobuf/blob/755f572a6b68518bde2773d215026659fa1a69a5/src/google/protobuf/port_def.inc#L337)
-- [Julia](https://github.com/JuliaLang/julia/blob/aea56a9d9547cff43c3bcfb3dac0fff91bd53793/src/llvm-multiversioning.cpp#L696)
 - [Swift](https://github.com/apple/swift/blob/670f5d24577d2196730f08762f2e70be10363cf3/stdlib/public/SwiftShims/swift/shims/Visibility.h#L112)
-- [Zig](https://github.com/ziglang/zig/blob/5744ceedb8ea4b3e5906175033f634b17287f3ca/lib/zig.h#L110)
-- [GHC](https://github.com/ghc/ghc/blob/994bda563604461ffb8454d6e298b0310520bcc8/rts/include/Stg.h#L372)
-- [Firefly](https://github.com/GetFirefly/firefly/blob/8e89bc7ec33cb8ffa9a60283c8dcb7ff62ead5fa/compiler/driver/src/compiler/passes/ssa_to_mlir/builder/function.rs#L1388) (a BEAM/Erlang implementation)
-- [MLton](https://github.com/MLton/mlton/blob/d082c4a36110321b00dc099858bb640c4d2d2c24/mlton/codegen/llvm-codegen/llvm-codegen.fun#L1405) (a Standard ML compiler)
-- [FreeRADIUS](https://github.com/FreeRADIUS/freeradius-server/blob/fb281257fb86aa83547d5dacecebc12271d091ab/src/lib/util/lst.c#L560) (a RADIUS implementation)
 - [Skia](https://github.com/google/skia/blob/bac819cdc94a0a9fc4b3954f2ea5eec4150be103/src/opts/SkRasterPipeline_opts.h#L1205) (a graphics library from Google)
+- [CHERIoT RTOS](https://github.com/microsoft/cheriot-rtos/blob/3e6811279fedd0195e105eb3b7ac77db93d67ec5/sdk/core/allocator/alloc.h#L1460) (a realtime operating system with memory safety)
+- [FreeRADIUS](https://github.com/FreeRADIUS/freeradius-server/blob/fb281257fb86aa83547d5dacecebc12271d091ab/src/lib/util/lst.c#L560) (a RADIUS implementation) (_planning to use_)
 - Example [BPF code](https://blog.cloudflare.com/assembly-within-bpf-tail-calls-on-x86-and-arm/) from a Cloudflare blog post
 - [RSM](https://github.com/rsms/rsm/blob/d539fd5f09876700c0c38758f2b4354df433dd1c/src/rsmimpl.h#L115) (a virtual computer in the form of a virtual machine)
 - [Tails](https://github.com/snej/tails/blob/d3b14fcce18c542211bc1fd37e378f667fdee42f/src/core/platform.hh#L52) (a Forth-like interpreter)
 - [Jasmin](https://github.com/asoffer/jasmin/blob/f035ef0752c09846331c8deb2109e4ebfce83200/jasmin/internal/attributes.h#L13) (a stack-based byte-code interpreter)
-- [CHERIoT RTOS](https://github.com/microsoft/cheriot-rtos/blob/3e6811279fedd0195e105eb3b7ac77db93d67ec5/sdk/core/allocator/alloc.h#L1460) (a realtime operating system with memory safety)
-- [Pyston](https://github.com/pyston/pyston/blob/6103fc013e9dd726efca9100a22be1ac08c58591/pyston/aot/aot_gen.py#L276) (a performance-optimizing JIT for Python)
 - [upb](https://github.com/classicvalues/upb/blob/2effcce774ce05d08af635ba02b1733873e73757/upb/port_def.inc#L177) (a small protobuf implementation in C)
 - [wasm3](https://github.com/wasm3/wasm3/blob/1a6ca56ee1250d95363424cc3a60f8fd14f24fa7/source/m3_config_platforms.h#L86) ("the self-proclaimed fastest WebAssembly interpreter")
-
 
 The resulting list of notable projects using [computed goto](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html):
 
@@ -71,6 +65,18 @@ The resulting list of notable projects using [computed goto](https://gcc.gnu.org
 - [Godot](https://github.com/godotengine/godot/blob/4c677c88e918e22ad696f225d189124444f9665e/modules/gdscript/gdscript_vm.cpp#L392) (a 2D/3D game engine)
 - [Ruby](https://github.com/ruby/ruby/blob/31b28b31fa5a0452cb9d5f7eee88eebfebe5b4d1/regexec.c#L2171) (they use it in their [regex](https://github.com/ruby/ruby/blob/31b28b31fa5a0452cb9d5f7eee88eebfebe5b4d1/regexec.c#L2171) engine as well as in their [interpreter](https://github.com/ruby/ruby/blob/31b28b31fa5a0452cb9d5f7eee88eebfebe5b4d1/vm_exec.h#L98))
 - [HHVM](https://github.com/facebook/hhvm/blob/7b0dc442a81861ee65a2fc09afe51adf89faea70/hphp/runtime/vm/bytecode.cpp#L5690) (a PHP implementation from Facebook)
+
+The resulting list of notable projects using [`musttail`](https://clang.llvm.org/docs/AttributeReference.html#musttail) for code generation:
+
+- [Swift](https://github.com/apple/swift/blob/ba67156608763a58fc0dbddbc9d1ccce2dc05c02/lib/IRGen/IRGenModule.cpp#L583)
+- [Zig](https://github.com/ziglang/zig/blob/5744ceedb8ea4b3e5906175033f634b17287f3ca/lib/zig.h#L110) (+ guaranteed [TCE exposed](https://ziglang.org/documentation/master/#call) to user code)
+- [GHC](https://github.com/ghc/ghc/blob/994bda563604461ffb8454d6e298b0310520bcc8/rts/include/Stg.h#L372) (+ guaranteed [TCE exposed](https://wiki.haskell.org/Tail_recursion) to user code)
+- [Clang](https://github.com/llvm/llvm-project/blob/59ad9c3f38c285e988072d100931bcbfb24196fb/clang/lib/CodeGen/CGCall.cpp#L544) (+ guaranteed [TCE exposed](https://clang.llvm.org/docs/AttributeReference.html#musttail) to user code)
+- [Julia](https://github.com/JuliaLang/julia/blob/aea56a9d9547cff43c3bcfb3dac0fff91bd53793/src/llvm-multiversioning.cpp#L696)
+- [Firefly](https://github.com/GetFirefly/firefly/blob/8e89bc7ec33cb8ffa9a60283c8dcb7ff62ead5fa/compiler/driver/src/compiler/passes/ssa_to_mlir/builder/function.rs#L1388) (a BEAM/Erlang implementation) (+ guaranteed [TCE exposed](https://www.erlang.org/doc/reference_manual/functions.html#tail-recursion) to user code)
+- [MLton](https://github.com/MLton/mlton/blob/d082c4a36110321b00dc099858bb640c4d2d2c24/mlton/codegen/llvm-codegen/llvm-codegen.fun#L1405) (a Standard ML compiler) (+ guaranteed TCE exposed to user code)
+- [Pyston](https://github.com/pyston/pyston/blob/6103fc013e9dd726efca9100a22be1ac08c58591/pyston/aot/aot_gen.py#L276) (a performance-optimizing JIT for Python) (_planning to use_)
+
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
