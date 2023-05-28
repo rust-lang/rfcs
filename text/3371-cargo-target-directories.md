@@ -156,6 +156,8 @@ This naming scheme is chosen to be simple for people to navigate but is **not co
 
 In case the parent directory is `/` or `C:\`, the subdirectory name is implementation defined.
 
+The path used for the hashing and naming of the final directory is the one found *after* symlink resolution: `bazel` does it too and I have not found any complaints about this and it has the distinct advantage of allowing to make a symlink to a project somewhere else on the machine (for example to organise work projects) and avoid duplicating the build directory and all its data (which can be quite heavy).
+
 ### Symbolic links
 
 In the following situation
