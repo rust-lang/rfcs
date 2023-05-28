@@ -145,6 +145,8 @@ The resolution order favors `CARGO_TARGET_DIR` in all its forms, in the interest
 
 `--target-dir` > `CARGO_TARGET_DIR` > `target-dir = ...` > `--target-directories` > `CARGO_TARGET_DIRECTORIES` > `target-directories = ...`
 
+See the final section for discussion on how to make `CARGO_TARGET_DIRECTORIES` the default.
+
 ## Naming
 
 In the example in the previous section, using `CARGO_TARGET_DIRECTORIES` with `cargo build` produces named subdirectories. The name of those is partially deterministic:
@@ -346,4 +348,27 @@ The section merely provides additional information.
 
 - Allowing relative paths: I feel this is counter-productive to the stated goal and have thought of no use for it, but it's entirely possible someone else will.
 - Introduce remapping into the concept in some way.
-- Use `CARGO_TARGET_DIRECTORIES` as the default instead of the current `target` dir, with platform-defined defaults. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon.
+
+## Use `CARGO_TARGET_DIRECTORIES` as the default instead of `target`
+
+This option has several complications I'm not sure how to resolve:
+
+1. How do we decide on good platform defaults ?
+  - Subsequently, when platform defaults are decided, how do we ensure a new platform has a good default too ?
+2. How do we communicate on said default values ?
+3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon.
+
+I see `CARGO_TARGET_DIRECTORIES` as `cargo`-specific `XDG_CACHE_DIR` variable: if unset, using a local `target/` is what *all* of the Web has documented for years, it's what people expect, it's what tools expect, it makes it easy to reorganize Rust projects by just moving them around in directories, ...
+
+`CARGO_TARGET_DIRECTORIES` is more intended for CI, peoples with specific setups or people wanting to dive just a little deeper in their directory management, but just like `npm` puts `.node_modules/` in the project's workspace directory by default, I think `cargo` should also keep this as the default behaviour.
+
+### We really want to do this, how do we do it ?
+
+Well, first, heavy advertising of the option. Very **heavy** advertising of it and of `cargo-metadata` for all interactions with the cargo `target/` directory. After that, it will be a waiting game:
+
+1. Wait for tools to be updated
+2. Wait for MSRVs to catch up to the cargo version introducing the option and its defaults (this could take a year or ten, I have no idea)
+3. Add a config option to `cargo` to make it the default behaviour (when there is not already a `target/` dir locally is `CARGO_TARGET_DIR` set), something like `use-user-wide-cargo-target-directories-by-default = true` and communicate so that people can try it out
+4. Write a post saying "we'll do the change in version X" (where current version is like X-2 to warn 3 months before at least ?) and then only apply the change to directory where there is no `CARGO_TARGET_DIR` and no `target/` dir locally
+
+I expect this to take a long time and `cargo` would need to be very clear about where it puts the target directory, probably through a simple command like `cargo metadata --print-target-dir` to make it easy for CIs and scripts to use it programatically without having to parse JSON all the time like a simple `cargo metadata` would do.
