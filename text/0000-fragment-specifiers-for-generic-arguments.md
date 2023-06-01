@@ -142,8 +142,8 @@ this set of fragment specifiers is the best for my use cases, but other people
 might be interested in macros that parse differently and they might want other
 things instead.
 
-Also, should `:generic_bound` include the preceding `:` in the match (e.g. `: 'a
-+ SomeTrait` in the example above)? And likewise with the `=` before
+Also, should `:generic_bound` include the preceding `:` in the match (e.g.
+`: 'a + SomeTrait` in the example above)? And likewise with the `=` before
 `:generic_default`? I personally think it looks nicer without, but other people
 may disagree with my aesthetic preferences.
 
