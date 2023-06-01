@@ -50,7 +50,7 @@ When you use `impl Trait` as the return type for a function within a trait defin
 Consider the following trait:
 
 ```rust
-trait IntoIntIterator {
+trait IntoNumIterator {
     fn into_int_iter(self) -> impl Iterator<Item = u32>;
 }
 ```
@@ -58,18 +58,18 @@ trait IntoIntIterator {
 The semantics of this are analogous to introducing a new associated type within the surrounding trait;
 
 ```rust
-trait IntoIntIterator { // desugared
-    type IntoIntIter: Iterator<Item = u32>;
-    fn into_int_iter(self) -> Self::IntoIntIter;
+trait IntoNumIterator { // desugared
+    type IntoNumIter: Iterator<Item = u32>;
+    fn into_int_iter(self) -> Self::IntoNumIter;
 }
 ```
 
 When using `-> impl Trait`, however, there is no associated type that users can name.
 
-By default, the impl for a trait like `IntoIntIterator` must also use `impl Trait` in return position.
+By default, the impl for a trait like `IntoNumIterator` must also use `impl Trait` in return position.
 
 ```rust
-impl IntoIntIterator for Vec<u32> {
+impl IntoNumIterator for Vec<u32> {
     fn into_int_iter(self) -> impl Iterator<Item = u32> {
         self.into_iter()
     }
@@ -79,7 +79,7 @@ impl IntoIntIterator for Vec<u32> {
 It can, however, give a more specific type with `#[refine]`:[^refine]
 
 ```rust
-impl IntoIntIterator for Vec<u32> {
+impl IntoNumIterator for Vec<u32> {
     #[refine]
     fn into_int_iter(self) -> impl Iterator<Item = u32> + ExactSizeIterator {
         self.into_iter()
@@ -568,10 +568,10 @@ Not compatibly, no, because they would no longer have a named associated type. T
 
 Generally yes, but all impls would have to be rewritten to include the definition of the associated type. In many cases, some form of type-alias impl trait (or impl trait in associated type values) would also be required.
 
-For example, if we changed the `IntoIntIterator` trait from the motivation to use an explicit associated type..
+For example, if we changed the `IntoNumIterator` trait from the motivation to use an explicit associated type..
 
 ```rust
-trait IntoIntIterator {
+trait IntoNumIterator {
     type IntIter: Iterator<Item = u32>;
     fn into_iter(self) -> Self::IntIter;
 }
@@ -580,7 +580,7 @@ trait IntoIntIterator {
 ...then impls like...
 
 ```rust
-impl IntoIntIterator for MyType {
+impl IntoNumIterator for MyType {
     fn into_int_iter(self) -> impl Iterator<Item = u32> {
         (0..self.len()).map(|x| x * 2)
     }
@@ -591,7 +591,7 @@ impl IntoIntIterator for MyType {
 
 ### Would there be any way to make it possible to migrate from `impl Trait` to a named associated type compatibly?
 
-Potentially! There have been proposals to allow the values of associated types that appear in function return types to be inferred from the function declaration. So, using the example from the previous question, the impl for `IntoIntIterator` could infer the value of `IntIter` based on the return type of `into_int_iter`. This may be a good idea, but it is not proposed as part of this RFC.
+Potentially! There have been proposals to allow the values of associated types that appear in function return types to be inferred from the function declaration. So, using the example from the previous question, the impl for `IntoNumIterator` could infer the value of `IntIter` based on the return type of `into_int_iter`. This may be a good idea, but it is not proposed as part of this RFC.
 
 ### What about using an implicitly-defined associated type?
 
@@ -657,7 +657,7 @@ There are a number of crates that do desugaring like this manually or with proce
 
 ### Naming return types
 
-This RFC does not include a way for generic code to name or bound the result of `-> impl Trait` return types. This means, for example, that for the `IntoIntIterator` trait introduced in the motivation, it is not possible to write a function that takes a `T: IntoIntIterator` which returns an `ExactLenIterator`; for async functions, the most common time this comes up is code that wishes to take an async function that returns a `Send` future. We expect future RFCs will address these use cases.
+This RFC does not include a way for generic code to name or bound the result of `-> impl Trait` return types. This means, for example, that for the `IntoNumIterator` trait introduced in the motivation, it is not possible to write a function that takes a `T: IntoNumIterator` which returns an `ExactLenIterator`; for async functions, the most common time this comes up is code that wishes to take an async function that returns a `Send` future. We expect future RFCs will address these use cases.
 
 ### Dynamic dispatch
 
