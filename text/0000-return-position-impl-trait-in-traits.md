@@ -646,6 +646,7 @@ There are a number of crates that do desugaring like this manually or with proce
 [unresolved-questions]: #unresolved-questions
 
 - Should we stabilize this feature together with `async fn` to mitigate hazards of writing a trait that is not forwards-compatible with its desugaring? (See [drawbacks].)
+- Resolution of [#112194: RPITIT is allowed to name any in-scope lifetime parameter, unlike inherent RPIT methods](https://github.com/rust-lang/rust/issues/112194)
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
