@@ -13,9 +13,11 @@ This RFC proposes to allow the bundling of local images in rustdoc HTML output. 
 # Motivation
 [motivation]: #motivation
 
-Doc authors want to produce docs that are consistent across local `cargo doc` output, `docs.rs`, and self-hosted docs. They would also like to include images (like logos and diagrams), and scripts (like KaTeX for rendering math symbols). Both doc authors and doc readers would like for those resources to not be subject to link-rot, which means it should be possible to build docs for an old version of a crate and have the images and scripts reliably available. Doc readers would like for `cargo doc` output to be rendered correctly by their browsers even when they are offline.
+Doc authors want to produce docs that are consistent across local `cargo doc` output, `docs.rs`, and self-hosted docs. They would also like to include images (like logos and diagrams). Both doc authors and doc readers would like for those resources to not be subject to link-rot, which means it should be possible to build docs for an old version of a crate and have the images and scripts reliably available. Doc readers would like for `cargo doc` output to be rendered correctly by their browsers even when they are offline.
 
 Right now, there are attributes that can set a logo and a favicon for documentation, but they must to point to an absolute URL, which prevents bundling the logo and favicon in the source repository. Also, while `<script>` tags are allowed in rustdoc, they have a similar problem: if they load script from some URL, that URL needs to be absolute or it won't work consistently across `cargo doc` and `docs.rs`.
+
+While using custom `<script>` tags is a valid usecase, this RFC only focusses on the usecase of dealing with images.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -60,7 +62,7 @@ To support `#[doc(inline)]` for foreign items using local resources, it will rel
 
 A new rustdoc pass will be added which would go through all documentation to gather local resources into a map.
 
-Then in HTML documentation generation, the local resources pathes will be replaced by their equivalent linking to the output directory instead.
+Then in HTML documentation generation, the local resources paths will be replaced by their equivalent linking to the output directory instead.
 
 The local resources files will be renamed as follows: `{original filename}-{hash}{extension}`. The `{hash}` information will be computed from the local resource file content.
 
