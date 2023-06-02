@@ -187,7 +187,6 @@ Formally, given a trait method with a return type like `-> impl A + ... + Z` and
 
 * Concrete types, constant expressions, and `'static`
 * Any generic type and const parameters in scope, including:
-    * `Self`
     * Type and const parameters on the impl
     * Explicit type and const parameters on the method
     * Implicit type parameters on the method (argument-position `impl Trait` types)
