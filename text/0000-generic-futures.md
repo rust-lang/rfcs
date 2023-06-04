@@ -51,9 +51,34 @@ Note also that the generic parameter should be spread to `IntoFuture` and any ot
 
 The core of the proposal is the API change, which is explained in the guide-level explaination.
 
-The current mechanics of constructing the state machine for `async` blocks would still be applicable. Care should be taken to generate implementations of future for the entire intersection of the sets of wakers supported by each awaited future. This should be doable by generating:
+The current mechanics of constructing the state machine for `async` blocks would still be applicable. Care should be taken to generate implementations of future for the entire intersection of the sets of wakers supported by each awaited future.
+
+Note that while `async` blocks can generate `AnonymousType` to handle an open set of wakers, there is no existing way to expose its full capabilities. The community has gotten into the habbit of modeling
 ```rust
-impl<_W> core::future::Future<_W> for StmThatAwaitsF1andF2
+async fn foo(f1: F1, f2: F2) -> () {
+	f1.await;
+	f2.await;
+}
+```
+as the following Return Position Impl Trait (RPIT) form
+```rust
+fn foo(f1: F1, f2: F2) -> impl Future<Output=()> {
+	// ...
+}
+```
+
+To the best of my knowledge, this model is an oversimplification, and the correct desuggaring would be 
+```rust
+struct [anonymous@foo] { .. }
+impl core::future::Future for [anonymous@foo] { .. }
+fn foo(f1: F1, f2: F2) -> [anonymous@foo] {
+	// ...
+}
+```
+which could be converted into the following to allow `foo` to be usable with arbitrary wakers:
+
+```rust
+impl<_W> core::future::Future<_W> for [anonymous@foo]
 where
 	_W: _WakerTrait,
 	F1: core::future::Future<_W>,
@@ -62,6 +87,14 @@ where
 }
 ```
 
+The issue of naming that anonymous type through RPIT remains. The most accurate RPIT naming would be the hypothetical `impl for<_W> core::future::Future<_W> where {bounds...}`, but RPIT doesn't support generics other than lifetimes, nor bounds on said generics.
+
+With the coming support of `async fn` in traits which (from my external viewpoint) seems to be orthogonal to that of RPIT in traits, this issue could be bypassed entirely, by simply dropping "async functions are just functions that return an async blocks named through RPIT" model in favor of the original "they return an anonymous state machine" model.
+
+Alternatively, users could define `pub trait PolyFuture: Future + Future<tokio::Waker> {}` and blanket-implement it, and then use that trait for their RPIT and boxed futures. This would only cover closed sets of wakers, but may be an acceptable compromise.
+
+While this awkwardness in interactions with RPIT is somewhat frustrating, Generic Futures are still a net gain in flexibility, and even RPIT code could gain in flexibility by extending their supported closed set of wakers.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -69,6 +102,7 @@ where
 - Risk of fragmentation and/or added complexity of executor APIs: since executors will be able to specialise their futures for their executors, this may cause additional fragmentation in the async ecosystem. Maintaining support for traditional futures _and_ specialised futures could have an impact on executor APIs and implementations, as these futures would need to be kept distinct.
 	- Note that this risk also exists with the runtime specialisation discussed in the `waker_getters` RFC, with the clear advantage for this RFC that fragmentation could be detected and handled at compile time.
 - Due to `std::task::Wake` _and_ `Waker` already exisiting, naming the new trait for wakers may be awkward, and the three symbols may become confusing to newcomers. 
+- The RFC breaks the RPIT model of teaching `async fn` (and assumes the current implementation of `async fn` doesn't rely on RPIT).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
