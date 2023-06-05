@@ -21,16 +21,18 @@ toy example:
 
 ```rust
 macro_rules! implement_debug {
-    { $params:generic $type:ty } => {
-        impl $params Debug for $ty {
+    { $params:generic $type:ty $( where $where:where_clause )? } => {
+        impl $params Debug for $ty $( where $where )? {
             /* .. implementation goes here .. */
         }
     };
 }
 
 struct Container<'a, T>(&'a T);
-
 implement_debug!(<'a, T: Debug + 'a> Container<'a, T>);
+
+struct Container2<'a, T>(&'a T);
+implement_debug!(<'a, T> Container<'a, T> where T: Debug + 'a);
 ```
 
 However, with the current state of declarative macros, there's no way to parse
@@ -71,8 +73,9 @@ fragment specifiers and their descriptions:
 * `:generic_bounds`: Bounds on a generic parameter (e.g. `'lifetime + SomeTrait`
   on a type or `usize` on a const parameter).
 * `:generic_default`: A default value for a generic type or lifetime
+* `:where_clause`: A where clause providing constraints on generic parameters
 
-These four parameters are designed to make it easier to write declarative macros
+These five parameters are designed to make it easier to write declarative macros
 that take in generic arguments (e.g. to use with a type or function), and then
 use them to be generic on e.g. type definitions or `impl` blocks.
 
@@ -94,6 +97,9 @@ Exact parsing behavior:
 * `:generic_default` matches a type (can be the default for a type parameter) or
   anything that can be default for a const parameter (a block, an identifier, or
   a literal).
+* `:where_clause` matches a
+  [`WhereClause`](https://doc.rust-lang.org/reference/items/generics.html#where-clauses)
+  excluding the initial `where` token.
 
 All of these can potentially pick up on multiple tokens, so the result of any of
 these parses is undestructible in the declarative macro.
@@ -107,6 +113,11 @@ Following behavior:
   type, and `+` is already illegal following a path or type.
 * `:generic_default` can be followed by anything that follows `:ty`, since the
   other options all have an unambiguous end.
+* `:where_clause` can be followed by anything that follows `:generic_bounds`
+  except not a `,`, as it contains a comma-separated repetition whose terms end
+  in a generic bound, so we need to tell that the generic bound is ending, and
+  we can't have a following comma (because then we don't know if there's another
+  repetition).
 
 # Drawbacks
 [drawbacks]: #drawbacks
