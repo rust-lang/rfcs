@@ -44,7 +44,7 @@ and its bounds for use in various places, so I'd like this as well:
 
 ```rust
 macro_rules! implement_debug {
-    { < $( $param:generic_param $( : $bound:generic_bound )? ),+ > $type:ty } => {
+    { < $( $param:generic_param $( : $bound:generic_bounds )? ),+ > $type:ty } => {
         impl < $( $param $( : $bound )? ),+ > Debug for $ty {
             /* .. implementation goes here .. */
         }
@@ -68,7 +68,7 @@ fragment specifiers and their descriptions:
 * `:generic`: A full set of generic parameters and their bounds (e.g. `<'a, T:
   'a + SomeTrait, const N: usize>`)
 * `:generic_param`: A generic parameter (e.g. `'a`, `T`, or `const N`)
-* `:generic_bound`: Bounds on a generic parameter (e.g. `'lifetime + SomeTrait`
+* `:generic_bounds`: Bounds on a generic parameter (e.g. `'lifetime + SomeTrait`
   on a type or `usize` on a const parameter).
 * `:generic_default`: A default value for a generic type or lifetime
 
@@ -85,12 +85,12 @@ Exact parsing behavior:
   grammar item.
 * `:generic_param` matches any of a lifetime, an identifier, or `const` followed
   by an identifier.
-* `:generic_bound` matches the
+* `:generic_bounds` matches the
   [`TypeParamBounds`](https://doc.rust-lang.org/reference/trait-bounds.html)
   (can be the bounds on a type parameter) or
   [`LifetimeBounds`](https://doc.rust-lang.org/reference/trait-bounds.html) (can
   be the bounds on a lifetime parameter) grammar items, or a type (can be the
-  bounds on a const parameter).
+  bounds on a const parameter). It may also match nothing.
 * `:generic_default` matches a type (can be the default for a type parameter) or
   anything that can be default for a const parameter (a block, an identifier, or
   a literal).
@@ -102,7 +102,7 @@ Following behavior:
 * `:generic` can be followed by anything, as it unambiguously ends when the
   closing `>` appears.
 * `:generic_param` is similarly bounded and so anything can follow it, as well.
-* `:generic_bound` can be followed by anything that follows `:path` and `:ty`,
+* `:generic_bounds` can be followed by anything that follows `:path` and `:ty`,
   as it contains some repetition of lifetimes and paths separated by `+`, or a
   type, and `+` is already illegal following a path or type.
 * `:generic_default` can be followed by anything that follows `:ty`, since the
@@ -142,7 +142,7 @@ this set of fragment specifiers is the best for my use cases, but other people
 might be interested in macros that parse differently and they might want other
 things instead.
 
-Also, should `:generic_bound` include the preceding `:` in the match (e.g.
+Also, should `:generic_bounds` include the preceding `:` in the match (e.g.
 `: 'a + SomeTrait` in the example above)? And likewise with the `=` before
 `:generic_default`? I personally think it looks nicer without, but other people
 may disagree with my aesthetic preferences.
