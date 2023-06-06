@@ -49,6 +49,17 @@ We think most users will not be aware of these implicit trust requirements, and 
 This RFC is not aiming to address the general threats of arbitrary execution of code defined in dependencies (such as build scripts or proc-macros) intentionally added by the user.
 Those threats still require reviewing the code and trust relationship with those dependencies.
 
+## Rollout
+
+The implementation for this will initially be released as a warning to give advance notification to users about the change without suddenly breaking their environment.
+A release of rustup will need to be made first, and then cargo should follow with a nightly release soon after (within a few days).
+
+After approximately 6-12 weeks, both cargo and rustup will be changed to generate an error.
+The rest of the text of this RFC discusses this proposal assuming it is generating an error.
+
+We do not consider the severity of this threat sufficiently high relative to other threats that this change was needing to be done under embargo.
+Since this risk is now publicly known, it is not expected that a warning period will be excessively risky.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
