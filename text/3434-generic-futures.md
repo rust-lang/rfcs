@@ -1,6 +1,6 @@
 - Feature Name: `generic-futures`
 - Start Date: 2023-05-17
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3434)
+- RFC PR: [rust-lang/rfcs#3434](https://github.com/rust-lang/rfcs/pull/3434)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
