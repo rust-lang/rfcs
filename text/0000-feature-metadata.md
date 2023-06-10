@@ -19,7 +19,7 @@ information is in a separate RFC.
 [motivation]: #motivation
 
 Features are widely used as a way to do things like reduce dependency count,
-gate std or alloc-dependent parts of code, or hide unstable API. Use is so
+gate `std` or `alloc`-dependent parts of code, or hide unstable API. Use is so
 common that many larger crates wind up with tens of feature gates, such as
 [`tokio`] with 24. Despite being a first class component of crate structure,
 there are some limitations that don't have elegant solutions:
@@ -48,7 +48,7 @@ foo = []
 # New configurations
 bar = { requires = ["foo"], doc = "simple docstring here"}
 baz = { requires = ["foo"], public = false}
-qux = { requires = [], deprecated = true, unstable = true }
+qux = { requires = [], deprecated = true }
 quux = { requires = [], deprecated = { since = "1.2.3", note = "don't use this!" } }
 
 # Features can also be full tables if descriptions are longer
@@ -72,8 +72,6 @@ The following keys would be allowed in a feature table:
     with `since` and/or `note` keys. Cargo will warn downstream crates using this
 -   `public`: A boolean flag defaulting to `true` that indicates whether or not
     downstream crates should be allowed to use this feature
--   `unstable`: A boolean flag indicating that the feature is only usable with
-    nightly Rust, or is otherwise not API-stable
 
 If a downstream crate attempts to use the features `baz` and `qux`, they will
 see messages like the following:
@@ -161,12 +159,6 @@ add`
 There needs to be an escape hatch for this for things like benchmarks - RFC TBD
 on how this works.
 
-## `unstable`
-
-`unstable` is a boolean value that defaults to `false`. It should indicate that
-a feature gates something that is not API-stable, or can only be built using
-`nightly` Rust.
-
 ---
 
 Use cases for this information will likely develop with time, but one of the
@@ -186,7 +178,6 @@ crab@rust foobar % cargo add regex
              + std              When enabled, this will cause regex to use the
                                 standard library
              + unicode          Enables all Unicode features
-             - unstable (U)     Some unstable features
              - deprecated (D)   Not a real feature, but it could be
 
     Updating crates.io index
@@ -200,7 +191,7 @@ Another thing to note is sort order. In general, any tool that renders features
 
 -   Display default features first
 -   Display non-default but stable features next (can be in a separate section)
--   Display unstable or deprecated features last (can be in a separate section)
+-   Display deprecated features last (can be in a separate section)
 -   Do not display private features unless receiving a flag saying to do so (e.g.
     `--document-private-items` with `rustdoc`)
 -   If ordering is not preserved, present the features alphabetically
@@ -211,10 +202,10 @@ Another thing to note is sort order. In general, any tool that renders features
 
 -   Added complexity to Cargo. Parsing is trivial, but exact implementation
     details do add test surface area
--   Added Cargo arguments if escape hatches for `public` or `unstable` are created
+-   Added Cargo arguments if escape hatches for `public` are created
 -   Docstrings can be lengthy, adding noise to `Cargo.toml`. This could
     potentially be solved with the below mentioned `doc-file` key.
--   `unstable` and `public` uses may not be common enough to be worth including
+-   `public` uses may not be common enough to be worth including
 -   A markdown parser is required to properly parse the `doc` field.
 -   This RFC does not provide any way for `rustdoc` to get the information it
     requires. This will require separate design work.
@@ -261,8 +252,8 @@ Another thing to note is sort order. In general, any tool that renders features
 
 [unresolved-questions]: #unresolved-questions
 
--   Do we want all the proposed keys? Specifically, `public` and `unstable` may be
-    more than what is needed.
+-   Do we want all the proposed keys? Specifically, `public` may be more than
+    what is needed.
 
     See also:
 
@@ -270,8 +261,7 @@ Another thing to note is sort order. In general, any tool that renders features
     -   <https://github.com/rust-lang/cargo/issues/10881>
 
 -   If we use the semantics as-written, should there be a
-    `--allow-private-features` or `--allow-unstable-features` flag? Or how should
-    a user opt in?
+    `--allow-private-features` flag? Or how should a user opt in?
 -   Does it make sense to have separate `hidden` (not documented) and `public`
     (feature not allowed downstream) attribute? I think probably not
 -   Should there be a way to deny deprecated features?
@@ -289,6 +279,8 @@ stabilized immediately and other features could be postponed.
     [`rustdoc-cargo-configuration`] RFC.
 -   Somehow inform users if they are using to-be-deprecated features, i.e.,
     deprecated `since` is set but is later than the current dependancy version.
+-   An `unstable` feature flag that indicates API-unstable or nightly-only
+    features.
 -   `unstable` or `private` feature flags could be used to allow optional dev
     dependencies. See: <https://github.com/rust-lang/cargo/issues/1596>
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
