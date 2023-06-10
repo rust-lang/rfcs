@@ -242,11 +242,12 @@ Another thing to note is sort order. In general, any tool that renders features
 
 [prior-art]: #prior-art
 
--   There is an existing crate that uses TOML comments to create a features table:
-    <https://docs.rs/document-features/latest/document_features/>
+-   There is an existing crate that uses TOML comments to create a features
+    table: <https://docs.rs/document-features/latest/document_features/>
 -   `docs.rs` displays a feature table, but it is fairly limited. If features
     start with `_`, they are hidden from this table.
--   Ivy has a [visibility attribute] for its configuration (mentioned in [cargo #10882])
+-   Ivy has a [visibility attribute] for its configuration (mentioned in
+    [cargo #10882])
 
 # Unresolved questions
 
@@ -279,17 +280,20 @@ stabilized immediately and other features could be postponed.
     [`rustdoc-cargo-configuration`] RFC.
 -   Somehow inform users if they are using to-be-deprecated features, i.e.,
     deprecated `since` is set but is later than the current dependancy version.
--   An `unstable` feature flag that indicates API-unstable or nightly-only
-    features.
+-   An `unstable` field that indicates API-unstable or nightly-only features.
+-   A `rust-version` field that could indicate e.g. `rust-version = "nightly"`
+    or `rust-version = "1.65"` to specify a MSRV for that feature. See:
+    <https://github.com/rust-lang/rfcs/pull/3416#discussion_r1174478461>
 -   `unstable` or `private` feature flags could be used to allow optional dev
     dependencies. See: <https://github.com/rust-lang/cargo/issues/1596>
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
     features.
 -   [`cargo-info`] can use this information to provide feature descriptions.
--   `deprecated` could take a `replace-with` key that indicates features have
-    moved to a different name
--   One option is to allow giving the feature documentation in a separate file,
-    allowing a markdown section specifier. This could be a good option for
+-   `deprecated` could take a `suggestion` key that indicates features have
+    moved to a different name (as with the [`deprecated-suggestions`] feature)
+-   Feature documentation could be allowed in a separate markdown file. For
+    convenience, markdown anchors could be used to specify a section, so
+    multiple features can share the same file. This could be a good option for
     features requiring long descriptions.
 
     ```toml
@@ -297,9 +301,10 @@ stabilized immediately and other features could be postponed.
     bar = { requires = [], doc-file = "features.md#bar" }
     ```
 
+[cargo #10882]: https://github.com/rust-lang/cargo/issues/10882
+[`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
+[`deprecated`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-deprecated-attribute
+[`deprecated-suggestions`]: https://github.com/rust-lang/rust/issues/94785#issuecomment-1579349116
 [`rustdoc-cargo-configuration`]: https://github.com/rust-lang/rfcs/pull/3421
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
-[`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
 [visibility attribute]: https://ant.apache.org/ivy/history/latest-milestone/ivyfile/conf.html
-[cargo #10882]: https://github.com/rust-lang/cargo/issues/10882
-[`deprecated`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-deprecated-attribute
