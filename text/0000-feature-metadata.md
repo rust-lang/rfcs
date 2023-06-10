@@ -220,7 +220,8 @@ Another thing to note is sort order. In general, any tool that renders features
 -   This RFC does not provide any way for `rustdoc` to get the information it
     requires. This will require separate design work.
 -   There is no way to structure features in a way that they are split into
-    sections, unlike with the `document-features` crate.
+    sections or have a user-specified layout, unlike with the
+    `document-features` crate.
 -   Features cannot be ordered since the TOML specification does not allow it.
 
 # Rationale and alternatives
@@ -240,10 +241,12 @@ Another thing to note is sort order. In general, any tool that renders features
     ```
 
     This was decided against as part of this RFC because it would mean that
-    standard TOML parsers (including anything `serde`-based) cannot extract all
-    the information in `Cargo.toml` - a format-preserving parser would be
-    required. This differs from documentation in Rust source, where a custom
-    parser already has to be used.
+    TOML-compliant parsers (including anything `serde`-based) would be
+    insufficient to extract all information in the manifest, requiring custom
+    deserialization of the fields via a format-preserving parser. This differs
+    from documentation in Rust source as the doc-comment behavior is described
+    specified within the grammar with parsers supporting extracting those
+    elements.
 
 # Prior art
 
