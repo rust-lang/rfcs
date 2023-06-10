@@ -289,6 +289,8 @@ stabilized immediately and other features could be postponed.
     [`rustdoc-cargo-configuration`] RFC.
 -   Somehow inform users if they are using to-be-deprecated features, i.e.,
     deprecated `since` is set but is later than the current dependancy version.
+-   `unstable` or `private` feature flags could be used to allow optional dev
+    dependencies. See: <https://github.com/rust-lang/cargo/issues/1596>
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
     features.
 -   [`cargo-info`] can use this information to provide feature descriptions.
