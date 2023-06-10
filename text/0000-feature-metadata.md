@@ -99,18 +99,19 @@ following sections:
 `requires` will take the place of the feature dependency array that currently
 exists. Semantics will remain unchanged.
 
-This is a required key.
+This is a required key. If there are no requirements, an empty list should be
+provided (`requires = []`).
 
 ## `doc`
 
 `doc` is the most straightforward: it accepts markdown-flavored text, and should
 be thought of as the equivalent to a `#[doc(...)]` attribute. Like doc comments,
-the first line should be usable as a summary, though most use cases will only
-have one line.
+the first line should be treated as a summary.
 
 There is nothing in this RFC that cargo `must` do with this action, since it is
 mainly intended for the consumption of `rustdoc` or `docs.rs`. However, it can
-be used for general diagnostic information.
+be used for general diagnostic information such as during `cargo add` or
+a possible `cargo info` command.
 
 ## `deprecated`
 
@@ -214,9 +215,7 @@ Another thing to note is sort order. In general, any tool that renders features
 -   Docstrings can be lengthy, adding noise to `Cargo.toml`. This could
     potentially be solved with the below mentioned `doc-file` key.
 -   `unstable` and `public` uses may not be common enough to be worth including
--   A markdown parser will eventaully be required to properly parse the `doc`
-    field. Presenting unrendered markdown is likely suitable as a first step,
-    but in general, markdown is required to fully interpret the field.
+-   A markdown parser is required to properly parse the `doc` field.
 -   This RFC does not provide any way for `rustdoc` to get the information it
     requires. This will require separate design work.
 -   There is no way to structure features in a way that they are split into
