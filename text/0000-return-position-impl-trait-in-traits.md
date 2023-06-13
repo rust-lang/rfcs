@@ -251,8 +251,6 @@ where `T_0 + ... + T_m` are bounds, for any impl of that trait to be valid, the 
 
 [^refine]: `#[refine]` was added in [RFC 3245: Refined trait implementations](https://rust-lang.github.io/rfcs/3245-refined-impls.html). This feature is not yet stable. Examples in this RFC requiring the use of `#[refine]` will not work until that feature is stabilized.
 
-Additionally, using `-> impl Trait` notation in an impl is only legal if the trait also uses that notation.
-
 ```rust
 trait NewIntoIterator {
     type Item;
@@ -291,6 +289,23 @@ impl NewIntoIterator for Vec<u32> {
     fn into_iter(self) -> std::vec::IntoIter<u32> {
         self.into_iter()
     }
+}
+```
+
+Additionally, using `-> impl Trait` notation in an impl is only legal if the trait also uses that notation. Each occurrence of `impl Trait` in an impl must unify with an occurrence of `impl Trait` in the trait.
+
+```rust
+trait Trait {
+    fn foo() -> i32;
+    fn bar() -> impl Sized;
+}
+
+impl Trait for () {
+    // Not OK
+    fn foo() -> impl Sized { 0 }
+
+    // Not OK
+    fn bar() -> Result<impl Sized, impl Sized> { Ok::<(), ()>(()) }
 }
 ```
 
@@ -680,3 +695,20 @@ trait NewIntoIterator {
 The only problem remaining is with `#[refine]`. If an existing implementation refined its return value of an RPITIT method, we would need the existing `#[refine]` attribute to stand in for an overriding of the associated type default.
 
 Whatever rules we decide to make this work, they will interact with some ongoing discussions of proposals for `#[defines]` or `#[defined_by]` attributes on `type_alias_impl_trait`. We therefore leave the details of this to a future RFC.
+
+### Adding new occurrences of `impl Trait` in refinements
+
+We may want to allow the following pattern:
+
+```rust
+trait Trait {
+    fn test() -> impl Sized;
+}
+
+impl Trait for () {
+    #[refine]
+    fn test() -> Result<impl Sized, impl Sized> { Ok::<(), ()>(()) }
+}
+```
+
+Then uses of `impl Trait` in a trait impl would not necessarily correspond to a use of `impl Trait` in the trait.
