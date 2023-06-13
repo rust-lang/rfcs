@@ -1,12 +1,7 @@
----
-tags: draft-rfc
-title: Return position `impl Trait` in traits
----
-
 - Feature Name: return_position_impl_trait_in_traits
 - Start Date: 2023-04-27
-- RFC PR: [rust-lang/rfcs#3193](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3425](https://github.com/rust-lang/rfcs/pull/3425)
+- Rust Issue: [rust-lang/rust#91611](https://github.com/rust-lang/rust/issues/91611)
 - Initiative: [impl trait initiative](https://github.com/rust-lang/impl-trait-initiative)
 
 # Summary
