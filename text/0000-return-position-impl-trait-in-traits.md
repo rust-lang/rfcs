@@ -179,6 +179,8 @@ impl NewIntoIterator for Vec<u32> {
 }
 ```
 
+The desugaring works the same for provided methods of traits.
+
 ## Scoping rules for generic parameters
 
 We say a generic parameter is "in scope" for an `impl Trait` type if the actual revealed type is allowed to name that parameter. The scoping rules for return position `impl Trait` in traits are the same as [those for return position `impl Trait` generally][scoping]: All type and const parameters are considered in-scope, while lifetime parameters are only considered in-scope if they are mentioned in the `impl Trait` type directly.
