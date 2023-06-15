@@ -319,3 +319,4 @@ compared to `LocalFrobber`, but it's not clear how that would work.
 - New kinds of bounds: anything that makes `where` clauses more powerful would make this feature more powerful as well.
   - Variance bounds would allow this feature to support backward-compatible GATification.
   - Method unsafety bounds would support the `Future` → `Async` use-case.
+- Allow `trait Foo: Copy = Iterator;` as alternative to `trait Foo = Iterator where Self: Copy;`.
