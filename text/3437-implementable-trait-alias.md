@@ -291,6 +291,8 @@ Trait aliases are `unsafe` to implement iff the underlying trait is marked `unsa
 
 - The sytactic distance between implementable and non-implementable aliases is short, which might confuse users.
 In particular, the fact that `trait Foo = Bar + Send;` means something different than `trait Foo = Bar where Self: Send;` will likely be surprising to many.
+  - On the other hand, the rules mirror those of `impl` blocks, which Rust programmers already understand.
+  - Ideally, we would collect user feedback before stabilizing this feature.
 - Adds complexity to the language.
 - Many of the motivating use-cases involve language features that are not yet stable, or even merely speculative.
 More experience with those features might unearth better alternatives.
@@ -300,8 +302,8 @@ More experience with those features might unearth better alternatives.
 - Very lightweight, with no new syntax forms. Compare "trait transformers" proposals, for example—they are generally much heavier.
 - Better ergonomics compared to purely proc-macro based solutions.
 - One alternative is to allow marker traits or auto traits to appear in `+` bounds of implementable aliases.
-(For example, `trait Foo = Bar + Send;` could be made implementable). However, I suspect that the complexity would not be worthwhile.
-- Another possibility is to require an attribute on implmenentable aliase; e.g. `#[implementable] trait Foo = ...`. Again, I don't think that the complexity is warranted.
+(For example, `trait Foo = Bar + Send;` could be made implementable). However, this would arguably make implementability rules less intuitive, as the symmetry with `impl` blocks would be broken.
+- Another possibility is to require an attribute on implmenentable aliase; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules explicit, but at the cost of cluttering the attribute namespace and adding more complexity to the language.
 
 # Prior art
 
