@@ -70,7 +70,7 @@ plays nicely with `rustfmt`.
         was being embedded, then the indentation would be lost.
         Finally, although `rustfmt` could in principle reformat
         these strings, in practice doing so in a reasonable way
-        is complicated and so this has never been enabled.
+        is complicated and so this has never been enabled by default.
     
     3.  Raw string literals, eg. `r#"I can use "s!"#`
 
