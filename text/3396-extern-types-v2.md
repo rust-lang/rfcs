@@ -114,10 +114,7 @@ A `MetaSized` bound can be introduced to regain the previous meaning.
 This introduces a new trait `core::marker::MetaSized` that represents a type that is "metadata sized" and "metadata aligned":
 ```rust
 #[lang = "meta_sized"]
-trait MetaSized: Pointee {
-    fn size_of_val(metadata: <Self as Pointee>::Metadata) -> usize;
-    fn align_of_val(metadata: <Self as Pointee>::Metadata) -> Alignment;
-}
+trait MetaSized {}
 ```
 This trait is automatically implemented for all types except extern types.
 
@@ -196,6 +193,17 @@ This would be a significant departure from the compilers approach to generics, b
 This change could be made in an entirely backwards compatible way by leaving the existing meaning of `?Sized` alone and allowing relaxing the implied `MetaSized` bound with `T: ?Sized + ?MetaSized` (or possibly just `T: ?MetaSized`).
 This is not suggested by this document because the lang team has historically said that they do not wish to add any more opt-out bounds.
 
+## Trait methods
+
+`MetaSized` could include `size_of_val` and `align_of_val` rather than relying on the free functions:
+``` rust
+trait MetaSized: Pointee {
+    fn size_of_val(metadata: <Self as Pointee>::Metadata) -> usize;
+    fn align_of_val(metadata: <Self as Pointee>::Metadata) -> Alignment;
+}
+```
+This is the more obvious way of writing the trait, however it would prevent splitting `MetaSized` and `MetaAligned` in the future and adding these functions later would be hard but probably not impossible.
+
 
 # Prior art
 [prior-art]: #prior-art
@@ -220,11 +228,10 @@ There is a lot of prior art in rust itself from previous attempts at custom DSTs
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should `MetaSized` contain methods, or should it be a marker trait with the implementation left to `core::mem::size_of_val` and `core::mem::align_of_val`?
 - Should "metadata sized" imply "metadata aligned" or should we be adding the `MetaAligned` trait rather than `MetaSized`?
 - Should `MetaSized` be a supertrait of `Sized`? All `Sized` things are `MetaSized` but `Sized` doesn't semantically require `MetaSized`.
 - Should users be able to slap a `#[repr(align(n))]` attribute onto opaque types to give them an alignment?  
-  This would allow us to represent `CStr` properly but would necessitate splitting `MetaSized` and `MetaAligned` as they would not be "metadata sized" in general.
+  This would allow us to represent `CStr` properly but would necessitate splitting `MetaSized` and `MetaAligned` as it is only "dynamically sized" but "statically aligned".
   (We may be able to get away with the [Aligned trait](https://github.com/rust-lang/rfcs/pull/3319))
 - Should the `extern type` syntax exist, or should there just be a `repr(unsized)`?  
   This would allow headers with opaque tails (which are very common in C code) but is a more significant departure from the original RFC, and looks more like custom DSTs.
