@@ -1,6 +1,6 @@
 # Static async fn in traits
 
-- Feature Name: `async_fn_in_traits`
+- Feature Name: `async_fn_in_trait`
 - Start Date: 2021-10-13
 - RFC PR: [rust-lang/rfcs#3185](https://github.com/rust-lang/rfcs/pull/3185)
 - Rust Issue: [rust-lang/rust#91611](https://github.com/rust-lang/rust/issues/91611)
