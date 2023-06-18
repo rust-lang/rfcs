@@ -170,7 +170,7 @@ they'll be able to use my collection.
 
 ```rust
 pub struct Either<L, R, S: Store> {
-    is_left: true,
+    is_left: bool,
     handle: S::Handle,
     store: ManuallyDrop<S>,
 }
@@ -509,7 +509,7 @@ pub unsafe trait MultipleStore: Store {}
 
 /// A refinement of `Store` which does not invalidate existing pointers on allocation, resolution, or deallocation, but
 /// may invalidate them on moves.
-pun unsafe trait StableStore: Store {}
+pub unsafe trait StableStore: Store {}
 
 /// A refinement of `Store` which does not invalidate existing pointers, not even on moves. That is, this refinement
 /// guarantees that the blocks of memory are pinned in memory.
@@ -535,7 +535,7 @@ This RFC increases the surface of the standard library, with yet another `Alloca
 
 Furthermore, the natural consequence of adopting this RFC would be rewriting the existing collections in terms of
 `Store`, rather than `Allocator`. A mostly mechanical task, certainly, but an opportunity to introduce subtle bugs in
-the process, even if MIRI would hopefully catch most such bugs.
+the process, even if Miri would hopefully catch most such bugs.
 
 Finally, having two allocator-like APIs, `Store` and `Allocator`, means that users will forever wonder which trait they
 should implement[^1], and which trait they should use when implementing a collection[^2].
