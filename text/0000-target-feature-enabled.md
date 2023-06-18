@@ -1,6 +1,6 @@
 - Feature Name: `target_feature_enabled`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Start Date: 2023-06-17
+- RFC PR: [rust-lang/rfcs#3449](https://github.com/rust-lang/rfcs/pull/3449)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
