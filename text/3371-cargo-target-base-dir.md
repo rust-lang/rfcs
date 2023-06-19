@@ -8,8 +8,7 @@
 
 <!-- One paragraph explanation of the feature. -->
 
-Introduce a new configuration option for cargo to tell it to move the crate/workspace's target directory into a crate/workspace-specific subdirectory of the configured absolute path,
-named `CARGO_TARGET_BASE_DIR`.
+Introduce a new configuration option for cargo to tell it to move the crate/workspace's target directory into a crate/workspace-specific subdirectory of the configured absolute path, named `CARGO_TARGET_BASE_DIR`.
 
 # Motivation
 [motivation]: #motivation
@@ -20,8 +19,7 @@ The original motivating issue can be found here: [rust-lang/cargo#11156](https:/
 
 1. Not having to find and clean all `target/` dirs everywhere while not having all projects collide (which is the effect of setting `CARGO_TARGET_DIR` globally)
 1. Being able to easily exclude a directory from saves (Apple's Time Machine, ZFS snapshots, BRTS, ...)
-1. Allows easily having separate directories for Rust-Analyzer and Cargo itself, allowing concurrent builds
-   (technically already doable with arguments/env vars but `CARGO_TARGET_DIR` collides all projects into big target dir, leading to frequent recompilation because of conflicting features and locking builds)
+1. Allows easily having separate directories for Rust-Analyzer and Cargo itself, allowing concurrent builds (technically already doable with arguments/env vars but `CARGO_TARGET_DIR` collides all projects into big target dir, leading to frequent recompilation because of conflicting features and locking builds)
 1. Allows using a different disk, partition or mount point for cargo artifacts
 1. Avoids having to set `CARGO_TARGET_DIR` for every project to get the same effect as proposed here
 
@@ -98,17 +96,13 @@ Two projects can be built in parallel without troubles.
 
 #### With both set
 
-`CARGO_TARGET_DIR` was present long before `CARGO_TARGET_BASE_DIR`: backward compatibility is important, so the first always trumps the second,
-there is no mixing going on.
+`CARGO_TARGET_DIR` was present long before `CARGO_TARGET_BASE_DIR`: backward compatibility is important, so the first always trumps the second, there is no mixing going on.
 
 #### Absolute and relative paths
 
-`CARGO_TARGET_DIR` can be either a relative or absolute path, which makes sense since it's mostly intended for a single project, which can then
-work from its own position to configure the target directory.
+`CARGO_TARGET_DIR` can be either a relative or absolute path, which makes sense since it's mostly intended for a single project, which can then work from its own position to configure the target directory.
 
-On the other hand `CARGO_TARGET_BASE_DIR` is intended to be used with several projects, possibly completely unrelated to each other. As such,
-it does not accept relative paths, only absolute ones. If a compelling use case is present for a relative path, it can added in the future as a
-backward-compatible change.
+On the other hand `CARGO_TARGET_BASE_DIR` is intended to be used with several projects, possibly completely unrelated to each other. As such, it does not accept relative paths, only absolute ones. If a compelling use case is present for a relative path, it can added in the future as a backward-compatible change.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -149,8 +143,7 @@ See the final section for discussion on how to make `CARGO_TARGET_BASE_DIR` the 
 
 ## Naming
 
-In the example in the previous section, using `CARGO_TARGET_BASE_DIR` with `cargo build` produces named subdirectories. The name of those is partially deterministic:
-it is the name of the parent directory of the workspace's `Cargo.toml` manifest and an unspecified hash of the absolute path to the workspace's root, so building `work-project/crate-1` will still use the `/cargo-caches/work-project-<hash>/debug/...` directory for a `cargo build` call.
+In the example in the previous section, using `CARGO_TARGET_BASE_DIR` with `cargo build` produces named subdirectories. The name of those is partially deterministic: it is the name of the parent directory of the workspace's `Cargo.toml` manifest and an unspecified hash of the absolute path to the workspace's root, so building `work-project/crate-1` will still use the `/cargo-caches/work-project-<hash>/debug/...` directory for a `cargo build` call.
 
 This naming scheme is chosen to be simple for people to navigate but is **not considered stable**: the hashing method (and so the hash) will probably not change often but `cargo` offers no guarantee and may change it in any release. Tools that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value each time they are invoked.
 
@@ -192,9 +185,7 @@ Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, 
 
 This introduces one more option to look at to find the target directory, which may complicate the life of external tools.
 
-This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_BASE_DIR`, so an external tool can set it and go on its way.
-Also, having `cargo` set `CARGO_TARGET_DIR` when inside a workspace where `CARGO_TARGET_BASE_DIR` is used will help current tools (those not
-yet using `cargo metadata`) continue working without trouble.
+This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_BASE_DIR`, so an external tool can set it and go on its way. Also, having `cargo` set `CARGO_TARGET_DIR` when inside a workspace where `CARGO_TARGET_BASE_DIR` is used will help current tools (those not yet using `cargo metadata`) continue working without trouble.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -221,14 +212,11 @@ For those reason, this option has not been retained and the `targo` tool is disc
 
 ## Using `XDG_CACHE_HOME` instead of a cargo-specific env-var
 
-Not all OSes use the XDG convention, notably Windows and macOS (though the latter can be somewhat made to) and it is
-very easy to define `CARGO_TARGET_BASE_DIR=${XDG_CACHE_HOME:-~/.cache}/cargo_target_base_dir` if wanted by users.
+Not all OSes use the XDG convention, notably Windows and macOS (though the latter can be somewhat made to) and it is very easy to define `CARGO_TARGET_BASE_DIR=${XDG_CACHE_HOME:-~/.cache}/cargo_target_base_dir` if wanted by users.
 
 ## Just put the directories inside of `.cargo/cache/...`
 
-There are already lots of discussion about `.cargo` and `.rustup` being home to both cache and config files and why this
-is annoying for lots of users. What's more, it would not be as helpful to external build tools, they don't care about
-bringing the registry cache in their build directory for example.
+There are already lots of discussion about `.cargo` and `.rustup` being home to both cache and config files and why this is annoying for lots of users. What's more, it would not be as helpful to external build tools, they don't care about bringing the registry cache in their build directory for example.
 
 ## Stabilize the naming scheme
 
@@ -238,8 +226,7 @@ What's more, by explicitely not stabilizing it (and maybe voluntarily changing i
 
 ## Use only the hash, not the name of the workspace directory
 
-While this solution is just as easy to work with for tools, I think having a somewhat human-readable part in the name make it easier to work with through things like logging or just listing the subdirectories in `CARGO_TARGET_BASE_DIR`. It also makes the path printed by `cargo run` or
-the local URL used when calling `cargo doc --open` much clearer.
+While this solution is just as easy to work with for tools, I think having a somewhat human-readable part in the name make it easier to work with through things like logging or just listing the subdirectories in `CARGO_TARGET_BASE_DIR`. It also makes the path printed by `cargo run` or the local URL used when calling `cargo doc --open` much clearer.
 
 Ultimately, tools are not negatively affected since they should be using `CARGO_TARGET_DIR` or `cargo metadata` and humans have an easier time working with such paths so I think it's worthwhile to include the workspace's name.
 
@@ -265,9 +252,7 @@ On the other hand, `targo` is already here and working for at least one person, 
 
 ## Remapping
 
-[rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156) was originally about remapping the target directory, not about having a
-central one but reading the issue, there seems to be no needs for more than the simple redefinition of the target directory proposed in this document.
-In the future, if `CARGO_TARGET_DIR_REMAP` is introduced, it could be used to be the prefix to the target directory like so:
+[rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156) was originally about remapping the target directory, not about having a central one but reading the issue, there seems to be no needs for more than the simple redefinition of the target directory proposed in this document. In the future, if `CARGO_TARGET_DIR_REMAP` is introduced, it could be used to be the prefix to the target directory like so:
 
 - Set `CARGO_TARGET_DIR_REMAP=/home/user/projects=/tmp/cargo-build`
 - Compile the crate under `/home/user/projects/foo/` **without** `CARGO_TARGET_DIR` or `CARGO_TARGET_BASE_DIR` set
@@ -277,8 +262,7 @@ By making the priority order `CARGO_TARGET_DIR` > `CARGO_TARGET_BASE_DIR` > `CAR
 
 When `CARGO_TARGET_DIR` is relative, the result could be `/tmp/cargo-build/foo/$CARGO_TARGET_DIR`.
 
-Overall, I feel remapping is much harder to implement well and can be added later without interfering with `CARGO_TARGET_BASE_DIR` (and without
-this RFC interfering with remapping), though the design space is probably bigger than the one for this RFC.
+Overall, I feel remapping is much harder to implement well and can be added later without interfering with `CARGO_TARGET_BASE_DIR` (and without this RFC interfering with remapping), though the design space is probably bigger than the one for this RFC.
 
 # Prior art
 [prior-art]: #prior-art
