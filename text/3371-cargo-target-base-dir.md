@@ -325,6 +325,16 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 
 - Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for us ?
 
+## Handle possibly thousands of directories in a single `CARGO_TARGET_BASE_DIR` path
+
+While a single dev machine is unlikely to have enough projects that the simple scheme of `<project name>-<hash>` will produce enough directories to slow down working in `$CARGO_TARGET_BASE_DIR/`, it could still happen, and notably in private CI, which are often less compartimentalized than public ones. Simple cruft over time (i.e, never calling `cargo clean` over years) could also make it happen, if much slower.
+
+A quick design that would probably work and still be relatively navigable by humans is: instead of `project-name-<hash>/`, use `p/r/o/j/e/ct-name-<hash>/`. Here I used an arbitrary limit of 5 subdirectories but really, anything could be used. A problem occurs if a `.` is present in the directory name,but in that case we could simply append it to the symbol before like so: `proj....name/` -> `p/r/o/j..../n/ame-<hash>/`.
+
+If the project name contains a space in the first 5 symbols, maybe replace it like so: `proj name/` -> `p/r/o/j-space/n/ame-<hash>/`.
+
+I don't know of any filesystem that has troubles with `_` or `-` (often used as delimiters) so those have no special handling.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
