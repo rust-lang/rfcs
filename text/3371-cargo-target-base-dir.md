@@ -175,7 +175,7 @@ When calling `cargo metadata` in the `symlink-to-crate` path, the result contain
 
 ## Impact on `cargo ...` calls
 
-When calling `cargo` where `CARGO_TARGET_BASE_DIR` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, including calls to third-party tools.
+When calling `cargo` where `CARGO_TARGET_BASE_DIR` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, as much as possible. For third party tools (`cargo-*`), where cargo does not know about the relevant `Cargo.toml`, the tool would have to use [`cargo_metadata`](https://docs.rs/cargo_metadata), as is already expected today.
 
 In the same vein, `cargo metadata` will fill the target directory information with the absolute path and make no mention of `CARGO_TARGET_BASE_DIR` since it can only be used in a single workspace at once.
 
