@@ -239,10 +239,13 @@ While a very nice tool, [`targo`](https://github.com/sunshowers/targo) is not in
 - It needs more metadata to work well, which means an external tool using it would have to understand that metadata too.
 - It uses `$CARGO_HOME/targo` to place its cache, making it less useful for external build tools and people wanting to separate caches and configuration.
 - It needs to intercept `cargo`'s arguments, making it more brittle than an integrated solution.
+- Its naming scheme is a base58-encoded blake3 hash of the workspace directory ([source]), making it unusable by human (that's not necessarily a bad thing, just a difference with this RFC) and not taking into account the use case of thousands of target directories within `$CARGO_HOME/targo`.
 
 Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
 
 On the other hand, `targo` is already here and working for at least one person, making it the most viable alternative for now.
+
+[source]: https://github.com/rust-lang/cargo/issues/11156#issuecomment-1285951209
 
 ### Providing backlinks
 
