@@ -321,6 +321,8 @@ If the project name contains a space in the first 5 symbols, maybe replace it li
 
 I don't know of any filesystem that has troubles with `_` or `-` (often used as delimiters) so those have no special handling.
 
+If, on the other, we don't care (or care less) for human usability of the directories inside `CARGO_TARGET_BASE_DIR`, we could simply invert the format to use `<hash>-<project name>`: since the hash would have fixed length and set of characters, it would be easy to split into subdirectories without special casing and a simple `find . -n 'project name'` would point to the final target directory for the project (or all of them, if several similarly named projects exists on the machine).
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
