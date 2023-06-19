@@ -260,7 +260,7 @@ On the other hand, `targo` is already here and working for at least one person, 
 
 ### Providing backlinks
 
-`targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target dire.
+`targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
 
 `cargo` does not for `CARGO_TARGET_DIR` and will not do it either for `CARGO_TARGET_BASE_DIR` : it provides `cargo metadata` that is the blessed way to obtain the actual target directory and when `CARGO_TARGET_BASE_DIR` is used, it will set `CARGO_TARGET_DIR` on all invocation (if not already set) to make it easy to obtain the target directory for simple task (e.g. a test needing to launch another binary in the repo).
 
