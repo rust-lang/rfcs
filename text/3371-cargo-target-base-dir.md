@@ -253,8 +253,7 @@ While a very nice tool, [`targo`](https://github.com/sunshowers/targo) is not in
 - It uses `$CARGO_HOME/targo` to place its cache, making it less useful for external build tools and people wanting to separate caches and configuration.
 - It needs to intercept `cargo`'s arguments, making it more brittle than an integrated solution.
 
-Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to
-solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
+Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
 
 On the other hand, `targo` is already here and working for at least one person, making it the most viable alternative for now.
 
@@ -367,6 +366,7 @@ This option has several complications I'm not sure how to resolve:
 
 1. How do we decide on good platform defaults ?
   - Subsequently, when platform defaults are decided, how do we ensure a new platform has a good default too ?
+  - `CARGO_HOME` is already criticized for being both a *cache* and a *config* home (using the XDG spec semantics), adding more local cache to it in the form of `CARGO_HOME/target-base-dir/` would not improve the situation and should probably not be done, but, if no good alternatives are found, there is precedent to use it for this.
 2. How do we communicate on said default values ?
 3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon.
 
