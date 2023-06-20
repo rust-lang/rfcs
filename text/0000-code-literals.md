@@ -71,7 +71,7 @@ into multi-line string literals.
         was being embedded, then the indentation would be lost.
         Finally, although `rustfmt` could in principle reformat
         these strings, in practice doing so in a reasonable way
-        is complicated and so this has never been enabled.
+        is complicated and so this has never been enabled by default.
     
     3.  Raw string literals, eg. `r#"I can use "s!"#`
 
@@ -251,7 +251,7 @@ problems with this (as demonstrated in this document).
 
 ### Quote style
 
-  - **3+N backticks**
+  - :heavy_check_mark: **3+N backticks**
     ```rust
     let _ = ```
         some code
@@ -289,7 +289,7 @@ problems with this (as demonstrated in this document).
 
 ### Indentation rules
 
-  - **Relative to closing quote + retain final newline**
+  - :heavy_check_mark: **Relative to closing quote + retain final newline**
 
     Benefits:
       - Allows every possible indentation to be represented.
@@ -331,9 +331,9 @@ problems with this (as demonstrated in this document).
     Drawbacks:
       - Some indentations cannot be represented.
 
-### Miscellaneous
+### Modifications
 
-  - **Language hint directly following opening quote**
+  - :heavy_check_mark: **Language hint directly following opening quote**
 
     This is intended to allow extra information (eg. language) to be
     conveyed by the programmer to macros and/or their IDE. For example:
@@ -345,7 +345,8 @@ problems with this (as demonstrated in this document).
     Here, an intelligent IDE could apply syntax highlighting to the nested
     code block, knowing that the code is SQL.
 
-  - **Annotation on closing quote to remove trailing newline**
+  - :heavy_check_mark: **Annotation on closing quote to remove trailing
+    newline**
 
     For indentation rules where the final quote must appear on
     its own line and there is no way to represent a string without
