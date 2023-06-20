@@ -7,7 +7,8 @@
 [summary]: #summary
 
 Add a new kind of multi-line string literal for embedding code which
-plays nicely with `rustfmt`.
+plays nicely with `rustfmt` and doesn't introduce unwanted whitespace
+into multi-line string literals.
 
 # Motivation
 [motivation]: #motivation
@@ -79,6 +80,12 @@ plays nicely with `rustfmt`.
         of using an `\` at the end of each line cannot be applied
         because escape characters are not recognised.
 
+  - The existing string literals introduce extra unwanted whitespace
+    into the literal value. Even if that extra whitespace does not
+    semantically affect the nested code, it results in ugly output
+    if the code is ever logged (such as might happen when logging
+    SQL query executions).
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -92,10 +99,10 @@ of string literal exists: code string literals.
         I can use special characters like "" and \ freely.
 
             Indentation is preserved *relative* to the indentation level
-            of the first line.
+            of the terminating triple backticks.
 
     It is an error for a line to have "negative" indentation (ie. be
-    indented less than the indentation of the opening backticks) unless
+    indented less than the final triple backticks) unless
     the line is empty.
         ```;
 ```
@@ -129,6 +136,15 @@ let code = ````
 ````;
 ```
 
+In order to suppress the final newline, the literal may instead be
+closed with `!``` `, eg.
+
+```rust
+let code = ```
+    Text with no final newline
+    !```;
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -139,35 +155,37 @@ to begin the literal.
 The value of the string literal will be determined using the following
 steps:
 
-1.  Start from the first newline after the opening backticks.
-2.  Take the string exactly as written until the closing backticks.
-3.  Remove equal numbers of spaces or tabs from every non-empty line
-    until the first character of the first non-empty line is neither
-    a space nor a tab, or until every line is empty.
-    Raise a compile error if this could not be done
-    due to a "negative" indent or inconsistent whitespace (eg. if
-    some lines are indented using tabs and some using spaces).
+1.  Measure the whitespace indenting the closing backticks. If a
+    non-whitespace character (other than a single `!`) exists before
+    the closing backticks on the same line, then issue a compiler error.
+2.  Take the lines *between* (but not including) the opening and
+    closing backticks exactly as written.
+3.  Remove exactly the measured whitespace from each line. If this
+    cannot be done, then issue a compiler error.
+4.  If the string was terminated with `!``` `, then remove the
+    final newline.
 
 Here are some edge case examples:
 
 ```rust
     // Empty string
     assert_eq!(```foo
-    ```, "");
+        ```, "");
 
     // Newline
     assert_eq!(```
 
-    ```, "\n");
+        ```, "\n");
 
     // No terminating newline
     assert_eq!(```
-        bar```, "bar");
+        bar
+        !```, "bar");
 
     // Terminating newline
     assert_eq!(```
         bar
-    ```, "bar\n");
+        ```, "bar\n");
 
     // Preserved indent
     assert_eq!(```
@@ -179,15 +197,15 @@ Here are some edge case examples:
     assert_eq!(```
             if a:
                 print(42)
-    ```, "if a:\n    print(42)\n");
+            ```, "if a:\n    print(42)\n");
 
-    // Relative to first non-empty line
+    // Relative to closing backticks
     assert_eq!(```
 
 
             if a:
                 print(42)
-    ```, "\n\nif a:\n    print(42)\n");
+    ```, "\n\n        if a:\n            print(42)\n");
 ```
 
 The text between the opening backticks and the first newline is
@@ -229,11 +247,133 @@ interfere with the ability to paste Rust code snippets into such
 blocks. Experimentally, markdown parsers do not seem to have any
 problems with this (as demonstrated in this document).
 
+## A list of all options regarding syntax
+
+### Quote style
+
+  - **3+N backticks**
+    ```rust
+    let _ = ```
+        some code
+        ```;
+    ```
+
+  - **3+N double-quotes**
+    ```rust
+    let _ = """
+        some code
+        """;
+    ```
+
+  - **3+N single quotes**
+    ```rust
+    let _ = '''
+        some code
+        ''';
+    ```
+
+  - **Word prefix + N+1 hashes**
+    ```rust
+    let _ = code#"
+        some code
+        "#;
+    ```
+
+  - **Single character prefix + N+1 hashes**
+    ```rust
+    let _ = m#"
+        some code
+        "#;
+    ```
+    (note: `c` is already reserved for C strings)
+
+### Indentation rules
+
+  - **Relative to closing quote + retain final newline**
+
+    Benefits:
+      - Allows every possible indentation to be represented.
+      - Simple rule.
+      - The value of the string is obvious and intuitive.
+
+    Drawbacks:
+      - It is not possible to represent strings without a trailing newline.
+
+  - **Relative to closing quote + remove final newline**
+
+    Benefits:
+      - Allows every possible indentation to be represented.
+      - Simple rule.
+      - Strings without a final newline can be represented.
+
+    Drawbacks:
+      - There are two ways to represent the empty string.
+      - It is unintuitive that two empty lines between quotes results in
+        a single newline.
+
+  - **Relative to first non-empty line**
+
+    Benefits:
+      - Simple rule.
+      - The value of the string is obvious and intuitive.
+      - Strings without a final newline can be represented.
+
+    Drawbacks:
+      - Some indentations cannot be represented.
+
+  - **Relative to least indented line**
+
+    Benefits:
+      - Simple rule.
+      - The value of the string is obvious and intuitive.
+      - Strings without a final newline can be represented.
+
+    Drawbacks:
+      - Some indentations cannot be represented.
+
+### Miscellaneous
+
+  - **Language hint directly following opening quote**
+
+    This is intended to allow extra information (eg. language) to be
+    conveyed by the programmer to macros and/or their IDE. For example:
+    ```rust
+    let _ = ```sql
+        SELECT * FROM table;
+        ```;
+    ```
+    Here, an intelligent IDE could apply syntax highlighting to the nested
+    code block, knowing that the code is SQL.
+
+  - **Annotation on closing quote to remove trailing newline**
+
+    For indentation rules where the final quote must appear on
+    its own line and there is no way to represent a string without
+    a trailing newline, a modification character could be used.
+
+    For example:
+    ```rust
+    let _ = ```
+        no trailing newline
+        !```;
+    ```
+    This could be used with any quote style and is unambiguous because
+    nothing can otherwise appear on the same line prior to the closing
+    quote.
+
 # Prior art
 [prior-art]: #prior-art
 
-The proposed syntax is primarily based on markdown code block syntax,
-which is widely used and should be familiar to most programmers.
+The proposed quote style is primarily based on markdown code block syntax,
+which is widely used and should be familiar to most programmers. This is
+also where the language hint comes from.
+
+The indentation rules are borrowed from [Perl's "Indented Here-docs"](https://perldoc.perl.org/perlop#EOF) and [PHP's "Heredoc" syntax](https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc)
+
+The [`indoc` crate](https://docs.rs/indoc/latest/indoc/) exists to remove
+leading indentation from multiline string literals. However, it cannot
+help with the reformatting done by `rustfmt`, and is generally not understood
+by IDEs.
 
 
 # Unresolved questions
@@ -255,7 +395,7 @@ which is widely used and should be familiar to most programmers.
     ```rust
     query!(```postgresql
         <query>
-    ```)
+        ```)
     ```
 
     could parse the query in a PostgreSQL specific way.
