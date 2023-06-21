@@ -8,7 +8,7 @@
 
 <!-- One paragraph explanation of the feature. -->
 
-Introduce a new configuration option for cargo to tell it to move the crate/workspace's target directory into a crate/workspace-specific subdirectory of the configured absolute path, named `CARGO_TARGET_BASE_DIR`.
+Introduce a new configuration option for cargo to tell it to move the workspace's target directory into a workspace-specific subdirectory of the configured absolute path, named `CARGO_TARGET_BASE_DIR`.
 
 # Motivation
 [motivation]: #motivation
@@ -74,7 +74,7 @@ Consider this directory tree:
 
 `cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts directly in `/cargo-cache/debug/...`
 
-A subsequent `cargo build` in `project-1` will work with the same artifact, potentially having conflicting features for dependencies for example.
+A subsequent `cargo build` in `perso-1` will work with the same artifact, potentially having conflicting features for dependencies for example.
 
 A `cargo clean` will delete the entire `/cargo-cache` directory, for all projects at once.
 
@@ -84,13 +84,13 @@ It's not possible to have to projects building at once because Cargo locks its t
 
 #### With `CARGO_TARGET_BASE_DIR=/cargo-cache`
 
-`cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts in `/cargo-cache/work-project-<hash>/debug/...`
+`cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts in `/cargo-cache/<project-path>/debug/...` (where `project-path` is a directory or several chained directories unique to the workspace, with an unspecified naming scheme).
 
-A `cargo build` in `project-1` will produce new artifacts in `/cargo-cache/project-1-<hash>/debug/...`.
+A `cargo build` in `perso-1` will produce new artifacts in `/cargo-cache/<project-path>/debug/...`.
 
-A `cargo clean` will only remove the `/cargo-cache/<project>-<hash>/` subdirectory, not all the artifacts.
+A `cargo clean` will only remove the `/cargo-cache/<project-path>/` subdirectory, not all the artifacts.
 
-In this situation, it's not possible for Cargo to produce invalid state without a `build.rs` deliberately writing outside its target directory.
+In this situation, it's much less likely for Cargo to produce invalid state without a `build.rs` deliberately writing outside its target directory.
 
 Two projects can be built in parallel without troubles.
 
@@ -143,13 +143,13 @@ See the final section for discussion on how to make `CARGO_TARGET_BASE_DIR` the 
 
 ## Naming
 
-In the example in the previous section, using `CARGO_TARGET_BASE_DIR` with `cargo build` produces named subdirectories. The name of those is partially deterministic: it is the name of the parent directory of the workspace's `Cargo.toml` manifest and an unspecified hash of the absolute path to the workspace's root, so building `work-project/crate-1` will still use the `/cargo-caches/work-project-<hash>/debug/...` directory for a `cargo build` call.
+In the example in the previous section, using `CARGO_TARGET_BASE_DIR` with `cargo build` produces named subdirectories. The name of those is computed from the full and canonicalized path to the manifest for the workspace, so building `work-project/crate-1` will still use the directory for the whole workspace during a `cargo build` call.
 
-This naming scheme is chosen to be simple for people to navigate but is **not considered stable**: the hashing method (and so the hash) will probably not change often but `cargo` offers no guarantee and may change it in any release. Tools that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value each time they are invoked.
+This naming scheme is **not considered stable**: the method will probably not change often but `cargo` offers no guarantee and may change it in any release. Tools that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value each time they are invoked.
 
-In case the parent directory is `/` or `C:\`, the subdirectory name is implementation defined.
+The path used for the naming of the final target directory is the one found *after* symlink resolution: `bazel` does it too and I have not found any complaints about this and it has the distinct advantage of allowing to make a symlink to a project somewhere else on the machine (for example to organise work projects) and avoid duplicating the build directory and all its data (which can be quite heavy).
 
-The path used for the hashing and naming of the final directory is the one found *after* symlink resolution: `bazel` does it too and I have not found any complaints about this and it has the distinct advantage of allowing to make a symlink to a project somewhere else on the machine (for example to organise work projects) and avoid duplicating the build directory and all its data (which can be quite heavy).
+To prevent collisions by craftings paths, the `<project-path>` directory will be computed from a hash of the workspace manifest's full path (and possibly other data, for example `bazel` uses its version and the current user too).
 
 ### Symbolic links
 
@@ -166,6 +166,12 @@ In the following situation
 
 When calling `cargo metadata` in the `symlink-to-crate` path, the result contains `"manifest_path": "/Users/poliorcetics/projects/actual-crate/Cargo.toml"` and `"workspace_root":"/Users/poliorcetics/projects/actual-crate"`. This behaviour means that symlinks won't change the final directory used inside `CARGO_TARGET_BASE_DIR`, or in other words: symbolic links are resolved.
 
+### Handle possibly thousands of directories in a single `CARGO_TARGET_BASE_DIR` path
+
+While a single dev machine is unlikely to have enough projects that the scheme of `<project-path>` will produce enough directories to slow down working in `$CARGO_TARGET_BASE_DIR/`, it could still happen, and notably in private CI, which are often less compartimentalized than public ones. Simple cruft over time (i.e, never calling `cargo clean` over years) could also make it happen, if much slower.
+
+A proposed solution for `cargo` to split the hash into something like `$CARG_TARGET_BASE_DIR/hash[:2]/hash[2:4]/hash[4:]/...`. Since the naming scheme is considered an implementation detail, if this prove insufficient it could be change in a subsequent version of `cargo`.
+
 ## Impact on `cargo ...` calls
 
 When calling `cargo` where `CARGO_TARGET_BASE_DIR` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, as much as possible. For third party tools (`cargo-*`), where cargo does not know about the relevant `Cargo.toml`, the tool would have to use [`cargo_metadata`](https://docs.rs/cargo_metadata), as is already expected today.
@@ -174,7 +180,7 @@ In the same vein, `cargo metadata` will fill the target directory information wi
 
 ### `cargo clean`
 
-Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_BASE_DIR`: if it set, `cargo clean` will delete `CARGO_TARGET_BASE_DIR/<project>-<hash>` and not `target/`.
+Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_BASE_DIR`: if it set, `cargo clean` will delete `CARGO_TARGET_BASE_DIR/<project-path>/` and not `target/`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -199,12 +205,13 @@ This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_B
 
 ## Do nothing
 
-It is already possible today to use `CARGO_TARGET_DIR` to remap workspaces and projects but this has two problems:
+It is already possible today to use `CARGO_TARGET_DIR` to remap workspaces and projects but this has a few problems:
 
 1) If done globally, the `CARGO_TARGET_DIR` becomes a hodge-podge of every project, which is not often the goal.
 2) If done per-project, it is very cumbersome to maintain.
 3) [`targo`](https://github.com/sunshowers/targo) by @sunshowers
 4) [rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156)
+5) The upcoming `cargo script` command needs someplace to put its cache and having a dedicated directory for that would be nice.
 
 `targo` and the cargo issue express a need for either remapping or a global target directory that is not shared between different Cargo workspaces.
 
@@ -224,12 +231,6 @@ I feel this require an hard-to-break naming scheme (a recent hash algorithm shou
 
 What's more, by explicitely not stabilizing it (and maybe voluntarily changing it between versions sometimes, since a version change recompiles everything anyway ?) we can instead reroute people and tools towards `CARGO_TARGET_DIR` / `cargo metadata` instead, which are much more likely to be suited to their use case if they need the path to the target directory.
 
-## Use only the hash, not the name of the workspace directory
-
-While this solution is just as easy to work with for tools, I think having a somewhat human-readable part in the name make it easier to work with through things like logging or just listing the subdirectories in `CARGO_TARGET_BASE_DIR`. It also makes the path printed by `cargo run` or the local URL used when calling `cargo doc --open` much clearer.
-
-Ultimately, tools are not negatively affected since they should be using `CARGO_TARGET_DIR` or `cargo metadata` and humans have an easier time working with such paths so I think it's worthwhile to include the workspace's name.
-
 ## Just use `targo`
 
 While a very nice tool, [`targo`](https://github.com/sunshowers/targo) is not integrated with `cargo` and has a few shortcomings:
@@ -239,7 +240,8 @@ While a very nice tool, [`targo`](https://github.com/sunshowers/targo) is not in
 - It needs more metadata to work well, which means an external tool using it would have to understand that metadata too.
 - It uses `$CARGO_HOME/targo` to place its cache, making it less useful for external build tools and people wanting to separate caches and configuration.
 - It needs to intercept `cargo`'s arguments, making it more brittle than an integrated solution.
-- Its naming scheme is a base58-encoded blake3 hash of the workspace directory ([source]), making it unusable by human (that's not necessarily a bad thing, just a difference with this RFC) and not taking into account the use case of thousands of target directories within `$CARGO_HOME/targo`.
+- Its naming scheme is a base58-encoded blake3 hash of the workspace directory ([source]), making it unusable by human and not taking into account the use case of thousands of target directories within `$CARGO_HOME/targo`.
+- It uses the workspace root dir and not manifest, which means a `targo script` would share cache between all the scripts in a directory, which may not be the desired effect.
 
 Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
 
@@ -251,7 +253,7 @@ On the other hand, `targo` is already here and working for at least one person, 
 
 `targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
 
-`cargo` does not for `CARGO_TARGET_DIR` and will not do it either for `CARGO_TARGET_BASE_DIR` : it provides `cargo metadata` that is the blessed way to obtain the actual target directory and when `CARGO_TARGET_BASE_DIR` is used, it will set `CARGO_TARGET_DIR` on all invocation (if not already set) to make it easy to obtain the target directory for simple task (e.g. a test needing to launch another binary in the repo).
+`cargo` does not for `CARGO_TARGET_DIR` and will not do it either for `CARGO_TARGET_BASE_DIR` : it provides `cargo metadata` that is the blessed way to obtain the actual target directory and when `CARGO_TARGET_BASE_DIR` is used, it will set `CARGO_TARGET_DIR` on all invocation within a workspace (if not already set) to make it easy to obtain the target directory for simple task (e.g. a test needing to launch another binary in the repo).
 
 ## Remapping
 
@@ -310,18 +312,6 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 -->
 
 - Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for us ?
-
-## Handle possibly thousands of directories in a single `CARGO_TARGET_BASE_DIR` path
-
-While a single dev machine is unlikely to have enough projects that the simple scheme of `<project name>-<hash>` will produce enough directories to slow down working in `$CARGO_TARGET_BASE_DIR/`, it could still happen, and notably in private CI, which are often less compartimentalized than public ones. Simple cruft over time (i.e, never calling `cargo clean` over years) could also make it happen, if much slower.
-
-A quick design that would probably work and still be relatively navigable by humans is: instead of `project-name-<hash>/`, use `p/r/o/j/e/ct-name-<hash>/`. Here I used an arbitrary limit of 5 subdirectories but really, anything could be used. A problem occurs if a `.` is present in the directory name,but in that case we could simply append it to the symbol before like so: `proj....name/` -> `p/r/o/j..../n/ame-<hash>/`.
-
-If the project name contains a space in the first 5 symbols, maybe replace it like so: `proj name/` -> `p/r/o/j-space/n/ame-<hash>/`.
-
-I don't know of any filesystem that has troubles with `_` or `-` (often used as delimiters) so those have no special handling.
-
-If, on the other, we don't care (or care less) for human usability of the directories inside `CARGO_TARGET_BASE_DIR`, we could simply invert the format to use `<hash>-<project name>`: since the hash would have fixed length and set of characters, it would be easy to split into subdirectories without special casing and a simple `find . -n 'project name'` would point to the final target directory for the project (or all of them, if several similarly named projects exists on the machine).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
