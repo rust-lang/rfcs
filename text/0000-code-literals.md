@@ -358,6 +358,14 @@ problems with this (as demonstrated in this document).
         no trailing newline
         !```;
     ```
+
+    Or (the less serious suggestion of)...
+    ```rust
+    let _ = ```
+        no trailing newline
+        🚫```;
+    ```
+
     This could be used with any quote style and is unambiguous because
     nothing can otherwise appear on the same line prior to the closing
     quote.
