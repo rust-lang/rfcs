@@ -18,7 +18,7 @@ Introduce a new configuration option for cargo to tell it to move the workspace'
 The original motivating issue can be found here: [rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156).
 
 1. Not having to find and clean all `target/` dirs everywhere while not having all projects collide (which is the effect of setting `CARGO_TARGET_DIR` globally)
-1. Being able to easily exclude a directory from saves (Apple's Time Machine, ZFS snapshots, BRTS, ...)
+1. Being able to easily exclude a directory from backups (Apple's Time Machine, ZFS and btrfs snapshots, ...)
 1. Allows easily having separate directories for Rust-Analyzer and Cargo itself, allowing concurrent builds (technically already doable with arguments/env vars but `CARGO_TARGET_DIR` collides all projects into big target dir, leading to frequent recompilation because of conflicting features and locking builds)
 1. Allows using a different disk, partition or mount point for cargo artifacts
 1. Avoids having to set `CARGO_TARGET_DIR` for every project to get the same effect as proposed here
