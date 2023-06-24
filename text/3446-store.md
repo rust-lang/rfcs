@@ -346,7 +346,7 @@ unsafe impl<T> Store for InlineSingleStore<T> {
         _new_layout: Layout,
     ) -> Result<(Self::Handle, usize), AllocError> {
         debug_assert!(
-            _new_layout.size() >= _old_layout.size(),
+            _new_layout.size() <= _old_layout.size(),
             "{_new_layout:?} must have a smaller size than {_old_layout:?}"
         );
 
@@ -429,7 +429,7 @@ impl<T> InlineSingleStore<T> {
 And that's it!
 
 I need not implement `MultipleStore`, and thus do not have to track allocations and deallocations. And I need not
-implement `PinningStore`, and thus do not have to ensure memory address stability across moves.
+implement `PinningStore`, and thus do not have to ensure that memory remains pinned.
 
 More examples of `Store` can be found at https://github.com/matthieu-m/storage/tree/main/src/store, including an inline
 bump store.
@@ -451,7 +451,7 @@ pub unsafe trait Store {
     type Handle: Copy;
 
     /// Returns a dangling handle, always invalid.
-    fn dangling() -> Self::Handle;
+    fn dangling(&self) -> Self::Handle;
 
     /// Return a pointer to the block of memory associated to `handle`.
     unsafe fn resolve(&self, handle: Self::Handle) -> NonNull<u8>;
@@ -512,7 +512,8 @@ pub unsafe trait MultipleStore: Store {}
 pub unsafe trait StableStore: Store {}
 
 /// A refinement of `Store` which does not invalidate existing pointers, not even on moves. That is, this refinement
-/// guarantees that the blocks of memory are pinned in memory.
+/// guarantees that the blocks of memory are pinned in memory until the instance of the `Store` is dropped, or until
+/// the lifetime bound of `Store` concrete type expires, whichever comes first.
 pub unsafe trait PinningStore: StableStore {}
 ```
 
@@ -598,6 +599,18 @@ Otherwise, the bulk of the API is a straightforward translation of the `Allocato
 `NonNull<_>` appears.
 
 
+##  Allocator-like (bis)
+
+The API of `Store` being intentionally kept very close to that of `Allocator` means that some questions worth asking on
+the `Allocator` API are also worth asking here:
+
+-   Should allocation methods return the actual allocated size? In theory, this may allow optimizations, in practice
+    it seems unimplemented by `Allocator` and unused by callers.
+-   Should we have `reallocate` rather than `grow`/`shrink`?
+
+It may be best to consider those questions orthogonal to this RFC, they can be resolved at once for both APIs.
+
+
 ##  Guarantees, or absence thereof
 
 The `Store` API is minimalist, providing a minimum of guarantees.
@@ -631,7 +644,7 @@ There is, however, a very good reason for `Allocator` to use a shared reference:
 context, requiring a mutable reference to the store requires a locking mechanism around the store. Even if the store is
 `Sync`.
 
-To fully support concurrent code with zero overhead, the `Store` API methods cannot accept `&mut self`.
+To fully support concurrent code with zero overhead, the `Store` API methods cannot require `&mut self`.
 
 
 ##  Owned Store
@@ -688,6 +701,38 @@ at the store level. The `UniqueHandle` possible future extension, which is non-i
 This solution is more flexible, and more minimalist, generally a good sign with regard to API design.
 
 
+##  Resolve with or without Layout
+
+There is an inherent trade-off in `Store::resolve`:
+
+-   Not requiring the layout allows thin pointers (`ThinBox`) as well as untyped manipulations (`RawTable` style).
+-   Requiring a layout allows optimized `SmallSingleStore` optimizations which decide whether to resolve to in-line
+    memory or off-line memory based on the layout, without having to store the state in the store or handle.
+
+The current API leans in favor of thin pointers and untyped manipulations as they seem slightly more common, but it is
+debatable.
+
+Another possibility would be to provide _both_, letting the implementer decide which it can support, and the collection
+which it requires. This would likely mean introducing another 2 traits, though, something like:
+
+```rust
+trait StoreResolver: Store {
+    fn resolve(&self, handle: Self::Handle) -> NonNull<u8>;
+}
+
+trait StoreLayoutResolver: Store {
+    fn resolve_with_layout(&self, handle: Self::Handle, layout: Layout) -> NonNull<u8>;
+}
+```
+
+Most `Store` would implement both -- any store which can resolve without layout should be able to resolve with layout,
+after all -- but `SmallSingleStore` would only implement the latter.
+
+Introducing those two traits, though, is then a trade-off of flexbility vs API-surface and ease of use. Most notably,
+a potential trap for collection implementers is that switching from one to the other would be a breaking change, which
+may prevent introducing an untyped core to their collection to reduce monomorphization bloat, for example.
+
+
 ##  Argument-less dangling method
 
 A previous version of the companion repository used an argument-less `Store::dangling` method.
@@ -702,14 +747,28 @@ In the absence of strong usecase for creating dangling handles with no instance 
 `Store::dangling` take `&self` so that `dyn Store` may be fully functional.
 
 
+##  No dangling
+
+A more radical option is NOT to provide a `Store::dangling` method at all.
+
+Any user has the option to store a `union { dangling: MaybeUninit<NonZeroU8>, handle: S::Handle }` and deal with
+creating a dangling version on their own.
+
+This comes at an ergonomic cost on the use of this union, and may have implications with regard to niches, however.
+
+
 ##  Adapter vs Blanket Implementation
 
 A previous version of the companion repository used an `AllocatorStore` adapter struct, instead of a blanket
 implementation.
 
 There does not seem to be any benefit to doing so, and it prevents using collections defined in terms of a `Store`
-with an `Allocator`, which would require wrapping all store-based collections in allocator-based adapters in the
-standard library... and duplicate their documentation. Pure overhead.
+directly with an `Allocator`:
+
+-   Either library makers suffer when collections switch from `Allocator` to `Store`, having to use a feature to wrap
+    or not since there's no "capability" concept.
+-   Or type aliases are used to preserve the `Allocator`-based API in `collections` and `std`, but then using the
+    `Store`-based API requires reaching for `core` directly which is odd.
 
 
 ##  Marker granularity
@@ -781,7 +840,7 @@ I have been seeking a better allocator API for years, now. This RFC draws from t
 -   Early 2021, I demonstrated the potential for stores in https://github.com/matthieu-m/storage-poc. It was based
     on my C++ experience, from which it inherited strong typing, which itself required GATs...
 -   Early 2022, @CAD97 demonstrated that a much leaner API could be made in https://github.com/CAD97/storages-api.
-    After reviewing his work, I concluded that the API was not suitable to replace `Allocator` in a number of
+    After reviewing their work, I concluded that the API was not suitable to replace `Allocator` in a number of
     situations as discussed in the Alternatives section, and that further adjustments needed to be made.
 
 And thus in early 2023 I began work on a 3rd revision of the API, a revision I am increasingly confident in for 2
