@@ -10,6 +10,15 @@ Add a new kind of multi-line string literal for embedding code which
 plays nicely with `rustfmt` and doesn't introduce unwanted whitespace
 into multi-line string literals.
 
+---
+
+**NOTE: The syntax presented here is *one possible syntax* 
+in a huge space. The purpose of this RFC is to gain consensus that
+such a feature would be beneficial to the language, not to settle
+every possible bike-shedding decision.**
+
+---
+
 # Motivation
 [motivation]: #motivation
 
@@ -50,7 +59,7 @@ into multi-line string literals.
         );
         ```
 
-        To do otherwise would be to change thange the value of
+        To do otherwise would be to change the value of
         the string literal.
     
     2.  Normal string literals with backslash escaping, eg.
@@ -89,126 +98,163 @@ into multi-line string literals.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-In addition to string literals and raw string literals, a third type
-of string literal exists: code string literals.
+A modifier `h` (for
+[Here document](https://en.wikipedia.org/wiki/Here_document))
+may be added to a string literal prefix to change how the
+string is interpreted by the compiler. The effect of the `h`
+modifier causes all indentation to be relative to the
+closing quote:
 
 ```rust
-    let code = ```
-        This is a code string literal
+    let code = h"
+        This is a code string literal.
 
-        I can use special characters like "" and \ freely.
+        I can use escape sequences like \n since the `h`
+        prefix was added to a normal string literal
 
             Indentation is preserved *relative* to the indentation level
-            of the terminating triple backticks.
+            of the terminating quote.
 
-    It is an error for a line to have "negative" indentation (ie. be
-    indented less than the final triple backticks) unless
+    It is an error for a line to have negative indentation (ie. be
+    indented less than the final quote) unless
     the line is empty.
-        ```;
+        ";
 ```
 
 `rustfmt` will automatically adjust the indentation of the code string
 literal as a whole to match the surrounding context, but will never
 change the relative indentation within such a literal.
 
-Anything directly after the opening backticks is not considered
+The `h` modifier will often be combined with raw string literals to
+embed sections of code such as SQL:
+
+```rust
+    let code = hr#"
+        This is also a code string literal
+
+        I can use special characters like "" and \ freely.
+
+            Indentation is still *relative* to the indentation level
+            of the terminating quote.
+        "#;
+```
+
+For completeness, the `h` modifier may also be combined with byte
+and raw byte string literals, eg. `hb"` and `hbr#"`.
+
+Anything directly after the opening quote is not considered
 part of the string literal. It may be used as a language hint or
 processed by macros (similar to the treatment of doc comments).
 
 ```rust
-let sql = ```sql
+let sql = hr#"sql
     SELECT * FROM table;
-    ```;
+    "#;
 ```
 
-Similar to raw string literals, there is no way to escape characters
-within a code string literal. It is expected that procedural macros
-would build upon code string literals to add support for such
-functionality as required.
-
-If it is necessary to include triple backticks within a code string
-literal, more than three backticks may be used to enclose the
-literal, eg.
-
-```rust
-let code = ````
-    ```
-````;
-```
+When the `h` modifier is used with a raw string literal, the same
+rules as usual apply, where the number of `#` characters can be
+increased if the sequence `"#` needs to appear inside the string.
 
 In order to suppress the final newline, the literal may instead be
-closed with `!``` `, eg.
+closed with `-" ` or `-"#` depending on the opening quote, eg.
 
 ```rust
-let code = ```
+let code = hr#"
     Text with no final newline
-    !```;
+    -"#;
 ```
+
+Aside from this `-` modifier, only whitespace may appear on the final
+line prior to the closing quote.
+
+Together, these rules ensure that every possible string can be represented
+in a single canonical way, while allowing the indentation of the string
+as a whole to be changed freely.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-A code string literal will begin and end with three or more backticks.
-The number of backticks in the terminator must match the number used
-to begin the literal.
+An `h` modifier may be added to the prefix of the following string
+literal types:
 
-The value of the string literal will be determined using the following
-steps:
+- String literals `h"`
+- Raw string literals `hr#"`
+- Byte string literals `hb"`
+- Raw byte string literals `hbr#"`
 
-1.  Measure the whitespace indenting the closing backticks. If a
-    non-whitespace character (other than a single `!`) exists before
-    the closing backticks on the same line, then issue a compiler error.
+The `h` modifier will appear before all characters in the prefix.
+
+The value of a string literal with the `h` modifier will be determined
+using the following steps:
+
+1.  Measure the whitespace indenting the closing quote. If a
+    non-whitespace character (other than a single `-`) exists before
+    the closing quote on the same line, then issue a compiler error.
 2.  Take the lines *between* (but not including) the opening and
-    closing backticks exactly as written.
-3.  Remove exactly the measured whitespace from each line. If this
-    cannot be done, then issue a compiler error.
-4.  If the string was terminated with `!``` `, then remove the
-    final newline.
+    closing quotes exactly as written.
+3.  Remove exactly the measured whitespace from each non-empty line.
+    If this cannot be done, then issue a compiler error. The
+    whitespace must match down to the exact character sequence.
+4.  If a `-` character was present immediately prior to the closing
+    quote, then remove the final newline.
+5.  Interpret any escape sequences and apply any pre-processing as
+    usual for the string literal type without an `h` modifier.
+    For example, newlines in the file are always treated as `\n`
+    even if the file is encoded with `\r\n` newlines.
 
 Here are some edge case examples:
 
 ```rust
-    // Empty string
-    assert_eq!(```foo
-        ```, "");
+    // Empty string with language hint
+    assert_eq!(h"foo
+        ", "");
 
     // Newline
-    assert_eq!(```
+    assert_eq!(h"
 
-        ```, "\n");
+        ", "\n");
 
     // No terminating newline
-    assert_eq!(```
+    assert_eq!(h"
         bar
-        !```, "bar");
+        -", "bar");
 
     // Terminating newline
-    assert_eq!(```
+    assert_eq!(h"
         bar
-        ```, "bar\n");
+        ", "bar\n");
 
     // Preserved indent
-    assert_eq!(```
+    assert_eq!(hr#"
     if a:
         print(42)
-    ```, "if a:\n    print(42)\n");
+    "#, "if a:\n    print(42)\n");
 
     // Relative indent
-    assert_eq!(```
+    assert_eq!(hr#"
             if a:
                 print(42)
-            ```, "if a:\n    print(42)\n");
+            "#, "if a:\n    print(42)\n");
 
-    // Relative to closing backticks
-    assert_eq!(```
+    // Relative to closing quote
+    assert_eq!(hr#"
 
 
             if a:
                 print(42)
-    ```, "\n\n        if a:\n            print(42)\n");
+    "#, "\n\n        if a:\n            print(42)\n");
+
+    // Interactions with escaping rules
+    assert_eq!(h"
+        \"\
+            foo\n
+            bar
+    \t
+    ", "    \"foo\n\n        bar\n\t\n");
 ```
 
-The text between the opening backticks and the first newline is
+Any text between the opening quote and the first newline is
 preserved within the AST, but is otherwise unused.
 
 # Drawbacks
@@ -216,42 +262,31 @@ preserved within the AST, but is otherwise unused.
 
 The main drawback is increased complexity of the language:
 
-1. It adds a new symbol to the language, which was not previously used.
-2. It adds a third way of writing string literals.
+1.  It adds a four new types of string literals given all
+    the combinations.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-There is lots of room to bike-shed syntax.
-If there is significant opposition to the backtick syntax, then an
-alternative syntax such as:
-```
-code"
-    string
-"
-```
-could be used.
-
-Similarly, the use of more than three backticks may be unpopular.
-It's not clear how important it is to be able to nest backticks
-within backticks, but a syntax mirroring raw string literals could
-be used instead, eg.
-```
-`# foo
-    string
-#`
-```
-
-There is also the question of whether the backtick syntax would
-interfere with the ability to paste Rust code snippets into such
-blocks. Experimentally, markdown parsers do not seem to have any
-problems with this (as demonstrated in this document).
+Many possible options regarding syntax have been explored during
+the life of this RFC. This section will attempt to categorize
+and enumerate every variation considered. The options marked
+with a :heavy_check_mark: are the variations which were chosen
+to form the syntax proposed above.
 
 ## A list of all options regarding syntax
 
 ### Quote style
 
-  - :heavy_check_mark: **3+N backticks**
+  - :heavy_check_mark: **Single character prefix + N hashes**
+    ```rust
+    let _ = hr#"
+        some code
+        "#;
+    ```
+    (note: `c` is already reserved for C strings)
+
+  - **3+N backticks**
     ```rust
     let _ = ```
         some code
@@ -272,20 +307,12 @@ problems with this (as demonstrated in this document).
         ''';
     ```
 
-  - **Word prefix + N+1 hashes**
+  - **Word prefix + N hashes**
     ```rust
     let _ = code#"
         some code
         "#;
     ```
-
-  - **Single character prefix + N+1 hashes**
-    ```rust
-    let _ = m#"
-        some code
-        "#;
-    ```
-    (note: `c` is already reserved for C strings)
 
 ### Indentation rules
 
@@ -297,7 +324,8 @@ problems with this (as demonstrated in this document).
       - The value of the string is obvious and intuitive.
 
     Drawbacks:
-      - It is not possible to represent strings without a trailing newline.
+      - Requires an additional syntax to allow representing strings
+        without a trailing newline.
 
   - **Relative to closing quote + remove final newline**
 
@@ -307,9 +335,47 @@ problems with this (as demonstrated in this document).
       - Strings without a final newline can be represented.
 
     Drawbacks:
-      - There are two ways to represent the empty string.
-      - It is unintuitive that two empty lines between quotes results in
-        a single newline.
+      - There are two ways to represent the empty string. For example:
+        ```rust
+        let _ = h"
+            "
+        ```
+        And 
+        ```rust
+        let _ = h"
+
+            "
+        ```
+        Would need to both represent the empty string. This is
+        unintuitive. It also means that *two* empty lines are
+        necessary to represent a single newline.
+
+      - The common case (where the final newline does not need
+        to be suppressed) is ugly and wastes vertical space:
+        ```rust
+        let _ = h"
+            some code
+        
+            ";
+        ```
+
+      - Forgetting to add this ugly blank line at the end is a footgun
+        when concatenating two strings:
+        ```rust
+        let a = h"
+            if a == 1:
+                return True
+            ";
+        let b = h"
+            if b == 1:
+                return False
+            "
+        format!("{a}{b}") == h"
+            if a == 1:
+                return Trueif b == 1:
+                return False
+            "
+        ```
 
   - **Relative to first non-empty line**
 
@@ -319,7 +385,8 @@ problems with this (as demonstrated in this document).
       - Strings without a final newline can be represented.
 
     Drawbacks:
-      - Some indentations cannot be represented.
+      - Some indentations cannot be represented (those
+        where the first line should be indented).
 
   - **Relative to least indented line**
 
@@ -329,7 +396,8 @@ problems with this (as demonstrated in this document).
       - Strings without a final newline can be represented.
 
     Drawbacks:
-      - Some indentations cannot be represented.
+      - Some indentations cannot be represented (those
+        where every line should be indented).
 
 ### Modifications
 
@@ -338,12 +406,14 @@ problems with this (as demonstrated in this document).
     This is intended to allow extra information (eg. language) to be
     conveyed by the programmer to macros and/or their IDE. For example:
     ```rust
-    let _ = ```sql
+    let _ = h"sql
         SELECT * FROM table;
-        ```;
+        ";
     ```
     Here, an intelligent IDE could apply syntax highlighting to the nested
-    code block, knowing that the code is SQL.
+    code block, knowing that the code is SQL. The string is not treated
+    any differently by the compiler, it's purely there for IDEs and
+    optionally procedural macros.
 
   - :heavy_check_mark: **Annotation on closing quote to remove trailing
     newline**
@@ -354,35 +424,40 @@ problems with this (as demonstrated in this document).
 
     For example:
     ```rust
-    let _ = ```
+    let _ = h"
         no trailing newline
-        !```;
+        -";
     ```
 
     Or (the less serious suggestion of)...
     ```rust
-    let _ = ```
+    let _ = h"
         no trailing newline
-        🚫```;
+        🚫";
     ```
 
     This could be used with any quote style and is unambiguous because
     nothing can otherwise appear on the same line prior to the closing
     quote.
 
+    Having the annotation be in the string prefix is also possible
+    (such as `hn"`) but this is worse because it is non-local (the
+    only effect is on the last line of the string) it "uses up" a
+    letter for a possible string prefix, and it makes the string
+    prefix even longer than it already is.
+
 # Prior art
 [prior-art]: #prior-art
-
-The proposed quote style is primarily based on markdown code block syntax,
-which is widely used and should be familiar to most programmers. This is
-also where the language hint comes from.
 
 The indentation rules are borrowed from [Perl's "Indented Here-docs"](https://perldoc.perl.org/perlop#EOF) and [PHP's "Heredoc" syntax](https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc)
 
 The [`indoc` crate](https://docs.rs/indoc/latest/indoc/) exists to remove
 leading indentation from multiline string literals. However, it cannot
-help with the reformatting done by `rustfmt`, and is generally not understood
-by IDEs.
+help with the reformatting done by `rustfmt`, and is generally not
+understood by IDEs. It also cannot distinguish between "real" whitespace
+in the final, and whitespace introduced by escape sequences.
+
+The "language hint" is based on markdown code block syntax.
 
 
 # Unresolved questions
@@ -398,13 +473,13 @@ by IDEs.
     interpolation, escaping, etc. without needing to further complicate
     the language itself.
 
--   Procedural macros could look at the text following the opening triple
+-   Procedural macros could look at the text following the opening
     quotes and use that to influence code generation, eg.
 
     ```rust
-    query!(```postgresql
+    query!(h"postgresql
         <query>
-        ```)
+        ")
     ```
 
     could parse the query in a PostgreSQL specific way.
