@@ -193,6 +193,12 @@ This introduces one more option to look at to find the target directory, which m
 
 This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_BASE_DIR`, so an external tool can set it and go on its way. Also, having `cargo` set `CARGO_TARGET_DIR` when inside a workspace where `CARGO_TARGET_BASE_DIR` is used will help current tools (those not yet using `cargo metadata`) continue working without trouble.
 
+## Hitting windows path length limits
+
+Depending on what naming scheme is used (e.g., a very long hash), we could hit the Windows path length limits if not careful.
+
+A mitigation for this is recommending a short prefix (in `CARGO_TARGET_BASE_DIR`) and using a has that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
