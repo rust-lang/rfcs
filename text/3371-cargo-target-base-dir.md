@@ -369,3 +369,11 @@ Well, first, heavy advertising of the option. Very **heavy** advertising of it a
 4. Write a post saying "we'll do the change in version X" (where current version is like X-2 to warn 3 months before at least ?) and then only apply the change to directory where there is no `CARGO_TARGET_DIR` and no `target/` dir locally
 
 I expect this to take a long time and `cargo` would need to be very clear about where it puts the target directory, probably through a simple command like `cargo metadata --print-target-dir` to make it easy for CIs and scripts to use it programatically without having to parse JSON all the time like a simple `cargo metadata` would do.
+
+### A user still wants the current behaviour and not this RFC's
+
+- We could use a config option (mentioned in previous section)
+- `CARGO_TARGET_DIR=target` would still be available
+- We could add special behaviour like `CARGO_TARGET_BASE_DIR=""` meaning "use current" directory
+
+The first two are probably enough, the third is a bandaid.
