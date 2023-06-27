@@ -197,7 +197,7 @@ This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_B
 
 Depending on what naming scheme is used (e.g., a very long hash), we could hit the Windows path length limits if not careful.
 
-A mitigation for this is recommending a short prefix (in `CARGO_TARGET_BASE_DIR`) and using a has that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
+A mitigation for this is recommending a short prefix (in `CARGO_TARGET_BASE_DIR`) and using a hash that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
