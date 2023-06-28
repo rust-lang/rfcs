@@ -1,6 +1,6 @@
 - Feature Name: `additional-float-types`
 - Start Date: 2023-6-28
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3451](https://github.com/rust-lang/rfcs/pull/3451)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
