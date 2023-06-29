@@ -386,7 +386,8 @@ to form the syntax proposed above.
 
     Drawbacks:
       - Some indentations cannot be represented (those
-        where the first line should be indented).
+        where the first line should be indented). At least
+        not without further extensions.
 
   - **Relative to least indented line**
 
@@ -397,7 +398,8 @@ to form the syntax proposed above.
 
     Drawbacks:
       - Some indentations cannot be represented (those
-        where every line should be indented).
+        where every line should be indented). At least
+        not without further extensions.
 
 ### Modifications
 
@@ -446,6 +448,21 @@ to form the syntax proposed above.
     letter for a possible string prefix, and it makes the string
     prefix even longer than it already is.
 
+  - **Explicit indentation markers on the closing quote**
+
+    This modification would be useful for indentation rules which
+    otherwise would now allow every possible indentation to be
+    represented:
+
+    ```rust
+    let _ = h"
+            This line will retain 4 characters of indentation.
+        ____";
+    ```
+
+    Note that this would not be needed in the currently proposed
+    scheme, since it can already represent every indentation level.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -458,6 +475,8 @@ understood by IDEs. It also cannot distinguish between "real" whitespace
 in the final, and whitespace introduced by escape sequences.
 
 The "language hint" is based on markdown code block syntax.
+
+See also https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/#raw-string-literals .
 
 
 # Unresolved questions
