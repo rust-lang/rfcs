@@ -218,3 +218,9 @@ For example:
   (e.g. "it won't allow UB in safe code"), or it could precisely specify what currently is and isn't accepted by the borrow checker.
   The right level of detail for each topic should be discussed and agreed upon by the involved parties,
   and can change over time.
+
+- Naming.
+
+  The exact title of the document might carry significance depending on how it will be used.
+  Before we officially publish a non-draft version of the specification, we
+  should come to an agreement on whether to call it "The Rust Specification" or something else.
