@@ -321,6 +321,9 @@ stabilized immediately and other features could be postponed.
 -   A `rust-version` field that could indicate e.g. `rust-version = "nightly"`
     or `rust-version = "1.65"` to specify a MSRV for that feature. See:
     <https://github.com/rust-lang/rfcs/pull/3416#discussion_r1174478461>
+-   At some point, the decision to not include `doc` in the index could be
+    reevaluated. Including only the first (summary) line of `doc` could be a
+    possibility.
 -   The `public` feature flags could be used to allow optional dev dependencies.
     See: <https://github.com/rust-lang/cargo/issues/1596>
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
