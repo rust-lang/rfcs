@@ -265,7 +265,6 @@ Another thing to note is sort order. In general, any tool that renders features
     `--allow-private-features` flag? Or how should a user opt in?
 -   Does it make sense to have separate `hidden` (not documented) and `public`
     (feature not allowed downstream) attribute? I think probably not
--   Should there be a way to deny deprecated features?
 -   The Cargo index may need a way to be aware of deprecated features, so it can
     properly report them during resolution. What would be needed here?
 
@@ -280,6 +279,8 @@ stabilized immediately and other features could be postponed.
     [`rustdoc-cargo-configuration`] RFC.
 -   Somehow inform users if they are using to-be-deprecated features, i.e.,
     deprecated `since` is set but is later than the current dependancy version.
+-   Via the `manifest-lint` RFC, a user could specify that deprecated crates
+    should be denied.
 -   An `unstable` field that indicates API-unstable or nightly-only features.
 -   A `rust-version` field that could indicate e.g. `rust-version = "nightly"`
     or `rust-version = "1.65"` to specify a MSRV for that feature. See:
