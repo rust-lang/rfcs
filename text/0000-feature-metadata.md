@@ -111,6 +111,11 @@ mainly intended for the consumption of `rustdoc` or `docs.rs`. However, it can
 be used for general diagnostic information such as during `cargo add` or
 a possible `cargo info` command.
 
+Any tools that want the information in `doc` will require access to the
+manifest. Adding this information to the index was decided against due to
+concerns about bloat, but this is further discussed in
+[future possibilities][future-possibilities].
+
 ## `deprecated`
 
 `deprecated` should be thought of as the equivalent of the [`deprecated`]
@@ -138,12 +143,19 @@ should produce a warning. There are two exceptions to this:
     If `foo` markes `bar` as deprecated, checking `bar` will emit a warning
     unless `barred` is also marked `deprecated.
 
+Accessing this information will require access to the manifest.
+
 ## `public`
 
 `public` is a boolean value that defaults to `true`. It can be thought of as
 `pub` in Rust source files, with the exception of being true by default. If set
 to `false`, Cargo should forbid its use with an error message on any downstream
 crates.
+
+The default `true` is not consistent with [`public_private_dependencies`] or
+Rust's `pub`, but is a reasonable default to be consistent with the current
+behavior so that either `feature = []` or `feature = { "requires" = [] }` will
+return the same result.
 
 In general, marking a feature `public = false` should make tooling treat the
 feature as non-public API. That includes:
@@ -156,10 +168,19 @@ add`
 -   A future tool like `cargo info` shouldn't display information about these
     features
 
-There needs to be an escape hatch for this for things like benchmarks - RFC TBD
-on how this works.
+There likely needs to be an escape hatch for this for things like benchmarks -
+RFC TBD on how this works.
 
-# Implementation & Usage
+This feature would require adjustments to the index for full support. This RFC
+proposes that it would be acceptable for the first implementation to simply
+strip private features from the manifest; this meanss that there will be no way
+to `cfg` based on these features. 
+
+Full support does not need to happen immediately, since it will require this
+information be present in the index. [Index changes] describes how this can take
+place.
+
+# General Implementation & Usage
 
 Use cases for this information will likely develop with time, but one of the
 simplest applications is for information output with `cargo add`:
@@ -186,10 +207,10 @@ crab@rust foobar % cargo add regex
 Features like `aho-corasick`, `memchr`, or `use_std` would likely be `public =
 false` since they aren't listed on the crate landing page.
 
-## Implementation notes
+## Implementation note: sort order
 
-One item of note is sort order. In general, any tool that renders features
-(`rustdoc`, `cargo add`) should attempt to present them in the following way:
+In general, any tool that renders features (`rustdoc`, `cargo add`) should
+attempt to present them in the following way:
 
 -   Display default features first
 -   Display non-default but stable features next (can be in a separate section)
@@ -198,6 +219,14 @@ One item of note is sort order. In general, any tool that renders features
     `--document-private-items` with `rustdoc`)
 -   If ordering is not preserved, present the features alphabetically
 
+## Index changes
+
+[index changes]: #index-changes
+
+For features that require new information in the index, it should be possible to
+add this information under a `features3` key. Older versions of Cargo will
+ignore this key, newer Cargo would be able to merge `features`, `features2`, and
+`features3`.
 
 # Drawbacks
 
@@ -314,6 +343,7 @@ stabilized immediately and other features could be postponed.
 [`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
 [`deprecated`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-deprecated-attribute
 [`deprecated-suggestions`]: https://github.com/rust-lang/rust/issues/94785#issuecomment-1579349116
+[`public_private_dependencies`]: https://rust-lang.github.io/rfcs/1977-public-private-dependencies.html
 [`rustdoc-cargo-configuration`]: https://github.com/rust-lang/rfcs/pull/3421
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
 [visibility attribute]: https://ant.apache.org/ivy/history/latest-milestone/ivyfile/conf.html
