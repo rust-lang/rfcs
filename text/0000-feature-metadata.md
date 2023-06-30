@@ -159,7 +159,7 @@ add`
 There needs to be an escape hatch for this for things like benchmarks - RFC TBD
 on how this works.
 
----
+# Implementation & Usage
 
 Use cases for this information will likely develop with time, but one of the
 simplest applications is for information output with `cargo add`:
@@ -186,7 +186,9 @@ crab@rust foobar % cargo add regex
 Features like `aho-corasick`, `memchr`, or `use_std` would likely be `public =
 false` since they aren't listed on the crate landing page.
 
-Another thing to note is sort order. In general, any tool that renders features
+## Implementation notes
+
+One item of note is sort order. In general, any tool that renders features
 (`rustdoc`, `cargo add`) should attempt to present them in the following way:
 
 -   Display default features first
@@ -195,6 +197,7 @@ Another thing to note is sort order. In general, any tool that renders features
 -   Do not display private features unless receiving a flag saying to do so (e.g.
     `--document-private-items` with `rustdoc`)
 -   If ordering is not preserved, present the features alphabetically
+
 
 # Drawbacks
 
@@ -281,12 +284,14 @@ stabilized immediately and other features could be postponed.
     deprecated `since` is set but is later than the current dependancy version.
 -   Via the `manifest-lint` RFC, a user could specify that deprecated crates
     should be denied.
--   An `unstable` field that indicates API-unstable or nightly-only features.
+-   An `stable` field can be set false to indicate API-unstable or nightly-only
+    features (somethign such as `stable = 3.2` could be used to indicate when a
+    feature was stabilized)
 -   A `rust-version` field that could indicate e.g. `rust-version = "nightly"`
     or `rust-version = "1.65"` to specify a MSRV for that feature. See:
     <https://github.com/rust-lang/rfcs/pull/3416#discussion_r1174478461>
--   `unstable` or `private` feature flags could be used to allow optional dev
-    dependencies. See: <https://github.com/rust-lang/cargo/issues/1596>
+-   The `public` feature flags could be used to allow optional dev dependencies.
+    See: <https://github.com/rust-lang/cargo/issues/1596>
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
     features.
 -   [`cargo-info`] can use this information to provide feature descriptions.
