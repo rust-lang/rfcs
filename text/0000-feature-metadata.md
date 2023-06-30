@@ -210,8 +210,9 @@ One item of note is sort order. In general, any tool that renders features
     potentially be solved with the below mentioned `doc-file` key.
 -   `public` uses may not be common enough to be worth including
 -   A markdown parser is required to properly parse the `doc` field.
--   This RFC does not provide any way for `rustdoc` to get the information it
-    requires. This will require separate design work.
+-   When rendering features in documentation, this RFC does not specify any way
+    for `rustdoc` to get the information it requires. This will require separate
+    design work.
 -   There is no way to structure features in a way that they are split into
     sections or have a user-specified layout, unlike with the
     `document-features` crate.
@@ -283,10 +284,11 @@ stabilized immediately and other features could be postponed.
 -   Somehow inform users if they are using to-be-deprecated features, i.e.,
     deprecated `since` is set but is later than the current dependancy version.
 -   Via the `manifest-lint` RFC, a user could specify that deprecated crates
-    should be denied.
--   An `stable` field can be set false to indicate API-unstable or nightly-only
+    should be denied. This would, however, be blocked by [cargo #12335].
+-   A `stable` field can be set false to indicate API-unstable or nightly-only
     features (somethign such as `stable = 3.2` could be used to indicate when a
-    feature was stabilized)
+    feature was stabilized). See also:
+    <https://github.com/rust-lang/cargo/issues/10882>
 -   A `rust-version` field that could indicate e.g. `rust-version = "nightly"`
     or `rust-version = "1.65"` to specify a MSRV for that feature. See:
     <https://github.com/rust-lang/rfcs/pull/3416#discussion_r1174478461>
@@ -307,6 +309,7 @@ stabilized immediately and other features could be postponed.
     bar = { requires = [], doc-file = "features.md#bar" }
     ```
 
+[cargo #12335]: https://github.com/rust-lang/cargo/issues/12235
 [cargo #10882]: https://github.com/rust-lang/cargo/issues/10882
 [`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
 [`deprecated`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-deprecated-attribute
