@@ -1,6 +1,6 @@
 - Feature Name: `nested_publish`
 - Start Date: 2023-06-30
-- RFC PR: ...
+- RFC PR: [rust-lang/rfcs#3452](https://github.com/rust-lang/rfcs/pull/3452)
 - Rust Issue: ...
 
 # Summary
