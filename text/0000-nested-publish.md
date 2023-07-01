@@ -33,7 +33,7 @@ By default (and always, prior to this RFC's implementation):
 * If your package contains any sub-packages, Cargo [excludes](https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields) them from the `.crate` archive file produced by `cargo package` and `cargo publish`.
 * If your package contains any non-`dev` dependencies which do not give a `version = "..."`, it cannot be published to `crates.io`.
 
-(By “sub-package” we mean a package (directory with `Cargo.toml`) which is a subdirectory of another package. We shall call the outermost such package, the package being published, the “parent package”.)
+(By “**sub-package**” we mean a package (directory with `Cargo.toml`) which is a subdirectory of another package. We shall call the outermost such package, the package being published, the “**parent package**”.)
 
 You can change this default by placing in the manifest (`Cargo.toml`) of a sub-package:
 
@@ -44,7 +44,7 @@ publish = "nested"
 
 If this is done, Cargo's behavior changes as follows:
 
-* If you publish the parent package, the sub-package is included in the `.crate` file (unless overridden by explicit `exclude`/`include`) and will be available whenever the parent package is downloaded and compiled.
+* If you publish the parent package, the sub-package is included in the `.crate` file (unless overridden by explicit `exclude`/`include`) and will be available to the parent package whenever the parent package is downloaded and compiled.
 * The parent package may have a `path =` dependency upon the sub-package. (This dependency may not have a `version =` specified.)
 * You cannot `cargo publish` the sub-package, just as if it had `publish = false`. (This is a safety measure against accidentally publishing the sub-package separately when this is not intended.)
 
@@ -95,10 +95,15 @@ The following changes must be made across Cargo and `crates.io`:
 * **`cargo package` &amp; `cargo publish`**
     * Should refuse to publish a package if that package (not its sub-packages) has `publish = "nested"`.
     * Exclude/include rules should, upon finding a sub-package, check if it is `publish = "nested"` and not automatically exclude it. Instead, they should treat it like any other subdirectory; in particular, it should be affected by explicitly specified exclude/include rules.
+    * Nested `Cargo.toml`s should be normalized in the same way the root `Cargo.toml` is, if they declare `publish = "nested"`, and not if they do not.
+        * This avoids modifying the publication behavior for existing packages, even if they contain project templates or invoke `cargo` to compile sub-packages to probe the behavior of the compiler.
+        * If the nested `Cargo.toml` has a syntax error such that its `package.publish` value cannot be determined, then if it is depended upon, emit an error; if it is not, emit a warning and do not normalize it.
 * **`crates.io`**
     * Should allow `path` dependencies that were previously prohibited, at least provided that the named package in fact exists in the `.crate` archive file. The path must not contain any upward traversal (`../`) or other hazardous or non-portable components.
 * **Build process**
     * Probably some messages will need to be adjusted; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”.
+
+The presence or absence of a `[workspace]` has no effect on the new behavior, just as it has no effect on existing package publication.
 
 # Drawbacks
 [drawbacks]: #drawbacks
