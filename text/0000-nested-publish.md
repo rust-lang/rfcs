@@ -53,7 +53,7 @@ Nested sub-packages may be freely placed within other nested sub-packages.
 
 When a group of packages is published in this way, and depended on, this has a number of useful effects (which are not things that Cargo explicitly implements, just consequences of the system):
 
-* The packages are versioned in lockstep; there is no way for a version mismatch to arise since all the code was published together. Version resolution does not apply (in the same way that it does not for any other `path =` dependency).
+* The packages are a single unit for all versioning purposes; there is no way for a version mismatch to arise since all the code was published together. Version resolution does not apply (in the same way that it does not for any other `path =` dependency).
 * The sub-package is effectively “private”: it cannot be named by any other package on `crates.io`, only by its parent package and sibling sub-packages.
 
 ## Example: trait and derive macro
@@ -112,6 +112,8 @@ The presence or absence of a `[workspace]` has no effect on the new behavior, ju
 * This increases the number of differences between “Cargo package (on disk)” from “Cargo package (that may be published in a registry, or downloaded as a unit)” in a way which may be confusing; it would be good if we have different words for these two entities, but we don't.
 * If Cargo were to add support for multiple libraries per package, that would be largely redundant with this feature.
 * It is not possible to publish a bug fix to a sub-package without republishing the entire parent package.
+* Suppose `foo` has a sub-package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publication may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
+     * If this situation comes up, it can be recovered from by newly publishing `foo-core` separately (as would have been done if nested publishing were not used) and using the [semver trick](https://github.com/dtolnay/semver-trick) to maintain compatibility.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
