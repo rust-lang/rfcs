@@ -175,3 +175,9 @@ However, it requires additional syntax and semantics, and these use cases might 
 
 [artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
 [#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
+
+## Additional privileges between crates
+
+Since nested packages are versioned as a unit, we could relax the trait coherence rules and allow implementations that would otherwise be prohibited.
+
+This would be particularly useful when implementing traits from large optional libraries; for example, package `foo` with subpackages `foo_core` and `foo_tokio` could have `foo_tokio` write `impl tokio::io::AsyncRead for foo_core::DataSource`. This would improve the dependency graph compared to `foo_core` having a dependency on `tokio` (which is the only way to do this currently), though not have the maximum possible benefit unless we also added public library targets as above, since the package as a whole still only exports one library and thus one dependency graph node.
