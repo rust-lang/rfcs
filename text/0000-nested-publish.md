@@ -32,6 +32,7 @@ By default (and always, prior to this RFC's implementation):
 
 * If your package contains any sub-packages, Cargo [excludes](https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields) them from the `.crate` archive file produced by `cargo package` and `cargo publish`.
 * If your package contains any non-`dev` dependencies which do not give a `version = "..."`, it cannot be published to `crates.io`.
+* If your package contains `[dev-dependencies]` which do not give a `version = "..."`, they are stripped out on publication.
 
 (By “**sub-package**” we mean a package (directory with `Cargo.toml`) which is a subdirectory of another package. We shall call the outermost such package, the package being published, the “**parent package**”.)
 
@@ -45,7 +46,7 @@ publish = "nested"
 If this is done, Cargo's behavior changes as follows:
 
 * If you publish the parent package, the sub-package is included in the `.crate` file (unless overridden by explicit `exclude`/`include`) and will be available to the parent package whenever the parent package is downloaded and compiled.
-* The parent package may have a `path =` dependency upon the sub-package. (This dependency may not have a `version =` specified.)
+* The parent package (and other sub-packages) may have `path =` dependencies upon the sub-package. (Such dependencies must not have a `version =` or `git =`; that is, the `path` must be the _only_ source for the dependency.)
 * You cannot `cargo publish` the sub-package, just as if it had `publish = false`. (This is a safety measure against accidentally publishing the sub-package separately when this is not intended.)
 
 Nested sub-packages may be freely placed within other nested sub-packages.
