@@ -75,13 +75,10 @@ The following keys would be allowed in a feature table:
 -   `public`: A boolean flag defaulting to `true` that indicates whether or not
     downstream crates should be allowed to use this feature.
 
-If a downstream crate attempts to use the features `baz` and `qux`, they will
-see messages like the following:
+Attempting to use a private feature on a downstream crate will result in
+messages like the following:
 
 ```
-warning: feature `quux` on crate `mycrate` is deprecated since version
-  1.2.3: "don't use this!"
-
 error: feature `baz` on crate `mycrate` is private and cannot be used by
   downstream crates
 ```
@@ -136,15 +133,12 @@ attribute in Rust source. The value can be a boolean, string, or an object with
 -   If not specified, the default is `false`
 
 If a downstream crate attempts to use a feature marked `deprecated`, Cargo
-should produce a warning. There are two exceptions to this:
-
--   If a `since` is specified that is later than the crate's current version,
-    this warning should not be emitted.
--   This warning should not be emitted for crates that reexport the feature
-    under a feature also marked deprecated. For example: crate `foo` exports
-    feature `phooey`, and crate `bar` exports feature `barred = ["foo/phooey"]`.
-    If `foo` markes `bar` as deprecated, checking `bar` will emit a warning
-    unless `barred` is also marked `deprecated.
+should produce a warning. This warning should not be emitted for crates that
+reexport the feature under a feature also marked deprecated. For example: crate
+`foo` exports feature `phooey`, and crate `bar` exports feature 
+`barred = ["foo/phooey"]`. If `foo` markes `bar` as deprecated, running any
+cargo action on `bar` will emit a warning unless `barred` is also marked
+`deprecated.
 
 Accessing this information will require access to the manifest.
 
@@ -158,26 +152,41 @@ crates.
 The default `true` is not consistent with [`public_private_dependencies`] or
 Rust's `pub`, but is a reasonable default to be consistent with the current
 behavior so that either `feature = []` or `feature = { "enables" = [] }` will
-return the same result.
+result in the same configuration.
 
 The name `public` was chosen in favor of `pub` to be consistent with the
 [`public_private_dependencies`] RFC, and to match the existing style of using
 non-truncated words as keys.
 
 In general, marking a feature `public = false` should make tooling treat the
-feature as non-public API. That includes:
+feature as non-public API. This is described as the following:
 
+-   The feature is always usable within the same crate:
+    -   Enablement by other features, e.g. `foo = { enables =
+        [some-private-feature] }`, is allowed
+    -   Using the feature in integration tests is allowed
+    -   Using the feature in benchmarks is allowed
 -   The feature should not be accepted by `cargo add --features`
 -   The feature should not be reported from `cargo add`'s feature output report
 -   Once `rustdoc` is able to consume feature metadata, `rustdoc` should not
     document these features unless `--document-private-items` is specified
 -   A future tool like `cargo info` shouldn't display information about these
     features
+-   Explicitly specifying the feature via `--features somecrate/private-feature`
+    will allow enabling a private feature that would otherwise be forbidden
 
-There likely needs to be an escape hatch for this for things like benchmarks -
-RFC TBD on how this works.
+Attempting to use a private feature in any of the forbidden cases should result
+in an error. Exact details of how features work will likely be refined during
+implementation and experimentation.
 
-This feature would require adjustments to the index for full support. This RFC
+Two sample use cases for `public = false` include:
+
+-   `docs.rs` having a way to know which features should be hidden
+-   Features that are included in feature chains (feature `a` enables feature
+    `b`) but not meant for public consumption could be marked not public
+
+
+This feature requires adjustments to the index for full support. This RFC
 proposes that it would be acceptable for the first implementation to simply
 strip private features from the manifest; this meanss that there will be no way
 to `cfg` based on these features. 
@@ -185,12 +194,6 @@ to `cfg` based on these features.
 Full support does not need to happen immediately, since it will require this
 information be present in the index. [Index changes] describes how this can take
 place.
-
-Two sample use cases for `public = false` include:
-
--   `docs.rs` having a way to know which features should be hidden
--   Features that are included in feature chains (feature `a` enables feature
-    `b`) but not meant for public consumption could be marked not public
 
 # General Implementation & Usage
 
@@ -300,16 +303,22 @@ ignore this key, newer Cargo would be able to merge `features`, `features2`, and
 
 [unresolved-questions]: #unresolved-questions
 
--   If we use the semantics as-written, should there be a
-    `--allow-private-features` flag? Or how should a user opt in?
 -   Rather than being consistent with `rustdoc` and accepting markdown, should
     the `doc` key be consistent with `package.description` and only support
     plain text? This RFC proposes making this decision at time of
     implementation, the challenges of supporting markdown are better understood.
+-   Are the semantics of `public` proposed in this RFC suitable? Should private
+    features be usable in examples or integration tests without a `--features`
+    argument?
+-   Should there be a simple `--allow-private-features` flag that allows using
+    all features, such as for crater runs? This can be decided during
+    implementation.
+-   How should `since` work with the `deprecated` key? This can be decided
+    during implementation or droped entirely.
 
-It is worth noting that not all of these feature flags need to be made available
-at once. `enables` needs to be implemented first, but support for all others
-could be added over time.
+It is worth noting that not all of these new keys need to be made available at
+once. `enables` needs to be implemented first, but support for all others could
+be added over time.
 
 # Future possibilities
 
@@ -331,8 +340,8 @@ could be added over time.
 -   At some point, the decision to not include `doc` in the index could be
     reevaluated. Including only the first (summary) line of `doc` could be a
     possibility.
--   The `public` feature flags could be used to allow optional dev dependencies.
-    See: <https://github.com/rust-lang/cargo/issues/1596>
+-   The `public` option could be used to allow optional dev dependencies. See:
+    <https://github.com/rust-lang/cargo/issues/1596>
 -   `cargo add` can show the `doc` and `deprecated` summary with the listed
     features.
 -   [`cargo-info`] can use this information to provide feature descriptions.
