@@ -3,7 +3,7 @@
 [Rust RFCs]: #rust-rfcs
 
 The "RFC" (request for comments) process is intended to provide a consistent
-and controlled path for changes to Rust (such as new features) so that all 
+and controlled path for changes to Rust (such as new features) so that all
 stakeholders can be confident about the direction of the project.
 
 Many changes, including bug fixes and documentation improvements can be
@@ -136,20 +136,20 @@ merged into the RFC repository as a markdown file. At that point the RFC is
     comment period" (FCP), along with a *disposition* for the RFC (merge, close,
     or postpone).
     - This step is taken when enough of the tradeoffs have been discussed that
-    the subteam is in a position to make a decision. That does not require
-    consensus amongst all participants in the RFC thread (which is usually
-    impossible). However, the argument supporting the disposition on the RFC
-    needs to have already been clearly articulated, and there should not be a
-    strong consensus *against* that position outside of the subteam. Subteam
-    members use their best judgment in taking this step, and the FCP itself
-    ensures there is ample time and notification for stakeholders to push back
-    if it is made prematurely.
+      the subteam is in a position to make a decision. That does not require
+      consensus amongst all participants in the RFC thread (which is usually
+      impossible). However, the argument supporting the disposition on the RFC
+      needs to have already been clearly articulated, and there should not be a
+      strong consensus *against* that position outside of the subteam. Subteam
+      members use their best judgment in taking this step, and the FCP itself
+      ensures there is ample time and notification for stakeholders to push
+      back if it is made prematurely.
     - For RFCs with lengthy discussion, the motion to FCP is usually preceded by
       a *summary comment* trying to lay out the current state of the discussion
       and major tradeoffs/points of disagreement.
     - Before actually entering FCP, *all* members of the subteam must sign off;
-    this is often the point at which many subteam members first review the RFC
-    in full depth.
+      this is often the point at which many subteam members first review the
+      RFC in full depth.
   - The FCP lasts ten calendar days, so that it is open for at least 5 business
     days. It is also advertised widely,
     e.g. in [This Week in Rust](https://this-week-in-rust.org/). This way all
