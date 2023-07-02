@@ -157,14 +157,17 @@ Rust's `pub`, but is a reasonable default to be consistent with the current
 behavior so that either `feature = []` or `feature = { "requires" = [] }` will
 return the same result.
 
+The name `public` was chosen in favor of `pub` to be consistent with the
+[`public_private_dependencies`] RFC, and to match the existing style of using
+non-truncated words as keys.
+
 In general, marking a feature `public = false` should make tooling treat the
 feature as non-public API. That includes:
 
 -   The feature should not be accepted by `cargo add --features`
--   The feature should not be reported from the feature output report of `cargo
-add`
--   In the future, `rustdoc` should not document these features unless
-    `--document-private-items` is specified
+-   The feature should not be reported from `cargo add`'s feature output report
+-   Once `rustdoc` is able to consume feature metadata, `rustdoc` should not
+    document these features unless `--document-private-items` is specified
 -   A future tool like `cargo info` shouldn't display information about these
     features
 
