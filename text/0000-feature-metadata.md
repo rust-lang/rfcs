@@ -46,14 +46,14 @@ possibilities:
 # Current configuration will continue to work
 foo = []
 # New configurations
-bar = { requires = ["foo"], doc = "simple docstring here"}
-baz = { requires = ["foo"], public = false}
-qux = { requires = [], deprecated = true }
-quux = { requires = [], deprecated = { since = "1.2.3", note = "don't use this!" } }
+bar = { enables = ["foo"], doc = "simple docstring here"}
+baz = { enables = ["foo"], public = false}
+qux = { enables = [], deprecated = true }
+quux = { enables = [], deprecated = { since = "1.2.3", note = "don't use this!" } }
 
 # Features can also be full tables if descriptions are longer
 [features.corge]
-requires = ["bar", "baz"]
+enables = ["bar", "baz"]
 doc = """
 # corge
 
@@ -63,9 +63,10 @@ This could be a longer description of this feature
 
 The following keys would be allowed in a feature table:
 
--   `requires`: This is synonymous with the existing array describing required
-    features. For example, `foo = ["dep:serde", "otherfeat"]` will be identical to
-    `foo = { requires = ["dep:serde", "otherfeat"] }`
+-   `enables`: This is synonymous with the existing array describing what
+    features are enabled by the described feature features. For example, `foo =
+    ["dep:serde", "otherfeat"]` will be identical to `foo = { enables =
+    ["dep:serde", "otherfeat"] }`
 -   `doc`: A markdown docstring describing the feature. Like with `#[doc(...)]`,
     the first line will be treated as a summary.
 -   `deprecated`: This can be either a simple boolean, a string, or an object
@@ -93,13 +94,13 @@ Validation and parsing of the new schema, described above, shoud be relatively
 straightforward. Each of the added keys is discussed individually in the
 following sections:
 
-## `requires`
+## `enables`
 
-`requires` will take the place of the feature dependency array that currently
+`enables` will take the place of the feature dependency array that currently
 exists. Semantics will remain unchanged.
 
 This is a required key. If there are no requirements, an empty list should be
-provided (`requires = []`).
+provided (`enables = []`).
 
 ## `doc`
 
@@ -156,7 +157,7 @@ crates.
 
 The default `true` is not consistent with [`public_private_dependencies`] or
 Rust's `pub`, but is a reasonable default to be consistent with the current
-behavior so that either `feature = []` or `feature = { "requires" = [] }` will
+behavior so that either `feature = []` or `feature = { "enables" = [] }` will
 return the same result.
 
 The name `public` was chosen in favor of `pub` to be consistent with the
@@ -269,7 +270,7 @@ ignore this key, newer Cargo would be able to merge `features`, `features2`, and
 
     ```toml
     [features]
-    foo = { requires = [], doc = "foo feature" }
+    foo = { enables = [], doc = "foo feature" }
     ## foo feature
     foo = []
     ```
@@ -307,7 +308,7 @@ ignore this key, newer Cargo would be able to merge `features`, `features2`, and
     implementation, the challenges of supporting markdown are better understood.
 
 It is worth noting that not all of these feature flags need to be made available
-at once. `requires` needs to be implemented first, but support for all others
+at once. `enables` needs to be implemented first, but support for all others
 could be added over time.
 
 # Future possibilities
@@ -343,8 +344,8 @@ could be added over time.
     features requiring long descriptions.
 
     ```toml
-    foo = { requires = [], doc-file = "features.md#foo" }
-    bar = { requires = [], doc-file = "features.md#bar" }
+    foo = { enables = [], doc-file = "features.md#foo" }
+    bar = { enables = [], doc-file = "features.md#bar" }
     ```
 
 [cargo #12335]: https://github.com/rust-lang/cargo/issues/12235
