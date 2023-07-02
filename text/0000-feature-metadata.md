@@ -69,9 +69,10 @@ The following keys would be allowed in a feature table:
 -   `doc`: A markdown docstring describing the feature. Like with `#[doc(...)]`,
     the first line will be treated as a summary.
 -   `deprecated`: This can be either a simple boolean, a string, or an object
-    with `since` and/or `note` keys. Cargo will warn downstream crates using this
+    with `since` and/or `note` keys. Cargo will warn downstream crates using
+    this feature.
 -   `public`: A boolean flag defaulting to `true` that indicates whether or not
-    downstream crates should be allowed to use this feature
+    downstream crates should be allowed to use this feature.
 
 If a downstream crate attempts to use the features `baz` and `qux`, they will
 see messages like the following:
@@ -104,7 +105,8 @@ provided (`requires = []`).
 
 `doc` is the most straightforward: it accepts markdown-flavored text, and should
 be thought of as the equivalent to a `#[doc(...)]` attribute. Like doc comments,
-the first line should be treated as a summary.
+the first line should be treated as a summary. Intra-doc link support is not
+included in this RFC, so they should not be used.
 
 There is nothing in this RFC that cargo `must` do with this action, since it is
 mainly intended for the consumption of `rustdoc` or `docs.rs`. However, it can
@@ -182,6 +184,12 @@ to `cfg` based on these features.
 Full support does not need to happen immediately, since it will require this
 information be present in the index. [Index changes] describes how this can take
 place.
+
+Two sample use cases for `public = false` include:
+
+-   `docs.rs` having a way to know which features should be hidden
+-   Features that are included in feature chains (feature `a` enables feature
+    `b`) but not meant for public consumption could be marked not public
 
 # General Implementation & Usage
 
@@ -284,28 +292,23 @@ ignore this key, newer Cargo would be able to merge `features`, `features2`, and
     start with `_`, they are hidden from this table.
 -   Ivy has a [visibility attribute] for its configuration (mentioned in
     [cargo #10882])
+-   Discussion on stable/unstable/nightly-only features
+    <https://github.com/rust-lang/cargo/issues/10881>
 
 # Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
 
--   Do we want all the proposed keys? Specifically, `public` may be more than
-    what is needed.
-
-    See also:
-
-    -   <https://github.com/rust-lang/cargo/issues/10882>
-    -   <https://github.com/rust-lang/cargo/issues/10881>
-
 -   If we use the semantics as-written, should there be a
     `--allow-private-features` flag? Or how should a user opt in?
--   Does it make sense to have separate `hidden` (not documented) and `public`
-    (feature not allowed downstream) attribute? I think probably not
--   The Cargo index may need a way to be aware of deprecated features, so it can
-    properly report them during resolution. What would be needed here?
+-   Rather than being consistent with `rustdoc` and accepting markdown, should
+    the `doc` key be consistent with `package.description` and only support
+    plain text? This RFC proposes making this decision at time of
+    implementation, the challenges of supporting markdown are better understood.
 
-It is worth noting that simpler keys (`requires`, `doc`, `deprecated`) could be
-stabilized immediately and other features could be postponed.
+It is worth noting that not all of these feature flags need to be made available
+at once. `requires` needs to be implemented first, but support for all others
+could be added over time.
 
 # Future possibilities
 
