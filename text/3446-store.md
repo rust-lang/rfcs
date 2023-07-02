@@ -42,6 +42,8 @@ The `Store` API is very closely related to the `Allocator` API, and largely mirr
 
 -   The `Handle` returned is opaque, and must be resolved into pointers by the instance of `Store` which allocated it,
     in general.
+-   The `StoreDangling` super trait, which allows acquiring a `dangling` handle, which can safely be resolved into a
+    well-aligned pointer, if an invalid one.
 -   Unless a specific store type implements `StoreMultiple`, any handle it allocated may be invalidated when the store
     performs a new allocation.
 -   Unless a specific store type implements `StoreStable`, there is no guarantee that resolving the same handle after
@@ -296,19 +298,36 @@ I wish.
 /// The block of memory is aligned and sized as per `T`.
 pub struct InlineSingleStore<T>(UnsafeCell<MaybeUninit<T>>);
 
-impl<T> Default for InlineSingleStore<T> {
-    fn default() -> Self {
+impl<T> InlineSingleStore<T> {
+    /// Creates a new instance.
+    pub const fn new() -> Self {
         Self(UnsafeCell::new(MaybeUninit::uninit()))
     }
 }
 
-unsafe impl<T> Store for InlineSingleStore<T> {
+impl<T> Default for InlineSingleStore<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+unsafe impl<T> const StoreDangling for InlineSingleStore<T> {
     type Handle = ();
 
-    fn dangling(&self) -> Self::Handle {}
+    fn dangling(&self, alignment: Alignment) -> Result<Self::Handle, AllocError> {
+        if alignment.as_usize() <= Alignment::of::<T>().as_usize() {
+            Ok(())
+        } else {
+            Err(AllocError)
+        }
+    }
+}
 
+unsafe impl<T> const Store for InlineSingleStore<T> {
     fn allocate(&self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
-        Self::validate_layout(layout)?;
+        if Self::validate_layout(layout).is_err() {
+            return Err(AllocError);
+        }
 
         Ok(((), mem::size_of::<T>()))
     }
@@ -331,10 +350,12 @@ unsafe impl<T> Store for InlineSingleStore<T> {
     ) -> Result<(Self::Handle, usize), AllocError> {
         debug_assert!(
             new_layout.size() >= _old_layout.size(),
-            "{new_layout:?} must have a greater size than {_old_layout:?}"
+            "new_layout must have a greater size than _old_layout"
         );
 
-        Self::validate_layout(new_layout)?;
+        if Self::validate_layout(new_layout).is_err() {
+            return Err(AllocError);
+        }
 
         Ok(((), mem::size_of::<T>()))
     }
@@ -346,15 +367,17 @@ unsafe impl<T> Store for InlineSingleStore<T> {
         _new_layout: Layout,
     ) -> Result<(Self::Handle, usize), AllocError> {
         debug_assert!(
-            _new_layout.size() <= _old_layout.size(),
-            "{_new_layout:?} must have a smaller size than {_old_layout:?}"
+            _new_layout.size() >= _old_layout.size(),
+            "_new_layout must have a smaller size than _old_layout"
         );
 
         Ok(((), mem::size_of::<T>()))
     }
 
     fn allocate_zeroed(&self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
-        Self::validate_layout(layout)?;
+        if Self::validate_layout(layout).is_err() {
+            return Err(AllocError);
+        }
 
         let pointer = self.0.get() as *mut u8;
 
@@ -375,10 +398,12 @@ unsafe impl<T> Store for InlineSingleStore<T> {
     ) -> Result<(Self::Handle, usize), AllocError> {
         debug_assert!(
             new_layout.size() >= old_layout.size(),
-            "{new_layout:?} must have a greater size than {old_layout:?}"
+            "new_layout must have a greater size than old_layout"
         );
 
-        Self::validate_layout(new_layout)?;
+        if Self::validate_layout(new_layout).is_err() {
+            return Err(AllocError);
+        }
 
         let pointer = self.0.get() as *mut u8;
 
@@ -439,20 +464,26 @@ bump store.
 
 ##  Overview
 
-This RFC introduces 4 new traits.
+This RFC introduces 5 new traits.
 
-The core of this RFC is the `Store` trait:
+The core of this RFC is the `Store` trait, a super-trait of the `StoreDangling` trait:
 
 ```rust
-/// Allocates and deallocates handles to blocks of memory, which can be temporarily resolved to pointers to actually
-/// access said memory.
-pub unsafe trait Store {
+/// A trait allowing to get a dangling handle.
+pub unsafe trait StoreDangling {
     /// Handle to a block of memory.
     type Handle: Copy;
 
-    /// Returns a dangling handle, always invalid.
-    fn dangling(&self) -> Self::Handle;
+    /// Returns a dangling handle.
+    ///
+    /// A dangling handle can be resolved to a pointer of at least the specified alignment, but the resulting pointer is
+    /// invalid
+    fn dangling(&self, alignment: Alignment) -> Result<Self::Handle, AllocError>;
+}
 
+/// Allocates and deallocates handles to blocks of memory, which can be temporarily resolved to pointers to actually
+/// access said memory.
+pub unsafe trait Store: StoreDangling {
     /// Return a pointer to the block of memory associated to `handle`.
     unsafe fn resolve(&self, handle: Self::Handle) -> NonNull<u8>;
 
@@ -591,7 +622,7 @@ There are 3 extra pieces:
 
 -   The `Handle` associated type is used, rather than `NonNull<u8>`. This is the key to the flexibility of `Store`.
 -   The `dangling` method, reminiscent of `NonNull::dangling`, and to be used for the same purposes. It is part of
-    `Store` to simplify the overall API, as otherwise another trait would be required for `Handle`.
+    `Store` as the maximum available alignment may be limited by the type of `Store`.
 -   The `resolve` method, which bridges from `Handle` to `NonNull<u8>`, since access to the allocated blocks of memory
     require pointers to them.
 
@@ -609,6 +640,9 @@ the `Allocator` API are also worth asking here:
 -   Should we have `reallocate` rather than `grow`/`shrink`?
 
 It may be best to consider those questions orthogonal to this RFC, they can be resolved at once for both APIs.
+
+_Note: the companion repository extensions do use the allocated size: for inline vectors, it allows immediately setting
+        the maximum capacity once and for all._
 
 
 ##  Guarantees, or absence thereof
@@ -733,28 +767,68 @@ a potential trap for collection implementers is that switching from one to the o
 may prevent introducing an untyped core to their collection to reduce monomorphization bloat, for example.
 
 
-##  Argument-less dangling method
+##  `StoreDangling` independent trait.
 
-A previous version of the companion repository used an argument-less `Store::dangling` method.
+A previous version of the companion repository associated the `Handle` and `dangling` method directly to the `Store`
+trait.
 
-The main advantage is that no instance of `Store` is then necessary to create an associated dangling handle. The
-somewhat hidden cost, however, is that `Store` is then no longer dyn-safe.
+A separate trait adds some complexity for implementers of stores and collections alike, yet it seems the best compromise
+as of today.
 
-An intermediate solution to restore dyn-safety would be a where clause `Self: Sized`, but while this would indeed make
-`Store` dyn-safe, it would still result in only providing partial functionality. This seems clearly undesirable.
+Firstly, there is desire for `Vec::new()` (and similar) to be `const`[^1], so that they can be easily stored in `static`
+variables without requiring `OnceCell` or similar. This, in turn, requires `dangling` to be `const`, much like
+`NonNull::dangling` is `const` today.
 
-In the absence of strong usecase for creating dangling handles with no instance of `Store`, it seems preferable to have
-`Store::dangling` take `&self` so that `dyn Store` may be fully functional.
+A `const` dangling, however, is no simple feat:
+
+1.  Trait associated functions cannot be `const`, today.
+2.  Even if trait associated functions could be `const`, they may never be conditionally `const`.
+3.  For flexibility, it should be possible for `Store` implementation NOT to be `const`, with a `const` `dangling`.
+    -   In particular, it should be noted that the `System` allocations cannot easily be `const`.
+
+In light of the above, one single solution emerges: a separate, `StoreDangling` trait.
+
+[^1]: _A separate `StoreDangling` is not sufficient, the `Default` trait needs to be marked `#[const_trait]` as well._
 
 
-##  No dangling
+##  `StoreDangling` super-trait
 
-A more radical option is NOT to provide a `Store::dangling` method at all.
+There are multiple options to weave `StoreDangling` with the other traits:
 
-Any user has the option to store a `union { dangling: MaybeUninit<NonZeroU8>, handle: S::Handle }` and deal with
-creating a dangling version on their own.
+-   It could stand apart, entirely.
+-   It could have `Store` as a super-trait.
+-   It can, as of now, be a super-trait of `Store`.
 
-This comes at an ergonomic cost on the use of this union, and may have implications with regard to niches, however.
+As of today, a `dyn` trait type can only feature one trait with associated methods, hence having `StoreDangling` stand
+apart is incompatible. This could be resolved at some point in the future, certainly, but would be one more impediment
+to the implementation of this RFC.
+
+Given that `StoreDangling` provides a _much_ simpler functionality than `Store`, it seems sensible to make it a basis on
+which `Store` is built, rather than the contrary.
+
+In particular, while `const Trait` is still under-developed, it could be reasonable in the future to require that a type
+may only implement a `const Trait` if and only if it implements all its super-traits constly.
+
+
+##  Alignment-enabled dangling method
+
+A previous version of the companion repository used first an argument-less `Store::dangling` method, then a version
+taking `&self` for `dyn Store` friendliness.
+
+At the moment, the `NonNull::dangling` API provides an _aligned_ dangling pointer, which neither of the previous
+versions allowed. The fact that the dangling pointer is aligned is crucial for the performance of `Vec::as_ptr`, which
+can blissfully return the pointer without any check, and in turn enable branchless `as_slice`, `get_unchecked`, etc...
+(credits @scottcm for pointing this out).
+
+In order to avoid pessimizing such a core operation, it is thus crucial that `StoreDangling::dangling` provide a handle
+which can be resolved into a sufficiently aligned pointer:
+
+-   Since `StoreDangling::dangling` is untyped, this requires passing `Alignment` as an argument.
+-   Since the alignments that can be provided dependent on the alignment of `Store` itself -- for inline stores -- this
+    requires passing `&self` as an argument.
+
+Furthermore, the latter point leads to `dangling` being fallible: a store may not be able to guarantee pointers aligned
+to large alignments.
 
 
 ##  Adapter vs Blanket Implementation
@@ -869,6 +943,21 @@ if `StoreBox<T, S>` were to become `Box`, which seems preferable to keeping it s
 A suggestion would be to have a `TypedMetadata<T>` lang item, which would implement `CoerceUnsized` appropriately, and
 [the companion repository showcases](https://github.com/matthieu-m/storage/blob/main/src/extension/typed_metadata.rs)
 how building upon this `StoreBox` gains the ability to be `CoerceUnsized`. This is a topic for another RFC, however.
+
+
+##  (Major) How to make `StoreBox<T, S>` `noalias`?
+
+At the moment, `Box` is `noalias`, which is fairly crucial for optimizations.
+
+Unfortunately, it is not clear (to me) how this is achieved, with `Box` being a lang-item itself _and_ being built atop
+`Unique` which is also a lang-item.
+
+It is possible to use ~~dark magic~~ specialization to have `UniqueHandle<T, H>` own a `Unique<T>` if necessary, as
+@CAD97 [worked out](https://github.com/rust-lang/rfcs/pull/3446#discussion_r1242780520), though it is unclear whether
+that is sufficient... or desirable.
+
+While this RFC does _not_ propose to re-implement `Box` in terms of `Store` immediately, it is a long-term goal, and
+thus it is crucial to ensure that the `Store` API allows achieving it.
 
 
 ##  (Medium) To `Clone`, to `Default`?
