@@ -302,8 +302,10 @@ but is preferred to use `features` or `features2` to avoid duplication.
     crate (linked below).
 
     ```toml
-    [features]
+    # RFC proposal
     foo = { enables = [], doc = "foo feature" }
+
+    # Alternative equivalent using doc comments
     ## foo feature
     foo = []
     ```
