@@ -133,14 +133,27 @@ attribute in Rust source. The value can be a boolean, string, or an object with
 -   If not specified, the default is `false`
 
 If a downstream crate attempts to use a feature marked `deprecated`, Cargo
-should produce a warning. This warning should not be emitted for crates that
-reexport the feature under a feature also marked deprecated. For example: crate
-`foo` exports feature `phooey`, and crate `bar` exports feature 
-`barred = ["foo/phooey"]`. If `foo` markes `bar` as deprecated, running any
-cargo action on `bar` will emit a warning unless `barred` is also marked
-`deprecated.
+should produce a warning that contains the `note`. This warning should not be
+emitted for crates that reexport the feature under a feature also marked
+deprecated. For example: crate `foo` exports feature `phooey`, and crate `bar`
+exports feature `barred = ["foo/phooey"]`. If `foo` markes `bar` as deprecated,
+running any cargo action on `bar` will emit a warning unless `barred` is also
+marked `deprecated.
 
 Accessing this information will require access to the manifest.
+
+### A note on `since`
+
+The exact behavior of the `since` key is not provided in this RFC as there are
+decisions related to resolution that need to be made. The generally accepted
+concept is that there should be a warning if a deprecated feature is used _and_
+there is something actionable to resolve this issue for all downstream crates -
+but the details of how best to do this are not yet clear. Please see [discussion
+on since].
+
+If the exact behavior of `since` does not reach consensus before `deprecated` is
+nearing stabilization, this key can stabilized separately or dropped entirely.
+
 
 ## `public`
 
@@ -313,8 +326,8 @@ ignore this key, newer Cargo would be able to merge `features`, `features2`, and
 -   Should there be a simple `--allow-private-features` flag that allows using
     all features, such as for crater runs? This can be decided during
     implementation.
--   How should `since` work with the `deprecated` key? This can be decided
-    during implementation or droped entirely.
+-   How should `since` work with the `deprecated` key? See
+    [a note on `since`](#a-note-on-since) for further information.
 
 It is worth noting that not all of these new keys need to be made available at
 once. `enables` needs to be implemented first, but support for all others could
@@ -361,7 +374,8 @@ be added over time.
 [cargo #10882]: https://github.com/rust-lang/cargo/issues/10882
 [`cargo-info`]: https://github.com/rust-lang/cargo/issues/948
 [`deprecated`]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-deprecated-attribute
-[`deprecated-suggestions`]: https://github.com/rust-lang/rust/issues/94785#issuecomment-1579349116
+[`deprecated-suggestions`]: https://github.com/rust-lang/rust/issues/94785
+[discussion on since]: https://github.com/rust-lang/rfcs/pull/3416#discussion_r1172895497
 [`public_private_dependencies`]: https://rust-lang.github.io/rfcs/1977-public-private-dependencies.html
 [`rustdoc-cargo-configuration`]: https://github.com/rust-lang/rfcs/pull/3421
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
