@@ -257,13 +257,12 @@ attempt to present them in the following way:
 For features that require new information in the index, it should be possible to
 add this information under a `features3` key. Older versions of Cargo will
 ignore this key, newer Cargo would be able to merge `features`, `features2`, and
-`features3`. `features3` should mirror the most complete syntax of the
-`[features]` table, i.e.:
+`features3`. `features3` should mirror the most complete syntax of the relevant
+keys from the `[features]` table. Currently this is only `deprecated`, i.e.:
 
 ```json5
 "features3": {
     "bar": {
-        enables: ["foo"],
         deprecated = { since = "1.2.3", note = "don't use this" }
     }
 }
@@ -271,7 +270,8 @@ ignore this key, newer Cargo would be able to merge `features`, `features2`, and
 
 In order to conserve index space, default keys should be omitted. `Cargo` should
 ignore unrecognized keys within a feature, to allow for future additions without
-needing a new `features` section.
+needing a new `features` section. `enables` may be specified in this section,
+but is preferred to use `features` or `features2` to avoid duplication.
 
 # Drawbacks
 
