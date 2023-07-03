@@ -89,7 +89,10 @@ error: feature `baz` on crate `mycrate` is private and cannot be used by
 
 Validation and parsing of the new schema, described above, shoud be relatively
 straightforward. Each of the added keys is discussed individually in the
-following sections:
+below sections.
+
+It is worth noting that none of these keys depend on any others, so they can be
+implemented and stabilized individually.
 
 ## `enables`
 
@@ -140,7 +143,8 @@ exports feature `barred = ["foo/phooey"]`. If `foo` markes `bar` as deprecated,
 running any cargo action on `bar` will emit a warning unless `barred` is also
 marked `deprecated.
 
-Accessing this information will require access to the manifest.
+Accessing this information will require access to the manifest as it will not be
+in the index.
 
 ### A note on `since`
 
