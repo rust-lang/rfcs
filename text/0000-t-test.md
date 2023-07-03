@@ -42,7 +42,7 @@ The new Testing team is intended to establish an overarching vision and provide 
 ## Mission and responsibilities
 [mission]: #mission
 
-This team would be primarily focused on iterating on the test writing and reporting experience, `cargo test`, and enabling integration points and features for external tools like CI or IDEs.
+This team would be primarily focused on iterating on the test writing and analysis experience, `cargo test`, and enabling integration points and features for external tools like CI or IDEs.
 
 Examples of issues to resolve:
 - [Stabilize support for programmatic (json) test output](https://github.com/rust-lang/rust/issues/49359)
@@ -53,13 +53,15 @@ Examples of issues to resolve:
 
 With the aforementioned breadth across the Project, the Testing team will need to have collaborative relationships with many other teams, and is conceptually a subteam of both the Libs and Dev Tools teams.
 
-The rust-lang/team repo does not currently support representing dual-parent subteams, so for now the Test team will be primarily under the Dev Tools team
+The rust-lang/team repo does not currently support representing dual-parent subteams, so for now the Testing team will be primarily under the Dev Tools team
 
 T-devtools: This will be the primary top level parent team.
 
 **T-cargo**: This is a sibling team that T-testing will need to work with similarly to T-rustfmt, T-clippy, etc.
 
 **T-rustdoc**: This is a sibling team that T-testing will likely coordinate with if any changes are need to how we do doctesting
+
+**T-IDEs and Editors**: This is a sibling team that T-testing will likely coordinate with to understand the needs of IDEs/editors related to incorporating test related capabilities
 
 **T-libs**: This will be a second/secondary top level parent team as they are ultimately responsible for libtest.
 
@@ -80,7 +82,7 @@ Someone can become a member of the Testing Team by requesting a review or being 
 
 Team Leads are responsible for scheduling and facilitating team meetings and will be selected from the team members by consensus.
 
-The initial members of the testing team shall be:
+The initial members of the Testing team shall be:
 - Lead: Caleb Cartwright (@calebcartwright)
 - Ed Page (@epage)
 - Weihang Lo (@weihanglo)
