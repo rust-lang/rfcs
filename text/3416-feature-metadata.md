@@ -100,7 +100,7 @@ implemented and stabilized individually.
 exists. Semantics will remain unchanged.
 
 This is a required key. If there are no requirements, an empty list should be
-provided (`enables = []`).
+provided (`enables = []`). This content is already in the index.
 
 ## `doc`
 
@@ -157,7 +157,6 @@ on since].
 
 If the exact behavior of `since` does not reach consensus before `deprecated` is
 nearing stabilization, this key can stabilized separately or dropped entirely.
-
 
 ## `public`
 
