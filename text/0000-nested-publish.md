@@ -25,6 +25,13 @@ Currently, developers must publish these packages separately. This has several d
 
 This RFC will allow developers to avoid all of these inconveniences and hazards by publishing a single package.
 
+# Definitions
+[definitions]: #definitions
+
+* (existing) A “**package**” is a directory with a `Cargo.toml` file, where that `Cargo.toml` file contains `[package]` metadata. (Note that valid `Cargo.toml` files can also declare `[workspace]`s without being packages; such files are irrelevant to this RFC.)
+* (existing) A “**sub-package**” is a package (directory with `Cargo.toml`) which is located in a subdirectory of another package. (This is an existing term in Cargo documentation, though only once.)
+* (new) A “**parent package**”, in the context of this RFC, is a package which is being or has been published, and which may contain sub-packages.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -33,8 +40,6 @@ By default (and always, prior to this RFC's implementation):
 * If your package contains any sub-packages, Cargo [excludes](https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields) them from the `.crate` archive file produced by `cargo package` and `cargo publish`.
 * If your package contains any non-`dev` dependencies which do not give a `version = "..."`, it cannot be published to `crates.io`.
 * If your package contains `[dev-dependencies]` which do not give a `version = "..."`, they are stripped out on publication.
-
-(By “**sub-package**” we mean a package (directory with `Cargo.toml`) which is a subdirectory of another package. We shall call the outermost such package, the package being published, the “**parent package**”.)
 
 You can change this default by placing in the manifest (`Cargo.toml`) of a sub-package:
 
