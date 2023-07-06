@@ -31,6 +31,7 @@ This RFC will allow developers to avoid all of these inconveniences and hazards 
 * (existing) A “**package**” is a directory with a `Cargo.toml` file, where that `Cargo.toml` file contains `[package]` metadata. (Note that valid `Cargo.toml` files can also declare `[workspace]`s without being packages; such files are irrelevant to this RFC.)
 * (existing) A “**sub-package**” is a package (directory with `Cargo.toml`) which is located in a subdirectory of another package. (This is an existing term in Cargo documentation, though only once.)
 * (new) A “**parent package**”, in the context of this RFC, is a package which is being or has been published, and which may contain sub-packages.
+* (new) A “**nested package**” is a package which is published as part of some parent package rather than independently.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -142,9 +143,15 @@ We could also do nothing, except for warning the authors of paired macro crates 
 
 ## Details within this proposal
 
-Instead of introducing a new value for the `publish` key, we could simply allow sub-packages to be published when they would previously be errors. However, this would be problematic  when an existing package has a dev-dependency on a sub-package; either that sub-package would suddenly start being published as nested, or there would be no way to specify the sub-package *should* be published.
+There are several ways we could mark packages for nested publication, rather than using the `package.publish` key:
 
-We could also introduce an explicit `[subpackages]` table in the manifest. However, I believe `publish = "nested"` has the elegant and worthwhile property that it simultaneously enables nested publication and prohibits accidental un-nested publication of the sub-package.
+* Instead of introducing a new value for the `publish` key, we could simply allow sub-packages to be published when they would previously be errors. However, this would be problematic  when an existing package has a dev-dependency on a sub-package; either that sub-package would suddenly start being published as nested, or there would be no way to specify the sub-package *should* be published.
+
+* We could introduce an explicit `[subpackages]` table in the manifest. However, I believe `publish = "nested"` has the elegant and worthwhile property that it simultaneously enables nested publication and prohibits accidental un-nested publication of the sub-package.
+
+    * We could reuse `workspace.members` to also describe nested packages somehow; this might usefully avoid redundancy, but not every workspace wants to be published as a single parent package.
+
+* Similar to the previous, we could allow marking specific `[dependencies]` as “include this for publication”. However, this would make it impossible to publish a nested package which is not a dependency of the parent package, which blocks [the future possibility of][future-possibilities] public targets in nested packages (particularly, installable binary targets in sub-packages, which will frequently depend on the parent and not vice versa).
 
 # Prior art
 [prior-art]: #prior-art
