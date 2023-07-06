@@ -60,7 +60,7 @@ Nested sub-packages may be freely placed within other nested sub-packages.
 When a group of packages is published in this way, and depended on, this has a number of useful effects (which are not things that Cargo explicitly implements, just consequences of the system):
 
 * The packages are a single unit for all versioning purposes; there is no way for a version mismatch to arise since all the code was published together. Version resolution does not apply (in the same way that it does not for any other `path =` dependency).
-* The sub-package is effectively “private”: it cannot be named by any other package on `crates.io`, only by its parent package and sibling sub-packages.
+* The sub-package is effectively “private” (in a sense like the Rust language's visibility system): it cannot be named as a dependency by any other package on `crates.io`, only by its parent package and sibling sub-packages. The parent package may still re-export items from it, or even the entire crate, in the same ways as it could do with a dependency on a normally published package.
 
 ## Example: trait and derive macro
 
