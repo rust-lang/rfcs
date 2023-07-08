@@ -355,6 +355,7 @@ The section merely provides additional information.
 
 - Allowing relative paths: I feel this is counter-productive to the stated goal and have thought of no use for it, but it's entirely possible someone else will.
 - Introduce remapping into the concept in some way.
+- Introduce a form of garbage collection. Expanded upon this [Zulip thread](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/last-use.20tracking).
 
 ## Use `CARGO_TARGET_BASE_DIR` as the default instead of `target`
 
