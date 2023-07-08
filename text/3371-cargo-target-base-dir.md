@@ -182,6 +182,18 @@ In the same vein, `cargo metadata` will fill the target directory information wi
 
 Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_BASE_DIR`: if it set, `cargo clean` will delete `CARGO_TARGET_BASE_DIR/<project-path>/` and not `target/`.
 
+### Providing backlinks
+
+`targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
+
+`cargo` does not for `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
+
+When `CARGO_TARGET_BASE_DIR` is used (in any form) and not superseded by other configurations (`CARGO_TARGET_DIR`), it *will* use a backlink by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if `CARGO_TARGET_BASE_DIR` and `CARGO_TARGET_DIR` weren't set at all.
+
+This has a two big advantages: not breaking external tools and giving easy access to artifacts produced by `cargo build/test/doc` to users (they're in the habit of typing `./target/debug/my-bin`, this would continue working with backlinks).
+
+A config option (CLI, `config.toml` and env var), `link-target-dir`, will be introduced to deactivate this behaviour, but it will `true` by default, for the reasons provided in favor of backlinks just above.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -198,6 +210,10 @@ This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_B
 Depending on what naming scheme is used (e.g., a very long hash), we could hit the Windows path length limits if not careful.
 
 A mitigation for this is recommending a short prefix (in `CARGO_TARGET_BASE_DIR`) and using a hash that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
+
+## Backlinks
+
+There a few cases where a symlink instead of a real dir will break programs: at least SQLite can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since `CARGO_TARGET_BASE_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -255,12 +271,6 @@ On the other hand, `targo` is already here and working for at least one person, 
 
 [source]: https://github.com/rust-lang/cargo/issues/11156#issuecomment-1285951209
 
-### Providing backlinks
-
-`targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
-
-`cargo` does not for `CARGO_TARGET_DIR` and will not do it either for `CARGO_TARGET_BASE_DIR` : it provides `cargo metadata` that is the blessed way to obtain the actual target directory and when `CARGO_TARGET_BASE_DIR` is used, it will set `CARGO_TARGET_DIR` on all invocation within a workspace (if not already set) to make it easy to obtain the target directory for simple task (e.g. a test needing to launch another binary in the repo).
-
 ## Remapping
 
 [rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156) was originally about remapping the target directory, not about having a central one but reading the issue, there seems to be no needs for more than the simple redefinition of the target directory proposed in this document. In the future, if `CARGO_TARGET_DIR_REMAP` is introduced, it could be used to be the prefix to the target directory like so:
@@ -317,6 +327,7 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
+- Do we want to add backlinks for `CARGO_TARGET_DIR` too in the process of this RFC ?
 - Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for us ?
 
 # Future possibilities
@@ -353,26 +364,18 @@ This option has several complications I'm not sure how to resolve:
   - Subsequently, when platform defaults are decided, how do we ensure a new platform has a good default too ?
   - `CARGO_HOME` is already criticized for being both a *cache* and a *config* home (using the XDG spec semantics), adding more local cache to it in the form of `CARGO_HOME/target-base-dir/` would not improve the situation and should probably not be done, but, if no good alternatives are found, there is precedent to use it for this.
 2. How do we communicate on said default values ?
-3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon.
-
-I see `CARGO_TARGET_BASE_DIR` as `cargo`-specific `XDG_CACHE_DIR` variable: if unset, using a local `target/` is what *all* of the Web has documented for years, it's what people expect, it's what tools expect, it makes it easy to reorganize Rust projects by just moving them around in directories, ...
-
-`CARGO_TARGET_BASE_DIR` is more intended for CI, peoples with specific setups or people wanting to dive just a little deeper in their directory management, but just like `npm` puts `.node_modules/` in the project's workspace directory by default, I think `cargo` should also keep this as the default behaviour.
+3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon. Note that having backlinks active by default (see relevant section earlier in the RFC) will help offset a lot of the problems here.
 
 ### We really want to do this, how do we do it ?
 
-Well, first, heavy advertising of the option. Very **heavy** advertising of it and of `cargo-metadata` for all interactions with the cargo `target/` directory. After that, it will be a waiting game:
+Well, first, advertising of the option and its behaviour, as well as the backlink behaviour (so people know we're not just breaking tools for fun). After that, it becomes necessary to test it quite heavily to really ensure nothing has broken irremediably.
 
-1. Wait for tools to be updated
-2. Wait for MSRVs to catch up to the cargo version introducing the option and its defaults (this could take a year or ten, I have no idea)
-3. Add a config option to `cargo` to make it the default behaviour (when there is not already a `target/` dir locally is `CARGO_TARGET_DIR` set), something like `use-user-wide-cargo-target-base-dir-by-default = true` and communicate so that people can try it out
-4. Write a post saying "we'll do the change in version X" (where current version is like X-2 to warn 3 months before at least ?) and then only apply the change to directory where there is no `CARGO_TARGET_DIR` and no `target/` dir locally
-
-I expect this to take a long time and `cargo` would need to be very clear about where it puts the target directory, probably through a simple command like `cargo metadata --print-target-dir` to make it easy for CIs and scripts to use it programatically without having to parse JSON all the time like a simple `cargo metadata` would do.
+1. Introduce it as the default behaviour in nightly, wait for a few stable releases so that beta has it too and it can start being used for a few months after that so that esoteric setups can also try it.
+2. Write a post saying "we'll do the change in version X" (where current version is like X-2 to warn 3 months before at least ?) and then only apply the change to directory where there is no `CARGO_TARGET_DIR` config set.
 
 ### A user still wants the current behaviour and not this RFC's
 
-- We could use a config option (mentioned in previous section)
+- We could use a config option to entirely deactivate it
 - `CARGO_TARGET_DIR=target` would still be available
 - We could add special behaviour like `CARGO_TARGET_BASE_DIR=""` meaning "use current" directory
 
