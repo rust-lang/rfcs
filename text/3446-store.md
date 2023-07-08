@@ -549,6 +549,83 @@ pub unsafe trait StorePinning: StoreStable {}
 ```
 
 
+##  Safety & Guarantees
+
+The `Store` trait is used to manage non-overlapping blocks of memory through opaque `Handle`s, temporarily resolving a
+`Handle` to the address of the block of memory as needed.
+
+There are therefore essentially 3 moving pieces to keep track of: handles, pointers resolved from those handles, and
+the operations that may be soundly executed on those.
+
+
+### Handles
+
+A `Handle` may be in one of 3 states:
+
+-   Invalid: it is Undefined Behavior to call any method of `Store` with this handle.
+-   Valid, but Dangling: the handle can be _resolved_ into a pointer, but the resulting pointer itself is dangling.
+-   Valid: the handle can be used with any method of `Store`, and the pointer it _resolves_ into can be used to access
+    the associated memory block.
+
+Creation of a `Handle`:
+
+-   `Store::dangling` produces a Valid, but Dangling, handle. This handle may then become Invalid as usual.
+-   `Store::allocate`, `Store::allocate_zeroed`, `Store::grow`, `Store::grow_zeroed`, and `Store::shrink` produce a
+    Valid handle. This handle may then become Invalid as usual.
+-   A copy of a handle may be made by replicating its bitwise state, in any way. All copies of a handle share the same
+    state, at any time.
+
+All handles created by a specific instance of `Store`, and the copies of those handles, are associated to this one
+instance and no other, unless otherwise specified.
+
+Invalidation of a `Handle`:
+
+-   All handles associated to a given instance of `Store` may be invalidated when any of `allocate`, `allocate_zeroed`,
+    `grow`, `grow_zeroed`, `shrink`, and `deallocate` is called on this instance, unless otherwise specified.
+    -   An instance of `StoreMultiple` does not invalidate existing handles on those calls.
+-   A handle is immediately invalidated when used as an argument to `deallocate`.
+-   A handle is invalidated in case of success when used as an argument to `grow`, grow_zeroed` or `shrink`. In case of
+    failure, the handle remains Valid.
+
+An instance of `Store` may provide extended guarantees, such as instances of `Store` also implementing `StoreMultiple`
+do.
+
+
+### Pointers
+
+Creation of a `NonNull<u8>` from a `Handle`:
+
+-   A Valid but Dangling handle may be _resolved_ into a pointer via `Store::resolve`. The resulting pointer is itself
+    dangling, as if obtained by `NonNull::dangling`.
+-   A Valid handle may be _resolved_ into a pointer via `Store::resolve`. The resulting pointer is valid, and points to
+    the first byte of the block of memory associated to the handle.
+-   A Valid possibly Dangling handle may be _resolved_ into a pointer by other means, such as the `Into` or `TryInto`
+    traits. The resulting pointer must be equal to the result of calling `Store::resolve` with the handle.
+
+All pointers resolved from a handle, or any of its copies, share the same state, at any time.
+
+All pointers resolved from a handle associated to a specific instance of `Store` are themselves associated to this one
+instance and no other, unless otherwise specified.
+
+Invalidation of a `NonNull<u8>`:
+
+-   All pointers resolved from a handle are invalidated when this handle is invalidated.
+-   All pointers associated to an instance of `Store` may be invalidated by dropping this instance.
+-   All pointers associated to an instance of `Store` may be invalidated by moving this instance, unless otherwise
+    specified.
+    -   An instance of `StorePinning` does not invalidate existing pointers on moves.
+-   All pointers associated to an instance of `Store` may be invalidated when calling any of `allocate`,
+    `allocate_zeroed`, `grow`, `grow_zeroed`, `shrink`, or `deallocate` on this instance, unless otherwise specified.
+    -   An instance of `StoreStable` does not invalidate existing pointers on those calls.
+-   All pointers associated to an instance of `Store` may be invalidated when calling `resolve` on this instance, unless
+    otherwise specified.
+    -   Pointers resolved from a copy of the handle passed to `resolve` are not invalidated.
+    -   An instance of `StoreStable` does not invalidate existing pointers on those calls.
+
+An instance of `Store` may provide extended guarantees, such as instances of `Store` also implementing `StoreStable` or
+`StorePinning` do.
+
+
 ##  Library Organization
 
 This RFC proposes to follow the lead of the `Allocator` trait, and add the `Store` traits to the `core` crate, either in
@@ -783,10 +860,10 @@ A `const` dangling, however, is no simple feat:
 
 1.  Trait associated functions cannot be `const`, today.
 2.  Even if trait associated functions could be `const`, they may never be conditionally `const`.
-3.  For flexibility, it should be possible for `Store` implementation NOT to be `const`, with a `const` `dangling`.
+3.  For flexibility, it should be possible for `Store` implementations NOT to be `const`, with a `const` `dangling`.
     -   In particular, it should be noted that the `System` allocations cannot easily be `const`.
 
-In light of the above, one single solution emerges: a separate, `StoreDangling` trait.
+In light of the above, one simple solution emerges: a separate, `StoreDangling` trait.
 
 [^1]: _A separate `StoreDangling` is not sufficient, the `Default` trait needs to be marked `#[const_trait]` as well._
 
@@ -1040,6 +1117,8 @@ collection in a const context even with a non-const `Store` implementation.
 The one downside is that this would preclude some implementations of `dangling` which would rely on global state, or
 I/O. @CAD97 notably mentioned the possibility of using randomization for debugging or hardening purposes. Still, it
 would still be possible to initialize the instance of `Store` with a random seed, then use a PRNG within `dangling`.
+
+On the other hand, it leads to a simpler API than a separate `StoreDangling` base trait.
 
 
 #   Future Possibilities
