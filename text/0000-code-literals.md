@@ -257,6 +257,12 @@ Here are some edge case examples:
 Any text between the opening quote and the first newline is
 preserved within the AST, but is otherwise unused.
 
+This is a backwards compatible change for editions 2021 onwards, since
+edition 2021 reserved prefixes for this kind of feature:
+https://doc.rust-lang.org/reference/tokens.html#reserved-prefixes.
+
+Editions prior to 2021 will not benefit from this feature.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
