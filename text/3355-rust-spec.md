@@ -1,7 +1,7 @@
 - Feature Name: `rust_spec`
 - Start Date: 2022-12-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3355](https://github.com/rust-lang/rfcs/pull/3355)
+- Rust Issue: [rust-lang/rust#113527](https://github.com/rust-lang/rust/issues/113527)
 
 # Summary
 [summary]: #summary
