@@ -1,6 +1,6 @@
 - Feature Name: `add-bf16-f64f64-and-f80-type`
 - Start Date: 2023-7-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3456](https://github.com/rust-lang/rfcs/pull/3456)
 - Rust Issue: [rust-lang/rust#2629](https://github.com/rust-lang/rfcs/issues/2629)
 
 # Summary
