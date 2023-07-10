@@ -283,317 +283,140 @@ accessible after the error has been converted to a `dyn Error`.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The following changes need to be made to implement this proposal:
+A proof of concept implementation, can be seen in  Nika Layzell's [dyno crate].
+
+A usable version of this proposal is available in master branch of the [rust
+repo](rust-repo). 
+
+## User-facing elements
+
+The user-facing elements of this proposal include the following (snippets
+copied from master branch of standard library):
 
 ### Add a `Request` type to `libcore` for type-indexed context
 
-`Request` is a type to emulate nested dynamic typing. This type fills the same
-role as `&dyn Any` except that it supports other trait objects as the requested
-type.
-
-Here is the implementation for the proof of concept, based on Nika Layzell's
-[dyno crate]:
-
-A usable version of this is available in the [proof of concept] repo under
-`fakecore/src/any.rs`.
+`Request` is a type intended to emulate nested dynamic typing. This type fills
+the same role as `&dyn Any` except that it supports other trait objects as the
+requested type. The only users of this type outside of the standard library
+will be implementors of `Error.provide_context`, in order to respond to
+requests for specific types of data. Requests for data types not supported by
+the implementor of `Error.provide_context` will result in `None` responses to
+`<dyn Error>.request_ref` and `<dyn Error>.request_value`.
 
 ```rust
-use core::any::TypeId;
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[cfg(feature = "alloc")]
-use alloc::boxed::Box;
-
-pub mod provider {
-    //! Tag-based value lookup API for trait objects.
-    //!
-    //! This provides a similar API to my `object_provider` crate, built on top of
-    //! `dyno`
-
-    use super::{Tag, Tagged};
-
-    /// An untyped request for a value of a specific type.
+pub struct Request<'a>(dyn Erased<'a> + 'a);
+impl<'a> Request<'a> {
+    /// Provide a value or other type with only static lifetimes.
     ///
-    /// This type is generally used as an `&mut Request<'a>` outparameter.
-    #[repr(transparent)]
-    pub struct Request<'a> {
-        tagged: dyn Tagged<'a> + 'a,
-    }
-
-    impl<'a> Request<'a> {
-        /// Helper for performing transmutes as `Request<'a>` has the same layout as
-        /// `dyn Tagged<'a> + 'a`, just with a different type!
-        ///
-        /// This is just to have our own methods on it, and less of the interface
-        /// exposed on the `provide` implementation.
-        fn wrap_tagged<'b>(t: &'b mut (dyn Tagged<'a> + 'a)) -> &'b mut Self {
-            unsafe { &mut *(t as *mut (dyn Tagged<'a> + 'a) as *mut Request<'a>) }
-        }
-
-        pub fn is<I>(&self) -> bool
-        where
-            I: Tag<'a>,
-        {
-            self.tagged.is::<ReqTag<I>>()
-        }
-
-        pub fn provide<I>(&mut self, value: I::Type) -> &mut Self
-        where
-            I: Tag<'a>,
-        {
-            if let Some(res @ None) = self.tagged.downcast_mut::<ReqTag<I>>() {
-                *res = Some(value);
-            }
-            self
-        }
-
-        pub fn provide_ref<I: ?Sized + 'static>(&mut self, value: &'a I) -> &mut Self
-        {
-            use crate::any::tag::Ref;
-            if let Some(res @ None) = self.tagged.downcast_mut::<ReqTag<Ref<I>>>() {
-                *res = Some(value);
-            }
-            self
-        }
-
-        pub fn provide_with<I, F>(&mut self, f: F) -> &mut Self
-        where
-            I: Tag<'a>,
-            F: FnOnce() -> I::Type,
-        {
-            if let Some(res @ None) = self.tagged.downcast_mut::<ReqTag<I>>() {
-                *res = Some(f());
-            }
-            self
-        }
-    }
-
-    pub trait Provider {
-        fn provide<'a>(&'a self, request: &mut Request<'a>);
-    }
-
-    impl dyn Provider {
-        pub fn request<'a, I>(&'a self) -> Option<I::Type>
-        where
-            I: Tag<'a>,
-        {
-            request::<I, _>(|request| self.provide(request))
-        }
-    }
-
-    pub fn request<'a, I, F>(f: F) -> Option<<I as Tag<'a>>::Type>
+    #[unstable(feature = "provide_any", issue = "96024")]
+    pub fn provide_value<T>(&mut self, value: T) -> &mut Self
     where
-        I: Tag<'a>,
-        F: FnOnce(&mut Request<'a>),
+        T: 'static,
     {
-        let mut result: Option<<I as Tag<'a>>::Type> = None;
-        f(Request::<'a>::wrap_tagged(<dyn Tagged>::tag_mut::<ReqTag<I>>(
-            &mut result,
-        )));
-        result
+        self.provide::<tags::Value<T>>(value)
     }
 
-    /// Implementation detail: Specific `Tag` tag used by the `Request` code under
-    /// the hood.
+    /// Provide a value or other type with only static lifetimes computed using a closure.
     ///
-    /// Composition of `Tag` types!
-    struct ReqTag<I>(I);
-    impl<'a, I: Tag<'a>> Tag<'a> for ReqTag<I> {
-        type Type = Option<I::Type>;
-    }
-}
-
-pub mod tag {
-    //! Simple type-based tag values for use in generic code.
-    use super::Tag;
-    use core::marker::PhantomData;
-
-    /// Type-based `Tag` for `&'a T` types.
-    pub struct Ref<T: ?Sized + 'static>(PhantomData<T>);
-
-    impl<'a, T: ?Sized + 'static> Tag<'a> for Ref<T> {
-        type Type = &'a T;
+    #[unstable(feature = "provide_any", issue = "96024")]
+    pub fn provide_value_with<T>(&mut self, fulfil: impl FnOnce() -> T) -> &mut Self
+    where
+        T: 'static,
+    {
+        self.provide_with::<tags::Value<T>>(fulfil)
     }
 
-    /// Type-based `Tag` for `&'a mut T` types.
-    pub struct RefMut<T: ?Sized + 'static>(PhantomData<T>);
-
-    impl<'a, T: ?Sized + 'static> Tag<'a> for RefMut<T> {
-        type Type = &'a mut T;
-    }
-
-    /// Type-based `Tag` for concrete types.
-    pub struct Value<T: 'static>(PhantomData<T>);
-
-    impl<T: 'static> Tag<'_> for Value<T> {
-        type Type = T;
-    }
-}
-
-/// An identifier which may be used to tag a specific
-pub trait Tag<'a>: Sized + 'static {
-    /// The type of values which may be tagged by this `Tag`.
-    type Type: 'a;
-}
-
-mod private {
-    pub trait Sealed {}
-}
-
-/// Sealed trait representing a type-erased tagged object.
-pub unsafe trait Tagged<'a>: private::Sealed + 'a {
-    /// The `TypeId` of the `Tag` this value was tagged with.
-    fn tag_id(&self) -> TypeId;
-}
-
-/// Internal wrapper type with the same representation as a known external type.
-#[repr(transparent)]
-struct TaggedImpl<'a, I>
-where
-    I: Tag<'a>,
-{
-    _value: I::Type,
-}
-
-impl<'a, I> private::Sealed for TaggedImpl<'a, I> where I: Tag<'a> {}
-
-unsafe impl<'a, I> Tagged<'a> for TaggedImpl<'a, I>
-where
-    I: Tag<'a>,
-{
-    fn tag_id(&self) -> TypeId {
-        TypeId::of::<I>()
-    }
-}
-
-// FIXME: This should also handle the cases for `dyn Tagged<'a> + Send`,
-// `dyn Tagged<'a> + Send + Sync` and `dyn Tagged<'a> + Sync`...
-//
-// Should be easy enough to do it with a macro...
-impl<'a> dyn Tagged<'a> {
-    /// Tag a reference to a concrete type with a given `Tag`.
+    /// Provide a reference. The referee type must be bounded by `'static`,
+    /// but may be unsized.
     ///
-    /// This is like an unsizing coercion, but must be performed explicitly to
-    /// specify the specific tag.
-    pub fn tag_ref<I>(value: &I::Type) -> &dyn Tagged<'a>
-    where
-        I: Tag<'a>,
-    {
-        // SAFETY: `TaggedImpl<'a, I>` has the same representation as `I::Type`
-        // due to `#[repr(transparent)]`.
-        unsafe { &*(value as *const I::Type as *const TaggedImpl<'a, I>) }
+    #[unstable(feature = "provide_any", issue = "96024")]
+    pub fn provide_ref<T: ?Sized + 'static>(&mut self, value: &'a T) -> &mut Self {
+        self.provide::<tags::Ref<tags::MaybeSizedValue<T>>>(value)
     }
 
-    /// Tag a reference to a concrete type with a given `Tag`.
+    /// Provide a reference computed using a closure. The referee type
+    /// must be bounded by `'static`, but may be unsized.
     ///
-    /// This is like an unsizing coercion, but must be performed explicitly to
-    /// specify the specific tag.
-    pub fn tag_mut<I>(value: &mut I::Type) -> &mut dyn Tagged<'a>
-    where
-        I: Tag<'a>,
-    {
-        // SAFETY: `TaggedImpl<'a, I>` has the same representation as `I::Type`
-        // due to `#[repr(transparent)]`.
-        unsafe { &mut *(value as *mut I::Type as *mut TaggedImpl<'a, I>) }
+    #[unstable(feature = "provide_any", issue = "96024")]
+    pub fn provide_ref_with<T: ?Sized + 'static>(
+        &mut self,
+        fulfil: impl FnOnce() -> &'a T,
+    ) -> &mut Self {
+        self.provide_with::<tags::Ref<tags::MaybeSizedValue<T>>>(fulfil)
     }
 
-    /// Tag a Box of a concrete type with a given `Tag`.
+    /// Check if the `Request` would be satisfied if provided with a
+    /// value of the specified type. If the type does not match or has
+    /// already been provided, returns false.
     ///
-    /// This is like an unsizing coercion, but must be performed explicitly to
-    /// specify the specific tag.
-    #[cfg(feature = "alloc")]
-    pub fn tag_box<I>(value: Box<I::Type>) -> Box<dyn Tagged<'a>>
+    #[unstable(feature = "provide_any", issue = "96024")]
+    pub fn would_be_satisfied_by_value_of<T>(&self) -> bool
     where
-        I: Tag<'a>,
+        T: 'static,
     {
-        // SAFETY: `TaggedImpl<'a, I>` has the same representation as `I::Type`
-        // due to `#[repr(transparent)]`.
-        unsafe { Box::from_raw(Box::into_raw(value) as *mut TaggedImpl<'a, I>) }
+        self.would_be_satisfied_by::<tags::Value<T>>()
     }
 
-    /// Returns `true` if the dynamic type is tagged with `I`.
-    #[inline]
-    pub fn is<I>(&self) -> bool
+    /// Check if the `Request` would be satisfied if provided with a
+    /// reference to a value of the specified type. If the type does
+    /// not match or has already been provided, returns false.
+    ///
+    #[unstable(feature = "provide_any", issue = "96024")]
+    pub fn would_be_satisfied_by_ref_of<T>(&self) -> bool
     where
-        I: Tag<'a>,
+        T: ?Sized + 'static,
     {
-        self.tag_id() == TypeId::of::<I>()
-    }
-
-    /// Returns some reference to the dynamic value if it is tagged with `I`,
-    /// or `None` if it isn't.
-    #[inline]
-    pub fn downcast_ref<I>(&self) -> Option<&I::Type>
-    where
-        I: Tag<'a>,
-    {
-        if self.is::<I>() {
-            // SAFETY: Just checked whether we're pointing to a
-            // `TaggedImpl<'a, I>`, which was cast to from an `I::Type`.
-            unsafe { Some(&*(self as *const dyn Tagged<'a> as *const I::Type)) }
-        } else {
-            None
-        }
-    }
-
-    /// Returns some reference to the dynamic value if it is tagged with `I`,
-    /// or `None` if it isn't.
-    #[inline]
-    pub fn downcast_mut<I>(&mut self) -> Option<&mut I::Type>
-    where
-        I: Tag<'a>,
-    {
-        if self.is::<I>() {
-            // SAFETY: Just checked whether we're pointing to a
-            // `TaggedImpl<'a, I>`, which was cast to from an `I::Type`.
-            unsafe { Some(&mut *(self as *mut dyn Tagged<'a> as *mut I::Type)) }
-        } else {
-            None
-        }
-    }
-
-    #[inline]
-    #[cfg(feature = "alloc")]
-    pub fn downcast_box<I>(self: Box<Self>) -> Result<Box<I::Type>, Box<Self>>
-    where
-        I: Tag<'a>,
-    {
-        if self.is::<I>() {
-            unsafe {
-                // SAFETY: Just checked whether we're pointing to a
-                // `TaggedImpl<'a, I>`, which was cast to from an `I::Type`.
-                let raw: *mut dyn Tagged<'a> = Box::into_raw(self);
-                Ok(Box::from_raw(raw as *mut I::Type))
-            }
-        } else {
-            Err(self)
-        }
+        self.would_be_satisfied_by::<tags::Ref<tags::MaybeSizedValue<T>>>()
     }
 }
+
 ```
 
 ### Define a generic accessor on the `Error` trait
 
-```rust
-pub trait Error {
-    // ...
+A new method on trait `Error`. Implementors of this `provide_context` method
+can respond to requests for specific types of data using the given `&mut
+Request` instance. Requests for data types not supported by this method on a
+particular type (via `<dyn Error>.request_ref` or `<dyn Error>.request_value`)
+will result in an `Option::None` response.
 
-    fn provide_context<'a>(&'a self, _request: &mut Request<'a>) {}
-}
+```rust
+    /// Provides type based access to context intended for error reports.
+    ///
+    /// Used in conjunction with [`Request::provide_value`] and [`Request::provide_ref`] to extract
+    /// references to member variables from `dyn Error` trait objects.
+    #[unstable(feature = "error_generic_member_access", issue = "99301")]
+    #[allow(unused_variables)]
+    fn provide_context<'a>(&'a self, request: &mut Request<'a>) {}
 ```
 
-### Use this `Request` type to handle passing generic types out of the trait object
+Note that `provide_context` is not a user-facing function, and is in the
+current unstable form only used indirectly through methods on `dyn Error`. It
+is provided as a means for implementors of `Error` to respond to requests
+routed to them via this method.
+
+### Use the `Request` type to handle passing generic types out of the trait object
+
+New methods on `dyn Error` trait objects, intended for downstream receivers of
+`dyn Error` instances to request data of specific types. These methods take
+care of implementation details related to constructing `Request`s and
+attempting to fulfill them via `Error.provide_context`.
 
 ```rust
-impl dyn Error {
-    pub fn context_ref<T: ?Sized + 'static>(&self) -> Option<&T> {
-        Request::request_ref(|req| self.provide_context(req))
+impl<'a> dyn Error + 'a {
+    /// Request a reference of type `T` as context about this error.
+    #[unstable(feature = "error_generic_member_access", issue = "99301")]
+    pub fn request_ref<T: ?Sized + 'static>(&'a self) -> Option<&'a T> {
     }
 
-    pub fn context<T: 'static>(&self) -> Option<T> {
-        Request::request_value(|req| self.provide_context(req))
+    /// Request a value of type `T` as context about this error.
+    #[unstable(feature = "error_generic_member_access", issue = "99301")]
+    pub fn request_value<T: 'static>(&'a self) -> Option<T> {
+    }
+
+    /// Request a ref of type `T` from the given `Self` instance.
+    #[unstable(feature = "error_generic_member_access", issue = "99301")]
+    pub fn request_ref_from<T: ?Sized + 'static>(this: &'a Self) -> Option<&'a T> {
     }
 }
 ```
@@ -672,13 +495,32 @@ facilities for accessing members when reporting errors. For the most part,
 prior art for this proposal comes from within rust itself in the form of
 previous additions to the `Error` trait.
 
+## Rust RFC 3192
+
+The now-defunct
+[rust-lang/rfcs#3192](https://github.com/rust-lang/rfcs/pull/3192) proposed a
+way for users outside the standard library to offer similar functionality as
+with the `Error.provide_context` trait method being proposed here. The libs
+meeting team ultimately decided to limit usage of the `Request` type to the
+`Error` trait:
+
+* May 2023 libs team meeting (summary of requested
+  changes](https://github.com/rust-lang/rust/issues/96024#issuecomment-1554773172)
+* July 9 2023 [confirmation that the libs team meeting only wants this
+  functionality to be available for `Error`
+  types](https://rust-lang.zulipchat.com/#narrow/stream/219381-t-libs/topic/error_generic_member_access/near/373733742)
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* What should the names of these functions be?
+* ~~What should the names of these functions be?~~
     * `context`/`context_ref`/`provide_context`/`provide_context`/`request_context`
     * `member`/`member_ref`
     * `provide`/`request`
+    * **Update** as of https://github.com/rust-lang/rust/pull/113464 we are
+      settling on `Request` and `Error`'s `fn provide<'a>(&'a self, demand: &mut Request<'a>)`
+      and https://github.com/rust-lang/rust/pull/112531 renames `provide` to
+      `provide_context`
 * ~~Should there be a by-value version for accessing temporaries?~~ **Update**:
   The object provider API in this RFC has been updated to include a by-value
   variant for passing out owned data.
@@ -691,9 +533,10 @@ previous additions to the `Error` trait.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This opens the door to supporting [`Error Return Traces`](https://ziglang.org/documentation/master/#toc-Error-Return-Traces), similar to zigs, where
-if each return location is stored in a `Vec<&'static Location<'static>>` a full
-return trace could be built up with:
+This opens the door to supporting [`Error Return
+Traces`](https://ziglang.org/documentation/master/#toc-Error-Return-Traces),
+similar to zig's, where if each return location is stored in a `Vec<&'static
+Location<'static>>` a full return trace could be built up with:
 
 ```rust
 let mut locations = e
@@ -702,8 +545,10 @@ let mut locations = e
     .flat_map(|locs| locs.iter());
 ```
 
+
 [`SpanTrace`]: https://docs.rs/tracing-error/0.1.2/tracing_error/struct.SpanTrace.html
 [`Request`]: https://github.com/yaahc/nostd-error-poc/blob/master/fakecore/src/any.rs
 [alternative proposal]: #use-an-alternative-proposal-that-relies-on-the-any-trait-for-downcasting
 [dyno crate]: https://github.com/mystor/dyno
 [proof of concept]: https://github.com/yaahc/nostd-error-poc
+[rust-repo] https://githbu.com/rust-lang/rust
