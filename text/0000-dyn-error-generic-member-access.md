@@ -276,7 +276,7 @@ Error:
 
 Mission accomplished! The error trait gave us everything we needed to build
 error reports enriched by context relevant to our application. This same
-pattern can be implement many error reporting patterns, such as including help
+pattern can implement many error reporting patterns, such as including help
 text, spans, http status codes, or backtraces in errors which are still
 accessible after the error has been converted to a `dyn Error`.
 
