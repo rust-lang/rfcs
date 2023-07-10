@@ -154,11 +154,13 @@ The `Error` trait accomplishes this by providing a set of methods for accessing
 members of `dyn Error` trait objects. It requires that types implement the
 `Display` trait, which acts as the interface to the main member, the error
 message itself.  It provides the `source` function for accessing `dyn Error`
-members, which typically represent the current error's cause. Via
-`#![feature(backtrace)]` it provides the `backtrace` function, for accessing a
-`Backtrace` of the state of the stack when an error was created. For all other
-forms of context relevant to an error report, the `Error` trait provides the
-`context`, context_ref`, and `provide_context` functions.
+members, which typically represent the current error's cause.
+
+For all other forms of context relevant to an error report, the `Error` trait
+offers the `provide_context` method. The report renderer indirectly calls
+`provide_context` for any `Error` type that implements it using standard
+library methods on `dyn Error` itself: `<dyn Error>.request_ref` and `<dyn
+Error>.request_value`.
 
 As an example of how to use this interface to construct an error report, let’s
 explore how one could implement an error reporting type. In this example, our
@@ -243,7 +245,7 @@ impl fmt::Debug for ErrorReporter {
 
         for (ind, error) in errors.enumerate() {
             writeln!(fmt, "    {}: {}", ind, error)?;
-            if let Some(location) = error.context_ref::<Location>() {
+            if let Some(location) = error.request_ref::<Location>() {
                 writeln!(fmt, "        at {}:{}", location.file, location.line)?;
             }
         }
