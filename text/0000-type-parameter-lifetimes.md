@@ -1,7 +1,7 @@
 - Feature Name: Type parameter lifetimes
 - Start Date: 2023-07-11
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3457](https://github.com/rust-lang/rfcs/pull/3457)
+- Rust Issue: [rust-lang/rust#3457](https://github.com/rust-lang/rust/issues/3457)
 
 # Summary
 [summary]: #summary
