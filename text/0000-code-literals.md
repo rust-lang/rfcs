@@ -182,8 +182,13 @@ literal types:
 - Raw string literals `hr#"`
 - Byte string literals `hb"`
 - Raw byte string literals `hbr#"`
+- *C string literals `hc"`*
+- *Raw C string literals `hcr#"`*
 
 The `h` modifier will appear before all characters in the prefix.
+This rule exists for consistency with raw byte strings, which must
+be written as `br"<content>"` and not `rb"<content>"`. The choice to
+have `h` come first is otherwise arbitrary and was chosen for simplicity.
 
 The value of a string literal with the `h` modifier will be determined
 using the following steps:
@@ -197,7 +202,8 @@ using the following steps:
     If this cannot be done, then issue a compiler error. The
     whitespace must match down to the exact character sequence.
 4.  If a `-` character was present immediately prior to the closing
-    quote, then remove the final newline.
+    quote, then remove the final newline. If there was no final newline
+    to remove (because the string was empty) then issue a compiler error.
 5.  Interpret any escape sequences and apply any pre-processing as
     usual for the string literal type without an `h` modifier.
     For example, newlines in the file are always treated as `\n`
@@ -255,10 +261,17 @@ Here are some edge case examples:
 ```
 
 Any text between the opening quote and the first newline is
-preserved within the AST, but is otherwise unused.
+preserved within the AST, but is otherwise unused. It will be
+referred to as a "language hint", although may also be used for other
+purposes.
 
-This is a backwards compatible change for editions 2021 onwards, since
-edition 2021 reserved prefixes for this kind of feature:
+The "language hint" (if present) must not begin with a whitespace
+character. It is recommended that editors distinguish the language hint
+from the rest of the string in some way, such as by highlighting it in
+a different colour.
+
+Overall this is a backwards compatible change for editions 2021 onwards,
+since edition 2021 reserved prefixes for this kind of feature:
 https://doc.rust-lang.org/reference/tokens.html#reserved-prefixes.
 
 Editions prior to 2021 will not benefit from this feature.
@@ -422,6 +435,41 @@ to form the syntax proposed above.
     code block, knowing that the code is SQL. The string is not treated
     any differently by the compiler, it's purely there for IDEs and
     optionally procedural macros.
+
+  - **Language hint prior to opening quote**
+
+    Similar to above, but using syntax like the following:
+
+    ```rust
+    let _ = h_sql"
+        SELECT * FROM table;
+        ";
+    ```
+    If combined with a raw string it might look like:
+    ```rust
+    let _ = h_sql_r#"
+        SELECT * FROM table;
+        "#;
+    ```
+    The choice of `_` as a separator is unsatisfactory, as it is normally
+    used as a *joining* character.
+
+  - **Language hint via an expression attribute**
+  
+    Similar to above, but using syntax like the following:
+
+    ```rust
+    let _ = #[lang(sql)] h"
+        SELECT * FROM table;
+        ";
+    ```
+
+    This gets very symbol heavy when combined with raw strings:
+    ```rust
+    let _ =  #[lang(sql)] hr#"
+        SELECT * FROM table;
+        "#;
+    ```
 
   - :heavy_check_mark: **Annotation on closing quote to remove trailing
     newline**
