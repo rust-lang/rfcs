@@ -87,6 +87,7 @@ The initial members of the Testing team shall be:
 - Ed Page (@epage)
 - Weihang Lo (@weihanglo)
 - Scott Schafer (@Muscraft)
+- Thom Chiovoloni  (@thomcc)
 
 ## Drawbacks 
 
