@@ -84,6 +84,10 @@ The goal of this RFC is to
 
 (Making the 2nd example UB-free without code changes would incur cost across the ecosystem, see the alternatives discussed below.)
 
+The examples described above are far from artificial, here are some real-world crates that need `MaybeDangling` to ensure their soundness (some currently crudely work-around that problem with `MaybeUninit` but that is really not satisfying):
+- [Yoke](https://github.com/unicode-org/icu4x/issues/3696) and [Yoke again](https://github.com/unicode-org/icu4x/issues/2095) (the first needs opting-out of `dereferenceable` for the yoke, the latter needs opting-out of `noalias` for both yoke and cart)
+- [ouroboros](https://github.com/joshua-maros/ouroboros/issues/88)
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
