@@ -175,9 +175,10 @@ and from the need to maintain backwards compatibility.
     implement `error_fmt` instead of `Display`.
 
  3. For example, macro packages like `thiserror` release a major version:
-      a. newer MSRV
-      b. implement `error_fmt` (as per 2.)
-      b. fail to compile if a provided format error string
+
+      1. newer MSRV
+      2. implement `error_fmt` (as per 2.)
+      3. fail to compile if a provided format error string
          includes the error's source.
 
  4. In the 2024 edition,
