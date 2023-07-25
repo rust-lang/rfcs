@@ -1,7 +1,6 @@
 - Feature Name: `crate-quarantine`
 - Start Date: 2023-07-25
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3464](https://github.com/rust-lang/rfcs/pull/3464)
 
 # Summary
 [summary]: #summary
@@ -128,7 +127,7 @@ PyPI has a list of prohibited words that cannot be used in package names[^pypi-p
 
 ## Node
 
-Unlike PyPI with its Warehouse project, the NPM registry isn't open source. There is, however, no indication of a pre-moderation or quarantine sy There was something of a space theme that pervaded the Embedded Linux Conference (ELC) portion of the 2023 Embedded Open Source Summit (EOSS), which is an umbrella event for various sub-conferences related to embedded open-source development. That may partly be because one of the organizers of EOSS (and ELC), Tim Bird, described himself as "a bit of a space junkie"; he made that observation during a panel session that he led on embedded Linux in space. Bird and four panelists discussed various aspects of the use of Linux in space-related systems, including where it has been used, the characteristics and challenges of aerospace deployments, certification of Linux for aerospace use, and more. stem in their public documentation.
+Unlike PyPI with its Warehouse project, the NPM registry isn't open source. There is, however, no indication of a pre-moderation or quarantine system in their public documentation.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
