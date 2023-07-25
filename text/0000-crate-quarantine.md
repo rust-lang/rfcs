@@ -23,11 +23,11 @@ Regardless, we need to be able to prevent malicious packages from being uploaded
 
 This project will add a new admin feature to crates.io that allows crate publishes matching specific properties to be placed into a quarantine state instead of being immediately published.
 
-A version in the quarantined state will have its `.crate` file published to S3 to simplify review, and will appear in crates.io API responses an an unpublished crate, but will _not_ be added to the index — and will therefore _not_ be installable via `cargo` — until it has been reviewed and approved.
+A version in the quarantined state will have its `.crate` file published to S3 to simplify review, and will appear in crates.io API responses as an unpublished crate, but will _not_ be added to the index — and will therefore _not_ be installable via `cargo` — until it has been reviewed and approved.
 
 `cargo publish` will also be modified to report when an uploaded crate version has been placed into quarantine. 
 
-Once a crate version has been quarantined, the a member of the crates.io team will review the quarantined crate within 1 week[^sla]. Once reviewed, the crate may be either approved and published to the index, or rejected and deleted. Either way, the crate owner(s) will be notified by e-mail, assuming crates.io has a verified e-mail available for their account.
+Once a crate version has been quarantined, then a member of the crates.io team will review the quarantined crate within 1 week[^sla]. Once reviewed, the crate may be either approved and published to the index, or rejected and deleted. Either way, the crate owner(s) will be notified by e-mail, assuming crates.io has a verified e-mail available for their account.
 
 Should the crate owner(s) disagree with the quarantine action, they may appeal to the moderation team.
 
@@ -41,7 +41,7 @@ In the event of a large scale spam attack on the entire site, we may want to eit
 
 ### Malicious users
 
-When we have high confidence (due to user reports or automated scanning) that a user is uploading malicious crates: in this case, a rule can be added for that specific user until the crates.io team is able to communicate with them.
+When we have high confidence (due to user reports or automated scanning) that a user is uploading malicious crates then a rule can be added for that specific user until the crates.io team is able to communicate with them.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
