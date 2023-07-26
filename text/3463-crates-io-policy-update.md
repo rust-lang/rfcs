@@ -38,7 +38,8 @@ We do not allow content or activity on crates.io that:
 
 - violates the [Code of Conduct](https://www.rust-lang.org/policies/code-of-conduct)
   of the Rust project
-- is unlawful or promotes unlawful activities
+- is unlawful or promotes unlawful activities, incurring legal liability in the
+  countries the Rust Foundation officially operates in
 - is libelous, defamatory, or fraudulent
 - amounts to phishing or attempted phishing
 - infringes any proprietary right of any party, including patent, trademark,
@@ -61,15 +62,15 @@ We do not allow content or activity on crates.io that:
   personal information without consent
 - gratuitously depicts or glorifies violence, including violent images
 - is sexually obscene or relates to sexual exploitation or abuse, including of
-  minors
+  minors (see <https://docs.github.com/en/site-policy/acceptable-use-policies/github-sexually-obscene-content>)
 - is false, inaccurate, or intentionally deceptive information and likely to
   adversely affect the public interest (including health, safety, election
   integrity, and civic participation)
 - is off-topic, or interacts with platform features in a way that significantly
   or repeatedly disrupts the experience of other users
-- exists only to reserve a name for a prolonged period of time without having
-  any genuine functionality or significant development activity on the
-  corresponding repository
+- exists only to reserve a name for a prolonged period of time (often called 
+  "name squatting") without having any genuine functionality, purpose, or
+  significant development activity on the corresponding repository
 - is related to buying, selling, or otherwise trading of package names or any
   other names on crates.io for money or other compensation
 - impersonates any person or entity, including through false association with
@@ -167,9 +168,15 @@ violation of this policy or causing an impact on the integrity of our service.
 
 Safety is one of the core principles of Rust, and to that end, we would like to
 ensure that cargo and crates.io have secure implementations. To learn more about
-disclosing security vulnerabilities, please reference the
+disclosing security vulnerabilities for these tools, please reference the
 [Rust Security policy](https://www.rust-lang.org/policies/security) for more
 details.
+
+Note that this policy only applies to official Rust projects like crates.io and
+cargo, and not individual crates. The crates.io team and the Security Response
+working group are not responsible for the disclosure of vulnerabilities to
+specific crates, and if any issues are found, you should seek guidance from
+the individual crate owners and their specific policies instead.
 
 Thank you for taking the time to responsibly disclose any issues you find.
 
@@ -186,8 +193,10 @@ violations, but instead relying on the community to draw them to our attention.
 While the majority of interactions between individuals in the Rust community
 falls within our policies, violations of those policies do occur at times.
 When they do, the crates.io team may need to take enforcement action to address
-the violations. In all cases, these actions are permanent and there is no basis
-to reverse a moderation action taken by the crates.io team.
+the violations. In all cases, content and account deletion is permanent and there
+is no basis to reverse these moderation actions taken by the crates.io team.
+Account suspension may be lifted at the team's discretion however, for example in
+the case of someone's account being compromised.
 
 
 ## Credits & License
