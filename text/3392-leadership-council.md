@@ -334,7 +334,7 @@ All policy decisions should have an evaluation date as part of the policy. Initi
 
 Decisions made by the Leadership Council will necessarily require varying levels of transparency and oversight based on the kind of decision being made. This section gives guidance on how the Council will seek oversight for its decisions, and what qualifies decisions to be made in private or in public.
 
-This RFC places certain decisions into each category. All decisions not specifically enumerated must use the public policy process. The Council may evolve the categorization through the [public policy process](decisions-that-the-Council-must-make-via-public-proposal).
+This RFC places certain decisions into each category. All decisions not specifically enumerated must use the public policy process. The Council may evolve the categorization through the [public policy process][decisions-that-the-council-must-make-via-public-proposal].
 
 Decisions made by the Council fall into one of three categories, based on the level of oversight possible and necessary:
 
@@ -369,7 +369,7 @@ See the [accountability section][accountability] for details on the feedback mec
 
 Some decisions necessarily involve private details of individuals or other entities, and making these details public would have a negative impact both on those individuals or entities (e.g. safety) and on the Project (eroding trust).
 
-This additional constraint should be considered an exceptional case. This does not permit making [decisions that would require a public proposal per the next section][decisions-that-the-Council-must-make-via-public-proposal]. However, this does permit decisions that the Council makes internally to be kept private, without full information provided for public oversight.
+This additional constraint should be considered an exceptional case. This does not permit making [decisions that would require a public proposal per the next section][decisions-that-the-council-must-make-via-public-proposal]. However, this does permit decisions that the Council makes internally to be kept private, without full information provided for public oversight.
 
 The Council may also decline to make a decision privately, such as if the Council considers the matter outside their purview (and chooses to defer to another team) or believes the matter should be handled publicly. However, even in such a case, the Council still cannot publicly reveal information shared with it in confidence (since otherwise the Council would not be trusted to receive such information). Obvious exceptions exist for imminent threats to safety.
 
@@ -399,7 +399,7 @@ Private matters may potentially be able to become public, or partially public, a
 The Council should make every effort to not make private decisions. The Council should have appropriate additional processes in place to encourage representatives to collectively review such decisions and consider their necessity.
 
 ## Decisions that the Council must make via public proposal
-[decisions-that-the-Council-must-make-via-public-proposal]: #decisions-that-the-Council-must-make-via-public-proposal
+[decisions-that-the-council-must-make-via-public-proposal]: #decisions-that-the-council-must-make-via-public-proposal
 
 Decisions in this category require the Council to publicly seek feedback from the broader Rust Project *in advance* of the decision being made. Such decisions are proposed and decided via the appropriate public decision process, currently the RFC process (though the Council may adopt a different public proposal process in the future). The public decision process must require the consent of representatives (either affirmatively or via non-objection), must allow for blocking objections by Council representatives, must provide reasonable time for public evaluation and discussion, and must provide a clear path for public feedback to the Council. 
 
