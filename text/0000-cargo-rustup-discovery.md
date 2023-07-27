@@ -14,13 +14,13 @@ This RFC is a proposal to fix a security issue with how Cargo and Rustup discove
 Currently, both Cargo and Rustup search for their files starting in the current directory and then walk towards the root of the filesystem.
 This presents a security hazard because those directories may be under the control of another user.
 These files may contain instructions which can then execute arbitrary commands, giving control to the other user account.
-This is particularly hazardous when running under a path that is world-writeable, such as `/tmp` on many Unix-like systems, or the root of a Windows drive like `C:\`.
+This is particularly hazardous when running under a path that is world-writeable, such as `/tmp` on many Unix-like systems, or in some environments the root of a Windows drive like `C:\`.
 
 This affects the following file searches:
 
 * `Cargo.toml` (to find the "current" project and the workspace root)
 * `.cargo/config.toml` [configuration files]
-* `rust-toolchain`/`rust-toolchain.toml` [toolchain overrides]
+* `rust-toolchain` or `rust-toolchain.toml` [toolchain overrides]
 
 This RFC proposes a new mechanism to constrain how Cargo and Rustup search for their files.
 This proposal is based on the recent changes to git in response to [CVE-2022-24765] described in Appendix [Git behavior](#git-behavior).
@@ -73,6 +73,11 @@ then an error will be reported and the tool will exit with a nonzero status.
 To disable the ownership requirement, the "safe directories" option provides a way to specify which directories are allowed to be accessed,
 or to turn off the constraint entirely.
 
+The method for setting the safe directories option depends on whether you are using rustup and/or cargo.
+When using rustup, most users should typically configure the setting via rustup described below.
+If you are not using rustup, then the cargo configuration described below should be used.
+The `RUSTUP_SAFE_DIRECTORIES` environment variable applies to both programs.
+
 ### Cargo safe directories config
 
 The `safe.directories` Cargo config option is an array of strings of directories where the ownership check is not enforced.
@@ -84,7 +89,7 @@ For example:
 directories = ['C:\Users\eric\Projects', 'D:\Other Projects']
 ```
 
-This option may only be set in:
+Cargo will only read the safe directories option from:
 
 * The Cargo home directory (`$CARGO_HOME/config.toml`).
 * The `CARGO_SAFE_DIRECTORIES` environment variable.
@@ -103,6 +108,8 @@ The `RUSTUP_SAFE_DIRECTORIES` environment variable is also read,
 and will be appended to the list.
 This is to help support the scenario if you are using both Cargo and Rustup;
 the config option only needs to be set in one place (with Rustup).
+
+> Note: The `RUSTUP_SAFE_DIRECTORIES` environment variable may be inherited from the rustup proxy which may automatically set it based on rustup's global configuration.
 
 ### Rustup safe directories config
 
@@ -425,6 +432,20 @@ The Git developers considered checking the ownership of every directory while tr
 but they decided not to do it for performance reasons.
 I don't see a particularly strong reason to check the ownership along the way.
 I'd also be concerned about the performance consequence, though I expect it is extremely small.
+
+## Don't issue an error, and silently stop on ownership change
+
+One option is to check the ownership while traversing upwards,
+and just stop when the ownership changes without continuing upwards,
+and without informing the user.
+
+Unfortunately this option causes some issues with the way cargo and rustup work.
+Cargo may behave incorrectly if it is able to read a workspace member package,
+but be unable to load the workspace root.
+This would cause cargo to believe the workspace member is in a workspace by itself, and start resolving it independently.
+This could cause confusing errors for the user.
+Similarly for cargo config files, the config file may be required for builds to work correctly, and silently avoiding them could lead to confusing errors.
+Rustup toolchain overrides also have similar issues with potential confusion when using the incorrect toolchain.
 
 ## Safe directory issues with Windows, WSL, and mingw
 
