@@ -46,7 +46,7 @@ When we have high confidence (due to user reports or automated scanning) that a 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The initial implementation of this RFC will only allow for rules on the crate name or a specific user. The fields and metadata that a rule can match against may be expanded in the future if required for operational reasons.
+The initial implementation of this RFC will only allow for rules on the crate name or a specific user. Further rule types may be added in the future by the crates.io team as required.
 
 ## crates.io
 
