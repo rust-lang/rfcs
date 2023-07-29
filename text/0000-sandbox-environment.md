@@ -206,13 +206,7 @@ procmacro.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This proposal is intended to be a minimum set of functionality to control the
-environment. It requires very explicit control - aside from `--env-clear`, all
-variables must be explicitly listed to remove or set their values.
-
-A possible extension would be to allow regular expressions to select which
-variable names should be removed from the logical environment or passed through
-from the process environment. For example, `--env-remove-re` or `--env-pass-re`.
+## Path handling
 
 Environment variables are frequently used for paths - a common pattern is:
 ```
@@ -229,3 +223,13 @@ To address this, a possible extension would be `--env-set-path VAR=PATH` (and
 `rustc` current working directory - in other words, it could be set as a
 relative path, but it would be interpreted as if it were an absolute path.
 Absolute paths would always be treated as absolute.
+
+## Regex Matching
+This proposal is intended to be a minimum set of functionality to control the
+environment. It requires very explicit control - aside from `--env-clear`, all
+variables must be explicitly listed to remove or set their values.
+
+A possible extension would be to allow regular expressions to select which
+variable names should be removed from the logical environment or passed through
+from the process environment. For example, `--env-remove-re` or `--env-pass-re`.
+
