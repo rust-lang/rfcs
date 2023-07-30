@@ -212,24 +212,24 @@ graph TB
 
 Impl crates depend on each other
 ```mermaid
-graph TB
+graph LR
  I1 & I2 -->|impl| D
  I2 --> I1
 ```
 Impl crates use other crates (common)
 ```mermaid
-graph TB
+graph LR
  I1 -->|impl| D
  I1 --> T
 ```
 Impl crates implement multiple definition crates
 ```mermaid
-graph TB
+graph LR
  I1 -->|impl| D0 & D1
 ```
 Impl crates define types and have their own impl crates
 ```mermaid
-graph TB
+graph LR
  I1 -->|impl| D0
  I1 -->|impl| I2
  I2 -->|impl| D0
@@ -262,7 +262,7 @@ feature is used must be very carefully considered.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-In principle you could use features to achieve similar outcomes to the
+In principle you could use Cargo features to achieve similar outcomes to the
 motivating `DBTrait` example above - you'd define a feature for each DB
 implementation, and the consumer would only enable the specific implementations
 they want.
@@ -325,3 +325,7 @@ crates.io publication time to make sure the package doesn't have lurking
 problems. On the other hand there might be cases where it's desireable to allow
 incoherent implementations to exist; for example, two implementations of the
 same API with different algorithms tuned for different use-cases.
+
+There are cases where the same coherence properties may be checked multiple
+times. Perhaps these checks could be memoized with the incremental machinery to
+avoid the redundancy.
