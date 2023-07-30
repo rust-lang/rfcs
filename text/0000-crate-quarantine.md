@@ -27,7 +27,7 @@ A version in the quarantined state will have its `.crate` file published to S3 t
 
 `cargo publish` will also be modified to report when an uploaded crate version has been placed into quarantine. 
 
-Once a crate version has been quarantined, then a member of the crates.io team will review the quarantined crate within 1 week[^sla]. Once reviewed, the crate may be either approved and published to the index, or rejected and deleted. Either way, the crate owner(s) will be notified by e-mail, assuming crates.io has a verified e-mail available for their account.
+Once a crate version has been quarantined, then a member of the crates.io team will review the quarantined crate, ideally within 1 week[^sla]. Once reviewed, the crate may be either approved and published to the index, or rejected and deleted. Either way, the crate owner(s) will be notified by e-mail, assuming crates.io has a verified e-mail available for their account.
 
 Should the crate owner(s) disagree with the quarantine action, they may appeal to the moderation team.
 
