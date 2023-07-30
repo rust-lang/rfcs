@@ -56,7 +56,7 @@ This RFC extends this capability to `ManuallyDrop`.
 use core::mem::ManuallyDrop;
 
 let m: ManuallyDrop<(String, String)> = ManuallyDrop::new(("hello".to_owned(), "world".to_owned()));
-let _: String = m.1; // `m.1` dropped here
+drop(m.1); // `m.1` moved out of here
 // `m.0` is never dropped
 ```
 
@@ -72,7 +72,7 @@ impl Drop for Foo {
 }
 
 let m: ManuallyDrop<Foo> = ManuallyDrop::new(Foo("hello".to_owned(), "world".to_owned()));
-let _: String = m.1; // `m.1` dropped here
+let s: String = m.1; // `m.1` moved out of here
 // `m.0` is never dropped, and nothing is printed.
 ```
 
