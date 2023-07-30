@@ -41,7 +41,7 @@ In the event of a large scale spam attack on the entire site, we may want to eit
 
 ### Malicious users
 
-When we have high confidence (due to user reports or automated scanning) that a user is uploading malicious crates then a rule can be added for that specific user until the crates.io team is able to communicate with them.
+As an alternative to locking or banning a user, when we have high confidence (due to user reports or automated scanning) that a user is uploading malicious crates then a rule may be added for that specific user until the crates.io team is able to communicate with them.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
