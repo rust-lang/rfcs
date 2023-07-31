@@ -303,6 +303,8 @@ which includes all error sources.
 
 `eyre::Report` provides a way to define the way errors are reported.
 Like `anyhow::Error`, it doesn't implement `std::error::Error`.
+`eyre::Report` includes error sources when printed with `{:#}`
+and not when printed with `{}`.
 
 [`snafu::CleanedErrorText`](https://docs.rs/snafu/latest/snafu/struct.CleanedErrorText.html)
 implements textual error message deduplication
