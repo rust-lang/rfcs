@@ -360,7 +360,7 @@ for use in error display contexts (such as logging).
  * What should `error_fmt` be called.
 
  * What about `no_std`?
-   The proposed ad-hoc deuplication can't sensibly be done without allcation.
+   The proposed ad-hoc duplication can't sensibly be done without all cation.
 
  * What about localisation and message translation?
    Are future efforts in that area going to render this all moot?
@@ -373,7 +373,7 @@ for use in error display contexts (such as logging).
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Nopefully this will be the last churn in this area.
+Hopefully this will be the last churn in this area.
 
 The default error reporter with string deduplication
 could use some magic to discover whether the provided
