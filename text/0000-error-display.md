@@ -275,6 +275,45 @@ because of a conflict with the blanket
 if user crates `impl ErrorDisplay for &...`.
 This would still need to be dealt with by specialisation.
 
+## Declare a difference between `{:#}` and `{}`
+
+We could say that whether to include sources should depend on
+`fmt::alternate()`, which comes from the `#` in `{:#}`.
+
+However:
+
+ * Conceptually, this is wrong.
+   The two kinds of output are not different styles of display
+   of the same information;
+   indeed, they aren't really sensibly used by the same callers.
+   Sources should *always* be included in errors shown to the user.
+   When omitting them is required, it is not because they are clutter,
+   but because somewhere else in the reporting machinery is printing them.
+
+ * Formatting without the source is needed only
+   by error reporting/formatting machineries,
+   of which there are going to be relatively few
+   (and their authors will be error display experts).
+   Conversely, most programmers must frequently write code to
+   display of errors to the human user,
+   and in that case the sources should be included.
+   That suggests `{}` should include the source and
+   `{:#}` should exclude it.
+   But usually the output from `{:#}` is longer,
+   whereas here it would be shorter.
+   And `eyre::Report` has the opposite convention.
+
+ * The two kinds of display want to be implemented in different places:
+   we want to provide a default implementation of
+   the user-visible display including sources;
+   conversely, we want errors to define the display
+   of their own content.
+   But `fmt::alternate()` isn't sensible to use for dispatch.
+
+ * `{:#}` vs `{}` has a better potential meaning for errors:
+   do we display everything on a single line,
+   or in multi-line "caused by" format.
+
 ## Replace the `Error` trait completely
 
 This would be a very big job
