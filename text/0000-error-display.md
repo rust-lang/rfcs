@@ -324,6 +324,11 @@ for use in error display contexts (such as logging).
  * What about localisation and message translation?
    Are future efforts in that area going to render this all moot?
 
+ * Should there be a way for someone who has an `Error`
+   to tell if `error_fmt` was defaulted to "use `Display`" ?
+   Without this, we might never be able to get rid of 
+   the extra string formatting and allocations.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
