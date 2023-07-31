@@ -92,7 +92,7 @@ pub trait Error: Debug + Display {
 /// each error displayed, and suppresses printing of the source if the
 /// source error text is textually contained within the previous error
 /// text.
-default impl<E> Display for E where E: Error + ErrorDisplay { ... }
+default impl<E> Display for E where E: Error { ... }
 ```
 
 If neither `error_fmt`, nor an explicit `Display` impl,
