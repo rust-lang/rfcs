@@ -301,6 +301,9 @@ The EHWG [recommends](https://blog.rust-lang.org/inside-rust/2021/07/01/What-the
 They *do* implement a useful `Display`
 which includes all error sources.
 
+`eyre::Report` provides a way to define the way errors are reported.
+Like `anyhow::Error`, it doesn't implement `std::error::Error`.
+
 [Arti](https://gitlab.torproject.org/tpo/core/arti)'s
 codebase follows the EHWG recommendation, and
 has [tools](https://docs.rs/tor-error/0.5.2/tor_error/trait.ErrorReport.html)
