@@ -191,14 +191,14 @@ struct UnsafeAliased<T: ?Sized> {
 
 impl<T: ?Sized> !Send for UnsafeAliased<T> {}
 
-impl<T> UnsafeCell<T> {
+impl<T: ?Sized> UnsafeAliased<T> {
     /// Constructs a new instance of `UnsafeCell` which will wrap the specified
     /// value.
-    pub fn new(value: T) -> UnsafeAliased<T> {
+    pub fn new(value: T) -> UnsafeAliased<T> where T: Sized {
         UnsafeAliased { value }
     }
 
-    pub fn into_inner(self) -> T {
+    pub fn into_inner(self) -> T where T: Sized {
         self.value
     }
 
@@ -290,7 +290,7 @@ Codegen and Miri changes:
 
 - `UnsafeCell`: disables aliasing (and affects but does not fully disable dereferenceable) behind shared refs, i.e. `&UnsafeCell<T>` is special. `UnsafeCell<&T>` (by-val, fully owned) is not special at all and basically like `&T`; `&mut UnsafeCell<T>` is also not special.
 - `UnsafeAliased`: disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafeAliased<T>` is special. `UnsafeAliased<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafeAliased<T>` is also not special.
-- [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336): disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDanling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
+- [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336): disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -326,7 +326,7 @@ This is somewhat like `UnsafeCell`, but for mutable instead of shared references
 [unresolved-questions]: #unresolved-questions
 
 - How do we transition code that relies on `Unpin` opting-out of aliasing guarantees, to the new type? Futures and generators just need a compiler patch, but there is probably other code that needs adjusting (e.g., Rust-for-Linux uses pinning to handle all sorts of self-referntial things in the Linux Kernel). Note that all such code is explicitly unsupported right now; the `Unpin` loophole has always explicitly been declared as temporary, unstable, and not something that we promise will actually work.
-- The name of the type needs to be bikeshed. `UnsafeAliased` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect when wrapped around the *pointer*. Like `UnsafeCell`, the aliasing allowed here is "interior". Other possible names: `UnsafeSelfReferential`, `UnsafePinned`, ...
+- The name of the type needs to be bikeshed. `UnsafeAliased` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect on aliasing rules when wrapped around the *pointer*. Like `UnsafeCell`, the aliasing allowed here is "interior". Other possible names: `UnsafeSelfReferential`, `UnsafePinned`, ...
 - Relatedly, in which module should this type live?
 - Should this type `derive(Copy)`? `UnsafeCell` does not, which is unfortunate because it now means some people might use `T: Copy` as indication that there is no `UnsafeCell` in `T`.
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
