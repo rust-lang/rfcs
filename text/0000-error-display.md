@@ -70,7 +70,7 @@ of `Display`.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-```
+```rust
 pub trait Error: Debug + Display {
     /// Format *this* error (excluding its `source`, if there is one).
     ///
@@ -257,7 +257,7 @@ to the reader of the code.
 
 Alternatively, there could be a marker trait:
 
-```
+```rust
 pub trait ErrorDisplay { }
 
 /// Displays `E` and all its sources; output is similar to "error: source".
