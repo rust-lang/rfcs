@@ -178,6 +178,13 @@ Miri is adjusted as follows:
   The `-Zmiri-retag-fields` flag makes retagging "peer into" compound types to retag all references it can find.
   This flag needs to become the default to make Miri actually detect all UB in the LLVM IR we generate. This RFC says that that traversal stops at `MaybeDangling`.)
 
+### Comparison with some other types that affect aliasing
+
+- `UnsafeCell`: disables aliasing (and affects but does not fully disable dereferenceable) behind shared refs, i.e. `&UnsafeCell<T>` is special. `UnsafeCell<&T>` (by-val, fully owned) is not special at all and basically like `&T`; `&mut UnsafeCell<T>` is also not special.
+- [`UnsafeAliased`](https://github.com/rust-lang/rfcs/pull/3467): disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafeAliased<T>` is special. `UnsafeAliased<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafeAliased<T>` is also not special.
+- `MaybeDangling`: disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
+
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
