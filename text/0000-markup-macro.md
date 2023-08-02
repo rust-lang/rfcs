@@ -99,7 +99,7 @@ This adds two macros to the standard library which must be implemented at the la
 # Prior art
 [prior-art]: #prior-art
 
-N/A
+- JSX (and TypeScript) supports similiar markups without using a macro. JSX and TypeScript use a transform that occurs at the compiler API.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
