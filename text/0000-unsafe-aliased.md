@@ -184,14 +184,14 @@ API sketch:
 ///
 /// Further note that this does *not* lift the requirement that shared references
 /// must be read-only! Use `UnsafeCell` for that.
-#[lang = "unsafe_cell_mut"]
+#[lang = "unsafe_aliased"]
 #[repr(transparent)]
 struct UnsafeAliased<T: ?Sized> {
     value: T,
 }
 
 impl<T: ?Sized> UnsafeAliased<T> {
-    /// Constructs a new instance of `UnsafeCell` which will wrap the specified
+    /// Constructs a new instance of `UnsafeAliased` which will wrap the specified
     /// value.
     pub fn new(value: T) -> UnsafeAliased<T> where T: Sized {
         UnsafeAliased { value }
