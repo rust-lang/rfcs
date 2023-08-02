@@ -53,10 +53,10 @@ markup_type! {
         Node
     }
 
-    // the `append_child` function describes
+    // the `append_children` function describes
     // how the contained nodes are added into the collection.
-    fn append_child(parent: Node, child: Node) {
-        // append child here.
+    fn append_children(parent: Node, child: Vec<Node>) {
+        // append children here.
     }
 
     // define the attribute `some_attr`
@@ -82,7 +82,7 @@ The `markup!` macro returns either a single node or a `Vec` of nodes if it conta
 The `markup!` macro takes a sequence of items: XML-based tags and interpolations:
 
 - An interpolation accepts a node or an iterable. If it evaluates to an iterable, then that iterable contributes all of its items to the enclosing tag or to the top `markup!`.
-- A XML-based tag consists of a type, optional attributes (supporting interpolation) and optional children. It is an error if the type is not defined by `markup_type!`. For each attribute, based in `markup_type!`, validate if it exists and evaluate its assignment. For each child, evaluate it and call `append_child` from `markup_type!`.
+- A XML-based tag consists of a type, optional attributes (supporting interpolation) and optional children. It is an error if the type is not defined by `markup_type!`. For each attribute, based in `markup_type!`, validate if it exists and evaluate its assignment. Call `append_children` from `markup_type!` to append children.
 
 The `markup_type!` macro puts no retriction about which type is returned by `new`; that is, `new` may return a different type from the enclosing `markup_type!`'s type. For example, `Button` may be construct via `new` resulting into a `Node`.
 
