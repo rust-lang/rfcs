@@ -71,6 +71,8 @@ The `markup!` macro takes a sequence of items: XML-based tags and interpolations
 - An interpolation accepts a node or an iterable. If it evaluates to an iterable, then that iterable contributes all of its items to the enclosing tag or to the top `markup!`.
 - A XML-based tag consists of a type, optional attributes (supporting interpolation) and optional children. It is an error if the type is not defined by `markup_type!`. For each attribute, based in `markup_type!`, validate if it exists and evaluate its assignment. For each child, evaluate it and call `append_child` from `markup_type!`.
 
+The `markup_type!` macro puts no retriction about which type is returned by `new`; that is, `new` may return a different type from the enclosing `markup_type!`'s type. For example, `Button` may be construct via `new` resulting into a `Node`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
