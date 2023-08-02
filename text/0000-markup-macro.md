@@ -13,6 +13,8 @@ The `markup!` and `markup_type!` macros allow constructing arbitrary node types,
 
 Applications may use node hierarchies as a fundamental way of describing graphics. Without the `markup!` macro, the developer must manually construct a node by chaining methods that are usually prefixed by `set_` and call a chaining `append_children` method.
 
+A procedure macro is limited for cases where the node type provide common `set_` prefixed methods for all node kinds, but where the node type does not provide methods that are very specific to a node kind.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
