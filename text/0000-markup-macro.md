@@ -13,7 +13,18 @@ The `markup!` and `markup_type!` macros allow constructing arbitrary node types,
 
 Applications may use node hierarchies as a fundamental way of describing graphics. Without the `markup!` macro, the developer must manually construct a node by chaining methods that are usually prefixed by `set_` and call a chaining `append_children` method.
 
-A procedure macro is limited for cases where the node type provide common `set_` prefixed methods for all node kinds, but where the node type does not provide methods that are very specific to a node kind.
+A procedural macro is limited for cases where the node type provides common `set_` prefixed methods for all node kinds, but where the node type does not provide methods that are very specific to a node kind.
+
+For example, consider a `Node` type and a kind `Button`:
+
+- `Arc<Button>` has a method `set_warning`
+- `Node` has no method `set_warning`
+- `Button::new(|btn| btn)` returns `Node`
+- `Node` does have a `to::<K>()` conversion method
+
+This cannot be expressed with a procedural macro unless the identifier in the markup macro constructed via a procedural macro performs a string comparison from the identifier to the name of the node kind, which puts the following limitation:
+
+- The markup will ignore node types from the lexical scope. For example, the `Button` tag always constructs a speficic type, not the type at the lexical scope.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
