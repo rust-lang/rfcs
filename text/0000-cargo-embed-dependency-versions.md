@@ -163,7 +163,7 @@ Alternatives:
 # Prior art
 [prior-art]: #prior-art
 
-An out-of-tree implementation of this RFC exists, see [`cargo auditable`](https://github.com/rust-secure-code/cargo-auditable/), and has garnered considerable interest. NixOS and Void Linux build all their Rust packages with it today; it is also used in production at Miscrosoft. Extracting the embedded data is already supported by [`rust-audit-info`](https://crates.io/crates/rust-audit-info) and [Syft](https://github.com/anchore/syft). Auditing such binaries for known vulnerabilities is already supported by [`cargo audit`](https://crates.io/crates/cargo-audit) and [Trivy](https://github.com/aquasecurity/trivy).
+An out-of-tree implementation of this RFC exists, see [`cargo auditable`](https://github.com/rust-secure-code/cargo-auditable/), and has garnered considerable interest. NixOS and Void Linux build all their Rust packages with it today; it is also used in production at Microsoft. Extracting the embedded data is already supported by [`rust-audit-info`](https://crates.io/crates/rust-audit-info) and [Syft](https://github.com/anchore/syft). Auditing such binaries for known vulnerabilities is already supported by [`cargo audit`](https://crates.io/crates/cargo-audit) and [Trivy](https://github.com/aquasecurity/trivy).
 
 The Rust compiler already [embeds](https://github.com/rust-lang/rust/pull/97550) compiler and LLVM version in the executables built with it.
 
