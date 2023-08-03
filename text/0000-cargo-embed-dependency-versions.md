@@ -20,7 +20,7 @@ The primary use case for this information is cross-referencing versions of the d
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Every time an executable is compiled with Cargo, the dependency tree of the executable is recorded in the binary. This includes the names, versions, dependency kind (build or runtime), and origin (crates.io, git, local filesystem, custom registry). Development dependencies are not recorded, since they cannot affect the final binary. All filesystem paths and URLs are redacted to preserve privacy. The data is encoded in JSON and compressed with zlib to reduce its size.
+Every time an executable is compiled with Cargo, the dependency tree of the executable is recorded in the binary. This includes the names, versions, dependency kind (build or runtime), and origin kind (crates.io, git, local filesystem, custom registry). Development dependencies are not recorded, since they cannot affect the final binary. All filesystem paths and URLs are redacted to preserve privacy. The data is encoded in JSON and compressed with zlib to reduce its size.
 
 This data can be recovered using existing tools like `readelf` or Rust-specific tooling. It can be then used to create a Software Bill of Materials in a common format, or audit the dependency list for known vulnerabilities.
 
@@ -152,7 +152,12 @@ Alternatives:
   - Verification by third parties will remain impossible.
 - Record version information in a `&'static str` in the binary instead if ELF sections, with start/stop markers to allow black-box extraction from the outside.
   - This has been [prototyped](https://github.com/Shnatsel/rust-audit). It has the upside of allowing the binary itself to introspect its version info with little parsing, but the extraction is less efficient, and this is harder to implement and maintain.
+- Record version information in an industry standard SBOM format instead of a custom format.
+  - This has been prototyped, and we've found the existing formats unsuitable. The primary reasons are a significant binary size increase (the existing formats are quite verbose, not designed for this use case) and issues with reproducible builds (they require timestamps).
+  - "SPDX in Zlib in a linker section" is not really an industry-standard format. Adding support for the custom format to [Syft](https://github.com/anchore/syft) was trivial, since it's nearly isomorphic to other SBOM formats, so the custom JSON encoding does not seem to add a lot of overhead to consuming this data.
+  - For compatibility with systems that cannot consume this data directly, external tools can be used to convert to industry standard SBOMs. [Syft](https://github.com/anchore/syft) can already do this today.
 - Provide a Cargo wrapper or plugin to implement this, but do not put it in Cargo itself.
+  - Third-party implementations cannot be perfectly reliable because Cargo does not expose sufficient information for a perfectly robust system. For example, custom target specifications are impossible to support. There are also [other corner cases](https://github.com/rust-secure-code/cargo-auditable/issues/124) that appear to be impossible to resolve based on the information from `cargo metadata` alone.
   - When people actually need this information (e.g. to check if they're impacted by a vulnerability) it is too late to reach for third-party tooling - the executables have already been built and deployed, and the information is already lost. As such, this mechanism is ineffective if it's not enabled by default.
 
 # Prior art
@@ -174,6 +179,8 @@ In microservice environments it is fairly typical to expose an HTTP endpoint ret
 [unresolved-questions]: #unresolved-questions
 
 - How exactly this should be enabled or disabled for a given target? Should there be a flag in the target configuration file, or some other mechanism?
+- How exactly should opt-in or opt-out from embedding this data be toggled? Should it be per-profile, like `strip = true`, or a global configuration option?
+- How exactly the initial roll-out should be handled? Following the sparse index example (opt-in on nightly -> default on nightly -> opt-in on stable -> default on stable) sounds like a good idea, but sparse index is target-independent, while this feature is not. So it makes sense to enable it for Tier 1 targets first, and have it gradually expanded to Tier 2, like it was done for LLVM coverage profiling. Does it make sense to have a "stable but opt-in" period in this case?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
