@@ -24,7 +24,7 @@ Every time an executable is compiled with Cargo, the dependency tree of the exec
 
 This data can be recovered using existing tools like `readelf` or Rust-specific tooling. It can be then used to create a Software Bill of Materials in a common format, or audit the dependency list for known vulnerabilities.
 
-WASM, asm.js and embedded platforms are excempt from this mechanism by default since they have very strict code size requirements. For those platforms we encourage you to use tooling that record the hash of every executable in a database and associates the hash with its Cargo.lock, compiler and LLVM version used for the build.
+WASM, asm.js and embedded platforms are exempt from this mechanism by default since they have very strict code size requirements. For those platforms we encourage you to use tooling that record the hash of every executable in a database and associates the hash with its Cargo.lock, compiler and LLVM version used for the build.
 
 A configuration option can be used to opt out of this behavior if it is not desired (e.g. when building [extremely minimal binaries](https://github.com/johnthagen/min-sized-rust)).
 
