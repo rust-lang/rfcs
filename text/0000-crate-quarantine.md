@@ -67,7 +67,7 @@ The publish endpoint will notify the publisher (generally `cargo publish`) of th
 1. A new field will be added to the response called `quarantined`.
 2. A human readable warning will be added to the `warnings` field within the response.
 
-When a crate version is quarantined, a support ticket will also be opened within the crates.io help desk, thereby notifying the crates.io team of the newly quarantined version.
+When a crate version is quarantined, a support ticket will also be opened within the crates.io help desk, thereby notifying the crates.io team of the newly quarantined version. If additional crates are quarantined for that user or regex, a comment will be added to that ticket, if it is still open. (This prevents the help desk being spammed.)
 
 ### API
 
