@@ -31,7 +31,7 @@ A configuration option can be used to opt out of this behavior if it is not desi
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The version information is encoded in an additional arbitrary section of the executable by Cargo. The exact mechanism varies depending on the executable format (ELF, Mach-O, PE, etc.). The section name is subject to bikeshedding.
+The version information is encoded in an additional arbitrary section of the executable by Cargo. The exact mechanism varies depending on the executable format (ELF, Mach-O, PE, etc.). The section name is `.dep-v0` across all platforms. The section name must be changed if breaking changes are made to the format.
 
 The data is encoded in JSON which is compressed with Zlib. All arrays a sorted not to disrupt reproducible builds.
 
