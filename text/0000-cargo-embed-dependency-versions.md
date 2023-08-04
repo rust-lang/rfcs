@@ -188,7 +188,8 @@ In microservice environments it is fairly typical to expose an HTTP endpoint ret
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Surface dependency information through an HTTP endpoint in a microservice environment. The [proof-of-concept](https://github.com/Shnatsel/rust-audit/issues/2) has a feature request for it. However, this does not require support from Cargo and can be implemented as a crate.
-  - Is data embedded in an ELF section accessible to the application itself at runtime?
+- Let the binary itself access this data at runtime.
+  - This can be achieved today by running the extraction pipeline on `std::env::current_exe`, but that requires a minimal binary format parser, and access to `/proc` on Unix. 
+  - The linker section is already given a symbol in the out-of-tree implementation, named `_AUDITABLE_VERSION_INFO`. It is possible to refer to it and access it. This has downsides such as confusing linker errors when embedding the audit data is disabled, and is out of scope of this initial RFC.
 - Record and surface versions of C libraries statically linked into the Rust executable, e.g. OpenSSL.
 - Include additional information, e.g. Git revision for dependencies sourced from Git repositories. This is not part of the original RFC because new fields can be added in a backwards-compatible way.
