@@ -24,14 +24,14 @@ The `std::arch::is_*_feature_detected` macros allow code to detect whether a par
 
 While no-std library crates can just go ahead and use these macros, there are implications for no-std *programs*. The actual work of querying the OS for available CPU features is done by `std` at startup, which means that no-std programs will need to do this work themselves.
 
-A new set of macros is introduced, named ``core`::arch::mark_*_feature_as_detected`, which accept the same feature names as the equivalent `is_*_feature_detected` macros. These macros are unsafe to call: the caller must ensure that the relevant CPU feature is actually available.
+A new set of macros is introduced, named `core::arch::mark_*_feature_as_detected`, which accept the same feature names as the equivalent `is_*_feature_detected` macros. These macros are unsafe to call: the caller must ensure that the relevant CPU feature is actually available.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## Static initialization
 
-Runtime feature detection is performed in `std` using a static initializer, which allows it work both when built as a program and as a static/dynamic library. This would perform the same work that is currently done by `std_detect` when the target features are first queried.
+Runtime feature detection is performed in `std` using a static initializer, which allows it to work both when built as a program and as a static/dynamic library. This would perform the same work that is currently done by `std_detect` when the target features are first queried.
 
 ## Thread-safety
 
@@ -84,7 +84,7 @@ None
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-AArch64 target have a feature called "outlined atomics" where atomic operations are compiled to a function call to a function in `compiler_builtins`. This function will either use ARMv8.0 LDX/STX instructions or ARMv8.1 atomic instructions (which are more efficient).
+AArch64 targets have a feature called "outlined atomics" where atomic operations are compiled to a function call to a function in `compiler_builtins`. This function will either use ARMv8.0 LDX/STX instructions or ARMv8.1 atomic instructions (which are more efficient).
 
 Currently, the implementation in `compiler_builtins` [always uses the ARMv8.0 path](https://github.com/rust-lang/compiler-builtins/pull/532) because feature detection would [require linking to libc](https://github.com/rust-lang/rust/issues/109064) which is not acceptable for `core`. 
 
