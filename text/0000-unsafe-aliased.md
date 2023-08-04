@@ -341,8 +341,11 @@ This is somewhat like `UnsafeCell`, but for mutable instead of shared references
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- How do we transition code that relies on `Unpin` opting-out of aliasing guarantees, to the new type? Futures and generators just need a compiler patch, but there is probably other code that needs adjusting (e.g., Rust-for-Linux uses pinning to handle all sorts of self-referntial things in the Linux Kernel). Note that all such code is explicitly unsupported right now; the `Unpin` loophole has always explicitly been declared as temporary, unstable, and not something that we promise will actually work.
-- The name of the type needs to be bikeshed. `UnsafeAliased` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect on aliasing rules when wrapped around the *pointer*. Like `UnsafeCell`, the aliasing allowed here is "interior". Other possible names: `UnsafeSelfReferential`, `UnsafePinned`, ...
+- How do we transition code that relies on `Unpin` opting-out of aliasing guarantees to the new type? Here's a plan: define the `PhantomPinned` type as `UnsafeAliased<()>`.
+  Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafeAliased` instead.
+  Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `Unique` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
+- The name of the type needs to be bikeshed. `UnsafeAliased` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect on aliasing rules when wrapped around the *pointer*.
+  Like `UnsafeCell`, the aliasing allowed here is "interior". Other possible names: `UnsafeSelfReferential`, `UnsafePinned`, ...
 - Relatedly, in which module should this type live?
 - Should this type `derive(Copy)`? `UnsafeCell` does not, which is unfortunate because it now means some people might use `T: Copy` as indication that there is no `UnsafeCell` in `T`.
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
