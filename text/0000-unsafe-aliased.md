@@ -75,6 +75,19 @@ This simple code only has UB under Stacked Borrows but not under the LLVM aliasi
 
 <summary>A more complex variant</summary>
 
+The following roughly corresponds to a generator with this code:
+
+```rust
+let mut data = 0;
+let ptr_to_data = &mut data;
+yield;
+*ptr_to_data = 42;
+println!("{}", data);
+return;
+```
+
+When implemented by hand, it looks as follows, and causes aliasing issues:
+
 ```rust
 #![feature(pin_macro)]
 #![feature(negative_impls)]
@@ -116,7 +129,8 @@ impl S {
                 // to reorder this and the previous line and then the output
                 // would change.
                 println!("{}", this.data);
-                // Done!
+                // Now yield and be done.
+                this.state += 1;
                 Poll::Ready(())
             }
             _ => unreachable!(),
