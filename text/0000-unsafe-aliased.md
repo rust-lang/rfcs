@@ -89,7 +89,6 @@ return;
 When implemented by hand, it looks as follows, and causes aliasing issues:
 
 ```rust
-#![feature(pin_macro)]
 #![feature(negative_impls)]
 use std::ptr;
 use std::pin::{pin, Pin};
