@@ -26,7 +26,7 @@ This data can be recovered using existing tools like `readelf` or Rust-specific 
 
 WASM, asm.js and embedded platforms are exempt from this mechanism by default since they have very strict code size requirements. For those platforms we encourage you to use tooling that record the hash of every executable in a database and associates the hash with its Cargo.lock, compiler and LLVM version used for the build.
 
-A configuration option can be used to opt out of this behavior if it is not desired (e.g. when building [extremely minimal binaries](https://github.com/johnthagen/min-sized-rust)).
+A per-profile configuration option in `Cargo.toml` can be used to opt out of this behavior if it is not desired (e.g. when building [extremely minimal binaries](https://github.com/johnthagen/min-sized-rust)). The exact name of this option is subject to bikeshedding.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -126,11 +126,15 @@ The JSON schema specifying the format is provided below. If you find Rust struct
 }
 ```
 
+Not all compilations targets will embed this data. Some may support it but disable it by default (e.g. WebAssembly) while others may not support it at all. Whether the target support it, and whether embedding this data is enabled by default for a given target is recorded in the [target specification JSON](https://doc.rust-lang.org/rustc/targets/custom.html). The exact name of the configuration option is subject to bikeshedding.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 - Slightly increases the size of the generated binaries. However, the increase is [typically below 1%](https://github.com/rust-lang/rfcs/pull/2801#issuecomment-549184251).
 - Adds more platform-specific code to the build process, which needs to be maintained.
+- Slightly more work need to be performed at compile time. This implies slightly slower compilation.
+  - If the compilation time impact is deemed to be significant, collecting and embedding this data will be disabled by default in debug profile before stabilization. It will be possible to override this default using the per-profile configuration option.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -181,8 +185,6 @@ In microservice environments it is fairly typical to expose an HTTP endpoint ret
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- How exactly this should be enabled or disabled for a given target? Should there be a flag in the target configuration file, or some other mechanism?
-- How exactly should opt-in or opt-out from embedding this data be toggled? Should it be per-profile, like `strip = true`, or a global configuration option?
 - How exactly the initial roll-out should be handled? Following the sparse index example (opt-in on nightly -> default on nightly -> opt-in on stable -> default on stable) sounds like a good idea, but sparse index is target-independent, while this feature is not. So it makes sense to enable it for Tier 1 targets first, and have it gradually expanded to Tier 2, like it was done for LLVM coverage profiling. Does it make sense to have a "stable but opt-in" period in this case?
 
 # Future possibilities
