@@ -20,7 +20,7 @@ The primary use case for this information is cross-referencing versions of the d
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Every time an executable is compiled with Cargo, the dependency tree of the executable is recorded in the binary. This includes the names, versions, dependency kind (build or runtime), and origin kind (crates.io, git, local filesystem, custom registry). Development dependencies are not recorded, since they cannot affect the final binary. All filesystem paths and URLs are redacted to preserve privacy. The data is encoded in JSON and compressed with zlib to reduce its size.
+Every time an executable is compiled with Cargo, the dependency tree of the executable is recorded in the binary. This includes the names, versions, dependency kind (build or normal), and origin kind (crates.io, git, local filesystem, custom registry). Development dependencies are not recorded, since they cannot affect the final binary. All filesystem paths and URLs are redacted to preserve privacy. The data is encoded in JSON and compressed with zlib to reduce its size.
 
 This data can be recovered using existing tools like `readelf` or Rust-specific tooling. It can be then used to create a Software Bill of Materials in a common format, or audit the dependency list for known vulnerabilities.
 
@@ -57,7 +57,7 @@ The JSON schema specifying the format is provided below. If you find Rust struct
             "type": "string",
             "enum": [
                 "build",
-                "runtime"
+                "normal"
             ]
         },
         "Package": {
@@ -79,7 +79,7 @@ The JSON schema specifying the format is provided below. If you find Rust struct
                     }
                 },
                 "kind": {
-                    "description": "\"build\" or \"runtime\". May be omitted if set to \"runtime\". If it's both a build and a runtime dependency, \"runtime\" is recorded.",
+                    "description": "\"build\" or \"normal\". May be omitted if set to \"normal\". If it's both a build and a normal dependency, \"normal\" is recorded.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/DependencyKind"
