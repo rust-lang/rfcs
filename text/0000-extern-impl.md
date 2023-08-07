@@ -329,3 +329,171 @@ same API with different algorithms tuned for different use-cases.
 There are cases where the same coherence properties may be checked multiple
 times. Perhaps these checks could be memoized with the incremental machinery to
 avoid the redundancy.
+
+# Appendix - Alloy spec (WIP)
+
+---
+title: Alloy spec for Rust implementation coherency
+---
+
+Note: this is a literate [Alloy](https://alloytools.org/) spec. Download the
+most recent version of Alloy from
+https://github.com/AlloyTools/org.alloytools.alloy/releases, and see
+https://alloy.readthedocs.io for documentation.
+
+# Alloy spec for Rust implementation coherency
+
+This is a simplified spec of Rust coherency checking. Rust requires that there,
+are no overlapping or conflicting implementations with a complete Rust program,
+as that would allow for ambiguity about which one to use.
+
+(This applies to all implementations, but here we're only going to consider the
+subset of simple trait implementations for types, with no generic type
+parameters.)
+
+The current solution to this is to requires that when a crate implements a trait
+for a type, at least one of the type or the trait have to be "local" - ie,
+defined in the same crate.
+
+This is simple to describe and implement, but in practice it has several downsides:
+- (dependencies, no third-party impls)
+
+## Alloy Spec
+
+First we define signatures for types and traits. Both are defined in a crate:
+
+```alloy
+sig Trait {
+    trait_def: one Crate
+}
+
+sig Type {
+    type_def: one Crate
+}
+```
+
+And crates themselves. Crates can depend on a set of other crates, but the
+overall crate dependency graph must be acyclic. Each crate also has a relation
+of which trait implementations for which types it contains.
+
+```alloy
+sig Crate {
+    deps: set Crate,
+    impls: Trait -> Type,
+} {
+    no this & this.^@deps -- acyclic
+}
+```
+
+A Binary is the unique "top-level" crate which depends on all the other crates
+transitively. Or to put it another way, no other crate depends on Binary.
+
+```alloy
+one sig Binary extends Crate {} {
+    no @deps.this -- nothing depends on Binary
+    all c: Crate - Binary | c in this.^@deps -- Binary depends on everything else
+}
+```
+
+Let's define the safety invariant we need to enforce, that every implementation
+is unique. Or more precisely, for every trait/type pair, there's at most one
+crate implementing it. (It's fine if nothing implements it.)
+
+```alloy
+pred coherent_impls[crates: Crate] {
+    all tr: Trait, ty: Type | lone crates & impls.ty.tr
+}
+``````
+
+This is the basic orphan rule, with a tight definition of "local": either the
+type or the trait must be defined in the crate:
+
+```alloy
+pred local_orphan_rule[crates: Crate] {
+    all crate: crates |
+        crate.impls in
+            (crate[trait_def] -> (crate + crate.deps)[type_def]) +
+            ((crate + crate.deps)[trait_def] -> crate[type_def])
+}
+```
+
+We can check that if `local_orphan_rule` is true for all crates, then we have
+coherence for all crates. This has no counter-examples.
+
+```alloy
+check local_coherent {
+    -- ie, checking local_orphan_rule on each crate implies that all crates are globally coherent
+    local_orphan_rule[Crate] => coherent_impls[Crate]
+}
+```
+
+## impl dependencies
+
+Let's extend the orphan constraint so that the definition of "local" is extended
+to immediate dependencies as well. In a way this is simpler than
+`local_orphan_rule` because we no longer have to constrain either the type or
+trait to be in `crate`.
+
+```alloy
+pred dep_orphan_rule[crates: Crate] {
+    all crate: crates |
+        crate.impls in
+            (crate + crate.deps)[trait_def] -> (crate + crate.deps)[type_def]
+}
+```
+
+However, this is not sufficient to maintain the invariant. This will quickly
+find a counter-example with two crates with a duplicate implementation.
+
+```alloy
+check dep_coherent_bad {
+    dep_orphan_rule[Crate] => coherent_impls[Crate]
+}
+```
+
+We need to add additional constraints to maintain the invariant. First, let's
+define a function which, for a given crate which defines types and/or traits,
+all the crates with implementations for those definitions:
+```alloy
+fun impl_crates[c: Crate]: set Crate {
+    c[trait_def][impls.univ] + c[type_def][impls].univ
+}
+```
+
+We can then apply the constraint in the most general way: for all dependencies
+of Binary, all the crates implementing anything must be coherent. We'll ignore
+that this is a tautology for now, as we'll tighten this up later.
+
+```alloy
+check dep_coherent_impl_crates {
+    {
+        dep_orphan_rule[Crate] -- redundant
+        all dep: Binary.*deps |
+            coherent_impls[impl_crates[dep]] -- tautology
+    } => coherent_impls[Crate]
+} for 10 -- make sure there's enough objects to be interesting
+```
+
+Unfortunately, this doesn't correspond to how the build is actually performed in
+practice. When we're compiling a crate which has definitions, we don't know
+which crates will have implementations. And when we're compiling the crates with
+implementations, we don't know which other crate to cross-check with for
+coherence.
+
+The key insight is that there must be *some* crate which has both the
+implementing crates in its transitive dependencies (even if it's the top-level
+Binary), which means it can check for coherence when compiling that crate.
+
+For example, here `Use` is responsible for checking the coherence of `ImplA` and
+`ImplB` in its dependencies, but `ImplC` someone else's problem, and `Other` is
+not relevant.
+```mermaid
+graph TD
+  Use --> ImplA & ImplB
+  ImplA & ImplB & ImplC --> Defn
+  Use --> Other
+```
+
+```alloy
+-- TODO check constraint for common deps
+```
