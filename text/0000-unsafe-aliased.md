@@ -149,7 +149,8 @@ fn main() {
     
 Beyond self-referential types, a similar problem also comes up with intrusive linked lists: the nodes of such a list often live on the stack frames of the functions participating in the list, but also have incoming pointers from other list elements.
 When a function takes a mutable reference to its stack-allocated node, that will alias the pointers from the neighboring elements.
-`Pin` is used to ensure that the list elements don't just move elsewhere (which would invalidate those incoming pointers), but there still is the problem that an `&mut Node` is actually not a unique pointer due to these aliases -- so we need a way for the to opt-out of the aliasing rules.
+[This](https://github.com/rust-lang/rust/issues/114581) is an example of an intrusive list in the standard library that is breaking Rust's aliasing rules.
+`Pin` is sometimes used to ensure that the list elements don't just move elsewhere (which would invalidate those incoming pointers) and provide a safe API, but there still is the problem that an `&mut Node` is actually not a unique pointer due to these aliases -- so we need a way for the to opt-out of the aliasing rules.
 
 <br>
 
@@ -168,7 +169,8 @@ pub struct S {
 }
 ```
 
-This lets the compiler know that mutable references to `data` might still have aliases, and so optimizations cannot assume that no aliases exist. That's entirely analogous to how `UnsafeCell` lets the compiler know that *shared* references to this field might undergo mutation.
+This lets the compiler know that mutable references to `data` might still have aliases, and so optimizations cannot assume that no aliases exist.
+That's entirely analogous to how `UnsafeCell` lets the compiler know that *shared* references to this field might undergo mutation.
 
 However, what is *not* analogous is that `&mut S`, when handed to safe code *you do not control*, must still be unique pointers!
 This is because of methods like `mem::swap` that can still assume that their two arguments are non-overlapping.
@@ -177,6 +179,7 @@ In other words, the safety invariant of `&mut S` still requires full ownership o
 But again, this is a *safety invariant*; it only applies to safe code you do not control. You can write your own code handling `&mut S` and as long as that code is careful not to make use of this memory in the wrong way, potential aliasing is fine.
 You can also hand out a `Pin<&mut S>` to external safe code; the `Pin` wrapper imposes exactly the restrictions needed to ensure that this remains sound (e.g., it prevents `mem::swap`).
 
+Similarly, the intrusive linked list from the motivation can be fixed by wrapping the entire `UnsafeListEntry` in `UnsafeAliased`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
