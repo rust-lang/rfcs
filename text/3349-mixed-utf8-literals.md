@@ -63,14 +63,14 @@ Similarly, in a byte literal (`b''`), `\u` may only be used for values 0 through
 The ["characters and strings" section in the Rust Reference](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings)
 is updated with the following table:
 
-                | Example     | Characters  | Escapes                   | Validation
---              | --          | --          | --                        |
-Character       | 'H'         | All Unicode | ASCII, unicode            | Valid unicode code point
-String          | "hello"     | All Unicode | ASCII, high byte, unicode | Valid UTF-8
-Raw string      | r#"hello"#  | All Unicode | -                         | Valid UTF-8
-Byte            | b'H'        | All ASCII   | ASCII, high byte          | -
-Byte string     | b"hello"    | All Unicode | ASCII, high byte, unicode | -
-Raw byte string | br#"hello"# | All Unicode | -                         | -
+|                 | Example     | Characters  | Escapes                   | Validation               |
+|-----------------|-------------|-------------|---------------------------|--------------------------|
+| Character       | 'H'         | All Unicode | ASCII, unicode            | Valid unicode code point |
+| String          | "hello"     | All Unicode | ASCII, high byte, unicode | Valid UTF-8              |
+| Raw string      | r#"hello"#  | All Unicode | -                         | Valid UTF-8              |
+| Byte            | b'H'        | All ASCII   | ASCII, high byte          | -                        |
+| Byte string     | b"hello"    | All Unicode | ASCII, high byte, unicode | -                        |
+| Raw byte string | br#"hello"# | All Unicode | -                         | -                        |
 
 With the following definitions for the escape codes:
 
