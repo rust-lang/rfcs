@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Relax the restrictions on which escape codes are allowed in string, char, and byte literals.
+Relax the restrictions on which characters and escape codes are allowed in string, char, byte string, and byte literals.
 
 Most importantly, this means we accept the exact same characters and escape codes in `"…"` and `b"…"` literals. That is:
 
