@@ -6,9 +6,9 @@
 # Summary
 [summary]: #summary
 
-Allow the exact same characters and escape codes in `"…"` and `b"…"` literals.
+Relax the restrictions on which escape codes are allowed in string, char, and byte literals.
 
-That is:
+Most importantly, this means we accept the exact same characters and escape codes in `"…"` and `b"…"` literals. That is:
 
 - Allow unicode characters, including `\u{…}` escape codes, in byte string literals. E.g. `b"hello\xff我叫\u{1F980}"`
 - Also allow non-ASCII `\x…` escape codes in regular string literals, as long as they are valid UTF-8. E.g. `"\xf0\x9f\xa6\x80"`
@@ -46,17 +46,46 @@ for different literal types. We'd only require regular string literals to be val
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Regular string literals (`""`) must be valid UTF-8.
+Regular string literals (`""` and `r""`) must be valid UTF-8.
 For example, valid strings are `"abc"`, `"🦀"`, `"\u{1F980}"` and `"\xf0\x9f\xa6\x80"`.
-`"\x80"` is not valid, however, as that is not valid UTF-8.
+`"\xff"` is not valid, however, as that is not valid UTF-8.
 
-Byte string literals (`b""`) may include non-ascii characters and unicode escape codes (`\u{…}`), which will be encoded as UTF-8.
+Byte string literals (`b""` and `br""`) may include non-ascii characters and unicode escape codes (`\u{…}`), which will be encoded as UTF-8.
+
+The `char` type does not store UTF-8, so while `'\u{1F980}'` is valid, trying to encode it in UTF-8 as in `'\xf0\x9f\xa6\x80'` is not accepted.
+In a char literal (`''`), `\x` may only be used for values 0 through 0x7F.
+
+Similarly, in a byte literal (`b''`), `\u` may only be used for values 0 through 0x7F, since those are the only code points that are unambiguously represented as a single byte.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The tokenizer should accept all known escape codes in both `""` and `b""` literals.
-Only a regular string literal is checked to be valid UTF-8 afterwards.
+The ["characters and strings" section in the Rust Reference](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings)
+is updated with the following table:
+
+                | Example     | Characters  | Escapes                   | Validation
+--              | --          | --          | --                        |
+Character       | 'H'         | All Unicode | ASCII, unicode            | Valid unicode code point
+String          | "hello"     | All Unicode | ASCII, high byte, unicode | Valid UTF-8
+Raw string      | r#"hello"#  | All Unicode | -                         | Valid UTF-8
+Byte            | b'H'        | All ASCII   | ASCII, high byte          | -
+Byte string     | b"hello"    | All Unicode | ASCII, high byte, unicode | -
+Raw byte string | br#"hello"# | All Unicode | -                         | -
+
+With the following definitions for the escape codes:
+
+- ASCII: `\'`, `\"`, `\n`, `\r`, `\t`, `\\`, `\0`, `\u{0}` through `\u{7F}`, `\x00` through `\x7F`
+- Unicode: `\u{80}` and beyond.
+- High byte: `\x80` through `\xFF`
+
+Compared to before, the tokenizer should start accepting:
+- unicode characters in `b""` and `br""` literals (which will be encoded as UTF-8),
+- all `\x` escapes in `""` literals,
+- all `\u` escapes in `b""` literals (which will be encoded as UTF-8), and
+- ASCII `\u` escapes in `b''` literals.
+
+Regular string literals (`""`) are checked to be valid UTF-8 afterwards.
+(Either during tokenization, or at a later point in time. See future possibilities.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -86,19 +115,6 @@ However, for regular string literals that will result in an error in nearly all 
 - Should `concat!("\xf0\x9f", "\xa6\x80")` work? (The string literals are not valid UTF-8 individually, but are valid UTF-8 after being concatenated.)
 
   (I don't care. I guess we should do whatever is easiest to implement.)
-
-- How about single byte and character literals?
-
-  - Should `b'\u{30}` work? (It's a unicode escape code, but it's still just one byte in UTF-8.)
-
-    I think yes. I see no reason to disallow it.
-
-  - Should `'\xf0\x9f\xa6\x80'` work? (It's multiple escape codes, but it's still just one character in UTF-8.)
-
-    Probably not, since a `char` is not UTF-8 encoded; it's a single UTF-32 codepoint.
-    _Decoding_ UTF-8 from `\x` escape codes back into UTF-32 would be a bit surprising.
-
-    (But note that `'\x41'` already works, for single byte UTF-8 characters, aka ASCII.)
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
