@@ -222,6 +222,11 @@ impl<T: ?Sized> UnsafeAliased<T> {
         self as *mut _ as *mut T
     }
 
+    /// Get read-write access to the contents of a pinned `UnsafeAliased`.
+    pub fn get_mut_pinned(Pin<&mut self>) -> *mut T {
+        ..
+    }
+
     /// Get read-only access to the contents of a shared `UnsafeAliased`.
     /// Note that `&UnsafeAliased<T>` is read-only if `&T` is read-only.
     /// This means that if there is mutation of the `T`, future reads from the
