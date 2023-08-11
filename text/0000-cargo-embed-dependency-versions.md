@@ -170,17 +170,48 @@ Alternatives:
 # Prior art
 [prior-art]: #prior-art
 
-An out-of-tree implementation of this RFC exists, see [`cargo auditable`](https://github.com/rust-secure-code/cargo-auditable/), and has garnered considerable interest. NixOS and Void Linux build all their Rust packages with it today; it is also used in production at Microsoft. Extracting the embedded data is already supported by [`rust-audit-info`](https://crates.io/crates/rust-audit-info) and [Syft](https://github.com/anchore/syft). Auditing such binaries for known vulnerabilities is already supported by [`cargo audit`](https://crates.io/crates/cargo-audit) and [Trivy](https://github.com/aquasecurity/trivy).
+## In Rust
 
 The Rust compiler already [embeds](https://github.com/rust-lang/rust/pull/97550) compiler and LLVM version in the executables built with it.
 
-Go compiler embeds `go.mod` dependency information into its compiled binaries. Due to Go binaries generally being far larger than Rust binaries, the binary size is not a constraint, so they embed much more information - e.g. the licence for each package in the dependency tree, which is then read by the [golicense](https://github.com/mitchellh/golicense) tool.
+An out-of-tree implementation of this RFC exists, see [`cargo auditable`](https://github.com/rust-secure-code/cargo-auditable/), and has garnered considerable interest. NixOS and Void Linux build all their Rust packages with it today; it is also used in production at Microsoft. Extracting the embedded data is already supported by [`rust-audit-info`](https://crates.io/crates/rust-audit-info) and [Syft](https://github.com/anchore/syft). Auditing such binaries for known vulnerabilities is already supported by [`cargo audit`](https://crates.io/crates/cargo-audit) and [Trivy](https://github.com/aquasecurity/trivy).
 
-The most common way to manage Ruby apps involves `Gemfile.lock` which can be thought of as a runtime `Cargo.lock`. Some companies have automation searching for these files in production VMs/containers and cross-referencing them against [RubySec](https://rubysec.com/).
+## In other languages
 
-Since build system and package management system are usually decoupled, most other languages did not have the opportunity to implement anything like this.
+Suppose a vulnerability that is exploitable over the network is discovered in a popular networking library. We will look at several languages and see how each of them handles it.
 
-In microservice environments it is fairly typical to expose an HTTP endpoint returning the application version, see e.g. [example from Go cookbook](https://blog.kowalczyk.info/article/vEja/embedding-build-number-in-go-executable.html). However, this typically does not include versions of the dependencies.
+### C
+
+Linux distrubutions maintain a strict policy of using shared libraries (dynamic linking) and only having a single copy of the library in the system. The library is also tracked in the package manager.
+
+When the vulnerability is disclosed, an update to the single copy of the library in the system is issued by the distribution. To check if a given system is affected, you only need to look at the version of the distribution package. Tools to scan systems for vulnerable package versions are also available, including as a service.
+
+To mitigate the issue you simply need to run the regular security update command provided by your distribution and reboot. The single copy of the library is replaced and the system is secured.
+
+Sadly this does not apply to packages installed from outside the distribution, or software that is not packaged at all.
+
+### Ruby
+
+Ruby code typically has a `Gemfile.lock` which is analogous to `Cargo.lock`. Crucially, Ruby is never compiled into a binary, and this file is present at runtime in the deployed code. So you can tell exactly what versions of which libraries the code you run actually uses.
+
+Thanks to `Gemfile.lock` the code can be automatically checked for vulnerable package versions against databases such as [RubySec](https://rubysec.com/).
+
+Unlike in the Linux distribution scenario, the dependencies of every program have to be updated individually.
+
+### Go
+
+Go statically links all its code, so the C approach of updating a single instance of a shared library is impossible. Every single Go binary contains a copy of the vulnerable code, and all of them have to be rebuilt.
+
+To make this problem tractable, Go embeds detailed information about the dependency tree in each compiled binary. It is similar to `Cargo.lock` but much more detailed, also including the licenses and other metadata about the dependencies.
+
+Automated tools exist to detect vulnerable dependencies in Go binaries via a database of vulnerable versions. Since this is enabled by default for all builds, it does not matter how the binary was installed (distribution package, binary from Github releases, built from source, etc) - all vulnerable binaries can be identified.
+
+### Rust (prior to this RFC)
+
+Like Go, Rust does not support dynamic linking. A copy of each library is included in each compiled binary.
+
+Unlike Go, Rust does not provide any visibility into what libraries went into compiling a given program. It is extremely challenging to hunt down every vulnerable binary in the system.
+
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
