@@ -126,7 +126,7 @@ The JSON schema specifying the format is provided below. If you find Rust struct
 }
 ```
 
-Not all compilations targets will embed this data. Some may support it but disable it by default (e.g. WebAssembly) while others may not support it at all. Whether the target support it, and whether embedding this data is enabled by default for a given target is recorded in the [target specification JSON](https://doc.rust-lang.org/rustc/targets/custom.html). The exact name of the configuration option is subject to bikeshedding.
+Not all compilations targets support embedding this data. Whether the target supports it is recorded in the [target specification JSON](https://doc.rust-lang.org/rustc/targets/custom.html). The exact name of the configuration option is subject to bikeshedding.
 
 # Drawbacks
 [drawbacks]: #drawbacks
