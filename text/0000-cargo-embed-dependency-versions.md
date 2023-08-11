@@ -33,7 +33,7 @@ A per-profile configuration option in `Cargo.toml` can be used to opt out of thi
 
 The version information is encoded in an additional arbitrary section of the executable by Cargo. The exact mechanism varies depending on the executable format (ELF, Mach-O, PE, etc.). The section name is `.dep-v0` across all platforms (subject to bikeshedding, but [within 8 bytes](https://github.com/rust-lang/rust/blob/4f7bb9890c0402cd145556ac1929d13d7524959e/compiler/rustc_codegen_ssa/src/back/metadata.rs#L462-L475)). The section name must be changed if breaking changes are made to the format.
 
-The data is encoded in JSON which is compressed with Zlib. All arrays a sorted not to disrupt reproducible builds.
+The data is encoded in JSON which is compressed with Zlib. All arrays are sorted to not disrupt reproducible builds.
 
 The JSON schema specifying the format is provided below. If you find Rust structures more readable, you can find them [here](https://github.com/rust-secure-code/cargo-auditable/blob/311f9932128667b8b18113becdea276b3d98aace/auditable-serde/src/lib.rs#L99-L172). In case of divergences the JSON schema provided in this RFC takes precedence.
 
