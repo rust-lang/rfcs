@@ -139,7 +139,7 @@ Not all compilations targets support embedding this data. Whether the target sup
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Rationale:
+## Rationale
 
 - This way version information is *impossible* to misplace. As long as you have the binary, you can recover the info about dependency versions. The importance of this is impossible to overstate. This allows auditing e.g. a Docker container that you did not build yourself, or a server that somebody's set up a year ago and left no audit trail.
 - A malicious actor could lie about the version information. However, doing so requires modifying the binary - and if a malicious actor can do _that,_ you are pwned anyway. So this does not create any additional attack vectors other than exploiting the tool that's recovering the version information, which can be easily sandboxed.
@@ -147,7 +147,17 @@ Rationale:
 - Tooling for extracting information from binaries (such as ELF sections) is already readily available, as are zlib decompressors and JSON parsers. It can be extracted and parsed [in 5 lines of Python](https://github.com/rust-secure-code/cargo-auditable/blob/master/PARSING.md), or even with a shell one-liner in a pinch.
 - This enables third parties such as cloud providers to scan your binaries for you. Google Cloud [already provides such a service](https://cloud.google.com/container-registry/docs/get-image-vulnerabilities), Amazon has [an open-source project you can deploy](https://aws.amazon.com/blogs/publicsector/detect-vulnerabilities-in-the-docker-images-in-your-applications/) while Azure [integrates several partner solutions](https://docs.microsoft.com/en-us/azure/security-center/security-center-vulnerability-assessment-recommendations). They do not support this specific format yet, but integration into Trivy was very easy, so adding support will likely be trivial.
 
-Alternatives:
+## Why enable this by default?
+
+If you have 10 programs on your computer that use a library exploitable over the network, your computer and all your data are vulnerable as long as even **a single program** remains vulnerable.
+
+It does not matter if you have discovered and patched 9 out of 10. As long as a single unpatched binary is running, the system is vulnerable.
+
+An attacker needs to only find a single vulnerable program; defense is all-or-nothing. **Every single** vulnerable binary needs to be found and fixed.
+
+If the mechanism proposed in this RFC is not enabled by default, it will not let you discover all vulnerable binaries in the system, and at that point it might as well not exist.
+
+## Alternatives
 
 - Do nothing.
   - Identifying vulnerable binaries will remain impossible. We will see increasing number of known vulnerabilities unpatched in production.
