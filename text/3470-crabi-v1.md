@@ -503,12 +503,15 @@ still seems preferable, though, as combining the two into one struct allows for
 uniform handling between arguments, return values, and fields, as well as
 keeping the pointer and length more strongly associated.
 
-@programmerjake made a proposal to modify the standard impl of `Drop` for `Box`
-to allow plugging in an arbitrary function (via a `BoxDrop` trait), to drop the
-`Box` as a whole. This would be generally useful (e.g. for object pooling), and
-would then permit crABI to define a `box_drop` function that calls an FFI
-function to free the object. If we accepted that proposal, it would make sense
-to use it to represent crABI boxes.
+@programmerjake made a
+[proposal](https://github.com/rust-lang/rfcs/pull/3470#issuecomment-1674249638)
+([sample usage](https://github.com/rust-lang/rfcs/pull/3470#issuecomment-1674265515))
+to modify the standard impl of `Drop` for `Box` to allow plugging in an
+arbitrary function (via a `BoxDrop` trait), to drop the `Box` as a whole. This
+would be generally useful (e.g. for object pooling), and would then permit
+crABI to define a `box_drop` function that calls an FFI function to free the
+object. If we accepted that proposal, it would make sense to use it to
+represent crABI boxes.
 
 # Prior art
 [prior-art]: #prior-art
