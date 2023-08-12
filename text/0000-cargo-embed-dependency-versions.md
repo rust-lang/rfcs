@@ -155,7 +155,7 @@ It does not matter if you have discovered and patched 9 out of 10. As long as a 
 
 An attacker needs to only find a single vulnerable program; defense is all-or-nothing. **Every single** vulnerable binary needs to be found and fixed.
 
-If the mechanism proposed in this RFC is not enabled by default, it will not let you discover all vulnerable binaries in the system, and at that point it might as well not exist.
+If the mechanism proposed in this RFC is not enabled by default, it will not let you discover all vulnerable binaries in the system, and will not be effective at preventing vulnerabiltiy exploitation.
 
 ## Alternatives
 
