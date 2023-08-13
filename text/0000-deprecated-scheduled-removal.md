@@ -24,7 +24,7 @@ of when the deprecated item will be removed from the public API and hence can pr
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-This RFC proposes the addition of the `scheduled_removal` parameter to the `deprecated` attribute, as with the following example:
+This RFC proposes the addition of the `scheduled_removal` parameter to the `deprecated` attribute, as with the following example, when a version is specified:
 ```rust
 #[deprecated(since = "0.2.1", scheduled_removal = "0.3.0")]
 struct ThisItemIsDeprecated;
@@ -40,9 +40,24 @@ warning: use of deprecated unit struct `ThisItemIsDeprecated`
   = note: this deprecated unit struct will be removed in version 0.3.0
   = note: `#[warn(deprecated)]` on by default
 ```
-The added line `note: this deprecated item will be removed in version 0.3.0`  tells the user this deprecated item will be removed in version
-`0.3.0` and would make it clear that the user needs to migrate to another API before `0.3.0` lands, otherwise their code would break and fail
-to compile due to the removal of the API.
+The added line `note: this deprecated item will be removed in version 0.3.0`  tells the user this deprecated item will be removed in version `0.3.0` and would make it clear that the user needs to migrate to another API before `0.3.0` lands, otherwise their code would break and fail to compile due to the removal of the API.
+
+If no value is provided for the `scheduled_removal` parameter, like so:
+```rust
+#[deprecated(since = "0.2.1", scheduled_removal = "0.3.0")]
+struct ThisItemIsDeprecated;
+```
+Then the usages of this struct would result in the following warning:
+```
+warning: use of deprecated unit struct `ThisItemIsDeprecated`
+ --> src/main.rs:5:17
+  |
+5 |     let _ = ThisItemIsDeprecated;
+  |             ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this deprecated unit struct will be removed in a future version
+  = note: `#[warn(deprecated)]` on by default
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
