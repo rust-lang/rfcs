@@ -1,5 +1,5 @@
 - Feature Name: n/a
-- Start Date: (2022-11-07)
+- Start Date: 2022-11-07
 - RFC PR: [rust-lang/rfcs#3346](https://github.com/rust-lang/rfcs/pull/3346)
 - Rust Issue: n/a
 
