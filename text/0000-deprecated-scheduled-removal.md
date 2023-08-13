@@ -70,10 +70,9 @@ The `scheduled_removal` parameter optionally takes in a `&str` value, signifying
 
 The compiler takes this parameter into account when generating diagnostics for usages of an item marked as `#[deprecated]` using this parameter. 
 
-If a version is provided, the compiler will
-append a `note` line that reads: `this deprecated {item_type} will be removed in version {version}`, where `{item type}` is the type of item
-used, like a `unit struct` in this example, and the `{version}` being the version specified as the value to the `scheduled_removal` parameter. Otherwise,
-the appended note line would read like `this deprecated {item_type} will be removed in a future version`,
+If a version is provided, the compiler will append a `note` line that reads: `this deprecated {item_type} will be removed in version {version}`,
+where `{item type}` is the type of item used, like a `unit struct` in this example, and the `{version}` being the version specified as the value
+to the `scheduled_removal` parameter. Otherwise, the appended note line would read like `this deprecated {item_type} will be removed in a future version`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
