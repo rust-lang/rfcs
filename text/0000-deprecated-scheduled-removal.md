@@ -46,7 +46,7 @@ make it clear that the user needs to migrate to another API before `0.3.0` lands
 
 If no value is provided for the `scheduled_removal` parameter, like so:
 ```rust
-#[deprecated(since = "0.2.1", scheduled_removal = "0.3.0")]
+#[deprecated(since = "0.2.1", scheduled_removal)]
 struct ThisItemIsDeprecated;
 ```
 Then the usages of this struct would result in the following warning:
