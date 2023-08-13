@@ -93,8 +93,8 @@ it is used to specify whether the deprecated item will be removed in a future ve
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- How should this new attribute be named? (Albeit `scheduled_removal` sounds kind of weird to me, it is the currently the best name after discussion
-on Rust Internals).
+- How should this new attribute be named? (Albeit `scheduled_removal` sounds kind of weird to me, it is the currently the best name after [discussion
+on Rust Internals](https://internals.rust-lang.org/t/pre-rfc-scheduled-removal-parameter-for-deprecated-attribute/19324)).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
