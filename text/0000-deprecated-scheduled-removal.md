@@ -56,7 +56,8 @@ used, like a `unit struct` in this example, and the `{version}` being the versio
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- More work for library authors to utilise this parameter for enhanced user experience of the users.
+- While knowing the version in which the item will be removed is a good thing for the library users, always requiring to put a version is not good,
+since putting a specific version then forces the maintainer to remove those items in that specific version.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
