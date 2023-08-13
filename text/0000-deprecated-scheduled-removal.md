@@ -41,7 +41,8 @@ warning: use of deprecated unit struct `ThisItemIsDeprecated`
   = note: this deprecated unit struct will be removed in version 0.3.0
   = note: `#[warn(deprecated)]` on by default
 ```
-The added line `note: this deprecated item will be removed in version 0.3.0`  tells the user this deprecated item will be removed in version `0.3.0` and would make it clear that the user needs to migrate to another API before `0.3.0` lands, otherwise their code would break and fail to compile due to the removal of the API.
+The added line `note: this deprecated item will be removed in version 0.3.0`  tells the user this deprecated item will be removed in version `0.3.0` and would
+make it clear that the user needs to migrate to another API before `0.3.0` lands, otherwise their code would break and fail to compile due to the removal of the API.
 
 If no value is provided for the `scheduled_removal` parameter, like so:
 ```rust
@@ -84,13 +85,13 @@ None.
 
 ## A separate `scheduled_for_removal` attribute
 
-A separate attribute named `scheduled_for_removal` will be introduced. Usage of this attribute looks like:
+A separate attribute named `scheduled_for_removal` will be introduced. Usage of this attribute looks like, when a version is provided:
 ```rust
 #[deprecated(since = "0.2.1")]
 #[scheduled_for_removal(at = "0.3.0")]
 struct ThisItemIsDeprecated;
 ```
-Which would generate the following warning:
+Which would result in the following warning:
 ```
 warning: use of unit struct `ThisItemIsDeprecated` that is scheduled for removal
  --> src/main.rs:5:17
@@ -99,6 +100,23 @@ warning: use of unit struct `ThisItemIsDeprecated` that is scheduled for removal
   |             ^^^^^^^^^^^^^^^^^^^^
   |
   = note: this unit struct will be removed in version 0.3.0
+  = note: `#[warn(scheduled_for_removal)]` on by default
+```
+
+When a version is not specified:
+```rust
+#[deprecated(since = "0.2.1")]
+#[scheduled_for_removal]
+struct ThisItemIsDeprecated;
+```
+Which would result in the following warning:
+```
+warning: use of unit struct `ThisItemIsDeprecated` that is scheduled for removal
+ --> src/main.rs:5:17
+  |
+5 |     let _ = ThisItemIsDeprecated;
+  |             ^^^^^^^^^^^^^^^^^^^^
+  |
   = note: `#[warn(scheduled_for_removal)]` on by default
 ```
 The `scheduled_for_removal` lint would be introduced alongside with this attribute.
