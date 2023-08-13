@@ -21,7 +21,6 @@ usually not prepared for sudden removal of deprecated items.
 Having a `scheduled_removal` attribute, that specifies the version of which a deprecated item is removed would mean users obtain the information
 of when the deprecated item will be removed from the public API and hence can prepare or complete for the migration beforehand.
 
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -47,6 +46,12 @@ to compile due to the removal of the API.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+The `scheduled_removal` parameter takes in a `&str` value, signifying the version for which the deprecated item is scheduled to be removed.
+
+The compiler takes this parameter into account when generating diagnostics for usages of an item marked as `#[deprecated]` using this parameter,
+appending a `note` line that reads: `this deprecated {item_type} will be removed in version {version}`, where `{item type}` is the type of item
+used, like a `unit struct` in this example, and the `{version}` being the version specified as the value to the `scheduled_removal` parameter.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -95,9 +100,10 @@ it is used to specify whether the deprecated item will be removed in a future ve
 
 - How should this new attribute be named? (Albeit `scheduled_removal` sounds kind of weird to me, it is the currently the best name after [discussion
 on Rust Internals](https://internals.rust-lang.org/t/pre-rfc-scheduled-removal-parameter-for-deprecated-attribute/19324)).
+- How should the diagnostics be updated to accommodate for this? Currently, simply a `note` line is added. Is that good enough?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Perhaps other API status attributes can be exposed to library authors, for example `experimental` to mark experimental APIs and emit corresponding
-warnings to the user about the usage of an unstable and experimental API of the library, that the code may break at any time without prior notice.
+Other API status attributes can be exposed to library authors, for example `experimental` to mark experimental APIs and emit corresponding warnings to the
+user about the usage of an unstable and experimental API of the library, that the code may break at any time without prior notice.
