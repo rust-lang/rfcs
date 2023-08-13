@@ -1,5 +1,5 @@
 - Feature Name: fallible_collection_alloc
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2017-08-18
 - RFC PR: [rust-lang/rfcs#2116](https://github.com/rust-lang/rfcs/pull/2116)
 - Rust Issue: [rust-lang/rust#48043](https://github.com/rust-lang/rust/issues/48043)
 
