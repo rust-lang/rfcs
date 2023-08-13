@@ -1,4 +1,4 @@
-- Feature Name: `deprecated_scheduled_removal`
+- Feature Name: deprecated_scheduled_removal
 - Start Date: 2023-08-13
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -38,7 +38,7 @@ warning: use of deprecated unit struct `ThisItemIsDeprecated`
 5 |     let _ = ThisItemIsDeprecated;
   |             ^^^^^^^^^^^^^^^^^^^^
   |
-  = note: this deprecated item will be removed in version 0.3.0
+  = note: this deprecated unit struct will be removed in version 0.3.0
   = note: `#[warn(deprecated)]` on by default
 ```
 The added line `note: this deprecated item will be removed in version 0.3.0`  tells the user this deprecated item will be removed in version
@@ -72,7 +72,7 @@ warning: use of unit struct `ThisItemIsDeprecated` that is scheduled for removal
 5 |     let _ = ThisItemIsDeprecated;
   |             ^^^^^^^^^^^^^^^^^^^^
   |
-  = note: this item will be removed in version 0.3.0
+  = note: this unit struct will be removed in version 0.3.0
   = note: `#[warn(scheduled_for_removal)]` on by default
 ```
 The `scheduled_for_removal` lint would be introduced alongside with this attribute.
