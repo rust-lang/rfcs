@@ -1,5 +1,5 @@
 - Feature Name: N/A
-- Start Date: 2015-06-4
+- Start Date: 2015-06-04
 - RFC PR: [rust-lang/rfcs#1156](https://github.com/rust-lang/rfcs/pull/1156)
 - Rust Issue: [rust-lang/rust#26438](https://github.com/rust-lang/rust/issues/26438)
 
