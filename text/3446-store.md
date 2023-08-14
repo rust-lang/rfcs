@@ -745,17 +745,35 @@ errors to prevent erroneous couplings.
 [^1]: With the exception, in the case of a call to `resolve`, of any pointer derived from a copy of the handle argument.
 
 
-##  Mutable Store
+##  Mutable Store: allocation.
 
 A previous incarnation of the API borrowed the store mutably to allocate, deallocate, grow, or shrink.
 
 This is tempting, as after all it is likely something within the store will need to be mutated.
 
 There is, however, a very good reason for `Allocator` to use a shared reference: concurrent uses. In a concurrent
-context, requiring a mutable reference to the store requires a locking mechanism around the store. Even if the store is
-`Sync`.
+context, a `Sync` allocator is shared between threads.
 
-To fully support concurrent code with zero overhead, the `Store` API methods cannot require `&mut self`.
+Suggestions were made to use `for<'a> &'a S: Store` in such cases, however, to the best of my knowledge, it is not
+possible today to refer to the associated type of such a bound. That is, it is not possible to declare a field as
+`handle: <for<'a> &'a S: Store>::Handle`, which greatly complicates things...
+
+
+##  Mutable Store: resolution.
+
+A previous incarnation of the API borrowed the store mutably to resolve mutable handles, ie it offered both a `resolve`
+and a `resolve_mut` methods.
+
+While this would, theoretically, allow implementing a store with no interior mutability, it unfortunately seems to run
+afoul of aliasing when obtaining multiple mutable references to distinct elements with overlapping lifetimes -- such
+as when retaining multiple mutable references yielded by an iterator.
+
+The problem is illustrated in [3446-store/aliasing-and-mutability.rs] on which Stacked Borrows chokes. While Tree
+Borrows _does_ accept the program as valid, it is not clear whether LLVM `noalias` would be compatible in such a case
+or not, now and in the future.
+
+Opting for a single `Store::resolve` method taking `&self`, while it requires interior mutability, is therefore the
+conservative choice: it is known to work now, and highly likely to continue working in the future.
 
 
 ##  Owned Store
@@ -765,6 +783,9 @@ A third possibility -- beyond accepting `&self` and `&mut self` -- is of course 
 
 This would require a `Sync` type to implement `Store` twice (once for immutable references, and once for mutable
 references) and would make it more difficult to declare bounds when using it.
+
+It also does not resolve the issue that a possible `resolve_mut` method runs afoul of the Stacked Borrows model, as
+illustrated above, and may not be compatible with `noalias`.
 
 
 ##  Typed Handles
