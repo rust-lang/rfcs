@@ -283,7 +283,7 @@ The primary downside of this RFC is that it requires larger vtables, which can b
 Looking forward, there are at least two potential ways we could address this problem:
 
 * Optimization to remove unused parts of vtables: When generating a final binary artifact, we could likely reduce the size of vtables overall by analyzing which methods are invoked and which upcast slots are used. Unused slots could be made NULL, which may enable additional dead code elimination as well. This would require some rearchitecture in the compiler, since LTO currently executes at the LLVM level, and this sort of analysis would be much easier to do at the MIR level; no language changes are required, however.
-* Target options to disable upcasting or other "space hogs": We could extend compilation profiles to allow targets to disable upcasting, either always or for select traits. This would lead to a compilation error if crates used upcasting, but permit generating smaller binaries (naturally, all crates being compiled would have to be compiled with the same target opions).
+* Target options to disable upcasting or other "space hogs": We could extend compilation profiles to allow targets to disable upcasting, either always or for select traits. This would lead to a compilation error if crates used upcasting, but permit generating smaller binaries (naturally, all crates being compiled would have to be compiled with the same target options).
 
 Another option, though one that this RFC recommends against, would be to add a new form of `dyn` that does not support upcasting (e.g., `dyn =Trait` or some such). This would allow individual values to "opt out" from upcasting.
 
