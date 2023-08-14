@@ -637,7 +637,7 @@ And in addition there's been extensive discussion on internals:
 
 - [Revisiting Rust’s modules](https://internals.rust-lang.org/t/revisiting-rusts-modules/5628) - aturon, Jul 26
 - [Revisiting Rust’s modules, part 2](https://internals.rust-lang.org/t/revisiting-rust-s-modules-part-2/5700?u=carols10cents) - aturon, Aug 2
-- [Revisting Modules, take 3](https://internals.rust-lang.org/t/revisiting-modules-take-3/5715?u=carols10cents) - withoutboats, Aug 4
+- [Revisiting Modules, take 3](https://internals.rust-lang.org/t/revisiting-modules-take-3/5715?u=carols10cents) - withoutboats, Aug 4
 - [pre-RFC: inline mod](https://internals.rust-lang.org/t/pre-rfc-inline-mod/5716?u=carols10cents) - ahmedcharles, Aug 4
 - [My Preferred Module System (a fusion of earlier proposals)](https://internals.rust-lang.org/t/my-preferred-module-system-a-fusion-of-earlier-proposals/5718?u=carols10cents) - phaylon, Aug 5
 - [[Pre-RFC] Yet another take on modules](https://internals.rust-lang.org/t/pre-rfc-yet-another-take-on-modules/5717?u=carols10cents) - newpavlov, Aug 5
