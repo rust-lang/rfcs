@@ -156,7 +156,7 @@ However, there are a number of practical concerns with taking that approach. One
 
 Further, the "reimplement" approach would represent a constraint on the ordering in which we do our work. With the design proposed in this RFC, for example, rust-analyzer is able to make use of the chalk library already. This is only possible because rust-analyzer has a "stub" version of Rust's name resolution engine and type checker embedded in it -- this type checker is not perfect, but it's good enough to drive chalk and gain useful experience. This allows us to create an end-to-end IDE user experience sooner, in effect.
 
-In contrast, if we were to try and rebuild rust-analyzer within rustc, even if we had rustc adopt chalk or some other IDE-friendly trait resolution algorithm, that would not be of use to IDE users until we had also upgraded the name resolution algorithm and type checker to be IDE friendly. In short, having a "prototype" version of these algorithms that lives in rust-anaylzer is both a pro and a con: it means we have to maintain two versions, but it means users get benefits faster and developers can experiment more freely.
+In contrast, if we were to try and rebuild rust-analyzer within rustc, even if we had rustc adopt chalk or some other IDE-friendly trait resolution algorithm, that would not be of use to IDE users until we had also upgraded the name resolution algorithm and type checker to be IDE friendly. In short, having a "prototype" version of these algorithms that lives in rust-analyzer is both a pro and a con: it means we have to maintain two versions, but it means users get benefits faster and developers can experiment more freely.
 
 ## Require feature parity between the existing RLS and rust-analyzer
 
