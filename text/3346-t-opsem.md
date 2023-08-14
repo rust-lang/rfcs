@@ -70,9 +70,9 @@ When considering someone for membership, the qualifications below will all be ta
     - Do they "steelman", looking for ways to restate others' points in the most convincing way?
  - Is this person **active**?
     - Are they attending meetings regularly?
-    - Either in meeting or elsewhere, do they comment on disussions and otherwise?
+    - Either in meeting or elsewhere, do they comment on discussions and otherwise?
 
-The last four bullets are lighlty edited versions of a subset of the [T-lang membership qualifications][lang-qualifications].
+The last four bullets are lightly edited versions of a subset of the [T-lang membership qualifications][lang-qualifications].
 
 [lang-qualifications]: https://lang-team.rust-lang.org/membership.html
 
