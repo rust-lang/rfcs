@@ -25,7 +25,7 @@ Lang team advisors can be useful in a number of situations:
 
 * Someone who is offered membership, but declines because they don't have time to attend meetings and the like, may find the advisors team a better fit, helping to keep them engaged in the Rust project (and to recognize their contributions).
 * Advisors is a great fit for domain experts who are consulted regularly on particular topics, but who are not interested in all aspects of Rust language design.
-* Advisors can also serve as a stepping stone to full membership: this gives the team a chance to recognize someone who is participating actively before commiting to full membership.
+* Advisors can also serve as a stepping stone to full membership: this gives the team a chance to recognize someone who is participating actively before committing to full membership.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -63,7 +63,7 @@ An advisor may be removed at their request, or if the team feels they've been in
 
 ## Integration into the decision process
 
-There will be a team in the rust repo (`rust-lang/lang-team-advisors`). When a lang team FCP is initiated, we will cc this team, making them aware it is happening. Advisors will be able to raise blocking objections with the "concern" functonality of rfcbot, or equivalent functionality in future decision tooling. (As an interim measure until rfcbot includes this functionality, team members may raise concerns on behalf of advisors on request.)
+There will be a team in the rust repo (`rust-lang/lang-team-advisors`). When a lang team FCP is initiated, we will cc this team, making them aware it is happening. Advisors will be able to raise blocking objections with the "concern" functionality of rfcbot, or equivalent functionality in future decision tooling. (As an interim measure until rfcbot includes this functionality, team members may raise concerns on behalf of advisors on request.)
 
 The precise details of how advisors fit into the lang team [decision making process](https://lang-team.rust-lang.org/decision_process/reference.html) are as follows:
 
