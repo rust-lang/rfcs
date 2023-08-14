@@ -362,7 +362,7 @@ using the `trait` keyword to define alias on *lifetimes* seems a wrong design ch
 very consistent.
 
 If we chose another keyword, like `constraint`, I feel less concerned and it would open further
-opportunies – see the `ConstraintKinds` alternative discussion above.
+opportunities – see the `ConstraintKinds` alternative discussion above.
 
 ## Which bounds need to be repeated when using a trait alias?
 
