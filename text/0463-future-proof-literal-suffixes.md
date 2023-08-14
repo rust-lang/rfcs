@@ -1,4 +1,4 @@
-- Start Date: 2014--28
+- Start Date: 2014-09-28
 - RFC PR: [#463](https://github.com/rust-lang/rfcs/pull/463)
 - Rust Issue: [#19088](https://github.com/rust-lang/rust/issues/19088)
 

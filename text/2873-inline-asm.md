@@ -1,5 +1,5 @@
 - Feature Name: `asm`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2020-01-13
 - RFC PR: [rust-lang/rfcs#2873](https://github.com/rust-lang/rfcs/pull/2873)
 - Rust Issue: [rust-lang/rust#72016](https://github.com/rust-lang/rust/issues/72016)
 - Project group repository: [rust-lang/project-inline-asm](https://github.com/rust-lang/project-inline-asm)
