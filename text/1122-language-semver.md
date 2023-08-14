@@ -181,7 +181,7 @@ Known areas where change is expected include the following:
 
 - Destructors semantics:
   - We plan to stop zeroing data and instead use marker flags on the stack,
-    as specified in [RFC 320]. This may affect destructors that rely on ovewriting
+    as specified in [RFC 320]. This may affect destructors that rely on overwriting
     memory or using the `unsafe_no_drop_flag` attribute.
   - Currently, panicking in a destructor can cause unintentional memory
     leaks and other poor behavior (see [#14875], [#16135]). We are
