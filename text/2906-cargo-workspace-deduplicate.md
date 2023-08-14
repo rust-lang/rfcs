@@ -447,7 +447,7 @@ implicit substitutions, if any, will be invisible to users of `cargo metadata`.
 ## Effect on `cargo read-manifest`
 
 Similar to `cargo metadata`, the `cargo read-manifest` command will perform all
-necessary subsitutions when presenting the output as JSON.
+necessary substitutions when presenting the output as JSON.
 
 ## Effect resolution for relative `path` dependencies
 
