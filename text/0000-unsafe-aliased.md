@@ -206,6 +206,10 @@ struct UnsafeAliased<T: ?Sized> {
     value: T,
 }
 
+/// When this type is used, that almost certainly means safe APIs need to use pinning
+/// to avoid the aliases from becoming invalidated. Therefore let's mark this as `!Unpin`.
+impl<T> !Unpin for UnsafeAliased<T> {}
+
 impl<T: ?Sized> UnsafeAliased<T> {
     /// Constructs a new instance of `UnsafeAliased` which will wrap the specified
     /// value.
