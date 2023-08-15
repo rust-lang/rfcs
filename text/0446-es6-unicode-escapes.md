@@ -77,7 +77,7 @@ Stage 2).
 * Status quo: don’t change the escaping syntax.
 * Add the new `\u{…}` syntax, but also keep the existing `\u` and `\U` syntax.
   This is what ES 6 does, but only to keep compatibility with ES 5.
-  We don’t have that constaint pre-1.0.
+  We don’t have that constraint pre-1.0.
 
 # Unresolved questions
 

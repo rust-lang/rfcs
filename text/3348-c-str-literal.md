@@ -58,7 +58,7 @@ Interactions with string related macros:
   The trivial implementation of using `concat!($s, "\0")` is problematic for several reasons, including non-string input and embedded nul bytes.
   (The unstable `concat_bytes!()` solves some of the problems.)
 
-  The popular [`cstr` crate](https://crates.io/crates/cstr) is a proc macro to work around the limiations of a `macro_rules` implementation, but that also has many downsides.
+  The popular [`cstr` crate](https://crates.io/crates/cstr) is a proc macro to work around the limitations of a `macro_rules` implementation, but that also has many downsides.
 
   Even if we had the right language features for a trivial correct implementation, there are many code bases where C strings are the primary form of string,
   making `cstr!("..")` syntax quite cumbersome.

@@ -80,7 +80,7 @@ It's always possible to *not* strengthen the guarantees of the language.
 # Prior art
 [prior-art]: #prior-art
 
-The compiler already suports `Option` being combined with specific non-zero types, this RFC mostly expands the list of guaranteed support.
+The compiler already supports `Option` being combined with specific non-zero types, this RFC mostly expands the list of guaranteed support.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions

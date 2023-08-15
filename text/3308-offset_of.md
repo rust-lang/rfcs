@@ -127,7 +127,7 @@ As you can see, the usage is the same as before, but because we didn't specify
 `#[repr(C)]`, compiler may have changed the order or position, so the values may
 be different -- it's completely possible that `pos` is located at offset 0, for
 example! Thankfully, by using `core::mem::offset_of!`, this code is correct
-either way, and will continute to be correct, even if the layout algorithm
+either way, and will continue to be correct, even if the layout algorithm
 changes in the future.
 
 ## `offset_of!` On Other Types

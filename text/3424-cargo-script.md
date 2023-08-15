@@ -400,7 +400,7 @@ Existing Rust solutions:
   - `--loop <expr>` for a closure to run on each line
   - `--test`, etc flags to make up for cargo not understanding thesefiles
   - `--force` to rebuild` and `--clear-cache`
-  - Communicates through scrpts through some env variables
+  - Communicates through scripts through some env variables
 - [`cargo-scripter`](https://crates.io/crates/cargo-scripter)
   - See above with 8 more commits
 - [`cargo-eval`](https://crates.io/crates/cargo-eval)

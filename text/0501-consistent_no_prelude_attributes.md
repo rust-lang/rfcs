@@ -75,4 +75,4 @@ Finally, the old attribute name should emit a deprecated warning, and be removed
  - Keep the current behavior
  - Remove the `#[no_implicit_prelude]` attribute all together, instead forcing users to use
    `#[no_std]` in combination with `extern crate std;` and `use std::prelude::*`.
- - Generalize preludes more to allow custom ones, which might superseed the attributes from this RFC.
+ - Generalize preludes more to allow custom ones, which might supersede the attributes from this RFC.
