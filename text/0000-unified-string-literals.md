@@ -1,6 +1,6 @@
 - Feature Name: `unified_string_literals`
 - Start Date: 2023-08-12
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3475](https://github.com/rust-lang/rfcs/pull/3475)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -276,7 +276,7 @@ function path() {
 "#)
 ```
 
-Also, since there is no prefix associated with the guarded literal form, this composes better with C-string and byte-string literals. There's no need to remeber the prefix order - `rb` or `br`, and escapes are needed even more often in these types of literals, since typing out an arbitrary byte sequence can be impossible.
+Also, since there is no prefix associated with the guarded literal form, this composes better with C-string and byte-string literals. There's no need to remember the prefix order - `rb` or `br`, and escapes are needed even more often in these types of literals, since typing out an arbitrary byte sequence can be impossible.
 
 # Prior art
 [prior-art]: #prior-art
