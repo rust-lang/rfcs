@@ -238,7 +238,7 @@ impl<T: ?Sized> UnsafeAliased<T> {
     ///     let ref1 = &mut *addr_of_mut!(x);
     ///     let ref2 = &mut *addr_of_mut!(x);
     ///     let ptr = ref1.get(); // read-only pointer, assumes immutability
-    ///     ref2.get_mut.write(1);
+    ///     ref2.get_mut().write(1);
     ///     ptr.read(); // UB!
     /// }
     /// ```
