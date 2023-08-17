@@ -122,6 +122,7 @@ let quotes = b#"You can also use "fancier" formatting, \#
 ```
 
 ## Formatting Placeholders
+[guide-formatting-placeholders]: #guide-formatting-placeholders
 
 Rust has several macros (such as `format!`, `println!`, and `write!`) which accept "format strings". These strings have "placeholders" which are delimited by curly braces. In order to output a literal curly brace, one must double up the curly braces.
 
@@ -196,6 +197,7 @@ Identical to string literals except they accept any byte sequence except Nul byt
 _Supported escapes are unchanged from those specified in RFC 3348 (union of string literals and byte string literals), aside from requiring the guard prefix as explained above._
 
 ## Format placeholders
+[reference-format-placeholders]: #reference-format-placeholders
 
 A _format string_ is a string literal used as an argument to the `format_args!` family of macros. Format strings use curly braces surrounding an optional set of format parameters as _placeholders_ for variable substitution.
 
@@ -214,12 +216,43 @@ format!(#"{ Hello"#);              // => { Hello
 ```
 
 ### Implementation note
+[reference-format-placeholders-impl-note]: #reference-format-placeholders-impl-note
 
-Format macros will need to have some way to detect the string guarding prefix. One way to achieve this is to inspect the `span` of the string literal token:
-- do no further processing if it begins with an `r`
-- count the number of leading `#`s
+Format placeholders are not a language lexing question at all. `#"this string has #{} in it"#` is just a string literal that in any other context resolves to the string `this string has #{} in it`. It is entirely the format macro's responsibility to parse the placeholders in accordance with the guarding prefix.
 
-Currently, third-party procedural macros must process string literals manually anyways (or delegate to a library like `syn`), so there's little change needed. However, the compiler may choose to optimize the `format_args!` builtin by storing the guarding prefix (or just the length) in the string literal token data.
+When a macro is parsing a format string, it simply needs to know the prefix used:
+
+- if `#*`, the placeholder is always `#*{}` and doubled curly braces are passed through literally
+- otherwise, the placeholder is always `{}` and curly braces are escaped by doubling
+
+Currently, the `proc_macro` API does not provide a way to get the string value, so third-party procedural macros must process string literals manually, using the span (or delegate to a library like `syn`). When this new syntax is first introduced, macros which parse directly (like `indoc`) will need to be manually updated to interpret the new syntax. Because of the manual involvement, they are likely to learn about the new way format placeholders work in these strings. 
+
+However, proc macros which use a parser library like `syn` may encounter a situation where a simple dependency bump allows their macros to treat these strings exactly the same as existing string literal forms. These proc macros will support guarded format strings with non-standard syntax, without the macro author knowing. Therefore, it is important that we perform a review of third-party format crates before stabilization.
+
+### Interaction with `concat!`
+[reference-format-placeholders-concat]: #reference-format-placeholders-concat
+
+We propose that `concat!` always return a bare string literal. Any string literals passed to it have escape sequences processed before being concatenated into a single string literal without a guarding prefix. `concat!(#"with "inner string", escape \#n, and placeholder #{} last"#)` would resolve to the string literal `"with \"inner string\", escape \n, and placeholder #{} last"`.
+
+Example `concat!` behavior:
+```rust
+fn main() {
+    let x = 42;
+    println!(#"{x} #{x}"#, x = x);              // {x} 42
+    println!("{x} #{x}", x = x);                // 42 #42
+    println!(concat!(#"{x} #{x}"#, ""), x = x); // 42 #42
+    println!(concat!(#"{x} #{x"#, "}"), x = x); // 42 #42
+    println!(concat!(#"{x} #{"#, "x}"), x = x); // 42 #42
+    println!(concat!(#"{x} #"#, "{x}"), x = x); // 42 #42
+    println!(concat!(#"{x} "#, "#{x}"), x = x); // 42 #42
+    println!(concat!(#"{x}"#, " #{x}"), x = x); // 42 #42
+    println!(concat!(#"{x"#, "} #{x}"), x = x); // 42 #42
+    println!(concat!(#"{"#, "x} #{x}"), x = x); // 42 #42
+    println!(concat!(#""#, "{x} #{x}"), x = x); // 42 #42
+}
+```
+
+We recommend that a lint be added (probably to clippy) to catch likely mistakes like those above. The lint could be avoided by adding an extra guarding level (making the placeholder in the guarded string literal unambiguous).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -246,6 +279,8 @@ r#"a raw string"#;
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+### Guarding for quotes but not escapes nor placeholders
 
 One possible alternative is to add just the `#`-guarding behavior to normal string literals, but without the change to escape sequences and format strings.
 ```swift
@@ -278,6 +313,24 @@ function path() {
 
 Also, since there is no prefix associated with the guarded literal form, this composes better with C-string and byte-string literals. There's no need to remember the prefix order - `rb` or `br`, and escapes are needed even more often in these types of literals, since typing out an arbitrary byte sequence can be impossible.
 
+### `#\` escape start
+[alternative-hash-before-backslash]: #alternative-hash-before-backslash
+
+Putting it before (`#\n`) matches the formatting placeholder syntax (`#{}`) slightly better.
+
+However, putting it after (`\#n`) parses unambiguously and allows us to catch more issues at compile time. `" #\n "` is already a valid string, but `" \#n "` can result in an "unexpected escape sequence, help: remove the extra `#`" error. Likewise, `##" ###\n "##` could mean `#\n` or could be a mistaken extra `#`, wheras `##" \###n "##` can result in the same error.
+
+### Promote format string placeholder parsing to the lexer 
+[alternative-placeholder-lexer]: #alternative-placeholder-lexer
+
+An alternative to `concat!` always resolving to a bare string literal: have the lexer record the positions of format placeholders. When multiple strings are concatenated, the placeholder positions from all are retained. Then, macros are provided an API to retrieve the indices where each placeholder starts.
+
+Benefits:
+- `concat!` "just works" with format strings.
+- macros have less work to do
+
+However, we consider this solution to be too complex for such a niche situation. It also has the drawback of requiring the expansion of the `proc_macro` API, and it doesn't solve the `syn` issue discussed above.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -291,7 +344,10 @@ This design is based on the raw string literal syntax of the Swift language. The
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- In an escape sequence, should the `#` come before or after the `\`?
+Should we remove the legacy raw string syntax?
+  + It can still be useful and more ergonomic when someone wants to ensure that absolutely no escapes are possible. Consider `#######"this is a \######n string"#######`, where it is difficult to tell from a glance that `\######n` is not a newline escape. `r"this is a \######n string"` makes that very clear, and is easier on the eyes.
+  + But, cases like the above are quite rare. And there is overhead in keeping the raw string literal syntax around. It's hard to argue for continuing to teach raw string literals alongside both bare string literals and guarded string literals, multiplied by various literal types (`b`, `c`). If we plan on no longer teaching raw string literals, a user may have to look up what the `r` means when they come across a rare usage. Or a user may accidentally add an `r` without knowing what it means.
+  + Also, cases like the above can use a longer guarding prefix than necessary to make it clear what is and is not an escape: `#########"this is a \######n string"#########`. The `needless_raw_string_hashes` clippy lint will currently trigger on that, but this can easily be changed to allow for cases that can benefit from the extra clarity extra `#`s bring.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
