@@ -20,7 +20,7 @@ let js = r#"function hello() { console.log("Hello, world!"); }"#;
 // function hello() { console.log("Hello, world!"); }
 ```
 
-This RFC proposes to unify the syntax of these two forms, supporting both the use of escape sequences and avoiding the need to escape backslashes and quotation marks. This proposal also uses the new syntax to improve format string ergonomics, reducing the need for double-brace escapes. We propose to introduce the new syntax and then remove the existing _raw string literal_ syntax in a future edition. We also propose to apply the same unified syntax to _bytes string literals_ and _C string literals_.
+This RFC proposes to unify the syntax of these two forms, supporting both the use of escape sequences and avoiding the need to escape backslashes and quotation marks. This proposal also uses the new syntax to improve format string ergonomics, reducing the need for double-brace escapes. We propose to apply the same unified syntax to _bytes string literals_ and _C string literals_.
 
 To avoid confusion with legacy code and education materials, we propose new terminology for the new syntax proposed here: _guarded string literal_. This will refer to a string literal like `#"content here"#`, where there are an equal amount of `#` before the opening quotation mark and after the closing quotation mark, but without the `r` prefix that existing _raw string literals_ use. String literals without guarding will be referred to as _bare string literals_.
 
@@ -150,6 +150,32 @@ let js = format!(#"function bar() { #{} }"#, "/* function body */");
 
 ## String literals
 
+> **<sup>Lexer</sup>**\
+> QUOTE_ESCAPE<sub>**N**</sub> :\
+> &nbsp;&nbsp; `\` `#`<sup>N</sup> \[ `'` `"` ]
+>
+> ASCII_ESCAPE<sub>**N**</sub> :\
+> &nbsp;&nbsp; &nbsp;&nbsp; `\` `#`<sup>N</sup> `x` OCT_DIGIT HEX_DIGIT\
+> &nbsp;&nbsp; | `\` `#`<sup>N</sup> \[ `n` `r` `t` `\` `0` ]
+>
+> UNICODE_ESCAPE<sub>**N**</sub> :\
+> &nbsp;&nbsp; `\` `#`<sup>N</sup> `u{` ( HEX_DIGIT `_`<sup>\*</sup> )<sup>1..6</sup> `}`
+>
+> STRING_CONTINUE<sub>**N**</sub> :\
+> &nbsp;&nbsp; `\` `#`<sup>N</sup> _followed by_ \\n
+>
+> STRING_CONTENT<sub>**N**</sub> :\
+> &nbsp;&nbsp; `#`<sup>N</sup> `"` (\
+> &nbsp;&nbsp; &nbsp;&nbsp; ~( [ `"` `\` ] `#`<sup>N</sup> |  _IsolatedCR_ )\
+> &nbsp;&nbsp; &nbsp;&nbsp; | QUOTE_ESCAPE<sub>N</sub>\
+> &nbsp;&nbsp; &nbsp;&nbsp; | ASCII_ESCAPE<sub>N</sub>\
+> &nbsp;&nbsp; &nbsp;&nbsp; | UNICODE_ESCAPE<sub>N</sub>\
+> &nbsp;&nbsp; &nbsp;&nbsp; | STRING_CONTINUE<sub>N</sub>\
+> &nbsp;&nbsp; )<sup>\*</sup> `"` `#`<sup>N</sup>
+>
+> STRING_LITERAL :\
+> &nbsp;&nbsp; STRING_CONTENT<sub>0..255</sub> SUFFIX<sup>?</sup>
+
 A _string literal_ opens with fewer than 256 of the character `U+0023` (`#`) (the _guarding prefix_) and a `U+0022` (double-quote) character. The _string body_ can contain any sequence of Unicode characters and is terminated only by another `U+0022` (double-quote) character, followed by the guarding prefix. A string literal started with one or more `U+0023` (`#`) characters is called a _guarded string literal_, but one without any opening `U+0023` (`#`) characters is a _bare string literal_.
 
 All Unicode characters contained in the _string body_ represent themselves, the characters `U+0022` (double-quote) or `U+005C` (`\`) only hold special meaning when followed by at least as many `U+0023` (`#`) characters as were used to start the string literal (zero for bare string literals). A `U+005C` (`\`) followed by the guarding prefix is interpreted as an _escape start_.
@@ -253,6 +279,28 @@ fn main() {
 ```
 
 We recommend that a lint be added (probably to clippy) to catch likely mistakes like those above. The lint could be avoided by adding an extra guarding level (making the placeholder in the guarded string literal unambiguous).
+
+## Timeline
+
+In Edition 2021 and earlier, `#"le string"#` resolves to three separate tokens when passed to a macro, so adding this new syntax in those editions would be a breaking change. To avoid that, we will introduce the change on the 2024 edition boundary.
+
+Guarded string literals make raw string literals redundant. It is unlikely the `unified_string_literals` feature can be implemented and stabilized before the 2024 edition, so raw string literals will be removed in the 2027 edition.
+
+### Edition 2024: Reserve the syntax
+
+> **<sup>Lexer</sup>**\
+> RESERVED_GUARDED_STRING_LITERAL :\
+> &nbsp;&nbsp; RESERVED_GUARDED_STRING_CONTENT SUFFIX<sup>?</sup>
+>
+> RESERVED_GUARDED_STRING_CONTENT :\
+> &nbsp;&nbsp; &nbsp;&nbsp; `#"` ( ~ _IsolatedCR_ )<sup>* (non-greedy)</sup> `"#`\
+> &nbsp;&nbsp; | `#` RESERVED_GUARDED_STRING_CONTENT `#`
+
+When compiling under the Rust 2024 edition (as determined by the edition of the current crate), any instance of `RESERVED_GUARDED_STRING_LITERAL` will result in a tokenization error (until the `unified_string_literals` feature is stabilized).
+
+### Edition 2027: Removal of raw string literals
+
+When compiling under the Rust 2027 edition (as determined by the edition of the current crate), the presence of `RAW_STRING_LITERAL` or `RAW_BYTE_STRING_LITERAL` will result in a tokenization error.
 
 # Drawbacks
 [drawbacks]: #drawbacks
