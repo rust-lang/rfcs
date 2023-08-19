@@ -35,21 +35,21 @@ But there are many use cases where someone wants to avoid escaping quotation mar
 
 1. null-terminated strings
 ```swift
-let foo = #"first line: "Hello, World!" \0"#;
+let foo = #"first line: "Hello, World!" \#0"#;
 ```
 
 2. byte strings
 ```swift
-let bytes = b#"some stuff in another encoding: "\xF7\x84" "#;
+let bytes = b#"some stuff in another encoding: "\#xF7\#x84" "#;
 ```
 
 3. splitting a long string literal across lines
 ```swift
-let long = #"\
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do \
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut \
-enim ad minim veniam, quis nostrud exercitation ullamco laboris \
-nisi ut aliquip ex ea commodo consequat.\
+let long = #"\#
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do \#
+eiusmod tempor "incididunt" ut labore et dolore magna aliqua. Ut \#
+enim ad minim veniam, quis nostrud exercitation ullamco laboris \#
+nisi ut aliquip ex ea commodo consequat.\#
 "#;
 ```
 
