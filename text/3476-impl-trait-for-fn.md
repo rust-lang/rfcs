@@ -1,6 +1,6 @@
 - Feature Name: `impl-trait-for-fn`
 - Start Date: 2023-08-20
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3476](https://github.com/rust-lang/rfcs/pull/3476)
 - Rust Issue: N/A
 
 # Summary
