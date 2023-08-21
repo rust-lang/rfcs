@@ -24,6 +24,8 @@ of when the deprecated item will be removed from the public API and hence can pr
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## From Library User Point-of-view
+
 This RFC proposes the addition of the `scheduled_removal` parameter to the `deprecated` attribute, as with the following example, when a version
 is specified:
 ```rust
@@ -63,6 +65,11 @@ warning: use of deprecated unit struct `ThisItemIsDeprecated`
 
 The second case is particularly useful - while knowing the version in which the item will be removed is a good thing for the library users, always requiring
 to put a version is troublesome, as putting a specific version then forces the maintainer to remove those items in that specific version.
+
+## From Library Author Point-of-view
+
+For all items annotated with the `deprecated` attribute including this `scheduled_removal` parameter, it is a hard compiler error not removing a certain item
+for when the version of the crate is **larger than or equal** to the version specified in the `scheduled_removal` parameter.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
