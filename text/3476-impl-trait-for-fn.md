@@ -57,6 +57,25 @@ impl Requestable for fn request_name {
     /* ... */
 }
 ```
+When the function is for example in a different mod, it should be referenced by its path
+```rust
+mod sub {
+    fn sub_mod_fn() { .. }
+}
+impl OutOfNamesRunnable for fn sub::sub_mod_fn {
+    /* ... */
+}
+```
+Just like how a fn inside an impl block still implements the Fn trait, it should also be possible to implement traits for them
+```rust
+struct MyStruct;
+impl MyStruct {
+    fn new() -> Self { Self }
+}
+impl Creatable for fn MyStruct::new {
+    /* ... */
+}
+```
 It should also be possible to implement them via proc attribute macros:
 ```rust
 #[impl_debug_name = "Greeting"]
