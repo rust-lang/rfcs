@@ -46,6 +46,14 @@ impl ValidFunction for fn valid {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+When the function has parameters, modifiers or a return type, it should not be included in the impl block, because the path is already unique
+```rust
+async fn request_name(id: PersonID) -> String { .. }
+
+impl Requestable for fn request_name {
+    /* ... */
+}
+```
 It gives the possibility to also implement a trait directly scoped to a function instead of generic implementation of multiple. Other than that, it basically behaves the same. It should also be possible to implement them via proc attribute macros:
 ```rust
 #[impl_debug_name = "Greeting"]
