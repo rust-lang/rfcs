@@ -24,11 +24,11 @@ The RFC gives a clear policy from T-lang's perspective so that both other teams 
 * `cargo check` only catches some subset of the possible compilation errors.
 * A Rust program **must** compile with `cargo build` to be covered by Rust's standard stability guarantee.
 
-Specifically, if a given Rust program passes `cargo check` but **not** `cargo build` in one version of Rust, then in any future version of Rust that program *can* begin to also fail `cargo check`, and this is **not** considered a breaking change.
+Specifically, if a given Rust program does not compile with `cargo build` then it might or might not pass `cargo check`. If a program does not compile with `cargo build` but does pass `cargo check` it still might not pass a `cargo check` in a future version of Rust. Changes in `cargo check` outcome when `cargo build` does not work are not considered a breaking change in Rust.
 
-`cargo check` should catch as many errors as possible, but the emphasis is on giving a fast answer rather than giving a complete answer. If you need a complete answer then you need to use `cargo build`.
+`cargo check` **should** catch as many errors as possible, but the emphasis of `cargo check` is on giving a "fast" answer rather than giving a "complete" answer. If you need a complete answer with all possible errors accounted for then you **must** use `cargo build`.
 
-The optimization level of the compiler **should not** affect if the program compiles or not (using `build` or `check`). Any such case is very likely a bug, and T-lang will have to make a determination on a case-by-case basis.
+Any example where the optimization level can affect if a program passes `cargo check` and/or `cargo build` is a bug. There are no situations where a change in optimization level is intended to affect if a `check` or `build` is successful.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
