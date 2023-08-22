@@ -97,6 +97,22 @@ impl fn MyStruct::new {
 }
 ```
 
+When a function has generics, they will be handled as follows, just like we know it from normal types
+```rust
+fn send<T: Send>(val: T) {}
+impl<T: Send> ParcelStation for fn send<T> {
+    /* ... */
+}
+```
+
+When we have an implicit generic, they will be appended in order to the generic list:
+```rust
+fn implicit_generic(val: impl Clone) -> impl ToString {}
+impl<T: Send, U: ToString> for fn implicit_generic<T, U> {
+    /* ... */
+}
+```
+
 Just as structs and enums have the possibility to derive traits to automatically generate code, function type do too
 
 ```rust
@@ -140,6 +156,7 @@ i dont know any
 
 - Is the syntax good? It could create confusion between a function pointer.
 - What about closures? They don't even have names so targetting them would be quite difficult. I wouldn't want to use the compiler generated mess of a name like `[closure@src/main.rs:13:18: 13:20]`. It would also contain line numbers which would be changing quite often so thats not ideal.
+- I provided a possible solution for a `fn implicit_generic(val: impl Clone) -> impl ToString` function, but because we currently don't have a defined syntax for those generics in types, thus we can't use `impl Trait` as types for fields in structs, we should think about this more, maybe don't implement exposed types of function for such `fn`s and wait for another RFC?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
