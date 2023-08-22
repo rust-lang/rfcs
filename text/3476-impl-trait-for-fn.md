@@ -46,8 +46,8 @@ impl ValidFunction for fn valid {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-It gives the possibility to also implement a trait directly scoped to a function instead of generic implementation of multiple. Other than that, it basically behaves the same. 
-
+It gives the possibility to also implement a trait directly scoped to a function instead of generic implementation of multiple.
+When writing `impl MyTrait for fn func`, the `MyTrait` trait will be implemented for the type behind the function `func`.
 
 When the function has parameters, modifiers or a return type, it should not be included in the impl block, because the path is already unique
 ```rust
