@@ -41,7 +41,7 @@ let b = B {bar: 2};
 let c = C {foo: 1, bar: 2};
 
 let d = A {foo: 5, ..c}; // Compiler: Sorry you can't do that, they need to have the same type
-let a = A {foo: 5, ..a}; // Compiler: Can't do that either even if all the fields are filled
+let a = A {foo: 5, ..b}; // Compiler: Can't do that either even if all the fields are filled
 ```
 
 Especially in builder patterns with lots of options, you can end up with a lot of boilerplate just on the `.finish(self)` function
