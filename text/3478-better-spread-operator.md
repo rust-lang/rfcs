@@ -1,6 +1,6 @@
 - Feature Name: better-spread-operator
 - Start Date: 2023-07-23
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3478](https://github.com/rust-lang/rfcs/pull/3478)
 
 # Summary
 [summary]: #summary
