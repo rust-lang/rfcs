@@ -29,6 +29,8 @@ Specifically, if a given Rust program does not compile with `cargo build` then i
 `cargo check` **should** catch as many errors as possible, but the emphasis of `cargo check` is on giving a "fast" answer rather than giving a "complete" answer. If you need a complete answer with all possible errors accounted for then you **must** use `cargo build`.
 
 Any example where the optimization level can affect if a program passes `cargo check` and/or `cargo build` is a bug. There are no situations where a change in optimization level is intended to affect if a `check` or `build` is successful.
+In particular, it is not okay to skip checks in dead code if (a) the optimization level can affect which code is considered dead and (b) the checks might lead to an error that causes the check/build not to pass.
+This policy favors consistency and predictability over performance.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
