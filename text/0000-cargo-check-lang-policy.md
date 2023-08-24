@@ -33,7 +33,7 @@ Monomorphization is expensive: instead of having to check each function only onc
 Given this performance cost and the fact that errors during monomorphization are fairly rare, `cargo check` favors speed over completeness.
 
 Any example where the optimization level can affect if a program passes `cargo check` and/or `cargo build` is a bug. There are no situations where a change in optimization level is intended to affect if a `check` or `build` is successful.
-In particular, it is not okay to skip checks in dead code if (a) the optimization level can affect which code is considered dead and (b) the checks might lead to an error that causes the check/build not to pass.
+In particular, it is not okay to skip checks in dead code if (a) the optimization level can affect which code is considered dead and (b) the checks might lead to an error that causes the `check`/`build` not to pass.
 This aspect of the policy favors consistency and predictability over performance.
 
 # Unresolved questions
