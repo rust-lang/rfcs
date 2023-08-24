@@ -94,8 +94,10 @@ The examples described above are far from artificial, here are some real-world c
 To handle situations like this, Rust has a special type called `MaybeDangling<P>`:
 references and boxes in `P` do *not* have to be dereferenceable or follow aliasing guarantees.
 This applies inside nested references/boxes inside `P` as well.
-They still have to be non-null and aligned, and it has to at least be *possible* that there exists valid data behind that reference (i.e., `MaybeDangling<&!>` is still invalid), but the rules are relaxed when compared with just a plain `P`.
+They still have to be non-null and aligned, and it has to at least be *possible* that there exists valid data behind that reference (i.e., `MaybeDangling<&!>` is still invalid).
 Also note that safe code can still generally assume that every `MaybeDangling<P>` it encounters is a valid `P`, but within unsafe code this makes it possible to store data of arbitrary type without making reference guarantees (this is similar to `ManuallyDrop`).
+In other words, `MaybeDangling<P>` is entirely like `P`, except that the rules that relate to the contents of memory that pointers in `P` point to (dereferencability and aliasing restrictions) are suspended when the pointers are not being actively used.
+You can think of the `P` as being "suspended" or "inert".
 
 The `ManuallyDrop<T>` type internally wraps `T` in a `MaybeDangling`.
 
@@ -129,7 +131,7 @@ As long as the `buffer` field is not used, the pointer stored in `ref_` will rem
 [reference-level-explanation]: #reference-level-explanation
 
 The standard library contains a type `MaybeDangling<P>` that is safely convertible with `P` (i.e., the safety invariant is the same), and that has all the same niches as `P`, but that does allow passing around dangling boxes and references within unsafe code.
-`MaybeDangling` propagates auto traits and has (at least) `derive(Copy, Clone, Debug)`.
+`MaybeDangling<P>` propagates auto traits, drops the `P` when it is dropped, and has (at least) `derive(Copy, Clone, Debug)`.
 
 "Behavior considered undefined" is adjusted as follows:
 
@@ -200,6 +202,7 @@ Miri is adjusted as follows:
 - The most obvious alternative is to declare `ManuallyDrop` to be that magic type with the memory model exception.
   This has the disadvantage that one risks memory leaks when all one wants to do is pass around data of some `T` without upholding reference liveness.
     For instance, the third example would have to remember to call `drop` on the `buffer`.
+    This alternative has the advantage that we avoid introducing another type, and it is future-compatible with factoring that aspect of `ManuallyDrop` into a dedicated type in the future.
 - The other alternative is to change the memory model such that the example code is fine as-is.
   There are several variants of this:
     - [Make all examples legal] All newtype wrappers behave the way `MaybeDangling` is specified in this RFC.
@@ -248,10 +251,11 @@ Notice that `UnsafeCell` acts "behind references" while `MaybeDangling`, like `M
 [unresolved-questions]: #unresolved-questions
 
 - What should the type be called?
-  `MaybeDangling` is somewhat misleading since the safety invariant still requires everything to be dereferenceable, only the validity invariant is relaxed.
+  `MaybeDangling` is somewhat misleading since the safety invariant still requires everything to be dereferenceable, only the requirement of dereferencability and noalias is relaxed.
   This is a bit like `ManuallyDrop` which supports dropping via an `unsafe` function but its safety invariant says that the data is not dropped (so that it can implement `Deref` and `DerefMut` and a safe `into_inner`).
   Furthermore, the type also allows maybe-aliasing references, not just maybe-dangling references.
-- Should `MaybeDangling` implement `Deref` and `DerefMut` like `ManuallyDrop` does, or should accessing the inner data be more explicit since that is when the aliasing and validity requirements do come back in full force?
+  Other possible names might be things like `InertPointers` or `SuspendedPointers`.
+- Should `MaybeDangling` implement `Deref` and `DerefMut` like `ManuallyDrop` does, or should accessing the inner data be more explicit since that is when the aliasing and dereferencability requirements do come back in full force?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
