@@ -26,7 +26,11 @@ The RFC gives a clear policy from T-lang's perspective so that both other teams 
 
 Specifically, if a given Rust program does not compile with `cargo build` then it might or might not pass `cargo check`. If a program does not compile with `cargo build` but does pass `cargo check` it still might not pass a `cargo check` in a future version of Rust. Changes in `cargo check` outcome when `cargo build` does not work are not considered a breaking change in Rust.
 
-`cargo check` **should** catch as many errors as possible, but the emphasis of `cargo check` is on giving a "fast" answer rather than giving a "complete" answer. If you need a complete answer with all possible errors accounted for then you **must** use `cargo build`.
+`cargo check` **should** catch as many errors as possible, but the emphasis of `cargo check` is on giving a "fast" answer rather than giving a "complete" answer.
+If you need a complete answer with all possible errors accounted for then you **must** use `cargo build`.
+The rationale for this is that giving a "complete" answer requires (among other things) doing full monomorphization (since some errors, such as those related to associated consts, can only be caught during monomorphization).
+Monomorphization is expensive: instead of having to check each function only once, each function now has to be checked once for all choices of generic parameters that the crate needs.
+Given this performance cost and the fact that errors during monomorphization are fairly rare, `cargo check` favors speed over completeness.
 
 Any example where the optimization level can affect if a program passes `cargo check` and/or `cargo build` is a bug. There are no situations where a change in optimization level is intended to affect if a `check` or `build` is successful.
 In particular, it is not okay to skip checks in dead code if (a) the optimization level can affect which code is considered dead and (b) the checks might lead to an error that causes the check/build not to pass.
