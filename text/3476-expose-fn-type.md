@@ -45,7 +45,7 @@ struct FnContainer<F: Fn()> {
 fn goods() { }
 
 let contained_goods = FnContainer {
-    inner: goods
+    inner: goods,
 };
 ```
 Here, we make a `FnContainer` which can hold every function with the signature `() -> ()` via generics.
