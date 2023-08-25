@@ -85,7 +85,7 @@ impl fn sub::sub_mod_fn {
 }
 ```
 
-It should be also possible to get the type of functions inside impl blocks:
+It should be also possible to get the type of associated functions:
 
 ```rust
 struct MyStruct;
