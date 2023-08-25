@@ -145,7 +145,7 @@ impl<T: Send> ParcelStation for fn(T, u32) send {
 When we have an implicit generic, the same rule applies
 ```rust
 fn implicit_generic(val: impl Clone) -> impl ToString {}
-impl<T: Send, U: ToString> for fn(T) -> U implicit_generic {
+impl<T: Clone, U: ToString> for fn(T) -> U implicit_generic {
     /* ... */
 }
 ```
