@@ -60,7 +60,7 @@ impl MyTrait for fn is_positive {
 > 💡 NOTE: Even when we need to describe the function type but the return type is `()`, we can (just as for function pointers and function traits) drop the `-> ()` from the type. (This should also be added as a lint).
 
 ---
-A function with a more complex signature, like a const function, we just ignore that when naming the type:
+A function with a more complex signature, like a function that specifies `const`, `unsafe` or `extern "ABI"`, we just ignore that when naming the type:
 ```rust
 const fn my_fn(a: i32) -> (i16, i16) { .. }
 impl MyTrait for fn my_fn {}
