@@ -11,11 +11,19 @@ This exposes the function type of a function item to the user.
 # Motivation
 [motivation]: #motivation
 
+### DasLixou
+
 I was trying to make something similar to bevy's system functions. And for safety reasons, they check for conflicts between SystemParams, so that a function requiring `Res<A>` and `ResMut<A>` [panic](https://github.com/bevyengine/bevy/blob/main/crates/bevy_ecs/src/system/system_param.rs#L421).
 
 Then after I heard about axum's [`#[debug_handler]`](https://docs.rs/axum/latest/axum/attr.debug_handler.html) I wanted to do something similar to my copy of bevy systems, so that I get compile time errors when there is a conflict. I wanted even more, I wanted to force the user to mark the function with a specific proc attribute macro in order to make it possible to pass it into my code and call itself a system.
 
 For that, I would need to mark the type behind the function item, for example, with a trait.
+
+### madsmtm
+
+In Swift, some functions have an associated selector that you can access with [`#selector`](https://developer.apple.com/documentation/swift/using-objective-c-runtime-features-in-swift).
+
+In my crate `objc2`, it would be immensely beautiful (and useful) to be able to do something similar, e.g. access a function's selector using something like `MyClass::my_function::Selector` or `selector(MyClass::my_function)`, instead of having to know the selector name (which might be something completely different than the function name).
 
 # Terminology
 
@@ -132,6 +140,19 @@ impl fn MyStruct::ambiguous { } // ERROR: ambiguous associated function
 impl fn <MyStruct as MyTrait>::ambiguous { } // OK
 ```
 
+When the type of the associated function has generics, they will be handles as follows
+
+```rust
+struct MyStruct<T>(T);
+impl<T> MyStruct<T> {
+    fn get() -> T { .. }
+}
+
+impl<T> fn MyStruct::<T>::get { }
+// or fully described:
+impl<T> fn() -> T MyStruct::<T>::get { }
+```
+
 ---
 
 When a function has generics, the function type is forced to be described, and the generic should be placed at it's desired position:
@@ -146,6 +167,24 @@ When we have an implicit generic, the same rule applies
 ```rust
 fn implicit_generic(val: impl Clone) -> impl ToString {}
 impl<T: Clone, U: ToString> for fn(T) -> U implicit_generic {
+    /* ... */
+}
+```
+
+---
+
+When functions have lifetimes, they have to be included in the types
+```rust
+fn log(text: &str) { .. }
+impl<'a> Logger for fn(&'a str) log {
+    /* ... */
+}
+```
+
+When the lifetime is explicitly defined on the function signature and there's no other rule forcing us to describe the function type, we can take a shortcut as follows
+```rust
+fn log<'a>(text: &'a str) { .. } // explicit lifetime 'a
+impl<'a> Logger for fn<'a> log {
     /* ... */
 }
 ```
