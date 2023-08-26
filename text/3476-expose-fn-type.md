@@ -213,6 +213,37 @@ impl DbgSignature for fn signature_test {
 
 Other than that, it should behave like every other type does.
 
+# Additional ToDo's
+
+## Change the fn type syntax for consistency
+
+When we try to compile the current [code snippet](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=cba2a1391c3e431a7499c6bf427b350d) 
+```rust
+fn cool<'a, T: Clone>(val: &'a T) -> (i32, bool) {
+    todo!()
+}
+
+fn main() {
+    let _a: () = cool;
+}
+```
+we get following error:
+```
+error[E0308]: mismatched types
+ --> src/main.rs:6:18
+  |
+6 |     let _a: () = cool;
+  |             --   ^^^^ expected `()`, found fn item
+  |             |
+  |             expected due to this
+  |
+  = note: expected unit type `()`
+               found fn item `for<'a> fn(&'a _) -> (i32, bool) {cool::<_>}`
+
+For more information about this error, try `rustc --explain E0308`.
+```
+For consistency, we should change the syntax to `for<'a, T: Clone> fn(&'a T) -> (i32, bool) cool` (I'm not sure if we should put generics in the for)
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
