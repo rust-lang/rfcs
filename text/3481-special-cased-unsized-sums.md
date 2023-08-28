@@ -62,19 +62,15 @@ is complete. This works for all unsigned integer types except `u128`. This was s
 Internals user [pitaj](https://internals.rust-lang.org/u/pitaj) in 
 [this comment](https://internals.rust-lang.org/t/special-case-unsigned-integer-range-iterator-sum/19436/5?u=alfriadox). 
 
-User [toc](https://internals.rust-lang.org/u/toc) on the Rust Internals forum also suggested a branching solution to prevent overflow in advance by doing the division first: 
+User [toc](https://internals.rust-lang.org/u/toc) on the Rust Internals forum also suggested a 
+solution to prevent overflow in advance by doing the division first: 
 ```
-if n % 2 == 0 {
-    (n / 2) * (n + 1)
-} else {
-    ((n + 1) / 2) * n
+pub fn sum_to(n: u64) -> u64 {
+    let odd: u64 = (n % 2 == 1).into();
+    ((n + (!odd)) / 2) * (n + odd)
 }
 ```
-This may be slower due to the branching logic, but is still a signifigant improvement over the
-iterative summation approach. 
-
-I am happy with either of these mitigations and am not (at the time of writing) in favor of one 
-over the other. 
+This is perhaps preferable to me, to avoid type casts and needing to special-case `u128`. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -99,7 +95,7 @@ see a performance improvement.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- [reference-level-explanation]: Mitigation of possible overflow of intermediate values through upcasting vs through `if`-expression. 
+- [reference-level-explanation]: Solution to mitigate possible overflow of intermediate values.
 - Number of use-cases where the possible change from adding-overflow to multiplication-overflow matters (suspected to be none). 
 
 # Future possibilities
