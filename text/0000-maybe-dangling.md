@@ -22,7 +22,7 @@ For example, the following code is UB at the time of writing this RFC:
 ```rust
 fn id<T>(x: T) -> T { x }
 
-fn unsound(x: Box<i32>) 
+fn unsound(x: Box<i32>) {
     let mut x = ManuallyDrop::new(x);
     unsafe { x.drop() };
     id(x); // or `let y = x;` or `mem::forget(x);`.
