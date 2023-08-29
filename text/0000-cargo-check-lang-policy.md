@@ -34,6 +34,26 @@ Given this performance cost and the fact that errors during monomorphization are
 
 Examples where the optimization level can affect if a program passes `cargo check` and/or `cargo build` are considered bugs unless there is a documented policy exception, approved by T-lang. One example of such an exception is [RFC #3016](https://rust-lang.github.io/rfcs/3016-const-ub.html), which indicated that undefined behavior in const functions cannot always be detected statically (and in particular, optimizations may cause the UB to be undetectable).
 
+# Frequently Asked Questions
+
+## Why doesn't `check` catch everything?
+
+The simplest example here is linker errors.  There's no practical way to confirm that linking will work without actually going through all the work of generating the artifacts and actually calling the linker, but that that point one might as well run `build` instead.
+
+An important part of what can make `check` faster than `build` is just *not* doing that kind of thing.  And linker errors are rare in pure Rust code, so this is often a good trade-off.
+
+## Why not let more things through in optimized builds?
+
+Rust takes [stability without stagnation] very seriously.  We want to make sure stuff keeps compiling if it did before, but we also want to be able to work on improving rust without being so constrained as to make that functionally impossible.
+
+If an optimization might allow something more to compile, that means that every small tweak to that optimization requires careful oversight for exactly what it's committing to support *forever*, which results in extreme overhead for rustc's developers.  The best way to avoid that is to have optimizations be about making things faster, not about what compiles *at all*.
+
+For things where people want a certain behaviour, that should be something guaranteed as an intentional language semantic, which we can restrict appropriately to make it feasible with or without optimization.
+
+As an example, there are various *lints* that can detect more cases when optimizations are run, but that's part of why they're lints -- which are fundamentally not *guaranteed* -- rather than part-of-the-language *errors*.
+
+[stability without stagnation]: https://blog.rust-lang.org/2014/10/30/Stability.html#the-plan
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
