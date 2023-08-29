@@ -32,9 +32,7 @@ The rationale for this is that giving a "complete" answer requires (among other 
 Monomorphization is expensive: instead of having to check each function only once, each function now has to be checked once for all choices of generic parameters that the crate needs.
 Given this performance cost and the fact that errors during monomorphization are fairly rare, `cargo check` favors speed over completeness.
 
-Any example where the optimization level can affect if a program passes `cargo check` and/or `cargo build` is a bug. There are no situations where a change in optimization level is intended to affect if a `check` or `build` is successful.
-In particular, it is not okay to skip checks in dead code if (a) the optimization level can affect which code is considered dead and (b) the checks might lead to an error that causes the `check`/`build` not to pass.
-This aspect of the policy favors consistency and predictability over performance.
+Examples where the optimization level can affect if a program passes `cargo check` and/or `cargo build` are considered bugs unless there is a documented policy exception, approved by T-lang. One example of such an exception is [RFC #3016](https://rust-lang.github.io/rfcs/3016-const-ub.html), which indicated that undefined behavior in const functions cannot always be detected statically (and in particular, optimizations may cause the UB to be undetectable).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
