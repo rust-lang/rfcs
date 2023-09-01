@@ -148,9 +148,9 @@ impl<T> MyStruct<T> {
     fn get() -> T { .. }
 }
 
-impl<T> fn MyStruct::<T>::get { }
+impl<T> fn MyStruct<T>::get { }
 // or fully described:
-impl<T> fn() -> T MyStruct::<T>::get { }
+impl<T> fn() -> T MyStruct<T>::get { }
 ```
 
 ---
