@@ -53,7 +53,7 @@ nisi ut aliquip ex ea commodo consequat.\#
 "#;
 ```
 
-In addition to making the syntax more flexible, there is substantial benefit to the language having only one form of string literal syntax. This reduces the combinatorial effect of having the `r` prefix for raw and also `b`, `c`, etc for different string literal output types. It may also improve how to language syntax is taught to beginners, who now do not need learn what the `r` stands for.
+In addition to making the syntax more flexible, there is substantial benefit to the language having only one form of string literal syntax. This reduces the combinatorial effect of having the `r` prefix for raw and also `b`, `c`, etc for different string literal output types. It may also improve how the language syntax is taught to beginners, who now do not need learn what the `r` stands for.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -290,8 +290,6 @@ We recommend that a lint be added (probably to clippy) to catch likely mistakes 
 
 In Edition 2021 and earlier, `#"le string"#` resolves to three separate tokens when passed to a macro, so adding this new syntax in those editions would be a breaking change. To avoid that, we will introduce the change on the 2024 edition boundary.
 
-Guarded string literals make raw string literals redundant. It is unlikely the `unified_string_literals` feature can be implemented and stabilized before the 2024 edition, so raw string literals will be removed in the 2027 edition.
-
 ### Edition 2024: Reserve the syntax
 
 > **<sup>Lexer</sup>**\
@@ -304,32 +302,14 @@ Guarded string literals make raw string literals redundant. It is unlikely the `
 
 When compiling under the Rust 2024 edition (as determined by the edition of the current crate), any instance of `RESERVED_GUARDED_STRING_LITERAL` will result in a tokenization error (until the `unified_string_literals` feature is stabilized).
 
-### Edition 2027: Removal of raw string literals
-
-When compiling under the Rust 2027 edition (as determined by the edition of the current crate), the presence of `RAW_STRING_LITERAL` or `RAW_BYTE_STRING_LITERAL` will result in a tokenization error.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
-One drawback of this change is syntax churn. When the old string literal syntax is removed is a future edition, crates planning on upgrading will need to update all of their raw string literals. Luckily, the upgrade path is quite simple (often just removing the `r` prefix) and can be fully automated (`cargo fix`). This kind of syntax evolution is exactly what editions are for.
+The largest drawback is the complexity ths introduces to the grammar of string literals, on top of the various forms of string literals that already exist or are planned. This complex grammar will be difficult to implement so we should also work on exposing useful `proc_macro` APIs to help third-party macros.
 
 Another drawback is ecosystem support. When the new syntax is introduced, macro libraries that deal with string literals (such as `ufmt` and `indoc`) will need to be updated to support it. The new format string behavior (using `{#}` in guarded string literals) is likely to require more intensive changes.
 
-A small but notable drawback is that guarded string literals require one more character to express the same behavior as a raw string literal with no `#` prefix.
-
-```rust
-#"a raw string"#;
-// vs
-r"a raw string";
-```
-
-However, this is likely irrelevant since it saves a character over a raw string literal with any amount of `#`s:
-
-```rust
-#"a raw string"#;
-// vs
-r#"a raw string"#;
-```
+Syntax churn and ecosystem consistency may also be an minor issue, similar to how the introduction of inlined format args and let-else (and clippy lints pushing them) has gone.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -512,3 +492,9 @@ f#"count: {#count}"# // => thing: 12
 ```
 
 `f`-strings make an even stronger case that `\#` and `{#}` escape sequences should be consistent. This would be very similar to how Swift strings work: `"\(count)"` and `#"\#(count)"#`.
+
+### Remove raw string literal syntax
+
+Guarded string literals make raw string literals largely redundant. Therefore, we may choose to remove them in a future edition and migrate all raw string literals to use guarded strings instead.
+
+However, this is controversial and not necessary to decide right now. We leave this to a possible future RFC.
