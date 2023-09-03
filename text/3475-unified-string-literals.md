@@ -138,10 +138,10 @@ let js = format!("function bar() {{ {} }}", "/* function body */");
 
 Sometimes there are just too many curly braces that need to be escaped or it's just much more convenient to write a string out as-is. This is where guarded string literals come into play.
 
-In guarded format strings, the opening `#` sequence must be placed directly before every placeholder. Any other curly braces will be passed through literally.
+In guarded format strings, the opening `#` sequence must be placed directly after the opening `{` of every placeholder. Any other curly braces will be passed through literally.
 
 ```rust
-let js = format!(#"function bar() { #{} }"#, "/* function body */");
+let js = format!(#"function bar() { {#} }"#, "/* function body */");
 // function bar() { /* function body */ }
 ```
 
@@ -180,7 +180,7 @@ A _string literal_ opens with fewer than 256 of the character `U+0023` (`#`) (th
 
 All Unicode characters contained in the _string body_ represent themselves, the characters `U+0022` (double-quote) or `U+005C` (`\`) only hold special meaning when followed by at least as many `U+0023` (`#`) characters as were used to start the string literal (zero for bare string literals). A `U+005C` (`\`) followed by the guarding prefix is interpreted as an _escape start_.
 
-Line-breaks are allowed in string literals. A line-break is either a newline (`U+000A`) or a pair of carriage return and newline (`U+000D`, `U+000A`). Both byte sequences are normally translated to `U+000A`, but as a special exception, when an escape start occurs immediately before a line break, then the line break character(s), and all immediately following (`U+0020`), `\t` (`U+0009`), `\n` (`U+000A`) and `\r` (`U+000D`) characters are ignored.
+Line-breaks are allowed in string literals. A line-break is either a newline (`U+000A`) or a pair of carriage return and newline (`U+000D`, `U+000A`). Both byte sequences are normally translated to `U+000A`, but as a special exception, when an escape start occurs immediately before a line break, then the line break character(s), and all immediately following space (`U+0020`), `\t` (`U+0009`), `\n` (`U+000A`) and `\r` (`U+000D`) characters are ignored.
 
 _Supported escapes are unchanged from those currently in the reference, aside from requiring the guard prefix as explained above._
 
@@ -236,20 +236,26 @@ format!("Hello, {}!", "world");    // => Hello, world!
 format!("Hello {{}}");             // => Hello {}
 format!("{{ Hello");               // => { Hello
 
-format!(#"Hello, #{}!"#, "world"); // => Hello, world!
+format!(#"Hello, {#}!"#, "world"); // => Hello, world!
 format!(#"Hello {}"#);             // => Hello {}
 format!(#"{ Hello"#);              // => { Hello
+
+let five = 5;
+format!(#"five: {#five}!"#);       // => five: 5
+format!(#"five hex: {#five:#x}"#); // => five: 0x5
 ```
 
 ### Implementation note
 [reference-format-placeholders-impl-note]: #reference-format-placeholders-impl-note
 
-Format placeholders are not a language lexing question at all. `#"this string has #{} in it"#` is just a string literal that in any other context resolves to the string `this string has #{} in it`. It is entirely the format macro's responsibility to parse the placeholders in accordance with the guarding prefix.
+Format placeholders are not a language lexing question at all. `#"this string has {#} in it"#` is just a string literal that in any other context resolves to the string `this string has {#} in it`. It is entirely the format macro's responsibility to parse the placeholders in accordance with the guarding prefix.
 
 When a macro is parsing a format string, it simply needs to know the prefix used:
 
-- if `#*`, the placeholder is always `#*{}` and doubled curly braces are passed through literally
+- if `#*`, the placeholder is always `{#*}` and doubled curly braces are passed through literally
 - otherwise, the placeholder is always `{}` and curly braces are escaped by doubling
+
+Essentially, all a format macro needs from the source code is the prefix. It can use the processed content of the literal (string value) when actually parsing the formatting. This means that `#"{\#x23}"#` would be treated identically to `"{}"`, just like `"\x7B\x7D"` is today.
 
 Currently, the `proc_macro` API does not provide a way to get the string value, so third-party procedural macros must process string literals manually, using the span (or delegate to a library like `syn`). When this new syntax is first introduced, macros which parse directly (like `indoc`) will need to be manually updated to interpret the new syntax. Because of the manual involvement, they are likely to learn about the new way format placeholders work in these strings. 
 
@@ -258,23 +264,23 @@ However, proc macros which use a parser library like `syn` may encounter a situa
 ### Interaction with `concat!`
 [reference-format-placeholders-concat]: #reference-format-placeholders-concat
 
-We propose that `concat!` always return a bare string literal. Any string literals passed to it have escape sequences processed before being concatenated into a single string literal without a guarding prefix. `concat!(#"with "inner string", escape \#n, and placeholder #{} last"#)` would resolve to the string literal `"with \"inner string\", escape \n, and placeholder #{} last"`.
+We propose that `concat!` always return a bare string literal. Any string literals passed to it have escape sequences processed before being concatenated into a single string literal without a guarding prefix. `concat!(#"with "inner string", escape \#n, and placeholder {#} last"#)` would resolve to the string literal `"with \"inner string\", escape \n, and placeholder {#} last"`.
 
 Example `concat!` behavior:
 ```rust
 fn main() {
     let x = 42;
-    println!(#"{x} #{x}"#, x = x);              // {x} 42
-    println!("{x} #{x}", x = x);                // 42 #42
-    println!(concat!(#"{x} #{x}"#, ""), x = x); // 42 #42
-    println!(concat!(#"{x} #{x"#, "}"), x = x); // 42 #42
-    println!(concat!(#"{x} #{"#, "x}"), x = x); // 42 #42
-    println!(concat!(#"{x} #"#, "{x}"), x = x); // 42 #42
-    println!(concat!(#"{x} "#, "#{x}"), x = x); // 42 #42
-    println!(concat!(#"{x}"#, " #{x}"), x = x); // 42 #42
-    println!(concat!(#"{x"#, "} #{x}"), x = x); // 42 #42
-    println!(concat!(#"{"#, "x} #{x}"), x = x); // 42 #42
-    println!(concat!(#""#, "{x} #{x}"), x = x); // 42 #42
+    println!(#"{x} {#x}"#, x = x);              // {x} 42
+    println!("{x} {#x}", x = x);                // 42 #42
+    println!(concat!(#"{x} {#x}"#, ""), x = x); // 42 #42
+    println!(concat!(#"{x} {#x"#, "}"), x = x); // 42 #42
+    println!(concat!(#"{x} {#"#, "x}"), x = x); // 42 #42
+    println!(concat!(#"{x} "#, "{#x}"), x = x); // 42 #42
+    println!(concat!(#"{x} "#, "{#x}"), x = x); // 42 #42
+    println!(concat!(#"{x}"#, " {#x}"), x = x); // 42 #42
+    println!(concat!(#"{x"#, "} {#x}"), x = x); // 42 #42
+    println!(concat!(#"{"#, "x} {#x}"), x = x); // 42 #42
+    println!(concat!(#""#, "{x} {#x}"), x = x); // 42 #42
 }
 ```
 
@@ -307,7 +313,7 @@ When compiling under the Rust 2027 edition (as determined by the edition of the 
 
 One drawback of this change is syntax churn. When the old string literal syntax is removed is a future edition, crates planning on upgrading will need to update all of their raw string literals. Luckily, the upgrade path is quite simple (often just removing the `r` prefix) and can be fully automated (`cargo fix`). This kind of syntax evolution is exactly what editions are for.
 
-Another drawback is ecosystem support. When the new syntax is introduced, macro libraries that deal with string literals (such as `ufmt` and `indoc`) will need to be updated to support it. The new format string behavior (using `#{}` in guarded string literals) is likely to require more intensive changes.
+Another drawback is ecosystem support. When the new syntax is introduced, macro libraries that deal with string literals (such as `ufmt` and `indoc`) will need to be updated to support it. The new format string behavior (using `{#}` in guarded string literals) is likely to require more intensive changes.
 
 A small but notable drawback is that guarded string literals require one more character to express the same behavior as a raw string literal with no `#` prefix.
 
@@ -342,7 +348,6 @@ However, this has disadvantages compared to our proposal:
 
 These make it specifically painful for usage with code, which commonly contains braces and backslash escape sequences:
 ```rust
-let filename = "statistics.xlsx";
 format!(r#"
 function path() {{
   return "C:\\\\Users\\\\John\\\\Documents\\\\{filename}";
@@ -351,22 +356,80 @@ function path() {{
 ```
 vs
 ```
-let filename = "statistics.xlsx";
 format!(#"
 function path() {
-  return "C:\\Users\\John\\Documents\\#{filename}";
+  return "C:\\Users\\John\\Documents\\{#filename}";
 }
 "#)
 ```
 
-Also, since there is no prefix associated with the guarded literal form, this composes better with C-string and byte-string literals. There's no need to remember the prefix order - `rb` or `br`, and escapes are needed even more often in these types of literals, since typing out an arbitrary byte sequence can be impossible.
+Also, since there is no prefix associated with the guarded literal form, this composes better with C-string and byte-string literals. There's no need to remember the prefix order (`rb` or `br`?), and escapes are needed even more often in these types of literals, since typing out an arbitrary byte sequence is impossible in UTF-8 Rust source code.
 
-### `#\` escape start
-[alternative-hash-before-backslash]: #alternative-hash-before-backslash
+### Guarding for quotes and escapes but not format placeholders
+[alternative-no-guarding-placeholders]: #alternative-no-guarding-placeholders
 
-Putting it before (`#\n`) matches the formatting placeholder syntax (`#{}`) slightly better.
+Many suggest that string guarding should not be tied to format placeholders as suggested in this proposal. Placeholders would instead work the same as they do currently in string literals and raw string literals.
 
-However, putting it after (`\#n`) parses unambiguously and allows us to catch more issues at compile time. `" #\n "` is already a valid string, but `" \#n "` can result in an "unexpected escape sequence, help: remove the extra `#`" error. Likewise, `##" ###\n "##` could mean `#\n` or could be a mistaken extra `#`, wheras `##" \###n "##` can result in the same error.
+Concerns:
+1. Layering violation, too magical: requires the lexer to interface with libraries, but formatting should onlyt depend on the content of the string
+2. Formatting should be orthogonal to escaping: proposal would require guarding placeholders even if you only want to avoid escaping quotes or backslashes
+3. Inconsistent with raw string literals: `r#"placeholder: {}"#` vs `#"placeholder: {#}"#`
+
+Addressing these concerns:
+1. Format macros already have to use the span of the literal even to just get the value of the string content. If we choose to add an API to expose the value, we can just as easily add an API for the guarding prefix. Macros have always worked at the syntax level, and Rust users generally understand that. Compared to other things macros do in the wild, this is pretty tame. 
+2. In our view, format placeholders are a kind of contextual escape sequence. The definition of escape sequence is "a combination of characters that has a meaning other than the literal characters contained therein", which fits exactly. We're also only talking about a single additional `#` for each placeholder in most cases, compared to two extra characters for each pair of literal `{}` in the output string. Plus, the `#` inside the placeholder doesn't impact the ease of spotting placeholders, since users are used to a mix of controlling symbols within the braces.
+3. Raw string literals are just different, and users of the language understand that. We think this behavior maintains more consistency with how the other escapes work in these strings.
+
+There is a true trade-off here, but we think the benefit for cases with many literal braces outweights the slight detriment to the general formatting case. You pay for the double-brace escaping on every literal brace in your string (there can be many), but you only pay for the placeholder guarding when you use a placeholder.
+```swift
+format!(#"
+function path() {{
+  let custom = getCustomPath();
+  if (custom) {{
+    return custom;
+  }} else {{
+    return "C:\\Users\\John\\Documents\\{#filename}";
+  }}
+}}
+"#)
+```
+vs
+```swift
+format!(#"
+function path() {
+  let custom = getCustomPath();
+  if (custom) {
+    return custom;
+  } else {
+    return "C:\\Users\\John\\Documents\\{#filename}";
+  }
+}
+"#)
+```
+
+Guarded string literals should allow the user to avoid escaping of any kind (therefore having all text outside escape sequences pass through literally), knowing that in return they have to use the guard to close the string, in escape sequences (should they want them), and in format placeholders.
+
+#### Specify the placeholder prefix within the format string
+
+Using currently invalid syntax, specify the placeholder prefix independently of the string guarding prefix:
+
+```swift
+format!(#"{(#)}The natural numbers, denoted "N", are the set {#{}, #{}, ...}."#, 1, 2)
+format!("{(%)}The natural numbers, denoted \"N\", are the set {%{}, %{}, ...}.", 1, 2)
+// The natural numbers, denoted "N", are the set {1, 2, ...}.
+```
+
+This would be independent of the string literal syntax and more flexible (useable with unguarded strings, raw strings, and any other future string type).
+
+However, it is more complex to implement and use. Independence from the string literal syntax is arguably a disadvantage, the flexibility is of limited usefulness beyond what our proposal offers, and the `"{(prefix)}` syntax is not exactly elegant.
+
+### Split the format changes into a separate RFC
+
+This would depend on a second RFC being incorporated before guarded strings are stabilized, or this RFC would have to require that they can't be used as format strings.
+
+While either is possible, they would likely just draw out the process for little benefit. The first could silently break usage of the unstable feature, and the second would just be annoying. 
+
+Tying format placeholders to the string syntax is a core part of this proposal and can't be easily separated.
 
 ### Promote format string placeholder parsing to the lexer 
 [alternative-placeholder-lexer]: #alternative-placeholder-lexer
@@ -378,6 +441,31 @@ Benefits:
 - macros have less work to do
 
 However, we consider this solution to be too complex for such a niche situation. It also has the drawback of requiring the expansion of the `proc_macro` API, and it doesn't solve the `syn` issue discussed above.
+
+### `\#{}` formatting placeholder
+
+Under this alternative, `\{` would be added as a new escape sequence resolving to a literal `{`. Format macros would look for that escape sequence in the literal span rather than using the processed string content. `concat!` could also use these escape sequences to propagate placeholders.
+
+Disadvantages:
+- Requires format macros to use the span rather than just the value + prefix
+- One more character than `{#}`
+
+### `#{}` formatting placeholder
+
+Placing it after the opening `{` parses unambiguously. `"#{}"` is already a valid format string, but `"{#}"` can result in an format-parse error. Likewise, `#"##{}"#` would be treated as a literal `#` followed by a placeholder, but `#"{##}"#` can result in the same error.
+
+Additionally, `#"( x = "#{x}" )"#` will actually lex as four tokens because the first `"#` closes the string:
+```
+#"(x = "#
+{x}
+")"
+#
+```
+This would make it almost impossible to place quotes directly around a placeholder, requiring the use of an escape instead. Whereas `#"( x = "{#x}" )"#` lexes as a single string without issue.
+
+### `#\` escape start
+
+Putting it after (`\#n`) parses unambiguously and allows us to catch more issues at compile time. `" #\n "` is already a valid string, but `" \#n "` can result in an "unexpected escape sequence, help: remove the extra `#`" error. Likewise, `##" ###\n "##` could mean `#\n` or could be a mistaken extra `#`, wheras `##" \###n "##` can result in the same error.
 
 # Prior art
 [prior-art]: #prior-art
@@ -400,6 +488,8 @@ Should we remove the legacy raw string syntax?
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+### Code Strings
+
 This syntax also composes well with "code strings": multiline, indent-normalized string literals.
 
 ```swift
@@ -410,3 +500,15 @@ const CODE: &str =
     }
     "#;
 ```
+
+### `f`-strings
+
+This proposed syntax and applies directly to `f`-strings without modification beyond adding the `f` prefix.
+
+```rust
+let count = 12;
+f"count: {count}"    // => thing: 12
+f#"count: {#count}"# // => thing: 12
+```
+
+`f`-strings make an even stronger case that `\#` and `{#}` escape sequences should be consistent. This would be very similar to how Swift strings work: `"\(count)"` and `#"\#(count)"#`.
