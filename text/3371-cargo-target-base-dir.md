@@ -174,9 +174,11 @@ A proposed solution for `cargo` to split the hash into something like `$CARG_TAR
 
 ## Impact on `cargo ...` calls
 
-When calling `cargo` where `CARGO_TARGET_BASE_DIR` is active, `CARGO_TARGET_DIR` is set by all `cargo` calls that happen in a Cargo workspace, as much as possible. For third party tools (`cargo-*`), where cargo does not know about the relevant `Cargo.toml`, the tool would have to use [`cargo_metadata`](https://docs.rs/cargo_metadata), as is already expected today.
+When calling `cargo` where `CARGO_TARGET_BASE_DIR` is active, a `CARGO_TARGET_DIR` is set by all `cargo` calls. For third party tools (`cargo-*`), where cargo does not know about the relevant `Cargo.toml`, the tool would have to use [`cargo_metadata`](https://docs.rs/cargo_metadata), as is already expected today.
 
 In the same vein, `cargo metadata` will fill the target directory information with the absolute path and make no mention of `CARGO_TARGET_BASE_DIR` since it can only be used in a single workspace at once.
+
+Example: calling `cargo install` can initially work outside of a workspace by installing a binary from *crates.io*, *git* or other sources: in this case, `cargo` will use the manifest path used when compiling the crate (from somewhere inside `CARGO_HOME` I suppose) to create the hashed path to use inside `CARGO_TARGET_BASE_DIR`.
 
 ### `cargo clean`
 
