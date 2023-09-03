@@ -186,7 +186,7 @@ Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, 
 
 `targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
 
-`cargo` does not for `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
+`cargo` does not provide them for `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
 
 When `CARGO_TARGET_BASE_DIR` is used (in any form) and not superseded by other configurations (`CARGO_TARGET_DIR`), it *will* use a backlink by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if `CARGO_TARGET_BASE_DIR` and `CARGO_TARGET_DIR` weren't set at all.
 
