@@ -74,9 +74,9 @@ Consider this directory tree:
 
 `cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts directly in `/cargo-cache/debug/...`
 
-A subsequent `cargo build` in `perso-1` will work with the same artifact, potentially having conflicting features for dependencies for example.
+A subsequent `cargo build` in `perso-1` works with the same artifact, potentially having conflicting features for dependencies for example.
 
-A `cargo clean` will delete the entire `/cargo-cache` directory, for all projects at once.
+A `cargo clean` deletes the entire `/cargo-cache` directory, for all projects at once.
 
 It's possible to produce invalid state in the target dir by having unrelated projects writing in the same place.
 
@@ -86,9 +86,9 @@ It's not possible to have to projects building at once because Cargo locks its t
 
 `cd /Users/poliorcetics/work/work-project && cargo build` produces artifacts in `/cargo-cache/<project-path>/debug/...` (where `project-path` is a directory or several chained directories unique to the workspace, with an unspecified naming scheme).
 
-A `cargo build` in `perso-1` will produce new artifacts in `/cargo-cache/<project-path>/debug/...`.
+A `cargo build` in `perso-1` produces new artifacts in `/cargo-cache/<project-path>/debug/...`.
 
-A `cargo clean` will only remove the `/cargo-cache/<project-path>/` subdirectory, not all the artifacts.
+A `cargo clean` only removed the `/cargo-cache/<project-path>/` subdirectory, not all the artifacts for all other projects that are also in the cache.
 
 In this situation, it's much less likely for Cargo to produce invalid state without a `build.rs` deliberately writing outside its target directory.
 
@@ -102,7 +102,7 @@ Two projects can be built in parallel without troubles.
 
 `CARGO_TARGET_DIR` can be either a relative or absolute path, which makes sense since it's mostly intended for a single project, which can then work from its own position to configure the target directory.
 
-On the other hand `CARGO_TARGET_BASE_DIR` is intended to be used with several projects, possibly completely unrelated to each other. As such, it does not accept relative paths, only absolute ones. If a compelling use case is present for a relative path, it can added in the future as a backward-compatible change.
+On the other hand `CARGO_TARGET_BASE_DIR` is intended to be used with several projects, possibly completely unrelated to each other. As such, it does not accept relative paths, only absolute ones. If a compelling use case is present for a relative path, it can be added in the future as a backward-compatible change.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -168,25 +168,23 @@ When calling `cargo metadata` in the `symlink-to-crate` path, the result contain
 
 ### Handle possibly thousands of directories in a single `CARGO_TARGET_BASE_DIR` path
 
-While a single dev machine is unlikely to have enough projects that the scheme of `<project-path>` will produce enough directories to slow down working in `$CARGO_TARGET_BASE_DIR/`, it could still happen, and notably in private CI, which are often less compartimentalized than public ones. Simple cruft over time (i.e, never calling `cargo clean` over years) could also make it happen, if much slower.
+While a single dev machine is unlikely to have enough projects that the naming scheme of `<project-path>` will produce enough directories to slow down working in `$CARGO_TARGET_BASE_DIR/`, it could still happen, and notably in private CI, which are often less compartimentalized than public ones. Simple cruft over time (i.e, never calling `cargo clean` over years) could also make it happen, if much slower.
 
-A proposed solution for `cargo` to split the hash into something like `$CARG_TARGET_BASE_DIR/hash[:2]/hash[2:4]/hash[4:]/...`. Since the naming scheme is considered an implementation detail, if this prove insufficient it could be change in a subsequent version of `cargo`.
+To prevent this, `cargo` splits the hash into something like `$CARG_TARGET_BASE_DIR/hash[:2]/hash[2:4]/hash[4:]/...`. Since the naming scheme is considered an implementation detail, if this prove insufficient it could be change in a subsequent version of `cargo`.
 
 ## Impact on `cargo ...` calls
 
-When calling `cargo` where `CARGO_TARGET_BASE_DIR` is active, a `CARGO_TARGET_DIR` is set by all `cargo` calls. For third party tools (`cargo-*`), where cargo does not know about the relevant `Cargo.toml`, the tool would have to use [`cargo_metadata`](https://docs.rs/cargo_metadata), as is already expected today.
+When calling `cargo` with a builtin call (e.g., `build`, `check` or `test`) where `CARGO_TARGET_BASE_DIR` is active, `cargo` will first resolve the effective `CARGO_TARGET_DIR` and then proceed with the command as if `CARGO_TARGET_DIR` had been set directly. For third party tools (`cargo-*`), where cargo does not know about the relevant `Cargo.toml`, the tool will have to use [`cargo_metadata`](https://docs.rs/cargo_metadata), as is already expected today, to learn about the effective target directory.
 
-In the same vein, `cargo metadata` will fill the target directory information with the absolute path and make no mention of `CARGO_TARGET_BASE_DIR` since it can only be used in a single workspace at once.
-
-Example: calling `cargo install` can initially work outside of a workspace by installing a binary from *crates.io*, *git* or other sources: in this case, `cargo` will use the manifest path used when compiling the crate (from somewhere inside `CARGO_HOME` I suppose) to create the hashed path to use inside `CARGO_TARGET_BASE_DIR`.
+In the same vein, `cargo metadata` fills the target directory information with the absolute path and make no mention of `CARGO_TARGET_BASE_DIR` since it can only be used with a single workspace at once.
 
 ### `cargo clean`
 
-Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_BASE_DIR`: if it set, `cargo clean` will delete `CARGO_TARGET_BASE_DIR/<project-path>/` and not `target/`.
+Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_BASE_DIR`: if it set, `cargo clean` deletes `CARGO_TARGET_BASE_DIR/<project-path>/` and not `target/`.
 
 ### Providing forward links
 
-`targo` provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
+[`targo`][tg] provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
 
 `cargo` does not provide them for `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
 
@@ -202,11 +200,11 @@ When creating a forward link `cargo` will first attempt to create a symbolic lin
 
 ### Providing backlinks
 
-Backlinks are metadata in `CARGO_TARGET_BASE_DIR` that links directories back to the workspace they came from.
+Backlinks are metadata in `CARGO_TARGET_BASE_DIR` that links target directories back to the workspace they came from.
 
-`targo` uses them in its own form of the feature and `cargo` will use them too in `CARGO_TARGET_BASE_DIR`.
+[`targo`][tg] uses them in its own form of the feature and `cargo` uses them too in `CARGO_TARGET_BASE_DIR`.
 
-While details of the stored data should probably be left to the implementation (there is no need for `cargo` to expose this data directly, though it could be exposed through `cargo metadata` in the future, see the relevant section later), one could imagine using it to clean target directories whose corresponding workspace does not exist anymore when calling something like `cargo clean --all-workspaces` (doing it automatically is not possible, else any workspace on external disks would have its target directory cleaned up each time the disk is unmounted, which is probably way too aggressive a default).
+While details of the stored data are left to the implementation (there is no need for `cargo` to expose this data directly, though it could be exposed through `cargo metadata` in the future, see the relevant section below), one could imagine using it to clean target directories whose corresponding workspace does not exist anymore when calling something like `cargo clean --all-workspaces` (doing it automatically is not possible, else any workspace on external disks would have its target directory cleaned up each time the disk is unmounted, which is way too aggressive a default).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -217,7 +215,7 @@ While details of the stored data should probably be left to the implementation (
 
 This introduces one more option to look at to find the target directory, which may complicate the life of external tools.
 
-This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_BASE_DIR`, so an external tool can set it and go on its way. Also, having `cargo` set `CARGO_TARGET_DIR` when inside a workspace where `CARGO_TARGET_BASE_DIR` is used will help current tools (those not yet using `cargo metadata`) continue working without trouble.
+This is mitigated by having `CARGO_TARGET_DIR` entirely override `CARGO_TARGET_BASE_DIR`, so an external tool can set it and go on its way. For tools not yet using `cargo metadata`, they'll be able to depend in the forward link provided by default by `cargo` when using `CARGO_TARGET_BASE_DIR`.
 
 ## Hitting windows path length limits
 
@@ -227,7 +225,7 @@ A mitigation for this is recommending a short prefix (in `CARGO_TARGET_BASE_DIR`
 
 ## Forward links
 
-There a few cases where a symlink instead of a real dir will break programs: at least SQLite can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since `CARGO_TARGET_BASE_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
+There a few cases where a symlink instead of a real dir will break programs: at least SQLite 3 can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since `CARGO_TARGET_BASE_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -245,13 +243,13 @@ It is already possible today to use `CARGO_TARGET_DIR` to remap workspaces and p
 
 1) If done globally, the `CARGO_TARGET_DIR` becomes a hodge-podge of every project, which is not often the goal.
 2) If done per-project, it is very cumbersome to maintain.
-3) [`targo`](https://github.com/sunshowers/targo) by @sunshowers
+3) [`targo`][tg] by @sunshowers
 4) [rust-lang/cargo#11156](https://github.com/rust-lang/cargo/issues/11156)
 5) The upcoming `cargo script` command needs someplace to put its cache and having a dedicated directory for that would be nice.
 
-`targo` and the cargo issue express a need for either remapping or a global target directory that is not shared between different Cargo workspaces.
+[`targo`][tg] and the cargo issue express a need for either remapping or a global target directory that is not shared between different Cargo workspaces.
 
-For those reason, this option has not been retained and the `targo` tool is discussed more in details below.
+For those reason, this option has not been retained and the [`targo`][tg] tool is discussed more in details below.
 
 ## Using `XDG_CACHE_HOME` instead of a cargo-specific env-var
 
@@ -263,25 +261,25 @@ There are already lots of discussion about `.cargo` and `.rustup` being home to 
 
 ## Stabilize the naming scheme
 
-I feel this require an hard-to-break naming scheme (a recent hash algorithm should be good enough in 99% of the cases but collisions are always possible), which I don't have the skills nor motivation to design. Instead, I prefer explicitely telling the naming scheme is not to be considered stable and allow more invested people to experiment with the feature and find something solid.
+This require an hard-to-break naming scheme (a recent hash algorithm should be good enough in 99% of the cases but collisions are always possible), which is something the `cargo` team probably does not want to offer guarantees about. Instead, explicitely telling the naming scheme is not to be considered stable allows more invested people to experiment with the feature and find something solid if stability proves itself necessary.
 
-What's more, by explicitely not stabilizing it (and maybe voluntarily changing it between versions sometimes, since a version change recompiles everything anyway ?) we can instead reroute people and tools towards `CARGO_TARGET_DIR` / `cargo metadata` instead, which are much more likely to be suited to their use case if they need the path to the target directory.
+What's more, by explicitely not stabilizing it (and maybe voluntarily changing it between versions sometimes, since a version change recompiles everything anyway ?) `cargo` can instead reroute people and tools towards `CARGO_TARGET_DIR` / `cargo metadata` instead, which are much more likely to be suited to their use case if they need the path to the target directory.
 
 ## Just use `targo`
 
-While a very nice tool, [`targo`](https://github.com/sunshowers/targo) is not integrated with `cargo` and has a few shortcomings:
+While a very nice tool, [`targo`][tg] is not integrated with `cargo` and has a few shortcomings:
 
-- It uses symlinks, which are not always handled well by other tools. Specifically, since it's not integrated inside `cargo`, it uses a `target` symlink to avoid having to remap `cargo`'s execution using `CARGO_TARGET_DIR` and such,making it less useful for external build tools that would use this functionality. Using such a symlink also means `cargo clean` does not work, it just removes the symlink and not the data.
+- It uses symlinks, which are not always handled well by other tools. Specifically, since it's not integrated inside `cargo`, it uses a `target` symlink to avoid having to remap `cargo`'s execution using `CARGO_TARGET_DIR` and such,making it less useful for external build tools that would use this functionality. Using such a symlink without setting the `CARGO_TARGET_DIR` env var also means `cargo clean` does not work, it just removes the symlink and not the data.
 - It completely ignores `CARGO_TARGET_DIR`-related options, which again may break workflows.
 - It needs more metadata to work well, which means an external tool using it would have to understand that metadata too.
 - It uses `$CARGO_HOME/targo` to place its cache, making it less useful for external build tools and people wanting to separate caches and configuration.
 - It needs to intercept `cargo`'s arguments, making it more brittle than an integrated solution.
-- Its naming scheme is a base58-encoded blake3 hash of the workspace directory ([source]), making it unusable by human and not taking into account the use case of thousands of target directories within `$CARGO_HOME/targo`.
-- It uses the workspace root dir and not manifest, which means a `targo script` would share cache between all the scripts in a directory, which may not be the desired effect.
+- Its naming scheme is a base58-encoded blake3 hash of the workspace directory ([source]), not taking into account the use case of thousands of target directories within `$CARGO_HOME/targo`.
+- It uses the workspace root dir and not manifest, which means a `targo script` would share cache between all the scripts (`cargo script`) in a directory, which may not be the desired effect.
 
-Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like `targo` will never be able to solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
+Some of those could be fixed of course, and I don't expect `cargo`'s `--target-dir` and `--manifest-path` to change or disappear anytime soon, but still, it could happen. An external tool like [`targo`][tg] will never be able to solve some of these or ensure forward compatibility as well as the solution proposed in this RFC.
 
-On the other hand, `targo` is already here and working for at least one person, making it the most viable alternative for now.
+On the other hand, [`targo`][tg] is already here and working for at least one person, making it the most viable alternative for now.
 
 [source]: https://github.com/rust-lang/cargo/issues/11156#issuecomment-1285951209
 
@@ -328,9 +326,9 @@ The `outputRoot` can be overridden using `--output_base=...` (this is `$CARGO_TA
 
 It should be noted that `bazel` is integrated with [remote caching](https://bazel.build/remote/caching) and has different needs from `cargo`, the latter only working locally.
 
-**Conclusion**: `bazel` shows that a hash-based workflow seems to work well enough, making an argument for the use of it in `cargo` too. It also uses the current user, to prevent attacks by having compiled a program as root and making the directory accessible to other users later on by also compiling there for them. `cargo` could also do this, though I do not know what happens when `--output_user_root` is set to the same path for two different users.
+**Conclusion**: `bazel` shows that a hash-based workflow seems to work well enough, making an argument for the use of it in `cargo` too. It also uses the current user, to prevent attacks by having compiled a program as root and making the directory accessible to other users later on by also compiling there for them. `cargo` could also do this, though it is not clear what happens when `--output_user_root` is set to the same path for two different users.
 
-*Note: I looked at Bazel 5.4.0, the latest stable version as of this writing, things may change in the future or be different for older versions.*
+*Note: Bazel 5.4.0 was used as the reference, the latest stable version as of this writing, things may change in the future or be different for older versions.*
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -341,8 +339,8 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
-- Do we want to add backlinks for `CARGO_TARGET_DIR` too in the process of this RFC ?
-- Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for us ?
+- Do we want to add forward links for `CARGO_TARGET_DIR` too in the process of this RFC ?
+- Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for the latter ?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -367,7 +365,7 @@ in the section on motivation or rationale in this or subsequent RFCs.
 The section merely provides additional information.
 -->
 
-- Allowing relative paths: I feel this is counter-productive to the stated goal and have thought of no use for it, but it's entirely possible someone else will.
+- Allowing relative paths: this is counter-productive to the stated goal and their is not obvious use for it, but it's entirely possible someone will.
 - Introduce remapping into the concept in some way.
 - Introduce a form of garbage collection. Expanded upon this [Zulip thread](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/last-use.20tracking).
 
@@ -379,11 +377,11 @@ This option has several complications I'm not sure how to resolve:
   - Subsequently, when platform defaults are decided, how do we ensure a new platform has a good default too ?
   - `CARGO_HOME` is already criticized for being both a *cache* and a *config* home (using the XDG spec semantics), adding more local cache to it in the form of `CARGO_HOME/target-base-dir/` would not improve the situation and should probably not be done, but, if no good alternatives are found, there is precedent to use it for this.
 2. How do we communicate on said default values ?
-3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon. Note that having backlinks active by default (see relevant section earlier in the RFC) will help offset a lot of the problems here.
+3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon. Note that having forward links active by default (see relevant section earlier in the RFC) will help offset a lot of the problems here.
 
 ### We really want to do this, how do we do it ?
 
-Well, first, advertising of the option and its behaviour, as well as the backlink behaviour (so people know we're not just breaking tools for fun). After that, it becomes necessary to test it quite heavily to really ensure nothing has broken irremediably.
+Well, first, advertising of the option and its behaviour, as well as the forward link behaviour (so people know we're not just breaking tools for fun). After that, it becomes necessary to test it quite heavily to really ensure nothing has broken irremediably.
 
 1. Introduce it as the default behaviour in nightly, wait for a few stable releases so that beta has it too and it can start being used for a few months after that so that esoteric setups can also try it.
 2. Write a post saying "we'll do the change in version X" (where current version is like X-2 to warn 3 months before at least ?) and then only apply the change to directory where there is no `CARGO_TARGET_DIR` config set.
@@ -401,3 +399,5 @@ The first two are probably enough, the third is a bandaid.
 `cargo` will use backlinks in an implementation-defined form to keep track in the `CARGO_TARGET_BASE_DIR` of the relation from a target directory to its source workspace.
 
 In the future, we could envisage letting external tools and users access this data in a well-defined form through `cargo metadata`.
+
+[tg]: https://github.com/sunshowers/targo
