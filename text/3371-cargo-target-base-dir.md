@@ -184,17 +184,29 @@ Example: calling `cargo install` can initially work outside of a workspace by in
 
 Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for `CARGO_TARGET_BASE_DIR`: if it set, `cargo clean` will delete `CARGO_TARGET_BASE_DIR/<project-path>/` and not `target/`.
 
-### Providing backlinks
+### Providing forward links
 
-`targo` provides backlink (it links from it's own target directory to `<workspace>/target`) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
+`targo` provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no `CARGO_TARGET_DIR` set for them to find the real target directory.
 
 `cargo` does not provide them for `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
 
-When `CARGO_TARGET_BASE_DIR` is used (in any form) and not superseded by other configurations (`CARGO_TARGET_DIR`), it *will* use a backlink by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if `CARGO_TARGET_BASE_DIR` and `CARGO_TARGET_DIR` weren't set at all.
+When `CARGO_TARGET_BASE_DIR` is used (in any form) and not superseded by other configurations (`CARGO_TARGET_DIR`), it *will* use a forward link by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if `CARGO_TARGET_BASE_DIR` and `CARGO_TARGET_DIR` weren't set at all.
 
-This has a two big advantages: not breaking external tools and giving easy access to artifacts produced by `cargo build/test/doc` to users (they're in the habit of typing `./target/debug/my-bin`, this would continue working with backlinks).
+This has a two big advantages: not breaking external tools and giving easy access to artifacts produced by `cargo build/test/doc` to users (they're in the habit of typing `./target/debug/my-bin`, this would continue working with forward links).
 
-A config option (CLI, `config.toml` and env var), `link-target-dir`, will be introduced to deactivate this behaviour, but it will `true` by default, for the reasons provided in favor of backlinks just above.
+A config option (CLI, `config.toml` and env var), `link-target-dir`, will be introduced to deactivate this behaviour, but it will `true` by default, for the reasons provided in favor of forward links just above.
+
+#### Detailed working of forward links
+
+When creating a forward link `cargo` will first attempt to create a symbolic link (regardless of the platform). If that fails, it will attempt zero or more platform-specific solutions, like junction points on NTFS. If that fails too, a warning will be emitted but this will not prevent the rest of the action to go on: regular calls like `cargo check/clippy/build/test` likely won't need this forward link and after the user has been warned they could either resolve the problem themselves or ignore it, depending on their own use case and domain-specific knowledge.
+
+### Providing backlinks
+
+Backlinks are metadata in `CARGO_TARGET_BASE_DIR` that links directories back to the workspace they came from.
+
+`targo` uses them in its own form of the feature and `cargo` will use them too in `CARGO_TARGET_BASE_DIR`.
+
+While details of the stored data should probably be left to the implementation (there is no need for `cargo` to expose this data directly, though it could be exposed through `cargo metadata` in the future, see the relevant section later), one could imagine using it to clean target directories whose corresponding workspace does not exist anymore when calling something like `cargo clean --all-workspaces` (doing it automatically is not possible, else any workspace on external disks would have its target directory cleaned up each time the disk is unmounted, which is probably way too aggressive a default).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -213,7 +225,7 @@ Depending on what naming scheme is used (e.g., a very long hash), we could hit t
 
 A mitigation for this is recommending a short prefix (in `CARGO_TARGET_BASE_DIR`) and using a hash that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
 
-## Backlinks
+## Forward links
 
 There a few cases where a symlink instead of a real dir will break programs: at least SQLite can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since `CARGO_TARGET_BASE_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
 
@@ -383,3 +395,9 @@ Well, first, advertising of the option and its behaviour, as well as the backlin
 - We could add special behaviour like `CARGO_TARGET_BASE_DIR=""` meaning "use current" directory
 
 The first two are probably enough, the third is a bandaid.
+
+### Expose `CARGO_TARGET_BASE_DIR` metadata
+
+`cargo` will use backlinks in an implementation-defined form to keep track in the `CARGO_TARGET_BASE_DIR` of the relation from a target directory to its source workspace.
+
+In the future, we could envisage letting external tools and users access this data in a well-defined form through `cargo metadata`.
