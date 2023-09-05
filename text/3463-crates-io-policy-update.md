@@ -63,9 +63,6 @@ We do not allow content or activity on crates.io that:
 - gratuitously depicts or glorifies violence, including violent images
 - is sexually obscene or relates to sexual exploitation or abuse, including of
   minors (see <https://docs.github.com/en/site-policy/acceptable-use-policies/github-sexually-obscene-content>)
-- is false, inaccurate, or intentionally deceptive information and likely to
-  adversely affect the public interest (including health, safety, election
-  integrity, and civic participation)
 - is off-topic, or interacts with platform features in a way that significantly
   or repeatedly disrupts the experience of other users
 - exists only to reserve a name for a prolonged period of time (often called 
