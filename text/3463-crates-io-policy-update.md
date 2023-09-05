@@ -111,15 +111,19 @@ owner is not reachable or has not published any contact information the
 crates.io team may reach out to help mediate the process of the ownership
 transfer.
 
-The crates.io team only deletes crates from the registry that do not comply with
-the policies on this document. Crate deletion by their owners is not possible to
-keep the registry as immutable as possible. If you want to flag your crate as
-open for transferring ownership to others, you can publish a new version with
-a message in the README or description communicating to the crates.io support
-team that you consent to transfer the crate to the first person who asks for it:
+Crate deletion by their owners is not possible to keep the registry as immutable
+as possible. If you want to flag your crate as open for transferring ownership
+to others, you can publish a new version with a message in the README or
+description communicating to the crates.io support team that you consent to
+transfer the crate to the first person who asks for it:
 
 > I consent to the transfer of this crate to the first person who asks
 > help@crates.io for it.
+
+The crates.io team may delete crates from the registry that do not comply with
+the policies on this document. In larger cases of squatting attacks this may
+happen without prior notification to the author, but in most cases the team will
+first give the author the chance to justify the purpose of the crate.
 
 
 ## Data Access
