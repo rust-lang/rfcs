@@ -223,6 +223,7 @@ RubyGems, Maven Central, Packagist (PHP) and Nuget (C#) were also investigated, 
 
 - Is the wording of the "name reservation" clause sufficient to discourage name squatting in the future?
 - Are there any current legitimate uses of crates.io that would suddenly be forbidden by these new rules?
+- Should the crates.io policies forbid embedding executable binaries in the crate files?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
