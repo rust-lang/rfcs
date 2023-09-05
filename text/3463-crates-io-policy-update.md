@@ -78,8 +78,8 @@ We do not allow content or activity on crates.io that:
   place undue burden on our servers through automated means, or to relay any
   form of unsolicited advertising or solicitation through our servers, such as
   get-rich-quick schemes
-- is other automated excessive bulk activity and coordinated inauthentic
-  activity, such as
+- is using our servers for other automated excessive bulk activity or
+  coordinated inauthentic activity, such as
     - spamming
     - cryptocurrency mining
 - is not functionally compatible with the cargo build tool (for example, a
