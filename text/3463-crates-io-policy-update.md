@@ -62,7 +62,7 @@ We do not allow content or activity on crates.io that:
   personal information without consent
 - gratuitously depicts or glorifies violence, including violent images
 - is sexually obscene or relates to sexual exploitation or abuse, including of
-  minors (see <https://docs.github.com/en/site-policy/acceptable-use-policies/github-sexually-obscene-content>)
+  minors (see "Sexually Obscene Content" section below)
 - is off-topic, or interacts with platform features in a way that significantly
   or repeatedly disrupts the experience of other users
 - exists only to reserve a name for a prolonged period of time (often called 
@@ -180,6 +180,27 @@ specific crates, and if any issues are found, you should seek guidance from
 the individual crate owners and their specific policies instead.
 
 Thank you for taking the time to responsibly disclose any issues you find.
+
+
+## Sexually Obscene Content
+
+We do not tolerate content associated with sexual exploitation or abuse of
+another individual, including where minors are concerned. We do not allow
+sexually themed or suggestive content that serves little or no purpose other
+than to solicit an erotic or shocking response, particularly where that content
+is amplified by its placement in profiles or other social contexts.
+
+This includes:
+
+- Pornographic content
+- Non-consensual intimate imagery
+- Graphic depictions of sexual acts including photographs, video, animation,
+  drawings, computer-generated images, or text-based content
+
+We recognize that not all nudity or content related to sexuality is obscene.
+We may allow visual and/or textual depictions in artistic, educational,
+historical or journalistic contexts, or as it relates to victim advocacy. In
+some cases a disclaimer can help communicate the context of the project.
 
 
 ## Violations and Enforcement
