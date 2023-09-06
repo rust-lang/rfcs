@@ -1,7 +1,7 @@
 - Feature Name: `cfg_attribute_in_where`
 - Start Date: 2023-03-11
 - RFC PR: [rust-lang/rfcs#3399](https://github.com/rust-lang/rfcs/pull/3399)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#115590](https://github.com/rust-lang/rust/issues/115590)
 
 # Summary
 [summary]: #summary
