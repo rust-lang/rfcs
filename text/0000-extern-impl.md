@@ -6,10 +6,11 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes a mechanism to allow `impl`s for a type or trait to be in a
-separate crate, while still meeting the soundness guarantees currently enforced
-by the orphan rule. With this, the crate structure (and thus build system
-dependency graph) can be decoupled from the actual implementations.
+This RFC proposes an opt-in mechanism to relax some of the restrictions of the
+orphan rule, while maintaining the soundness of implementation coherence. It
+also proposes a minimal Cargo extension to allow this feature to be exercised.
+With this, the crate structure (and thus build system dependency graph) can be
+decoupled from the actual implementations.
 
 # Motivation
 [motivation]: #motivation
@@ -109,7 +110,8 @@ itself. Re-exports don't count.
 The dependency *must* be a path dependency to another crate defined in the same
 workspace. Cargo will not allow you specify `impl = True` for other crates.
 
-Publishing packages with `impl = True` to crates.io is not allowed.
+Publishing packages with any `impl = True` dependencies to crates.io is not
+allowed.
 
 # Guide-level explanation (rustc)
 
@@ -139,20 +141,22 @@ use mysql::MySql;
 impl dbtrait::DBTrait for MySql {}
 ```
 
-In other words, the implementing crate is considered the same as the defining
-crate as far as the orphan rule goes. Note that you may only implement traits
-and types for crates directly defined in the defining crate &mdash; you cannot
-implement re-exported types.
+In other words, when the overlap check is considering what definitions are
+"local",  both the implementing crate and the defining crate both count. Note
+that you may only implement traits and types for crates directly defined in the
+defining crate &mdash; you cannot implement re-exported types.
 
 The defining and implementing crates are not the same in other respects. They
 still have distinct crate names, defining their own crate-level namespaces. For
 example, if they both defined a type `Foo`, it would be two definitions
 `defining::Foo` and `implementing::Foo`.
 
-There are no other constraints on the defining and implementing crates - they
-can freely define new traits, types and other items, and implementations for
-those types and traits. An implementing crate can be a defining crate for
-another crate.
+The terms "implementing" and "defining" describe a property of the dependency
+relationship between two crates, not an intrinsic property of the crates
+themselves. There are no other constraints on the defining and implementing
+crates - they can freely define new traits, types and other items, and
+implementations for those types and traits. An implementing crate can be a
+defining crate for another crate.
 
 Regardless, the definitions within the defining crate, the implementing crate,
 and between the implementing crate and defining crate must meet the current
@@ -162,18 +166,27 @@ scope in the dependency graph, they must also be coherent.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-[Coherence](https://rust-lang.github.io/chalk/book/clauses/coherence.html) is
-currently defined in terms of "local" definitions - that is, items defined with
-in the current crate.
+> The idea of trait
+> [coherence](https://rust-lang.github.io/chalk/book/clauses/coherence.html) is
+> that, given a trait and some set of types for its type parameters, there
+> should be exactly one impl that applies.
 
-The details of the coherence checking logic are unchanged; the only change is
-the constraints on which crates a definition and an implementation can be in.
+A key part of this are *overlap checks*, which check that not only are there
+currently no conflicting implementations, but adding new implementations won't
+invalidate or change the meaning of existing code.
 
-The discussion below talks about coherence in terms of the crate dependency
-relations, but the actual coherence check is at the level of individual type and
-trait implementations. The crate dependency relations set an upper bound on
-this, as any crate which does not appear within the relevent dependency graph
-need not be considered for coherence checking.
+These overlap checks can only be performed if all the relevant implementation
+sites are known so they can be checked. This is the role of the *orphan rule*,
+which has the consequence that there's only one possible crate in which contain
+a given implementation. This is the restriction this RFC proposes to loosen.
+
+We introduce what could be called *the adoption rule*. This is an extension of
+the orphan rule, in which implementations can be in more than one crate, but
+some other crate adopts those implementation crates in order to apply the
+overlap check across them in order to guarantee coherence.
+
+The actual details of the overlap check logic are unchanged; the only change is
+a wider definition of what's considered a "local definition".
 
 ## Changes to coherence checking
 
@@ -183,6 +196,12 @@ between crates). Coherence is defined in terms of type/trait definitions and
 implementations, which forms its own graph. This graph is embedded in the crate
 dependency graph &mdash; that is there are no edges in the type/trait
 implementation graph which are not also present in the crate dependency graph.
+
+Note that a blanket implementations - `impl<T> Foo for T` - are a universal
+quantifier over all types `T`, whether they're in scope or not. However if we're
+interested in applying it to specific concrete types, we need only consider
+those types which are in scope, which are therefore constrained by the
+dependency graph.
 
 ```mermaid
 graph TB
@@ -224,8 +243,8 @@ a set of implementations for a type if:
 
 This means the compilation of a crate must check for coherence when:
 - all the definitions and implementations are within one crate
-- if a crate A has an impl dependency on crate B, it must check coherency
-  between A and B
+- if a crate A has an impl dependency (ie, a direct dependency with the impl
+  option) on crate B, it must check coherency between A and B
 - if a crate has two or more crates with implementations for a given definition
   within its view via distinct direct dependencies
 
