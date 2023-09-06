@@ -69,7 +69,7 @@ functionality already exists in the language, but quickly grows out of reasonabl
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Where clauses can use cfg-attributes on individual bounds, like so:
+`where` clauses can use cfg-attributes on individual trait bounds, like so:
 
 ```rust
 impl<T> SomeTrait<T> for Thing
@@ -90,7 +90,7 @@ where
     T: SomeRequirementB,
 {}
 ```
-and in other situations where where clauses apply.
+and in other situations where `where` clauses apply.
 
 During compilation, all cfg-attributes on a where bound are evaluated. If the evaluation result is false, then the bound in question is not
 compiled and the bound does not apply to the given type. This may cause errors if code that relies on those bounds is not itself also 
@@ -101,8 +101,8 @@ fields or on function signatures.
 [reference-level-explanation]: #reference-level-explanation
 
 In positions that accept where clauses, such as trait implementations and function signatures, individual clauses can now be decorated with 
-cfg-attributes. The cfg-attribute must be on the left hand of the colon (e.g. `#[cfg(...]) T: Foo` rather than `T: #[cfg(...)] Foo`) and 
-apply for that one bound, up to the comma or end of the where section. Each bound collection will be conditionally compiled depending on the 
+cfg-attributes. The cfg-attribute must be on the left hand of the colon (e.g. `#[cfg(...)] T: Foo` rather than `T: #[cfg(...)] Foo`) and 
+applies to that one bound, up to the comma or end of the where section. Each bound collection will be conditionally compiled depending on the 
 conditions specified in the cfg arguments. Note that this may cause a where clause to conditionally compile as having no bound entries 
 (i.e. an empty where clause), but this has been allowed in Rust since 1.16 and already occurs from time to time when using macros.
 
