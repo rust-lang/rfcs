@@ -148,10 +148,12 @@ but that's not the way I would expect Rust to provide this kind of functionality
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-In theory, I don't see any harm in cfg-attributes decorating individual bounds on the right hand side of the colon. Is it worth adding that
+* In theory, I don't see any harm in cfg-attributes decorating individual bounds on the right hand side of the colon. Is it worth adding that
 potential feature as well? Personally, I don't see it as being worth the added complexity given that you can have multiple individual bound
 declarations for the same item. Doing so would also create an inconsistency, given that this isn't currently allowed in angle-bracketed 
 bounds either.
+
+* rustfmt is supposed to be able to format the where clause somehow, do we expect it to (try to) put the attribute on the same line, or would it always prefer the attribute on separate lines?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
