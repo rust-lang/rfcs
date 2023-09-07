@@ -43,7 +43,7 @@ unsafe extern {
     
     pub static IMPORTANT_BYTES: [u8; 256];
     
-    pub static LINES: UnsafeCell<i32>;
+    pub static LINES: SyncUnsafeCell<i32>;
 }
 ```
 
