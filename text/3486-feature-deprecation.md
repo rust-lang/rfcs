@@ -1,6 +1,6 @@
 - Feature Name: feature-deprecation
 - Start Date: 2023-09-09
-- RFC PR: [rust-lang/rfcs#3416](https://github.com/rust-lang/rfcs/pull/3416)
+- RFC PR: [rust-lang/rfcs#3486](https://github.com/rust-lang/rfcs/pull/3486)
 - Rust Issue:
   [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
