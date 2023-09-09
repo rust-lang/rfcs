@@ -1,6 +1,6 @@
 - Feature Name: feature-documentation
 - Start Date: 2023-09-09
-- RFC PR: [rust-lang/rfcs#3416](https://github.com/rust-lang/rfcs/pull/3416)
+- RFC PR: [rust-lang/rfcs#3485](https://github.com/rust-lang/rfcs/pull/3485)
 - Rust Issue:
   [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
