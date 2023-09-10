@@ -65,18 +65,19 @@ In general, marking a feature `public = false` should make tooling treat the
 feature as non-public API. This is described as the following:
 
 - The feature is always usable within the same crate:
-  - Enablement by other features, e.g.
+  - Enabled by other features, e.g.
     `foo = { enables = [some-private-feature] }`, is allowed
-  - Using the feature in integration tests is allowed
-  - Using the feature in benchmarks is allowed
+  - Referenced in `[[bench]]` and `[[test]]` target `required-features`
+  - Using the feature on the command-line is allowed
+- Users may explicitly specifying the private features for their dependencies
+  on the command-line (e.g. `--features somecrate/private-feature`) which would
+  otherwise be forbidden
 - The feature should not be accepted by `cargo add --features`
 - The feature should not be reported from `cargo add`'s feature output report
+  - A future tool like `cargo info` shouldn't display information about these
+    features
 - Once `rustdoc` is able to consume feature metadata, `rustdoc` should not
   document these features unless `--document-private-items` is specified
-- A future tool like `cargo info` shouldn't display information about these
-  features
-- Explicitly specifying the feature via `--features somecrate/private-feature`
-  will allow enabling a private feature that would otherwise be forbidden
 
 Attempting to use a private feature in any of the forbidden cases should result
 in an error. Exact details of how features work will likely be refined during
@@ -116,8 +117,7 @@ TODO
 
 [prior-art]: #prior-art
 
-- `docs.rs` displays a limited feature table. Features that start with `_` are
-  hidden from this table.
+- `docs.rs` treats features with a leading `_` as private / hidden
 - Ivy has a [visibility attribute] for its configuration (mentioned in
   [cargo #10882])
 - Discussion on stable/unstable/nightly-only features
