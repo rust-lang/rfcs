@@ -51,10 +51,9 @@ attribute in Rust source. The value can be a boolean, string, or an object with
 - If a boolean value, `false` indicates not deprecated and `true` indicates
   deprecated
 - If an object, the keys `since` and/or `note` can be specified
-- An empty object is not allowed to avoid ambiguity `foo = { deprecated = {} }`
-- A string `foo = { deprecated = "my msg" }` will be equivalent to if that
-  string was specified in the `note` field:
-  `foo = { deprecated = { note = "my msg" } }`
+  - An empty object is not allowed to avoid ambiguity `foo = { deprecated = {} }`
+- If a string (e.g. `foo = { deprecated = "my msg" }`), it will be equivalent to if that
+  string was specified in the `note` field (e.g. `foo = { deprecated = { note = "my msg" } }`)
 - If not specified, the default is `false`
 
 If a downstream crate attempts to use a feature marked `deprecated`, Cargo
@@ -108,9 +107,6 @@ needing a new `features` section.
 
 - Added complexity to Cargo. Parsing is trivial, but exact implementation
   details do add test surface area
-- There is no way to structure features in a way that they are split into
-  sections or have a user-specified layout, unlike with the `document-features`
-  crate.
 
 # Rationale and alternatives
 
@@ -140,7 +136,7 @@ WIP
 - Via the `manifest-lint` RFC, a user could specify that deprecated crates
   should be denied. This would, however, be blocked by [cargo #12335].
 - A `stable` field can be set false to indicate API-unstable or nightly-only
-  features (somethign such as `stable = 3.2` could be used to indicate when a
+  features (something such as `stable = 3.2` could be used to indicate when a
   feature was stabilized). See also:
   <https://github.com/rust-lang/cargo/issues/10882>
 - A `rust-version` field that could indicate e.g. `rust-version = "nightly"` or
