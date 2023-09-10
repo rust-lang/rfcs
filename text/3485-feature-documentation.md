@@ -65,7 +65,7 @@ the equivalent to a `#[doc(...)]` attribute. Like doc comments, the first line
 should be treated as a summary. Intra-doc link support is not included in this
 RFC, so they should not be used.
 
-There is nothing in this RFC that cargo `must` do with this action, since it is
+There is nothing in this RFC that cargo **must** do with this action, since it is
 mainly intended for the consumption of `rustdoc` or `docs.rs`. However, it can
 be used for general diagnostic information such as during `cargo add` or a
 possible `cargo info` command. A sample application with `cargo add`:
@@ -88,8 +88,8 @@ crab@rust foobar % cargo add regex
     Updating crates.io index
 ```
 
-Features like `aho-corasick`, `memchr`, or `use_std` would likely be
-`public = false` since they aren't listed on the crate landing page.
+*(features like `aho-corasick`, `memchr`, or `use_std` would likely be
+`public = false` since they aren't listed on the crate landing page)*
 
 Any tools that want the information in `doc` will require access to the
 manifest. Adding this information to the index was decided against due to
@@ -100,23 +100,26 @@ concerns about bloat, but this is further discussed in
 
 [drawbacks]: #drawbacks
 
-- Added complexity to Cargo. Parsing is trivial, but exact implementation
-  details do add test surface area
+- Added complexity to Cargo.
+  - Exact implementation details do add test surface area
+  - A markdown parser is required to properly parse the `doc` field.
 - Docstrings can be lengthy, adding noise to `Cargo.toml`. This could
   potentially be solved with the below mentioned `doc-file` key.
-- A markdown parser is required to properly parse the `doc` field.
 - When rendering features in documentation, this RFC does not specify any way
   for `rustdoc` to get the information it requires. This will require separate
   design work.
-- There is no way to structure features in a way that they are split into
-  sections or have a user-specified layout, unlike with the `document-features`
-  crate.
-- Features cannot be ordered since the TOML specification does not allow it.
+- Unlike with the [`document-features`](https://crates.io/crates/document-features)
+  crate there is no way to group features in into sections or have a
+  user-specified layout
+- Users cannot control features ordering in documentation since the TOML specification defines table keys as unordered.
 
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+- To avoid increasing the size of the registry index, this does not add `doc`
+  to a package's index entry.  This means a `.crate` file must be downloaded
+  and extracted to access the features.
 - Feature descriptions could be specified somewhere in Rust source files. This
   has the downside of creating multiple sources of truth on features.
 - Cargo could parse doc comments in `Cargo.toml`, like the `document-features`
@@ -146,7 +149,8 @@ concerns about bloat, but this is further discussed in
 - There is an existing crate that uses TOML comments to create a features table:
   <https://docs.rs/document-features/latest/document_features/>
 - `docs.rs` displays a feature table, but it is fairly limited. If features
-  start with `_`, they are hidden from this table.
+  start with `_`, they are hidden from this table ([example](https://docs.rs/crate/regex/latest/features)).
+- `lib.rs` extracts feature documentation from `Cargo.toml` and source ([example](https://lib.rs/crates/regex/features))
 
 # Unresolved questions
 
@@ -154,20 +158,21 @@ concerns about bloat, but this is further discussed in
 
 - Rather than being consistent with `rustdoc` and accepting markdown, should the
   `doc` key be consistent with `package.description` and only support plain
-  text? This RFC proposes making this decision at time of implementation, the
+  text? This RFC proposes making this decision at time of implementation when the
   challenges of supporting markdown are better understood.
 
 # Future possibilities
 
 [future-possibilities]: #future-possibilities
 
-- Rustdoc will gain the ability to document features.
+- Rustdoc can build on this to show feature documentation.
 - At some point, the decision to not include `doc` in the index could be
   reevaluated. Including only the first (summary) line of `doc` could be a
   possibility.
 - `cargo add` can show the `doc` and `deprecated` summary with the listed
   features.
 - [`cargo-info`] can use this information to provide feature descriptions.
+- crates-io could be updated to render feature documentation
 - Feature documentation could be allowed in a separate markdown file. For
   convenience, markdown anchors could be used to specify a section, so multiple
   features can share the same file. This could be a good option for features
