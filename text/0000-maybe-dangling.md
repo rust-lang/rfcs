@@ -203,7 +203,12 @@ Miri is adjusted as follows:
   This has the disadvantage that one risks memory leaks when all one wants to do is pass around data of some `T` without upholding reference liveness.
     For instance, the third example would have to remember to call `drop` on the `buffer`.
     This alternative has the advantage that we avoid introducing another type, and it is future-compatible with factoring that aspect of `ManuallyDrop` into a dedicated type in the future.
-- The other alternative is to change the memory model such that the example code is fine as-is.
+- Another tempting alternative is to attach the special meaning not to a type, but an attribute.
+  We could have a `#[maybe_dangling]` attribute that can be attached to ADTs, such that references and `Box` inside that type are not required to be dereferenceable or non-aliasing as the type gets moved around.
+  This has the advantage that user can attach the attribute to their own type and directly access the fields, so e.g. `MyType` can have a `Box<T>` field and all of the magic of `Box` is still available,
+  but the type can be moved around freely without worrying about aliasing. For the compiler and Miri implementation this would barely make a difference;
+  we would simply stop recursing into fields when encountering any type with that attribute (rather than only stopping when encountering the magic `MaybeDangling` type).
+- Another alternative is to change the memory model such that the example code is fine as-is.
   There are several variants of this:
     - [Make all examples legal] All newtype wrappers behave the way `MaybeDangling` is specified in this RFC.
       This means it is impossible to do zero-cost newtype-wrapping of references and boxes, which is against the Rust value of zero-cost abstractions.
