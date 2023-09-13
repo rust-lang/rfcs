@@ -5,7 +5,7 @@
 
 # Summary
 
-Extend `#![feature(trait_alias)]` to permit `impl` blocks for trait aliases with a single primary trait.
+Extend `#![feature(trait_alias)]` to permit `impl` blocks for trait aliases with a single primary trait. Also support fully-qualified method call syntax with such aliases.
 
 # Motivation
 
@@ -196,7 +196,7 @@ impl Frobber for MyType {
 
 Joe's original code Just Works.
 
-The rule of thumb is: if you can copy everything between the `=` and `;` of a trait alias, and paste it between the
+The rule of thumb is: if you can copy everything between the `=` and `;` of a trait alias, paste it between the
 `for` and `{` of a trait `impl` block, and the result is sytactically valid—then the trait alias is implementable.
 
 # Reference-level explanation
@@ -286,6 +286,25 @@ impl Frobber for MyType {
 ```
 
 Trait aliases are `unsafe` to implement iff the underlying trait is marked `unsafe`.
+
+Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax. When used this way,
+they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and associated type bounds
+must be satisfied.
+
+```rust
+trait IntIter = Iterator<Item = u32> where Self: Clone;
+
+fn foo() {
+    let iter = [1_u32].into_iter();
+    IntIter::next(&mut iter); // works
+    <std::array::IntoIter as IntIter>::next(); // works
+    //IntIter::clone(&iter); // ERROR: trait `Iterator` has no method named `clone()`
+    let dyn_iter: &mut dyn Iterator<Item = u32> = &mut iter;
+    //IntIter::next(dyn_iter); // ERROR: `dyn Iterator<Item = u32>` does not implement `Clone`
+    let signed_iter = [1_i32].into_iter();
+    //IntIter::next(&mut signed_iter); // ERROR: Expected `<Self as Iterator>::Item` to be `u32`, it is `i32`
+}
+```
 
 # Drawbacks
 
