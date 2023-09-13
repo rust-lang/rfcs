@@ -38,14 +38,6 @@ pub trait Bar {
     fn bar(&self);
 }
 
-pub trait ExtBar: Bar {
-    fn ext_bar(&self);
-}
-
-impl<T: Bar> ExtBar for T {
-    fn ext_bar(&self) { }
-}
-
 pub struct Foo;
 
 #[inherent]
@@ -53,21 +45,17 @@ impl Bar for Foo {
     fn bar(&self) { println!("foo::bar"); }
 }
 
-// works thanks to specialization
-#[inherent]
-impl ExtBar for Foo { }
-
 impl Foo {
     fn foo(&self) { println!("foo::foo"); }
 }
 ```
 
-The methods `bar` and `ext_bar` are now callable on any instance of `Foo`,
-regardless of whether the `Bar` and `ExtBar` traits are currently in scope,
+The method `bar` is now callable on any instance of `Foo`,
+regardless of whether the `Bar` trait is currently in scope,
 or even whether the `Bar` trait is publically visible. In other words if `Bar`
-and `ExtBar` defined in one crate and `Foo` and another, user of `Foo` will be
+is defined in one crate and `Foo` in another, the user of `Foo` will be
 able to explicitly depend only on the crate which defines `Foo` and still use
-the inherent traits methods.
+the inherent trait's methods.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
