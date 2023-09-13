@@ -60,14 +60,12 @@ the inherent trait's methods.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `inherent` attribute in the above example makes the `impl` block equivalent to:
+The `#[inherent]` attribute in the above example desugars equivalently to an inherent forwarding method (in addition to the trait impl):
 
 ```rust
 impl Foo {
     #[inline]
     pub fn bar(&self) { <Self as Bar>::bar(self); }
-
-    fn foo(&self) { println!("foo::foo"); }
 }
 ```
 
