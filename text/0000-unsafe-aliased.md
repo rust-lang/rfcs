@@ -356,6 +356,10 @@ However, of course one could imagine alternatives:
 
 This is somewhat like `UnsafeCell`, but for mutable instead of shared references.
 
+Adding something like this to Rust has been discussed many times throughout the years. Here are some links for recent discussions:
+- [Zulip, Nov 2022](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/UnsafeCellMut/near/308124014)
+- [IRLO, May 2023](https://internals.rust-lang.org/t/an-alternative-to-the-current-unpin-hack-unsafealias/18810)
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
