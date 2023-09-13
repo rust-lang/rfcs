@@ -287,8 +287,7 @@ impl Frobber for MyType {
 
 Trait aliases are `unsafe` to implement iff the underlying trait is marked `unsafe`.
 
-Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax. When used this way,
-they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and associated type bounds
+Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax, as well as in paths more generally. When used this way, they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and associated type bounds
 must be satisfied.
 
 ```rust
@@ -296,8 +295,8 @@ trait IntIter = Iterator<Item = u32> where Self: Clone;
 
 fn foo() {
     let iter = [1_u32].into_iter();
-    IntIter::next(&mut iter); // works
-    <std::array::IntoIter as IntIter>::next(); // works
+    let _: IntIter::Item = IntIter::next(&mut iter); // works
+    let _: <std::array::IntoIter as IntIter>::Item = <std::array::IntoIter as IntIter>::next(); // works
     //IntIter::clone(&iter); // ERROR: trait `Iterator` has no method named `clone()`
     let dyn_iter: &mut dyn Iterator<Item = u32> = &mut iter;
     //IntIter::next(dyn_iter); // ERROR: `dyn Iterator<Item = u32>` does not implement `Clone`
