@@ -25,11 +25,11 @@ be available to downstream users. Examples include:
 - Debugging, benchmarking or test-related features that expose unstable internal
   API
 - Intermediate features that are enabled by user-facing features but not meant
-  to be used on their own
+  to be used on their own (e.g. a feature enabling dependency features)
 
 A way to hide these features from user-facing configuration will make options
 easier to understand and lowers the chance of library users accidentally using
-unstable internal PAI.
+unstable internal API.
 
 # Guide-level explanation
 
@@ -92,20 +92,16 @@ Attempting to use a private feature in any of the forbidden cases should result
 in an error. Exact details of how features work will likely be refined during
 implementation and experimentation.
 
-Two sample use cases for `public = false` include:
-
-- `docs.rs` having a way to know which features should be hidden
-- Features that are included in feature chains (feature `a` enables feature `b`)
-  but not meant for public consumption could be marked not public
-
 This feature requires adjustments to the index for full support. This RFC
 proposes that it would be acceptable for the first implementation to simply
 strip private features from the manifest; this means that there will be no way
 to `cfg` based on these features.
 
 Full support does not need to happen immediately, since it will require this
-information be present in the index. [Index changes] describes how this can take
-place.
+information be present in the index. The [`feature-deprecation`] RFC describes
+a way to add attributes to features in a forward-compatible way under a
+`features3` key, which would be suitible for any additional information needed
+here.
 
 # Drawbacks
 
@@ -114,7 +110,8 @@ place.
 - Added complexity to Cargo. Parsing is trivial, but exact implementation
   details do add test surface area
 - Added Cargo arguments if escape hatches for `public` are created
-- `public` uses may not be common enough to be worth including
+- This adds confusion to the `cfg` diagnostics introduced in
+  <https://github.com/rust-lang/rust/pull/109005>
 
 # Rationale and alternatives
 
@@ -165,3 +162,4 @@ place.
 [`rustdoc-cargo-configuration`]: https://github.com/rust-lang/rfcs/pull/3421
 [`tokio`]: https://docs.rs/crate/tokio/latest/features
 [visibility attribute]: https://ant.apache.org/ivy/history/latest-milestone/ivyfile/conf.html
+[`feature-deprecation`]: https://github.com/rust-lang/rfcs/pull/3486
