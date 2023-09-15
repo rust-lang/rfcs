@@ -17,7 +17,7 @@ Please see the parent meta RFC for background information: [`feature-metadata`].
 
 [motivation]: #motivation
 
-Cargo feature gates are one of the main means to support optional build
+[Cargo features](link to features doc) are one of the main means to support conditional build and optional dependency
 configuration in Rust crates. Often these are for configuration options that a
 library user may want, but another common use case is hiding API that shouldn't
 be available to downstream users. Examples include:
