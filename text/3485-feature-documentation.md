@@ -158,8 +158,7 @@ concerns about bloat, but this is further discussed in
 
 - Rather than being consistent with `rustdoc` and accepting markdown, should the
   `doc` key be consistent with `package.description` and only support plain
-  text? This RFC proposes making this decision at time of implementation when the
-  challenges of supporting markdown are better understood.
+  text? This needs to be a point of discussion before approval of this RFC.
 
 # Future possibilities
 
