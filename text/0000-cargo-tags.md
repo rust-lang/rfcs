@@ -36,7 +36,7 @@ To make the change clearer, the unified categories and keywords are called "tags
 Categories and keywords in `Cargo.toml` are now deprecated. Setting `categories` or `keywords` will now trigger a warning and suggest to use `tags` instead. These combined `tags` now accept the formats used by both `categories` and `keywords`, meaning:
 
 * It's now possible to add a single double-colon inside a tag to indicate a parent tag. This has the effect of adding two tags to a crate: for example, adding the `development-tools::testing` tag adds the crate to both the `development-tools` tag and the `development-tools::testing` tag. The part after the double-colon is called a subtag.
-* On each side of the double-colon, the length of text may be up to 25 characters. That means that, including the double-colon, tags can be up to 52 characters long. (This is to accomodate the accomodate the largest category before the unification, `development-tools::procedural-macro-helpers`, although rounding up to a nice number for the actual limit.)
+* On each side of the double-colon, the length of text may be up to 25 characters. That means that, including the double-colon, tags can be up to 52 characters long. (This is to accomodate the largest category before the unification, `development-tools::procedural-macro-helpers`, although rounding up to a nice number for the actual limit.)
 
 On crates.io, the "categories" section of the sidebar is removed and all tags are shown with hashtags in a crate header, like keywords are now. On the pages for popular tags, a curated description from the crates.io team may be shown alongside a list of common subtags and similar tags.
 
