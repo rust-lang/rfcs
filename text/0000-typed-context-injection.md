@@ -13,7 +13,7 @@ This RFC proposes the addition of a `Cx` structure to the `core` standard librar
 
 [motivation]: #motivation
 
-Barring interior mutability, Rust's object graph is tree shaped and forbits objects in the tree from creating references to ancestors, references to indirect descendants, and references to siblings.
+Barring interior mutability, Rust's object graph is tree shaped and forbids objects in the tree from creating references to ancestors, references to indirect descendants, and references to siblings.
 
 In practice, this means two things:
 
@@ -24,71 +24,68 @@ This reference forwarding is massively inconvenient for refactoring purposes. Ev
 
 ```rust
 pub struct GameEngine {
-  	audio_system: AudioSystem,  // New!
+    audio_system: AudioSystem,  // New!
 }
 
 pub struct World {
-  	// ...
+    // ...
 }
 
 pub struct Player {
-  	// ...
+    // ...
 }
 
 pub struct Tool {
-  	// ...
+    // ...
 }
 
 impl GameEngine {
-  	pub fn update(&mut self) {
-      	// ...
-    		some_world.update(
-      			// ...
-          	&mut self.audio_system,  // New!
-      	);
-      	
-  	}
+    pub fn update(&mut self) {
+        // ...
+        some_world.update(
+            // ...
+            &mut self.audio_system,  // New!
+        );
+    }
 }
 
 impl World {
-  	pub fn update(
-      	&mut self,
-      	// ...
-      	audio_system: &mut AudioSystem,  // New!
- 		) {
-      	// ...
-    		some_player.update(
-      			// ...
-          	audio_system,  // New!
-      	);
-      	
-  	}
+    pub fn update(
+        &mut self,
+        // ...
+        audio_system: &mut AudioSystem,  // New!
+     ) {
+        // ...
+        some_player.update(
+            // ...
+            audio_system,  // New!
+        );
+    }
 }
 
 impl Player {
-  	pub fn update(
-      	&mut self,
-      	// ...
-      	audio_system: &mut AudioSystem,  // New!
- 		) {
-      	// ...
-    		some_tool.update(
-      			// ...
-          	audio_system,  // New!
-      	);
-      	
-  	}
+    pub fn update(
+        &mut self,
+        // ...
+        audio_system: &mut AudioSystem,  // New!
+     ) {
+        // ...
+        some_tool.update(
+            // ...
+            audio_system,  // New!
+        );
+    }
 }
 
 impl Tool {
-  	pub fn update(
-      	&mut self,
-      	// ...
-      	audio_system: &mut AudioSystem,  // New!
- 		) {
-      	// We finally have access to the audio system!
-      	audio_system.play_sound("tool_use.ogg");
-  	}
+    pub fn update(
+        &mut self,
+        // ...
+        audio_system: &mut AudioSystem,  // New!
+     ) {
+        // We finally have access to the audio system!
+        audio_system.play_sound("tool_use.ogg");
+    }
 }
 ```
 
@@ -96,11 +93,11 @@ Much of this complexity is irreducible, unfortunately. Although it may be tempti
 
 ```rust
 impl World {
-  	pub fn update(engine: &mut GameEngine) {
-      	for player in engine.players.iter_mut() {
-						player.update(engine);  // Whoops!
-      	}
-  	}
+    pub fn update(engine: &mut GameEngine) {
+        for player in engine.players.iter_mut() {
+            player.update(engine);  // Whoops!
+        }
+    }
 }
 ```
 
@@ -116,99 +113,96 @@ pub struct AudioPlayer {}
 // ...
 
 pub struct GameEngine {
-  	audio_loader: AudioResourceLoader,  // Updated!
-  	audio_player: AudioPlayer,  // Updated!
+    audio_loader: AudioResourceLoader,  // Updated!
+    audio_player: AudioPlayer,  // Updated!
 }
 
 impl GameEngine {
-  	pub fn update(&mut self) {
-      	// ...
-    		some_world.update(
-      			// ...
-          	&mut self.audio_loader,  // Updated!
-          	&mut self.audio_player,  // Updated!
-      	);
-      	
-  	}
+    pub fn update(&mut self) {
+        // ...
+        some_world.update(
+            // ...
+            &mut self.audio_loader,  // Updated!
+            &mut self.audio_player,  // Updated!
+        );
+    }
 }
 
 impl World {
-  	pub fn update(
-      	&mut self,
-      	// ...
-      	audio_loader: &mut AudioResourceLoader,  // Updated!
-	      audio_player: &mut AudioPlayer,  // Updated!
- 		) {
-      	// ...
-    		some_player.update(
-      			// ...
-          	audio_loader, audio_player,  // Updated!
-      	);
-      	
-  	}
+    pub fn update(
+        &mut self,
+        // ...
+        audio_loader: &mut AudioResourceLoader,  // Updated!
+        audio_player: &mut AudioPlayer,  // Updated!
+     ) {
+        // ...
+        some_player.update(
+            // ...
+            audio_loader, audio_player,  // Updated!
+        );
+    }
 }
 
 impl Player {
-  	pub fn update(
-      	&mut self,
-      	// ...
+    pub fn update(
+        &mut self,
+        // ...
         audio_loader: &mut AudioResourceLoader,  // Updated!
-	      audio_player: &mut AudioPlayer,  // Updated!
- 		) {
-      	// ...
-    		some_tool.update(
-      			// ...
-          	audio_loader, audio_player,  // Updated!
-      	);
-      	
-  	}
+        audio_player: &mut AudioPlayer,  // Updated!
+	) {
+        // ...
+        some_tool.update(
+            // ...
+            audio_loader, audio_player,  // Updated!
+        );
+    }
 }
 
 impl Tool {
-  	pub fn update(
-      	&mut self,
-      	// ...
-      	audio_loader: &mut AudioResourceLoader,  // Updated!
-	      audio_player: &mut AudioPlayer,  // Updated!
- 		) {
-      	// We finally have access to the audio system!
-      
-      	// Oh no, our method got more tedious to use!
-	      audio_player.play_sound(audio_loader.load("tool_use.ogg"));
-      
-      	// ...and we can't really simplify it in any meaningful way.
-      	audio_player.player_sound_from_path(&mut audio_loader, "tool_use.org");
-  	}
+    pub fn update(
+        &mut self,
+        // ...
+        audio_loader: &mut AudioResourceLoader,  // Updated!
+        audio_player: &mut AudioPlayer,  // Updated!
+    ) {
+        // We finally have access to the audio system!
+
+        // Oh no, our method got more tedious to use!
+        audio_player.play_sound(audio_loader.load("tool_use.ogg"));
+
+        // ...and we can't really simplify it in any meaningful way.
+        audio_player.player_sound_from_path(&mut audio_loader, "tool_use.org");
+    }
 }
 ```
 
-Of course, in passing all these objects through the dispatch chain, we are left with massive and very unweildy function signatures:
+Of course, in passing all these objects through the dispatch chain, we are left with massive and very unwieldy function signatures:
 
 ```rust
-// The full, unabbridged Player signature.
+// The full, unabridged Player signature.
 impl Player {
-  	pub fn update(
-      	&mut self,
-      	// Some systems operate on just the position so we should probably separate those into their
-      	// own object.
-      	positions: &mut HashMap<ActorId, Position>,
-      
-      	// Some systems operate on just the base information common to all items so we should separate
-      	// those into their own object as well.
-	      common_item_data: &mut HashMap<ItemId, CommonsItemData>,
-      
-      	// Turns out, the world sometimes accesses tools directly without going through the player so
-      	// we need the world to own these and pass these along to the player.
-      	tools: &mut HashMap<ItemId, Tool>,
-      
-      	// Oh yeah, these still need to be passed.
-	      audio_loader: &mut AudioResourceLoader,
-	      audio_player: &mut AudioPlayer,
-      
-      	// Ugh.
-  	) {
-      	// ...
-  	}
+    pub fn update(
+        &mut self,
+        // Some systems operate on just the position so we should probably separate those into their
+        // own object.
+        positions: &mut HashMap<ActorId, Position>,
+
+        // Some systems operate on just the base information common to all items so we should separate
+        // those into their own object as well.
+        common_item_data: &mut HashMap<ItemId, CommonsItemData>,
+
+        // Turns out, the world sometimes accesses tools directly without going through the player so
+        // we need the world to own these and pass these along to the player.
+        tools: &mut HashMap<ItemId, Tool>,
+
+        // Oh yeah, these still need to be passed.
+        audio_loader: &mut AudioResourceLoader,
+        audio_player: &mut AudioPlayer,
+
+        // Ugh.
+    ) {
+        // ...
+    }
 }
 ```
 
@@ -224,7 +218,7 @@ To define a function taking types `&System1`, `&System2`, and `&mut System3` as 
 
 ```rust
 fn child_function(cx: Cx<&System1, &System2, &mut System3>) {
-  	// ...
+    // ...
 }
 ```
 
@@ -232,13 +226,13 @@ To pass context to this `child_function`, we either have to construct the approp
 
 ```rust
 fn parent_function(cx: Cx<&mut System1, &System2, &mut System3, &mut System4, &mut System5>) {
-	  // ...
-  	child_function(cx);
+    // ...
+    child_function(cx);
 }
 
 fn root_function() {
-  	// ...
-  	parent_function(Cx::new((&mut system_1, &system_2, &mut system_3, &mut system_4, &mut system_5)));
+    // ...
+    parent_function(Cx::new((&mut system_1, &system_2, &mut system_3, &mut system_4, &mut system_5)));
 }
 ```
 
@@ -246,9 +240,9 @@ Elements can be extracted from a `Cx` instance by implicitly coercing it into it
 
 ```rust
 fn child_function(cx: Cx<&System1, &System2, &mut System3>) {
-  	let system_1: &System1 = cx;
-  	let system_2 = cx.extract::<System2>();
-  	let system_3 = cx.extract_mut::<System3>();
+    let system_1: &System1 = cx;
+    let system_2 = cx.extract::<System2>();
+    let system_3 = cx.extract_mut::<System3>();
 }
 ```
 
@@ -268,28 +262,28 @@ A user can union the component types of several contexts together as follows:
 
 ```rust
 fn parent_function(cx: Cx<&mut ParentSystem, ChildCx<'_>>) {
-  	// ...
-  	child_function(cx);
+    // ...
+    child_function(cx);
 }
 
 type ChildCx<'a> = Cx<&'a mut ChildSystem1, &'a mut ChildSystem2, DescendantCx1<'a>, DescendantCx2<'a>>;
 
 fn child_function(cx: ChildCx<'_>) {
-  	// ...
-  	descendant_1_function(cx);
-	  descendant_2_function(cx);
+    // ...
+    descendant_1_function(cx);
+    descendant_2_function(cx);
 }
 
 type DescendantCx1<'a> = Cx<&'a mut DescendantSystem1, &'a mut DescendantSystem2>;
 
 fn descendant_function_1(cx: DescendantCx1<'_>) {
-  	// ...
+    // ...
 }
 
 type DescendantCx2<'a> = Cx<&'a DescendantSystem1, &'a mut DescendantSystem3>;
 
 fn descendant_function_2(cx: DescendantCx2<'_>) {
-  	// ...
+    // ...
 }
 ```
 
@@ -310,17 +304,17 @@ In addition to being safely parameterizable by their component types, `Cx` can a
 
 ```rust
 fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) {
-  	// It is assumed that generic parameters will never alias, making this sound.
-  	// Again, details on why this assumption works are present in the reference-level guide.
-  	(cx, cx)
+    // It is assumed that generic parameters will never alias, making this sound.
+    // Again, details on why this assumption works are present in the reference-level guide.
+    (cx, cx)
 }
 
 pub fn map_mut<R: AnyCx, T: ?Sized, V: ?Sized>(cx: Cx<&mut T, R>, f: impl FnOnce(&mut T) -> &mut V) -> Cx<L, V> {
-  	let mapped = f(cx);  // Cx<&mut T, R> -> &mut T
-  	let rest: R = cx;  // Cx<&mut T, R> -> R
-  	
-	  // Once again, it is assumed that generic parameters will not overlap, making this safe.
-  	Cx::new((mapped, rest))
+    let mapped = f(cx);  // Cx<&mut T, R> -> &mut T
+    let rest: R = cx;  // Cx<&mut T, R> -> R
+
+    // Once again, it is assumed that generic parameters will not overlap, making this safe.
+    Cx::new((mapped, rest))
 }
 ```
 
@@ -355,7 +349,7 @@ let (cx_l, cx_r) = split_off::<Cx<&mut u32, &i32>, Cx<&mut u32>>(cx_1);
 
 // Finally, we can cause a source ambiguity like so:
 fn reverse_generics_demo<'a, A, B>(a: &'a mut A, b: &'a mut B) -> Cx<&'a mut A, &'a mut B> {
-  	Cx::new((a, b))
+    Cx::new((a, b))
 }
 
 let mut my_u32_1 = 3;
@@ -378,84 +372,81 @@ pub struct AudioResourceLoader {}
 pub struct AudioPlayer {}
 
 pub struct GameEngine {
-  	audio_loader: AudioResourceLoader,  // New!
-  	audio_player: AudioPlayer,  // New!
+    audio_loader: AudioResourceLoader,  // New!
+    audio_player: AudioPlayer,  // New!
 }
 
 pub struct World {
-  	// ...
+    // ...
 }
 
 pub struct Player {
-  	// ...
+    // ...
 }
 
 pub struct Tool {
-  	// ...
+    // ...
 }
 
 impl GameEngine {
-  	pub fn update(&mut self) {
-      	// ...
-    		some_world.update(Cx::new((
-      			// ...
-          	&mut self.audio_system,  // New!
-      	)));
-      	
-  	}
+    pub fn update(&mut self) {
+        // ...
+        some_world.update(Cx::new((
+            // ...
+            &mut self.audio_system,  // New!
+        )));
+    }
 }
 
 type WorldCx<'a> = Cx<
-		// ...
-		PlayerCx<'a>,  // Unchanged!
+    // ...
+    PlayerCx<'a>,  // Unchanged!
 >
 
 impl World {
-  	pub fn update(&mut self, cx: WorldCx<'_>) {
-      	// ...
-    		some_player.update(cx);  // Unchanged!
-      	
-  	}
+    pub fn update(&mut self, cx: WorldCx<'_>) {
+        // ...
+        some_player.update(cx);  // Unchanged!
+    }
 }
 
 type PlayerCx<'a> = Cx<
-		// ...
-		ToolCx<'a>,  // Unchanged!
+    // ...
+    ToolCx<'a>,  // Unchanged!
 >;
 
 impl Player {
-  	pub fn update(&mut self, cx: PlayerCx<'_>) {
-      	// ...
-    		some_tool.update(cx);  // Unchanged!
-      	
-  	}
+    pub fn update(&mut self, cx: PlayerCx<'_>) {
+        // ...
+        some_tool.update(cx);  // Unchanged!
+    }
 }
 
 type ToolCx<'a> = Cx<
-		// ...
-		&'a mut AudioResourceLoader,  // New!
-		&'a mut AudioPlayer,  // New!
+    // ...
+    &'a mut AudioResourceLoader,  // New!
+    &'a mut AudioPlayer,  // New!
 >;
 
 impl Tool {
-  	pub fn update(&mut self, cx: ToolCx<'_>) {
-      	// We very quickly got access to the audio system!
-      	// ...and, oh, what's that?
-      	cx.play_sound_from_path("tool_use.ogg");
-  	}
+    pub fn update(&mut self, cx: ToolCx<'_>) {
+        // We very quickly got access to the audio system!
+        // ...and, oh, what's that?
+        cx.play_sound_from_path("tool_use.ogg");
+    }
 }
 
 // Ah, it's an extension method designed to make it easier to call `play_sound` with a file path!
 pub trait AudioFsExt {
-  	fn play_sound_from_path(self, path: &str);
+    fn play_sound_from_path(self, path: &str);
 }
 
 impl AudioFsExt for Cx<&'_ mut AudioResourceLoader, &'_ mut AudioPlayer> {
-  	fn play_sound_from_path(self, path: &str) {
-      	self.extract_mut::<AudioPlayer>().play_sound(
-      			self.extract_mut::<AudioResourceLoader>().load(path),
-      	);
-  	}
+    fn play_sound_from_path(self, path: &str) {
+        self.extract_mut::<AudioPlayer>().play_sound(
+            self.extract_mut::<AudioResourceLoader>().load(path),
+        );
+    }
 }
 ```
 
@@ -477,28 +468,28 @@ We begin with the semantics of `CxRaw`. Here is its definition in the `core` sta
 ```rust
 // Somewhere in `core`...
 pub mod cx {
-  	mod cx_raw_unnamable {
-      	#[lang_item = "cx_raw"]  // Grants the special coercion semantics described below.
-    	  pub struct CxRaw<T>(T);
-  	}
+    mod cx_raw_unnamable {
+        #[lang_item = "cx_raw"]  // Grants the special coercion semantics described below.
+        pub struct CxRaw<T>(T);
+    }
 
-	  use cx_raw_unnamable::CxRaw;
-  
-  	impl<T> CxRaw<T> {
-  			pub fn new(value: T) -> Self {
-    	  		Self(value)
-      	}
-	  }
-  
-  	mod any_cx_sealed {
-      	pub trait Sealed {}
-  	}
-  
-  	#[lang_item = "any_cx"]  // Allows the compiler to get access to the `AnyCx` trait during coercion.
-  	pub trait AnyCx: any_cx_sealed::Sealed {}
-  
-  	impl<T> any_cx_sealed::Sealed for CxRaw<T> {}
-	  impl<T> AnyCx for CxRaw<T> {}
+    use cx_raw_unnamable::CxRaw;
+
+    impl<T> CxRaw<T> {
+        pub fn new(value: T) -> Self {
+            Self(value)
+        }
+    }
+
+    mod any_cx_sealed {
+        pub trait Sealed {}
+    }
+
+    #[lang_item = "any_cx"]  // Allows the compiler to get access to the `AnyCx` trait during coercion.
+    pub trait AnyCx: any_cx_sealed::Sealed {}
+
+    impl<T> any_cx_sealed::Sealed for CxRaw<T> {}
+    impl<T> AnyCx for CxRaw<T> {}
 }
 ```
 
@@ -538,12 +529,12 @@ Now, we can describe the semantics of the `Cx` type alias. Here is its definitio
 ```rust
 // Somewhere in `core`...
 pub mod cx {
-  	#[lang_item = "cx"]
-  	pub type Cx = ();  // (actual implementation provided by the compiler)
-  	//         ^ I'm not sure what to put here.
-  	//           If we have variadic type alias type parameters and they are somewhat functional,
-  	//           we could use that. Otherwise, we could define 12 existing type alias parameters
-  	//           each with a default of `CxRaw<()>` and pretend that this is essentially variadic.
+    #[lang_item = "cx"]
+    pub type Cx = ();  // (actual implementation provided by the compiler)
+    //         ^ I'm not sure what to put here.
+    //           If we have variadic type alias type parameters and they are somewhat functional,
+    //           we could use that. Otherwise, we could define 12 existing type alias parameters
+    //           each with a default of `CxRaw<()>` and pretend that this is essentially variadic.
 }
 ```
 
@@ -567,39 +558,39 @@ Finally, we implement the following extension methods in the `core` standard lib
 
 ```rust
 impl<'a, T: ?Sized> Cx<&'a T> {
-  	pub fn extract(self) -> &'a T {
-      	self
-  	}
+    pub fn extract(self) -> &'a T {
+        self
+    }
 }
 
 impl<'a, T: ?Sized> Cx<&'a mut T> {
-  	pub fn extract_mut(self) -> &'a mut T {
-      	self
-  	}
+    pub fn extract_mut(self) -> &'a mut T {
+        self
+    }
 }
 
 impl<'a, R: AnyCx, T: ?Sized> Cx<R, &'a T> {
-  	pub fn map<V: ?Sized>(self, f: impl FnOnce(&T) -> &V) -> Cx<R, &'a V> {
-      	let mapped = f(self);
+    pub fn map<V: ?Sized>(self, f: impl FnOnce(&T) -> &V) -> Cx<R, &'a V> {
+        let mapped = f(self);
         let rest: R = self;
 
         Cx::new((mapped, rest))
-  	}
+    }
 }
 
 impl<'a, R: AnyCx, T: ?Sized> Cx<R, &'a mut T> {
-  	pub fn map_mut<V: ?Sized>(self, f: impl FnOnce(&mut T) -> &mut V) -> Cx<R, &'a mut V> {
-      	let mapped = f(self);
+    pub fn map_mut<V: ?Sized>(self, f: impl FnOnce(&mut T) -> &mut V) -> Cx<R, &'a mut V> {
+        let mapped = f(self);
         let rest: R = self;
 
         Cx::new((mapped, rest))
-  	}
+    }
 }
 
 impl<L: AnyCx, R: AnyCx> Cx<L, R> {
-  	pub fn split(self) -> (L, R) {
-      	(self, self)
-	  }
+    pub fn split(self) -> (L, R) {
+        (self, self)
+    }
 }
 ```
 
