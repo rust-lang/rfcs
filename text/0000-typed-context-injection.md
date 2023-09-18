@@ -149,7 +149,7 @@ impl Player {
         // ...
         audio_loader: &mut AudioResourceLoader,  // Updated!
         audio_player: &mut AudioPlayer,  // Updated!
-	) {
+  ) {
         // ...
         some_tool.update(
             // ...
@@ -212,7 +212,7 @@ Yuck! It's no wonder most Rust applications prefer designs with such flat object
 
 [guide-level-explanation]: #guide-level-explanation
 
-This RFC proposes the introduction of the `Cx` object to the Rust `core` standard library to solve this problem. `Cx` is a type parameterized by a variadic list of either references to contextual objects—which we will henceforth call "components"—or other `Cx` objects we wish to "inherit."
+This RFC proposes the introduction of the `Cx` object to the Rust `core` standard library to solve this problem. `Cx` is a type parameterized by a variadic list of either references to objects—which we will henceforth call "components"—or other `Cx` objects we wish to "inherit."
 
 To define a function taking types `&System1`, `&System2`, and `&mut System3` as context, we simply write:
 
@@ -232,7 +232,8 @@ fn parent_function(cx: Cx<&mut System1, &System2, &mut System3, &mut System4, &m
 
 fn root_function() {
     // ...
-    parent_function(Cx::new((&mut system_1, &system_2, &mut system_3, &mut system_4, &mut system_5)));
+    let systems_4_and_5 = Cx::new(&mut system_4, &mut system_5);
+    parent_function(Cx::new((&mut system_1, &system_2, &mut system_3, systems_4_and_5)));
 }
 ```
 
@@ -305,7 +306,6 @@ In addition to being safely parameterizable by their component types, `Cx` can a
 ```rust
 fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) {
     // It is assumed that generic parameters will never alias, making this sound.
-    // Again, details on why this assumption works are present in the reference-level guide.
     (cx, cx)
 }
 
@@ -325,9 +325,17 @@ pub fn map_mut<R: AnyCx, T: ?Sized, V: ?Sized>(cx: Cx<&mut T, R>, f: impl FnOnce
 let cx_1: Cx<&mut u32, &mut u32> = ...;
 let cx_2: Cx<&mut u32> = cx_1;
 
-// ...Since `Cx`'s always eagerly attempt to deduplicate their component list!
+// ...since `Cx`'s always eagerly attempt to deduplicate their component list!
 
-// Instead, we have to rely upon `generics_demo` for help:
+// We can, however, force this duplication by creating the context tuple ourselves.
+let mut value_1 = 3;
+let mut value_2 = 4;
+let cx_1 = Cx::new((&mut value_1, &mut value_2));
+
+// This fails because `cx_1` genuinely contains more than one mutable reference.
+let cx_2: Cx<&mut u32> = cx_1;
+
+// Alternatively, we could rely upon `generics_demo` to cause a similar issue:
 fn generics_demo<A, B>(_cx: Cx<&mut A, &mut B>) {}
 
 let cx_1: Cx<&mut u32> = ...;
@@ -450,6 +458,67 @@ impl AudioFsExt for Cx<&'_ mut AudioResourceLoader, &'_ mut AudioPlayer> {
 }
 ```
 
+The mechanisms described above—with a little bit of help by the type bundle trick—can be used to pass generic context items as well:
+
+```rust
+// Define "bundle" traits for every type of generic component we're interested in
+// accepting. 
+trait HasLogger {
+    type Logger: Logger;
+}
+
+trait HasDatabase {
+    type Database: Database;
+}
+
+trait HasTracing {
+    type Tracing: Tracing;
+}
+
+// Define the context for Child1
+trait HasBundleForChildCx1: HasLogger + HasDatabase {}
+
+type Child1Cx<'a, B> = Cx<
+    &'a mut <B as HasLogger>::Logger>,
+    &'a mut <B as HasDatabase>::Database,
+>;
+
+// Define the context for Child2
+trait HasBundleForChildCx2: HasLogger + HasTracing {}
+
+type Child2Cx<'a, B> = Cx<
+    &'a mut <B as HasLogger>::Logger,
+    &'a mut <B as HasDatabase>::Tracing,
+>;
+
+// Define the context for parent
+type ParentCx<'a, B> = Cx<Child1Cx<'a, B>, Child2Cx<'a, B>>;
+
+trait HasBundleForParent: HasBundleForChildCx1 + HasBundleForChildCx2 {}
+
+// Define our functions
+fn parent<B: ?Sized + HasBundleForParent>(cx: ParentCx<'_, B>) {
+    let logger: &mut B::Logger = cx;
+    let tracing &mut B::Tracing = cx;
+
+    // This already works because of the no-alias assumptions
+    // between distinct generic parameters.
+    let _ = (logger, tracing);
+}
+
+fn caller(cx: Cx<&mut MyLogger, &mut MyDatabase, &mut MyTracing>) {
+    consumer::<
+        // We'll likely have to augment `Cx`'s inference system to allow
+        // this to be inferred automatically.
+        dyn HasBundleForParent<
+            Logger = MyLogger,
+            Database = MyDatabase,
+            Tracing = MyTracing,
+        >,
+    >(cx);
+}
+```
+
 How convenient!
 
 # Reference-level explanation
@@ -546,11 +615,9 @@ When resolving a type alias...
 
 - Flatten all properly parameterized parameters of type `CxRaw` into the main list of components to borrow.
 
-- Perform a best-effort deduplication of all known reference types based off their inferred pointees. The "strongest" mutability is used as the mutability of the deduplicated pointer. The check for type equality used to determine duplicates once again ignores lifetimes and considers generic parameter equality opaquely.
+- Perform a best-effort deduplication of all known reference types based off their inferred pointees. The "strongest" mutability is used as the mutability of the deduplicated pointer. The check for type equality used to determine duplicates, unlike the type equality check for context passing, is *not* lifetime blind and, if one lifetime is not known to be longer than another, the two types will be considered unequal and therefore will not be deduplicated. We do, however, consider generic parameter equality opaquely.
 
-  ==TODO: How do we choose the strongest lifetime?==
-
-- Perform a best-effort deduplication of all other arguments. Unlike the previous check, this check does not ignore lifetimes since, for most valid uses of the alias, this should not matter.
+- Perform a best-effort deduplication of all other arguments. This deduplication is also sensitive to lifetimes.
 
 - Return a `CxRaw` ADT parameterized with a tuple of these deduplicated types.
 
