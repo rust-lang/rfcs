@@ -321,7 +321,7 @@ More experience with those features might unearth better alternatives.
 - Better ergonomics compared to purely proc-macro based solutions.
 - One alternative is to allow marker traits or auto traits to appear in `+` bounds of implementable aliases.
 (For example, `trait Foo = Bar + Send;` could be made implementable). However, this would arguably make implementability rules less intuitive, as the symmetry with `impl` blocks would be broken.
-- Another possibility is to require an attribute on implmenentable aliase; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules explicit, but at the cost of cluttering the attribute namespace and adding more complexity to the language.
+- Another possibility is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules explicit, at the cost of cluttering the attribute namespace.
 
 ## What about combining multiple prtimary traits, and their items, into one impl block?
 
