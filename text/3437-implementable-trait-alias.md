@@ -157,7 +157,7 @@ so this change would break every `impl Iterator` block in existence.
 
 ## Speculative example: `Async` trait
 
-There has been some discussion about a variant of the `Future` trait with an `unsafe` poll method, to support structured concurrency ([here](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html) for example). *If* such a change ever happens, then the same "weak"/"strong" relationship will arise: the safe-to-poll `Future` trait would be a "strong" version of the unsafe-to-poll `Async`. As the linked design notes explain, there are major problems with expressing this relationship in today's Rust.
+There has been some discussion about a variant of the `Future` trait with an `unsafe` poll method, to support structured concurrency ([here](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html) for example). *If* such a change ever happens, then the same "weak"/"strong" relationship will arise: the safe-to-poll `Future` trait would be a "strong" version of the unsafe-to-poll `Async`. As the linked design notes explain, there are major problems with expressing that relationship in today's Rust.
 
 # Guide-level explanation
 
@@ -322,6 +322,47 @@ More experience with those features might unearth better alternatives.
 - One alternative is to allow marker traits or auto traits to appear in `+` bounds of implementable aliases.
 (For example, `trait Foo = Bar + Send;` could be made implementable). However, this would arguably make implementability rules less intuitive, as the symmetry with `impl` blocks would be broken.
 - Another possibility is to require an attribute on implmenentable aliase; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules explicit, but at the cost of cluttering the attribute namespace and adding more complexity to the language.
+
+## What about combining multiple prtimary traits, and their items, into one impl block?
+
+It's possible to imagine an extension of this proposal, that allows trait aliases to be implementable even if they have multiple primary traits. For example:
+
+```rust
+trait Foo = Clone + PartialEq;
+
+struct Stu;
+
+impl Foo for Stu {
+    fn clone(&self) -> Self {
+        Stu
+    }
+
+    fn eq(&self, other: &Self) -> bool {
+        true
+    }
+}
+```
+
+Such a feature could be useful when a trait has multiple items and you want to split it in two.
+
+However, there are some issues. Most glaring is the risk of name collisions:
+
+```rust
+trait A {
+    fn foo();
+}
+
+trait B {
+    fn foo();
+}
+
+// How would you write an `impl` block for this?
+trait C = A + B;
+```
+
+Such a feature could also make it harder to find the declaration of a trait item from its implementation, especially if IDE "go to definition" is not available. One would need to first find the trait alias definition, and then look through every primary trait to find the item. (However, given the current situation with postfix method call syntax, maybe this is an acceptable tradeoff.)
+
+Perhaps a more narrowly tailored version of this extension, in which both subtrait and supertrait explicitly opt-in to support sharing an `impl` block with one another, would satisfy the backward-compatibility use-case while avoiding the above issues. I think exploring that is best left to a future RFC.
 
 # Prior art
 
