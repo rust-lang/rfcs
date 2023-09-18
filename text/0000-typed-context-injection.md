@@ -232,7 +232,11 @@ fn parent_function(cx: Cx<&mut System1, &System2, &mut System3, &mut System4, &m
 
 fn root_function() {
     // ...
+
+	// Contexts can be constructed directly from references...
     let systems_4_and_5 = Cx::new(&mut system_4, &mut system_5);
+
+	// ...or from a mix of references and other "inherited" contexts.
     parent_function(Cx::new((&mut system_1, &system_2, &mut system_3, systems_4_and_5)));
 }
 ```
@@ -259,7 +263,7 @@ fn borrow_demo(cx: Cx<&mut System1, &System2, &mut System3, &mut System4>) {
 }
 ```
 
-A user can union the component types of several contexts together as follows:
+A user can union the list of component types borrowed by several contexts together as follows:
 
 ```rust
 fn parent_function(cx: Cx<&mut ParentSystem, ChildCx<'_>>) {
@@ -299,7 +303,7 @@ fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) {
 }
 ```
 
-...even if `A` and `B` happen to take on the same type.
+...even if `A` and `B` happen to take on the same type in a given parameterization of this function. We'll see later why this is sound.
 
 In addition to being safely parameterizable by their component types, `Cx` can also be parameterized by a generic context type like so:
 
@@ -318,6 +322,28 @@ pub fn map_mut<R: AnyCx, T: ?Sized, V: ?Sized>(cx: Cx<&mut T, R>, f: impl FnOnce
 }
 ```
 
+`Cx` is secretly a type alias to a second underlying type `CxRaw`. `Cx`'s sole role in this scheme is to perform a best-effort deduplication of component types and, like all other type aliases, this deduplication is performed eagerly and is only performed once.
+
+Hence, when a user specifies `Cx<&mut u32, &mut u32>`, this `Cx` alias is transformed into `CxRaw<(&mut u32,)>`. However, if we have function generic with respect to the `T` and `V` type parameters, the parameter `Cx<&mut T, &mut V>` will be resolved to `CxRaw<(&mut T, &mut V)>` and will never change its definition, even if `T` and `V` end up being the same type:
+
+```rust
+// This signature:
+fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) { }
+
+// Is rewritten as:
+fn generics_demo<A, B>(cx: CxRaw<(&mut A, &mut B)>) { }
+
+// Meanwhile, the signature:
+fn non_generic_demo(cx: Cx<&mut u32, &mut u32>) {}
+
+// Is rewritten as:
+fn non_generic_demo(cx: CxRaw<(&mut u32,)>) {}
+
+// This means that the parameter of `generics_demo::<u32, u32>` takes on the type
+// `CxRaw<(&mut u32, &mut u32)>`, which is distinct from the type of `non_generic_demo`, which
+// takes on the type `CxRaw<(&mut u32,)>`.
+```
+
 `Cx` coercion can fail if there is any ambiguity in "where" a component should come from or where it should be put. In other words, coercing to or from a context with overlapping component types will fail. This error is fortunately pretty difficult to achieve in practice.
 
 ```rust
@@ -334,13 +360,22 @@ let cx_1 = Cx::new((&mut value_1, &mut value_2));
 
 // This fails because `cx_1` genuinely contains more than one mutable reference.
 let cx_2: Cx<&mut u32> = cx_1;
+```
 
-// Alternatively, we could rely upon `generics_demo` to cause a similar issue:
-fn generics_demo<A, B>(_cx: Cx<&mut A, &mut B>) {}
+These two aforementioned rules explain why it sound to assume that distinct generic type parameters refer to distinct components in generic function bodies.
 
-let cx_1: Cx<&mut u32> = ...;
+```rust
+fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) {
+    let borrow_1: Cx<&mut A> = cx;
+    let borrow_2: Cx<&mut B> = cx;
 
-// Cx<&mut A, &mut B> is substituted with Cx<&mut u32, &mut u32> in this invocation.
+    let _ = (borrow_1, borrow_2);
+}
+
+let mut value_1 = 3;
+let cx_1: Cx<&mut u32> = Cx::new((&mut value1,));
+
+// Cx<&mut A, &mut B> is substituted with CxRaw<(&mut u32, &mut u32)> in this invocation.
 // Unlike the component list above, this component list is not deduplicated and, hence,
 // we do indeed trigger an error about the ambiguity in "where" we should provide our `u32`
 // reference.
@@ -369,6 +404,8 @@ let cx_1 = reverse_generics_demo::<u32, u32>(&mut my_u32_1, &mut my_u32_2);
 // Which `u32` do we take? This is, again, an ambiguous coercion error.
 let cx_2: Cx<&mut u32> = cx_1;
 ```
+
+## Usage Examples
 
 Using all the features described above, we can finally see how our nasty example described in the "motivation" section can be cleaned up significantly!
 
@@ -528,7 +565,6 @@ How convenient!
 Implementation of this RFC is split up into several parts:
 
 1. A `CxRaw` lang-item struct which provides the actual coercion mechanisms.
-
 2. A `Cx` intrinsic type alias which implements the eager deduplication mentioned above.
 3. Standard library helpers methods.
 
@@ -562,7 +598,7 @@ pub mod cx {
 }
 ```
 
-The compiler provides then provides the coercion semantics for this type. That is, given a source type `A` and a target type `B`...
+The compiler then provides the coercion semantics for this type. Specifically, given a source type `A` and a target type `B`...
 
 - If `A` and `B` are both ADTs which correspond to the `cx_raw` lang-item...
 
