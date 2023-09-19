@@ -1,7 +1,7 @@
 - Feature Name: `min_rust_version`
 - Start Date: 2018-06-28
-- RFC PR: [rust-lang/rfcs#2495](https://github.com/rust-lang/rfcs/pull/2495)
-- Rust Issue: [rust-lang/rust#65262](https://github.com/rust-lang/rust/issues/65262)
+- RFC PR: [rust-lang/rfcs#9732](https://github.com/rust-lang/rfcs/pull/9732)
+- Rust Issue: [rust-lang/rust#8072](https://github.com/rust-lang/cargo/issues/8072)
 
 # Summary
 [summary]: #summary
