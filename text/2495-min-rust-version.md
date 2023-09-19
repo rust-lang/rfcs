@@ -12,7 +12,7 @@ specify crate's Minimum Supported Rust Version (MSRV):
 [package]
 name = "foo"
 version = "0.1.0"
-rust = "1.30"
+rust-version = "1.30"
 ```
 
 # Motivation
