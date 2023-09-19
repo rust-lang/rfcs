@@ -109,6 +109,10 @@ another features
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+Instead of a `cargo::rust-202X-compatibility` group, we could put this in
+`rust-202X-compatibility` so there is one less group to enable to prepare for
+the next edition at the risk of user confusion over a "rust" lint controllin cargo.
+
 Instead of an error, optional dependencies could be
 - Make optional dependencies private features ([RFC #3487](https://github.com/rust-lang/rfcs/pull/3487))
   - Seems like the need for this would be relatively low and be less obvious
