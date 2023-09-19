@@ -6,7 +6,8 @@
 # Summary
 [summary]: #summary
 
-By default, cargo will treat any optional dependency as a feature.
+By default, cargo will treat any optional dependency as a
+[feature](https://doc.rust-lang.org/cargo/reference/features.html).
 As of cargo 1.60, these can be disabled by declaring a feature that activates
 the optional dependency as `dep:<name>`
 (see [RFC #3143](https://rust-lang.github.io/rfcs/3143-cargo-weak-namespaced-features.html)).
