@@ -1,97 +1,124 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: `remove-implicit-feature`
+- Start Date: 2023-09-18
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+By default, cargo will treat any optional dependency as a feature.
+As of cargo 1.60, these can be disabled by declaring a feature that activates
+the optional dependency as `dep:<name>`
+(see [RFC #3143](https://rust-lang.github.io/rfcs/3143-cargo-weak-namespaced-features.html)).
+
+On the next edition, cargo will stop exposing optional dependencies as features
+implicitly, requiring users to add `foo = ["dep:foo"]` if they still want it exposed.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+While implicit features offer a low overhead way of defining features,
+- It is easy to overlook using `dep:` when the optional dependency is not intended to be exposed
+  - Making it easy for crate authors to use the wrong syntax and be met with errors ([rust-lang/cargo#10125](https://github.com/rust-lang/cargo/issues/10125))
+  - Potentially breaking people if they are later removed ([rust-lang/cargo#12687)](https://github.com/rust-lang/cargo/pull/12687))
+  - Leading to confusing choices when `cargo add` lists features that look the same (e.g. `cargo add serde` showing `derive` and `serde_derive`)
+  - Leading to confusing errors for callers when they reference the dependency, instead of the feature, and things don't work right
+- Tying feature names to dependency names is a code smell because it ties the API to the implementation
+- It requires people and tools to deal with this special case ([rust-lang/cargo#10543](https://github.com/rust-lang/cargo/issues/10543))
+  - Granted, anything having to deal with old editions will still have to deal with this
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+Updated documentation:
+
+## Optional Dependencies
+*(Replaces the [same section in the book](https://doc.rust-lang.org/cargo/reference/features.html#optional-dependencies))*
+
+Dependencies can be marked "optional", which means they will not be compiled
+by default.
+
+For example, let's say that our 2D image processing library uses
+an external package to handle GIF images. This can be expressed like this:
+
+```toml
+[features]
+gif = ["dep:giffy"]
+
+[dependencies]
+giffy = { version = "0.11.1", optional = true }
+```
+
+This means that this dependency will only be included if the `gif`
+feature is enabled.
+In addition to `cfg(feature = "gif")` syntax, you can reference this as
+`cfg(feature = "giffy")` in the code though users may get confused at error
+messages when used on a public API.
+
+> **Note**: Prior to the 202X edition, features were implicitly created for
+> optional dependencies not referenced via `dep:`.
+
+> **Note**: Another way to optionally include a dependency is to use
+> [platform-specific dependencies]. Instead of using features, these are
+> conditional based on the target platform.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+## Existing editions
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+For existing editions, `cargo` will warn when parsing a workspace member's
+package when an optional dependency is not referenced via `dep:` in the
+features ([rust-lang/cargo#9088](https://github.com/rust-lang/cargo/issues/9088)) using the
+planned warning control system ([rust-lang/cargo#12235](https://github.com/rust-lang/cargo/issues/12235)).
+The warning will be named something like `cargo::implicit_feature` and be part
+of the `cargo::rust-202X-compatibility` group.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+Suggested text:
+```
+implicit features for optional dependencies is deprecated and will be unavailable in the 202X edition.
+```
+This would be machine applicable with a suggestion to add `foo = ["dep:foo"]`.  `cargo fix` would then insert this feature.
+
+## Next edition
+
+On the next edition, this warning will be a hard error.
+
+Suggested text:
+```
+unused optional dependency `foo`.  To use it, a feature must activate it with `dep:foo` syntax
+```
+This could be machine applicable with a suggestion to add `foo = ["dep:foo"]`.
+
+## Other
+
+To help users through this, `cargo add` will be updated so that `cargo add foo
+--optional` will create a `foo = ["dep:foo"]` if its not already referenced by
+another features
+([rust-lang/cargo#11010](https://github.com/rust-lang/cargo/issues/11010)).
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+- Some boilerplate is needed for all features, rather than just a subset
+- Extra ecosystem churn on the next edition update
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+Instead of an error, optional dependencies could be
+- Make optional dependencies private features ([RFC #3487](https://github.com/rust-lang/rfcs/pull/3487))
+  - Seems like the need for this would be relatively low and be less obvious
+  - We could still transition to this in the future
+- Allow access to the feature via `#[cfg(accessible)]` ([RFC #2523](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html))
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
-
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
-
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
