@@ -77,7 +77,9 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 
 ❌: Will not upgrade
 
-¹For backwards compatibility with Cargo's current behaviour (see [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263))
+¹This behaviour is considered by some to be undesirable and may change as proposed in [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263).
+This RFC preserves this behaviour to remain backwards compatible.
+Since this RFC is concerned with the behaviour of `cargo update --precise` changes to bare `cargo update` made in future RFCs should have no impact on this proposal.
 
 # Drawbacks
 [drawbacks]: #drawbacks
