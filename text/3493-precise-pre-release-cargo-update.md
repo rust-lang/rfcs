@@ -1,6 +1,6 @@
 - Feature Name: precise-pre-release-cargo-update
 - Start Date: 2023-09-20
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3493](https://github.com/rust-lang/rfcs/pull/3493)
 
 # Summary
 [summary]: #summary
