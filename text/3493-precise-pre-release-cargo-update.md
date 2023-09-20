@@ -106,11 +106,25 @@ Put in simple terms the relationship between a pre-release and its stable releas
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Discourage pre-releases
+
 The main alternative to this would be to accept that pre-release versions are not very usable and discourage their use.
 Cargo overrides can be used instead using `[patch]`.
 These provide a similar experience to pre-releases, however, they require that the library's code is somehow vendored outside of the registry, usually with git.
 This can cause issues particularly in CI where jobs may have permission to fetch from a private registry but not from private git repositories.
 Resolving issues around not being able to fetch pre-releases from the registry usually wastes a significant amount of time.
+
+## Extend `[patch]`
+
+It could be possible to build upon `[patch]` to [allow it to use crates published in the registry](https://github.com/rust-lang/cargo/issues/9227).
+This could be combined with [version overrides](https://github.com/rust-lang/cargo/issues/5640) to pretend that the pre-release crate is a stable version.
+
+My concern with this approach is that it doesn't introduce the concept of compatible pre-releases.
+This would allow any version to masquerade as another.
+Without the concept of compatible pre-releases there would be no path forward towards being able to express pre-release requirements in library crates.
+This is explored in [future-possibilities].
+
+## Pre-releases in `Cargo.toml`
 
 Another alternative would be to resolve pre-release versions in `Cargo.toml`s even when another dependency specifies a stable version.
 This is explored in [future-possibilities].
