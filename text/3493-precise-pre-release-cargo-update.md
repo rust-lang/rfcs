@@ -59,14 +59,6 @@ location searched: crates.io index
 required by package `tmp-oyyzsf v0.1.0 (/home/ethan/.cache/cargo-temp/tmp-OYyZsF)`
 ```
 
-Once `1.2.0` is released `cargo update` will warn the user that a stable version is available
-
-```
-> cargo update
-warning: version `1.2.0` of `example` has been released but `1.2.0-pre.0` was previously selected
-note: to use the stable version run `cargo update -p example --precise 1.2.0`
-```
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -78,16 +70,14 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 | `a.b.c`         | `a.b.c`            | `x.y.z-pre.0`   | ❌                        | ✅                                  |
 | `a.b.c`         | `x.y.z-pre.0`       | `x.y.z-pre.1`   | ❌                        | ✅                                  |
 | `a.b.c-pre.0`    | `a.b.c-pre.0`       | `a.b.c-pre.1`   | ✅¹                       | ✅                                  |
+| `a.b.c-pre.0`    | `a.b.c-pre.0`       | `x.y.z`        | ✅¹                       | ✅                                  |
 | `a.b.c`         | `a.b.c`            | `a.b.c-pre.0`   | ❌                        | ❌                                  |
-| `a.b.c-pre.0`    | `a.b.c-pre.0`       | `x.y.z`        | ❌²                       | ✅                                  |
 
 ✅: Will upgrade
 
 ❌: Will not upgrade
 
 ¹For backwards compatibility with Cargo's current behaviour (see [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263))
-
-²Emits a warning
 
 # Drawbacks
 [drawbacks]: #drawbacks
