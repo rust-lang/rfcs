@@ -106,9 +106,8 @@ Put in simple terms the relationship between a pre-release and its stable releas
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Discourage pre-releases
+## Use overrides
 
-The main alternative to this would be to accept that pre-release versions are not very usable and discourage their use.
 Cargo overrides can be used instead using `[patch]`.
 These provide a similar experience to pre-releases, however, they require that the library's code is somehow vendored outside of the registry, usually with git.
 This can cause issues particularly in CI where jobs may have permission to fetch from a private registry but not from private git repositories.
