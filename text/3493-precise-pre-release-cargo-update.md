@@ -66,12 +66,12 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 
 | Cargo.toml spec | Cargo.lock version | Target version | Selected by cargo update  | Selected by cargo update --precise  |
 | --------------- | ------------------ | -------------- | ------------------------- | ----------------------------------- |
-| `a.b.c`         | `a.b.c`            | `x.y.z`        | ✅                        | ✅                                  |
-| `a.b.c`         | `a.b.c`            | `x.y.z-pre.0`   | ❌                        | ✅                                  |
-| `a.b.c`         | `x.y.z-pre.0`       | `x.y.z-pre.1`   | ❌                        | ✅                                  |
-| `a.b.c-pre.0`    | `a.b.c-pre.0`       | `a.b.c-pre.1`   | ✅¹                       | ✅                                  |
-| `a.b.c-pre.0`    | `a.b.c-pre.0`       | `x.y.z`        | ✅¹                       | ✅                                  |
-| `a.b.c`         | `a.b.c`            | `a.b.c-pre.0`   | ❌                        | ❌                                  |
+| `^a.b.c`         | `a.b.c`            | `x.y.z`        | ✅                        | ✅                                  |
+| `^a.b.c`         | `a.b.c`            | `x.y.z-pre.0`   | ❌                        | ✅                                  |
+| `^a.b.c`         | `x.y.z-pre.0`       | `x.y.z-pre.1`   | ❌                        | ✅                                  |
+| `^a.b.c-pre.0`    | `a.b.c-pre.0`       | `a.b.c-pre.1`   | ✅¹                       | ✅                                  |
+| `^a.b.c-pre.0`    | `a.b.c-pre.0`       | `x.y.z`        | ✅¹                       | ✅                                  |
+| `^a.b.c`         | `a.b.c`            | `a.b.c-pre.0`   | ❌                        | ❌                                  |
 
 ✅: Will upgrade
 
@@ -80,6 +80,21 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 ¹This behaviour is considered by some to be undesirable and may change as proposed in [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263).
 This RFC preserves this behaviour to remain backwards compatible.
 Since this RFC is concerned with the behaviour of `cargo update --precise` changes to bare `cargo update` made in future RFCs should have no impact on this proposal.
+
+To determine if a version can be selected with `--precise` for a specification that isn't listed above cosider where pre-releases exist within version ranges.
+
+For example consider the version `~1.2.3`.
+The range for `~1.2.3` is [stated in the cargo book](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#tilde-requirements).
+
+```
+~1.2.3  := >=1.2.3, <1.3.0
+```
+
+Intuitively `1.2.4-pre.0` satisfies this inequality, therefore it can be selected with `cargo update --precise`.
+Since it is a pre-release and the specification is not, `1.2.4-pre.0` would not be selected by a bare `cargo update`.
+`1.3.0-pre.0` also satisfies the inequality but `1.2.3-pre.0` and `1.3.1-pre.0` do not.
+
+Put in simple terms the relationship between a pre-release and its stable release is always `a.b.c-pre.0 < a.b.c`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
