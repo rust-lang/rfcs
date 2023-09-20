@@ -124,6 +124,14 @@ This would allow any version to masquerade as another.
 Without the concept of compatible pre-releases there would be no path forward towards being able to express pre-release requirements in library crates.
 This is explored in [future-possibilities].
 
+## Change the version in `Cargo.toml` rather than `Cargo.lock` when using `--precise`
+
+This [accepted proposal](https://github.com/rust-lang/cargo/issues/12425) allows cargo to update a projects `Cargo.toml` when the version is incompatible.
+
+The issue here is that cargo will not unify a pre-release version with a stable version.
+If the crate being updated is used pervasively this will more than likely cause a resolver error.
+This makes this alternative unfit for our [motivation].
+
 ## Pre-releases in `Cargo.toml`
 
 Another alternative would be to resolve pre-release versions in `Cargo.toml`s even when another dependency specifies a stable version.
