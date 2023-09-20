@@ -4,3 +4,13 @@ allow-unauthenticated = [
     "T-*",
     "not-rfc",
 ]
+
+[notify-zulip."T-cargo"]
+zulip_stream = 246057 # t-cargo
+topic = "RFC #{number} - {title}"
+message_on_add = "A new T-cargo RFC has been opened: https://github.com/rust-lang/rfcs/pull/{number}"
+
+[notify-zulip."T-crates-io"]
+zulip_stream = 318791 # t-crates-io
+topic = "RFC #{number} - {title}"
+message_on_add = "A new T-crates-io RFC has been opened: https://github.com/rust-lang/rfcs/pull/{number}"
