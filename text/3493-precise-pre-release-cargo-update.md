@@ -153,7 +153,7 @@ pre-release versions to new pre-releases when one is released.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-It would be nice if dependencies could specify their requirements for pre-release versions.
+It would be nice if cargo could unify pre-release version requirements with stable versions.
 
 Take for example this dependency tree.
 
