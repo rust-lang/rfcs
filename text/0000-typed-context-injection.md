@@ -322,6 +322,21 @@ pub fn map_mut<R: AnyCx, T: ?Sized, V: ?Sized>(cx: Cx<&mut T, R>, f: impl FnOnce
 }
 ```
 
+By default, when `AnyCx` components are used to coerce into a destination context, ownership of the entire `AnyCx` instance is transferred. We can avoid this by specifying that the we actually intend to reborrow the type:
+
+```rust
+fn split_of_after_inspecting<L: AnyCx, R: AnyCx>(
+    cx: Cx<L, R>,
+    inspector: impl FnOnce(L::Reborrowed<'_>, R::Reborrowed<'_>),
+) -> (L, R) {
+    // Reborrows `L` and `R`
+    inspector(cx, cx);
+
+    // Moves `L` and `R`
+    (cx, cx)
+}
+```
+
 `Cx` is secretly a type alias to a second underlying type `CxRaw`. `Cx`'s sole role in this scheme is to perform a best-effort deduplication of component types and, like all other type aliases, this deduplication is performed eagerly and is only performed once.
 
 Hence, when a user specifies `Cx<&mut u32, &mut u32>`, this `Cx` alias is transformed into `CxRaw<(&mut u32,)>`. However, if we have function generic with respect to the `T` and `V` type parameters, the parameter `Cx<&mut T, &mut V>` will be resolved to `CxRaw<(&mut T, &mut V)>` and will never change its definition, even if `T` and `V` end up being the same type:
