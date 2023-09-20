@@ -1,5 +1,6 @@
 [relabel]
 allow-unauthenticated = [
     "A-*",
+    "T-*",
     "not-rfc",
 ]
