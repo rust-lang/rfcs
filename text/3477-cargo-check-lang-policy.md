@@ -1,7 +1,6 @@
 - Feature Name: `cargo-check-lang-policy`
 - Start Date: 2023-08-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3477](https://github.com/rust-lang/rfcs/pull/3477)
 
 # Summary
 [summary]: #summary
