@@ -4,308 +4,426 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
-
 [summary]: #summary
 
-This RFC proposes the addition of a `Cx` structure to the `core` standard library alongside corresponding compiler support to allow Rust users to conveniently pass "bundles of context" around in their applications. `Cx` objects act as unordered tuples of references to objects the user wishes to pass around. `Cx` objects can be coerced into `Cx` objects containing a subset of their references.
+This RFC proposes the addition of a `Cx` structure to the `core` standard library alongside corresponding compiler support to allow Rust users to conveniently pass "bundles of context" around their applications. `Cx` objects are a thin wrapper around tuples of references which adorn the wrapped tuple with the ability to coerce into other `Cx` objects containing a subset of their references.
 
 # Motivation
-
 [motivation]: #motivation
 
-Barring interior mutability, Rust's object graph is tree shaped and forbids objects in the tree from creating references to ancestors, references to indirect descendants, and references to siblings.
-
-In practice, this means two things:
-
-1. Users must store object instances at the common ancestor of all its consumers.
-2. To pass a reference pointing at an object near the root of the tree to a descendant deep in the tree, the user must manually forward that reference through the entire dispatch chain.
-
-This reference forwarding is massively inconvenient for refactoring purposes. Every time the user wishes to grant a deeply nested object access to an ancestor object, they must modify many different places in the program to properly forward that reference to its children—even if those places don't end up using the reference directly!
+As it stands, Rust has no mechanism for conveniently passing large amounts of context to a function deep in the call stack. To inject a component of type `NewSystem`, for example, one must manually forward that reference throughout the entire dispatch chain.
 
 ```rust
-pub struct GameEngine {
-    audio_system: AudioSystem,  // New!
+fn func_1(..., new_system: &mut NewSystem) {  // Updated!
+    ...
+    func_2(..., new_system);  // Updated!
 }
 
-pub struct World {
-    // ...
+fn func_2(..., new_system: &mut NewSystem) { // Updated!
+    ...
+    func_3(..., new_system);  // Updated!
 }
 
-pub struct Player {
-    // ...
-}
-
-pub struct Tool {
-    // ...
-}
-
-impl GameEngine {
-    pub fn update(&mut self) {
-        // ...
-        some_world.update(
-            // ...
-            &mut self.audio_system,  // New!
-        );
-    }
-}
-
-impl World {
-    pub fn update(
-        &mut self,
-        // ...
-        audio_system: &mut AudioSystem,  // New!
-     ) {
-        // ...
-        some_player.update(
-            // ...
-            audio_system,  // New!
-        );
-    }
-}
-
-impl Player {
-    pub fn update(
-        &mut self,
-        // ...
-        audio_system: &mut AudioSystem,  // New!
-     ) {
-        // ...
-        some_tool.update(
-            // ...
-            audio_system,  // New!
-        );
-    }
-}
-
-impl Tool {
-    pub fn update(
-        &mut self,
-        // ...
-        audio_system: &mut AudioSystem,  // New!
-     ) {
-        // We finally have access to the audio system!
-        audio_system.play_sound("tool_use.ogg");
-    }
+fn func_3(..., new_system: &mut NewSystem) { // Updated!
+    // We finally have access to `new_system`
 }
 ```
 
-Much of this complexity is irreducible, unfortunately. Although it may be tempting to just pass the entire `GameEngine` throughout the entire dispatch chain, doing so will prevent other systems from creating their own concurrent borrows to objects owned by the `GameEngine`.
+Although one may be tempted to bundle up this context into convenient tuples to reduce the amount of explicit context passing, doing so will only work if only one descendant of the call stack relies upon that type. If several descendants rely on a given contextual type, you're out of luck!
 
 ```rust
-impl World {
-    pub fn update(engine: &mut GameEngine) {
-        for player in engine.players.iter_mut() {
-            player.update(engine);  // Whoops!
-        }
-    }
+type Descendant1Cx<'a> = (&'a mut SharedSystem, &'a mut Descendant1System);
+
+fn descendant_1(cx: Descendant1Cx<'_>) {
+    ...
+}
+
+type Descendant2Cx<'a> = (&'a mut SharedSystem, &'a mut Descendant2System);
+
+fn descendant_2(cx: Descendant2Cx<'_>) {
+    ...
+}
+
+fn callee(descendant_1_cx: Descendant1Cx<'_>, descendant_2_cx: Descendant2Cx<'_>) {
+    descendant_1(descendant_1_cx);
+    descendant_2(descendant_2_cx);
+}
+
+fn caller(
+    shared_system: &mut SharedSystem,
+    descendant_1_system: &mut Descendant1System,
+    descendant_2_system: &mut Descendant2System,
+) {
+    callee(
+        (shared_system, descendant_1_system),
+        (shared_system, descendant_2_system),  // Whoops! We borrowed shared_system twice!
+    );
 }
 ```
 
-Worst of all, when users wish to split up an application system into several semi-dependent objects for the purpose of improving parallelism or code reuse, they must forward those new references throughout the entire context-passing chain, including in the call sites of the previously "atomic" methods!
+Finally, although good software practices encourage programmers to keep their abstractions minimal and properly-decoupled, doing so only causes grief when trying to implement operations acting upon several of these well-split-up components:
 
 ```rust
-// New!
-pub struct AudioResourceLoader {}
+pub struct AudioBuffer { ... }
 
-// New!
-pub struct AudioPlayer {}
-
-// ...
-
-pub struct GameEngine {
-    audio_loader: AudioResourceLoader,  // Updated!
-    audio_player: AudioPlayer,  // Updated!
+impl AudioBuffer {
+    pub fn play_samples(&mut self, data: &[f32], volume: f32) { ... }
 }
 
-impl GameEngine {
-    pub fn update(&mut self) {
-        // ...
-        some_world.update(
-            // ...
-            &mut self.audio_loader,  // Updated!
-            &mut self.audio_player,  // Updated!
-        );
-    }
+pub struct VirtualFileSystem { ... }
+
+impl VirtualFileSystem {
+    pub fn load_file(&mut self, path: &str) -> &[u8] { ... }
 }
 
-impl World {
-    pub fn update(
-        &mut self,
-        // ...
-        audio_loader: &mut AudioResourceLoader,  // Updated!
-        audio_player: &mut AudioPlayer,  // Updated!
-     ) {
-        // ...
-        some_player.update(
-            // ...
-            audio_loader, audio_player,  // Updated!
-        );
-    }
+pub struct AudioCache { ... }
+
+impl AudioCache {
+    pub fn resolve_from_cache(&mut self, path: &str, loader: impl FnOnce() -> &[u8]) -> &[f32] { ... }
 }
 
-impl Player {
-    pub fn update(
-        &mut self,
-        // ...
-        audio_loader: &mut AudioResourceLoader,  // Updated!
-        audio_player: &mut AudioPlayer,  // Updated!
-  ) {
-        // ...
-        some_tool.update(
-            // ...
-            audio_loader, audio_player,  // Updated!
-        );
-    }
+pub struct SoundVolumeOverrides { ... }
+
+impl SoundVolumeOverrides {
+    pub fn get_volume_override(path: &str) -> f32 { ... }
 }
 
-impl Tool {
-    pub fn update(
-        &mut self,
-        // ...
-        audio_loader: &mut AudioResourceLoader,  // Updated!
-        audio_player: &mut AudioPlayer,  // Updated!
-    ) {
-        // We finally have access to the audio system!
+// Ideally, we could just write:
+cx.play_sound_at_path("cbat.ogg");
 
-        // Oh no, our method got more tedious to use!
-        audio_player.play_sound(audio_loader.load("tool_use.ogg"));
-
-        // ...and we can't really simplify it in any meaningful way.
-        audio_player.player_sound_from_path(&mut audio_loader, "tool_use.org");
-    }
-}
+// But, unfortunately, we must write:
+audio_buffer.play_sound_at_path(&mut virtual_fs, &mut audio_cache, &mut sound_volume_overrides, "cbat.ogg");
 ```
 
-Of course, in passing all these objects through the dispatch chain, we are left with massive and very unwieldy function signatures:
-
-```rust
-// The full, unabridged Player signature.
-impl Player {
-    pub fn update(
-        &mut self,
-        // Some systems operate on just the position so we should probably separate those into their
-        // own object.
-        positions: &mut HashMap<ActorId, Position>,
-
-        // Some systems operate on just the base information common to all items so we should separate
-        // those into their own object as well.
-        common_item_data: &mut HashMap<ItemId, CommonsItemData>,
-
-        // Turns out, the world sometimes accesses tools directly without going through the player so
-        // we need the world to own these and pass these along to the player.
-        tools: &mut HashMap<ItemId, Tool>,
-
-        // Oh yeah, these still need to be passed.
-        audio_loader: &mut AudioResourceLoader,
-        audio_player: &mut AudioPlayer,
-
-        // Ugh.
-    ) {
-        // ...
-    }
-}
-```
-
-Yuck! It's no wonder most Rust applications prefer designs with such flat object hierarchies.
+Yuck!
 
 # Guide-level explanation
-
 [guide-level-explanation]: #guide-level-explanation
 
-This RFC proposes the introduction of the `Cx` object to the Rust `core` standard library to solve this problem. `Cx` is a type parameterized by a variadic list of either references to objects—which we will henceforth call "components"—or other `Cx` objects we wish to "inherit."
+Enter typed context injection. 
 
-To define a function taking types `&System1`, `&System2`, and `&mut System3` as context, we simply write:
+Context injection is accomplished with two new standard library items: `Cx` and `AnyCx`. `Cx` is a variadic type parameterized by the references comprising a function's context. For example, to write a function taking `&mut System1` and `&System2`, you can just write:
 
 ```rust
-fn child_function(cx: Cx<&System1, &System2, &mut System3>) {
-    // ...
-}
+fn consumer(cx: Cx<&mut System1, &System2>) { ... }
 ```
 
-To pass context to this `child_function`, we either have to construct the appropriate context from a tuple or coerce from a `Cx` object containing a superset of the required context.
+From there, you can fetch your components by either coercing the context to its comprising elements (which we'll henceforth refer to as *components*) or by using the `.extract::<T>()` utility methods, which perform the coercion internally but expose it in an occasionally-more-convenient method form.
 
 ```rust
-fn parent_function(cx: Cx<&mut System1, &System2, &mut System3, &mut System4, &mut System5>) {
-    // ...
-    child_function(cx);
-}
+fn consumer(cx: Cx<&mut System1, &System2>) {
+    let system_1: &mut System1 = cx;
+    let system_2: &System2 = cx;
 
-fn root_function() {
-    // ...
-
-    // Contexts can be constructed directly from references...
-    let systems_4_and_5 = Cx::new(&mut system_4, &mut system_5);
-
-    // ...or from a mix of references and other "inherited" contexts.
-    parent_function(Cx::new((&mut system_1, &system_2, &mut system_3, systems_4_and_5)));
-}
-```
-
-Elements can be extracted from a `Cx` instance by implicitly coercing it into its target reference type or by calling the `.extract::<T>()` or `.extract_mut::<T>()` methods:
-
-```rust
-fn child_function(cx: Cx<&System1, &System2, &mut System3>) {
-    let system_1: &System1 = cx;
+    // ...which is equivalent to:
+    let system_1 = cx.extract_mut::<System1>();
     let system_2 = cx.extract::<System2>();
-    let system_3 = cx.extract_mut::<System3>();
 }
 ```
 
-This mechanism is, as expected, borrow-aware, so passing one element of the context to another method will not affect borrows on another:
+To provide a `Cx` to a method, you can either create it with the `Cx::new` constructor or coerce a superset context into the target subset of itself.
 
 ```rust
-fn borrow_demo(cx: Cx<&mut System1, &System2, &mut System3, &mut System4>) {
-    let borrow_1: Cx<&mut System1, &System2> = cx;
-    let borrow_2: Cx<&mut System3, &System2> = cx;
+fn caller_1(cx: Cx<&mut System1, &mut System2, &System3>) {
+    // `cx` has a mutable reference to `System1` and (at least) an immutable reference to `System2`
+    // so this is fine. The unnecessary `&System3` reference is completely ignored.
+    consumer(cx);
+}
 
-    // Both context objects can be used at the same time.
+fn caller_2() {
+    ...
+
+    // We can give the context in the order it shows up in the target type.
+    consumer(Cx::new((&mut system_1, &system_2)));
+
+    // But we could also provide the context in any other order and let coercion
+    // turn e.g. a `Cx<&mut System2, &mut System1>` into a `Cx<&mut System1, &System2>`.
+    consumer(Cx::new((&mut system_2, &mut system_1)));
+
+    // Heck, we could even pass the function additional completely unrelated components and coercion
+    // would still have our back!
+    //
+    // Coerces `Cx<&mut SomeOtherSystem, &mut System2, &mut System1>` into
+    // `Cx<&mut System1, &System2>`.
+    consumer(Cx::new((&mut some_other_system, &mut system_2, &mut system_1)));
+
+    // And if that flexibility wasn't enough, we can combine several contexts together to
+    // construct a full context like so:
+    let inherited_cx = Cx::new((&mut some_other_system, &mut system_2));
+
+    // Coerces `Cx<Cx<&mut SomeOtherSystem, &mut System2>, &mut System1>` into
+    // `Cx<&mut System1, &System2>`.
+    consumer(Cx::new((inherited_cx, &mut system_1)));
+}
+```
+
+Of course, this process is entirely borrow aware. When we coerce a context, only the components needed by the coercion are borrowed. All other components are completely untouched by the process.
+
+```rust
+fn example(cx: Cx<&mut CommonSystem, &mut System1, &mut System2, &mut OtherSystem>) {
+    let borrow_1: Cx<&CommonSystem, &mut System1> = cx;
+    let borrow_2: Cx<&CommonSystem, &mut System2> = cx;
+
+    // Both borrows can overlap.
+    let _ = (borrow_1, borrow_2);
+
+    // ...because the coercions desugar to the following:
+
+    // `CxRaw<T>` is an implementation detail we'll talk about in a bit. For right now,
+    // just think of it as a newtype around an arbitrary tuple type `T`.
+    let borrow_1: CxRaw<(&CommonSystem, &mut System1)> = CxRaw::new((
+        &self.0.0,
+        &mut self.0.1,
+    ));
+    let borrow_2: CxRaw<(&CommonSystem, &mut System2)> = CxRaw::new((
+        &self.0.0,
+        &mut self.0.2,
+    ));
+
     let _ = (borrow_1, borrow_2);
 }
 ```
 
-A user can union the list of component types borrowed by several contexts together as follows:
+We can use these features to implement a much more convenient version of the `play_sound_at_path` method demonstrated in the [motivation section](#motivation).
 
 ```rust
-fn parent_function(cx: Cx<&mut ParentSystem, ChildCx<'_>>) {
-    // ...
-    child_function(cx);
+pub trait AudioBufferCxExt {
+    fn play_sound_at_path(self, path: &str);
 }
 
-type ChildCx<'a> = Cx<&'a mut ChildSystem1, &'a mut ChildSystem2, DescendantCx1<'a>, DescendantCx2<'a>>;
+type AudioBufferCx<'a> = Cx<
+    &'a mut AudioBuffer,
+    &'a mut VirtualFileSystem,
+    &'a mut AudioCache,
+    &'a mut SoundVolumeOverrides,
+>;
 
-fn child_function(cx: ChildCx<'_>) {
-    // ...
-    descendant_1_function(cx);
-    descendant_2_function(cx);
+impl AudioBufferCxExt for AudioBufferCx<'_> {
+    fn play_sound_at_path(self, path: &str) {
+        self.extract_mut::<AudioBuffer>().play_samples(
+            self.extract_mut::<AudioCache>().resolve_from_cache(
+                path,
+                || self.extract_mut::<VirtualFileSystem>().load_file(path),
+            ),
+            self.extract_mut::<SoundVolumeOverrides>().get_volume_override(path),
+        );
+    }
 }
 
-type DescendantCx1<'a> = Cx<&'a mut DescendantSystem1, &'a mut DescendantSystem2>;
+let cx: AudioBufferCx<'_> = ...;
 
-fn descendant_function_1(cx: DescendantCx1<'_>) {
-    // ...
+// And now it just works!
+cx.play_sound_at_path("cbat.ogg");
+```
+
+This feature is great at reducing the amount of typing required to pass context to function but does nothing to reduce the pain of propagating context components throughout a dispatch chain. To fix this problem, we have to look into the second super power of `Cx`: nesting and deduplication.
+
+In addition to containing references and mutable references in its variadic parameters, `Cx` can also contain other `Cx` types, which it inherits into its own context. The flattened component list is then deduplicated to ensure that only one instance of each type is requested.
+
+With these two features, it is now possible to rewrite our second example in the [motivation section](#motivation) to be convenient to refactor:
+
+```rust
+// We just have to change this line from a tuple to a `Cx`.
+type Descendant1Cx<'a> = Cx<&'a mut SharedSystem, &'a mut Descendant1System>;
+
+fn descendant_1(cx: Descendant1Cx<'_>) {
+    ...
 }
 
-type DescendantCx2<'a> = Cx<&'a DescendantSystem1, &'a mut DescendantSystem3>;
+// Same here!
+type Descendant2Cx<'a> = Cx<&'a mut SharedSystem, &'a mut Descendant2System>;
 
-fn descendant_function_2(cx: DescendantCx2<'_>) {
-    // ...
+fn descendant_2(cx: Descendant2Cx<'_>) {
+    ...
+}
+
+// We also need to give the callee its own context.
+type CalleeCx<'a> = Cx<Descendant1Cx<'a>, Descendant2Cx<'a>>;
+
+fn callee(cx: CalleeCx<'_>) {
+    descendant_1(cx);
+    descendant_2(cx);
+}
+
+fn caller(
+    shared_system: &mut SharedSystem,
+    descendant_1_system: &mut Descendant1System,
+    descendant_2_system: &mut Descendant2System,
+) {
+    callee(Cx::new((
+        // ...and now we only have to provide one reference to `shared_system`.
+        shared_system,
+        descendant_1_system,
+        descendant_2_system,
+    )));
 }
 ```
 
-As implied above, this mechanism is type based. It is important  to note that type equality is based off non-monomorphized information. Hence it is sound to write:
+So far, this system works great for concrete types but how does it fare for generics?
+
+Consider the following simple example:
 
 ```rust
-fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) {
-    let borrow_1: Cx<&mut A> = cx;
-    let borrow_2: Cx<&mut B> = cx;
-
-    let _ = (borrow_1, borrow_2);
+fn generic_demo<T, V>(cx: Cx<&mut T, &mut V>) {
+    let a: &mut T = cx;
+    let b: &mut V = cx;
+    let _ = (a, b);
 }
 ```
 
-...even if `A` and `B` happen to take on the same type in a given parameterization of this function. We'll see later why this is sound.
+Should this be accepted? This proposes says yes: generic parameters should be assumed distinct.
 
-In addition to being safely parameterizable by their component types, `Cx` can also be parameterized by a generic context type like so:
+But how does the proposal handle misuse like this:
+
+```rust
+let mut value = 3u32;
+generic_demo::<u32, u32>(Cx::new((&mut value,)));  // Oh no!
+```
+
+Isn't this going to cause undefined behavior in the `generic_demo` function body?
+
+To understand why this is sound, we need to dive deeper into the specific semantics of `Cx`. `Cx` is not an actual type; instead, it's a special type alias resolving to some parametrization of the type `CxRaw<T>`. `CxRaw<T>`, meanwhile, is just a thin newtype wrapper around a tuple of type `T` which is given special treatment by the Rust compiler to allow it to coerce with the semantics described above. `Cx`'s sole role in this scheme is to perform a best-effort deduplication of component types and, like all other type aliases, this deduplication is performed eagerly and is only performed once.
+
+Hence, when a user specifies `Cx<&mut u32, &mut u32>`, this `Cx` alias is transformed into `CxRaw<(&mut u32,)>`. However, if we have function generic with respect to the `T` and `V` type parameters, the parameter `Cx<&mut T, &mut V>` will be resolved to `CxRaw<(&mut T, &mut V)>` and will never change its definition, even if `T` and `V` end up being the same type in a given monomorphization:
+
+```rust
+// This signature:
+fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) { }
+
+// Is rewritten as:
+fn generics_demo<A, B>(cx: CxRaw<(&mut A, &mut B)>) { }
+
+// Meanwhile, the signature:
+fn non_generic_demo(cx: Cx<&mut u32, &mut u32>) {}
+
+// Is rewritten as:
+fn non_generic_demo(cx: CxRaw<(&mut u32,)>) {}
+
+// This means that the parameter of `generics_demo::<u32, u32>` takes a parameter of the type
+// `CxRaw<(&mut u32, &mut u32)>`, which is distinct from the type of `non_generic_demo`'s parameter,
+// which takes on the type `CxRaw<(&mut u32,)>`.
+```
+
+`CxRaw` does not do any deduplication of its component types. If a component type is duplicated in the source or target `CxRaw` tuple type, the coercion is rejected for being ambiguous since the coercion logic will have no clue where to take references from and where to reborrow them into.
+
+With these two rules in mind, let us now desugar the `generic_demo`:
+
+```rust
+// The user's function...
+fn generic_demo<T, V>(cx: Cx<&mut T, &mut V>) {
+    let a: &mut T = cx;
+    let b: &mut V = cx;
+    let _ = (a, b);
+}
+
+// Desugars to:
+fn generic_demo<T, V>(cx: CxRaw<(&mut T, &mut V)>) {
+    // We can assume that these do not alias because the tuple ensures that
+    // they're different references.
+    let a: &mut T = &mut cx.0.0;
+    let b: &mut V = &mut cx.0.1;
+    let _ = (a, b);
+}
+
+// So when we call it dangerously...
+let mut value = 3u32;
+
+// This coercion is rejected as ambiguous.
+// `CxRaw<(&mut u32,)>` cannot coerce to `CxRaw<(&mut u32, &mut u32)>` because the target
+// contains more than one component of type `&mut u32`.
+generic_demo::<u32, u32>(CxRaw::new((&mut value,)));
+```
+
+Hence, it is safe to assume that distinct generic parameters are non-overlapping.
+
+Now that we know generics are safe, we can now see how to use generics in a "refactor-safe" way:
+
+```rust
+// Define "bundle" traits for every type of generic component we're interested in
+// accepting. 
+trait HasLogger {
+    type Logger: Logger;
+}
+
+trait HasDatabase {
+    type Database: Database;
+}
+
+trait HasTracing {
+    type Tracing: Tracing;
+}
+
+// Define the context for Child1
+trait HasBundleForChildCx1: HasLogger + HasDatabase {}
+
+type Child1Cx<'a, B> = Cx<
+    &'a mut <B as HasLogger>::Logger,
+    &'a mut <B as HasDatabase>::Database,
+>;
+
+// Define the context for Child2
+trait HasBundleForChildCx2: HasLogger + HasTracing {}
+
+type Child2Cx<'a, B> = Cx<
+    &'a mut <B as HasLogger>::Logger,
+    &'a mut <B as HasTracing>::Tracing,
+>;
+
+// Define the context for parent
+type ParentCx<'a, B> = Cx<Child1Cx<'a, B>, Child2Cx<'a, B>>;
+
+trait HasBundleForParent: HasBundleForChildCx1 + HasBundleForChildCx2 {}
+
+// Define our functions
+fn parent<B: ?Sized + HasBundleForParent>(cx: ParentCx<'_, B>) {
+    let logger: &mut B::Logger = cx;
+    let tracing &mut B::Tracing = cx;
+
+    // This already works because of the no-alias assumptions
+    // between distinct generic parameters.
+    let _ = (logger, tracing);
+}
+
+fn caller(cx: Cx<&mut MyLogger, &mut MyDatabase, &mut MyTracing>) {
+    consumer::<
+        // We'll likely have to augment `Cx`'s inference system to allow
+        // this to be inferred automatically.
+        dyn HasBundleForParent<
+            Logger = MyLogger,
+            Database = MyDatabase,
+            Tracing = MyTracing,
+        >,
+    >(cx);
+}
+```
+
+This technique of using type bundles to accept generic parameters in contexts works because all resolutions of `<B as HasLogger>::Logger` throughout the entire context type tree will resolve to the same generic type parameter when used in `parent`'s signature, meaning that we end up with a desugared signature for `parent` which looks like this:
+
+```rust
+// Our original function...
+fn parent<B: ?Sized + HasBundleForParent>(cx: ParentCx<'_, B>) { ... }
+
+// After inlining all our type aliases...
+fn parent<B: ?Sized + HasBundleForParent>(cx: Cx<
+    Cx<
+        &'a mut B::Logger,
+        &'a mut B::Database,
+    >,
+    Cx<
+        &'a mut B::Logger,
+        &'a mut B::Tracing,
+    >
+>) { ... }
+
+// Desugars into:
+fn parent<B: ?Sized + HasBundleForParent>(cx: CxRaw<(&mut B::Logger, &mut B::Database, &mut B::Tracing)>) {
+    ...
+}
+
+// ...which was exactly what we wanted.
+```
+
+In addition to being safely parameterizable by their component types, `Cx` can also be parameterized by a generic context type implementing the `AnyCx` trait. This feature can be used like so:
 
 ```rust
 fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) {
@@ -337,241 +455,154 @@ fn split_of_after_inspecting<L: AnyCx, R: AnyCx>(
 }
 ```
 
-`Cx` is secretly a type alias to a second underlying type `CxRaw`. `Cx`'s sole role in this scheme is to perform a best-effort deduplication of component types and, like all other type aliases, this deduplication is performed eagerly and is only performed once.
-
-Hence, when a user specifies `Cx<&mut u32, &mut u32>`, this `Cx` alias is transformed into `CxRaw<(&mut u32,)>`. However, if we have function generic with respect to the `T` and `V` type parameters, the parameter `Cx<&mut T, &mut V>` will be resolved to `CxRaw<(&mut T, &mut V)>` and will never change its definition, even if `T` and `V` end up being the same type:
+These methods involving `AnyCx` are sound for much the same reason that functions with generic component types are sound:
 
 ```rust
-// This signature:
-fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) { }
+// This function:
+fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) { (cx, cx) }
 
-// Is rewritten as:
-fn generics_demo<A, B>(cx: CxRaw<(&mut A, &mut B)>) { }
+// Desugars to:
+fn split_off<L: AnyCx, R: AnyCx>(cx: CxRaw<(L, R)>) -> (L, R) { (cx.0.0, cx.0.1) }
 
-// Meanwhile, the signature:
-fn non_generic_demo(cx: Cx<&mut u32, &mut u32>) {}
-
-// Is rewritten as:
-fn non_generic_demo(cx: CxRaw<(&mut u32,)>) {}
-
-// This means that the parameter of `generics_demo::<u32, u32>` takes on the type
-// `CxRaw<(&mut u32, &mut u32)>`, which is distinct from the type of `non_generic_demo`, which
-// takes on the type `CxRaw<(&mut u32,)>`.
-```
-
-`Cx` coercion can fail if there is any ambiguity in "where" a component should come from or where it should be put. In other words, coercing to or from a context with overlapping component types will fail. This error is fortunately pretty difficult to achieve in practice.
-
-```rust
-// We can't just demonstrate this directly like so:
-let cx_1: Cx<&mut u32, &mut u32> = ...;
-let cx_2: Cx<&mut u32> = cx_1;
-
-// ...since `Cx`'s always eagerly attempt to deduplicate their component list!
-
-// We can, however, force this duplication by creating the context tuple ourselves.
-let mut value_1 = 3;
-let mut value_2 = 4;
-let cx_1 = Cx::new((&mut value_1, &mut value_2));
-
-// This fails because `cx_1` genuinely contains more than one mutable reference.
-let cx_2: Cx<&mut u32> = cx_1;
-```
-
-These two aforementioned rules explain why it sound to assume that distinct generic type parameters refer to distinct components in generic function bodies.
-
-```rust
-fn generics_demo<A, B>(cx: Cx<&mut A, &mut B>) {
-    let borrow_1: Cx<&mut A> = cx;
-    let borrow_2: Cx<&mut B> = cx;
-
-    let _ = (borrow_1, borrow_2);
-}
-
-let mut value_1 = 3;
-let cx_1: Cx<&mut u32> = Cx::new((&mut value1,));
-
-// Cx<&mut A, &mut B> is substituted with CxRaw<(&mut u32, &mut u32)> in this invocation.
-// Unlike the component list above, this component list is not deduplicated and, hence,
-// we do indeed trigger an error about the ambiguity in "where" we should provide our `u32`
-// reference.
-let cx_2 = generics_demo::<u32, u32>(cx_1);
-
-// A similar error can be observed with a bad call to `split_off`.
-fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) { ... }
-
+// Preventing us from writing this dangerous code:
 let cx_1: Cx<&mut u32, &i32> = ...;
 
-// Cx<L, R> is substituted with Cx<&mut u32, &i32, &mut u32>, which once again causes an
+// Cx<L, R> is substituted with CxRaw<(&mut u32, &i32, &mut u32)>, which once again causes an
 // ambiguity.
 let (cx_l, cx_r) = split_off::<Cx<&mut u32, &i32>, Cx<&mut u32>>(cx_1);
-
-// Finally, we can cause a source ambiguity like so:
-fn reverse_generics_demo<'a, A, B>(a: &'a mut A, b: &'a mut B) -> Cx<&'a mut A, &'a mut B> {
-    Cx::new((a, b))
-}
-
-let mut my_u32_1 = 3;
-let mut my_u32_2 = 4;
-
-// Here, Cx takes on the type Cx<&mut u32, &mut u32> as it is, once again, not subject to de-duplication.
-let cx_1 = reverse_generics_demo::<u32, u32>(&mut my_u32_1, &mut my_u32_2);
-
-// Which `u32` do we take? This is, again, an ambiguous coercion error.
-let cx_2: Cx<&mut u32> = cx_1;
 ```
 
-## Usage Examples
-
-Using all the features described above, we can finally see how our nasty example described in the "motivation" section can be cleaned up significantly!
+The aforementioned `split_off` and `map` functions are actually included in the standard library as inherent methods on `Cx`. Here are their definitions:
 
 ```rust
-// New!
-pub struct AudioResourceLoader {}
+impl<'a, R: AnyCx, T: ?Sized> Cx<R, &'a T> {
+    pub fn map<V: ?Sized>(self, f: impl FnOnce(&T) -> &V) -> Cx<R, &'a V> {
+        let mapped = f(self);
+        let rest: R = self;
 
-// New!
-pub struct AudioPlayer {}
-
-pub struct GameEngine {
-    audio_loader: AudioResourceLoader,  // New!
-    audio_player: AudioPlayer,  // New!
-}
-
-pub struct World {
-    // ...
-}
-
-pub struct Player {
-    // ...
-}
-
-pub struct Tool {
-    // ...
-}
-
-impl GameEngine {
-    pub fn update(&mut self) {
-        // ...
-        some_world.update(Cx::new((
-            // ...
-            &mut self.audio_system,  // New!
-        )));
+        Cx::new((mapped, rest))
     }
 }
 
-type WorldCx<'a> = Cx<
-    // ...
-    PlayerCx<'a>,  // Unchanged!
->
+impl<'a, R: AnyCx, T: ?Sized> Cx<R, &'a mut T> {
+    pub fn map_mut<V: ?Sized>(self, f: impl FnOnce(&mut T) -> &mut V) -> Cx<R, &'a mut V> {
+        let mapped = f(self);
+        let rest: R = self;
 
-impl World {
-    pub fn update(&mut self, cx: WorldCx<'_>) {
-        // ...
-        some_player.update(cx);  // Unchanged!
+        Cx::new((mapped, rest))
     }
 }
 
-type PlayerCx<'a> = Cx<
-    // ...
-    ToolCx<'a>,  // Unchanged!
->;
-
-impl Player {
-    pub fn update(&mut self, cx: PlayerCx<'_>) {
-        // ...
-        some_tool.update(cx);  // Unchanged!
-    }
-}
-
-type ToolCx<'a> = Cx<
-    // ...
-    &'a mut AudioResourceLoader,  // New!
-    &'a mut AudioPlayer,  // New!
->;
-
-impl Tool {
-    pub fn update(&mut self, cx: ToolCx<'_>) {
-        // We very quickly got access to the audio system!
-        // ...and, oh, what's that?
-        cx.play_sound_from_path("tool_use.ogg");
-    }
-}
-
-// Ah, it's an extension method designed to make it easier to call `play_sound` with a file path!
-pub trait AudioFsExt {
-    fn play_sound_from_path(self, path: &str);
-}
-
-impl AudioFsExt for Cx<&'_ mut AudioResourceLoader, &'_ mut AudioPlayer> {
-    fn play_sound_from_path(self, path: &str) {
-        self.extract_mut::<AudioPlayer>().play_sound(
-            self.extract_mut::<AudioResourceLoader>().load(path),
-        );
+impl<L: AnyCx, R: AnyCx> Cx<L, R> {
+    pub fn split(self) -> (L, R) {
+        (self, self)
     }
 }
 ```
 
-The mechanisms described above—with a little bit of help by the type bundle trick—can be used to pass generic context items as well:
+## Type Inference
+
+There are many type inference situations that this proposal handles gracefully.
+
+Because `Cx::new` is frequently coerced into a target type, it is not useful to infer its type from its usage destination.
 
 ```rust
-// Define "bundle" traits for every type of generic component we're interested in
-// accepting. 
-trait HasLogger {
-    type Logger: Logger;
-}
+fn consumer(cx: Cx<&mut System1, &System2>) { ... }
 
-trait HasDatabase {
-    type Database: Database;
-}
-
-trait HasTracing {
-    type Tracing: Tracing;
-}
-
-// Define the context for Child1
-trait HasBundleForChildCx1: HasLogger + HasDatabase {}
-
-type Child1Cx<'a, B> = Cx<
-    &'a mut <B as HasLogger>::Logger>,
-    &'a mut <B as HasDatabase>::Database,
->;
-
-// Define the context for Child2
-trait HasBundleForChildCx2: HasLogger + HasTracing {}
-
-type Child2Cx<'a, B> = Cx<
-    &'a mut <B as HasLogger>::Logger,
-    &'a mut <B as HasDatabase>::Tracing,
->;
-
-// Define the context for parent
-type ParentCx<'a, B> = Cx<Child1Cx<'a, B>, Child2Cx<'a, B>>;
-
-trait HasBundleForParent: HasBundleForChildCx1 + HasBundleForChildCx2 {}
-
-// Define our functions
-fn parent<B: ?Sized + HasBundleForParent>(cx: ParentCx<'_, B>) {
-    let logger: &mut B::Logger = cx;
-    let tracing &mut B::Tracing = cx;
-
-    // This already works because of the no-alias assumptions
-    // between distinct generic parameters.
-    let _ = (logger, tracing);
-}
-
-fn caller(cx: Cx<&mut MyLogger, &mut MyDatabase, &mut MyTracing>) {
-    consumer::<
-        // We'll likely have to augment `Cx`'s inference system to allow
-        // this to be inferred automatically.
-        dyn HasBundleForParent<
-            Logger = MyLogger,
-            Database = MyDatabase,
-            Tracing = MyTracing,
-        >,
-    >(cx);
+fn caller() {
+    // Typical inference rules would infer the first parameter as having type
+    // `(&mut System1, &System2)` but this is not useful because such an inference causes a type
+    // error. The real type we're providing—`Cx<&mut System2, &mut System1>`—can easily be coerced
+    // to the target type so that should be the real type of this expression.
+    consumer(Cx::new((&mut system_2, &mut system_1)));
 }
 ```
 
-How convenient!
+Coercion should attempt to infer the types of generic type parameters in a coercion target based off what is available.
+
+```rust
+fn generic_consumer_1<L: Logger, D: Database>(cx: Cx<&mut L, &mut D>) { ... }
+
+fn generic_consumer_2<L: Logger, D>(cx: Cx<&mut L, &mut D>) { ... }
+
+fn caller() {
+    // Because `MyDatabase` is the only type in this context which we know to implement `Database`,
+    // we infer `D` to be `MyDatabase`. Likewise, `MyLogger` is the only type in this context which
+    // we know to implement `Logger` so `L` is inferred to be `MyLogger`. This inference then
+    // allows this coercion to take place flawlessly.
+    generic_consumer_1(Cx::new((&mut my_database, &mut my_logger, &mut my_tracer)));
+
+    // Meanwhile, this coercion fails because, which we can successfully infer `L` to be `MyLogger`,
+    // we can't unambiguously make a choice for `D` because both `MyTracer` and `MyDatabase` are
+    // `Sized`.
+    generic_consumer_2(Cx::new((&mut my_database, &mut my_logger, &mut my_tracer)));
+
+    // This, however, does succeed because we can successfully infer `L` to be `MyLogger` and, in
+    // doing so, we only leave one remaining type to be used as the database, allowing us to infer
+    // `D` as being `MyDatabase`.
+    generic_consumer_2(Cx::new((&mut my_database, &mut my_logger)));
+}
+```
+
+To open up more opportunities for macro ~~magic~~ science, whenever several coercion targets are applicable during trait resolution, we always choose the applicable coercion target with the highest arity.
+
+```rust
+use core::{any::TypeId, marker:PhantomData};
+
+struct AccessToken<T: ?Sized + 'static>(PhantomData<T>);
+
+trait EnumerateAllTokens {
+    fn enumerate(self) -> Vec<TypeId>;
+}
+
+impl<'a, A> EnumerateAllTokens for Cx<&'a mut AccessToken<A>>
+where
+    A: ?Sized + 'static,
+{
+    fn enumerate(self) -> Vec<TypeId> {
+        vec![TypeId::of::<A>()]
+    }
+}
+
+impl<'a, A, B> AcquireComponentsExt for Cx<&'a mut AccessToken<A>, &'a mut AccessToken<B>>
+where
+    A: ?Sized + 'static,
+    B: ?Sized + 'static,
+{
+    fn enumerate(self) -> Vec<TypeId> {
+        vec![TypeId::of::<A>(), TypeId::of::<B>()]
+    }
+}
+
+// (continues for higher arities)
+
+fn example() {
+    let cx = Cx::new((&mut access_u32, &mut access_i32));
+
+    assert_eq!(cx.enumerate(), vec![TypeId::of::<u32>(), TypeId::of::<i32>()]);
+}
+```
+
+To make functions like `split_off` and `map` more useful, if all generic types besides one remaining type implementing `AnyCx` are resolved, the remaining `AnyCx` instance is resolved to be the remainder of the context.
+
+```rust
+fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) { ... }
+
+pub fn map_mut<R: AnyCx, T: ?Sized, V: ?Sized>(cx: Cx<&mut T, R>, f: impl FnOnce(&mut T) -> &mut V) -> Cx<L, V> { ... }
+
+fn example(cx: Cx<&mut System1, &mut System2, &mut System3, &mut System4>) {
+    let (left, right) = split_off::<Cx<&mut System1, &System2>, _>(cx);
+    // `left`` has the type `Cx<&mut System1, &System2>`, leaving `right` with the type
+    // `Cx<&System2, &mut System3, &mut System4>`.
+
+    let mapped = map_mut(cx, |v: &mut System1| &mut v.inner);
+    // `T` has the type `System1`. This leaves `R` with the type
+    // `Cx<&mut System2, &mut System3, &mut System4>`, giving `mapped` the final type
+    // `Cx<&mut System1Inner, &mut System2, &mut System3, &mut System4>`.
+}
+```
+
+All the aforementioned coercions continue to work, even if the context is constructed in a nested manner. Note, however, that these inferences don't take lifetimes into account; in other words, they do not care whether a given type is already borrowed.
 
 # Reference-level explanation
 
@@ -584,7 +615,7 @@ Implementation of this RFC is split up into several parts:
 3. A `Cx` intrinsic type alias which implements the eager deduplication mentioned above.
 4. Standard library helpers methods.
 
-We begin with the semantics of `CxRaw` and `AnyCx`. Here are their definition in the `core` standard library:
+We begin with the semantics of `CxRaw`, `AnyCx`, and `ReborrowedFrom`. Here are their definitions in the `core` standard library:
 
 ```rust
 // Somewhere in `core`...
@@ -736,31 +767,15 @@ impl<L: AnyCx, R: AnyCx> Cx<L, R> {
 }
 ```
 
----
-
-==TODO: Is this finished?==
-
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+==TODO: Ensure that the aforementioned guide-level inference rules are actually implemented here.==
 
 # Drawbacks
-
 [drawbacks]: #drawbacks
-
-==TODO==
 
 Why should we *not* do this?
 
 # Rationale and alternatives
-
 [rationale-and-alternatives]: #rationale-and-alternatives
-
-==TODO==
 
 - Why is this design the best in the space of possible designs?
 - What other designs have been considered and what is the rationale for not choosing them?
@@ -768,10 +783,7 @@ Why should we *not* do this?
 - If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
 
 # Prior art
-
 [prior-art]: #prior-art
-
-==TODO==
 
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
@@ -788,20 +800,14 @@ Note that while precedent set by other languages is some motivation, it does not
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
 
 # Unresolved questions
-
 [unresolved-questions]: #unresolved-questions
-
-==TODO==
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
 # Future possibilities
-
 [future-possibilities]: #future-possibilities
-
-==TODO==
 
 Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
