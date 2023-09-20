@@ -6,7 +6,7 @@
 [summary]: #summary
 
 This RFC proposes extending `cargo update` to allow updates to pre-release versions when requested with `--precise`.
-For example, a `cargo` user would be able to call `cargo update -p dep --precise 0.1.1-pre0` as long as the version of `dep` requested by their project and its dependencies are semver compatible with `0.1.1`.
+For example, a `cargo` user would be able to call `cargo update -p dep --precise 0.1.1-pre.0` as long as the version of `dep` requested by their project and its dependencies are semver compatible with `0.1.1`.
 This effectively splits the notion of compatibility in `cargo`.
 A pre-release version may be considered compatible when the version is explicitly requested with `--precise`.
 Cargo will not automatically select that version via a basic `cargo update`.
@@ -15,9 +15,9 @@ Cargo will not automatically select that version via a basic `cargo update`.
 [motivation]: #motivation
 
 Pre-release crates are currently challenging to use in large projects with complex dependency trees.
-For example, if a maintainer releases `dep = "0.1.1-pre0"`.
+For example, if a maintainer releases `dep = "0.1.1-pre.0"`.
 They may ask one of their users to try the new API additions in a large project so that the user can give feedback on the release before the maintainer stabilises the new parts of the API.
-Unfortunately, since `dep = "0.1.0"` is a transitive dependency of several dependencies of the large project, `cargo` refuses the upgrade, stating that `0.1.1-pre0` is incompatible with `0.1.0`.
+Unfortunately, since `dep = "0.1.0"` is a transitive dependency of several dependencies of the large project, `cargo` refuses the upgrade, stating that `0.1.1-pre.0` is incompatible with `0.1.0`.
 The user is left with no upgrade path to the pre-release unless they are able to convince all of their transitive uses of `dep` to release pre-releases of their own.
 
 # Guide-level explanation
@@ -31,7 +31,7 @@ If a user does want to select a pre-release version they are able to do so by ex
 This is done by passing the `--precise` flag to Cargo.
 Cargo will refuse to select pre-release versions that are "incompatible" with the requirement in the projects `Cargo.toml`.
 A pre-release version is considered compatible for a precise upgrade if its major, minor, and patch versions are compatible with the requirement, ignoring its pre-release version.
-`x.y.z-pre0` is considered compatible with `a.b.c` when requested `--precise`ly if `x.y.z` is semver compatible with `a.b.c` and `a.b.c` `!=` `x.y.z`.
+`x.y.z-pre.0` is considered compatible with `a.b.c` when requested `--precise`ly if `x.y.z` is semver compatible with `a.b.c` and `a.b.c` `!=` `x.y.z`.
 
 Consider a `Cargo.toml` with this `[dependencies]` section
 
@@ -40,21 +40,21 @@ Consider a `Cargo.toml` with this `[dependencies]` section
 example = "1.0.0"
 ```
 
-It is possible to update to `1.2.0-pre0` because `1.2.0` is semver compatible with `1.0.0`
+It is possible to update to `1.2.0-pre.0` because `1.2.0` is semver compatible with `1.0.0`
 
 ```
-> cargo update -p example --precise 1.2.0-pre0
+> cargo update -p example --precise 1.2.0-pre.0
     Updating crates.io index
-    Updating example v1.0.0 -> v1.2.0-pre0
+    Updating example v1.0.0 -> v1.2.0-pre.0
 ```
 
-It is not possible to update to `2.0.0-pre0` because `2.0.0` is not semver compatible with `1.0.0`
+It is not possible to update to `2.0.0-pre.0` because `2.0.0` is not semver compatible with `1.0.0`
 
 ```
-> cargo update -p example --precise 2.0.0-pre0
+> cargo update -p example --precise 2.0.0-pre.0
     Updating crates.io index
 error: failed to select a version for the requirement `example = "^1"`
-candidate versions found which didn't match: 2.0.0-pre0
+candidate versions found which didn't match: 2.0.0-pre.0
 location searched: crates.io index
 required by package `tmp-oyyzsf v0.1.0 (/home/ethan/.cache/cargo-temp/tmp-OYyZsF)`
 ```
@@ -63,7 +63,7 @@ Once `1.2.0` is released `cargo update` will warn the user that a stable version
 
 ```
 > cargo update
-warning: version `1.2.0` of `example` has been released but `1.2.0-pre0` was previously selected
+warning: version `1.2.0` of `example` has been released but `1.2.0-pre.0` was previously selected
 note: to use the stable version run `cargo update -p example --precise 1.2.0`
 ```
 
@@ -75,11 +75,11 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 | Cargo.toml spec | Cargo.lock version | Target version | Selected by cargo update  | Selected by cargo update --precise  |
 | --------------- | ------------------ | -------------- | ------------------------- | ----------------------------------- |
 | `a.b.c`         | `a.b.c`            | `x.y.z`        | ✅                        | ✅                                  |
-| `a.b.c`         | `a.b.c`            | `x.y.z-pre0`   | ❌                        | ✅                                  |
-| `a.b.c`         | `x.y.z-pre0`       | `x.y.z-pre1`   | ❌                        | ✅                                  |
-| `a.b.c-pre0`    | `a.b.c-pre0`       | `a.b.c-pre1`   | ✅¹                       | ✅                                  |
-| `a.b.c`         | `a.b.c`            | `a.b.c-pre0`   | ❌                        | ❌                                  |
-| `a.b.c-pre0`    | `a.b.c-pre0`       | `x.y.z`        | ❌²                       | ✅                                  |
+| `a.b.c`         | `a.b.c`            | `x.y.z-pre.0`   | ❌                        | ✅                                  |
+| `a.b.c`         | `x.y.z-pre.0`       | `x.y.z-pre.1`   | ❌                        | ✅                                  |
+| `a.b.c-pre.0`    | `a.b.c-pre.0`       | `a.b.c-pre.1`   | ✅¹                       | ✅                                  |
+| `a.b.c`         | `a.b.c`            | `a.b.c-pre.0`   | ❌                        | ❌                                  |
+| `a.b.c-pre.0`    | `a.b.c-pre.0`       | `x.y.z`        | ❌²                       | ✅                                  |
 
 ✅: Will upgrade
 
@@ -129,11 +129,11 @@ Take for example this dependency tree.
 ```
 example
 ├── a ^0.1.0
-│   └── b =0.1.1-pre0
+│   └── b =0.1.1-pre.0
 └── b ^0.1.0
 ```
 
-Since crates ignore the lock files of their dependencies there is no way for `a` to communicate with `example` that it requires features from `b = 0.1.1-pre0` without breaking `example`'s direct dependency on `b`.
+Since crates ignore the lock files of their dependencies there is no way for `a` to communicate with `example` that it requires features from `b = 0.1.1-pre.0` without breaking `example`'s direct dependency on `b`.
 To enable this we could use the same concept of compatible pre-releases in `Cargo.toml`, not just `Cargo.lock`.
 This would require that pre-releases are specified with `=` and would allow pre-release versions to be requested anywhere within the dependency tree without causing the resolver to throw an error.
 
