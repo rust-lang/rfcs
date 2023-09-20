@@ -132,6 +132,9 @@ The issue here is that cargo will not unify a pre-release version with a stable 
 If the crate being updated is used pervasively this will more than likely cause a resolver error.
 This makes this alternative unfit for our [motivation].
 
+The [accepted proposal](https://github.com/rust-lang/cargo/issues/12425) is affected by this RFC,
+insofar as it will not update the `Cargo.toml` in cases when the pre-release can be considered compatible for upgrade in `Cargo.lock`.
+
 ## Pre-releases in `Cargo.toml`
 
 Another alternative would be to resolve pre-release versions in `Cargo.toml`s even when another dependency specifies a stable version.
