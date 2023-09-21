@@ -130,13 +130,19 @@ available within traits. In this case, `async` comes with a lot more nuance than
 
 [unresolved-questions]: #unresolved-questions
 
-None at this time
+None at this time.
 
 # Future possibilities
 
 [future-possibilities]: #future-possibilities
 
-None at this time
+- As part of the work of the [`refined-impls`] RFC, it may be possible to
+  mark a function `const` in an implementation, even if the trait signature
+  does not indicate `const`.
+- The [keyword generics initiative] will add much more fine tuned control
+  than the basic mechanics in this RFC, allowing for optional const bounds
+  in a parametric way.
 
 [keyword generics initiative]: https://github.com/rust-lang/keyword-generics-initiative
 [`async-fn-in-trait`]: https://rust-lang.github.io/rfcs/3185-static-async-fn-in-trait.html
+[`refined-impls`]: https://rust-lang.github.io/rfcs/3245-refined-impls.html
