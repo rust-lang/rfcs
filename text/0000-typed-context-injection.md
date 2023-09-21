@@ -386,14 +386,15 @@ fn parent<B: ?Sized + HasBundleForParent>(cx: ParentCx<'_, B>) {
 
 fn caller(cx: Cx<&mut MyLogger, &mut MyDatabase, &mut MyTracing>) {
     consumer::<
-        // We'll likely have to augment `Cx`'s inference system to allow
-        // this to be inferred automatically.
         dyn HasBundleForParent<
             Logger = MyLogger,
             Database = MyDatabase,
             Tracing = MyTracing,
         >,
     >(cx);
+
+    // ...which is equivalent to its inferred version:
+    consumer::<dyn HasBundleForParent>(cx);
 }
 ```
 
@@ -527,6 +528,13 @@ fn generic_consumer_1<L: Logger, D: Database>(cx: Cx<&mut L, &mut D>) { ... }
 
 fn generic_consumer_2<L: Logger, D>(cx: Cx<&mut L, &mut D>) { ... }
 
+trait GenericBundle {
+    type Logger: Logger;
+    type Database: Database;
+}
+
+fn generic_consumer_3<B: ?Sized + GenericBundle>(cx: Cx<&mut B::Logger, &mut B::Database>) { ... }
+
 fn caller() {
     // Because `MyDatabase` is the only type in this context which we know to implement `Database`,
     // we infer `D` to be `MyDatabase`. Likewise, `MyLogger` is the only type in this context which
@@ -543,6 +551,12 @@ fn caller() {
     // doing so, we only leave one remaining type to be used as the database, allowing us to infer
     // `D` as being `MyDatabase`.
     generic_consumer_2(Cx::new((&mut my_database, &mut my_logger)));
+
+    // It is important to note that these inference rules work for associated types in `dyn Trait`
+    // types as well.
+    generic_consumer_3::<dyn GenericBundle>(Cx::new((
+        &mut my_database, &mut my_logger, &mut my_tracer,
+    )));
 }
 ```
 
@@ -567,18 +581,17 @@ fn example(cx: Cx<&mut System1, &mut System2, &mut System3, &mut System4>) {
 
 All the aforementioned coercions continue to work, even if the context is constructed in a nested manner. Note, however, that these inferences don't take lifetimes into account; in other words, they do not care whether a given type is already borrowed.
 
-TODO: Allow `Deref`.
-
 # Reference-level explanation
 
 [reference-level-explanation]: #reference-level-explanation
 
 Implementation of this RFC is split up into several parts:
 
-1. A `CxRaw` lang-item struct which provides the actual coercion mechanisms.
-2. `AnyCx` and `ReborrowedFrom` lang-item traits which provide blanket `impl`s over all `CxRaw` structures and expose a mechanism for reborrowing these opaque contexts.
-3. A `Cx` intrinsic type alias which implements eager deduplication.
-4. Standard library helpers methods.
+1. The introduction of a `CxRaw` lang-item struct which provides the actual coercion mechanisms.
+2. The introduction of `AnyCx` and `ReborrowedFrom` lang-item traits which provide blanket `impl`s over all `CxRaw` structures and expose a mechanism for reborrowing these opaque contexts.
+3. The introduction of a `Cx` intrinsic type alias which implements eager deduplication.
+4. The adjustment of `dyn MyTrait` type forming rules to allow unspecified associated types to participate in inference rather than causing a hard error.
+5. The implementation of standard library helpers methods.
 
 We begin with the semantics of `CxRaw`, `AnyCx`, and `ReborrowedFrom`. Here are their definitions in the `core` standard library:
 
