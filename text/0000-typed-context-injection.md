@@ -11,7 +11,7 @@ This RFC proposes the introduction of the `Cx` structure to the `core` standard 
 # Motivation
 [motivation]: #motivation
 
-As it stands, Rust has no mechanism for conveniently passing large amounts of context to a function deep in the call stack. To inject a component of type `NewSystem` to `func_3`, for example, one must manually forward that reference throughout the entire dispatch chain.
+As it stands, Rust has no mechanism for conveniently passing large amounts of context to a function deep in the call stack. To inject a component of type `NewSystem` into `func_3`, for example, one must manually forward that reference throughout the entire dispatch chain.
 
 ```rust
 fn func_1(..., new_system: &mut NewSystem) {  // Updated!
@@ -29,7 +29,7 @@ fn func_3(..., new_system: &mut NewSystem) { // Updated!
 }
 ```
 
-Although one may be tempted to bundle up this context into convenient tuples to reduce the amount of explicit context passing, doing so will only work if only one descendant of the call stack relies upon that type. If several descendants rely on a given contextual type, you're out of luck!
+Although one may be tempted to bundle up this context into convenient tuples to reduce the amount of explicit context passing, doing so will only work if at most one descendant of the call stack relies upon that type. If several descendants rely on a given contextual type, you're out of luck!
 
 ```rust
 type Descendant1Cx<'a> = (&'a mut SharedSystem, &'a mut Descendant1System);
@@ -108,7 +108,7 @@ Context injection is accomplished with two new standard library items: `Cx` and 
 fn consumer(cx: Cx<&mut System1, &System2>) { ... }
 ```
 
-From there, you can fetch your components by either coercing the context to its comprising elements (which we'll henceforth refer to as *components*) or by using the `.extract::<T>()` utility methods, which perform the coercion internally but expose it in an occasionally-more-convenient method form.
+From there, you can fetch your components by either coercing the context into its comprising elements (which we'll henceforth refer to as *components*) or by using the `.extract::<T>()` and `.extract_mut::<T>()` utility methods, which perform the coercion internally but expose it in an occasionally-more-convenient method form.
 
 ```rust
 fn consumer(cx: Cx<&mut System1, &System2>) {
@@ -133,10 +133,10 @@ fn caller_1(cx: Cx<&mut System1, &mut System2, &System3>) {
 fn caller_2() {
     ...
 
-    // We can give the context in the order it shows up in the target type.
+    // We can give the context in the order it shows up in the target type...
     consumer(Cx::new((&mut system_1, &system_2)));
 
-    // But we could also provide the context in any other order and let coercion
+    // ...but we could also provide the context in any other order and let coercion
     // turn e.g. a `Cx<&mut System2, &mut System1>` into a `Cx<&mut System1, &System2>`.
     consumer(Cx::new((&mut system_2, &mut system_1)));
 
@@ -164,7 +164,7 @@ fn example(cx: Cx<&mut CommonSystem, &mut System1, &mut System2, &mut OtherSyste
     let borrow_1: Cx<&CommonSystem, &mut System1> = cx;
     let borrow_2: Cx<&CommonSystem, &mut System2> = cx;
 
-    // Both borrows can overlap.
+    // Both borrows can coexist.
     let _ = (borrow_1, borrow_2);
 
     // ...because the coercions desugar to the following:
@@ -172,12 +172,12 @@ fn example(cx: Cx<&mut CommonSystem, &mut System1, &mut System2, &mut OtherSyste
     // `CxRaw<T>` is an implementation detail we'll talk about in a bit. For right now,
     // just think of it as a newtype around an arbitrary tuple type `T`.
     let borrow_1: CxRaw<(&CommonSystem, &mut System1)> = CxRaw::new((
-        &self.0.0,
-        &mut self.0.1,
+        &*self.0.0,
+        &mut *self.0.1,
     ));
     let borrow_2: CxRaw<(&CommonSystem, &mut System2)> = CxRaw::new((
-        &self.0.0,
-        &mut self.0.2,
+        &*self.0.0,
+        &mut *self.0.2,
     ));
 
     let _ = (borrow_1, borrow_2);
@@ -216,11 +216,11 @@ let cx: AudioBufferCx<'_> = ...;
 cx.play_sound_at_path("cbat.ogg");
 ```
 
-This feature is great at reducing the amount of typing required to pass context to function but does nothing to reduce the pain of propagating context components throughout a dispatch chain. To fix this problem, we have to look into the second super power of `Cx`: nesting and deduplication.
+This feature is great at reducing the amount of typing required to pass context to function but does nothing to reduce the pain of propagating changes to component lists throughout a dispatch chain. To fix this problem, we have to look into the second super power of `Cx`: nesting and deduplication.
 
 In addition to containing references and mutable references in its variadic parameters, `Cx` can also contain other `Cx` types, which it inherits into its own context. The flattened component list is then deduplicated to ensure that only one instance of each type is requested.
 
-With these two features, it is now possible to rewrite our second example in the [motivation section](#motivation) to be convenient to refactor:
+With these two features, it is now possible to rewrite our second example in the [motivation section](#motivation) to be more convenient to refactor:
 
 ```rust
 // We just have to change this line from a tuple to a `Cx`.
@@ -259,7 +259,7 @@ fn caller(
 }
 ```
 
-So far, this system works great for concrete types but how does it fare for generics?
+So far, this system works great for concrete types but how does it fare with generics?
 
 Consider the following simple example:
 
@@ -284,7 +284,7 @@ Isn't this going to cause undefined behavior in the `generic_demo` function body
 
 To understand why this is sound, we need to dive deeper into the specific semantics of `Cx`. `Cx` is not an actual type; instead, it's a special type alias resolving to some parametrization of the type `CxRaw<T>`. `CxRaw<T>`, meanwhile, is just a thin newtype wrapper around a tuple of type `T` which is given special treatment by the Rust compiler to allow it to coerce with the semantics described above. `Cx`'s sole role in this scheme is to perform a best-effort deduplication of component types and, like all other type aliases, this deduplication is performed eagerly and is only performed once.
 
-Hence, when a user specifies `Cx<&mut u32, &mut u32>`, this `Cx` alias is transformed into `CxRaw<(&mut u32,)>`. However, if we have function generic with respect to the `T` and `V` type parameters, the parameter `Cx<&mut T, &mut V>` will be resolved to `CxRaw<(&mut T, &mut V)>` and will never change its definition, even if `T` and `V` end up being the same type in a given monomorphization:
+Hence, when a user specifies `Cx<&mut u32, &mut u32>`, this `Cx` alias is transformed into `CxRaw<(&mut u32,)>`. However, if we have function generic with respect to the `T` and `V` type parameters, the parameter `Cx<&mut T, &mut V>` will be resolved to `CxRaw<(&mut T, &mut V)>` and will never change its definition, even if `T` and `V` end up being the same type in a given monomorphization.
 
 ```rust
 // This signature:
@@ -318,8 +318,8 @@ fn generic_demo<T, V>(cx: Cx<&mut T, &mut V>) {
 
 // Desugars to:
 fn generic_demo<T, V>(cx: CxRaw<(&mut T, &mut V)>) {
-    // We can assume that these do not alias because the tuple ensures that
-    // they're different references.
+    // We can assume that these do not alias because they're stored in different slots in `CxRaw`'s
+	// underlying tuple.
     let a: &mut T = &mut cx.0.0;
     let b: &mut V = &mut cx.0.1;
     let _ = (a, b);
@@ -339,8 +339,7 @@ Hence, it is safe to assume that distinct generic parameters are non-overlapping
 Now that we know generics are safe, we can now see how to use generics in a "refactor-safe" way:
 
 ```rust
-// Define "bundle" traits for every type of generic component we're interested in
-// accepting. 
+// Define "bundle" traits for every type of generic component we're interested in accepting.
 trait HasLogger {
     type Logger: Logger;
 }
@@ -428,7 +427,7 @@ In addition to being safely parameterizable by their component types, `Cx` can a
 
 ```rust
 fn split_off<L: AnyCx, R: AnyCx>(cx: Cx<L, R>) -> (L, R) {
-    // It is assumed that generic parameters will never alias, making this sound.
+    // It is assumed that generic parameters will never alias, making this valid.
     (cx, cx)
 }
 
@@ -436,7 +435,7 @@ pub fn map_mut<R: AnyCx, T: ?Sized, V: ?Sized>(cx: Cx<&mut T, R>, f: impl FnOnce
     let mapped = f(cx);  // Cx<&mut T, R> -> &mut T
     let rest: R = cx;  // Cx<&mut T, R> -> R
 
-    // Once again, it is assumed that generic parameters will not overlap, making this safe.
+    // Once again, it is assumed that generic parameters will not overlap, making this valid.
     Cx::new((mapped, rest))
 }
 ```
@@ -468,8 +467,8 @@ fn split_off<L: AnyCx, R: AnyCx>(cx: CxRaw<(L, R)>) -> (L, R) { (cx.0.0, cx.0.1)
 // Preventing us from writing this dangerous code:
 let cx_1: Cx<&mut u32, &i32> = ...;
 
-// Cx<L, R> is substituted with CxRaw<(&mut u32, &i32, &mut u32)>, which once again causes an
-// ambiguity.
+// Cx<L, R> is substituted with CxRaw<(CxRaw<(&mut u32, &i32)>, CxRaw<(&mut u32,)>)>, which once
+// again causes an ambiguity error.
 let (cx_l, cx_r) = split_off::<Cx<&mut u32, &i32>, Cx<&mut u32>>(cx_1);
 ```
 
@@ -591,7 +590,7 @@ Implementation of this RFC is split up into several parts:
 2. The introduction of `AnyCx` and `ReborrowedFrom` lang-item traits which provide blanket `impl`s over all `CxRaw` structures and expose a mechanism for reborrowing these opaque contexts.
 3. The introduction of a `Cx` intrinsic type alias which implements eager deduplication.
 4. The adjustment of `dyn MyTrait` type forming rules to allow unspecified associated types to participate in inference rather than causing a hard error.
-5. The implementation of standard library helpers methods.
+5. The implementation of standard library helpers methods for `CxRaw`.
 
 We begin with the semantics of `CxRaw`, `AnyCx`, and `ReborrowedFrom`. Here are their definitions in the `core` standard library:
 
@@ -623,8 +622,8 @@ pub mod cx {
 
     type InferenceBarrier<T> = <T as inference_barrier::Identity>::Me;
 
-    // Implementations of this trait are generated by the compiler. Users should not be able
-    // to derive this trait themselves.
+    // Implementations of these two traits are generated by the compiler. Users should not be able
+    // to derive these traits themselves.
     #[lang_item = "any_cx"]
     pub trait AnyCx: Sized {
         type Reborrowed<'a>: ReborrowedFrom<'a, Self>;
@@ -658,21 +657,21 @@ The autogenerated `Reborrowed` type is derived as expected:
 - `S` must be a tuple.
 - The arity of `T` and `S` must match.
 - Working element-wise, for every pair of elements `s` in `S` and `t` in `T`, either...
-  - `t` and `s` are both references with the same pointee type. The reference mutability of `s` must be greater than or equal to that of `t`. The lifetime of `'a` must exceed the lifetime of the `t` reference and the lifetime of the `s` reference must outlive `'a`.
+  - `t` and `s` are both references with the same pointee type. The reference mutability of `s` must be greater than or equal to that of `t`. The lifetime of `'a` must outlive the lifetime of the `t` reference and the lifetime of the `s` reference must outlive `'a`.
   - `t` implements `ReborrowedFrom<'a, s>`.
 
 The autogenerated `reborrow` method is derived as expected:
 
 - A new `CxRaw` is created form a tuple of the same arity as `S` and `T`. For every element in the tuple...
   - References are reborrowed using typical reference reborrowing.
-  - `ReborrowedFrom` targets are reborrowed using the corresponding `reborrow` method.
+  - `ReborrowedFrom` targets are reborrowed using their corresponding `reborrow` method.
 
 The compiler then provides the coercion semantics for this `CxRaw`. Specifically, given a source type `A` and a target type `B`...
 
 - If `A` and `B` are both ADTs which correspond to the `cx_raw` lang-item...
 - ...and `A` and `B`'s sole generic parameters are provably tuples
 - ...we can begin determining the coercion from one tuple to the other!
-- Start by performing a best-effort flattening of the potentially contexts of `A` and `B` into a flat tuple of...
+- Start by performing a best-effort flattening of the potentially nested contexts of `A` and `B` into a flat tuple of...
   - references whose pointee has been successfully inferred but potentially generic (this includes nested references in `CxRaw` instances whose tuple parameter is statically known)
   - instances implementing `AnyCx` which have been successfully inferred but generic
   - *In the destination type*, at most one uninferred type implementing `AnyCx`
@@ -683,8 +682,8 @@ The compiler then provides the coercion semantics for this `CxRaw`. Specifically
     - If the number of candidate pointees is greater than one, reject the coercion attempt with a source ambiguity hint on type check failure.
     - If the mutability of the destination is strictly greater than the source, reject the coercion attempt with an incompatible mutability hint on type check failure.
     - If the destination pointee type contains a generic parameter and no other component in the source tuple has generic parameter unifiable with the destination type parameter, scan for potential concretizations of this parameter. If there is exactly one concretization, infer the destination type parameter to have that type. Otherwise, treat the ambiguity as an inference ambiguity.
+  - For every generic type which implements `AnyCx` in the destination `CxRaw` tuple, match each to the corresponding `AnyCx` using a similar process as described above. If these types match exactly, we know that we are performing an ownership-transferring coercion. If these types do not match exactly but the target candidate type implements the `ReborrowedFrom` trait against the source candidate type, we know that we are performing a reborrowing coercion.
   - Ensure that, in establishing this mapping, we don't map the same source pointee to several target pointees. If we did indeed map the same source to several targets, we have a target ambiguity. In that case, we reject the coercion attempt with a destination ambiguity hint on type check failure.
-  - For every generic type which implements `AnyCx` in the destination `CxRaw` tuple, match each to the corresponding `AnyCx` using a similar process as described above. If these types match exactly, we know that we are performing an ownership-transferring coercion. If these types do not match exactly but the target candidate type implements `ReborrowedFrom` against the source candidate type, we know that we are performing a reborrowing coercion.
   - If we have a remaining uninferred type in the destination tuple implementing `AnyCx`, infer it to be the remaining elements of the source context which have not been borrowed by this coercion.
 - If all this succeeds, produce a `Adjust::Context` adjustment detailing how to map from the source tuple to the target tuple.
 
@@ -713,7 +712,7 @@ As far as I can tell, type aliases are resolved fairly early in the compilation 
 
 - If the type alias corresponds to the `cx` lang item...
 - Flatten all properly parameterized parameters of type `CxRaw` into the main list of components to borrow.
-- Perform a best-effort deduplication of all known reference types based off their inferred pointees. The "strongest" mutability is used as the mutability of the deduplicated pointer. Likewise, if one pointee is a lifetime supertype of another, the supertype replaces the subtype during deduplication. The check for type equality used to determine duplicates, unlike the type equality check for context passing, is *not* lifetime blind and, if one lifetime is not known to be longer than another, the two types will be considered unequal and therefore will not be deduplicated. We consider generic parameter equality opaquely but do not consider, for a type `T: AnyCx`, `T` to be equal to `T::Reborrowed<'_>`.
+- Perform a best-effort deduplication of all known reference types based off their inferred pointees. The "strongest" mutability of all duplicate references is used as the mutability of the deduplicated pointer. Likewise, if one pointee has a lifetime provably longer than another following variance rules for both the reference and the pointee, the object with the longest lifetime replaces all shorter ones during deduplication. We consider generic parameter equality opaquely modulo parameter equality constraints and do not consider, for a type `T: AnyCx`, `T` to be equal to `T::Reborrowed<'_>`.
 - Return a `CxRaw` ADT parameterized with a tuple of these deduplicated types.
 
 Finally, we implement the following extension methods in the `core` standard library:
@@ -759,7 +758,7 @@ impl<L: AnyCx, R: AnyCx> Cx<L, R> {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The largest drawback with this proposal is that `Cx`'s existence may encourage users to introduce `UserCx<'a>` GATs into their traits to make their traits maximally flexible, which may easily become another source of churn for Rust developers.
+The largest drawback with this proposal is that `Cx`'s existence may encourage users to introduce `UserCx<'a>` GATs into their traits to make their traits maximally flexible with respect to userdata passing, which may easily become another source of churn for Rust developers.
 
 ```rust
 trait MyTrait {
@@ -784,34 +783,34 @@ impl<T: MyTrait> MyConsumer<T> {
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The strongest alternative to typed context injection at the moment seems to be *context and capabilities* ([IRLO discussion](https://internals.rust-lang.org/t/blog-post-contexts-and-capabilities-in-rust/15833), [blog permalink](https://web.archive.org/web/20230420000109/https://tmandry.gitlab.io/blog/posts/2021-12-21-context-capabilities/)). This proposal works by transitively tracking which functions require which bits of context—which the proposal calls `capabilities`—and automatically passing the instances bound to these `capabilities` to the dependent function, regardless of whether its ancestor functions also request access to that capability.
+The strongest alternative to the typed context injection solution proposed by this RFC seems to be *context and capabilities* at the moment ([IRLO discussion](https://internals.rust-lang.org/t/blog-post-contexts-and-capabilities-in-rust/15833), [blog permalink](https://web.archive.org/web/20230420000109/https://tmandry.gitlab.io/blog/posts/2021-12-21-context-capabilities/)). This alternative proposal works by transitively tracking which functions require which bits of context—which the proposal calls `capabilities`—and automatically passes the instances bound to these `capabilities` to the dependent function, regardless of whether its ancestor functions also request access to that capability.
 
 There are a few key advantages to the *context and capabilities* solution:
 
-- To introduce a new component to a function's context, it's as simple as adding an additional declaration to the function's `with` block. In contrast, the typed context injection mechanism laid out in this proposal requires the function to add a context parameter to its signature and, if the calling ancestors haven't yet introduced this parameter to their signature, they must do so as well. A potential solution to this problem has been mentioned in the [future possibilities](#future-possibilities) section of this proposal.
-- Some traits definition may not have the capability to pass userdata to their implementors. The context and capabilities proposal can nonetheless work around this issue by adding the necessary context-passing for a given dispatch scenario during monomorphization. A potential solution to this problem has been mentioned in the [future possibilities](#future-possibilities) section of this proposal.
+- To introduce a new component to a function's context, it is as simple as adding an additional declaration to the function's `with` block. In contrast, the typed context injection mechanism laid out in this proposal requires the function to add a context parameter to its signature and, if the calling ancestors haven't yet introduced this parameter to their signatures, they must do so as well. A potential solution to this problem has been mentioned in the [future possibilities](#future-possibilities) section of this proposal.
+- Some trait definitions may not have declared the capability to pass userdata to their implementors. The context and capabilities proposal can nonetheless work around this issue by adding the necessary context-passing for a given dispatch scenario during monomorphization. A potential solution to this problem has been mentioned in the [future possibilities](#future-possibilities) section of this proposal.
 
-However, many of the major features of the *context and capabilities* solution are also present in this proposal as well:
+Many of the major features of the *context and capabilities* solution are common with this proposal:
 
 - Users can inject context into deeply called functions without having to adjust the signatures of their ancestors by setting up a proper "context inheritance" scheme.
 - `capabilities` may accept generic types rather than concrete types to be bound to them. This is something which can be easily emulated using bundle types as shown above.
-- Lifetime and trait bounds on `with` blocks are represented by regular lifetime and type bounds on the references in the context parameter.
+- Lifetime and trait bounds on `with` blocks are represented in the typed context injection proposal by regular lifetime and type bounds on the references in the context parameter.
 
 Finally, there are several advantages to this proposal over the *context and capabilities* solution:
 
-- Typed context injection is presented to the user as a familiar function parameter rather than as new syntax, making it easier for both Rust beginners and veterans to learn.
+- Typed context injection is presented to the user as a familiar function parameter rather than as new syntax and module items, making it easier for both Rust beginners and veterans to learn.
 - This strong interaction with preexisting Rust systems reduces the complexity required to make a useful MVP of this feature while still providing plenty of space to make the feature more advanced and convenient after it has been stabilized.
-- Because contexts are real objects, they can be manipulated generically. For example, one could create a method to automatically transform `HashMap<EntityId, T>` components into their corresponding `T` instance given a source `EntityId`. This is something which is much more awkward to do in the *context and capabilities* proposal.
+- Because contexts are real objects, they can be manipulated generically. For example, one could create a method to automatically transform `HashMap<EntityId, T>` components into references to their corresponding `T` instances given a source `EntityId`. This is something which is much more awkward to do in the *context and capabilities* proposal.
 - Macro and trait magicians can use the fact that `CxRaw` is just a type parameterized by a tuple to collect the full context of a function. This could be used, for example, to automate context injection in entity-component-systems schedulers, which rely on being able to enumerate the context requested by a function to automatically fetch and provide the function the appropriate context when the scheduler decides to execute it.
 
 ---
 
-Portions of this RFC have already been implemented in userland. This [playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=df715558ebe5d4ce82892793ef1fd516), for example, contains a semi-complete implementation of `CxRaw` coercion (modulo nested contexts and type inference) in userland. Unfortunately, there are several reasons for which the entire feature cannot be fully implemented in userland:
+Portions of this RFC have already been implemented in userland. This [Rust playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=df715558ebe5d4ce82892793ef1fd516), for example, contains a semi-complete implementation of `CxRaw` coercion (modulo nested contexts and type inference) in userland. Unfortunately, there are several reasons for which the entire feature cannot be fully implemented in userland:
 
-- It is not possible to implement the type deduplication and inheritance mechanisms described in this RFC in userland because type aliases cannot rely on trait inference to make complex type-based decisions. This makes the mechanism essentially useless because it fails to properly solve the deep context injection problem mentioned in the [motivation section](#motivation).
-- It is not possible to implement proper generic inference in userland. This, once again, makes the mechanism essentially useless because it fails to properly solve a variant of the deep context injection problem involving generics as mentioned in the [motivation section](#motivation).
-- `Cx` is limited to a fixed arity. The complexity of the reborrowing macro and trait resolution grows quadratically with respect to this arity.
-- This system slows the compiler to a crawl. From the experience of the author, just 20 invocations of this macro in a somewhat involved module causes rust-analyzer fly-check and type analysis times to become unbearable.
+- It is not possible to implement the type deduplication and inheritance mechanisms described in this RFC in userland because type aliases cannot rely on trait inference to make complex type-based decisions. This makes the userland implementation essentially useless because it fails to properly solve the deep context injection problem mentioned in the [motivation section](#motivation).
+- It is not possible to implement proper generic inference in userland. This, once again, makes the userland implementation essentially useless because it fails to properly solve a variant of the deep context injection problem involving generics as mentioned in the [motivation section](#motivation).
+- `Cx` is limited to a fixed arity. The complexity of the macro-generated syntax and trait resolution grows quadratically with respect to this arity.
+- This system slows the compiler to a crawl. From my limited experience trying to integrate this prototype into my codebase, just 20 invocations of this macro in a somewhat involved module caused rust-analyzer fly-check and type analysis times to become unbearable.
 
 # Prior art
 [prior-art]: #prior-art
@@ -828,7 +827,7 @@ Currently, the type inference rules detailed in this proposal are quite limited 
 
 There are several areas in which this proposal could be extended:
 
-1. `Cx` could be subjected to more sophisticated inference rules, allowing for more "macro magic" and general convenience. Luckily, because of the conservative nature of the current inference rules, almost all conceivable additions to the inference engine should be backwards compatible.
-2. Context could be passed implicitly, reducing the verbosity required to define a new context. This is, once again, a strict addition to the feature and should therefore not be made impossible by the adoption of this proposal.
-3. Traits could automatically be given a userland `Cx` GAT parameter which, through implicit context passing, could automatically add support for indirect context passing across "context-blind" functions without having to adjust the existing Rust trait definitions.
+1. `Cx` could be subjected to more sophisticated inference rules, allowing for more "macro magic" and general convenience. Luckily, because of the conservative nature of the current inference rules, almost all conceivable improvements to the inference engine should be backwards compatible.
+2. Context parameters could be added to functions and passed to their calls to children implicitly, which would reduce the verbosity required to define a new context. This is, once again, a strict addition to the proposed feature and should therefore not be made impossible by the adoption of this proposal.
+3. Traits could automatically be given a userland `Cx` GAT parameter which, through implicit context passing, could automatically add support for indirect context passing across "context-blind" traits without having to adjust the existing Rust trait definitions.
 4. Integration with variadic generics could allow more "trait magic" to be done with `CxRaw`.
