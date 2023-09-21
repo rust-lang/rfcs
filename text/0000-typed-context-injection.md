@@ -567,7 +567,7 @@ fn example(cx: Cx<&mut System1, &mut System2, &mut System3, &mut System4>) {
 
 All the aforementioned coercions continue to work, even if the context is constructed in a nested manner. Note, however, that these inferences don't take lifetimes into account; in other words, they do not care whether a given type is already borrowed.
 
-TODO: Allow `deref`.
+TODO: Allow `Deref`.
 
 # Reference-level explanation
 
@@ -746,8 +746,27 @@ impl<L: AnyCx, R: AnyCx> Cx<L, R> {
 # Drawbacks
 [drawbacks]: #drawbacks
 
-1. `Cx`'s existence may encourage users to introduce `UserCx<'a>` GATs into their traits to make their traits maximally flexible, which may easily become another source of churn for Rust developers.
-2. `Cx`'s overlap is checked at the first concrete use of the function rather than encoded as a requirement in the generic functions' signatures, which may feel like SFINAE to some.
+The largest drawback with this proposal is that `Cx`'s existence may encourage users to introduce `UserCx<'a>` GATs into their traits to make their traits maximally flexible, which may easily become another source of churn for Rust developers.
+
+```rust
+trait MyTrait {
+    type UserCx<'a>: AnyCx;
+
+    fn do_something(&mut self, cx: <Self::UserCx<'_> as AnyCx>::Reborrowed<'_>);
+}
+
+struct MyConsumer<T> {
+    targets: Vec<T>,
+}
+
+impl<T: MyTrait> MyConsumer<T> {
+    fn do_something(&mut self, cx: T::UserCx<'_>) {
+        for target in &mut self.targets {
+            target.do_something(cx);
+        }
+    }
+}
+```
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -760,12 +779,12 @@ impl<L: AnyCx, R: AnyCx> Cx<L, R> {
 # Prior art
 [prior-art]: #prior-art
 
-This specific dependency-injection mechanism described by this proposal has not been tried in any other programming language that I know of.
+This specific dependency-injection mechanism described by this proposal has not been tried in any other programming language of which I know.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-1. Currently, the type inference rules detailed in this proposal are quite limited and only intended to support the use cases explored by this RFC. As such, these rules may or may not be sufficiently advanced for actual use. This is, unfortunately, something that can only really be determined with a working prototype.
+Currently, the type inference rules detailed in this proposal are quite limited and only intended to support the use cases explored by this RFC. As such, these rules may or may not be sufficiently advanced for actual use. This is, unfortunately, something that can only really be determined with a working prototype.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
