@@ -6,12 +6,12 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes the addition of a `Cx` structure to the `core` standard library alongside corresponding compiler support to allow Rust users to conveniently pass "bundles of context" around their applications. `Cx` objects are a thin wrapper around tuples of references which adorn the wrapped tuple with the ability to coerce into other `Cx` objects containing a subset of their references.
+This RFC proposes the introduction of the `Cx` structure to the `core` standard library alongside corresponding compiler support to allow Rust users to conveniently pass "bundles of context" around their applications. `Cx` is a thin wrapper around tuples of references which adorn the wrapped tuples with the ability to coerce into other `Cx` objects containing a subset of their references.
 
 # Motivation
 [motivation]: #motivation
 
-As it stands, Rust has no mechanism for conveniently passing large amounts of context to a function deep in the call stack. To inject a component of type `NewSystem`, for example, one must manually forward that reference throughout the entire dispatch chain.
+As it stands, Rust has no mechanism for conveniently passing large amounts of context to a function deep in the call stack. To inject a component of type `NewSystem` to `func_3`, for example, one must manually forward that reference throughout the entire dispatch chain.
 
 ```rust
 fn func_1(..., new_system: &mut NewSystem) {  // Updated!
@@ -784,10 +784,34 @@ impl<T: MyTrait> MyConsumer<T> {
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+The strongest alternative to typed context injection at the moment seems to be *context and capabilities* ([IRLO discussion](https://internals.rust-lang.org/t/blog-post-contexts-and-capabilities-in-rust/15833), [blog permalink](https://web.archive.org/web/20230420000109/https://tmandry.gitlab.io/blog/posts/2021-12-21-context-capabilities/)). This proposal works by transitively tracking which functions require which bits of context—which the proposal calls `capabilities`—and automatically passing the instances bound to these `capabilities` to the dependent function, regardless of whether its ancestor functions also request access to that capability.
+
+There are a few key advantages to the *context and capabilities* solution:
+
+- To introduce a new component to a function's context, it's as simple as adding an additional declaration to the function's `with` block. In contrast, the typed context injection mechanism laid out in this proposal requires the function to add a context parameter to its signature and, if the calling ancestors haven't yet introduced this parameter to their signature, they must do so as well. A potential solution to this problem has been mentioned in the [future possibilities](#future-possibilities) section of this proposal.
+- Some traits definition may not have the capability to pass userdata to their implementors. The context and capabilities proposal can nonetheless work around this issue by adding the necessary context-passing for a given dispatch scenario during monomorphization. A potential solution to this problem has been mentioned in the [future possibilities](#future-possibilities) section of this proposal.
+
+However, many of the major features of the *context and capabilities* solution are also present in this proposal as well:
+
+- Users can inject context into deeply called functions without having to adjust the signatures of their ancestors by setting up a proper "context inheritance" scheme.
+- `capabilities` may accept generic types rather than concrete types to be bound to them. This is something which can be easily emulated using bundle types as shown above.
+- Lifetime and trait bounds on `with` blocks are represented by regular lifetime and type bounds on the references in the context parameter.
+
+Finally, there are several advantages to this proposal over the *context and capabilities* solution:
+
+- Typed context injection is presented to the user as a familiar function parameter rather than as new syntax, making it easier for both Rust beginners and veterans to learn.
+- This strong interaction with preexisting Rust systems reduces the complexity required to make a useful MVP of this feature while still providing plenty of space to make the feature more advanced and convenient after it has been stabilized.
+- Because contexts are real objects, they can be manipulated generically. For example, one could create a method to automatically transform `HashMap<EntityId, T>` components into their corresponding `T` instance given a source `EntityId`. This is something which is much more awkward to do in the *context and capabilities* proposal.
+- Macro and trait magicians can use the fact that `CxRaw` is just a type parameterized by a tuple to collect the full context of a function. This could be used, for example, to automate context injection in entity-component-systems schedulers, which rely on being able to enumerate the context requested by a function to automatically fetch and provide the function the appropriate context when the scheduler decides to execute it.
+
+---
+
+Portions of this RFC have already been implemented in userland. This [playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=df715558ebe5d4ce82892793ef1fd516), for example, contains a semi-complete implementation of `CxRaw` coercion (modulo nested contexts and type inference) in userland. Unfortunately, there are several reasons for which the entire feature cannot be fully implemented in userland:
+
+- It is not possible to implement the type deduplication and inheritance mechanisms described in this RFC in userland because type aliases cannot rely on trait inference to make complex type-based decisions. This makes the mechanism essentially useless because it fails to properly solve the deep context injection problem mentioned in the [motivation section](#motivation).
+- It is not possible to implement proper generic inference in userland. This, once again, makes the mechanism essentially useless because it fails to properly solve a variant of the deep context injection problem involving generics as mentioned in the [motivation section](#motivation).
+- `Cx` is limited to a fixed arity. The complexity of the reborrowing macro and trait resolution grows quadratically with respect to this arity.
+- This system slows the compiler to a crawl. From the experience of the author, just 20 invocations of this macro in a somewhat involved module causes rust-analyzer fly-check and type analysis times to become unbearable.
 
 # Prior art
 [prior-art]: #prior-art
