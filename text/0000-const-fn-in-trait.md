@@ -64,7 +64,7 @@ const fn register_state<T: GlobalState>(name: &'static str, item: T) {
 }
 
 /// Or, use with a single item
-const DEFAULT_STATE: State = MyFavoriteStruct.build();
+const DEFAULT_STATE: State = MyFavoriteStruct::build(42);
 ```
 
 The rules for what is allowed are the same as for other `const` functions. At
