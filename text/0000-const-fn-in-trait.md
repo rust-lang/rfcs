@@ -39,7 +39,7 @@ Functions within a trait can be marked const:
 ```rust
 trait GlobalState {
     /// Create a state that will be held in a global static
-    const fn build(u32) -> State;
+    const fn build(base_value: u32) -> State;
 }
 ```
 
