@@ -14,3 +14,13 @@ message_on_add = "A new T-cargo RFC has been opened: https://github.com/rust-lan
 zulip_stream = 318791 # t-crates-io
 topic = "RFC #{number} - {title}"
 message_on_add = "A new T-crates-io RFC has been opened: https://github.com/rust-lang/rfcs/pull/{number}"
+
+[notify-zulip."I-types-nominated"]
+zulip_stream = 326866 # #T-types/nominated
+topic = "RFC #{number}: {title}"
+message_on_add = """\
+@*T-types* RFC #{number} "{title}" has been nominated for team discussion.
+"""
+message_on_remove = "RFC #{number}'s nomination has been removed. Thanks all for participating!"
+message_on_close = "RFC #{number} has been closed. Thanks for participating!"
+message_on_reopen = "RFC #{number} has been reopened. Pinging @*T-types*."
