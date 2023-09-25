@@ -458,13 +458,13 @@ Other resources:
 
 | | 2021: *Outer LP* | 2021: *Item LP* | 2024: *Outer LP* | 2024: *Item LP* |
 |-|-|-|-|-|
-| RPIT          | N   | N | Y | Y |
-| `async fn`    | Y   | Y | Y | Y |
-| GATs          | Y   | Y | Y | Y |
-| TAIT          | N/A | Y | Y | Y |
-| ATPIT         | Y   | Y | Y | Y |
-| RPITIT: trait | Y   | Y | Y | Y |
-| RPITIT: impl  | Y   | Y | Y | Y |
+| RPIT          | N   | N | Y   | Y |
+| `async fn`    | Y   | Y | Y   | Y |
+| GATs          | Y   | Y | Y   | Y |
+| TAIT          | N/A | Y | N/A | Y |
+| ATPIT         | Y   | Y | Y   | Y |
+| RPITIT: trait | Y   | Y | Y   | Y |
+| RPITIT: impl  | Y   | Y | Y   | Y |
 
 In the table above, "LP" refers to "lifetime parameters".
 
