@@ -618,7 +618,7 @@ Considerations for embedded manifest include
 - Needs to be valid Rust code based on the earlier stated design guidelines
 - Lockfiles might also need to reuse how we attach metadata to the file
 
-See [RFC TODO](TODO) for discussion on syntax.
+See [RFC 3503](https://github.com/rust-lang/rfcs/pull/3503) for discussion on syntax.
 
 The `cargo` infostring was chosen because
 - An alternative is `Cargo.toml` but infostring language fields are generally an identifier rather than a file name
