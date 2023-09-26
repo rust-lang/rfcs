@@ -14,8 +14,8 @@ Single-file bin packages are `.rs` files with an embedded manifest and a
 These will be accepted with just like `Cargo.toml` files with
 `--manifest-path`.
 `cargo` will be modified to accept `cargo <file>.rs` as a shortcut to `cargo
-run --manifest-path <file>.rs`.
-This allows placing `cargo` in a `#!` line for directly running these files.
+run --manifest-path <file>.rs`;
+this allows placing `cargo` in a `#!` line for directly running these files.
 
 Support for single-file lib packages, publishing, and workspace support is
 deferred out.
@@ -306,9 +306,119 @@ automatically infers target names.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-**Reminder:** This serves as a starting point for experimentation and
-[Unresolved questions](#unresolved-questions) will be worked out through the
-tracking issues.
+## Single-file packages
+
+In addition to today's multi-file packages (`Cargo.toml` file with other `.rs`
+files),
+we are adding the concept of single-file packages which may contain an
+embedded manifest.
+There is no required way to distinguish a single-file
+`.rs` package from any other `.rs` file.
+
+A single-file package may contain an embedded manifest.
+An embedded manifest is stored using `TOML` in rust "frontmatter",
+a markdown code-fence with `cargo` at the start of the infostring at the top of
+the file.
+
+Inferred / defaulted manifest fields:
+- `package.name = <slugified file stem>`
+- `package.version = "0.0.0"` to [call attention to this crate being used in unexpected places](https://matklad.github.io/2021/08/22/large-rust-workspaces.html#Smaller-Tips)
+  - This may be altered with [rust-lang/cargo#9829](https://github.com/rust-lang/cargo/issues/9829)
+- `package.publish = false` to avoid accidental publishes, particularly if we
+  later add support for including them in a workspace.
+- `package.edition = <current>` to avoid always having to add an embedded
+  manifest at the cost of potentially breaking scripts on rust upgrades
+  - Warn when `edition` is unspecified.  While with single-file packages this will be
+    silenced by default, users wanting stability are also likely to be using
+    other commands, like `cargo test` and will see it.
+  - Based on feedback, we might add `cargo-<edition>-edition` proxies to put in `#!` as a shorthand
+  - Based on feedback, we can switch to "edition is required as of <future> edition"
+
+Disallowed manifest fields:
+- `[workspace]`, `[lib]`, `[[bin]]`, `[[example]]`, `[[test]]`, `[[bench]]`
+- `package.workspace`, `package.build`, `package.links`, `package.autobins`, `package.autoexamples`, `package.autotests`, `package.autobenches`
+
+Single-file packages maintain an out-of-line target directory by default.
+This is `$CARGO_HOME/target/<hash-of-path>`.
+
+A single-file package is accepted by cargo commands as a `--manifest-path`
+- This is distinguished by the file extension (`.rs`) and that it is a file.
+- This allows running `cargo test --manifest-path single.rs`
+- `cargo package` / `cargo publish` will normalize this into a multi-file package
+- `cargo add` and `cargo remove` may not support editing embedded manifests initially
+- Path-dependencies may not refer to single-file packages at this time (they don't have a `lib` target anyways)
+
+Single-file packages will not be accepted as `path` or `git` dependencies.
+
+The lockfile for single-file packages will be placed in `CARGO_TARGET_DIR`.  In
+the future, when workspaces are supported, that will allow a user to have a
+persistent lockfile.
+We may also allow customizing the non-workspace lockfile location in the [future](#future-possibilities).
+
+## `cargo <file>.rs`
+
+`cargo` is intended for putting in the `#!` for single-file packages:
+```rust
+#!/usr/bin/env cargo
+
+fn main() {
+    println!("Hello world");
+}
+```
+- Like with `cargo install`, `.cargo/config.toml` will be read based on the
+  scripts location rather than the current-dir.
+  - And like `cargo install`, the current-dir rustup-toolchain is respected
+- `--release` is not passed in because the primary use case is for exploratory
+  programming, so the emphasis will be on build-time performance and debugging,
+  rather than runtime performance
+
+Most other flags and behavior will be similar to `cargo run`.
+
+The precedence for `cargo foo` will change from:
+1. built-in commands
+2. user aliases
+3. third-party commands
+
+to:
+1. built-in command xor manifest
+2. user aliases
+3. third-party commands
+
+To allow the xor, we enforce that
+- manifests must be passed in as `Cargo.toml`, `foo.rs`, or have a `/` in them
+  - So `./build` can be used to run a script name `build` rather than the `cargo build` command
+- no built-in command may look like an accepted manifest
+
+When piping `cargo <file>.rs`, `--quiet` will be assumed.
+Further work may be done to refine the output in interactive mode.
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+The implicit content of the manifest will be unclear for users.
+We can patch over this as best we can in documentation but the result won't be
+ideal.
+A user can workaround this with `cargo metadata --manifest-path <file>.rs`.
+
+This increases the maintenance and support burden for the cargo team, a team
+that is already limited in its availability.
+
+Like with all cargo packages, the `target/` directory grows unbounded.
+This is made worse by them being out of the way and the scripts are likely to be short-lived.
+Some prior art include a cache GC but that is also to clean up the temp files
+stored in other locations
+(our temp files are inside the `target/` dir and should be rarer).
+A GC for cargo is being tracked in [rust-lang/cargo#12633](https://github.com/rust-lang/cargo/issues/12633)
+
+Syntax is not reserved for `build.rs`, proc-maros, embedding
+additional packages, or other functionality to be added later with the
+assumption that if these features are needed, a user should be using a
+multi-file package.
+As stated in the Motivation, this doesn't have to perfectly cover every use
+case that a `Cargo.toml` would.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
 
 Initial guidelines for evaluating decisions:
 - Single-file packages should have a first-class experience
@@ -341,127 +451,6 @@ Initial guidelines for evaluating decisions:
     - Most likely, we'll want to muck with the errors returned by `toml_edit`
       so we render manifest errors based on the original source code which will require accurate span information.
 
-
-## Single-file packages
-
-In addition to today's multi-file packages (`Cargo.toml` file with other `.rs`
-files), we are adding the concept of single-file packages which may contain an
-embedded manifest.  There is no required distinguishment for a single-file
-`.rs` package from any other `.rs` file.
-
-A single-file package may contain an embedded manifest.  An embedded manifest
-is stored using `TOML` in rust "frontmatter", a markdown code-fence with `cargo`
-at the start of the infostring at the top of the file.
-
-Inferred / defaulted manifest fields:
-- `package.name = <slugified file stem>`
-- `package.version = "0.0.0"` to [call attention to this crate being used in unexpected places](https://matklad.github.io/2021/08/22/large-rust-workspaces.html#Smaller-Tips)
-- `package.publish = false` to avoid accidental publishes, particularly if we
-  later add support for including them in a workspace.
-- `package.edition = <current>` to avoid always having to add an embedded
-  manifest at the cost of potentially breaking scripts on rust upgrades
-  - Warn when `edition` is unspecified.  While with single-file packages this will be
-    silenced by default, users wanting stability are also likely to be using
-    other commands, like `cargo test` and will see it.
-  - Based on feedback, we might add `cargo-<edition>-edition` proxies to put in `#!` as a shorthand
-  - Based on feedback, we can switch to "edition is required as of <future> edition"
-
-Disallowed manifest fields:
-- `[workspace]`, `[lib]`, `[[bin]]`, `[[example]]`, `[[test]]`, `[[bench]]`
-- `package.workspace`, `package.build`, `package.links`, `package.autobins`, `package.autoexamples`, `package.autotests`, `package.autobenches`
-
-As the primary role for these files is exploratory programming which has a high
-edit-to-run ratio, building should be fast.  Therefore `CARGO_TARGET_DIR` will
-be shared between single-file packages to allow reusing intermediate build
-artifacts.
-
-A single-file package is accepted by cargo commands as a `--manifest-path`
-- This is distinguished by the file extension (`.rs`) and that it is a file.
-- This allows running `cargo test --manifest-path single.rs`
-- `cargo package` / `cargo publish` will normalize this into a multi-file package
-- `cargo add` and `cargo remove` may not support editing embedded manifests initially
-- Path-dependencies may not refer to single-file packages at this time (they don't have a `lib` target anyways)
-
-Single-file packages will not be accepted as `path` or `git` dependencies.
-
-The lockfile for single-file packages will be placed in `CARGO_TARGET_DIR`.  In
-the future, when workspaces are supported, that will allow a user to have a
-persistent lockfile.
-We may also allow customizing the non-workspace lockfile location in the [future](#future-possibilities).
-
-## `cargo <file>.rs`
-
-`cargo` is intended for putting in the `#!` for single-file packages:
-```rust
-#!/usr/bin/env cargo
-
-fn main() {
-    println!("Hello world");
-}
-```
-- Like with `cargo install`, `.cargo/config.toml` will be read based on the
-  scripts location rather than the current-dir.
-  - And like `cargo install`, the current-dir rustup-toolchain is respected
-- `--release` is not passed in because the primary use case is for exploratory
-  programming, so the emphasis will be on build-time performance, rather than
-  runtime performance
-
-Most other flags and behavior will be similar to `cargo run`.
-
-The precedence for `cargo foo` will change from:
-1. built-in commands
-2. user aliases
-3. third-party commands
-
-to:
-1. built-in command xor manifest
-2. user aliases
-3. third-party commands
-
-To allow the xor, we enforce that
-- manifests must be passed in as `Cargo.toml`, `foo.rs`, or have a `/` in them
-- no built-in command may look like an accepted manifest
-
-When piping `cargo <file>.rs`, `--quiet` will be assumed.
-
-# Drawbacks
-[drawbacks]: #drawbacks
-
-At the moment, the doc-comment parsing is brittle, relying on regexes, to
-extract it and then requires a heavy dependency (a markdown parser) to get the
-code fence.
-
-The implicit content of the manifest will be unclear for users.
-We can patch over this as best we can in documentation but the result won't be
-ideal.
-A user can workaround this with `cargo metadata --manifest-path <file>.rs`.
-
-The `bin.name` assigned to the script included a hash as an implementation
-detail of the shared cache (for improving build times).
-This makes programmatic choices off of `argv[0]` not work like normal (e.g.
-multi-call binaries).
-We could settings
-[`argv[0]` on unix-like systems](https://doc.rust-lang.org/std/os/unix/process/trait.CommandExt.html#tymethod.arg0)
-but could not find something similar for Windows.
-
-This increases the maintenance and support burden for the cargo team, a team
-that is already limited in its availability.
-
-Like with all cargo packages, the `target/` directory grows unbounded.
-Some prior art include a cache GC but that is also to clean up the temp files
-stored in other locations
-(our temp files are inside the `target/` dir and should be rarer).
-
-Syntax is not reserved for `build.rs`, `[lib]` support, proc-maros, embedding
-additional packages, or other functionality to be added later with the
-assumption that if these features are needed, a user should be using a
-multi-file package.
-As stated in the Motivation, this doesn't have to perfectly cover every use
-case that a `Cargo.toml` would.
-
-# Rationale and alternatives
-[rationale-and-alternatives]: #rationale-and-alternatives
-
 ## Misc
 
 - Rejected: Defaulting to `RUST_BACKTRACE=1` for `cargo foo.rs` runs
@@ -474,9 +463,9 @@ case that a `Cargo.toml` would.
   some platforms
   - See [rust-lang/cargo#12255](https://github.com/rust-lang/cargo/pull/12255)
 
-## Scope
+## Command-line / interactive evaluation
 
-The `cargo-script` family of tools has a single command
+The [`cargo-script`](https://crates.io/crates/cargo-script) family of tools has a single command for
 - Run `.rs` files with embedded manifests
 - Evaluate command-line arguments (`--expr`, `--loop`)
 
@@ -541,7 +530,8 @@ for this which also allows greater interop.
 
 A default implementation ensures people will use it.  For example, `clap`
 received an issue with a reproduction case using a `cargo-play` script that
-went unused because it just wasn't worth installing yet another, unknown tool.
+went unused because it just wasn't worth installing yet another, unknown tool,
+and it was unclear if it was interoperable with `rust-script`.
 
 This also improves the overall experience as you do not need the third-party
 command to replicate support for every potential feature including:
@@ -561,9 +551,10 @@ This still leaves room for third-party implementations, either differentiating t
 
 ## File association on Windows
 
-We would add a non-default association to run the file.  We don't want it to be
-a default, by default, to avoid unintended harm and due to the likelihood
-someone is going to want to edit these files.
+We could add a non-default association to run the file.
+We don't want it to be a default,
+to avoid unintended harm and due to the likelihood someone is going to want to
+edit these files.
 
 ## File extension
 
@@ -571,8 +562,8 @@ Should these files use `.rs` or a custom file extension?
 
 Reasons for a unique file type
 - Semantics are different than a normal `.rs` file
-  - Except already a normal `.rs` file has context-dependent semantics (rest of
-    source, `Cargo.toml`, etc), so this doesn't seem too far off
+  - Except already a normal `.rs` file has context-dependent semantics (`build.rs`, `main.rs`, `random.rs`),
+    so this doesn't seem too far off
 - Different file associations for Windows
 - Better detection by tools for the new semantics (particularly `rust-analyzer`)
 
