@@ -930,6 +930,12 @@ Note: we are assuming the following are **not** future possibilities in this des
 - Embedding `rustup-toolchain.toml` files
 - Embedding other source files or additional packages
 
+## Playground support
+
+The [playground](play.rust-lang.org/) could gain support for embedded
+manifests, allowing users access to more packages, specific package versions,
+and specific feature sets.
+
 ## Dealing with leaked `target/`
 
 As `target/` is out of sight, it is easy to "leak" them, eating up disk space.
