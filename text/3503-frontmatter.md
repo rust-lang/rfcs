@@ -383,3 +383,28 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
   - We need to better understand use cases for how this should be extended
 - Add support for a `#[frontmatter(info = "", content = "")]` attribute that this syntax maps to.
   - Since nothing will read this, whether we do it now or in the future will have no affect
+
+## Multiple frontmatters
+
+If we decide we need to embed additional metadata, we have a couple of options for extending frontmatter support.
+
+Distinct blocks, maybe with newlines
+
+````md
+```Cargo.toml
+```
+
+```Cargo.lock
+```
+````
+
+Continuous blocks
+````md
+```Cargo.toml
+```Cargo.lock
+```
+````
+
+Distinct blocks is more like the source inspiration, markdown,
+though has more noise, places to get things wrong, and syntax questions
+(newlines).
