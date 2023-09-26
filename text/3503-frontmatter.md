@@ -342,8 +342,10 @@ which enumerates the syntax used by different tools.
 
 ## YAML frontmatter
 
-As a specialization of [YAML presentation streams](https://yaml.org/spec/1.2.2/#323-presentation-stream), static site generators use frontmatter to embed YAML at the top of files.
-Other systems have extended this for non-YAML use, like [zola using `+++` for TOML](https://www.getzola.org/documentation/content/page/#front-matter).
+As a specialization of [YAML presentation streams](https://yaml.org/spec/1.2.2/#323-presentation-stream),
+static site generators use frontmatter to embed YAML at the top of files.
+Other systems have extended this for non-YAML use, like
+[zola using `+++` for TOML](https://www.getzola.org/documentation/content/page/#front-matter).
 
 ### Proposed Python syntax
 
