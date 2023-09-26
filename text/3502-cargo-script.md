@@ -2,9 +2,8 @@
 - Start Date: 2023-03-31
 - Pre-RFC: [internals](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639)
 - eRFC PR: [rust-lang/rfcs#3424](https://github.com/rust-lang/rfcs/pull/3424)
-  - Rust Issue: [rust-lang/cargo#12207](https://github.com/rust-lang/cargo/issues/12207)
 - RFC PR: [rust-lang/rfcs#3502](https://github.com/rust-lang/rfcs/pull/3502)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/cargo#12207](https://github.com/rust-lang/cargo/issues/12207)
 
 # Summary
 [summary]: #summary
