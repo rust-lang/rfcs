@@ -51,7 +51,7 @@ Hello world!
 ```
 
 We are carrying this concept over to Rust with a twist: using code fences which
-will be familiar to Rust developers who when documenting their code:
+will be familiar to Rust developers when documenting their code:
 ````rust
 #!/usr/bin/env cargo
 ```cargo
