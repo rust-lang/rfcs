@@ -9,7 +9,7 @@
 [summary]: #summary
 
 This RFC adds support for single-file bin packages in cargo.
-Single-file bin packages are `.rs` files with an embedded manifest and a
+Single-file bin packages are rust source files with an embedded manifest and a
 `main`.
 These files will be accepted by cargo commands as `--manifest-path` just like `Cargo.toml` files.
 `cargo` will be modified to accept `cargo <file>.rs` as a shortcut to `cargo
