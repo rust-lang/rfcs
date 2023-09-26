@@ -42,7 +42,7 @@ fn main() {
 }
 ````
 ```console
-$ ./prog --config file.toml
+$ ./prog.rs --config file.toml
 Args { config: Some("file.toml") }
 ```
 
