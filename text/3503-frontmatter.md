@@ -349,7 +349,7 @@ Other systems have extended this for non-YAML use, like
 
 ### Proposed Python syntax
 
-Currently the draft [PEP 723](https://peps.python.org/pep-0723/) proposes allowing begin/end markers inside of source code:
+Currently the draft [PEP 723](https://peps.python.org/pep-0723/) proposes allowing begin/end markers inside of regular comments:
 
 ```python
 # /// pyproject
