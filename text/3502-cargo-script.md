@@ -403,7 +403,8 @@ Further work may be done to refine the output in interactive mode.
 The implicit content of the manifest will be unclear for users.
 We can patch over this as best we can in documentation but the result won't be
 ideal.
-A user can workaround this with `cargo metadata --manifest-path <file>.rs`.
+A user can workaround this with `cargo metadata --manifest-path <file>.rs`
+or `cargo read-manifest --manifest-path <file>.rs`
 
 Users may be using this feature for heavier duty scripting and want optimized builds.
 - This can be worked around by changing `profile.dev` in the embedded manifest
