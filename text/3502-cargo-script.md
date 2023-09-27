@@ -917,6 +917,8 @@ See also [Single-file scripts that download their dependencies](https://dbohdan.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Wherther `version` should may be unset or defaulted to `0.0.0`
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
