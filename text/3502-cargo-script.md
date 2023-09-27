@@ -406,6 +406,7 @@ ideal.
 A user can workaround this with `cargo metadata --manifest-path <file>.rs`.
 
 Users may be using this feature for heavier duty scripting and want optimized builds.
+- This can be worked around by changing `profile.dev` in the embedded manifest
 
 Like with all cargo packages, the `target/` directory grows unbounded.
 This is made worse by them being out of the way and the scripts are likely to be short-lived.
