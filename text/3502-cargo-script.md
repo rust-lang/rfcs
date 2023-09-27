@@ -127,6 +127,9 @@ Let's run it
 ```console
 $ chmod +x hello_world.rs
 $ ./hello_world.rs
+warning: `package.edition` is unspecified, defaulting to `2021`
+    Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+     Running `/home/epage/.cargo/target/98/07dcd6510bdcec/debug/hello_world`
 Hello, world!
 ```
 
@@ -185,7 +188,8 @@ fn main() {
 
 You can then re-run this and Cargo will fetch the new dependencies and all of their dependencies.  You can see this by passing in `--verbose`:
 ```console
-$ cargo eval --verbose ./hello_world.rs
+$ cargo --verbose ./hello_world.rs
+warning: `package.edition` is unspecified, defaulting to `2021`
       Updating crates.io index
    Downloading memchr v0.1.5
    Downloading libc v0.1.10
@@ -200,6 +204,8 @@ $ cargo eval --verbose ./hello_world.rs
      Compiling aho-corasick v0.3.0
      Compiling regex v0.1.41
      Compiling hello_world v0.1.0 (file:///path/to/package/hello_world)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+     Running `/home/epage/.cargo/target/98/07dcd6510bdcec/debug/hello_world`
 Did our date match? true
 ```
 
