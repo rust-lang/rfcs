@@ -327,9 +327,7 @@ Inferred / defaulted manifest fields:
   later add support for including them in a workspace.
 - `package.edition = <current>` to avoid always having to add an embedded
   manifest at the cost of potentially breaking scripts on rust upgrades
-  - Warn when `edition` is unspecified.  While with single-file packages this will be
-    silenced by default, users wanting stability are also likely to be using
-    other commands, like `cargo test` and will see it.
+  - Warn when `edition` is unspecified.  Since piped commands are run with `--quiet`, this may not show up.
   - Based on feedback, we might add `cargo-<edition>-edition` proxies to put in `#!` as a shorthand
   - Based on feedback, we can switch to "edition is required as of <future> edition"
 
