@@ -256,7 +256,7 @@ Notice that `UnsafeCell` acts "behind references" while `MaybeDangling`, like `M
 [unresolved-questions]: #unresolved-questions
 
 - What should the type be called?
-  `MaybeDangling` is somewhat misleading since the safety invariant still requires everything to be dereferenceable, only the requirement of dereferencability and noalias is relaxed.
+  `MaybeDangling` is somewhat misleading since the *safety* invariant still requires everything to be dereferenceable, only the *validity* requirement of dereferenceability and noalias is relaxed.
   This is a bit like `ManuallyDrop` which supports dropping via an `unsafe` function but its safety invariant says that the data is not dropped (so that it can implement `Deref` and `DerefMut` and a safe `into_inner`).
   Furthermore, the type also allows maybe-aliasing references, not just maybe-dangling references.
   Other possible names might be things like `InertPointers` or `SuspendedPointers`.
