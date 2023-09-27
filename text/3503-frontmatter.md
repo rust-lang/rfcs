@@ -304,7 +304,7 @@ Benefits
 - Visually/syntactically lightweight
 - Has parallels to ideas outside of Rust, building on external knowledge that might exist
 - Easy for cargo to parse and modify
-- Can be leveraged by buck2, meson, etc in the future
+- Can easily be leveraged by buck2, meson, etc in the future
 
 Downsides
 - Too general that people might abuse it
@@ -336,7 +336,7 @@ Benefits
 - Visually connected to the shebang
 - Has parallels to ideas outside of Rust, building on external knowledge that might exist
 - Easy for cargo to parse and modify
-- Can be leveraged by buck2, meson, etc in the future
+- Can easily be leveraged by buck2, meson, etc in the future
 - Maybe we can get others on board with this syntax
 
 Downsides
