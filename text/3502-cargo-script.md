@@ -335,7 +335,7 @@ Inferred / defaulted manifest fields:
 
 Disallowed manifest fields:
 - `[workspace]`, `[lib]`, `[[bin]]`, `[[example]]`, `[[test]]`, `[[bench]]`
-- `package.workspace`, `package.build`, `package.links`, `package.autobins`, `package.autoexamples`, `package.autotests`, `package.autobenches`
+- `package.workspace`, `package.build`, `package.links`, `package.publish`, `package.autobins`, `package.autoexamples`, `package.autotests`, `package.autobenches`
 
 Single-file packages maintain an out-of-line target directory by default.
 This is `$CARGO_HOME/target/<hash-of-path>`.
@@ -343,7 +343,6 @@ This is `$CARGO_HOME/target/<hash-of-path>`.
 A single-file package is accepted by cargo commands as a `--manifest-path`
 - This is distinguished by the file extension (`.rs`) and that it is a file.
 - This allows running `cargo test --manifest-path single.rs`
-- `cargo package` / `cargo publish` will normalize this into a multi-file package
 - `cargo add` and `cargo remove` may not support editing embedded manifests initially
 - Path-dependencies may not refer to single-file packages at this time (they don't have a `lib` target anyways)
 
