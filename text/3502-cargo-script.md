@@ -43,6 +43,9 @@ fn main() {
 ````
 ```console
 $ ./prog.rs --config file.toml
+warning: `package.edition` is unspecified, defaulting to `2021`
+    Finished dev [unoptimized + debuginfo] target(s) in 0.06s
+     Running `/home/epage/.cargo/target/98/07dcd6510bdcec/debug/prog`
 Args { config: Some("file.toml") }
 ```
 
