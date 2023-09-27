@@ -317,6 +317,7 @@ fn main() {}
 This is a variation on other options that ties itself closer to the shebang syntax.
 The hope would be that we could get buy-in from other languages.
 - The first line post-shebang-stripping is a hash plus 3+ backticks, then capture all content until a matching pair of backticks on a dedicated line.  This would be captured into a `#![frontmatter(info = "cargo", content = "..."]`.  `frontmatter` attribute is reserved for crate roots.  The 3+ with matching pair is a "just in case" a TOML multi-line string has that syntax in it).  Each content line must be indented to at least the same level as the first backtick.
+  - Backticks are needed to know to avoid parsing `#[dependencies]` as an attribute
 - Future evolution: Allow `cargo` being the default `info` string
 - Future evolution: Allow any `info` string with cargo checking for `content.starts_with(["cargo", "cargo,"])`
 - Future evolution: Allow `frontmatter` attribute on any module
