@@ -13,7 +13,7 @@ the risks is that a condition may contain misspelled identifiers, or may use ide
 obsolete or have been removed from a product. For example:
 
 ```rust
-#[cfg(feature = "widnows")]
+#[cfg(feature = "widnows")]    // notice the typo!
 fn do_windows_thing() { /* ... */ }
 ```
 
