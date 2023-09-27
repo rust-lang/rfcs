@@ -405,9 +405,6 @@ We can patch over this as best we can in documentation but the result won't be
 ideal.
 A user can workaround this with `cargo metadata --manifest-path <file>.rs`.
 
-This increases the maintenance and support burden for the cargo team, a team
-that is already limited in its availability.
-
 Like with all cargo packages, the `target/` directory grows unbounded.
 This is made worse by them being out of the way and the scripts are likely to be short-lived.
 Some prior art include a cache GC but that is also to clean up the temp files
@@ -429,6 +426,9 @@ The precedence schema for `cargo foo` has limitations
 - If your script has the same name as a built-in subcommand, then you have to prefix it with `./`
 - If you browse a random repo and try to run one of your aliases or third-party commands, you could unintentionally get a local script instead.
 - If `PATH` is unset or set to an empty string, then running `build` will run `cargo build` and run the built-in `build` command rather than your script
+
+This increases the maintenance and support burden for the cargo team, a team
+that is already limited in its availability.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
