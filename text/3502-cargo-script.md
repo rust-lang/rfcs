@@ -640,7 +640,7 @@ A policy on this needs to balance
 - Users wanting the latest experience, in general
 - Boilerplate runs counter to experimentation and prototyping, particularly in the "no dependencies" case
   - A `cargo new --script` (flag TBD) could help reduce writing of boilerplate.
-- There might not be a backing file if we read from `stdin`
+- There might not be a backing file if we read from `stdin` (future possibility)
 
 **Solution: Latest as Default**
 
@@ -783,7 +783,7 @@ fn main() {
 }
 ````
 
-This won't work for the `stdin` case.
+This won't work for the `stdin` case (future possibility).
 
 > Disposition: Rejected because implicitly modifying user code, especially
 > while being edited, is a poor experience.
@@ -1090,7 +1090,7 @@ Considerations
 - There is an expectation of a reproducible Rust experience across systems with lockfiles being a key element
 - Dropping of additional files might be frustrating for users to deal with (in
   addition to making it harder to share it all)
-- We would need a way to store the lockfile for `stdin` without conflicting
+- We would need to decide what to do for lockfiles and `stdin` (another future possibility) without conflicting
   with parallel runs
 - `cargo` already makes persisting of `Cargo.lock` optional for multi-file
   packages, encouraging not persisting it in some cases
