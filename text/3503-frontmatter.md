@@ -174,6 +174,8 @@ Benefits
 - Parsers are available to make this work (e.g. `syn`)
 
 Downsides
+- When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
+  - Unpredictable location (both the doc comment and the cargo code block within it)
 - The `cargo` macro would need to come from somewhere (`std`?) which means it is taking on `cargo`-specific knowledge
   - An unexplored direction we could go with this is a `meta!` macro (e.g. we'd need to have a format marker in it)
 - A lot of tools/IDEs have problems in dealing with macros
@@ -203,6 +205,8 @@ Benefits
 - Parsers are available to make this work (e.g. `syn`)
 
 Downsides
+- When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
+  - Unpredictable location (both the doc comment and the cargo code block within it)
 - From talking to a teacher, users are more forgiving of not understanding the details for structure data in an unstructured format (doc comments / comments) but something that looks meaningful, they will want to understand it all requiring dealing with all of the concepts
  - The attribute approach requires explaining multiple "advanced" topics: One teacher doesn't get to teaching any attributes until the second level in his crash course series and two teachers have found it difficult to teach people raw strings
 - Attributes look "scary" (and they are in some respects for the hidden stuff they do)
@@ -276,6 +280,10 @@ Benefits
 
 Downsides
 - Unfamiliar syntax
+- When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
+  - Having the explain the overloading of concepts to new users
+  - Unpredictable location (both the doc comment and the cargo code block within it)
+  - Visual clutter (where clutter is overwhelming already in Rust)
 - New style of structured comment for the ecosystem to support with potential
   compatibility issues, likely requiring a new edition
 - Assuming it can't be parsed with `syn` and either we need to write a
