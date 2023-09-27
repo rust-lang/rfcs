@@ -101,7 +101,7 @@ Compare this to rust where
 **Non-Goals:**
 
 With that said, this doesn't have to completely handle every use case for
-Collaboration, Interoperability, Prototuping, or One-off Utilities.
+Collaboration, Interoperability, Prototyping, or One-off Utilities.
 Users can always scale up to normal packages with an explicit `Cargo.toml` file.
 
 # Guide-level explanation
