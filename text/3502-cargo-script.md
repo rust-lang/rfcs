@@ -1087,7 +1087,7 @@ Considerations
 - Sharing of single-file projects should be easy
   - In "copy/paste" scenarios, like reproduction cases in issues, how often
     have lockfiles been pertinent for reproduction?
-- There is an expectation of a reproducible Rust experience
+- There is an expectation of a reproducible Rust experience across systems with lockfiles being a key element
 - Dropping of additional files might be frustrating for users to deal with (in
   addition to making it harder to share it all)
 - We would need a way to store the lockfile for `stdin` without conflicting
