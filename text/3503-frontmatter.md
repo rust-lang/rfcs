@@ -50,7 +50,7 @@ name: My Blog Post
 Hello world!
 ```
 
-We are carrying this concept over to Rust with a twist: using code fences which
+We are carrying this concept over to Rust with a twist: using fence code blocks which
 will be familiar to Rust developers when documenting their code:
 ````rust
 #!/usr/bin/env cargo
@@ -80,7 +80,7 @@ This means users will only be exposed to this within the concept of ["cargo scri
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When parsing Rust code, after stripping the shebang (`#!`), rustc will strip a code fence:
+When parsing Rust code, after stripping the shebang (`#!`), rustc will strip a fenced code block:
 - Must be immediately at the top (after shebang stripping), meaning no blank lines
 - Opens with 3+ backticks and "cargo" followed by a newline
 - All content is ignored until a matching number of backticks is found at the start of a line.  It is an error to have anything come between the backticks and the newline.
