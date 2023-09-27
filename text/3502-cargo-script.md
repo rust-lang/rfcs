@@ -493,6 +493,9 @@ Considerations:
   of whether `something` is a script or subcommand)
 
 Candidates
+- `rust`:
+  - Would fit well for Rust scripting
+  - Would not make it clear that cargo is involved.
 - `cargo-script`:
   - Out of scope
   - Verb preferred
