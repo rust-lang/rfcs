@@ -430,6 +430,7 @@ The precedence schema for `cargo foo` has limitations
 - If your script has the same name as a built-in subcommand, then you have to prefix it with `./`
 - If you browse a random repo and try to run one of your aliases or third-party commands, you could unintentionally get a local script instead.
 - If `PATH` is unset or set to an empty string, then running `build` will run `cargo build` and run the built-in `build` command rather than your script
+- Calls to `execve` (and similar functions) don't rely on resolving via `PATH` so a call with `build` will run `cargo build` and run the built-in `build` command rather than your script
 
 This increases the maintenance and support burden for the cargo team, a team
 that is already limited in its availability.
