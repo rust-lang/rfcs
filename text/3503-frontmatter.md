@@ -88,7 +88,7 @@ When parsing Rust code, after stripping the shebang (`#!`), rustc will strip a f
   - We are prioritizing on "one right way to do it" to make it easier to learn to write and to read a variety of files.
 - All content is ignored until the same number of backticks or more is found at the start of a line.
   It is an error to have anything besides spaces and tabs between the backticks and the newline.
-  - Unlike commonark, it is an error to not close the fenced code block seeing to detect problems earlier in the process seeing as the primary content is what comes after the fenced code block
+  - Unlike commonmark, it is an error to not close the fenced code block seeing to detect problems earlier in the process seeing as the primary content is what comes after the fenced code block
 
 As cargo will be the first step in the process to parse this,
 the responsibility for high quality error messages will largely fall on cargo.
