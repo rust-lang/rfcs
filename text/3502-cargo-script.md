@@ -715,7 +715,7 @@ and in terms of file size on Windows.
 
 This might also make shell completion of `cargo` noiser than what we have today with third-part plugins.
 
-> Dispition: Deferred and we'll re-evvaluate based on feedback
+> Disposition: Deferred and we'll re-evaluate based on feedback
 
 **Alternative 3: `cargo --edition <YEAR>`**
 
