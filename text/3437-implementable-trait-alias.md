@@ -9,9 +9,7 @@ Extend `#![feature(trait_alias)]` to permit `impl` blocks for trait aliases with
 
 # Motivation
 
-Often, one desires to have a "weak" version of a trait, as well as a "strong" one providing additional guarantees.
-Subtrait relationships are commonly used for this, but they sometimes fall short—expecially when the "strong" version is
-expected to see more use, or was stabilized first.
+Often, one desires to have a "weak" version of a trait, as well as a "strong" one providing additional guarantees. Subtrait relationships are commonly used for this, but they sometimes fall short—expecially when the "strong" version is expected to see more use, or was stabilized first.
 
 ## Example: AFIT `Send` bound aliases
 
@@ -26,9 +24,7 @@ pub trait Frobber {
 }
 ```
 
-Most of `frob-lib`'s users will need `Frobber::frob`'s return type to be `Send`,
-so the library wants to make this common case as painless as possible. But non-`Send`
-usage should be supported as well.
+Most of `frob-lib`'s users will need `Frobber::frob`'s return type to be `Send`, so the library wants to make this common case as painless as possible. But non-`Send` usage should be supported as well.
 
 `frob-lib`, following the recommended practice, decides to design its API in the following way:
 
@@ -95,8 +91,7 @@ impl LocalFrobber for MyType {
 }
 ```
 
-This is distinctly worse. Joe now has to reference both `Frobber` and `LocalFrobber` in his code,
-and (assuming that the final AFIT feature ends up requiring it) also has to write `#[refine]`.
+This is distinctly worse. Joe now has to reference both `Frobber` and `LocalFrobber` in his code, and (assuming that the final AFIT feature ends up requiring it) also has to write `#[refine]`.
 
 ### With today's `#![feature(trait_alias)]`
 
@@ -113,8 +108,7 @@ pub trait LocalFrobber {
 pub trait Frobber = LocalFrobber<frob(..): Send> + Send;
 ```
 
-With today's `trait_alias`, it wouldn't make much difference for Joe. He would just get a slightly different
-error message:
+With today's `trait_alias`, it wouldn't make much difference for Joe. He would just get a slightly different error message:
 
 ```
 error[E0404]: expected trait, found trait alias `Frobber`
@@ -126,15 +120,11 @@ error[E0404]: expected trait, found trait alias `Frobber`
 
 ## Speculative example: GATification of `Iterator`
 
-*This example relies on some language features that are currently pure speculation.
-Implementable trait aliases are potentially necessary to support this use-case, but not sufficent.*
+*This example relies on some language features that are currently pure speculation.Implementable trait aliases are potentially necessary to support this use-case, but not sufficent.*
 
-Ever since the GAT MVP was stabilized, there has been discussion about how to add `LendingIterator` to the standard library, without breaking existing uses of `Iterator`.
-The relationship between `LendingIterator` and `Iterator` is "weak"/"strong"—an `Iterator` is a `LendingIterator` with some extra guarantees about the `Item` associated type.
+Ever since the GAT MVP was stabilized, there has been discussion about how to add `LendingIterator` to the standard library, without breaking existing uses of `Iterator`. The relationship between `LendingIterator` and `Iterator` is "weak"/"strong"—an `Iterator` is a `LendingIterator` with some extra guarantees about the `Item` associated type.
 
-Now, let's imagine that Rust had some form of "variance bounds",
-that allowed restricting the way in which a type's GAT can depend on said GAT's generic parameters.
-One could then define `Iterator` in terms of `LendingIterator`, like so:
+Now, let's imagine that Rust had some form of "variance bounds", that allowed restricting the way in which a type's GAT can depend on said GAT's generic parameters. One could then define `Iterator` in terms of `LendingIterator`, like so:
 
 ```rust
 //! core::iter
@@ -152,8 +142,7 @@ where
     for<'a> Self::Item<'a>: bivariant_in<'a>;
 ```
 
-But, as with the previous example, we are foiled by the fact that trait aliases aren't `impl`ementable,
-so this change would break every `impl Iterator` block in existence.
+But, as with the previous example, we are foiled by the fact that trait aliases aren't `impl`ementable, so this change would break every `impl Iterator` block in existence.
 
 ## Speculative example: `Async` trait
 
@@ -196,8 +185,7 @@ impl Frobber for MyType {
 
 Joe's original code Just Works.
 
-The rule of thumb is: if you can copy everything between the `=` and `;` of a trait alias, paste it between the
-`for` and `{` of a trait `impl` block, and the result is sytactically valid—then the trait alias is implementable.
+The rule of thumb is: if you can copy everything between the `=` and `;` of a trait alias, paste it between the `for` and `{` of a trait `impl` block, and the result is sytactically valid—then the trait alias is most likely implementable.
 
 # Reference-level explanation
 
@@ -213,8 +201,7 @@ Implementable trait aliases must follow a more restrictive form:
 
 For example, `trait Foo<T> = PartialEq<T> where Self: Sync;` is a valid implementable alias. The `=` must be followed by a single trait (or implementable trait alias), and then some number of where clauses.
 
-An impl block for a trait alias looks just like an impl block for the underlying trait. The alias's where clauses
-are treated as obligations that the the `impl`ing type must meet.
+An impl block for a trait alias looks just like an impl block for the underlying trait. The alias's where clauses are treated as if they had been written out in the `impl` header.
 
 ```rust
 pub trait CopyIterator = Iterator<Item: Copy> where Self: Send;
@@ -234,6 +221,29 @@ impl !Send for Bar;
 
 // ERROR: `Bar` is not `Send`
 // impl IntIterator for Bar { /* ... */ }
+```
+
+There is another restriction that trait aliases must adhere to in order to be implementable: all generic parameters of the alias itself must be used as generic parameters of the alias's primary trait.
+
+```rust
+// Implementable
+trait Foo<T> = PartialEq<T>;
+
+// Not implementable
+trait Foo<T> = Copy;
+trait Foo<T> = Copy where T: Send;
+trait Foo<T> = Iterator<Item = T>;
+trait Foo<T> = Copy where Self: PartialEq<T>;
+```
+
+Bounds on such generic parameters are enforced at the `impl` site.
+
+```rust
+trait Underlying<T> {}
+
+trait Alias<T: Send> = Underlying<T>;
+
+impl<T> Alias<T> for i32 {} // Error: missing `T: Send` bound
 ```
 
 If the trait alias uniquely constrains a portion of the `impl` block, that part can be omitted.
@@ -287,8 +297,7 @@ impl Frobber for MyType {
 
 Trait aliases are `unsafe` to implement iff the underlying trait is marked `unsafe`.
 
-Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax, as well as in paths more generally. When used this way, they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and associated type bounds
-must be satisfied.
+Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax, as well as in paths more generally. When used this way, they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and type parameter/associated type bounds must be satisfied.
 
 ```rust
 trait IntIter = Iterator<Item = u32> where Self: Clone;
@@ -307,23 +316,24 @@ fn foo() {
 
 # Drawbacks
 
-- The sytactic distance between implementable and non-implementable aliases is short, which might confuse users.
-In particular, the fact that `trait Foo = Bar + Send;` means something different than `trait Foo = Bar where Self: Send;` will likely be surprising to many.
+- The sytactic distance between implementable and non-implementable aliases is short, which might confuse users. In particular, the fact that `trait Foo = Bar + Send;` means something different than `trait Foo = Bar where Self: Send;` will likely be surprising to many.
   - On the other hand, the rules mirror those of `impl` blocks, which Rust programmers already understand.
   - Ideally, we would collect user feedback before stabilizing this feature.
-- Adds complexity to the language.
-- Many of the motivating use-cases involve language features that are not yet stable, or even merely speculative.
-More experience with those features might unearth better alternatives.
+- Adds complexity to the language, which might surprise or confuse users.
+- Many of the motivating use-cases involve language features that are not yet stable, or even merely speculative. More experience with those features might unearth better alternatives.
 
 # Rationale and alternatives
 
 - Very lightweight, with no new syntax forms. Compare "trait transformers" proposals, for example—they are generally much heavier.
 - Better ergonomics compared to purely proc-macro based solutions.
 - One alternative is to allow marker traits or auto traits to appear in `+` bounds of implementable aliases.
-(For example, `trait Foo = Bar + Send;` could be made implementable). However, this would arguably make implementability rules less intuitive, as the symmetry with `impl` blocks would be broken.
-- Another possibility is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules explicit, at the cost of cluttering the attribute namespace.
+(For example, `trait Foo = Bar + Send;` could be made implementable).
+  - This may make the implementablility rules more intutive to some, as the distinction between `+ Send` and `where Self: Send` would no longer be present.
+  - However, it also might make the rules less intuitive, as the symmetry with `impl` blocks would be broken.
+  - Again, user feedback could help make this decision.
+- Another option is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules more explicit, at the cost of cluttering user code and the attribute namespace.
 
-## What about combining multiple prtimary traits, and their items, into one impl block?
+## What about combining multiple primary traits, and their items, into one impl block?
 
 It's possible to imagine an extension of this proposal, that allows trait aliases to be implementable even if they have multiple primary traits. For example:
 
@@ -370,12 +380,12 @@ Perhaps a more narrowly tailored version of this extension, in which both subtra
 
 # Unresolved questions
 
-- How does `rustdoc` render these? Consider the `Frobber` example—ideally, `Frobber` should be emphasized
-compared to `LocalFrobber`, but it's not clear how that would work.
+- How does `rustdoc` render these? Consider the `Frobber` example—ideally, `Frobber` should be emphasized compared to `LocalFrobber`, but it's not clear how that would work.
 
 # Future possibilities
 
 - New kinds of bounds: anything that makes `where` clauses more powerful would make this feature more powerful as well.
   - Variance bounds would allow this feature to support backward-compatible GATification.
   - Method unsafety bounds would support the `Future` → `Async` use-case.
-- Allow `trait Foo: Copy = Iterator;` as alternative to `trait Foo = Iterator where Self: Copy;`.
+- `trait Foo: Copy = Iterator;` could be allowed as an alternative to `trait Foo = Iterator where Self: Copy;`.
+- The possible contents of `impl` bodies could be expanded, for example to support combining supertrait and subtrait implementations.
