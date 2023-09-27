@@ -341,7 +341,7 @@ Single-file packages maintain an out-of-line target directory by default.
 This is `$CARGO_HOME/target/<hash-of-path>`.
 
 A single-file package is accepted by cargo commands as a `--manifest-path`
-- This is distinguished by the file extension (`.rs`) and that it is a file.
+- Files are considered to have embedded manifest if they end with `.rs` or they lack and extension and are of type file
 - This allows running `cargo test --manifest-path single.rs`
 - `cargo add` and `cargo remove` may not support editing embedded manifests initially
 - Path-dependencies may not refer to single-file packages at this time (they don't have a `lib` target anyways)
