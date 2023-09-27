@@ -170,6 +170,7 @@ Benefits
 
 Downsides
 - The `cargo` macro would need to come from somewhere (`std`?) which means it is taking on `cargo`-specific knowledge
+  - An unexplored direction we could go with this is a `meta!` macro (e.g. we'd need to have a format marker in it)
 - A lot of tools/IDEs have problems in dealing with macros
 - Free-form rust code makes it harder for cargo to make edits to the manifest
 - Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
