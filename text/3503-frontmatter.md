@@ -340,6 +340,81 @@ Downsides
 See also [Single-file scripts that download their dependencies](https://dbohdan.com/scripts-with-dependencies)
 which enumerates the syntax used by different tools.
 
+## `cargo-script` family
+
+There are several forks of [cargo script](https://github.com/DanielKeep/cargo-script).
+
+doc-comments
+```rust
+#!/usr/bin/env run-cargo-script
+//! This is a regular crate doc comment, but it also contains a partial
+//! Cargo manifest.  Note the use of a *fenced* code block, and the
+//! `cargo` "language".
+//!
+//! ```cargo
+//! [dependencies]
+//! time = "0.1.25"
+//! ```
+extern crate time;
+fn main() {
+    println!("{}", time::now().rfc822z());
+}
+```
+short-hand
+```rust
+// cargo-deps: time="0.1.25"
+// You can also leave off the version number, in which case, it's assumed
+// to be "*".  Also, the `cargo-deps` comment *must* be a single-line
+// comment, and it *must* be the first thing in the file, after the
+// hashbang.
+extern crate time;
+fn main() {
+    println!("{}", time::now().rfc822z());
+}
+```
+
+## RustExplorer
+
+[Rust Explorer](https://users.rust-lang.org/t/rust-playground-with-the-top-10k-crates/75746)
+uses a comment syntax for specifying dependencies
+
+Example:
+```rust
+/*
+[dependencies]
+actix-web = "*"
+ureq = "*"
+tokio = { version = "*", features = ["full"] }
+*/
+
+use actix_web::App;
+use actix_web::get;
+use actix_web::HttpResponse;
+use actix_web::HttpServer;
+use actix_web::post;
+use actix_web::Responder;
+use actix_web::web;
+use tokio::spawn;
+use tokio::sync::oneshot;
+use tokio::task::spawn_blocking;
+```
+
+## PL/Rust
+
+Example:
+```sql
+CREATE OR REPLACE FUNCTION randint() RETURNS bigint LANGUAGE plrust AS $$
+[dependencies]
+rand = "0.8"
+
+[code]
+use rand::Rng; 
+Ok(Some(rand::thread_rng().gen())) 
+$$;
+```
+
+See [External Dependencies](https://github.com/tcdi/plrust/blob/main/doc/src/dependencies.md)
+
 ## YAML frontmatter
 
 As a specialization of [YAML presentation streams](https://yaml.org/spec/1.2.2/#323-presentation-stream),
