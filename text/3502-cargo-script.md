@@ -425,6 +425,11 @@ case that a `Cargo.toml` would.
 With lockfile "hidden away" in the `target/`,
 users might not be aware that they are using old dependencies.
 
+The precedence schema for `cargo foo` has limitations
+- If your script has the same name as a built-in subcommand, then you have to prefix it with `./`
+- If you browse a random repo and try to run one of your aliases or third-party commands, you could unintentionally get a local script instead.
+- If `PATH` is unset or set to an empty string, then running `build` will run `cargo build` and run the built-in `build` command rather than your script
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
