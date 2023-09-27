@@ -375,6 +375,7 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+- Treat `cargo` as the default infostring
 - Support more infostring languages
   - We need to better understand use cases for how this should be extended
 - Support infostring attributes
