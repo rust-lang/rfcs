@@ -405,6 +405,8 @@ We can patch over this as best we can in documentation but the result won't be
 ideal.
 A user can workaround this with `cargo metadata --manifest-path <file>.rs`.
 
+Users may be using this feature for heavier duty scripting and want optimized builds.
+
 Like with all cargo packages, the `target/` directory grows unbounded.
 This is made worse by them being out of the way and the scripts are likely to be short-lived.
 Some prior art include a cache GC but that is also to clean up the temp files
