@@ -372,7 +372,7 @@ fn main() {
 ```
 - Like with `cargo install`, `.cargo/config.toml` will be read based on the
   scripts location rather than the current-dir.
-  - And like `cargo install`, the current-dir rustup-toolchain is respected
+  - And like `cargo install`, the current-dir `rust-toolchain.toml` is respected
 - `--release` is not passed in because the primary use case is for exploratory
   programming, so the emphasis will be on build-time performance and debugging,
   rather than runtime performance
@@ -940,7 +940,7 @@ See also [Single-file scripts that download their dependencies](https://dbohdan.
 Note: we are assuming the following are **not** future possibilities in this design
 - Embedding build scripts
 - Embedding `.cargo/config.toml` files
-- Embedding `rustup-toolchain.toml` files
+- Embedding `rust-toolchain.toml` files
 - Embedding other source files or additional packages
 
 ## Playground support
