@@ -142,7 +142,7 @@ Benefits
   - When discussing on forums, people expressed how they had never seen the syntax but instantly were able to understand it
 
 Downsides:
-- When discussing with a a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
+- When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
   - Having the explain the overloading of concepts to new users
   - Unpredictable location (both the doc comment and the cargo code block within it)
   - Visual clutter (where clutter is overwhelming already in Rust)
