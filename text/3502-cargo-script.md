@@ -422,6 +422,9 @@ multi-file package.
 As stated in the Motivation, this doesn't have to perfectly cover every use
 case that a `Cargo.toml` would.
 
+With lockfile "hidden away" in the `target/`,
+users might not be aware that they are using old dependencies.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
