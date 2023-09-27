@@ -255,7 +255,7 @@ fn main() {
 HEREDOC:
 ```rust
 #!/usr/bin/env cargo
-/* Cargo.TOML >>>
+/* Cargo.toml >>>
 [package]
 edition = "2018"
 <<<
@@ -270,6 +270,9 @@ comments or HEREDOC.
 This does not prescribe the exact syntax used or supported comments
 
 Benefits
+- Natural to support `Cargo.lock` as well
+- Without existing baggage, can use file extensions, making a firmer
+  association in users minds for what is in these (for those used to `Cargo.toml`)
 
 Downsides
 - Unfamiliar syntax
