@@ -119,6 +119,14 @@ When choosing a syntax for embedding manifests in source files, our care-abouts 
 - Leave the door open in case we want to reuse the syntax for embedded lockfiles
 - Leave the door open for single-file `lib`s
 
+This proposed syntax builds off of the precedence of Rust syntax being specialized for an external tool
+(doc-comments for rustdoc).
+However, a new syntax is used instead of extending the comment syntax:
+- Focused on being parsed by arbitrary tools (cargo, vim plugins, etc) without understanding the full Rust grammar
+- Side steps compatibility issues with both
+  user expectations with the looseness of comment syntax (making it harder to parse)
+  and any existing comments that may look like a new structured comment syntax
+
 Benefits for the proposed solution are:
 - Visually/syntactically lightweight
 - Has parallels to ideas outside of Rust, building on external knowledge that might exist
