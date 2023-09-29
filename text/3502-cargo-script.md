@@ -615,7 +615,7 @@ If we adopted a unique file extensions, some options include:
   - No connection back to cargo
 - `.rss`
   - No connection back to cargo
-  - Confused with RSS
+  - Confused with [RSS](https://en.wikipedia.org/wiki/RSS)
 - `.rsscript`
   - No connection back to cargo
   - Unwieldy
