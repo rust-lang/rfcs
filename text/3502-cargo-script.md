@@ -410,7 +410,8 @@ Users may be using this feature for heavier duty scripting and want optimized bu
 - This can be worked around by changing `profile.dev` in the embedded manifest
 
 Like with all cargo packages, the `target/` directory grows unbounded.
-This is made worse by them being out of the way and the scripts are likely to be short-lived.
+This is made worse by them being out of the way and the scripts are likely to be short-lived,
+removed without a `cargo clean --manifest-path foo`.
 Some prior art include a cache GC but that is also to clean up the temp files
 stored in other locations
 (our temp files are inside the `target/` dir and should be rarer).
