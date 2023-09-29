@@ -83,7 +83,7 @@ This means users will only be exposed to this within the concept of ["cargo scri
 When parsing Rust code, after stripping the shebang (`#!`), rustc will strip a fenced code block:
 - Must be immediately at the top (after shebang stripping), meaning no blank lines
 - Opens with 3+ backticks and "cargo" followed by a newline
-  - We are intentionally supporting a subset of commonmark code fences in supporting backticks but not tilde code fences or indented fenced code blocks
+  - We are intentionally supporting only a subset of commonmark code fences in supporting backticks but not tilde code fences or indented fenced code blocks
   - As we aren't supporting an arbitrarily nested file format (though may show up in one), we likely don't need the flexibility
   - We are prioritizing on "one right way to do it" to make it easier to learn to write and to read a variety of files.
 - All content is ignored until the same number of backticks or more is found at the start of a line.
