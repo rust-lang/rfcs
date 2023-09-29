@@ -590,7 +590,7 @@ Reasons for a unique file type
 - Better detection by tools for the new semantics (particularly `rust-analyzer`)
 
 Downsides to a custom extension
-- Limited support by different tools (rust-analyzer, syntax highlighting, non-LSP editor actions) as adoptin rolls out
+- Limited support by different tools (rust-analyzer, syntax highlighting, non-LSP editor actions) as adoption rolls out
 
 At this time, we do not see enough reason to use a custom extension when facing
 the downsides to a slow roll out.
