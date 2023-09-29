@@ -498,7 +498,7 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 
 ## Multiple frontmatters
 
-At least for cargo's use cases, the only other file would consier supporting is `Cargo.lock`
+At least for cargo's use cases, the only other file that we would consider supporting is `Cargo.lock`
 and we have other avenues we want to explore as future possibilities before we
 even consider the idea of multiple frontmatters.
 
