@@ -390,7 +390,7 @@ to:
 3. third-party commands
 
 To allow the xor, we enforce that
-- manifests must be passed in as `Cargo.toml`, with a `.rs` extension, or have a `/` in them
+- we only assume the argument is a manifest if it has a `/` in it, ends with the `.rs` extension, or is `Cargo.toml`
   - So `./build` can be used to run a script name `build` rather than the `cargo build` command
 - no built-in command may look like an accepted manifest
 
