@@ -498,7 +498,11 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 
 ## Multiple frontmatters
 
-If we decide we need to embed additional metadata, we have a couple of options for extending frontmatter support.
+At least for cargo's use cases, the only other file would consier supporting is `Cargo.lock`
+and we have other avenues we want to explore as future possibilities before we
+even consider the idea of multiple frontmatters.
+
+So **if** we decide we need to embed additional metadata, we have a couple of options for extending frontmatter support.
 
 Distinct blocks, maybe with newlines
 
