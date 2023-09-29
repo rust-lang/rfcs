@@ -254,7 +254,7 @@ Benefits
 
 Downsides
 - Difficult to parse without assistance from something like `syn` as we'd need to distinguish what the start of a stream is vs content of a string literal
-- Being new syntax, there would be a lot of details to work out, including
+- Being a new file format (a "text tar" format), there would be a lot of details to work out, including
   - How to delineate and label documents
   - How to allow escaping to avoid conflicts with content in a documents
   - Potentially an API for accessing the document from within Rust
