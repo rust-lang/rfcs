@@ -97,6 +97,7 @@ the responsibility for high quality error messages will largely fall on cargo.
 [drawbacks]: #drawbacks
 
 - A new concept for Rust syntax, adding to overall cognitive load
+- Ecosystem tooling updates to deal with new syntax
 - When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)
 
 # Rationale and alternatives
@@ -119,19 +120,28 @@ When choosing a syntax for embedding manifests in source files, our care-abouts 
 - Leave the door open in case we want to reuse the syntax for embedded lockfiles
 - Leave the door open for single-file `lib`s
 
-This proposed syntax builds off of the precedence of Rust syntax being specialized for an external tool
+### Fenced Code Block Frontmatter
+
+This proposed syntax builds off of the precedence of Rust having syntax specialized for an external tool
 (doc-comments for rustdoc).
 However, a new syntax is used instead of extending the comment syntax:
-- Focused on being parsed by arbitrary tools (cargo, vim plugins, etc) without understanding the full Rust grammar
+- Simplified for being parsed by arbitrary tools (cargo, vim plugins, etc) without understanding the full Rust grammar
 - Side steps compatibility issues with both
-  user expectations with the looseness of comment syntax (making it harder to parse)
+  user expectations with the looseness of comment syntax (which supporting would make it harder to parse)
   and any existing comments that may look like a new structured comment syntax
 
-Benefits for the proposed solution are:
+This proposal mirrors the location of YAML frontmatter (absolutely first).
+As we learn more of its uses and problems people run into in practice,
+we can evaluate if we want to loosen any of the rules.
+
+Benefits:
 - Visually/syntactically lightweight
 - Has parallels to ideas outside of Rust, building on external knowledge that might exist
-- Easy for cargo to parse and modify
-  - Cargo needs a simple syntax subset to parse to ensure it can adequately report errors for the part it cares about but does not get in the way of rustc reporting the high quality errors it cares about
+- Easy for cargo and any third-party tool to parse and modify
+  - As cargo will be parsing before rustc,
+    cargo being able to work off of a reduced syntax is paramount for ensuring
+    cargo doesn't mask the high quality rustc errors with lower-quality errors of
+    its own
 - In the future, this can be leveraged by other build systems or tools
 
 ### Alternative 1: Doc-comment
