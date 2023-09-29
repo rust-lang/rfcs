@@ -1086,9 +1086,7 @@ to do interactive whitebox testing of private code within a larger project.
 [Lockfiles](https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html)
 record the exact version used for every possible dependency to ensure
 reproducibility.  In particular, this protects against upgrading to broken
-versions and allows continued use of a yanked version.  At this time, the
-recommendation is for
-[`bin`s to persist their lockfile while `lib`s do not](https://doc.rust-lang.org/cargo/faq.html#why-do-binaries-have-cargolock-in-version-control-but-not-libraries).
+versions and allows continued use of a yanked version.
 
 With multi-file packages, `cargo` writes a `Cargo.lock` file to the package
 directory.  As there is no package directory for single-file packages, we need
