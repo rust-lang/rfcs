@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Categories and keywords for crates are now deprecated, replaced by a unified "tags" instead. A new set of policies is added to allow the crates.io team to curate the way tags are presented, replacing features such as the "Popular Categories" list on crates.io with a "Popular Tags" instead.
+Categories for crates are now deprecated and implicitly added as keywords instead. A new set of policies is added to allow the crates.io team to curate the way keywords are presented, replacing features such as the "Popular Categories" list on crates.io with a "Popular Keywords" instead.
 
 # Motivation
 [motivation]: #motivation
@@ -24,7 +24,7 @@ Recently, [a discussion](https://github.com/rust-lang/crates.io/discussions/6762
 
 Because categories cannot be removed, they also cannot be renamed or otherwise curated by the community. However, by switching to keywords, we can effectively solve this problem; community members can simply start publishing their crates under different keywords and older, unsupported crates wouldn't have any issue remaining published under their older versions.
 
-To make the change clearer, the unified categories and keywords are called "tags" instead, and any crates using keywords or categories in their manifests will implicitly add those strings to tags instead. Ultimately, switching to a unified, unrestricted system solves a couple problems:
+To make the change backwards-compatible, any crates using categories in their manifests will implicitly add those strings to keywords instead. Ultimately, switching to a unified system solves a couple problems:
 
 1. Instead of being gatekept by a PR to the crates.io repository, categories can organically be adopted by community members in the form of keywords. Which keywords are most popular and useful can be decided organically.
 2. Keywords can still be given descriptions and other metadata on crates.io, although no distinction between these "special" keywords and other keywords is made in cargo itself. This allows making changes to the way crates are presented without having to worry about backwards compatibility.
@@ -33,66 +33,71 @@ To make the change clearer, the unified categories and keywords are called "tags
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Categories and keywords in `Cargo.toml` are now deprecated. Setting `categories` or `keywords` will now trigger a warning and suggest to use `tags` instead. These combined `tags` now accept the formats used by both `categories` and `keywords`, meaning:
+Categories in `Cargo.toml` are now deprecated. Setting `categories` will now trigger a warning and suggest to use `keywords` instead. To ensure that crates still build correctly in these cases, the provided `categories` are implicitly converted into `keywords`.
 
-* It's now possible to add a single double-colon inside a tag to indicate a parent tag. This has the effect of adding two tags to a crate: for example, adding the `development-tools::testing` tag adds the crate to both the `development-tools` tag and the `development-tools::testing` tag. The part after the double-colon is called a subtag.
-* On each side of the double-colon, the length of text may be up to 25 characters. That means that, including the double-colon, tags can be up to 52 characters long. (This is to accomodate the largest category before the unification, `development-tools::procedural-macro-helpers`, although rounding up to a nice number for the actual limit.)
+As part of this conversion, both the parent and child categories are added as keywords, meaning that for example the `development-tools::testing` category gets converted into a `development-tools` keyword and a `testing` keyword. When computing the number of keywords used, only unique keywords are added, meaning that the following manifest contains only three keywords:
 
-On crates.io, the "categories" section of the sidebar is removed and all tags are shown with hashtags in a crate header, like keywords are now. On the pages for popular tags, a curated description from the crates.io team may be shown alongside a list of common subtags and similar tags.
+```toml
+[package]
+categories = ["development-tools::testing"]
+keywords = ["testing", "tests"]
+```
 
-The exact policy for how this curated metadata can be added to tags can be modified by the crates.io team without an RFC, although an initial policy is described below in the reference-level explanation.
+To accomodate this change, the number of keywords allowed on `crates.io` is increased to `15`; this allows for 5 parent categories, 5 child categories, and 5 pre-existing keywords. External registries are free to change this limit as they please, just like before.
+
+Keywords also have their length limit raised to 25 characters, which accomodates the previous largest category, `procedural-macro-helpers`.
+
+On crates.io, the "categories" section of the sidebar is removed and all keywords are shown with hashtags in a crate header, like they are currently. On the pages for popular keywords, a curated description from the crates.io team may be shown alongside a list of aliases and commonly paired keywords. Aliases are special because they allow the crates.io team to implicitly include multiple keywords in the same list, for example, including both crates with `tests` and `testing` keywords in listings for either keyword.
+
+The exact policy for how this curated metadata can be added to keywords can be modified by the crates.io team without an RFC, although an initial policy is described below in the reference-level explanation.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `Cargo.toml` manifest gains a new key, `package.tags`, which is an array of strings with the following restrictions:
+Currently, Cargo does not place any limits on the contents or quantity of categories and keywords and instead relies on registries (like crates.io) to perform validation; this will not change. To accomodate older external registries, Cargo will continue to send categories and keywords separately if they are both provided and rely on registries to merge them together. Regardless of whether the registry treats categories as special, Cargo should emit a warning if a user provides categories, encouraging them to switch to keywords; this may eventually have the option to `cargo fix` to automatically convert the categories to keywords.
 
-* The strings are nonempty and consist of "tag components" separated by double-colons as specified below. While crates.io limits the number of components to at most two, this can be raised for custom registries.
-* Tag components must start with a letter and only contain letters, numbers, `_`, or `-`. (This is the same as keywords and crate names.)
-* crates.io limits the length of tag components to 25 characters and the number of tags to 10, but this can be raised for custom registries.
+To allow simpler code, crates.io may eventually decide to stop validating categories specially and implicitly convert all provided categories into keywords. The actual requirements for the format of keywords will not change, although their length limit will be increased to 25 characters. Additionally, the number of allowed keywords will be increased to 15 to accomodate the lack of categories, as well as the implicit conversion of categories into keywords.
 
-The `package.categories` and `package.keywords` keys are now deprecated, and future versions of Cargo emit a warning whenever they are used. If either of these keys is present, their contents are implicitly treated as tags and count toward the ten-tag limit.
-
-## Adding tag metadata
+## Adding keyword metadata
 
 This policy can be changed at the discretion of the crates.io team without an RFC. It's really just a starting set of guidelines.
 
-crates.io can now add metadata to tags according to this policy. Immediately after the adoption of this RFC, this would likely start by converting the `categories.toml` configuration into a `tags.toml` configuration, with PRs affecting this file subject to the policy.
+crates.io can now add metadata to keywords according to this policy. Immediately after the adoption of this RFC, this would likely start by converting the `categories.toml` configuration into a `keywords.toml` configuration, with PRs affecting this file subject to the policy.
 
-Tags with the same name as a crate may be automatically marked as "crate tags" if the majority of the crates with the tag have the tagged crate as a non-development dependency, optional or otherwise. At the discretion of the crates.io team, tags may be explicitly marked as non-crate tags, to account for cases of popular crates with generic names. This can help avoid marking a particular crate as "canonical" just because it's popular and has a generic name.
+Keywords with the same name as a crate (for example, `serde` or `tokio`) may be automatically marked as "crate keywords" if the majority of the crates with the keywords have the crate with the same name as the keyword as a non-development dependency, optional or otherwise. At the discretion of the crates.io team, keywords may be explicitly marked as non-crate keywords, to account for cases of popular crates with generic names (for example, `sha2`). This can help avoid marking a particular crate as "canonical" just because it's popular and has a generic name.
 
-Tags that are deemed "noteworthy" can have metadata added to them. A tag is noteworthy if it:
+Non-crate keywords can have the following metadata:
+* A description of what the keyword is for.
+* A list of "commonly paired" keywords, which operate similar to subcategories. (Unlike subcategories, a keyword can be commonly paired with more than one parent keyword.)
+* A list of alias keywords, whose listings are merged with the parent keyword. (If "tests" is an alias of "testing," then any listing for "test" will redirect to that of "testing," and all crates with the keyword "test" will be shown under the "testing" list.)
 
-1. Does not violate the Rust Code of Conduct in any way. (Extra scrutiny is given to tags compared to individual crates, since they reflect on the values of the Rust project more broadly.)
-2. Is not a crate tag. (These use the crate for their metadata instead.)
-3. Has at least five "noteworthy" crates from separate authors. (Intentionally vague to allow unpopular but important tags to gain metadata.)
-4. Serve a purpose that is not covered by an existing tag. (For these cases, subtags are more appropriate. A good metric for this would be whether the five noteworthy crates share a second tag in common that itself is.)
-5. Could feasibly have at least one subtag that is noteworthy. ("Feasibly" is also left highly subject to interpretation. The idea here is to ensure that these are not best replaced with subtags.)
+Keywords that are deemed "noteworthy" can have metadata added to them. A keyword is noteworthy if it:
 
-For determining the noteworthiness of subtags, the conditions are slightly altered:
+1. Does not violate the Rust Code of Conduct in any way. (Extra scrutiny is given to keywords compared to individual crates, since they reflect on the values of the Rust project more broadly.)
+2. Is not a crate keyword. (These use the crate for their metadata instead.)
+3. Has at least five "noteworthy" crates from separate authors. (Intentionally vague to allow unpopular but important keywords to gain metadata.)
+4. Serve a purpose that is not covered by an existing noteworthy keyword. (For these cases, marking the keyword as a "commonly paired" keyword might be more appropriate, as described below. A good metric for this would be whether the five noteworthy crates share a second keyword in common that itself is noteworthy.)
+5. Could feasibly have at least one commonly paired keyword that is noteworthy. ("Feasibly" is also left highly subject to interpretation. The idea here is to ensure that these are not best replaced with pairings.)
 
-* They only have to serve a purpose that isn't covered by other subtags, instead of any tag.
-* They don't even feasibly need to have noteworthy subtags, since nested subtags aren't allowed.
+For determining the noteworthiness of commonly paired keywords, the requirements are slightly reduced:
 
-When determining noteworthiness, similar tags can be taken into account. For example, if `math`, `maths`, and `mathematics` are used as tags, but the community hasn't yet decided upon a canonical tag, one can be chosen arbitrarily and metadata can be added to it instead.
+* They only have to serve a purpose that isn't covered by other pairings, instead of any keyword. (In this case, an alias might be more appropriate.)
+* They don't need to have noteworthy pairings themselves.
 
-Metadata can take one of the following forms:
+When determining noteworthiness, potential aliases can be taken into account. For example, if `math`, `maths`, and `mathematics` are used as keywords, but the community hasn't yet decided upon a canonical keyword, one can be chosen arbitrarily and metadata can be added to it instead.
 
-* A short description can be added to the tag.
-* A list of similar tags can be added, grouping together crates under all these tags in the same list.
+Additionally, keywords that are seen as noteworthy are allowed to be shown on the "popular keywords" list on the crates.io home page, or displayed prominently above other keywords on crate pages.
 
-Additionally, tags that are seen as noteworthy are allowed to be shown on the "popular tags" list on the crates.io home page, or displayed prominently above other tags on crate pages.
+These guidelines are meant to provide a *minimum* requirement to add a noteworthy keyword, but meeting these requirements does not ensure that a keyword is added. These keywords may still be vetoed at the discretion of the crates.io team, and this may also result in changes to the policy.
 
-These guidelines are meant to provide a *minimum* requirement to add a noteworthy tag, but meeting these requirements does not ensure that a tag is added. These tags may still be vetoed at the discretion of the crates.io team, and this may also result in changes to the policy.
-
-Since this is a big cultural change to the way crates are presented, it's going to take a bit of experimentation and time to fully refine these guidelines. This is why the crates.io team should be allowed to change these guidelines as they see fit without a full RFC, since ultimately, they're the ones in charge of actually responding to changes to tag metadata and they can only do what they have the capacity to do.
+Since this is a big cultural change to the way crates are presented, it's going to take a bit of experimentation and time to fully refine these guidelines. This is why the crates.io team should be allowed to change these guidelines as they see fit without a full RFC, since ultimately, they're the ones in charge of actually responding to changes to keyword metadata and they can only do what they have the capacity to do.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The biggest drawback is that this can potentially add substantial extra work for the crates.io team, since there could potentially be several more tags with metadata than existing categories.
+The biggest drawback is that this can potentially add substantial extra work for the crates.io team, since there could potentially be several more keywords with metadata than existing categories. However, [because crates.io currently uses the `itree` PostgreSQL extension to handle nested categories](https://github.com/rust-lang/rfcs/pull/3488#issuecomment-1741110992), this change could potentially reduce maintenance load on that team.
 
-However, the requirements here aren't substantially different than those expected of users proposing categories before, just more clarified. Arguably, the onus is more on the users proposing tags than the crates.io members accepting metadata changes, since it's substantially more difficult to make a case than to accept or reject one.
+However, the requirements here aren't substantially different than those expected of users proposing categories before, just more clarified. Arguably, the onus is more on the users proposing keywords than the crates.io members accepting metadata changes, since it's substantially more difficult to make a case than to accept or reject one.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -121,6 +126,6 @@ None currently.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-It seems unlikely that tagging functionality could be extended beyond the points this RFC suggests. Given the fact that existing package repositories take a rather lax mentality toward metadata, arguably, having metadata for arbitrary tags at all is going above and beyond the status quo.
+It seems unlikely that keyword functionality could be extended beyond the points this RFC suggests. Given the fact that existing package repositories take a rather lax mentality toward metadata, arguably, having metadata for arbitrary keywords at all is going above and beyond the status quo.
 
 It's probably not a best idea to expand the scope of what's offered.
