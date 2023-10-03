@@ -54,9 +54,6 @@ giffy = { version = "0.11.1", optional = true }
 
 This means that this dependency will only be included if the `gif`
 feature is enabled.
-In addition to `cfg(feature = "gif")` syntax, you can reference this as
-`cfg(feature = "giffy")` in the code though users may get confused at error
-messages when used on a public API.
 
 > **Note**: Prior to the 202X edition, features were implicitly created for
 > optional dependencies not referenced via `dep:`.
