@@ -493,6 +493,7 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
   - We need to better understand use cases for how this should be extended
 - Support infostring attributes
   - We need to better understand use cases for how this should be extended
+- Loosen the code-fence syntax, like allowing newlines
 - Add support for a `#[frontmatter(info = "", content = "")]` attribute that this syntax maps to.
   - Since nothing will read this, whether we do it now or in the future will have no affect
 
