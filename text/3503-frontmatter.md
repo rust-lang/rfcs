@@ -495,6 +495,7 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
   - Since this is a one-way door, we want to make sure we are confident that that is the right default / policy
 - Support more infostring languages
   - We need to better understand use cases for how this should be extended
+  - Hard coding it for now is much like how rustc has hard coded support for `#[rustdoc]` or `clippy`/`rustdoc` lint categories
 - Support infostring attributes
   - We need to better understand use cases for how this should be extended
 - Loosen the code-fence syntax, like allowing newlines
