@@ -144,6 +144,9 @@ Benefits:
     its own
 - In the future, this can be leveraged by other build systems or tools
 
+Downsides:
+- When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)
+
 ### Alternative 1: Doc-comment
 
 ```rust
