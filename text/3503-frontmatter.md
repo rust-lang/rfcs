@@ -146,6 +146,7 @@ Benefits:
 
 Downsides:
 - When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)
+- Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 
 ### Alternative 1: Doc-comment
 
