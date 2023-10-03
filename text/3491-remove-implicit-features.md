@@ -67,10 +67,17 @@ feature is enabled.
 
 ## Existing editions
 
-For existing editions, `cargo` will warn when parsing a workspace member's
-package when an optional dependency is not referenced via `dep:` in the
-features ([rust-lang/cargo#9088](https://github.com/rust-lang/cargo/issues/9088)) using the
-planned warning control system ([rust-lang/cargo#12235](https://github.com/rust-lang/cargo/issues/12235)).
+As is expected for edition changes, `cargo fix --edition` will add `foo = ["dep:foo"]` features as needed.
+Where undesired, users can remove these and switch their references to the
+dependency from `foo` to `dep:foo`,
+dealing with the [potential breaking changes](https://doc.rust-lang.org/cargo/reference/semver.html#cargo-remove-opt-dep).
+
+Ideally, this will be accomplished by `cargo` emitting an allow-by-defaylt
+warning when parsing a workspace member's package when an optional dependency
+is not referenced via `dep:` in the features
+([rust-lang/cargo#9088](https://github.com/rust-lang/cargo/issues/9088))
+using the planned warning control system
+([rust-lang/cargo#12235](https://github.com/rust-lang/cargo/issues/12235)).
 The warning will be named something like `cargo::implicit_feature` and be part
 of the `cargo::rust-202X-compatibility` group.
 
@@ -79,6 +86,8 @@ Suggested text:
 implicit features for optional dependencies is deprecated and will be unavailable in the 202X edition.
 ```
 This would be machine applicable with a suggestion to add `foo = ["dep:foo"]`.  `cargo fix` would then insert this feature.
+
+If that system is not ready in time, we can always hard code the change in `cargo fix`.
 
 ## Next edition
 
