@@ -72,7 +72,7 @@ Where undesired, users can remove these and switch their references to the
 dependency from `foo` to `dep:foo`,
 dealing with the [potential breaking changes](https://doc.rust-lang.org/cargo/reference/semver.html#cargo-remove-opt-dep).
 
-Ideally, this will be accomplished by `cargo` emitting an allow-by-defaylt
+Ideally, this will be accomplished by `cargo` emitting an allow-by-default
 warning when parsing a workspace member's package when an optional dependency
 is not referenced via `dep:` in the features
 ([rust-lang/cargo#9088](https://github.com/rust-lang/cargo/issues/9088))
