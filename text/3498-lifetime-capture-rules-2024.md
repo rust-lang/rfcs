@@ -5,7 +5,7 @@
 
 # Summary
 
-In Rust 2024 and later editions, return position `impl Trait` (RPIT) opaque types will automatically capture all in-scope type *and* lifetime parameters.  In preparation for this, new RPIT-like `impl Trait` features introduced into the Rust 2021 edition will also automatically capture all in-scope type and lifetime parameters.
+In Rust 2024 and later editions, return position `impl Trait` (RPIT) opaque types will automatically capture all in-scope type *and* lifetime parameters.  In preparation for this, new RPIT-like `impl Trait` features introduced into earlier editions will also automatically capture all in-scope type and lifetime parameters.
 
 # Background
 
@@ -218,7 +218,7 @@ In summary, in Rust 2021, the lifetime capture rules for RPIT opaque types are u
 
 This section is normative.
 
-In Rust 2024 and later editions, return position `impl Trait` (RPIT) opaque types will automatically capture all in-scope type *and* lifetime parameters.  In preparation for this, new RPIT-like `impl Trait` features introduced into the Rust 2021 edition will also automatically capture all in-scope type and lifetime parameters.
+In Rust 2024 and later editions, return position `impl Trait` (RPIT) opaque types will automatically capture all in-scope type *and* lifetime parameters.  In preparation for this, new RPIT-like `impl Trait` features introduced into earlier editions will also automatically capture all in-scope type and lifetime parameters.
 
 ## Apply `async fn` rule to RPIT in 2024 edition
 
