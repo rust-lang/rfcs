@@ -34,6 +34,8 @@ For an opaque type that *does not* specify an outlives bound (e.g. `+ 'other`), 
 
 For an opaque type that *does* specify an outlives bound (e.g. `+ 'other`), when a caller receives a value of that opaque type and wants to prove that it outlives some lifetime, it's enough to prove that the lifetime substituted for the specified lifetime parameter in the bounds of the opaque outlives that other lifetime after transitively taking into account all known lifetime bounds.  For such an opaque type, the *callee* must prove that all lifetime and type parameters that are used in the hidden type outlive the specified bound.
 
+See [Appendix H] for examples and further exposition of these rules.
+
 ## Capturing lifetimes in type parameters
 
 In return position `impl Trait` (RPIT) and `async fn`, lifetimes contained within all in-scope type parameters are captured in the opaque type.  For example:
@@ -640,3 +642,102 @@ fn test_outlives<'o, T: PhantomCapture>(x: T) {
 ```
 
 Future work may relax this current limitation of the compiler.  The result of such an improvement would be that, when an outlives bound is specified for the opaque type, any type or lifetime parameters that the compiler could prove to not outlive that bound would act as if they were not captured by the opaque type.
+
+# Appendix H: Examples of outlives rules on opaque types
+
+[Appendix H]: #appendix-h-examples-of-outlives-rules-on-opaque-types
+
+There is some subtlety in understanding the rules for outlives relationships on RPIT-like `impl Trait` opaque types as [described above](#capturing-lifetimes).  In this appendix, we provide annotated examples to make these rules more clear.
+
+### Caller proof for opaque without a specified bound
+
+Consider:
+
+```rust
+// For an opaque type that *does not* specify an outlives bound...
+fn callee<T, U>(_: T, _: U) -> impl Send {}
+
+fn caller<'short, T: 'short, U: 'short>(x: T, y: U) {
+    fn outlives<'o, T: 'o>(_: T) {}
+    // ...when a caller receives a value of that opaque type...
+    let z = callee(x, y);
+    // ...and wants to prove that it outlives some lifetime
+    // (`'short`), the caller must prove that all of the captured
+    // lifetime components of the opaque type (the lifetimes within
+    // `T` and `U`) outlive that lifetime (`'short`).
+    //
+    // The caller proves this because `T: 'short, U: 'short`.
+    outlives::<'short>(z);
+}
+```
+
+In this example, the caller wants to prove that the returned opaque type outlives the lifetime `'short`.  To prove this, since there is no specified outlives bound on the opaque type, it must prove that all lifetimes captured by the opaque type outlive `'short`.  To do that, it must prove that `T` and `U` outlive `'short`, since those type parameters are captured by the opaque type and may contain lifetimes.  The caller is able to prove this since `T: 'short, U: 'short`.
+
+### Caller proof for opaque with a specified bound
+
+Consider:
+
+```rust
+// For an opaque type that *does* specify an outlives bound...
+fn callee<'o, T, U>(_: T, _: U) -> impl Send + 'o {}
+
+fn caller<'short, 'long: 'short, T, U>(x: T, y: U) {
+    fn outlives<'o, T: 'o>(_: T) {}
+    // ...when a caller receives a value of that opaque type...
+    let z = callee::<'long, _, _>(x, y);
+    // ...and wants to prove that it outlives some lifetime
+    // (`'short`), it's enough to prove that the lifetime substituted
+    // (`'long`) for the specified lifetime parameter (`'o` in
+    // `callee`) in the bounds of the opaque type outlives that other
+    // lifetime (`'short`).
+    //
+    // The caller proves this because `'long: 'short`.
+    outlives::<'short>(z);
+}
+```
+
+In this example, the caller wants to prove that the returned opaque type outlives the lifetime `'short`.  To prove this, since there is a specified outlives bound on the opaque type (`+ 'o` in `callee`), it must prove only that the lifetime substituted for that lifetime parameter outlives `'short`.  Since `'long` is substituted for `'o`, and since `'long: 'short`, the caller is able to prove this.  Note that the caller does *not* need to prove that `T: 'short` or that `U: 'short`.
+
+### Callee proof for opaque with a specified bound
+
+Consider:
+
+```rust
+// For an opaque type that *does* specify an outlives bound, the
+// callee must prove that all lifetime and type parameters that are
+// used in the hidden type (`T` in this example) outlive the specified
+// bound (`'o`).
+fn callee<'o, T: 'o, U>(x: T, _: U) -> impl Sized + 'o { x }
+```
+
+In this example, the callee has specified an outlives bound on the opaque type (`+ 'o`).  For this code to be valid, the callee must prove that all lifetime and type parameters used in the returned *hidden* type (`T` in this example) outlive `'o`.  Since `T: 'o`, the callee is able to prove this.  Note that even though `U` is also captured in the opaque type, the callee does *not* need to prove `U: 'o` since it is not used in the hidden type.
+
+### Rough equivalence between opaques with and without a specified bound
+
+Consider these two roughly equivalent examples.
+
+Example H.1:
+
+```rust
+fn callee<T, U>(x: T, y: U) -> impl Sized { (x, y) }
+fn caller<'short, T: 'short, U: 'short>(x: T, y: U) {
+    fn outlives<'o, T: 'o>(_: T) {}
+    outlives::<'short>(callee(x, y));
+}
+```
+
+Example H.2:
+
+```rust
+fn callee<'o, T: 'o, U: 'o>(x: T, y: U) -> impl Sized + 'o { (x, y) }
+fn caller<'short, 'long: 'short, T: 'long, U: 'long>(x: T, y: U) {
+    fn outlives<'o, T: 'o>(_: T) {}
+    outlives::<'short>(callee::<'long, _, _>(x, y));
+}
+```
+
+In the first example, to prove that the opaque type outlives `'short`, the *caller* has to prove that each of the captured lifetime components outlives `'short`.  In the second example, to prove that same thing, it only needs to prove that `'long: 'short`.
+
+(Obviously, the caller then still needs to prove the outlives relationships necessary to satisfy the other specified bounds in the signature of `callee`.)
+
+That is, at the cost of an extra early-bound lifetime parameter in the signature of the callee, we can always express an RPIT without a specified outlives bound as an RPIT with a specified outlives bound in a way that does not change the requirements on the caller or the callee.  We do this by transforming a signature of the form `fn callee<P1, .., Pn>(..) -> impl Trait` to a signature of the form `fn callee<'o, P1: 'o, .., Pn: 'o>(..) -> impl Trait + 'o`.
