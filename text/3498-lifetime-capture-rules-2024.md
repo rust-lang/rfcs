@@ -28,6 +28,8 @@ A hidden type is only allowed to name lifetime parameters when those lifetime pa
 async fn foo<'a>(x: &'a ()) -> &'a () { x }
 ```
 
+(See [below](#the-captures-trick) for the definition of `Captures`.)
+
 In the above, we would say that the lifetime parameter `'a` has been captured in the returned opaque type.
 
 For an opaque type that *does not* specify an outlives bound (e.g. `+ 'other`), when a caller receives a value of that opaque type and wants to prove that it outlives some lifetime, the caller must prove that all of the captured lifetime components of the opaque type outlive that lifetime.  The captured lifetime components are the set of lifetimes contained within captured type parameters and the lifetimes represented by captured lifetime parameters.
@@ -149,7 +151,7 @@ The correct way to express the capture of lifetime parameters in Rust 2021 is wi
 fn foo<'a>(x: &'a ()) -> impl Sized { x }
 ```
 
-We could solve the problem in this way using the `Captures` trick:
+We could solve the problem in this way using the `Captures` trick[^captures-trait]:
 
 ```rust
 trait Captures<U> {}
@@ -169,6 +171,8 @@ fn foo<'a, 'b>(x: &'a (), y: &'b ()) -> impl Sized + Captures<(&'a (), &'b ())> 
 ```
 
 While this does work, the `Captures` trick is ungainly, it's not widely known, and its purpose is not commonly well understood.
+
+[^captures-trait]: Note that there are various ways to define the `Captures` trait.  In most discussions about this trick, it has been defined as above.  However, internally in the Rust compiler it is currently defined instead as `pub trait Captures<'a> {}`.  These notational differences do not affect the semantics described in this RFC.
 
 ## Behavior of RPIT in Rust 2021 with type parameters
 
