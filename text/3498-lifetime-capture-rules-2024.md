@@ -214,7 +214,7 @@ In summary, in Rust 2021, the lifetime capture rules for RPIT opaque types are u
 
 # Solution
 
-[solution]: #Solution
+[solution]: #solution
 
 This section is normative.
 
@@ -275,7 +275,7 @@ impl<T> Foo<T> {
 
 ## TAIT as the solution to overcapturing
 
-[TAIT as the solution to overcapturing]: #TAIT-as-the-solution-to-overcapturing
+[TAIT as the solution to overcapturing]: #tait-as-the-solution-to-overcapturing
 
 As we described above, sometimes the capture rules result in unwanted type and lifetime parameters being captured.  This happens in Rust 2021 due to the RPIT rules for capturing lifetimes from all in-scope type parameters and the `async fn` rules for capturing all in-scope type and lifetime parameters.  Under this RFC, in Rust 2024, lifetime parameters could also be overcaptured by RPIT.
 
@@ -520,7 +520,7 @@ For RPITIT, the Rust 2021 lifetime capture rules would necessarily lead to some 
 
 # Appendix D: The outlives trick fails with only one lifetime parameter
 
-[Appendix D]: #Appendix-D-The-outlives-trick-fails-with-only-one-lifetime-parameter
+[Appendix D]: #appendix-d-the-outlives-trick-fails-with-only-one-lifetime-parameter
 
 In the past, people often thought that the outlives trick was OK as long as there was only one lifetime parameter.  This is not in fact true.  Consider:
 
