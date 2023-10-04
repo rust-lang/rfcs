@@ -32,7 +32,7 @@ In the above, we would say that the lifetime parameter `'a` has been captured in
 
 For an opaque type that *does not* specify an outlives bound (e.g. `+ 'other`), when a caller receives a value of that opaque type and wants to prove that it outlives some lifetime, the caller must prove that all of the captured lifetime components of the opaque type outlive that lifetime.  The captured lifetime components are the set of lifetimes contained within captured type parameters and the lifetimes represented by captured lifetime parameters.
 
-For an opaque type that *does* specify an outlives bound (e.g. `+ 'other`), when a caller receives a value of that opaque type and wants to prove that it outlives some lifetime, it's enough to prove that it outlives the specified lifetime in the bounds of the opaque after transitively taking into account all known lifetime bounds.  For such an opaque type, the *callee* must prove that all lifetime and type parameters that are used in the hidden type outlive the specified bound.
+For an opaque type that *does* specify an outlives bound (e.g. `+ 'other`), when a caller receives a value of that opaque type and wants to prove that it outlives some lifetime, it's enough to prove that the lifetime substituted for the specified lifetime parameter in the bounds of the opaque outlives that other lifetime after transitively taking into account all known lifetime bounds.  For such an opaque type, the *callee* must prove that all lifetime and type parameters that are used in the hidden type outlive the specified bound.
 
 ## Capturing lifetimes in type parameters
 
