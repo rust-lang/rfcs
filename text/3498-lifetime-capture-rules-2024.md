@@ -91,7 +91,7 @@ fn foo<'a, T>(x: &'a (), y: T)
 
 (As we'll discuss below, other seemingly simpler desugarings are incorrect.)
 
-If `async fn` had happened first, we could imagine that the original lifetime capture rules for RPIT may have gone the other way.
+Given how `async fn` captures all type and lifetime parameters in scope in its returned opaque type, we could imagine that if it had happened first, the original lifetime capture rules for RPIT might have done that as well.
 
 ### Behavior of `async fn` with lifetimes in outer impl
 
