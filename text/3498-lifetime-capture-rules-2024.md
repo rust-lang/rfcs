@@ -24,7 +24,7 @@ In return position `impl Trait` (RPIT) and `async fn`, an **opaque type** is a t
 A hidden type is only allowed to name lifetime parameters when those lifetime parameters have been *"captured"* by the corresponding opaque type. For example:[^ref-captures-trait-ltps]
 
 ```rust
-// Returns: `Future<Output = ()> + Captures<&'a ()>`
+// Returns: `impl Future<Output = ()> + Captures<&'a ()>`
 async fn foo<'a>(x: &'a ()) { _ = (x,); }
 ```
 
@@ -43,7 +43,7 @@ See [Appendix H] for examples and further exposition of these rules.
 In return position `impl Trait` (RPIT) and `async fn`, lifetimes contained within all in-scope type parameters are captured in the opaque type.  For example:[^ref-captures-trait-tps]
 
 ```rust
-// Returns: Future<Output = ()> + Captures<T>
+// Returns: `impl Future<Output = ()> + Captures<T>`
 async fn foo<T>(x: T) { _ = (x,); }
 
 fn bar<'a>(x: &'a ()) {
