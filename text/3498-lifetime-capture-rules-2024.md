@@ -174,7 +174,7 @@ fn foo<'a, 'b>(x: &'a (), y: &'b ()) -> impl Sized + Captures<(&'a (), &'b ())> 
 
 While this does work, the `Captures` trick is ungainly, it's not widely known, and its purpose is not commonly well understood.
 
-[^captures-trait]: Note that there are various ways to define the `Captures` trait.  In most discussions about this trick, it has been defined as above.  However, internally in the Rust compiler it is currently defined instead as `pub trait Captures<'a> {}`.  These notational differences do not affect the semantics described in this RFC.
+[^captures-trait]: Note that there are various ways to define the `Captures` trait.  In most discussions about this trick, it has been defined as above.  However, internally in the Rust compiler it is currently defined instead as `trait Captures<'a> {}`.  These notational differences do not affect the semantics described in this RFC.  Note, however, that `Captures<'a> + Captures<'b>` is not equivalent to `Captures<(&'a (), &'b ())>` because lifetimes do not participate in trait selection in Rust.  To get equivalent semantics, one would have to define `trait Captures2<'a, 'b> {}`, `trait Captures3<'a, 'b, 'c> {}`, etc.
 
 ## Behavior of RPIT in Rust 2021 with type parameters
 
