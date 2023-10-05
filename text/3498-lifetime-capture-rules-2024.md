@@ -24,8 +24,8 @@ In return position `impl Trait` (RPIT) and `async fn`, an **opaque type** is a t
 A hidden type is only allowed to name lifetime parameters when those lifetime parameters have been *"captured"* by the corresponding opaque type. For example:[^ref-captures-trait-ltps]
 
 ```rust
-// Returns: `Future<Output = &'a ()> + Captures<&'a ()>`
-async fn foo<'a>(x: &'a ()) -> &'a () { x }
+// Returns: `Future<Output = ()> + Captures<&'a ()>`
+async fn foo<'a>(x: &'a ()) { _ = (x,); }
 ```
 
 In the above, we would say that the lifetime parameter `'a` has been captured in the returned opaque type.
@@ -43,8 +43,8 @@ See [Appendix H] for examples and further exposition of these rules.
 In return position `impl Trait` (RPIT) and `async fn`, lifetimes contained within all in-scope type parameters are captured in the opaque type.  For example:[^ref-captures-trait-tps]
 
 ```rust
-// Returns: Future<Output = T> + Captures<T>
-async fn foo<T>(x: T) -> T { x }
+// Returns: Future<Output = ()> + Captures<T>
+async fn foo<T>(x: T) { _ = (x,); }
 
 fn bar<'a>(x: &'a ()) {
     let y = foo(x);
@@ -68,8 +68,8 @@ The inconsistency is visible to users when desugaring from `async fn` to RPIT.  
 For example, given this `async fn`:
 
 ```rust
-async fn foo<'a, T>(x: &'a (), y: T) -> (&'a (), T) {
-    (x, y)
+async fn foo<'a, T>(x: &'a (), y: T) {
+    _ = (x, y);
 }
 ```
 
@@ -82,10 +82,10 @@ trait Captures<U> {}
 impl<T: ?Sized, U> Captures<U> for T {}
 
 fn foo<'a, T>(x: &'a (), y: T)
--> impl Future<Output = (&'a (), T)> + Captures<&'a ()> {
-//                                     ^^^^^^^^^^^^^^^^
-//                                     ^ Capture of lifetime.
-    async move { (x, y) }
+-> impl Future<Output = ()> + Captures<&'a ()> {
+//                            ^^^^^^^^^^^^^^^^
+//                            ^ Capture of lifetime.
+    async move { _ = (x, y); }
 }
 ```
 
@@ -100,7 +100,7 @@ Lifetimes in scope from an outer impl are also captured automatically by an `asy
 ```rust
 struct Foo<'a>(&'a ());
 impl<'a> Foo<'a> {
-    async fn foo(x: &'a ()) {}
+    async fn foo(x: &'a ()) { _ = (x,); }
     //       ^^^^^^^^^^^^^^
     //       ^ The lifetime `'a` is automatically
     //       captured in the opaque return type.
