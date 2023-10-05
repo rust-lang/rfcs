@@ -1,6 +1,6 @@
 - Feature Name: `const_fn_in_trait`
 - Start Date: 2023-09-15
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3490](https://github.com/rust-lang/rfcs/pull/3490)
 - Rust Issue:
   [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -23,9 +23,13 @@ This RFC proposes allowing functions in a trait to be marked `const`, meaning
 they can be called from a const context like other const functions. Use cases
 include:
 
-- Needing a constructor that can create a static object for C-style plugins
-- Wanting to reduce code duplication in const contexts
+- Reducing code duplication in const contexts
+- Providing a constructor for generic static object, e.g. C-style plugin
+  registration
 - Subtraits that want to provide defaults based on supertraits
+- Compile-time checking of object properties
+- Logically mononolithic traits that need to be split in order to support const
+  actions
 
 Workarounds typically involve a combination of wrapper functions, macros, and
 associated consts. This RFC will eliminate the need for such workarounds.
@@ -58,13 +62,13 @@ calls within other const functions:
 
 ```rust
 /// Add a named item to our global state register
-const fn register_state<T: GlobalState>(name: &'static str, item: T) {
+const fn register_state<T: GlobalState>(name: &'static str) {
     // ...
-    STATES[0] = (name, item.build())
+    STATES[n] = (name, T::build(n as u32))
 }
 
 /// Or, use with a single item
-const DEFAULT_STATE: State = MyFavoriteStruct::build(42);
+static DEFAULT_STATE: State = MyFavoriteStruct::build(42);
 ```
 
 The rules for what is allowed are the same as for other `const` functions. At
@@ -83,15 +87,55 @@ trait's function definitions.
 
 After monomorphization, these functions will be evaluated the same way as
 standard `const` functions when needed at CTFE. This additional metadata can be
-stripped in all other cases and the function will act the same as a non- const
+stripped in all other cases and the function will act the same as a non-const
 function.
+
+In short, this:
+
+```rust
+trait Foo {
+    const fn foo(&self) -> u32;
+}
+
+impl Foo for Bar { /* ... */ }
+```
+
+Should be effectively treated the same as this at compile time:
+
+```rust
+const fn bar_as_foo_foo(bar: &Bar) -> u32 { /* ... */ }
+```
+
+And as this at runtime:
+
+```rust
+trait Foo {
+    /* non-const */ fn foo(&self) -> u32;
+}
+```
+## Relationship with the Keyword Generics Initiative
+
+The [keyword generics initiative] or effects initiative proposes a way to have
+optional `const`ness and `async`ness on trait functions, roughly:
+
+
+```rust
+// Note that syntax has changed a few times, including `~const`
+const<C> trait SometimesConstFoo {
+  const <C> fn sometimes_const_foo(&self) -> u32
+}
+```
+
+This RFC aims to extract an extremely minimal subset of effects in order to make
+it available sooner, similar to [`async-fn-in-trait`]. Part of why this proposed
+design is so minimal is to avoid possible conflicts with effects.
 
 # Drawbacks
 
 [drawbacks]: #drawbacks
 
 This feature requires tracking more information related to trait definition and
-usage.
+usage, but this should be a relatively maintenance burden.
 
 There is also potential user confusion due to possible more content in a `trait`
 block, as well as the question "does this need to be const". However, teaching
@@ -115,6 +159,34 @@ able to provide similar functionality; however, that is a much more in-depth
 solution using parameterized optional constness. This feature should not
 conflict with anything introduced as part of that proposal.
 
+## Usage with `&dyn`
+
+To be on the safe side, calling const functions from compile-time trait objects
+is not allowed. This would look something like the below, using the same `trait
+Foo` as above:
+
+```rust
+// Signature is OK and will compile (as it currently does)
+const fn comptime_dyn_foo(object: &dyn Foo) {
+    // This call is not allowed for the time being
+    object.foo();
+}
+```
+
+In theory, this behavior should be possible to support. However, it requires
+more in-depth design than just tracking `const`ness through monomorphization; in
+order to keep RFC suface area minimal, this is considered a future possibility.
+
+Of course, the `const` function can still be called as a standard runtime
+function:
+
+```rust
+fn runtime_dyn_foo(object: &dyn Foo) {
+    object.foo();
+}
+```
+
+
 # Prior art
 
 [prior-art]: #prior-art
@@ -136,9 +208,21 @@ None at this time.
 
 [future-possibilities]: #future-possibilities
 
-- As part of the work of the [`refined-impls`] RFC, it may be possible to
-  mark a function `const` in an implementation, even if the trait signature
-  does not indicate `const`.
+- As part of the work of the accepted but not yet implemented [`refined-impls`]
+  RFC, it may be possible to mark a function `const` in an implementation even
+  if the trait signature does not indicate `const`.
+- Calling `const` functions through `&dyn` could be added, as in [Usage with
+  &dyn](#usage-with-dyn). This is likely blocked on having effects as function
+  parameters, that is:
+  ```rust
+  // This works
+  type F = fn() -> u32;
+  type U = unsafe fn() -> u32;
+
+  // But this does not yet work
+  // type C = const fn() -> u32;
+  // type A = async fn() -> u32;
+  ```
 - The [keyword generics initiative] will add much more fine tuned control
   than the basic mechanics in this RFC, allowing for optional const bounds
   in a parametric way.
