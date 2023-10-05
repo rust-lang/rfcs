@@ -21,14 +21,12 @@ This RFC specifies a [solution] that achieves this.  But first, we'll describe t
 
 In return position `impl Trait` (RPIT) and `async fn`, an **opaque type** is a type that can only be used for its specified trait bounds (and for the "leaked" auto trait bounds of its hidden type).  A **hidden type** is the actual concrete type of the values hidden behind the opaque type.
 
-A hidden type is only allowed to name lifetime parameters when those lifetime parameters have been *"captured"* by the corresponding opaque type. For example:
+A hidden type is only allowed to name lifetime parameters when those lifetime parameters have been *"captured"* by the corresponding opaque type. For example:[^ref-captures-trait-ltps]
 
 ```rust
 // Returns: `Future<Output = &'a ()> + Captures<&'a ()>`
 async fn foo<'a>(x: &'a ()) -> &'a () { x }
 ```
-
-(See [below](#the-captures-trick) for the definition of `Captures`.)
 
 In the above, we would say that the lifetime parameter `'a` has been captured in the returned opaque type.
 
@@ -38,9 +36,11 @@ For an opaque type that *does* specify an outlives bound (e.g. `+ 'other`), when
 
 See [Appendix H] for examples and further exposition of these rules.
 
+[^ref-captures-trait-ltps]: See ["The `Captures` trick"](#the-captures-trick) for the definition of `Captures`.
+
 ## Capturing lifetimes in type parameters
 
-In return position `impl Trait` (RPIT) and `async fn`, lifetimes contained within all in-scope type parameters are captured in the opaque type.  For example:
+In return position `impl Trait` (RPIT) and `async fn`, lifetimes contained within all in-scope type parameters are captured in the opaque type.  For example:[^ref-captures-trait-tps]
 
 ```rust
 // Returns: Future<Output = T> + Captures<T>
@@ -54,6 +54,8 @@ fn bar<'a>(x: &'a ()) {
 ```
 
 In the above, we would say that `foo` captures the type parameter `T` or that it "captures all lifetime components contained in the type parameter `T`".  Consequently, the call to `foo` captures the lifetime `'a` in its returned opaque type.
+
+[^ref-captures-trait-tps]: See ["The `Captures` trick"](#the-captures-trick) for the definition of `Captures`.  Note that in this example, the `Captures` trick would not be needed, but it is notated explicitly for exposition.
 
 ### Behavior of `async fn`
 
