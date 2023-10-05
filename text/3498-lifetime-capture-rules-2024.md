@@ -151,7 +151,7 @@ The correct way to express the capture of lifetime parameters in Rust 2021 is wi
 fn foo<'a>(x: &'a ()) -> impl Sized { x }
 ```
 
-We could solve the problem in this way using the `Captures` trick[^captures-trait]:
+We could solve the problem in this way using the `Captures` trick:[^captures-trait]
 
 ```rust
 trait Captures<U> {}
