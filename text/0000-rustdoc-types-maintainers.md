@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from be officialy maintained by the rustdoc team.
+The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from being privately maintained to being officially maintained by the rustdoc team.
 
 # Motivation
 [motivation]: #motivation
