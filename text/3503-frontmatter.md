@@ -141,6 +141,7 @@ we can evaluate if we want to loosen any of the rules.
 
 Benefits:
 - Visually/syntactically lightweight
+- Users can edit/copy/paste the manifest without dealing with leading characters
 - Has parallels to ideas outside of Rust, building on external knowledge that might exist
 - Easy for cargo and any third-party tool to parse and modify
   - As cargo will be parsing before rustc,
@@ -173,6 +174,7 @@ Benefits
 - Familiar syntax both to read and write.
   - When discussing with a Rust author, it was pointed out many times people preface code with a comment specifying the dependencies ([example](https://github.com/dtolnay/prettyplease#example)), this is the same idea but reusable by cargo
   - When discussing on forums, people expressed how they had never seen the syntax but instantly were able to understand it
+- Depending on doc-comment style used, users may be able to edit/copy/paste the manifest without dealing with leading characters
 
 Downsides:
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
@@ -200,6 +202,7 @@ fn main() {
 ```
 Benefits
 - Parsers are available to make this work (e.g. `syn`)
+- Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
@@ -231,6 +234,7 @@ fn main() {
 
 Benefits
 - Parsers are available to make this work (e.g. `syn`)
+- Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
@@ -261,6 +265,7 @@ What if we extended Rust's syntax to allow something similar?
 
 Benefits
 - Flexible for other content
+- Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
 - Difficult to parse without assistance from something like `syn` as we'd need to distinguish what the start of a stream is vs content of a string literal
@@ -305,6 +310,7 @@ Benefits
 - Natural to support `Cargo.lock` as well
 - Without existing baggage, can use file extensions, making a firmer
   association in users minds for what is in these (for those used to `Cargo.toml`)
+- Depending on the exact syntax decided on, users may be able to edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
 - Unfamiliar syntax
@@ -341,6 +347,7 @@ Benefits
 - Has parallels to ideas outside of Rust, building on external knowledge that might exist
 - Easy for cargo to parse and modify
 - Can easily be leveraged by buck2, meson, etc in the future
+- Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
 - Too general that people might abuse it
@@ -380,6 +387,7 @@ Downsides
   - Visually
   - More work to type it out / copy-paste
   - More to get wrong
+- Requires users to deal with leading characters when editing/copying/pasting the manifest
 
 # Prior art
 [prior-art]: #prior-art
