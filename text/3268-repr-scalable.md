@@ -29,7 +29,7 @@ An understanding of that is expected from the reader of this. In addition to tha
 
 Existing SIMD types are tagged with a `repr(simd)` and contain an array or multiple fields to represent the size of the
 vector. Scalable vectors have a size known (and constant) at run-time, but unknown at compile time. For this we propose a
-new kind of exotic type, denoted by an additional `repr()`, and based on a ZST. This additional representation, `scalable`,
+new kind of exotic type, denoted by an additional `repr()`. This additional representation, `scalable`,
 accepts an integer to determine the number of elements per granule. See the definitions in
 [the reference-level explanation](#reference-level-explanation) for more information.
 
@@ -37,23 +37,30 @@ e.g. for a scalable vector f32 type the following could be its representation:
 
 ```rust
 #[repr(simd, scalable(4))]
-#[derive(Clone, Copy)]
 pub struct svfloat32_t {
-    _ty: [f32; 0],
+    _ty: [f32],
 }
 ```
 `_ty` is purely a type marker, used to get the element type for the LLVM backend.
 
 
-This new class of type has some restrictions on it that a normal ZST wouldn't have, and some of the restrictions that a ZST
-has do not apply to this new type.
-As this type does have a run-time size it can be stored to memory, this is required for spilling to the stack for instance.
-This new class of type can't be stored in a structure or a compound type, as the layout of that wouldn't be known at compile
-time.
-
+This new class of type has the following properties:
+* Not `Sized`, but it does exist as a value type.
+  * These can be returned from functions.
+* Heap allocation of these types is not possible.
+* Can be passed by value, reference and pointer.
+* The types can't have a `'static` lifetime.
+* These types can be loaded and stored to/from memory for spilling to the stack,
+  and to follow any calling conventions.
+* Can't be stored in a struct, enum, union or compound type.
+  * This includes single field structs with `#[repr(trasparent)]`.
+  * This also means that closures can't capture them by value.
+* Traits can be implemented for these types.
+* These types are `Unpin`.
 
 A simple example that an end user would be able to write for summing of two arrays using functions from the ACLE
 for SVE is shown below:
+
 ```rust
 unsafe {
     let step = svcntw() as usize;
@@ -90,49 +97,75 @@ For a Scalable Vector Type LLVM takes the form `<vscale x elements x type>`.
 * `elements` multiplied by sizeof(`type`) gives the smallest allowed register size and the increment size.
 * `vscale` is a run time constant that is used to determine the actual vector register size.
 
-For example, with Arm SVE the scalable vector register (Z register) size has to be a multiple of 128 bits, therefore for `f32`, `elements` would
-always be four. At run time `vscale` could be 1, 2, 3, through to 16 which would give register sizes of 128, 256, 384 to 2048.
+For example, with Arm SVE the scalable vector register (Z register) size has to
+be a multiple of 128 bits and a power of 2 (via a retrospective change to the
+architecture), therefore for `f32`, `elements` would always be four. At run time
+`vscale` could be 1, 2, 4, 8, 16 which would give register sizes of 128, 256,
+512, 1024 and 2048. While SVE now has the power of 2 restriction, `vscale` could
+be any value providing it gives a legal vector register size for the
+architecture.
 
 The scalable representation accepts the number of `elements` rather than the compiler calculating it, which serves
 two purposes. The first being that it removes the need for the compiler to know about the user defined types and how to calculate
 the required `element` count. The second being that some of these scalable types can have different element counts. For instance,
 the predicates used in SVE have different element counts in LLVM depending on the types they are a predicate for.
 
-Within Rust some of the requirements on a SIMD type would need to be relaxed when the scalable attribute is applied, for instance,
-currently the type can't be a ZST this check would need to be conditioned on the scalable attribute not being present, and a check
-to ensure a scalable vector is a ZST should be added.
-Aside from that check, all other SIMD checks should be valid to do with what the type can contain.
-
-This should have minimal impact with other language features, to the same extent that the `repr(simd)` has.
-
-
 As mentioned previously `vscale` is a runtime constant. With SVE the vector length can be changed at runtime (e.g. by a
 [prctl()](https://www.kernel.org/doc/Documentation/arm64/sve.txt) call in Linux). However, since this would require a change
 to `vscale`, this is considered undefined behaviour in Rust. This is consistent with C and C++ implementations.
 
+## Unsized rules
+These types aren't `Sized`, but they need to exist in local variables, and we
+need to be able to pass them to, and return them from functions. This means
+adding an exception to the rules around returning unsized types in Rust. There
+are also some traits (`Copy`) that have a bound on being `Sized`.
+
+We will implement `Copy` for these types within the compiler, without having to
+implement the traits when the types are defined.
+
+This RFC also changes the rules so that function return values can be `Copy` or
+`Sized` (or both). Once returning of unsized is allowed this part of the rule
+would be superseded by that mechanism. It's worth noting that, if any other
+types are created that are `Copy` but not `Sized` this rule would apply to
+those.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-One difficulty with this type of approach is typically vector types require a target feature to be enabled.
-Currently, a trait implementation can't enable a target feature, so `Clone` can't be implemented without
-setting `-C target-feature` via rustc.
+## Target Features
+One difficulty with this type of approach is typically vector types require a
+target feature to be enabled.  Currently, a trait implementation can't enable a
+target feature, so some traits can't be implemented correctly without setting `-C
+target-feature` via rustc.
 
-However, that isn't a reason to not do this, it's a pain point that another RFC can address.
+However, that isn't a reason to not do this, it's a pain point that another RFC
+can address.
 
 # Prior art
 [prior-art]: #prior-art
 
-This is a relatively new concept, with not much prior art. C has gone a very similar way to this by using a ZST to
-represent the SVE types. Aligning with C here means that most of the documentation that already exists for
-the intrinsics in C should still be applicable to Rust.
+This is a relatively new concept, with not much prior art. C has gone a very
+similar way to this by using sizeless incomplete types to represent the SVE
+types. Aligning with C here means that most of the documentation that already
+exists for the intrinsics in C should still be applicable to Rust.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Relaxing restrictions
+Some of the restrictions that have been placed on these types could possibly be
+relaxed at a later time. This could be done in a backwards compatible way. For
+instance, we could perhaps relax the rules around placing these in other
+types. It could be possible to allow a struct to contain these types by value,
+with certain rules such as requiring them to be the last element(s) of the
+struct. Doing this could then allow closures to capture them by value.
+
 ## Portable SIMD
-For this to work with portable SIMD in the way that portable SIMD is currently implemented, a const generic parameter
-would be needed in the `repr(scalable)`. Creating this dependency would be awkward from an implementation point of view
-as it would require support for symbols within the literals.
+For this to work with portable SIMD in the way that portable SIMD is currently
+implemented, a const generic parameter would be needed in the
+`repr(scalable)`. Creating this dependency would probably be a source of bugs
+from an implementation point of view as it would require support for symbols
+within the literals.
 
 One potential for having portable SIMD working in its current style would be to have a trait as follows:
 ```rust
@@ -146,7 +179,6 @@ Which the compiler can use to get the `elements` and `type` from.
 The above representation could then be implemented as:
 ```rust
 #[repr(simd, scalable)]
-#[derive(Clone, Copy)]
 pub struct svfloat32_t {}
 impl RuntimeScalable for svfloat32_t {
     type Increment = [f32; 4];
