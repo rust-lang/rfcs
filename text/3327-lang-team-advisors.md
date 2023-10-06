@@ -4,8 +4,8 @@ title: Lang team advisors RFC
 
 - Feature Name: N/A
 - Start Date: 2022-09-21
-- RFC PR: [rust-lang/rfcs#3327](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3327](https://github.com/rust-lang/rfcs/pull/3327)
+- Rust Issue: N/A
 
 # Summary
 [summary]: #summary

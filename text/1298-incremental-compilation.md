@@ -1,7 +1,7 @@
 - Feature Name: incremental-compilation
 - Start Date: 2015-08-04
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#1298](https://github.com/rust-lang/rfcs/pull/1298)
+- Rust Issue: [rust-lang/rust-roadmap-2017#4](https://github.com/rust-lang/rust-roadmap-2017/issues/4)
 
 # Summary
 
