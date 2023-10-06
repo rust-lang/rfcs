@@ -189,6 +189,8 @@ The rule of thumb is: if you can copy everything between the `=` and `;` of a tr
 
 # Reference-level explanation
 
+## Implementability rules
+
 A trait alias has the following syntax (using the Rust Reference's notation):
 
 > [Visibility](https://doc.rust-lang.org/stable/reference/visibility-and-privacy.html)<sup>?</sup> `trait` [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html) [GenericParams](https://doc.rust-lang.org/stable/reference/items/generics.html)<sup>?</sup> `=` [TypeParamBounds](https://doc.rust-lang.org/stable/reference/trait-bounds.html)<sup>?</sup> [WhereClause](https://doc.rust-lang.org/stable/reference/items/generics.html#where-clauses)<sup>?</sup> `;`
@@ -199,7 +201,22 @@ Implementable trait aliases must follow a more restrictive form:
 
 > [Visibility](https://doc.rust-lang.org/stable/reference/visibility-and-privacy.html)<sup>?</sup> `trait` [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html) [GenericParams](https://doc.rust-lang.org/stable/reference/items/generics.html)<sup>?</sup> `=` [TypePath](https://doc.rust-lang.org/stable/reference/paths.html#paths-in-types) [WhereClause](https://doc.rust-lang.org/stable/reference/items/generics.html#where-clauses)<sup>?</sup> `;`
 
-For example, `trait Foo<T> = PartialEq<T> where Self: Sync;` is a valid implementable alias. The `=` must be followed by a single trait (or implementable trait alias), and then some number of where clauses.
+For example, `trait Foo<T> = PartialEq<T> where Self: Sync;` is a valid implementable alias. The `=` must be followed by a single trait (or implementable trait alias), and then some number of where clauses. The trait's generic parameter list may contain associated type constraints (for example `trait IntIterator = Iterator<Item = u32>`).
+
+There is another restriction that trait aliases must adhere to in order to be implementable: all generic parameters of the alias itself must be used as generic parameters of the alias's primary trait.
+
+```rust
+// Implementable
+trait Foo<T> = PartialEq<T>;
+
+// Not implementable
+trait Foo<T> = Copy;
+trait Foo<T> = Copy where T: Send;
+trait Foo<T> = Iterator<Item = T>;
+trait Foo<T> = Copy where Self: PartialEq<T>;
+```
+
+## Usage in `impl` blocks
 
 An impl block for a trait alias looks just like an impl block for the underlying trait. The alias's where clauses are treated as if they had been written out in the `impl` header.
 
@@ -223,27 +240,14 @@ impl !Send for Bar;
 // impl IntIterator for Bar { /* ... */ }
 ```
 
-There is another restriction that trait aliases must adhere to in order to be implementable: all generic parameters of the alias itself must be used as generic parameters of the alias's primary trait.
-
-```rust
-// Implementable
-trait Foo<T> = PartialEq<T>;
-
-// Not implementable
-trait Foo<T> = Copy;
-trait Foo<T> = Copy where T: Send;
-trait Foo<T> = Iterator<Item = T>;
-trait Foo<T> = Copy where Self: PartialEq<T>;
-```
-
-Bounds on such generic parameters are enforced at the `impl` site.
+Bounds on generic parameters are also enforced at the `impl` site.
 
 ```rust
 trait Underlying<T> {}
 
 trait Alias<T: Send> = Underlying<T>;
 
-impl<T> Alias<T> for i32 {} // Error: missing `T: Send` bound
+impl Alias<*const i32> for i32 {} // Error: `*const i32` is not `Send`
 ```
 
 If the trait alias uniquely constrains a portion of the `impl` block, that part can be omitted.
@@ -297,21 +301,32 @@ impl Frobber for MyType {
 
 Trait aliases are `unsafe` to implement iff the underlying trait is marked `unsafe`.
 
+## Usage in paths
+
 Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax, as well as in paths more generally. When used this way, they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and type parameter/associated type bounds must be satisfied.
 
 ```rust
 trait IntIter = Iterator<Item = u32> where Self: Clone;
 
-fn foo() {
-    let iter = [1_u32].into_iter();
-    let _: IntIter::Item = IntIter::next(&mut iter); // works
-    let _: <std::array::IntoIter as IntIter>::Item = <std::array::IntoIter as IntIter>::next(); // works
-    //IntIter::clone(&iter); // ERROR: trait `Iterator` has no method named `clone()`
-    let dyn_iter: &mut dyn Iterator<Item = u32> = &mut iter;
-    //IntIter::next(dyn_iter); // ERROR: `dyn Iterator<Item = u32>` does not implement `Clone`
-    let signed_iter = [1_i32].into_iter();
-    //IntIter::next(&mut signed_iter); // ERROR: Expected `<Self as Iterator>::Item` to be `u32`, it is `i32`
-}
+let iter = [1_u32].into_iter();
+let _: IntIter::Item = IntIter::next(&mut iter); // works
+let _: <std::array::IntoIter as IntIter>::Item = <std::array::IntoIter as IntIter>::next(); // works
+//IntIter::clone(&iter); // ERROR: trait `Iterator` has no method named `clone()`
+let dyn_iter: &mut dyn Iterator<Item = u32> = &mut iter;
+//IntIter::next(dyn_iter); // ERROR: `dyn Iterator<Item = u32>` does not implement `Clone`
+let signed_iter = [1_i32].into_iter();
+//IntIter::next(&mut signed_iter); // ERROR: Expected `<Self as Iterator>::Item` to be `u32`, it is `i32`
+```
+
+Implementable trait aliases can also be used with associated type bounds; the associated type must belong to the alias's primary trait.
+
+```rust
+trait IteratorAlias = Iterator;
+let _: IteratorAlias<Item = u32> = [1_u32].into_iter();
+
+trait IntIter = Iterator<Item = u32> where Self: Clone;
+let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, but allowed
+//let _: IntIter<Item = f64> = [1.0_f64].into_iter(); // ERROR: `Item = f64` conflicts with `Item = u32`
 ```
 
 # Drawbacks
