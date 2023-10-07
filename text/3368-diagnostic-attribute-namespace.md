@@ -1,7 +1,7 @@
 - Feature Name: The `#[diagnostic]` attribute namespace
 - Start Date: 2023-01-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3368](https://github.com/rust-lang/rfcs/pull/3368)
+- Rust Issue: [rust-lang/rust#111996](https://github.com/rust-lang/rust/issues/111996)
 
 
 # Summary
