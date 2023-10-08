@@ -161,7 +161,71 @@ Downsides:
 - Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 - If viewed from the lens of a comment, it isn't a variant of comment syntax like doc-comments
 
-### Alternative 1: Doc-comment
+### Alternative 1: Static-site generator frontmatter
+
+```rust
+#!/usr/bin/env cargo
+---
+[package]
+edition = "2018"
+---
+
+fn main() {
+}
+```
+This is a subset/specialization of YAML presentation streams that mirrors people's experience with static site generators:
+- The first line post-shebang-stripping is 3+ dashes, then capture all content until a matching pair of dashes on a dedicated line.  This would be captured into a `#![frontmatter = ""]`.  `frontmatter` attribute is reserved for crate roots.  The 3+ with matching pair is a "just in case" a TOML multi-line string has that syntax in it)
+- Future evolution: Allow a markdown-like infostring on the frontmatter opening dashes to declare the format with `cargo` being the default
+- Future evolution: Allow `frontmatter` attribute on any module
+
+Benefits
+- Visually/syntactically lightweight
+- Has parallels to ideas outside of Rust, building on external knowledge that might exist
+- Easy for cargo to parse and modify
+- Can easily be leveraged by buck2, meson, etc in the future
+- Users can edit/copy/paste the manifest without dealing with leading characters
+
+Downsides
+- Too general that people might abuse it
+- We've extended the frontmatter syntax, undoing some of the "familiarity" benefit
+- People are used to YAML going in frontmatter (though some systems allow other syntaxes)
+- Doesn't feel very rust-like
+
+### Alternative 2: Extended Shebang
+
+````rust
+#!/usr/bin/env cargo
+# ```cargo
+# [dependencies]
+# foo = "1.2.3"
+# ```
+
+fn main() {}
+````
+This is a variation on other options that ties itself closer to the shebang syntax.
+The hope would be that we could get buy-in from other languages.
+- The first line post-shebang-stripping is a hash plus 3+ backticks, then capture all content until a matching pair of backticks on a dedicated line.  This would be captured into a `#![frontmatter(info = "cargo", content = "..."]`.  `frontmatter` attribute is reserved for crate roots.  The 3+ with matching pair is a "just in case" a TOML multi-line string has that syntax in it).  Each content line must be indented to at least the same level as the first backtick.
+  - Backticks are needed to know to avoid parsing `#[dependencies]` as an attribute
+  - This also allows an infostring so this isn't just a cargo feature
+- Future evolution: Allow `cargo` being the default `info` string
+- Future evolution: Allow any `info` string with cargo checking for `content.starts_with(["cargo", "cargo,"])`
+- Future evolution: Allow `frontmatter` attribute on any module
+
+Benefits
+- Visually connected to the shebang
+- Has parallels to ideas outside of Rust, building on external knowledge that might exist
+- Easy for cargo to parse and modify
+- Can easily be leveraged by buck2, meson, etc in the future
+- Maybe we can get others on board with this syntax
+
+Downsides
+- More syntactically heavy than the frontmatter solution
+  - Visually
+  - More work to type it out / copy-paste
+  - More to get wrong
+- Requires users to deal with leading characters when editing/copying/pasting the manifest
+
+### Alternative 3: Doc-comment
 
 ```rust
 #!/usr/bin/env cargo
@@ -193,33 +257,7 @@ Downsides:
 - Requires pulling in a full markdown parser to extract the manifest
   - Incorrectly formatted markdown would lead to a missing manifest and confusing error messages at best or silent incorrect behavior at worse
 
-### Alternative 2: Macro
-
-```rust
-#!/usr/bin/env cargo
-
-cargo! {
-[package]
-edition = "2018"
-}
-
-fn main() {
-}
-```
-Benefits
-- Parsers are available to make this work (e.g. `syn`)
-- Users can edit/copy/paste the manifest without dealing with leading characters
-
-Downsides
-- When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
-  - Unpredictable location (both the doc comment and the cargo code block within it)
-- The `cargo` macro would need to come from somewhere (`std`?) which means it is taking on `cargo`-specific knowledge
-  - An unexplored direction we could go with this is a `meta!` macro (e.g. we'd need to have a format marker in it)
-- A lot of tools/IDEs have problems in dealing with macros
-- Free-form rust code makes it harder for cargo to make edits to the manifest
-- Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
-
-### Alternative 3: Attribute
+### Alternative 4: Attribute
 
 ```rust
 #!/usr/bin/env cargo
@@ -249,37 +287,6 @@ Downsides
  - The attribute approach requires explaining multiple "advanced" topics: One teacher doesn't get to teaching any attributes until the second level in his crash course series and two teachers have found it difficult to teach people raw strings
 - Attributes look "scary" (and they are in some respects for the hidden stuff they do)
 - Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
-
-
-### Alternative 4: Presentation Streams
-
-```rust
-#!/usr/bin/env cargo
-
-fn main() {
-}
-
----Cargo.toml
-[package]
-edition = "2018"
-```
-YAML allows several documents to be concatenated together variant
-[presentation streams](https://yaml.org/spec/1.2.2/#323-presentation-stream)
-which might seem familiar as this is frequently used in static-site generators
-for adding frontmatter to pages.
-What if we extended Rust's syntax to allow something similar?
-
-Benefits
-- Flexible for other content
-- Users can edit/copy/paste the manifest without dealing with leading characters
-
-Downsides
-- Difficult to parse without assistance from something like `syn` as we'd need to distinguish what the start of a stream is vs content of a string literal
-- Being a new file format (a "text tar" format), there would be a lot of details to work out, including
-  - How to delineate and label documents
-  - How to allow escaping to avoid conflicts with content in a documents
-  - Potentially an API for accessing the document from within Rust
-- Unfamiliar, new syntax, unclear how it will work out for newer users
 
 ### Alternative 5: Regular Comment
 
@@ -331,69 +338,61 @@ Downsides
   to extract and update comments.
   - Like with doc comments, this should map to an attribute and then we'd just start the MVP with that attribute
 
-### Alternative 6: Static-site generator frontmatter
+### Alternative 6: Macro
 
 ```rust
 #!/usr/bin/env cargo
----
+
+cargo! {
 [package]
 edition = "2018"
----
+}
 
 fn main() {
 }
 ```
-This is a subset/specialization of YAML presentation streams that mirrors people's experience with static site generators:
-- The first line post-shebang-stripping is 3+ dashes, then capture all content until a matching pair of dashes on a dedicated line.  This would be captured into a `#![frontmatter = ""]`.  `frontmatter` attribute is reserved for crate roots.  The 3+ with matching pair is a "just in case" a TOML multi-line string has that syntax in it)
-- Future evolution: Allow a markdown-like infostring on the frontmatter opening dashes to declare the format with `cargo` being the default
-- Future evolution: Allow `frontmatter` attribute on any module
-
 Benefits
-- Visually/syntactically lightweight
-- Has parallels to ideas outside of Rust, building on external knowledge that might exist
-- Easy for cargo to parse and modify
-- Can easily be leveraged by buck2, meson, etc in the future
+- Parsers are available to make this work (e.g. `syn`)
 - Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
-- Too general that people might abuse it
-- We've extended the frontmatter syntax, undoing some of the "familiarity" benefit
-- People are used to YAML going in frontmatter (though some systems allow other syntaxes)
-- Doesn't feel very rust-like
+- When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
+  - Unpredictable location (both the doc comment and the cargo code block within it)
+- The `cargo` macro would need to come from somewhere (`std`?) which means it is taking on `cargo`-specific knowledge
+  - An unexplored direction we could go with this is a `meta!` macro (e.g. we'd need to have a format marker in it)
+- A lot of tools/IDEs have problems in dealing with macros
+- Free-form rust code makes it harder for cargo to make edits to the manifest
+- Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
 
-### Alternative 7: Extended Shebang
+### Alternative 7: Presentation Streams
 
-````rust
+```rust
 #!/usr/bin/env cargo
-# ```cargo
-# [dependencies]
-# foo = "1.2.3"
-# ```
 
-fn main() {}
-````
-This is a variation on other options that ties itself closer to the shebang syntax.
-The hope would be that we could get buy-in from other languages.
-- The first line post-shebang-stripping is a hash plus 3+ backticks, then capture all content until a matching pair of backticks on a dedicated line.  This would be captured into a `#![frontmatter(info = "cargo", content = "..."]`.  `frontmatter` attribute is reserved for crate roots.  The 3+ with matching pair is a "just in case" a TOML multi-line string has that syntax in it).  Each content line must be indented to at least the same level as the first backtick.
-  - Backticks are needed to know to avoid parsing `#[dependencies]` as an attribute
-  - This also allows an infostring so this isn't just a cargo feature
-- Future evolution: Allow `cargo` being the default `info` string
-- Future evolution: Allow any `info` string with cargo checking for `content.starts_with(["cargo", "cargo,"])`
-- Future evolution: Allow `frontmatter` attribute on any module
+fn main() {
+}
+
+---Cargo.toml
+[package]
+edition = "2018"
+```
+YAML allows several documents to be concatenated together variant
+[presentation streams](https://yaml.org/spec/1.2.2/#323-presentation-stream)
+which might seem familiar as this is frequently used in static-site generators
+for adding frontmatter to pages.
+What if we extended Rust's syntax to allow something similar?
 
 Benefits
-- Visually connected to the shebang
-- Has parallels to ideas outside of Rust, building on external knowledge that might exist
-- Easy for cargo to parse and modify
-- Can easily be leveraged by buck2, meson, etc in the future
-- Maybe we can get others on board with this syntax
+- Flexible for other content
+- Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
-- More syntactically heavy than the frontmatter solution
-  - Visually
-  - More work to type it out / copy-paste
-  - More to get wrong
-- Requires users to deal with leading characters when editing/copying/pasting the manifest
+- Difficult to parse without assistance from something like `syn` as we'd need to distinguish what the start of a stream is vs content of a string literal
+- Being a new file format (a "text tar" format), there would be a lot of details to work out, including
+  - How to delineate and label documents
+  - How to allow escaping to avoid conflicts with content in a documents
+  - Potentially an API for accessing the document from within Rust
+- Unfamiliar, new syntax, unclear how it will work out for newer users
 
 # Prior art
 [prior-art]: #prior-art
