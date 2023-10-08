@@ -164,6 +164,10 @@ Downsides:
 
 ### Alternative 1: Static-site generator frontmatter
 
+Note: this alternative was kept close to its source of inspiration, maintaining
+no infostring, despite being subject to the same questions that would be
+present for fenced code blocks, see [Future possibilities](#future-possibilities).
+
 ```rust
 #!/usr/bin/env cargo
 ---
