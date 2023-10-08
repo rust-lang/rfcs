@@ -158,6 +158,7 @@ Benefits:
 
 Downsides:
 - When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)
+  - Maintainers seeding GitHub issue templates with 4 backticks can help
 - Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 - If viewed from the lens of a comment, it isn't a variant of comment syntax like doc-comments
 
