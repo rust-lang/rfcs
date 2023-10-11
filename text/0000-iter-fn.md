@@ -1,0 +1,207 @@
+- Feature Name: `iter-fn`
+- Start Date: 2023-10-10
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+Add `iter {}` blocks to the language. These blocks implement `Iterator` and
+enable writing iterators in regular code by `yield`ing elements instead of having
+to implement `Iterator` for a custom struct and manually writing an `Iterator::next`
+method body. This is a change similar to adding `async {}` blocks that implement
+`Future` instead of having to manually write futures and their state machines.
+
+Furthermore, add `iter fn` to the language. `iter fn foo(arg: X) -> Y` desugars to
+`fn foo(arg: X) -> impl Iterator<Item = Y>`.
+
+# Motivation
+[motivation]: #motivation
+
+Writing iterators manually can be very painful. Many iterators can be written by
+chaining `Iterator` methods, but some need to be written as a `struct` and have
+`Iterator` implemented for them. Some of the code that is written this way pushes
+people to instead not use iterators, but just run a `for` loop and write to mutable
+state. With this RFC, you could write the `for` loop, without mutable state, and get
+an iterator out of it again.
+
+As an example, here are three ways to write an iterator over something that contains integers,
+only keep the odd integers, and multiply all of them by 2:
+
+```rust
+// `Iterator` methods
+fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
+    values.filter(|value| value.is_odd()).map(|value| value * 2)
+}
+// `struct` and manual `impl`
+fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
+    struct Foo<T>(T);
+    impl<T: Iterator<Item = u32>> Iterator<Item = u32> for Foo<T> {
+        type Item = u32;
+        fn next(&mut self) -> Option<u32> {
+            loop {
+                let value = self.0.next()?;
+                if value.is_odd() {
+                    return Some(x * 2)
+                }
+            }
+        }
+    }
+    Foo(values)
+}
+// `iter block`
+fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
+    iter {
+        for value in values {
+            if value.is_odd() {
+                yield value * 2;
+            }
+        }
+    }
+}
+
+// `iter fn`
+iter fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
+    for value in values {
+        if value.is_odd() {
+            yield value * 2;
+        }
+    }
+}
+```
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+- Introducing new named concepts.
+- Explaining the feature largely in terms of examples.
+- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
+- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
+- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
+- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
+
+For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+
+## Returning/finishing an iterator
+
+`iter` blocks' trailing expression must be of unit type or the block must diverge before reaching its end.
+
+### Diverging iterators
+
+For example, an `iter` block that produces the sequence `0, 1, 0, 1, 0, 1, ...`, will never return `None`
+from `next`, and only drop its captured data when the iterator is dropped.
+
+```rust
+iter {
+    loop {
+        yield 0;
+        yield 1;
+    }
+}
+```
+
+If an `iter` panics, the behavior is very similar to `return`, except that `next` doesn't return `None`, but unwinds.
+
+## Error handling
+
+Within `iter` blocks, the `?` operator desugars differently from how it desugars outside of `iter` blocks.
+Instead of returning the `Err` variant, `foo?` yields the `Err` variant and then `return`s immediately afterwards.
+This has the effect of it being an iterator with `Iterator::Item`'s type being  `Result<T, E>`, and once a `Some(Err(e))`
+is produced via `?`, the iterator returns `None` next.
+
+`iter` blocks do not need to have a trailing `Ok(x)` expression, because returning from an `iter` block will make the `Iterator` return `None` from now, which needs no value.
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+This is the technical portion of the RFC. Explain the design in sufficient detail that:
+
+- Its interaction with other features is clear.
+- It is reasonably clear how the feature would be implemented.
+- Corner cases are dissected by example.
+
+The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+
+## Error handling
+
+`?` desugars to 
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+Why should we *not* do this?
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+- Why is this design the best in the space of possible designs?
+- What other designs have been considered and what is the rationale for not choosing them?
+- What is the impact of not doing this?
+- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+
+## Keyword
+
+We could also use `gen` (for `generator`) as a keyword. The reason I chose `iter` in this RFC, is that people (including me) connect generators with a more powerful
+scheme than just plain `Iterator`s. The `Generator` trait can do everything that `iter` blocks and `async` blocks can do, and more. I believe connecting the `Iterator`
+trait with `iter` blocks is the right choice, but I also don't feel too strongly about it.
+
+## Non-Contextual keyword
+
+We could forbid `iter` from being used as an identifier anywhere.
+
+I believe blocking `iter` (or even just `gen`) from being used as module, type and function names is not feasible.
+The standard library contains an `iter` module and many
+data structures have `iter` methods implemented for them.
+
+## Do not do this
+
+The alternative is to keep adding more helper methods to `Iterator`. It is already rather hard for new Rustaceans to get a hold of all the options they have on `Iterator`.
+Some such methods would also need to be very generic (not an `Iterator` example, but https://doc.rust-lang.org/std/primitive.array.html#method.try_map on arrays is something
+that has very complex diagnostics that are hard to improve, even if it's nice once it works).
+
+Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) instead, which work on stable and give you `gen!` blocks that behave pretty mostly
+like `iter` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator.
+
+# Prior art
+[prior-art]: #prior-art
+
+## Python
+
+Python has `iter fn`: any funciton that uses `yield` internally.
+These work pretty much like the `iter` functions proposed in this PR. The main difference is that raising an
+exception automatically passes the exception outwards, instead of yielding an `Err()` element.
+
+```python
+def odd_dup(values):
+    for value in values:
+        if is_odd(value):
+            yield value * 2
+```
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+- What parts of the design do you expect to resolve through the RFC process before this gets merged?
+- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
+- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+Think about what the natural extension and evolution of your proposal would
+be and how it would affect the language and project as a whole in a holistic
+way. Try to use this section as a tool to more fully consider all possible
+interactions with the project and language in your proposal.
+Also consider how this all fits into the roadmap for the project
+and of the relevant sub-team.
+
+This is also a good place to "dump ideas", if they are out of scope for the
+RFC you are writing but otherwise related.
+
+If you have tried and cannot think of any future possibilities,
+you may simply state that you cannot think of anything.
+
+Note that having something written down in the future-possibilities section
+is not a reason to accept the current or a future RFC; such notes should be
+in the section on motivation or rationale in this or subsequent RFCs.
+The section merely provides additional information.
