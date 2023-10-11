@@ -131,7 +131,6 @@ A closure expression has the following syntax:
 > &nbsp;&nbsp; _PatternNoTopAlt_ `=` _Expression_\
 > _UnnamedMoveBinding_ :\
 > &nbsp;&nbsp; `mut`<sup>?</sup> ( _IdentifierExpression_ | _MethodCallExpression_ )\
-> &nbsp;&nbsp; ( _Identifier_ `=` | `mut`)<sup>?</sup> ( _IdentifierExpression_ | _MethodCallExpression_ )\
 > _ClosureParameters_ :\
 > &nbsp;&nbsp; _ClosureParam_ (`,` _ClosureParam_)<sup>\*</sup> `,`<sup>?</sup>\
 > _ClosureParam_ :\
@@ -178,7 +177,7 @@ If it is implicitly captured from the parent scope
 instead of declared in a _MoveBinding_,
 the local variable declaration must be declared `mut` too.
 
-## _ImplicitReference_ closures
+## _ImplicitMove_ closures
 
 When the `move` keyword is present but _MoveBindings_ is absent (with its parentheses absent as well),
 the closure expression is of the _ImplicitMove_ type, where
