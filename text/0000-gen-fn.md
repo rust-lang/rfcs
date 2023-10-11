@@ -1,4 +1,4 @@
-- Feature Name: `iter-fn`
+- Feature Name: `gen-fn`
 - Start Date: 2023-10-10
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,13 +6,13 @@
 # Summary
 [summary]: #summary
 
-Add `iter {}` blocks to the language. These blocks implement `Iterator` and
+Add `gen {}` blocks to the language. These blocks implement `Iterator` and
 enable writing iterators in regular code by `yield`ing elements instead of having
 to implement `Iterator` for a custom struct and manually writing an `Iterator::next`
 method body. This is a change similar to adding `async {}` blocks that implement
 `Future` instead of having to manually write futures and their state machines.
 
-Furthermore, add `iter fn` to the language. `iter fn foo(arg: X) -> Y` desugars to
+Furthermore, add `gen fn` to the language. `gen fn foo(arg: X) -> Y` desugars to
 `fn foo(arg: X) -> impl Iterator<Item = Y>`.
 
 # Motivation
@@ -49,9 +49,9 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
     }
     Foo(values)
 }
-// `iter block`
+// `gen block`
 fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
-    iter {
+    gen {
         for value in values {
             if value.is_odd() {
                 yield value * 2;
@@ -60,8 +60,8 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
     }
 }
 
-// `iter fn`
-iter fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
+// `gen fn`
+gen fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
     for value in values {
         if value.is_odd() {
             yield value * 2;
@@ -82,17 +82,21 @@ iter fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
 
 For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
 
+## New keyword
+
+Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings. This means during the migration to the 2024 edition, all variables, functions, modules, types, ... named `gen` must be renamed. 
+
 ## Returning/finishing an iterator
 
-`iter` blocks' trailing expression must be of unit type or the block must diverge before reaching its end.
+`gen` blocks' trailing expression must be of unit type or the block must diverge before reaching its end.
 
 ### Diverging iterators
 
-For example, an `iter` block that produces the sequence `0, 1, 0, 1, 0, 1, ...`, will never return `None`
+For example, an `gen` block that produces the sequence `0, 1, 0, 1, 0, 1, ...`, will never return `None`
 from `next`, and only drop its captured data when the iterator is dropped.
 
 ```rust
-iter {
+gen {
     loop {
         yield 0;
         yield 1;
@@ -100,16 +104,16 @@ iter {
 }
 ```
 
-If an `iter` panics, the behavior is very similar to `return`, except that `next` doesn't return `None`, but unwinds.
+If an `gen` panics, the behavior is very similar to `return`, except that `next` doesn't return `None`, but unwinds.
 
 ## Error handling
 
-Within `iter` blocks, the `?` operator desugars differently from how it desugars outside of `iter` blocks.
+Within `gen` blocks, the `?` operator desugars differently from how it desugars outside of `gen` blocks.
 Instead of returning the `Err` variant, `foo?` yields the `Err` variant and then `return`s immediately afterwards.
 This has the effect of it being an iterator with `Iterator::Item`'s type being  `Result<T, E>`, and once a `Some(Err(e))`
 is produced via `?`, the iterator returns `None` next.
 
-`iter` blocks do not need to have a trailing `Ok(x)` expression, because returning from an `iter` block will make the `Iterator` return `None` from now, which needs no value.
+`gen` blocks do not need to have a trailing `Ok(x)` expression, because returning from an `gen` block will make the `Iterator` return `None` from now, which needs no value.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -141,17 +145,23 @@ Why should we *not* do this?
 
 ## Keyword
 
-We could also use `gen` (for `generator`) as a keyword. The reason I chose `iter` in this RFC, is that people (including me) connect generators with a more powerful
+We could also use `iter` as a keyword. I would prefer `iter` in because I connect generators with a more powerful
 scheme than just plain `Iterator`s. The `Generator` trait can do everything that `iter` blocks and `async` blocks can do, and more. I believe connecting the `Iterator`
-trait with `iter` blocks is the right choice, but I also don't feel too strongly about it.
+trait with `iter` blocks is the right choice, but that would require us to carve out many exceptions for this keyword,
+as `iter` is used for module names and method names everywhere (including libstd/libcore).
 
-## Non-Contextual keyword
+## Contextual keyword
 
-We could forbid `iter` from being used as an identifier anywhere.
+We allow `gen` as an identifier for function names and module names, without that conflicting with `gen` blocks, but that makes the syntax more complicated than necessary, for not too much gain.
 
-I believe blocking `iter` (or even just `gen`) from being used as module, type and function names is not feasible.
-The standard library contains an `iter` module and many
-data structures have `iter` methods implemented for them.
+## 2021 edition
+
+We could allow `gen` blocks on the 2021 edition via `k#gen {}` syntax.
+We can allow `gen fn` on all editions.
+
+## `gen` identifiers on 2024 edition
+
+We can allow `i#gen` identifiers in the 2024 edition in order to refer to items named `gen` in previous edition crates.
 
 ## Do not do this
 
@@ -159,16 +169,16 @@ The alternative is to keep adding more helper methods to `Iterator`. It is alrea
 Some such methods would also need to be very generic (not an `Iterator` example, but https://doc.rust-lang.org/std/primitive.array.html#method.try_map on arrays is something
 that has very complex diagnostics that are hard to improve, even if it's nice once it works).
 
-Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) instead, which work on stable and give you `gen!` blocks that behave pretty mostly
-like `iter` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator.
+Users can use crates like [`genawagen`](https://crates.io/crates/genawagen) instead, which work on stable and give you `gen!` blocks that behave pretty mostly
+like `gen` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator.
 
 # Prior art
 [prior-art]: #prior-art
 
 ## Python
 
-Python has `iter fn`: any funciton that uses `yield` internally.
-These work pretty much like the `iter` functions proposed in this PR. The main difference is that raising an
+Python has `gen fn`: any function that uses `yield` internally.
+These work pretty much like the `gen` functions proposed in this PR. The main difference is that raising an
 exception automatically passes the exception outwards, instead of yielding an `Err()` element.
 
 ```python
