@@ -136,7 +136,7 @@ A closure expression has the following syntax:
 > _ClosureParam_ :\
 > &nbsp;&nbsp; _OuterAttribute_<sup>\*</sup> _PatternNoTopAlt_&nbsp;( `:` _Type_  )<sup>?</sup>
 
-Closure expressions are clsasified into two main types,
+Closure expressions are classified into two main types,
 namely _ImplicitReference_ and _ImplicitMove_.
 A closure expression is _ImplicitMove_ IF AND ONLY IF
 it starts with a `move` token immediately followed by a `|` token,
