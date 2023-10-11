@@ -126,14 +126,28 @@ This is the technical portion of the RFC. Explain the design in sufficient detai
 
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 
+## New keyword
+
+In the 2024 edition we reserve `gen` as a keyword. Previous editions need to use `k#gen` to get the same features.
+
 ## Error handling
 
-`?` desugars to 
+`foo?` in `gen` blocks desugars to
+
+```rust
+match foo {
+    Err(err) => {
+        yield Err(err.into());
+        return;
+    },
+    Ok(val) => val,
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+It's another language feature for something that can already be written entirely in user code.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
