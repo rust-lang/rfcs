@@ -59,7 +59,7 @@ instead of referenced:
 
 ```rs
 let mut foo = 1;
-let mut closure = || { foo = 2; };
+let mut closure = move || { foo = 2; };
 closure();
 dbg!(foo); // foo is still 1, but the copy of `foo` in `closure` is 2
 ```
