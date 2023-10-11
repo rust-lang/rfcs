@@ -113,7 +113,9 @@ Instead of returning the `Err` variant, `foo?` yields the `Err` variant and then
 This has the effect of it being an iterator with `Iterator::Item`'s type being  `Result<T, E>`, and once a `Some(Err(e))`
 is produced via `?`, the iterator returns `None` next.
 
-`gen` blocks do not need to have a trailing `Ok(x)` expression, because returning from an `gen` block will make the `Iterator` return `None` from now, which needs no value.
+`gen` blocks do not need to have a trailing `Ok(x)` expression, because returning from an `gen` block will make the `Iterator` return `None` from now, which needs no value. Instead all `yield` operations must be given a `Result`.
+
+Similarly the `?` operator on `Option`s will `yield None` if it is `None`, and require passing an `Option` to all `yield` operations.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -135,14 +137,17 @@ In the 2024 edition we reserve `gen` as a keyword. Previous editions need to use
 `foo?` in `gen` blocks desugars to
 
 ```rust
-match foo {
-    Err(err) => {
-        yield Err(err.into());
+match foo.branch() {
+    ControlFlow::Break(err) => {
+        yield R::from_residual(err);
         return;
     },
-    Ok(val) => val,
+    ControlFlow::Continue(val) => val,
 }
 ```
+
+which will stop iteration after the first error. This is the same behaviour that `collect::<Result<_, _>>()` performs
+on any iterator over `Result`s
 
 # Drawbacks
 [drawbacks]: #drawbacks
