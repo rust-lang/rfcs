@@ -68,7 +68,7 @@ Note that `foo` is _copied_ during move in this example
 as `i32` implements `Copy`.
 
 If a closure captures multiple bindings,
-all the `move` keywoed makes them all captured by moving.
+all the `move` keyword makes them all captured by moving.
 To move only specific bindings,
 list them in parentheses after `move`:
 
