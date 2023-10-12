@@ -118,6 +118,12 @@ is produced via `?`, the iterator returns `None` next.
 
 Similarly the `?` operator on `Option`s will `yield None` if it is `None`, and require passing an `Option` to all `yield` operations.
 
+## Fusing
+
+Just like `Generators`, Iterators produced by `gen` panic when invoked again after they have returned `None` once.
+This can probably be fixed by special casing the generator impl if `Generator::Return = ()`, as we can trivally
+produce infinite values of `()` type.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 ## New keyword
@@ -252,13 +258,35 @@ def odd_dup(values):
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## Keyword
+
+Should we use `iter` as a keyword instead, as we're producing `Iterator`s.
+We can also use `gen` like proposed in this RFC and later extend its abilities to more powerful generators.
+
+[playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=efeacb803158c2ebd57d43b4e606c0b5)
+
+```rust
+#![feature(generators)]
+#![feature(iter_from_generator)]
+
+fn main() {
+    let mut it = std::iter::from_generator(|| {
+        yield 1
+    });
+
+    assert_eq!(it.next(), Some(1));
+    assert_eq!(it.next(), None);
+    it.next(); // panics
+}
+```
+
 ## Panicking
 
 What happens when a `gen` block that panicked gets `next` called again? Do we need to poison the iterator?
 
 ## Fusing
 
-Are `gen` blocks fused? Or may they behave eratically after returning `None` the first time?
+Should we make `gen` blocks fused? Right now they'd panic (which is what the generator impl does):
 
 ## Contextual keyword
 
