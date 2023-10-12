@@ -79,15 +79,6 @@ gen fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
-
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
-
 ## New keyword
 
 Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings. This means during the migration to the 2024 edition, all variables, functions, modules, types, ... named `gen` must be renamed. 
@@ -125,15 +116,6 @@ Similarly the `?` operator on `Option`s will `yield None` if it is `None`, and r
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
-
 ## New keyword
 
 In the 2024 edition we reserve `gen` as a keyword. Previous editions need to use `k#gen` to get the same features.
@@ -155,6 +137,30 @@ match foo.branch() {
 which will stop iteration after the first error. This is the same behaviour that `collect::<Result<_, _>>()` performs
 on any iterator over `Result`s
 
+## Implementation
+
+This feature is mostly implemented via existing generators, we'll just need some desugarings and then lots of work to get good diagnostics.
+
+### Gen fn
+
+`gen fn` desugars to the function itself, with its return type replaced by `impl Iterator<Item = $ret>` and its body wrapped in a `gen` block.
+So a `gen fn`'s "return type" is in fact its iterator's `yield` type.
+
+A `gen fn` captures all lifetimes and generic parameters into the `impl Iterator` return type (just like `async fn`).
+If you want more control over your captures, you'll need to use type alias impl trait when that becomes stable.
+
+Just like all other uses of `impl Trait`, auto traits are revealed without being specified.
+
+### Gen blocks
+
+`gen` blocks are effectively the same as an unstable generator
+
+* without arguments,
+* with an additional check forbidding holding borrows across `yield` points,
+* and an automatic `Iterator` implementation.
+
+We'll probably be able to modularize the generator impl and make it more robust (on the impl and diagnostics side) for the `gen` block case, but I believe the initial implementation should just be a HIR lowering to a generator and wrapping that generator in `std::iterator::from_generator`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -162,18 +168,14 @@ It's another language feature for something that can already be written entirely
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
-
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
-
 ## Keyword
 
 We could also use `iter` as a keyword. I would prefer `iter` in because I connect generators with a more powerful
 scheme than just plain `Iterator`s. The `Generator` trait can do everything that `iter` blocks and `async` blocks can do, and more. I believe connecting the `Iterator`
 trait with `iter` blocks is the right choice, but that would require us to carve out many exceptions for this keyword,
-as `iter` is used for module names and method names everywhere (including libstd/libcore). It may not be much worse than `gen` (see also [#unresolved-questions])
+as `iter` is used for module names and method names everywhere (including libstd/libcore). It may not be much worse than `gen` (see also [#unresolved-questions]).
+
+One argument for `iter` is also that we may want to use `gen` for full on generators in the future.
 
 ## 2021 edition
 
