@@ -214,23 +214,43 @@ def odd_dup(values):
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
+## Panicking
+
+What happens when a `gen` block that panicked gets `next` called again? Do we need to poison the iterator?
+
+## Fusing
+
+Are `gen` blocks fused? Or may they behave eratically after returning `None` the first time?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
+## `yield from` (forwarding operation)
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
+Python has the ability to `yield from` an iterator.
+Effectively this is syntax sugar for looping over all elements of the iterator and yielding them individually.
+There are infinite options to choose from if we want such a feature, so I'm just going to list the general ideas below:
 
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
+### Do nothing, just use loops
 
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+```rust
+for x in iter {
+    yield x
+}
+```
+
+### language support
+
+we could do something like postfix `yield` or an entirely new keyword, or...
+
+```rust
+iter.yield
+```
+
+### stlib macro
+
+We could add a macro to the standard library and prelude, the macro would just expand to the for loop + yield.
+
+```rust
+yield_all!(iter)
+```
