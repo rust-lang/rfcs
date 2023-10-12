@@ -76,6 +76,10 @@ gen fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
 }
 ```
 
+Iterators created with `gen` return `None` once they `return` (implicitly at the end of the scope or explicitly with `return`).
+See [#unresolved-questions] for whether `gen` iterators are fused or may behave strangely after having returned `None` once.
+Under no circumstances will it be undefined behavior if `next` is invoked again after having gotten a `None`.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -166,6 +170,10 @@ We'll probably be able to modularize the generator impl and make it more robust 
 
 It's another language feature for something that can already be written entirely in user code.
 
+In contrast to `Generator`, `gen` blocks that produce `Iterator`s cannot hold references across `yield` points.
+See also https://doc.rust-lang.org/std/iter/fn.from_generator.html, which has an `Unpin` bound on the generator it takes
+to produce an `Iterator`.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 ## Keyword
@@ -190,6 +198,40 @@ that has very complex diagnostics that are hard to improve, even if it's nice on
 
 Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) instead, which work on stable and give you `gen!` blocks that behave pretty mostly
 like `gen` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator.
+
+## `return` statements `yield` one last element
+
+Similarly to `try` blocks, trailing expresisons could yield their element.
+
+But then have no way to terminate iteration, as `return` statements would similarly have to have a
+value that needs to get `yield`ed before terminating iteration.
+
+We could do something magical where returning `()` terminates the iteration, so
+
+```rust
+gen fn foo() -> i32 {
+    42
+}
+```
+
+could be a way to specify `std::iter::once(42)`. The issue I see with this is that
+
+```rust
+gen fn foo() -> i32 {
+    42; // note the semicolon
+}
+```
+
+would then not return a value.
+
+Furthermore this would make it unclear what the behaviour of
+
+```rust
+gen fn foo() {}
+```
+
+is supposed to be, as it could be either `std::iter::once(())` or `std::iter::empty::<()>()`
+
 
 # Prior art
 [prior-art]: #prior-art
@@ -277,3 +319,22 @@ while `gen` blocks are the simpler concept that has no arguments and just captur
 
 Either way, support for full `Generator`s should (in my opinion) be discussed and implemented separately,
 as there are many more open questions around them than around just a simpler way to write `Iterator`s.
+
+## `async` interactions
+
+We could support using `await` in `gen` blocks, similar to how we support `?` being used within them.
+This is not trivially possible due to the fact that `Iterator::next` takes `&mut self` and not `Pin<&mut self>`.
+
+There are a few options forward for this:
+
+* Add a separate trait for pinned iteration that is also usable with `gen` and `for`
+    * downside: very similar traits for the same thing
+* backwards compatibly add a way to change the argument type of `Iterator::next`
+    * downside: unclear if possible
+* implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block)
+    * downside: the thing being iterated over must now be pinned for the entire iteration, instead of for each iteration
+
+## `try` interactions
+
+We could allow `try gen fn foo() -> i32` to actually mean something akin to `gen fn foo() -> Result<i32, E>`.
+Whatever we do here, it should mirror whatever `try fn` will mean in the future.
