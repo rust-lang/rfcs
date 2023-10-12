@@ -188,7 +188,7 @@ The alternative is to keep adding more helper methods to `Iterator`. It is alrea
 Some such methods would also need to be very generic (not an `Iterator` example, but https://doc.rust-lang.org/std/primitive.array.html#method.try_map on arrays is something
 that has very complex diagnostics that are hard to improve, even if it's nice once it works).
 
-Users can use crates like [`genawagen`](https://crates.io/crates/genawagen) instead, which work on stable and give you `gen!` blocks that behave pretty mostly
+Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) instead, which work on stable and give you `gen!` blocks that behave pretty mostly
 like `gen` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator.
 
 # Prior art
