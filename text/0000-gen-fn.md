@@ -18,6 +18,12 @@ Furthermore, add `gen fn` to the language. `gen fn foo(arg: X) -> Y` desugars to
 # Motivation
 [motivation]: #motivation
 
+The main motivation of this RFC is to reserve a new keyword in the 2024 edition.
+The feature used by this keyword described here should be treated as an e-RFC for
+experimentation on nightly with this new keyword. I would like to avoid too much
+discussion of the semantics provided here, and instead discuss the semantics during
+the experimental implementation work.
+
 Writing iterators manually can be very painful. Many iterators can be written by
 chaining `Iterator` methods, but some need to be written as a `struct` and have
 `Iterator` implemented for them. Some of the code that is written this way pushes
@@ -167,20 +173,12 @@ It's another language feature for something that can already be written entirely
 We could also use `iter` as a keyword. I would prefer `iter` in because I connect generators with a more powerful
 scheme than just plain `Iterator`s. The `Generator` trait can do everything that `iter` blocks and `async` blocks can do, and more. I believe connecting the `Iterator`
 trait with `iter` blocks is the right choice, but that would require us to carve out many exceptions for this keyword,
-as `iter` is used for module names and method names everywhere (including libstd/libcore).
-
-## Contextual keyword
-
-We allow `gen` as an identifier for function names and module names, without that conflicting with `gen` blocks, but that makes the syntax more complicated than necessary, for not too much gain.
+as `iter` is used for module names and method names everywhere (including libstd/libcore). It may not be much worse than `gen` (see also [#unresolved-questions])
 
 ## 2021 edition
 
 We could allow `gen` blocks on the 2021 edition via `k#gen {}` syntax.
 We can allow `gen fn` on all editions.
-
-## `gen` identifiers on 2024 edition
-
-We can allow `i#gen` identifiers in the 2024 edition in order to refer to items named `gen` in previous edition crates.
 
 ## Do not do this
 
@@ -210,10 +208,6 @@ def odd_dup(values):
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
-
 ## Panicking
 
 What happens when a `gen` block that panicked gets `next` called again? Do we need to poison the iterator?
@@ -221,6 +215,19 @@ What happens when a `gen` block that panicked gets `next` called again? Do we ne
 ## Fusing
 
 Are `gen` blocks fused? Or may they behave eratically after returning `None` the first time?
+
+## Contextual keyword
+
+Popular crates (like `rand`) have methods called `gen` (https://docs.rs/rand/latest/rand/trait.Rng.html#method.gen). If we forbid those, we are forcing those crates to make a major version bump when they update their edition, and we are requiring any users of those crates to use `r#gen` instead of `gen` when calling that method.
+
+We could instead choose to use a contextual keyword and only forbid
+
+* bindings,
+* field names (due to destructuring bindings),
+* enum variants,
+* and type names
+
+to be `gen`. This should avoid any parsing issues around `gen` followed by `{` in expressions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -254,3 +261,17 @@ We could add a macro to the standard library and prelude, the macro would just e
 ```rust
 yield_all!(iter)
 ```
+
+## Full on `Generator` support
+
+We already have a `Generator` trait on nightly that is much more powerful than the `Iterator`
+API could possibly be.
+
+1. it uses `Pin<&mut Self>`, allowing self-references in the generator across yield points
+2. it has arguments (`yield` returns the arguments passed to it in the subsequent invocations)
+
+Similar (but def not the same) to ideas around `async` closures, I think we could argue for `Generators` to be `gen` closures,
+while `gen` blocks are the simpler concept that has no arguments and just captures variables.
+
+Either way, support for full `Generator`s should (in my opinion) be discussed and implemented separately,
+as there are many more open questions around them than around just a simpler way to write `Iterator`s.
