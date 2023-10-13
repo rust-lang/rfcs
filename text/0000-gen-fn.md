@@ -117,11 +117,19 @@ Instead of returning the `Err` variant, `foo?` yields the `Err` variant and then
 This creates an iterator with `Iterator::Item`'s type being `Result<T, E>`.
 Once a `Some(Err(e))` is produced via `?`, the iterator returns `None` on the subsequent call to `Iterator::next`.
 
-`gen` blocks do not need to have a trailing `Ok(x)` expression.
+In contrast to other code where you can use `?`, `gen` blocks do not need to have a trailing `Ok(x)` or `x` expression.
 Returning from a `gen` block will make the `Iterator` return `None`, which needs no value.
 Instead, all `yield` operations must be given a `Result`.
 
 The `?` operator on `Option`s will `yield None` if it is `None`, and require passing an `Option` to all `yield` operations.
+As an example:
+
+```rust
+let x = some_option?;
+yield Some(x + 1)
+```
+
+will yield `None` if `some_option` is `None`, but `Some(x + 1)` otherwise.
 
 ## Fusing
 
@@ -248,6 +256,25 @@ gen fn foo() {}
 ```
 
 is supposed to be, as it could be either `std::iter::once(())` or `std::iter::empty::<()>()`
+
+## different syntax for `gen fn`:
+
+There are many options to choose from, and we can decide on it while implementing the feature and before stabilization.
+Some options are:
+
+```rust
+fn foo(args) yield item
+fn foo(args) yields item
+fn foo(args) => item
+fn* foo(args) -> item // or any of the `fn foo` variants for the item type
+gen fn foo(args) // or any of the above variants for the item type
+gen foo(args) // or any of the above variants for the item type
+generator fn foo(args) // or any of the above variants for the item type
+```
+
+The design space here is very large. I propose to use `gen fn foo(args) -> item` for now as
+experimental syntax, as it requries the least parser changes. Or even use `#[rustc_gen]` to require
+no parser changes, but still reserve the `gen` keyword in the 2024 edition for `gen` blocks.
 
 # Prior art
 [prior-art]: #prior-art
