@@ -123,7 +123,7 @@ pub mod __derive_refs {
 }
 ```
 Since the proc-macro can only guarantee that the namespace `clap` is accessible,
-`clap` must re-export any functionality that is needed at runtime.
+`clap` must re-export any functionality that is needed at runtime by the generated code.
 As a last-ditch way of dealing with this, a user may allow the error:
 ```rust
 #[doc(hidden)]
