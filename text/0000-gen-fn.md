@@ -129,24 +129,23 @@ If a `#[rustc_gen]` block panics, the behavior is very similar to `return`, exce
 
 ## Error handling
 
-Within `#[rustc_gen]` blocks, the `?` operator desugars differently from how it desugars outside of `#[rustc_gen]` blocks.
-Instead of returning the `Err` variant, `foo?` yields the `Err` variant and then `return`s immediately afterwards.
-This creates an iterator with `Iterator::Item`'s type being `Result<T, E>`.
-Once a `Some(Err(e))` is produced via `?`, the iterator returns `None` on the subsequent call to `Iterator::next`.
+Within `#[rustc_gen]` blocks, the `?` operator desugars as follows.  When its
+argument returns a value indicating "do not short circuit"
+(e.g. `Option::Some(..)`, `Result::Ok(..)`, `ControlFlow::Continue(..)`), that
+value becomes the result of the expression as usual.  When its argument
+returns a value indicating that short-circuiting is desired
+(e.g. `Option::None`, `Result::Err(..)`, `ControlFlow::Break(..)`), the value
+is first yielded (after being converted by `From::from` as usual), then the
+block returns immediately.
 
-In contrast to other code where you can use `?`, `#[rustc_gen]` blocks do not need to have a trailing `Ok(x)` or `x` expression.
-Returning from a `#[rustc_gen]` block will make the `Iterator` return `None`, which needs no value.
-Instead, all `yield` operations must be given a `Result`.
+Even when `?` is used within a `#[rustc_gen]` block, the block must return a
+value of type unit or `!`.  That is, it does not return a value of `Some(..)`,
+`Ok(..)`, or `Continue(..)` as other such blocks might.
 
-The `?` operator on `Option`s will `yield None` if it is `None`, and require passing an `Option` to all `yield` operations.
-As an example:
-
-```rust
-let x = some_option?;
-yield Some(x + 1)
-```
-
-will yield `None` if `some_option` is `None`, but `Some(x + 1)` otherwise.
+However, note that when `?` is used within a `#[rustc_gen]` block, all `yield`
+statements will need to be given an argument of a compatible type.  For
+example, if `None?` is used in an expression, then all `yield` statements will
+need to be given arguments of type `Option`.
 
 ## Fusing
 
