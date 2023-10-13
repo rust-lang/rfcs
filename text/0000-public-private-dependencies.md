@@ -163,10 +163,13 @@ This most likely will also be necessary for the more complex relationship of
 ## cargo
 
 A new dependency field, `pub = <bool>` will be added that defaults to `false`.
-Old cargo version will emit a warning when this key is encountered but otherwise continue.
 Cargo will use use the `priv` modifier with `--extern` for all private dependencies when building a `lib`.
 What is private is what is left after recursively walking public dependencies.
 We'll ignore this for other build target kinds (e.g. `bin`) as that would create extra noise.
+
+Old cargo version will emit a warning when this key is encountered but otherwise continue,
+even if the feature is present but unstable.
+While it is unstable, `cargo publish` will strip the field.
 
 Cargo will not force a `rust-version` bump when using this feature as someone
 building with an old version of cargo depending on packages that set `pub =
