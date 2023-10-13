@@ -45,6 +45,18 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
     values.filter(|value| value.is_odd()).map(|value| value * 2)
 }
 
+// `std::iter::from_fn`
+fn odd_dup(mut values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
+    std::iter::from_fn(move || {
+        loop {
+            let value = values.next()?;
+            if value % 2 == 1 {
+                return Some(value * 2);
+            }
+        }
+    })
+}
+
 // `struct` and manual `impl`
 fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
     struct Foo<T>(T);
@@ -228,6 +240,11 @@ Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) or
 `genawaiter` works on stable and provides `gen!` macro blocks that behave like `#[rustc_gen]` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator. The `propane` crate uses the `Generator` trait from nightly and works mostly
 like `#[rustc_gen]` would.
 
+The standard library includes [`std::iter::from_fn`][], which can be used in
+some cases, but as we saw in the example [above][motivation], often the
+improvement over writing out a manual implementation of `Iterator` is limited.
+
+[`std::iter::from_fn`]: https://doc.rust-lang.org/std/array/fn.from_fn.html
 [`array::try_map`]: https://doc.rust-lang.org/std/primitive.array.html#method.try_map
 
 ## `return` statements `yield` one last element
