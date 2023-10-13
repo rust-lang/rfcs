@@ -36,8 +36,8 @@ pushes people to avoid iterators and instead execute a `for` loop that eagerly
 writes values to mutable state. With this RFC, one can write the `for` loop
 and still get a lazy iterator of values.
 
-As an example, here are multiple ways to write an iterator over something that contains integers,
-only keep the odd integers, and multiply all of them by 2:
+As an example, here are multiple ways to write an iterator over something that contains integers
+while only keeping the odd integers and multiplying each by 2:
 
 ```rust
 // `Iterator` methods
@@ -93,7 +93,7 @@ Under no circumstances will it be undefined behavior if `next` is invoked again 
 
 ## New keyword
 
-Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings. This means during the migration to the 2024 edition, all variables, functions, modules, types, ... named `gen` must be renamed.
+Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings. This means during the migration to the 2024 edition, all variables, functions, modules, types, etc. named `gen` must be renamed.
 
 ## Returning/finishing an iterator
 
@@ -102,7 +102,7 @@ Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming 
 ### Diverging iterators
 
 For example, a `#[rustc_gen]` block that produces the infinite sequence `0, 1, 0, 1, 0, 1, ...`, will never return `None`
-from `next`, and only drop its captured data when the iterator is dropped.
+from `next`, and only drop its captured data when the iterator is dropped:
 
 ```rust
 #[rustc_gen] {
@@ -150,7 +150,7 @@ In the 2024 edition we reserve `gen` as a keyword. Previous editions will use `k
 
 ## Error handling
 
-`foo?` in `#[rustc_gen]` blocks will stop iteration after the first error by desugaring to
+`foo?` in `#[rustc_gen]` blocks will stop iteration after the first error by desugaring to:
 
 ```rust
 match foo.branch() {
@@ -163,7 +163,7 @@ match foo.branch() {
 ```
 
 This is the same behaviour that `collect::<Result<_, _>>()` performs
-on iterators over `Result`s
+on iterators over `Result`s.
 
 ## Implementation
 
@@ -182,11 +182,11 @@ Like other uses of `impl Trait`, auto traits are revealed without being specifie
 
 ### `#[rustc_gen]` blocks
 
-`#[rustc_gen]` blocks are the same as an unstable generator
+`#[rustc_gen]` blocks are the same as an unstable generator...
 
-* without arguments,
-* with an additional check forbidding holding borrows across `yield` points,
-* and an automatic `Iterator` implementation.
+* ...without arguments,
+* ...with an additional check forbidding holding borrows across `yield` points,
+* ...and with an automatic `Iterator` implementation.
 
 We'll probably be able to modularize the generator implementation and make it more robust on the implementation and diagnostics side for the `#[rustc_gen]` block case, but I believe the initial implementation should be a HIR lowering to a generator and wrapping that generator in [`from_generator`][].
 
@@ -237,7 +237,7 @@ Similarly to `try` blocks, trailing expressions could yield their element.
 There would then be no way to terminate iteration as `return` statements would have to have a
 value that is `yield`ed before terminating iteration.
 
-We could do something magical where returning `()` terminates the iteration, so
+We could do something magical where returning `()` terminates the iteration, so this code...
 
 ```rust
 #[rustc_gen] fn foo() -> i32 {
@@ -245,7 +245,7 @@ We could do something magical where returning `()` terminates the iteration, so
 }
 ```
 
-could be a way to specify `std::iter::once(42)`. The issue I see with this is that
+...could be a way to specify `std::iter::once(42)`. The issue I see with this is that this...
 
 ```rust
 #[rustc_gen] fn foo() -> i32 {
@@ -253,17 +253,17 @@ could be a way to specify `std::iter::once(42)`. The issue I see with this is th
 }
 ```
 
-would then not return a value.
+...would then not return a value.
 
-Furthermore this would make it unclear what the behaviour of
+Furthermore this would make it unclear what the behaviour of this...
 
 ```rust
 #[rustc_gen] fn foo() {}
 ```
 
-is supposed to be, as it could be either `std::iter::once(())` or `std::iter::empty::<()>()`
+...is supposed to be, as it could be either `std::iter::once(())` or `std::iter::empty::<()>()`.
 
-## different syntax for `#[rustc_gen] fn`:
+## Different syntax for `#[rustc_gen] fn`:
 
 This RFC explicitly picks an attribute, as that has no conflicts with any other syntax, even within macros, and
 does not pick any option that may influence how experimental users think about syntax.
@@ -330,12 +330,12 @@ What happens when `Iterator::next` is called again on a `#[rustc_gen]` block tha
 
 Popular crates (like `rand`) have methods called [`gen`][Rng::gen]. If we forbid those, we are forcing those crates to make a major version bump when they update their edition, and we are requiring any users of those crates to use `r#gen` instead of `gen` when calling that method.
 
-We could choose to use a contextual keyword and only forbid `gen` in
+We could choose to use a contextual keyword and only forbid `gen` in:
 
-* bindings,
-* field names (due to destructuring bindings),
-* enum variants,
-* and type names
+* bindings
+* field names (due to destructuring bindings)
+* enum variants
+* type names
 
 This should avoid any parsing issues around `gen` followed by `{` in expressions.
 
@@ -369,11 +369,13 @@ for x in iter {
 
 ### Language support
 
-we could do something like postfix `yield` or an entirely new keyword, or...
+We could do something like postfix `yield`:
 
 ```rust
 iter.yield
 ```
+
+Or we could use an entirely new keyword.
 
 ### stdlib macro
 
@@ -387,10 +389,10 @@ yield_all!(iter)
 ## Complete `Generator` support
 
 We already have a `Generator` trait on nightly that is more powerful than the `Iterator`
-API could possibly be.
+API could possibly be:
 
-1. it uses `Pin<&mut Self>`, allowing self-references in the generator across yield points
-2. it has arguments (`yield` returns the arguments passed to it in the subsequent invocations)
+1. It uses `Pin<&mut Self>`, allowing self-references in the generator across yield points.
+2. It has arguments (`yield` returns the arguments passed to it in the subsequent invocations).
 
 Similar to the ideas around `async` closures,
 I think we could argue for `Generators` to be `#[rustc_gen]` closures while `#[rustc_gen]` blocks are a simpler concept that has no arguments and only captures variables.
@@ -408,18 +410,18 @@ This RFC's design is forward compatible with anything we decide on.
 At present it is only possible to have a `#[rustc_gen]` block yield futures, but not `await` within it, similar to how
 you cannot write iterators that `await`, but that return futures from `next`.
 
-## self-referential `#[rustc_gen]` blocks
+## Self-referential `#[rustc_gen]` blocks
 
 We can allow `#[rustc_gen]` blocks to hold borrows across `yield` points in the future.
 
 There are a few options forward (though this list is probably not complete):
 
-* Add a separate trait for pinned iteration that is also usable with `#[rustc_gen]` and `for`
-    * downside: very similar traits for the same thing
-* backwards compatibly add a way to change the argument type of `Iterator::next`
-    * downside: unclear if possible
-* implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `#[rustc_gen]` block)
-    * downside: the thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
+* Add a separate trait for pinned iteration that is also usable with `#[rustc_gen]` and `for`.
+    * *Downside*: We would have very similar traits for the same thing.
+* Backward-compatibly add a way to change the argument type of `Iterator::next`.
+    * *Downside*: It's unclear whether this is possible.
+* Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `#[rustc_gen]` block).
+    * *Downside*: The thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
 
 This RFC is forward compatible with any such designs, so I will not explore it here.
 
