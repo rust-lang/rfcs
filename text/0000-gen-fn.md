@@ -85,7 +85,7 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
 ```
 
 Iterators created with `#[rustc_gen]` return `None` once they `return` (implicitly at the end of the scope or explicitly with `return`).
-See [the unresolved questions][#unresolved-questions] for whether `#[rustc_gen]` iterators are fused or may behave strangely after having returned `None` once.
+See [the unresolved questions][unresolved-questions] for whether `#[rustc_gen]` iterators are fused or may behave strangely after having returned `None` once.
 Under no circumstances will it be undefined behavior if `next` is invoked again after having gotten a `None`.
 
 # Guide-level explanation
@@ -214,7 +214,7 @@ I prefer `iter` because I connect generators with a more powerful scheme than pl
 The `Generator` trait can do everything that `iter` blocks and `async` blocks can do and more.
 I believe connecting the `Iterator` trait with `iter` blocks is the right choice,
 but that would require us to carve out many exceptions for this keyword as `iter` is used for module names and method names everywhere (including libstd/libcore).
-It may not be much worse than `gen` (see also [the unresolved questions][#unresolved-questions]).
+It may not be much worse than `gen` (see also [the unresolved questions][unresolved-questions]).
 We may want to use `gen` for full on generators in the future.
 
 ## Do not do this
