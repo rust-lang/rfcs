@@ -341,6 +341,15 @@ This should avoid any parsing issues around `gen` followed by `{` in expressions
 
 [Rng::gen]: https://docs.rs/rand/latest/rand/trait.Rng.html#method.gen
 
+## `Iterator::size_hint`
+
+Should we try to compute a conservative `size_hint`? This will reveal information from the body of a generator,
+but at least for simple cases users will likely expect `size_hint` to not just be the default.
+
+## Implement other `Iterator` traits.
+
+Is there a possibility for implementing traits like `DoubleEndedIterator`, `ExactSizeIterator` at all?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
