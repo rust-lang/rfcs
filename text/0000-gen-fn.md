@@ -109,7 +109,7 @@ Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming 
 
 ## Returning/finishing an iterator
 
-`#[rustc_gen]` block's trailing expression must be of the unit type or the block must diverge before reaching its end.
+`#[rustc_gen]` blocks must diverge or return the unit type.  Specifically, the trailing expression must be of the unit or `!` type, and any `return` statements in the block must either be given no argument at all or given an argument of the unit or `!` type.
 
 ### Diverging iterators
 
