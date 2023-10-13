@@ -297,6 +297,35 @@ def odd_dup(values):
             yield value * 2
 ```
 
+## C# ##
+
+In C#, within an [`iterator`][c-sharp-iterators], the [`yield`][c-sharp-yield]
+statement is used to either yield the next value or to stop iteration.  E.g.:
+
+```csharp
+IEnumerable<int> OddDupUntilNegative(IEnumerable<int> numbers)
+{
+    foreach (int n in numbers)
+    {
+        if (n < 0)
+        {
+            yield break;
+        }
+        else if (n % 2 == 1)
+        {
+            yield return n * 2;
+        }
+    }
+}
+```
+
+Analogously with this RFC and with `async` blocks in Rust (but unlike `async
+Task` in C#), execution of C# iterators does not start until they are
+iterated.
+
+[c-sharp-iterators]: https://learn.microsoft.com/en-us/dotnet/csharp/iterators
+[c-sharp-yield]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/yield
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
