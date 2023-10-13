@@ -363,13 +363,18 @@ as there are many more open questions around them beyond a simpler way to write 
 ## `async` interactions
 
 We could support using `await` in `async gen` blocks, similar to how we support `?` being used within `gen` blocks.
-This is not possible in general due to the fact that `Iterator::next` takes `&mut self` and not `Pin<&mut self>`, but
-it should be possible if no references are held across the `await` point, similar to how we disallow holding
-references across `yield` points in this RFC.
+We'd have similar limitations holding references held across `await` points as we do have with `yield` points.
+The solution space for `async gen` is large enough that I will not explore it here.
+This RFC's design is forward compatible with anything we decide on.
+
+At present it is only possible to have a `gen` block yield futures, but not `await` within it, similar to how
+you cannot write iterators that `await`, but that return futures from `next`.
 
 ## self-referential `gen` blocks
 
-There are a few options forward:
+We can allow `gen` blocks to hold borrows across `yield` points in the future.
+
+There are a few options forward (though this list is probably not complete):
 
 * Add a separate trait for pinned iteration that is also usable with `gen` and `for`
     * downside: very similar traits for the same thing
@@ -377,6 +382,8 @@ There are a few options forward:
     * downside: unclear if possible
 * implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block)
     * downside: the thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
+
+This RFC is forward compatible with any such designs, so I will not explore it here.
 
 ## `try` interactions
 
