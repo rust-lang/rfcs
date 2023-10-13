@@ -1,12 +1,18 @@
 - Feature Name: `public_private_dependencies`
-- Start Date: 2017-04-03
-- RFC PR: [rust-lang/rfcs#1977](https://github.com/rust-lang/rfcs/pull/1977)
+- Start Date: 2023-10-13
+- Prior RFC PR: [rust-lang/rfcs#1977](https://github.com/rust-lang/rfcs/pull/1977)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#44663](https://github.com/rust-lang/rust/issues/44663)
 
 # Summary
 [summary]: #summary
 
 Introduce a public/private distinction to crate dependencies.
+
+Note: this supersedes [RFC 1977]
+Enough has changed in the time since that RFC was approved that we felt we needed to go back and get wider input on this, rather than handling decisions through the tracking issue.
+- [RFC 1977] was written before Editions, `cfg` dependencies, and package renaming which can all affect it
+- The resolver changes were a large part of [RFC 1977] but there are concerns with it and we feel it'd be best to decouple it, offering a faster path to stabilization
 
 # Motivation
 [motivation]: #motivation
@@ -15,272 +21,132 @@ The crates ecosystem has greatly expanded since Rust 1.0. With that, a few patte
 dependencies have evolved that challenge the currently existing dependency declaration
 system in Cargo and Rust. The most common problem is that a crate `A` depends on another
 crate `B` but some of the types from crate `B` are exposed through the API in crate `A`.
-This causes problems in practice if that dependency `B` is also used by the user's code
-itself, crate `B` resolves to different versions for each usage, and the values of types
-from the two crate `B` instances need to be used together but don't match. In this case,
-the user's code will refuse to compile because different versions of those libraries are
-requested, and the compiler messages are less than clear.
 
-The introduction of an explicit distinction between public and private dependencies can
-solve some of these issues. This distinction should also let us lift some restrictions and
-make some code compile that previously was prevented from compiling.
-
-**Q: What is a public dependency?**<br>
-A: A dependency is public if some of the types or traits of that dependency are themselves
-exported through the public API of main crate. The most common places where this happens
-are return values and function parameters. The same applies to trait implementations and
-many other things. Because "public" can be tricky to determine for a user, this RFC
-proposes to extend the compiler infrastructure to detect the concept of a "public
-dependency". This will help the user understand this concept so they can avoid making
-mistakes in the `Cargo.toml`.
-
-Effectively, the idea is that if you bump a public dependency's version, it's a breaking
-change of your *own* crate.
-
-**Q: What is a private dependency?**<br>
-A: On the other hand, a private dependency is contained within your crate and effectively
-invisible for users of your crate. As a result, private dependencies can be freely
-duplicated in the dependency graph and won't cause compilation errors. This distinction
-will also make it possible to relax some restrictions that currently exist in Cargo which
-sometimes prevent crates from compiling.
-
-**Q: Can public become private later?**<br>
-A: Public dependencies are public within a reachable subgraph but can become private if a
-crate stops exposing a public dependency. For instance, it is very possible to have a
-family of crates that all depend on a utility crate that provides common types which is a
-public dependency for all of them. However, if your own crate ends up being a user of this
-utility crate but none of its types or traits become part of your own API, then this
-utility crate dependency is marked private.
-
-**Q: Where is public / private defined?**<br>
-Dependencies are private by default and are made public through a `public` flag on the
-dependency in the `Cargo.toml` file. This also means that crates created before the
-implementation of this RFC will have all their dependencies private.
-
-**Q: How is backwards compatibility handled?**<br>
-A: It will continue to be permissible to "leak" dependencies (and there are even some use
-cases of this), however, the compiler or Cargo will emit warnings if private dependencies
-are part of the public API. Later, it might even become invalid to publish new crates
-without explicitly silencing these warnings or marking the dependencies as public.
-
-**Q: Can I export a type from a private dependency as my own?**<br>
-A: For now, it will not be strictly permissible to privately depend on a crate and export a
-type from there as your own. The reason for this is that at the moment it is not possible
-to force this type to be distinct. This means that users of the crate might accidentally
-start depending on that type to be compatible if the user starts to depend on the crate
-that actually implements that type. The limitations from the previous answer apply (e.g.:
-you can currently overrule the restrictions).
-
-**Q: How do semver and dependencies interact?**<br>
-A: It is already the case that changing your own dependencies would require a semver bump
-for your own library because your API contract to the outside world changes. This RFC,
-however, makes it possible to only have this requirement for public dependencies and would
-permit Cargo to prevent new crate releases with semver violations.
+- Poor error messages when a user directly depends on `A` and `B` but with a version requirement on `B` that is semver incompatible with `A`s version requirement on `B`
+- Brittle semver compatibility as `A` might not have intended to expose `B`, like with `impl From<B::error> for AError`
+- When self-hosting documentation, you may want to render documentation for all of your public dependencies as well
+- When running `cargo doc`, users may way to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
+- When linting for semver compatibility [there isn't enough information](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-From the user's perspective, the initial scope of the RFC will be quite transparent,
-but it will definitely show up for users as a question of what the new restrictions
-mean. In particular, a common way to leak out types from APIs that most crates do is
-error handling. Quite frequently it happens that users wrap errors from other
-libraries in their own types. It might make sense to identify common cases of where
-type leakage happens and provide hints in the lint about how to deal with it.
-
-Cases that I anticipate that should be explained separately:
-
-* Type leakage through errors: This should be easy to spot for a lint because the
-  wrapper type will implement `std::error::Error`. The recommendation should most
-  likely be to encourage wrapping the internal error.
-* Traits from other crates: In particular, serde and some other common crates will
-  show up frequently. It might make sense to separately explain types and traits.
-* Type leakage through derive: Users might not be aware they have a dependency on
-  a type when they derive a trait (think `serde_derive`). The lint might want to
-  call this out separately.
-
-The feature will be called `public_private_dependencies` and it comes with one
-lint flag called `external_private_dependency`. For all intents and purposes, this
-should be the extent of the new terms introduced in the beginning. This RFC, however,
-lays the groundwork for later providing aliasing so that a private dependency could
-be forcefully re-exported as the crate's own types. As such, it might make sense to
-consider how to refer to this.
-
-It is assumed that this feature will eventually become quite popular due to patterns
-that already exist in the crate ecosystem. It's likely that it will evoke some
-negative opinions initially. As such, it would be a good idea to make a run with
-cargobomb/crater to see what the actual impact of the new linter warnings is and
-how far away we are from making them errors.
-
-Crates.io should be updated to render public and private dependencies separately.
-
-## End user experience
-[end-user-experience]: #end-user-experience
-
-### Author of a crate with one dependency
-
-Assume today that an author of a library crate `onedep` has a
-dependency on the `url` crate and the `url::Url` type is exposed in
-`onedep`'s public API.
-
-`onedep`'s `Cargo.toml`:
-
+As a trivial example:
 ```toml
 [package]
-name = "onedep"
-version = "0.1.0"
+name = "diagnostic"
+version = "1.0.0"
 
 [dependencies]
-url = "1.0.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 ```
-
-`onedep`'s `src/lib.rs`:
-
 ```rust
-extern crate url;
-use url::Origin;
-
-use std::collections::HashMap;
-
-#[derive(Default)]
-pub struct OriginTracker {
-    origin_counts: HashMap<Origin, usize>,
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct Diagnostic {
+    code: String,
+    message: String,
+    file: std::path::PathBuf,
+    span: std::ops::Range<usize>,
 }
 
-impl OriginTracker {
-    pub fn log_origin(&mut self, origin: Origin) {
-        let counter = self.origin_counts.entry(origin).or_insert(0);
-        *counter += 1;
+impl std::str::FromStr for Diagnostic {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str(s)
     }
 }
 ```
 
-When the author of `onedep` upgrades Rust/Cargo to a version where this RFC is
-completely implemented, the author will notice two changes:
+The dependencies `serde` and `serde_json` are both public dependencies, meaning their types are referenced in the public API.
+Effectively, the idea is that if you do a semver incompatible upgrade to a
+public dependency, it's a breaking change of your *own* crate.
 
-1. When they run `cargo build`, the build will succeed but they will get a warning
-that a private dependency (the `url` crate specifically) is used in their public API
-(the `url::Origin` type in the `pub fn log_origin` function specifically) and that
-they should consider adding `public = true` to their `Cargo.toml`. Ideally the
-warning would say something like:
+With this RFC, in pre-2024 editions, this will warn saying that `serde` and `serde_json` are private dependencies in a public API.
+In 2024+ editions, this will be an error.
 
-    ```
-        consider changing dependency:
-
-        ```
-        url = "1.0.0"
-        ```
-
-        to:
-
-        ```
-        url = { version = "1.0.0", public = true }
-        ```
-    ```
-
-The warning could also encourage the author to then bump their crate's major
-version since adding public dependencies is a breaking change.
-
-2. When they run `cargo publish`, the build check that happens after packaging will
-fail and the publish will fail. This is because [deriving `Hash` on `url::Origin`
-wasn't added until v1.5.1 of the url
-crate](https://github.com/servo/rust-url/commit/42603254fac8d4c446183cba73bbaeb2c3b416c2).
-The author of `onedep` has been running `cargo update` periodically, and their
-`Cargo.lock` has url 1.5.1, but they never updated `Cargo.toml` to indicate that
-they have a new lower bound. Since `cargo publish` will try to resolve dependencies
-to the lowest possible versions, it will choose version 1.0.0 of the url crate,
-which doesn't implement `Hash` on `Origin`.
-
-There should be a clear error message for this case that indicates Cargo has
-resolved crates to their lowest possible versions, that this might be the cause of
-the compilation failure, and that the author should investigate the versions of
-their dependencies in `Cargo.toml` to see if they should be updated. This command
-should change the Cargo.lock so that running `cargo build` will reproduce the error
-for the author to fix.
-
-### Author of a crate with multiple dependencies
-
-`twodep`'s `Cargo.toml`:
-
+To resolve this in a semver compatible way, they would need to declare both dependencies as public:
 ```toml
 [package]
-name = "twodep"
-version = "0.1.0"
+name = "diagnostic"
+version = "1.0.0"
 
 [dependencies]
-// this is the version of onedep above using a public dep on url 1.5.1
-onedep = "1.0.0"
-url = "1.0.0"
+serde = { version = "1", features = ["derive"], pub = true }
+serde_json = { version = "1", pub = true }
+```
+For edition migrations, `cargo fix` will look for the warning code and mark those dependencies as `pub`.
+
+However, for this example, it was an oversight in exposing `serde_json` in the public API.
+Removing it from the public API is a semver incompatible change.
+```toml
+[package]
+name = "diagnostic"
+version = "1.0.0"
+
+[dependencies]
+serde = { version = "1", features = ["derive"], pub = true }
+serde_json = "1"
+```
+```rust
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub struct Diagnostic {
+    code: String,
+    message: String,
+    file: std::path::PathBuf,
+    span: std::ops::Range<usize>,
+}
+
+impl std::str::FromStr for Diagnostic {
+    type Err = Error
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str(s).map_err(Error)
+    }
+}
+
+pub struct Error(serde_json::Error);
 ```
 
-`twodep`'s `src/main.rs`:
+If you then had a public dependency on `diagnostic`,
+then `serde` would automatically be considered a public dependency of yours.
 
+At times, some public dependencies are effectively private.
+Take this code from older versions of `clap`
 ```rust
-extern crate url;
-use url::Origin;
-
-extern crate onedep;
-
-fn main() {
-    let mut origin_tracker = onedep::OriginTracker::default();
-
-    loop {
-        println!("Please enter a URL!");
-        // pseudocode because I'm lazy
-        let url = stdin::readline().unwrap();
-        let url = Url::parse(url).unwrap();
-        origin_tracker.log_origin(url.origin());
-        // other stuff
-    }
-    println!("Here are all the origins you mentioned: {:#?}", origin_tracker);
+#[doc(hidden)]
+#[cfg(feature = "derive")]
+pub mod __derive_refs {
+    #[doc(hidden)]
+    pub use once_cell;
 }
 ```
-
-Before upgrading Rust/Cargo to a version where this RFC has been implemented, this
-code might have been getting a compilation error if Cargo had resolved the direct
-dependency on the url crate to a different version than the version of onedep
-resolved to. Or it might have been resolving and compiling fine if the versions had
-resolved to be the same.
-
-After upgrading Rust/Cargo, if this code had a compilation error, it would now have
-a version resolution problem that cargo would either automatically resolve or prompt
-the user to change version constraints/`cargo update` to resolve. If the code was
-compiling before, that must mean the previous resolution graph was good, so nothing
-will change on upgrading.
-
-This crate is a binary and doesn't have a public API, so it won't get any warnings
-about crates not being marked public.
-
-If the author publishes to crates.io after upgrading Rust/Cargo, since onedep's
-public dependency on url now has a lower bound of 1.5.1, the only valid graphs that
-Cargo will generate will be with url 1.5.1 or greater, which is also compatible with
-the url 1.0.0 direct dependency. Publish will work without any errors or further
-changes.
+Since the proc-macro can only guarantee that the namespace `clap` is accessible,
+`clap` must re-export any functionality that is needed at runtime.
+As a last-ditch way of dealing with this, a user may allow the error:
+```rust
+#[doc(hidden)]
+#[allow(external_private_dependency)]
+#[cfg(feature = "derive")]
+pub mod __derive_refs {
+    #[doc(hidden)]
+    pub use once_cell;
+}
+```
+I say "last ditch" because in cases outside of `#[doc(hidden)]` items for macros,
+a user would be better served by other features,
+like `impl Trait` in type aliases if we had it.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-There are a few areas that need to be changed for this RFC:
+## rustc
 
-* The compiler needs to be extended to understand when crate dependencies are
-  considered a public dependency
-* The `Cargo.toml` manifest needs to be extended to support declaring public
-  dependencies. This will start as an unstable cargo feature available on nightly
-  and only via opt-in.
-* The `public` attribute of dependencies needs to appear in the Cargo index in order
-  to be used by Cargo during version resolution
-* Cargo's version resolution needs to change to reject crate graph resolutions where
-  two versions of a crate are publicly reachable to each other.
-* The `cargo publish` process needs to be changed to warn (or prevent) the publishing
-  of crates that have undeclared public dependencies
-* `cargo publish` will resolve dependencies to the *lowest* possible versions in order to
-  check that the minimal version specified in `Cargo.toml` is correct.
-* Crates.io should show public dependencies more prominently than private ones.
-
-## Compiler Changes
-
-The main change to the compiler will be to accept a new parameter that Cargo
-supplies which is a list of public dependencies. The flag will be called
-`--extern-public`. The compiler then emits warnings if it encounters private
+The main change to the compiler will be to accept a new modifier on the `--extern` flag that Cargo
+supplies which is a list of public dependencies.
+The mode will be called `priv` (e.g. `--extern priv:serde`).
+The compiler then emits warnings if it encounters private
 dependencies leaking to the public API of a crate. `cargo publish` might change
 this warning into an error in its lint step.
 
@@ -294,53 +160,86 @@ paired with `#[doc(hidden)]` and other already existing hacks.
 This most likely will also be necessary for the more complex relationship of
 `libcore` and `libstd` in Rust itself.
 
-## Changes to `Cargo.toml`
+## cargo
 
-The `Cargo.toml` file will be amended to support the new `public` parameter on
-dependencies. Old Cargo versions will emit a warning when this key is encountered
-but otherwise continue. Since the default for a dependency to be private only,
-public ones will need to be tagged which should be the minority.
+A new dependency field, `pub = <bool>` will be added that defaults to `false`.
+Old cargo version will emit a warning when this key is encountered but otherwise continue.
+Cargo will use use the `priv` modifier with `--extern` for all private dependencies when building a `lib`.
+What is private is what is left after recursively walking public dependencies.
+We'll ignore this for other build target kinds (e.g. `bin`) as that would create extra noise.
 
-This will start as an unstable Cargo feature available on nightly only that authors
-will need to opt into via a feature specified in `Cargo.toml` before Cargo will
-start using the `public` attribute to change the way versions are resolved. The
-Cargo unstable feature will turn on a corresponding rustc unstable feature for
-the compiler changes noted above.
+Cargo will not force a `rust-version` bump when using this feature as someone
+building with an old version of cargo depending on packages that set `pub =
+true` will not start to fail when upgrading to new versions of cargo.
 
-Example dependency:
+`cargo add` will gain `--pub <bool>` flags to control this field.
+When adding a dependency today, the version requirement is reused from other dependency tables within your manifest.
+With this RFC, that will be extended to also checking your dependencies for any `pub` dependencies, and reusing their version requirement.
+This would be most easily done by having the field in the Index but `cargo add` could also read the `.crate` files as a fallback.
 
-```toml
-[dependencies]
-url = { version = "1.4.0", public = true }
-```
+## crates.io
 
-## Changes to the Cargo Index
+Crates.io should show public dependencies more prominently than private ones.
 
-The [Cargo index](https://github.com/rust-lang/crates.io-index) used by Cargo when
-resolving versions will contain the `public` attribute on dependencies as specified
-in `Cargo.toml`. For example, an index line for a crate named `example` that
-publicly depends on the `url` crate would look like (JSON prettified for legibility):
+# Drawbacks
+[drawbacks]: #drawbacks
 
-```json
-{
-    "name":"example",
-    "vers":"0.1.0",
-    "deps":[
-        {
-            "name":"url",
-            "req":"^1.4.0",
-            "public":"true",
-            "features":[],
-            "optional":false,
-            "default_features":true,
-            "target":null,
-            "kind":"normal"
-        }
-    ]
-}
-```
+This doesn't cover the case where a dependency is public only if a feature is enabled.
 
-## Changes to Cargo Version Resolution
+In the case where you depend on `foo = "300"`, there isn't a way to clarify that what is public is actually from `foo-core = "1"` without explicitly depending on it.
+
+You can't definitively lint when a `pub = true` is unused since it may depend on which platform or features.
+
+The warning is emitted even when a `pub` item isn't accessible.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+## Misc
+
+- `cargo add`: instead of `--pub <bool>` it could be `--pub` / `--no-pub` like `--optional` or `--public` / `--private`
+- `cargo add`: when adding a dependency, we could automatically add all of its `pub` dependencies.
+  - This was passed up as being too noisy, especially when dealing with facade crates, those that fully re-export their `pub = true` dependency
+- `Cargo.toml`: Instead of `pub = false` being the default and changing the warning level on an edition boundary, we could instead start with `pub = true` and change the default on an edition boundary.
+  - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
+- `Cargo.toml`: Instead of `pub = false` being the default, we could have a "unchecked" / "unset" state
+  - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
+- `Cargo.toml`: In the long term, we decided on the default being `pub = false` as that is the common case and gives us more information than supporting a `pub = "unchecked"` and having that be the long term solution.
+- `Cargo.toml`: instead of `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html), we could name the field `public` (like [RFC 1977]) or name the field `visibility = "<public|private>"`
+  - The parallel with Rust seemed worth pursuing
+  - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
+
+## Minimal version resolution
+
+[RFC 1977] included the idea of verifying version requirements are high enough.
+This is a problem whether the dependency is private or not.
+This should be handled independent of this RFC.
+
+## Dependency visibility and the resolver
+
+This is deferred to [Future possibilities](#future-possibilities)
+- This has been the main hang-up for stabilization over the last 6 years since the RFC was approved
+  - For more on the complexity involved, see the thread starting at [this comment](https://github.com/rust-lang/rust/issues/44663#issuecomment-881965668)
+- More thought is needed as we found that making a dependency `pub = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
+- More thought is needed on what happens if you have multiple versions of a package that are public (via renaming like `tokio_03` and `tokio_1`)
+
+Affects of deferring this out
+- It is hoped that the resolver change would help with [cargo#9029](https://github.com/rust-lang/cargo/issues/9029)
+- If we allow duplication of private semver compatible dependencies, it would help with [cargo#10053](https://github.com/rust-lang/cargo/issues/10053)
+
+# Prior art
+[prior-art]: #prior-art
+
+Within the cargo ecosystem:
+- [cargo public-api-crates](https://github.com/davidpdrsn/cargo-public-api-crates)
+
+# Unresolved questions
+[unresolved]: #unresolved-questions
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+## Dependency visibility and the resolver
 
 Cargo will specifically reject graphs that contain two different versions of the
 same crate being publicly depended upon and reachable from each other. This will
@@ -372,86 +271,6 @@ How this will work:
   same crate, we consider that an error. This basically means that if you privately
   depend on Hyper 0.3 and Hyper 0.4, that's an error.
 
-## Changes to Cargo Publish: Warnings
+As an alternative, when declaring dependencies, a user could [explicitly delegate the version requirement to another package](https://github.com/rust-lang/cargo/issues/4641)
 
-When a new crate version is published, Cargo will warn about types and traits that
-the compiler determined to be public but did not come from a public dependency. For
-now, it should be possible to publish anyways but in some period in the future it
-will be necessary to explicitly mark all public dependencies as such or explicitly
-mark them with `#[allow(external_private_dependency)]`.
-
-## Changes to Cargo Publish: Lowest Version Resolution
-
-A very common situation today is that people write the initial version of a
-dependency in their Cargo.toml, but never bother to update it as they take advantage
-of new features in newer versions. This works out okay because (1) Cargo will
-generally use the largest version it can find, compatible with constraints, and (2)
-upper bounds on constraints (at least within a particular minor version) are
-relatively rare. That means, in particular, that Cargo.toml is not a fully accurate
-picture of version dependency information; in general it's a lower bound at best.
-There can be "invisible" dependencies that don't cause resolution failures but can
-create compilation errors as APIs evolve.
-
-Public dependencies exacerbate the above problem, because you can end up relying on
-features of a "new API" from a crate you didn't even know you depended on! For
-example:
-
-- A depends on:
-  - B 1.0 which publicly depends on C ^1.0
-  - D 1.0, which has no dependencies
-- When A is initially built, it resolves to B 1.0 and C 1.1.
-  - Because C's APIs are available to A via re-exports in B, A effectively depends
-    on C 1.1 now, even though B only claims to depend on C ^1.0
-  - In particular, the code in A might depend on APIs only available in C 1.1
-  - However, if A is a library, we don't check in any lockfile for it, so this
-    information is lost.
-- Now we change A to depend on D 1.1, which depends on C =1.0
-  - A fresh copy of A, when built, will now resolve the crate graph to B 1.0, D 1.1,
-    C 1.0
-  - But now A may suddenly fail to compile, because it was implicitly depending on C
-    1.1 features via B.
-
-This example and others like it rely on a common ingredient: a crate somewhere using
-an API that only is available in a newer version of a crate than the version listed
-in Cargo.toml.
-
-To attempt to surface this problem earlier, `cargo publish` will attempt to resolve
-the graph while picking the smallest versions compatible with constraints. If the
-crate fails to build with this resolution graph, the publish will fail.
-
-# Drawbacks
-[drawbacks]: #drawbacks
-
-I believe that there are no drawbacks if implemented well (this assumes good
-linters and error messages).
-
-# Rationale and alternatives
-[rationale-and-alternatives]: #rationale-and-alternatives
-
-For me, the biggest alternative to this RFC would be a variation of it where type
-and trait aliasing becomes immediately part of it. This would mean that a crate
-can have a private dependency and re-export it as its own type, hiding where it
-came from originally. This would most likely be easier to teach users and can get
-rid of a few "cul-de-sac" situations users can end up in where their only way
-out is to introduce a public dependency for now. The assumption is that if trait
-and type aliasing is available, the `external_public_dependency` would not need to
-exist.
-
-# Prior art
-[prior-art]: #prior-art
-
-# Unresolved questions
-[unresolved]: #unresolved-questions
-
-There are a few open questions about how to best hook into the compiler and Cargo
-infrastructure:
-
-* What is the impact of this change going to be? This most likely can be answered
-  running cargobomb/crater.
-* Since changing public dependency pins/ranges requires a change in semver, it might
-  be worth exploring if Cargo could prevent the user from publishing new crate
-  versions that violate that constraint.
-* If this is implemented before [the RFC to deprecate `extern crate`](https://github.com/rust-lang/rfcs/pull/2126), how would this work if you're not using `--extern`?
-
-# Future possibilities
-[future-possibilities]: #future-possibilities
+[RFC 1977]: https://github.com/rust-lang/rfcs/pull/1977
