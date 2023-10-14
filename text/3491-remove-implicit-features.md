@@ -1,7 +1,7 @@
 - Feature Name: `remove-implicit-feature`
 - Start Date: 2023-09-18
 - RFC PR: [rust-lang/rfcs#3491](https://github.com/rust-lang/rfcs/pull/3491)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/cargo#12826](https://github.com/rust-lang/cargo/issues/12826)
 
 # Summary
 [summary]: #summary
