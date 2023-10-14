@@ -26,8 +26,7 @@ It's time to stop leaving our users in the dark about what actually is and is no
 [guide-level-explanation]: #guide-level-explanation
 
 Primitive operations on floating-point types generally produce results that exactly match IEEE 754-2008:
-if you never use `to_bits`, `from_bits`, `is_sign_negative`, or `is_sign_positive`, nor any unsafe operations that are equivalent to these safe methods, then your code will behave perfectly deterministically according to the IEEE specification.
-In fact, this is true even if you do use these operations as long as you never call them on a NaN (or, in case of `from_bits`, use them to produce a NaN).
+if you never use `to_bits`, `copysign`, `is_sign_negative`, or `is_sign_positive` on a NaN, and don't construct a NaN using `from_bits`, nor use any unsafe operations that are equivalent to these safe methods, then your code will behave perfectly deterministically and according to the IEEE specification.
 
 If you *do* use these operations on NaNs, then the exact behavior you see can depend on compiler version, compiler flags, target architecture, and it can even be non-deterministic (i.e., running the same operation on the same inputs twice can yield different results).
 The results produced in these cases do *not* always conform to the IEEE specification.
