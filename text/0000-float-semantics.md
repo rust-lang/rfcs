@@ -83,7 +83,7 @@ then the output NaN is guaranteed to be preferred.
 
 The non-deterministic choice happens when the operation is executed; i.e., the result of a NaN-producing floating point operation is a stable bit pattern (looking at these bits multiple times will yield consistent results), but running the same operation twice with the same inputs can produce different results.
 
-Unless noted otherwise, the same rules also apply to NaNs returned by other library functions (e.g. `min`, `mimimum`, `max`, `maximum`); other aspects of their semantics and which IEEE 754-2008 operation they correspond to are documented with the respective functions.
+Unless noted otherwise, the same rules also apply to NaNs returned by other library functions (e.g. `min`, `minimum`, `max`, `maximum`); other aspects of their semantics and which IEEE 754-2008 operation they correspond to are documented with the respective functions.
 
 ### `const` semantics
 
