@@ -195,6 +195,14 @@ You can't definitively lint when a `pub = true` is unused since it may depend on
 
 The warning is emitted even when a `pub` item isn't accessible.
 
+The warning message might not be the clearest in how to resolve as its emitted
+by rustc but is resolved by changing information in the build system,
+generally, but not always, cargo.
+
+There are risks with the `cargo fix` approach is it requires us to take a non-machine applicable lint,
+parsing out the information we need to identify the corresponding `Cargo.toml`,
+and translate it into a change for `Cargo.toml`.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
