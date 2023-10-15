@@ -191,14 +191,6 @@ Crates.io should show public dependencies more prominently than private ones.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This doesn't cover the case where a dependency is public only if a feature is enabled.
-
-In the case where you depend on `foo = "300"`, there isn't a way to clarify that what is public is actually from `foo-core = "1"` without explicitly depending on it.
-
-You can't definitively lint when a `pub = true` is unused since it may depend on which platform or features.
-
-The warning is emitted even when a `pub` item isn't accessible.
-
 The warning message might not be the clearest in how to resolve as its emitted
 by rustc but is resolved by changing information in the build system,
 generally, but not always, cargo.
@@ -206,6 +198,14 @@ generally, but not always, cargo.
 There are risks with the `cargo fix` approach is it requires us to take a non-machine applicable lint,
 parsing out the information we need to identify the corresponding `Cargo.toml`,
 and translate it into a change for `Cargo.toml`.
+
+In the case where you depend on `foo = "300"`, there isn't a way to clarify that what is public is actually from `foo-core = "1"` without explicitly depending on it.
+
+This doesn't cover the case where a dependency is public only if a feature is enabled.
+
+The warning is emitted even when a `pub` item isn't accessible.
+
+You can't definitively lint when a `pub = true` is unused since it may depend on which platform or features.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
