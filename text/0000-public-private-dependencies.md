@@ -22,11 +22,15 @@ dependencies have evolved that challenge the currently existing dependency decla
 system in Cargo and Rust. The most common problem is that a crate `A` depends on another
 crate `B` but some of the types from crate `B` are exposed through the API in crate `A`.
 
-- Poor error messages when a user directly depends on `A` and `B` but with a version requirement on `B` that is semver incompatible with `A`s version requirement on `B`
-- Brittle semver compatibility as `A` might not have intended to expose `B`, like with `impl From<B::error> for AError`
+- Brittle semver compatibility as `A` might not have intended to expose `B`, like when adding `impl From<B::error> for AError` for your own convenience
 - When self-hosting documentation, you may want to render documentation for all of your public dependencies as well
 - When running `cargo doc`, users may way to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
 - When linting for semver compatibility [there isn't enough information](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
+
+A related problem not covered by this RFC is helping with the poor error
+messages when a user directly depends on `A` and `B` but with a version
+requirement on `B` that is semver incompatible with `A`s version requirement on
+`B`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -250,7 +254,27 @@ Within the cargo ecosystem:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Dependency visibility and the resolver
+## Help keep versions in-sync
+
+When upgrading one dependency, you might need to upgrade another because you
+use it to interact with the first, like `clap` and `clap_complete`.
+The existing error messages are not great, along the lines of "expected `clap::Command`, found `clap::Command`".
+Ideally, you would be presented instead with a message saying "clap_complete
+3.4 is not compatiblw with clap 4.0, try upgrading to clap_complete 4.0".
+Even better if we could help users do this upgrade automatically.
+
+As solving this, via the resolver, has been the main sticking point for [RFC 1997],
+this was deferred out to take smaller,
+more incremental steps,
+that open the
+door for more experimentation in the future to understand how best to solve
+these problems.
+
+Some possible routes:
+
+### Dependency visibility and the resolver
+
+[RFC 1977] originall proposed handling this within the resolver
 
 Cargo will specifically reject graphs that contain two different versions of the
 same crate being publicly depended upon and reachable from each other. This will
@@ -282,6 +306,40 @@ How this will work:
   same crate, we consider that an error. This basically means that if you privately
   depend on Hyper 0.3 and Hyper 0.4, that's an error.
 
-As an alternative, when declaring dependencies, a user could [explicitly delegate the version requirement to another package](https://github.com/rust-lang/cargo/issues/4641)
+If we want to go this route, some hurdles to overcome include:
+- Difficulties in working with cargo's resolver as this has been the main hang-up for stabilization over the last 6 years since the [RFC 1977] was approved
+  - For more on the complexity involved, see the thread starting at [this comment](https://github.com/rust-lang/rust/issues/44663#issuecomment-881965668)
+- More thought is needed as we found that making a dependency `pub = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
+- More thought is needed on what happens if you have multiple versions of a package that are public (via renaming like `tokio_03` and `tokio_1`)
+
+### Caller-declared relations
+
+As an alternative, when declaring dependencies,
+a user could [explicitly delegate the version requirement to another package](https://github.com/rust-lang/cargo/issues/4641)
+
+One possible approach for this:
+```toml
+[package]
+name = "some-cli"
+
+[dependencies]
+clap = { version.from ["clap_complete"] }
+clap_complete = "3.4"
+```
+When resolving the dependencies for `some-cli`,
+the resolver will not explicitly choose a version for `clap` but will continue resolving the graph.
+Upon completion, it will look to see what version of `clap_complete` was
+resolved and act as if that was what was specified inside of the in-memory
+`clap` dependency.
+
+The packakge using `version.from` must be a public dependency of the `from` package.
+In this case, `clap` must be a public dependency of `clap_complete`.
+If the different packages in `version.from` do not agree on what the package
+version should resolve to (clap 3.4 vs clap 4.0), then it is an error.
+
+Compared to the resolver doing this implicitly
+- It is unclear if this would be any more difficult to implement in the resolver
+- Changing a dependency from `pub = false` to `pub = true` is backwards compatible because it has no affect on existing callers.
+- It is unclear how this would hanlde multiple versions of a package that are public
 
 [RFC 1977]: https://github.com/rust-lang/rfcs/pull/1977
