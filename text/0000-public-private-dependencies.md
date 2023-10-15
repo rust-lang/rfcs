@@ -14,6 +14,8 @@ Enough has changed in the time since that RFC was approved that we felt we neede
 - [RFC 1977] was written before Editions, `cfg` dependencies, and package renaming which can all affect it
 - The resolver changes were a large part of [RFC 1977] but there are concerns with it and we feel it'd be best to decouple it, offering a faster path to stabilization
 
+Note: The 2024 Edition is referenced in this RFC but that is a placeholder for whatever edition next comes up.
+
 # Motivation
 [motivation]: #motivation
 
@@ -150,17 +152,20 @@ like `impl Trait` in type aliases if we had it.
 The main change to the compiler will be to accept a new modifier on the `--extern` flag that Cargo
 supplies which is a list of public dependencies.
 The mode will be called `priv` (e.g. `--extern priv:serde`).
-The compiler then emits warnings if it encounters private
-dependencies leaking to the public API of a crate. `cargo publish` might change
-this warning into an error in its lint step.
+The compiler then emits a lint if it encounters private
+dependencies leaking to the public API of a crate.
 
-Additionally, later on, the warning can turn into a hard error in general.
+While unstable, this lint will be `warn` by default.
+If the presentatuion of the lint is what holds us back from stabilization,
+one route to speed up the process is to change the level to `allow`.
+Once we feel comfortable with the presentation, we could then move it back towards
+`warn`.
+In the 2024 edition, we would change this lint to `deny`.
 
 In some situations, it can be necessary to allow private dependencies to become
 part of the public API. In that case one can permit this with
 `#[allow(external_private_dependency)]`. This is particularly useful when
 paired with `#[doc(hidden)]` and other already existing hacks.
-
 This most likely will also be necessary for the more complex relationship of
 `libcore` and `libstd` in Rust itself.
 
