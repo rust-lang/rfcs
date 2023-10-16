@@ -231,6 +231,7 @@ You can't definitively lint when a `pub = true` is unused since it may depend on
 - `Cargo.toml`: In the long term, we decided on the default being `pub = false` as that is the common case and gives us more information than supporting a `pub = "unchecked"` and having that be the long term solution.
 - `Cargo.toml`: instead of `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html), we could name the field `public` (like [RFC 1977]) or name the field `visibility = "<public|private>"`
   - The parallel with Rust seemed worth pursuing
+  - `pub` could be seen as ambiguous with `publish`
   - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
 
 ## Minimal version resolution
