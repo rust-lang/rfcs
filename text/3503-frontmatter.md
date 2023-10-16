@@ -7,7 +7,7 @@
 # Summary
 [summary]: #summary
 
-Add a frontmatter syntax to Rust as a way for [cargo to have manifests embedded in source code](https://github.com/rust-lang/rfcs/pull/3502):
+Add a frontmatter syntax to Rust as a way for [cargo to have manifests embedded in source code][RFC 3502]:
 ````rust
 #!/usr/bin/env cargo
 ```cargo
@@ -33,7 +33,7 @@ fn main() {
 # Motivation
 [motivation]: #motivation
 
-["cargo script"](https://github.com/rust-lang/rfcs/pull/3502) is in need of a syntax for embedding manifests in source.
+["cargo script"][RFC 3502] is in need of a syntax for embedding manifests in source.
 See that RFC for its motivations.
 
 # Guide-level explanation
@@ -75,7 +75,7 @@ fn main() {
 ````
 
 As we work to better understand how tool authors will want to use frontmatter, we are restricting it to just the `cargo` infostring.
-This means users will only be exposed to this within the concept of ["cargo script"](https://github.com/rust-lang/rfcs/pull/3502).
+This means users will only be exposed to this within the concept of ["cargo script"][RFC 3502].
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -107,7 +107,7 @@ we considered starting with only allowing this in the root `mod` (e.g. `main.rs`
 but decided to allow it in any file mostly for ease of implementation.
 Like with Python, this allows any file in a package (with the correct deps and `mod`s) to be executed, allowing easier interacting experiences in verifying behavior.
 
-As for the hard-coded infostring used by cargo, that is a decision for [RFC 3502](https://github.com/rust-lang/rfcs/pull/3502).
+As for the hard-coded infostring used by cargo, that is a decision for [RFC 3502].
 
 ## Syntax
 
@@ -562,3 +562,5 @@ Continuous blocks
 Distinct blocks is more like the source inspiration, markdown,
 though has more noise, places to get things wrong, and syntax questions
 (newlines).
+
+[RFC 3502]: https://github.com/rust-lang/rfcs/pull/3502
