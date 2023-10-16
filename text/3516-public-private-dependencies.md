@@ -2,7 +2,7 @@
 - Start Date: 2023-10-13
 - Prior RFC PR: [rust-lang/rfcs#1977](https://github.com/rust-lang/rfcs/pull/1977)
 - Pre-RFC: [Pre-RFC: Superseding public/private dependencies](https://internals.rust-lang.org/t/pre-rfc-superseding-public-private-dependencies/19708)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3516](https://github.com/rust-lang/rfcs/pull/3516)
 - Rust Issue: [rust-lang/rust#44663](https://github.com/rust-lang/rust/issues/44663)
 
 # Summary
