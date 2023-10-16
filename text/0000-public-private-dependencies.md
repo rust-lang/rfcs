@@ -14,22 +14,24 @@ Enough has changed in the time since that RFC was approved that we felt we neede
 - [RFC 1977] was written before Editions, `cfg` dependencies, and package renaming which can all affect it
 - The resolver changes were a large part of [RFC 1977] but there are concerns with it and we feel it'd be best to decouple it, offering a faster path to stabilization
 
-Note: The 2024 Edition is referenced in this RFC but that is a placeholder for whatever edition next comes up.
+Note: The 2024 Edition is referenced in this RFC but that is a placeholder for
+whatever edition next comes up after stabilization.
 
 # Motivation
 [motivation]: #motivation
 
 The crates ecosystem has greatly expanded since Rust 1.0. With that, a few patterns for
-dependencies have evolved that challenge the currently existing dependency declaration
+dependencies have evolved that challenge the existing dependency declaration
 system in Cargo and Rust. The most common problem is that a crate `A` depends on another
 crate `B` but some of the types from crate `B` are exposed through the API in crate `A`.
 
-- Brittle semver compatibility as `A` might not have intended to expose `B`, like when adding `impl From<B::error> for AError` for your own convenience
+- Brittle semver compatibility as `A` might not have intended to expose `B`,
+  like when adding `impl From<B::error> for AError` for convenience in using `?` in the implementation of `A`.
 - When self-hosting documentation, you may want to render documentation for all of your public dependencies as well
 - When running `cargo doc`, users may way to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
-- When linting for semver compatibility [there isn't enough information](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
+- When linting for semver compatibility [there isn't enough information to reason about dependencies](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
 
-Excluded motivations:
+Related problems not with this scenario not handled by this RFC:
 - Poor error messages when a user directly depends on `A` and `B` but with a
   version requirement on `B` that is semver incompatible with `A`s version
   requirement on `B`.
@@ -44,7 +46,7 @@ Excluded motivations:
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-As a trivial example:
+As a trivial, artificial example:
 ```toml
 [package]
 name = "diagnostic"
@@ -73,12 +75,12 @@ impl std::str::FromStr for Diagnostic {
 ```
 
 The dependencies `serde` and `serde_json` are both public dependencies, meaning their types are referenced in the public API.
-This as the implication that a semver incompatible upgrade of these dependencies is a breaking change for this package.
+This has the implication that a semver incompatible upgrade of these dependencies is a breaking change for this package.
 
 With this RFC, in pre-2024 editions, this will warn saying that `serde` and `serde_json` are private dependencies in a public API.
 In 2024+ editions, this will be an error.
 
-To resolve this in a semver compatible way, they would need to declare both dependencies as public:
+To resolve the warning in a semver compatible way, they would need to declare both dependencies as public:
 ```toml
 [package]
 name = "diagnostic"
@@ -91,7 +93,7 @@ serde_json = { version = "1", pub = true }
 For edition migrations, `cargo fix` will look for the warning code and mark those dependencies as `pub`.
 
 However, for this example, it was an oversight in exposing `serde_json` in the public API.
-Removing it from the public API is a semver incompatible change.
+Note that removing it from the public API is a semver incompatible change.
 ```toml
 [package]
 name = "diagnostic"
@@ -146,9 +148,18 @@ pub mod __derive_refs {
     pub use once_cell;
 }
 ```
-I say "last ditch" because in cases outside of `#[doc(hidden)]` items for macros,
-a user would be better served by other features,
-like `impl Trait` in type aliases if we had it.
+A similar case is pub-in-private:
+```rust
+mod private {
+    #[allow(external_private_dependency)]
+    pub struct Foo { pub x: some_dependency::SomeType }
+}
+```
+Though this might be worked around by reducing the visibility to `pub(crate)`.
+
+I say "last ditch" because in most other cases,
+a user would be better served by wrapping the API which would be helped with
+features like `impl Trait` in type aliases if we had it.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -156,10 +167,10 @@ like `impl Trait` in type aliases if we had it.
 ## rustc
 
 The main change to the compiler will be to accept a new modifier on the `--extern` flag that Cargo
-supplies which is a list of public dependencies.
-The mode will be called `priv` (e.g. `--extern priv:serde`).
+supplies which marks it as a private dependency.
+The modifier will be called `priv` (e.g. `--extern priv:serde`).
 The compiler then emits a lint if it encounters private
-dependencies leaking to the public API of a crate.
+dependencies exposed as `pub`.
 
 While unstable, this lint will be `warn` by default.
 If the presentatuion of the lint is what holds us back from stabilization,
@@ -178,11 +189,11 @@ This most likely will also be necessary for the more complex relationship of
 ## cargo
 
 A new dependency field, `pub = <bool>` will be added that defaults to `false`.
-Cargo will use use the `priv` modifier with `--extern` for all private dependencies when building a `lib`.
-What is private is what is left after recursively walking public dependencies.
+When building a `lib`, Cargo will use the `priv` modifier with `--extern` for all private dependencies.
+What is private is what is left after recursively walking public dependencies (`pub = true`).
 We'll ignore this for other build target kinds (e.g. `bin`) as that would create extra noise.
 
-Old cargo version will emit a warning when this key is encountered but otherwise continue,
+Old cargo versions will emit a warning when this key is encountered but otherwise continue,
 even if the feature is present but unstable.
 While it is unstable, `cargo publish` will strip the field.
 
@@ -205,8 +216,10 @@ Crates.io should show public dependencies more prominently than private ones.
 The warning message might not be the clearest in how to resolve as its emitted
 by rustc but is resolved by changing information in the build system,
 generally, but not always, cargo.
+As a last resort, we could put a hack in cargo to intercept the lint and emit a
+new version of it that explains things in terms of cargo.
 
-There are risks with the `cargo fix` approach is it requires us to take a non-machine applicable lint,
+There are risks with the `cargo fix` approach as it requires us to take a non-machine applicable lint,
 parsing out the information we need to identify the corresponding `Cargo.toml`,
 and translate it into a change for `Cargo.toml`.
 
@@ -223,18 +236,18 @@ You can't definitively lint when a `pub = true` is unused since it may depend on
 
 ## Misc
 
-- `cargo add`: instead of `--pub <bool>` it could be `--pub` / `--no-pub` like `--optional` or `--public` / `--private`
-- `cargo add`: when adding a dependency, we could automatically add all of its `pub` dependencies.
-  - This was passed up as being too noisy, especially when dealing with facade crates, those that fully re-export their `pub = true` dependency
+- `Cargo.toml`: instead of `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html), we could name the field `public` (like [RFC 1977]) or name the field `visibility = "<public|private>"`
+  - The parallel with Rust seemed worth pursuing
+  - `pub` could be seen as ambiguous with `publish`
+  - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
 - `Cargo.toml`: Instead of `pub = false` being the default and changing the warning level on an edition boundary, we could instead start with `pub = true` and change the default on an edition boundary.
   - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
 - `Cargo.toml`: Instead of `pub = false` being the default, we could have a "unchecked" / "unset" state
   - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
 - `Cargo.toml`: In the long term, we decided on the default being `pub = false` as that is the common case and gives us more information than supporting a `pub = "unchecked"` and having that be the long term solution.
-- `Cargo.toml`: instead of `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html), we could name the field `public` (like [RFC 1977]) or name the field `visibility = "<public|private>"`
-  - The parallel with Rust seemed worth pursuing
-  - `pub` could be seen as ambiguous with `publish`
-  - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
+- `cargo add`: instead of `--pub <bool>` it could be `--pub` / `--no-pub` like `--optional` or `--public` / `--private`
+- `cargo add`: when adding a dependency, we could automatically add all of its `pub` dependencies.
+  - This was passed up as being too noisy, especially when dealing with facade crates, those that fully re-export their `pub = true` dependency
 
 ## Minimal version resolution
 
@@ -250,7 +263,7 @@ This is deferred to [Future possibilities](#future-possibilities)
 - More thought is needed as we found that making a dependency `pub = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
 - More thought is needed on what happens if you have multiple versions of a package that are public (via renaming like `tokio_03` and `tokio_1`)
 
-Affects of deferring this out
+Related problems potentially blocked on this
 - It is hoped that the resolver change would help with [cargo#9029](https://github.com/rust-lang/cargo/issues/9029)
 - If we allow duplication of private semver compatible dependencies, it would help with [cargo#10053](https://github.com/rust-lang/cargo/issues/10053)
 
