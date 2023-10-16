@@ -301,35 +301,209 @@ The design space here is very large, but either way, I propose to reserve the `g
 # Prior art
 [prior-art]: #prior-art
 
+## CLU, Alphard
+
+The idea of generators that yield their values goes back at least as far as
+the Alphard language from circa 1975 (see ["Alphard: Form and
+Content"][alphard], Mary Shaw, 1981). This was later refined into the idea of
+iterators in the CLU language (see ["A History of CLU"][clu-history], Barbara
+Liskov, 1992 and ["CLU Reference Manual"][clu-ref], Liskov et al., 1979).
+
+The CLU language opened an iterator context with the `iter` keyword and
+produced values with `yield` statements. E.g.:
+
+```
+odds = iter () yields (int)
+  x: int := 1
+  while x <= 20 do
+    yield x
+    x := x + 2
+  end
+end odds
+```
+
+[alphard]: https://web.archive.org/web/20150926014020/http://repository.cmu.edu/cgi/viewcontent.cgi?article=1868&context=isr
+[clu-history]: https://web.archive.org/web/20030917041834/http://www.lcs.mit.edu/publications/pubs/pdf/MIT-LCS-TR-561.pdf
+[clu-ref]: https://web.archive.org/web/20211105171453/https://pmg.csail.mit.edu/ftp.lcs.mit.edu/pub/pclu/CLU/3.Documents/MIT-LCS-TR-225.pdf
+
+## Icon
+
+In [Icon][icon-language] (introduced circa 1977), generators are woven deeply
+into the language, and any function can return a sequence of values. When done
+explicitly, the `suspend` keyword is used. E.g.:
+
+```
+procedure range(i, j)
+  while i < j do {
+    suspend i
+    i +:= 1
+  }
+  fail
+end
+```
+
+[icon-language]: https://web.archive.org/web/20230721102710/https://www2.cs.arizona.edu/icon/ftp/doc/lb1up.pdf
+
 ## Python
 
-Python has equivalent functionality to `#[rustc_gen] fn`: any function that uses `yield` internally.
-The main difference is that raising an exception automatically passes the exception outwards, instead of yielding an `Err()` element.
+In Python, any function that contains a `yield` statement returns a
+generator. E.g.:
 
 ```python
-def odd_dup(values):
-    for value in values:
-        if is_odd(value):
-            yield value * 2
+def odd_dup(xs):
+  for x in xs:
+    if x % 2 == 1:
+      yield x * 2
 ```
+
+## ECMAScript / JavaScript
+
+In JavaScript, `yield` can be used within [`function*`][javascript-function*]
+generator functions. E.g.:
+
+```javascript
+function* oddDupUntilNegative(xs) {
+  for (const x of xs) {
+    if (x < 0) {
+      return;
+    } else if (x % 2 == 1) {
+      yield x * 2;
+    }
+  }
+}
+```
+
+These generator functions are general coroutines. `yield` forms an expression
+that returns the value passed to `next`. E.g.:
+
+```javascript
+function* dup(x) {
+  while (true) {
+    x = yield x * 2;
+  }
+}
+
+const g = dup(2);
+console.assert(g.next().value === 4);
+console.assert(g.next(3).value === 6);
+```
+
+[javascript-function*]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*
+
+## Ruby
+
+In Ruby, `yield` can be used with the [`Enumerator`][ruby-enumerator] class to
+implement an iterator. E.g.:
+
+```ruby
+def odd_dup_until_negative xs
+  Enumerator.new do |y|
+    xs.each do |x|
+      if x < 0
+        return
+      elsif x % 2 == 1
+        y.yield x * 2
+      end
+    end
+  end
+end
+```
+
+Ruby also uses `yield` for a general coroutine mechanism with the
+[`Fiber`][ruby-fiber] class. E.g.:
+
+```ruby
+def dup
+  Fiber.new do |x|
+    while true
+      x = Fiber.yield x * 2
+    end
+  end
+end
+
+g = dup
+4 == (g.resume 2)
+6 == (g.resume 3)
+```
+
+[ruby-enumerator]: https://ruby-doc.org/3.2.2/Enumerator.html
+[ruby-fiber]: https://ruby-doc.org/3.2.2/Fiber.html
+
+## Kotlin
+
+In Kotlin, a lazy [`Sequence`][kotlin-sequences] can be built using `sequence`
+expressions and `yield`. E.g.:
+
+```kotlin
+fun oddDup(xs: Iterable<Int>): Sequence<Int> {
+    return sequence {
+        for (x in xs) {
+            if (x % 2 == 1) {
+                yield(x * 2);
+            }
+        }
+    };
+}
+
+fun main() {
+    for (x in oddDup(listOf(1, 2, 3, 4, 5))) {
+        println(x);
+    }
+}
+```
+
+[kotlin-sequences]: https://kotlinlang.org/docs/sequences.html#from-elements
+
+## Swift
+
+In Swift, [`AsyncStream`][swift-asyncstream] is used with `yield` to produce
+asynchronous generators. E.g.:
+
+```swift
+import Foundation
+
+let sequence = AsyncStream { k in
+    for x in 0..<20 {
+        if x % 2 == 1 {
+            k.yield(x * 2)
+        }
+    }
+    k.finish()
+}
+
+let semaphore = DispatchSemaphore(value: 0)
+Task {
+    for await elem in sequence {
+        print(elem)
+    }
+    semaphore.signal()
+}
+semaphore.wait()
+```
+
+Synchronous generators are not yet available in Swift, but [may
+be][swift-sync-gen] something they are planning.
+
+[swift-asyncstream]: https://developer.apple.com/documentation/swift/asyncstream
+[swift-sync-gen]: https://forums.swift.org/t/is-it-possible-to-make-an-iterator-that-yelds/53995/7
 
 ## C# ##
 
-In C#, within an [`iterator`][c-sharp-iterators], the [`yield`][c-sharp-yield]
-statement is used to either yield the next value or to stop iteration.  E.g.:
+In C#, within an [`iterator`][csharp-iterators], the [`yield`][csharp-yield]
+statement is used to either yield the next value or to stop iteration. E.g.:
 
 ```csharp
-IEnumerable<int> OddDupUntilNegative(IEnumerable<int> numbers)
+IEnumerable<int> OddDupUntilNegative(IEnumerable<int> xs)
 {
-    foreach (int n in numbers)
+    foreach (int x in xs)
     {
-        if (n < 0)
+        if (x < 0)
         {
             yield break;
         }
-        else if (n % 2 == 1)
+        else if (x % 2 == 1)
         {
-            yield return n * 2;
+            yield return x * 2;
         }
     }
 }
@@ -339,8 +513,147 @@ Analogously with this RFC and with `async` blocks in Rust (but unlike `async
 Task` in C#), execution of C# iterators does not start until they are
 iterated.
 
-[c-sharp-iterators]: https://learn.microsoft.com/en-us/dotnet/csharp/iterators
-[c-sharp-yield]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/yield
+[csharp-iterators]: https://learn.microsoft.com/en-us/dotnet/csharp/iterators
+[csharp-yield]: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/yield
+
+## D
+
+In D, `yield` is used when constructing a
+[`Generator`][dlang-generators]. E.g.:
+
+```dlang
+import std.concurrency;
+import std.stdio: writefln;
+
+auto odd_dup(int[] xs) {
+    return new Generator!int({
+        foreach(x; xs) {
+            if (x % 2 == 1) {
+                yield(x * 2);
+            }
+        }
+    });
+}
+
+void main() {
+    auto xs = odd_dup([1, 2, 3, 4, 5]);
+    foreach (x; xs) {
+        writefln("%d", x);
+    }
+}
+```
+
+As in Ruby, generators in D are built on top of a more general
+[`Fiber`][dlang-fibers] class that also uses `yield`.
+
+[dlang-generators]: https://dlang.org/library/std/concurrency/generator.html
+[dlang-fibers]: https://dlang.org/library/core/thread/fiber/fiber.html
+
+## Dart
+
+In Dart, there are both synchronous and asynchronous [generator
+functions][dart-generators].  Synchronous generator functions return an
+`Iteratable`. E.g.:
+
+```dart
+Iterable<int> oddDup(Iterable<int> xs) sync* {
+    for (final x in xs) {
+        if (x % 2 == 1) {
+            yield x * 2;
+        }
+    }
+}
+
+void main() {
+    oddDup(List<int>.generate(20, (x) => x + 1)).forEach(print);
+}
+```
+
+Asynchronous generator functions return a `Stream` object. E.g.:
+
+```dart
+Stream<int> oddDup(Iterable<int> xs) async* {
+    for (final x in xs) {
+        if (x % 2 == 1) {
+            yield x * 2;
+        }
+    }
+}
+
+void main() {
+  oddDup(List<int>.generate(20, (x) => x + 1)).forEach(print);
+}
+```
+
+[dart-generators]: https://dart.dev/language/functions#generators
+
+## F# ##
+
+In F#, generators can be expressed with [sequence
+expressions][fsharp-sequences] using `yield`. E.g.:
+
+```fsharp
+let oddDup xs = seq {
+  for x in xs do
+    if x % 2 = 1 then
+      yield x * 2 }
+
+for x in oddDup (seq { 1 .. 20 }) do
+  printfn "%d" x
+```
+
+[fsharp-sequences]: https://learn.microsoft.com/en-us/dotnet/fsharp/language-reference/sequences
+
+## Racket
+
+In Racket, generators can be built using [`generator`][racket-generators] and
+`yield`. E.g.:
+
+```racket
+#lang racket
+(require racket/generator)
+
+(define (odd-dup xs)
+  (generator ()
+    (for ([x xs])
+      (when (odd? x)
+        (yield (* 2 x))))))
+
+(define g (odd-dup '(1 2 3 4 5)))
+(= (g) 2)
+(= (g) 6)
+(= (g) 10)
+```
+
+Note that because of the expressive power of [`call/cc`][racket-callcc] (and
+continuations in general), generators can be written in Racket as a normal
+library.
+
+[racket-callcc]: https://docs.racket-lang.org/reference/cont.html
+[racket-generators]: https://docs.racket-lang.org/reference/Generators.html
+
+## Haskell, Idris, Clean, etc.
+
+In [Haskell][] (and in similar languages such as [Idris][idris-lang],
+[Clean][clean-lang], etc.), all functions are lazy unless specially annotated.
+Consequently, Haskell does not need a special `yield` operator. Any function
+can be a generator by recursively building a list of elements that will be
+lazily returned one at a time. E.g.:
+
+```haskell
+oddDup :: (Integral x) => [x] -> [x]
+oddDup [] = []
+oddDup (x:xs)
+  | odd x = x * 2 : oddDup xs
+  | otherwise = oddDup xs
+
+main :: IO ()
+main = putStrLn $ show $ take 5 $ oddDup [1..20]
+```
+
+[haskell]: https://www.haskell.org/
+[clean-lang]: https://wiki.clean.cs.ru.nl/Clean
+[idris-lang]: https://www.idris-lang.org/
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
