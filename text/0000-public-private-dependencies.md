@@ -71,8 +71,7 @@ impl std::str::FromStr for Diagnostic {
 ```
 
 The dependencies `serde` and `serde_json` are both public dependencies, meaning their types are referenced in the public API.
-Effectively, the idea is that if you do a semver incompatible upgrade to a
-public dependency, it's a breaking change of your *own* crate.
+This as the implication that a semver incompatible upgrade of these dependencies is a breaking change for this package.
 
 With this RFC, in pre-2024 editions, this will warn saying that `serde` and `serde_json` are private dependencies in a public API.
 In 2024+ editions, this will be an error.
