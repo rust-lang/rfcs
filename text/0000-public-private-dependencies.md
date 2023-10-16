@@ -276,6 +276,14 @@ Within the cargo ecosystem:
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
+- Will the warning be too disruptive to the ecosystem to enable by default?
+  - Being automatically fixed with `cargo fix` (with cargo's reminder that you can run it) helps
+  - Not requiring an MSRV bump helps
+  - We could instead start it as `allow`
+    but in `rust-2024-compatibility` group,
+    still turning into an error in the 2024 edition,
+    and have the edition migration reduce the blast radius.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
