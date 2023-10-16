@@ -307,7 +307,7 @@ Some possible routes:
 
 ### Dependency visibility and the resolver
 
-[RFC 1977] originall proposed handling this within the resolver
+[RFC 1977] originally proposed handling this within the resolver
 
 Cargo will specifically reject graphs that contain two different versions of the
 same crate being publicly depended upon and reachable from each other. This will
@@ -373,7 +373,7 @@ version should resolve to (clap 3.4 vs clap 4.0), then it is an error.
 Compared to the resolver doing this implicitly
 - It is unclear if this would be any more difficult to implement in the resolver
 - Changing a dependency from `pub = false` to `pub = true` is backwards compatible because it has no affect on existing callers.
-- It is unclear how this would hanlde multiple versions of a package that are public
+- It is unclear how this would handle multiple versions of a package that are public
 
 The downside is it feels like the declaration is backwards.
 If you have one core crate (e.g. `clap`) and many crates branching off (e.g. `clap_complete`, `clap_mangen`),
