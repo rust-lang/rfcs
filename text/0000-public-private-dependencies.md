@@ -38,6 +38,8 @@ Excluded motivations:
   by not requiring private dependencies to be unified.
   - Private dependencies are not sufficient on their own for this
   - There are likely better alternatives, like [Pre-RFC: Mutually-exclusive, global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618)
+- Help check for missing feature declarations by duplicating dependencies, rather than unifiying features
+  - See [Missing feature declaration check](#future-possibilities)
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -351,5 +353,19 @@ Compared to the resolver doing this implicitly
 - It is unclear if this would be any more difficult to implement in the resolver
 - Changing a dependency from `pub = false` to `pub = true` is backwards compatible because it has no affect on existing callers.
 - It is unclear how this would hanlde multiple versions of a package that are public
+
+## Missing feature declaration check
+
+It is easy for packages to accidentally rely on a dependency enabling a feature for them.
+We could add a mode that limits feature unification to reachable dependencies,
+forcing duplication and longer builds for the sake of checking if any features
+need specifying.
+
+However, this will still likely miss a lot of cases, making the pay off questionable.
+This also has the risk of being abused as a workaround so people can use
+mutually exclusive features.
+If packages start relying on it,
+it could coerce callers into abusing this mechanism,
+having a cascading effect in the ecosystem in the wrong direction.
 
 [RFC 1977]: https://github.com/rust-lang/rfcs/pull/1977
