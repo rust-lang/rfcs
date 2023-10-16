@@ -189,6 +189,7 @@ This most likely will also be necessary for the more complex relationship of
 ## cargo
 
 A new dependency field, `pub = <bool>` will be added that defaults to `false`.
+This field can be specified in `workspace.dependencies` and be overridden when `workspace = true` is in a dependency.
 When building a `lib`, Cargo will use the `priv` modifier with `--extern` for all private dependencies.
 What is private is what is left after recursively walking public dependencies (`pub = true`).
 We'll ignore this for other build target kinds (e.g. `bin`) as that would create extra noise.
