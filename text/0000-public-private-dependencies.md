@@ -354,6 +354,10 @@ Compared to the resolver doing this implicitly
 - Changing a dependency from `pub = false` to `pub = true` is backwards compatible because it has no affect on existing callers.
 - It is unclear how this would hanlde multiple versions of a package that are public
 
+The downside is it feels like the declaration is backwards.
+If you have one core crate (e.g. `clap`) and many crates branching off (e.g. `clap_complete`, `clap_mangen`),
+it seems like those helper crates should have their version picked from `clap`.
+
 ## Missing feature declaration check
 
 It is easy for packages to accidentally rely on a dependency enabling a feature for them.
