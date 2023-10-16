@@ -111,11 +111,24 @@ As for the hard-coded infostring used by cargo, that is a decision for [RFC 3502
 
 ## Syntax
 
-When choosing a syntax for embedding manifests in source files, our care-abouts are
+[RFC 3502] lays out some design principles, including
+- Single-file packages should have a first-class experience
+  - Provides a higher quality of experience (doesn't feel like a hack or tacked on)
+  - Transferable knowledge, whether experience, stackoverflow answers, etc
+  - Easier unassisted migration between single-file and multi-file packages
+  - The more the workflows deviate, the higher the maintenance and support costs for the cargo team
+
+This led us to wanting to re-use the existing manifest format inside of Rust code.
+The question is what that syntax for embedding should be.
+
+When choosing the syntax, our care-abouts are
 - How obvious it is for new users when they see it
 - How easy it is for newer users to remember it and type it out
 - How machine editable it is for `cargo add` and friends
 - Needs to be valid Rust code for quality of error messages, etc
+- Simple enough syntax for tools to parse without a full Rust parser
+  - Leave Rust syntax errors to rustc, rather than masking them with lower quality ones
+  - Ideally we allows random IDE tools (e.g. [`crates.nvim`](https://github.com/Saecki/crates.nvim) to still have easy access to the manifest
 - Leave the door open in case we want to reuse the syntax for embedded lockfiles
 - Leave the door open for single-file `lib`s
 
