@@ -13,6 +13,10 @@ Data structures and containers may be able to store unsized types only if their 
 
 In addition, this RFC allows implementing certain object-safe traits for slices, in a more complete fashion than was possible before.
 
+## Case study: rustc `Aligned` trait
+
+In rustc, a [manually-implemented version](https://github.com/rust-lang/rust/blob/a76ec181fba25f9fe64999ec2ae84bdc393560f2/compiler/rustc_data_structures/src/aligned.rs#L22-L25) of the `Aligned` trait is used to support pointer tagging. A pointer to a type with known alignment has log2(alignment) low bits available for a tag. Because rustc uses pointer tagging with unsized types, [including custom DSTs](https://github.com/rust-lang/rust/blob/a76ec181fba25f9fe64999ec2ae84bdc393560f2/compiler/rustc_middle/src/ty/list.rs#L222-L232), it needs to use a custom trait, along with potentially error-prone `unsafe` impls.
+
 # Guide-level explanation
 
 `Aligned` is a marker trait defined in `core::marker`, and re-exported in the prelude. It's automatically implemented for all types with an alignment determined at compile time. This includes all `Sized` types (`Aligned` is a supertrait of `Sized`), as well as slices and records containing them. Trait objects are not `Aligned`.
