@@ -29,10 +29,15 @@ crate `B` but some of the types from crate `B` are exposed through the API in cr
 - When running `cargo doc`, users may way to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
 - When linting for semver compatibility [there isn't enough information](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
 
-A related problem not covered by this RFC is helping with the poor error
-messages when a user directly depends on `A` and `B` but with a version
-requirement on `B` that is semver incompatible with `A`s version requirement on
-`B`.
+Excluded motivations:
+- Poor error messages when a user directly depends on `A` and `B` but with a
+  version requirement on `B` that is semver incompatible with `A`s version
+  requirement on `B`.
+  - See [Dependency visibility and the resolver](#rationale-and-alternatives) for why this is excluded.
+- Allow mutually exclusiev features or overly-constrained version requirements
+  by not requiring private dependencies to be unified.
+  - Private dependencies are not sufficient on their own for this
+  - There are likely better alternatives, like [Pre-RFC: Mutually-exclusive, global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618)
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
