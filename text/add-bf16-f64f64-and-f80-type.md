@@ -8,11 +8,11 @@
 
 This RFC proposes new floating point types to enhance FFI with specific targets:
 
-- `bf16` as builtin type for 'Brain floating format', widely used in machine learning, different from IEEE-754 standard `binary16` representation
-- `f64f64` into `core::arch` for the legacy extended float format used in PowerPC architecture
-- `f80` into `core::arch` for the extended float format used in x86 and x86_64 architecture
+- `bf16` as builtin type for the 'brain floating point' format, widely used in machine learning, different from the IEEE 754 standard `binary16` representation
+- `f64f64` in `core::arch` for the legacy extended float format used in the PowerPC architecture
+- `f80` in `core::arch` for the extended float format used in the x86 and x86_64 architectures
 
-Also, this proposal introduces `c_longdouble` in `core::ffi` to represent correct format for 'long double' in C.
+Also, this proposal introduces `c_longdouble` in `core::ffi` to represent the correct format for 'long double' in C.
 
 # Motivation
 [motivation]: #motivation
