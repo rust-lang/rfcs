@@ -84,7 +84,7 @@ impl From<f64> for f80 { /* ... */ }
 # Drawbacks
 [drawbacks]: #drawbacks
 
-`bf16` is not a IEEE-754 standard type, so adding it as primitive type may break existing consistency for builtin float types. The truncation after calculation on targets not supporting `bf16` natively also breaks how Rust treats precision loss in other cases.
+`bf16` is not an IEEE 754 standard type, so adding it as primitive type may break existing consistency for builtin float types. The truncation after calculations on targets not supporting `bf16` natively also breaks how Rust treats precision loss in other cases.
 
 `c_longdouble` are not uniquely determined by architecture, OS and ABI. On the same target, C compiler options may change what representation `long double` uses.
 
