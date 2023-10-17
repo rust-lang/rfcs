@@ -32,7 +32,7 @@ crate `B` but some of the types from crate `B` are exposed through the API in cr
 - When running `cargo doc`, users may way to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
 - When linting for semver compatibility [there isn't enough information to reason about dependencies](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
 
-Related problems not with this scenario not handled by this RFC:
+Related problems with this scenario not handled by this RFC:
 - Poor error messages when a user directly depends on `A` and `B` but with a
   version requirement on `B` that is semver incompatible with `A`s version
   requirement on `B`.
