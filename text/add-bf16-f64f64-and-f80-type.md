@@ -26,14 +26,14 @@ In respective targets (namely PowerPC and x86), the target-specific extended typ
 
 `bf16` is available on all targets. The operators and constants defined for `f32` are also available for `bf16`.
 
-For `f64f64` and `f80`, their availability is limited into following targets, but may change over time:
+For `f64f64` and `f80`, their availability is limited to the following targets, but this may change over time:
 
 - `f64f64` is supported on `powerpc-*` and `powerpc64(le)-*`, available in `core::arch::{powerpc, powerpc64}`
 - `f80` is supported on `i[356]86-*` and `x86_64-*`, available in `core::arch::{x86, x86_64}`
 
-The operators and constants defined for `f32` or `f64` are available for `f64f64` and `f80` in their respective arch-specific modules.
+The operators and constants defined for `f32` and `f64` are available for `f64f64` and `f80` in their respective arch-specific modules.
 
-All the proposed types, including `bf16`, `f64f64` and `f80`, do not have literal representation. Instead, they can be converted to or from IEEE-754 compliant types.
+All proposed types do not have literal representation. Instead, they can be converted to or from IEEE 754 compliant types.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -42,13 +42,13 @@ All the proposed types, including `bf16`, `f64f64` and `f80`, do not have litera
 
 `bf16` consists of 1 sign bit, 8 bits of exponent, 7 bits of mantissa. Some ARM, AArch64, x86 and x86_64 targets support `bf16` operations natively. For other targets, they will be promoted into `f32` before computation and truncated back into `bf16`.
 
-`bf16` will generate `bfloat` type in LLVM IR.
+`bf16` will generate the `bfloat` type in LLVM IR.
 
 ## `f64f64` type
 
-`f64f64` is the legacy format of extended floating format used on PowerPC target. It consists of two `f64`s, with the former as normal `f64` and the latter for extended mantissa.
+`f64f64` is the legacy extended floating point format used on PowerPC targets. It consists of two `f64`s, with the former acting as a normal `f64` and the latter for an extended mantissa.
 
-The following `From` traits are implemented in `core::arch::{powerpc, powerpc64}` for conversion between `f64f64` and other floating types:
+The following `From` traits are implemented in `core::arch::{powerpc, powerpc64}` for conversion between `f64f64` and other floating point types:
 
 ```rust
 impl From<bf16> for f64f64 { /* ... */ }
@@ -60,9 +60,9 @@ impl From<f64> for f64f64 { /* ... */ }
 
 ## `f80` type
 
-`f80` represents the extended precision floating type on x86 targets, with 1 sign bit, 15 bits of exponent and 63 bits of mantissa.
+`f80` represents the extended precision floating point type on x86 targets, with 1 sign bit, 15 bits of exponent and 63 bits of mantissa.
 
-The following `From` traits are implemented in `core::arch::{x86, x86_64}` for conversion between `f80` and other floating types:
+The following `From` traits are implemented in `core::arch::{x86, x86_64}` for conversion between `f80` and other floating point types:
 
 ```rust
 impl From<bf16> for f80 { /* ... */ }
@@ -70,13 +70,13 @@ impl From<f32> for f80 { /* ... */ }
 impl From<f64> for f80 { /* ... */ }
 ```
 
-`f80` will generate `x86_fp80` type in LLVM IR.
+`f80` will generate the `x86_fp80` type in LLVM IR.
 
 ## `c_longdouble` type in FFI
 
 `core::ffi::c_longdouble` will always represent whatever `long double` does in C. Rust will defer to the compiler backend (LLVM) for what exactly this represents, but it will approximately be:
 
-- 80-bit extended precision (f80) on `x86` and `x86_64`:
+- `f80` extended precision on `x86` and `x86_64`
 - `f64` double precision with MSVC
 - `f128` quadruple precision on AArch64
 - `f64f64` on PowerPC
@@ -91,15 +91,15 @@ impl From<f64> for f80 { /* ... */ }
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-[half](https://github.com/starkat99/half-rs) crate provides implementation of binary16 and bfloat16 types.
+The [half](https://github.com/starkat99/half-rs) crate provides an implementation of the binary16 and bfloat16 formats.
 
-However, besides the disadvantage of usage inconsistency between primitive type and type from crate, there are still issues around those bindings.
+However, besides the disadvantage of usage inconsistency between primitive types and types from crates, there are still issues around those bindings.
 
-The availablity of additional float types depends on CPU/OS/ABI/features of different targets heavily. Evolution of LLVM may also unlock possibility of the types on new targets. Implementing them in compiler handles the stuff at the best location.
+The availablity of additional float types heavily depends on CPU/OS/ABI/features of different targets. Evolution of LLVM may also unlock the possibility of the types on new targets. Implementing them in the compiler handles the stuff at the best location.
 
-Most of such crates defines their type on top of C binding. But extended float type definition in C is complex and confusing. The meaning of `long double`, `_Float128` varies by targets or compiler options. Implementing in Rust compiler helps to maintain a stable codegen interface.
+Most of such crates define their type on top of C bindings. However the extended float type definition in C is complex and confusing. The meaning of `long double` and `_Float128` varies by targets or compiler options. Implementing them in the Rust compiler helps to maintain a stable codegen interface.
 
-And since third party tools also relies on Rust internal code, implementing additional float types in compiler also help the tools to recognize them.
+And since third party tools also rely on Rust internal code, implementing additional float types in the compiler also helps the tools to recognize them.
 
 # Prior art
 [prior-art]: #prior-art
@@ -113,7 +113,7 @@ This proposal does not contain information for FFI with C's `_Float128` and `__f
 
 Although statements like `X target supports A type` is used in above text, some target may only support some type when some target features are enabled. Such features are assumed to be enabled, with precedents like `core::arch::x86_64::__m256d` (which is part of AVX).
 
-Representation of `long double` in C may depend on some compiler options. For example, in Clang on `powerpc64le-*`, `-mabi=ieeelongdouble`/`-mabi=ibmlongdouble`/`-mlong-double-64` will set `long double` as `fp128`/`ppc_fp128`/`double` in LLVM. Currently, the default option is assumed.
+Representation of `long double` in C may depend on some compiler options. For example, Clang on `powerpc64le-*`, `-mabi=ieeelongdouble`/`-mabi=ibmlongdouble`/`-mlong-double-64` will set `long double` as `fp128`/`ppc_fp128`/`double` in LLVM. Currently, the default option is assumed.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
