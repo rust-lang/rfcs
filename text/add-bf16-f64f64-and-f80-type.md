@@ -109,7 +109,7 @@ There is a previous proposal on `f16b` type to represent `bfloat16`: https://git
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-This proposal does not contain information for FFI with C's `_Float128` and `__float128` type. Because they are not so commonly used compared to `long double`, and they are even more complex than the situation of `c_longdouble` (for example, their semantics are different under C or C++ mode).
+This proposal does not contain information for FFI with C's `_Float128` and `__float128` type. [RFC #3453](https://github.com/rust-lang/rfcs/pull/3453) focuses on type conforming to IEEE 754 `binary128`.
 
 Although statements like `X target supports A type` is used in above text, some target may only support some type when some target features are enabled. Such features are assumed to be enabled, with precedents like `core::arch::x86_64::__m256d` (which is part of AVX).
 
