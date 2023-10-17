@@ -62,7 +62,7 @@ impl From<f64> for f64f64 { /* ... */ }
 
 `f80` represents the extended precision floating type on x86 targets, with 1 sign bit, 15 bits of exponent and 63 bits of mantissa.
 
-The following `From` traits are implemented in `core::arch::{x86, x86_64}` for conversion between `f64f64` and other floating types:
+The following `From` traits are implemented in `core::arch::{x86, x86_64}` for conversion between `f80` and other floating types:
 
 ```rust
 impl From<bf16> for f80 { /* ... */ }
