@@ -6,6 +6,10 @@
 # Summary
 [summary]: #summary
 
+This RFC proposes a specification for how our floating point operations are expected to behave.
+The current implementation in rustc already matches the specification, so after accepting the RFC no compiler changes are required.
+(However we might be able to stabilize some `const fn` features, see below for details.)
+
 Rust's floating point operations follow IEEE 754-2008 -- with some caveats around operations producing NaNs: IEEE makes almost no guarantees about the sign and payload bits of the NaN; however, actual hardware does not pick those bits completely arbitrarily, and Rust will expose some of those hardware-provided guarantees to programmers.
 On the flip side, NaN generation is non-deterministic: running the same operation on the same inputs several times can produce different results.
 And there is a caveat: while IEEE specifies that float operations can never output a signaling NaN, Rust float operations *can* produce signaling NaNs, *but only if* an input is signaling.
