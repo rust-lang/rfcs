@@ -17,9 +17,9 @@ Also, this proposal introduces `c_longdouble` in `core::ffi` to represent the co
 # Motivation
 [motivation]: #motivation
 
-The types listed above may be widely used in existing native code, but not available on all targets. Their underlying representations are quite different from 16-bit and 128-bit binary floating format defined in IEEE-754.
+The types listed above may be widely used in existing native code, but are not available on all targets. Their underlying representations are quite different from 16-bit and 128-bit binary floating format defined in IEEE 754.
 
-In respective targets (namely PowerPC and x86), the target-specific extended types are referenced by `long double`, which makes `long double` ambiguous in context of FFI. Thus defining `c_longdouble` should help interoperating with C code with `long double` type.
+In respective targets (namely PowerPC and x86), the target-specific extended types are referenced by `long double`, which makes `long double` ambiguous in the context of FFI. Thus defining `c_longdouble` should help interoperating with C code using the `long double` type.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
