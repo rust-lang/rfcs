@@ -6,9 +6,7 @@
 # Summary
 [summary]: #summary
 
-Reserve the `gen` keyword in the 2024 edition and start experimenting on
-implementing generator functions and blocks that allow implementing `Iterator`s
-without writing `Iterator::next` impls under placeholder syntax.
+Reserve the `gen` keyword in the 2024 edition.
 
 Add `gen {}` blocks to the language. These implement `Iterator` by `yield`ing
 elements. This is simpler and more intuitive than creating a custom type and
@@ -23,11 +21,12 @@ Furthermore, add `gen fn` to the language. `gen fn foo(arg: X) -> Y` desugars to
 # Motivation
 [motivation]: #motivation
 
-The main motivation of this RFC is to reserve a new keyword in the 2024 edition.
-The feature used by the keyword described here should be treated as an e-RFC for
-experimentation on nightly. I would like to avoid discussion of the semantics
-provided here, deferring that discussion until during the experimental
-implementation work.
+The main motivation of this RFC is to reserve a new keyword in the 2024
+edition. We will discuss the semantic questions of generators in this
+document, but we do not have to settle them with this RFC. We'll describe
+current thinking on the semantics, but some questions will be left open to be
+answered at a later time after we gain more experience with the
+implementation.
 
 Writing iterators manually can be very painful. Many iterators can be written by
 chaining `Iterator` methods, but some need to be written as a `struct` and have
@@ -280,10 +279,8 @@ gen fn foo() {}
 
 ## Different syntax for `gen fn`:
 
-This RFC explicitly picks an attribute, as that has no conflicts with any other syntax, even within macros, and
-does not pick any option that may influence how experimental users think about syntax.
-There are many options to choose from, and we'll have to decide on one before stabilization.
-Some options are:
+This RFC selects `gen` as the keyword.  But there are other options we might
+pick.  Here are some alternatives:
 
 ```rust
 fn foo(args) yield item
