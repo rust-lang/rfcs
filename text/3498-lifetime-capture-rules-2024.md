@@ -210,9 +210,15 @@ fn bar(x: ()) -> impl Sized + 'static {
 
 In Rust 2021, lifetimes within type parameters are automatically captured in RPIT opaque types, and both lifetime parameters and lifetimes within type parameters are automatically captured in `async fn` opaque types.  Additionally capturing lifetime parameters in RPIT opaque types may make this problem somewhat worse.
 
-The intended solution for this problem is type alias `impl Trait` (TAIT).  The stabilization of the 2024 lifetime capture rules in this RFC is contingent on the stabilization of TAIT or some other solution for precise capturing that will allow all code that is allowed under Rust 2021 to be expressed, in some cases with syntactic changes, in Rust 2024.
+There are a number of possible solutions to this problem.  One appealing partial solution is to more fully implement the rules specified in [RFC 1214][].  This would allow type and lifetime parameters that do not outlive a specified bound to mostly act as if they were not captured.  See [Appendix G][] for a full discussion of this.
 
-For an example of how TAIT is intended to be used to fix overcapturing, see the section titled "[TAIT as the solution to overcapturing]".
+Another solution would be to add syntax for precisely specifying which type and lifetime parameters to capture.  One proposal for this syntax is described in [Appendix F][].
+
+Type alias `impl Trait` (TAIT) is another solution.  It has accepted RFCs (see [RFC 2515][], [RFC 2071][]), it's implemented and actively maintained in nightly Rust, and there is a consensus to stabilize it in some form.  The stabilization of TAIT would allow all currently accepted code to continue to be expressed with precisely the same semantics.  See [Appendix I][] for further details on how TAIT can be used to precisely control the capturing of type and lifetime parameters.
+
+The stabilization of the 2024 lifetime capture rules in this RFC is contingent on the stabilization of some solution for precise capturing that will allow all code that is allowed under Rust 2021 to be expressed, in some cases with syntactic changes, in Rust 2024.
+
+[RFC 1214]: https://github.com/rust-lang/rfcs/blob/master/text/1214-projections-lifetimes-and-wf.md
 
 ## Summary of problems
 
@@ -306,47 +312,11 @@ Note that support for higher kinded lifetime bounds is not required by this RFC 
 
 [#104288]: https://github.com/rust-lang/rust/issues/104288
 
-## TAIT as the solution to overcapturing
+## Overcapturing
 
-[TAIT as the solution to overcapturing]: #tait-as-the-solution-to-overcapturing
+Sometimes the capture rules result in unwanted type and lifetime parameters being captured.  This happens in Rust 2021 due to the RPIT rules for capturing lifetimes from all in-scope type parameters and the `async fn` rules for capturing all in-scope type and lifetime parameters.  Under this RFC, in Rust 2024, lifetime parameters could also be overcaptured by RPIT.
 
-As we described above, sometimes the capture rules result in unwanted type and lifetime parameters being captured.  This happens in Rust 2021 due to the RPIT rules for capturing lifetimes from all in-scope type parameters and the `async fn` rules for capturing all in-scope type and lifetime parameters.  Under this RFC, in Rust 2024, lifetime parameters could also be overcaptured by RPIT.
-
-The intended solution to this is type alias `impl Trait` (TAIT).  It works as follows.  Consider this overcaptures scenario in Rust 2024:
-
-```rust
-fn foo<'a, T>(_: &'a (), _: T) -> impl Sized { () }
-//                                ^^^^^^^^^^
-// The returned opaque type captures `'a` and `T`
-// but the hidden type does not use either.
-
-fn bar<'a, 'b>(x: &'a (), y: &'b ()) {
-    fn is_static<T: 'static>(_: T) {}
-    is_static(foo(x, y));
-    //        ^^^^^^^^^
-    // Error: `foo` captures `'a` and `'b`.
-}
-```
-
-In the above code, we want to rely on the fact that `foo` does not actually use any lifetimes in the returned hidden type.  We can't do that using RPIT because there's no way to prevent the opaque type from capturing too much.  However, we can use TAIT to solve this problem elegantly as follows:
-
-```rust
-#![feature(type_alias_impl_trait)]
-
-type FooRet = impl Sized;
-fn foo<'a, T>(_: &'a (), _: T) -> FooRet { () }
-//                                ^^^^^^
-// The returned opaque type does NOT capture `'a` or `T`.
-
-fn bar<'a, 'b>(x: &'a (), y: &'b ()) {
-    fn is_static<T: 'static>(_: T) {}
-    is_static(foo(x, y)); // OK.
-}
-```
-
-The type alias `FooRet` has no generic parameters, so none are captured in the opaque type.  It's always possible to desugar an RPIT opaque type into a TAIT opaque type that expresses precisely which generic parameters to capture.
-
-The stabilization of the 2024 lifetime capture rules in this RFC is contingent on the stabilization of TAIT or some other solution for precise capturing that will allow all code that is allowed under Rust 2021 to be expressed, in some cases with syntactic changes, in Rust 2024.
+The stabilization of the 2024 lifetime capture rules in this RFC is contingent on the stabilization of some solution for precise capturing that will allow all code that is allowed under Rust 2021 to be expressed, in some cases with syntactic changes, in Rust 2024.
 
 ## Type alias `impl Trait` (TAIT)
 
@@ -612,7 +582,9 @@ fn test<'t, 'x>(t: &'t (), x: &'x ()) {
 
 # Appendix F: Future possibility: Precise capturing syntax
 
-Under this RFC, TAIT is the intended solution to avoid capturing type and lifetime parameters that should not be captured.  If this comes up too often in the future, we may want to consider adding new syntax to `impl Trait` to allow for precise capturing.  One proposal for that would look like this:
+[Appendix F]: #appendix-f-future-possibility-precise-capturing-syntax
+
+If other solutions for precise capturing of type and lifetime parameters turn out to be unergonomic or needed too often, we may want to consider adding new syntax to `impl Trait` to allow for precise capturing.  One proposal for that would look like this:
 
 ```rust
 fn foo<'x, 'y, T, U>() -> impl<'x, T> Sized { todo!() }
@@ -623,7 +595,9 @@ fn foo<'x, 'y, T, U>() -> impl<'x, T> Sized { todo!() }
 
 # Appendix G: Future possibility: Inferred precise capturing
 
-Under this RFC, TAIT is the intended solution to avoid capturing type and lifetime parameters that should not be captured.  However, when an outlives bound is stated for the opaque type, we can use that bound to allow code to compile that does not currently.  Consider:
+[Appendix G]: #appendix-g-future-possibility-inferred-precise-capturing
+
+When an outlives bound is stated for the opaque type, we can use that bound to allow code to compile that does not currently.  Consider:
 
 ```rust
 fn capture<'o, T>(_: T) -> impl Send + 'o {}
@@ -674,7 +648,26 @@ fn test_outlives<'o, T: PhantomCapture>(x: T) {
 }
 ```
 
-Future work may relax this current limitation of the compiler.  The result of such an improvement would be that, when an outlives bound is specified for the opaque type, any type or lifetime parameters that the compiler could prove to not outlive that bound would act as if they were not captured by the opaque type.
+Future work may relax this current limitation of the compiler by more fully implementing the rules of [RFC 1214][] (see, e.g., [#116733][]).  Fixing this completely is believed to require support in the compiler for existential lifetimes (see [#60670][]).
+
+The end result of these improvements would be that, when an outlives bound is specified for the opaque type, any type or lifetime parameters that the compiler could prove to not outlive that bound would mostly act as if it were not captured by the opaque type.
+
+This would not be quite the same as those type and lifetime parameters not actually being captured.  By checking type equality between opaque types where different captured type or lifetime parameters have been substituted, one could tell the difference.
+
+Still, this improvement would allow for solving many cases of overcapturing elegantly.  Consider this transformation:
+
+```rust
+fn callee<P1, .., Pn>(..) -> impl Trait { .. }
+//-------------------------------------------------------------
+fn callee<'o, P1: 'o, .., Pn: 'o>(..) -> impl Trait + 'o { .. }
+```
+
+Using this transformation (which is described more fully in [Appendix H][]), we can add a specified outlives bound to an RPIT opaque type without changing the effective proof requirements on either the caller or the callee.  We can then drop the `Pi: 'o` outlives bound from any type or lifetime parameter that we would like to act as if it were not captured.
+
+This comes at the cost of adding an extra early-bound lifetime parameter in the general case.  Adding that lifetime parameter may require changing the externally visible API of the function.  However, for the common case of adding a `+ 'static` bound, or for any other case where an existing lifetime parameter suffices to specify the needed bounds, this is not a problem.
+
+[#60670]: https://github.com/rust-lang/rust/issues/60670
+[#116733]: https://github.com/rust-lang/rust/pull/116733
 
 # Appendix H: Examples of outlives rules on opaque types
 
@@ -773,4 +766,54 @@ In the first example, to prove that the opaque type outlives `'short`, the *call
 
 (Obviously, the caller then still needs to prove the outlives relationships necessary to satisfy the other specified bounds in the signature of `callee`.)
 
-That is, at the cost of an extra early-bound lifetime parameter in the signature of the callee, we can always express an RPIT without a specified outlives bound as an RPIT with a specified outlives bound in a way that does not change the requirements on the caller or the callee.  We do this by transforming a signature of the form `fn callee<P1, .., Pn>(..) -> impl Trait` to a signature of the form `fn callee<'o, P1: 'o, .., Pn: 'o>(..) -> impl Trait + 'o`.
+That is, at the cost of an extra early-bound lifetime parameter in the signature of the callee, we can always express an RPIT without a specified outlives bound as an RPIT with a specified outlives bound in a way that does not change the requirements on the caller or the callee.  We do this by applying the following transformation:
+
+```rust
+fn callee<P1, .., Pn>(..) -> impl Trait { .. }
+//-------------------------------------------------------------
+fn callee<'o, P1: 'o, .., Pn: 'o>(..) -> impl Trait + 'o { .. }
+```
+
+One application of this transformation to solve problems created by overcapturing is described in [Appendix G][].
+
+# Appendix I: Precise capturing with TAIT
+
+[Appendix I]: #appendix-i-precise-capturing-with-tait
+
+Sometimes the capture rules result in unwanted type and lifetime parameters being captured.  This happens in Rust 2021 due to the RPIT rules for capturing lifetimes from all in-scope type parameters and the `async fn` rules for capturing all in-scope type and lifetime parameters.  Under this RFC, in Rust 2024, lifetime parameters could also be overcaptured by RPIT.
+
+Type alias `impl Trait` (TAIT) provides a precise solution.  It works as follows.  Consider this overcaptures scenario in Rust 2024:
+
+```rust
+fn foo<'a, T>(_: &'a (), _: T) -> impl Sized { () }
+//                                ^^^^^^^^^^
+// The returned opaque type captures `'a` and `T`
+// but the hidden type does not use either.
+
+fn bar<'a, 'b>(x: &'a (), y: &'b ()) {
+    fn is_static<T: 'static>(_: T) {}
+    is_static(foo(x, y));
+    //        ^^^^^^^^^
+    // Error: `foo` captures `'a` and `'b`.
+}
+```
+
+In the above code, we want to rely on the fact that `foo` does not actually use any lifetimes in the returned hidden type.  We can't do that using RPIT because there's no way to prevent the opaque type from capturing too much.  However, we can use TAIT to solve this problem elegantly as follows:
+
+```rust
+#![feature(type_alias_impl_trait)]
+
+type FooRet = impl Sized;
+fn foo<'a, T>(_: &'a (), _: T) -> FooRet { () }
+//                                ^^^^^^
+// The returned opaque type does NOT capture `'a` or `T`.
+
+fn bar<'a, 'b>(x: &'a (), y: &'b ()) {
+    fn is_static<T: 'static>(_: T) {}
+    is_static(foo(x, y)); // OK.
+}
+```
+
+The type alias `FooRet` has no generic parameters, so none are captured in the opaque type.  It's always possible to desugar an RPIT opaque type into a TAIT opaque type that expresses precisely which generic parameters to capture.
+
+The stabilization of the 2024 lifetime capture rules in this RFC is contingent on the stabilization of some solution for precise capturing that will allow all code that is allowed under Rust 2021 to be expressed, in some cases with syntactic changes, in Rust 2024.
