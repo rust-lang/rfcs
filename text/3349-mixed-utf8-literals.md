@@ -1,7 +1,7 @@
 - Feature Name: `mixed_utf8_literals`
 - Start Date: 2022-11-15
 - RFC PR: [rust-lang/rfcs#3349](https://github.com/rust-lang/rfcs/pull/3349)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#116907](https://github.com/rust-lang/rust/issues/116907)
 
 # Summary
 [summary]: #summary
