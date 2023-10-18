@@ -10,14 +10,14 @@ Reserve the `gen` keyword in the 2024 edition and start experimenting on
 implementing generator functions and blocks that allow implementing `Iterator`s
 without writing `Iterator::next` impls under placeholder syntax.
 
-Add `#[rustc_gen] {}` blocks to the language. These implement `Iterator` by `yield`ing
+Add `gen {}` blocks to the language. These implement `Iterator` by `yield`ing
 elements. This is simpler and more intuitive than creating a custom type and
 manually implementing `Iterator` for that type, which requires writing an
 explicit `Iterator::next` method body. This is a change similar to adding `async
 {}` blocks that implement `Future` instead of having to manually write futures
 and their state machines.
 
-Furthermore, add `#[rustc_gen] fn` to the language. `#[rustc_gen] fn foo(arg: X) -> Y` desugars to
+Furthermore, add `gen fn` to the language. `gen fn foo(arg: X) -> Y` desugars to
 `fn foo(arg: X) -> impl Iterator<Item = Y>`.
 
 # Motivation
@@ -76,7 +76,7 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
 
 // `gen block`
 fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
-    #[rustc_gen] {
+    gen {
         for value in values {
             if value.is_odd() {
                 yield value * 2;
@@ -86,8 +86,7 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
 }
 
 // `gen fn`
-#[rustc_gen]
-fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
+gen fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
     for value in values {
         if value.is_odd() {
             yield value * 2;
@@ -96,8 +95,8 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
 }
 ```
 
-Iterators created with `#[rustc_gen]` return `None` once they `return` (implicitly at the end of the scope or explicitly with `return`).
-See [the unresolved questions][unresolved-questions] for whether `#[rustc_gen]` iterators are fused or may behave strangely after having returned `None` once.
+Iterators created with `gen` return `None` once they `return` (implicitly at the end of the scope or explicitly with `return`).
+See [the unresolved questions][unresolved-questions] for whether `gen` iterators are fused or may behave strangely after having returned `None` once.
 Under no circumstances will it be undefined behavior if `next` is invoked again after having gotten a `None`.
 
 # Guide-level explanation
@@ -109,15 +108,15 @@ Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming 
 
 ## Returning/finishing an iterator
 
-`#[rustc_gen]` blocks must diverge or return the unit type.  Specifically, the trailing expression must be of the unit or `!` type, and any `return` statements in the block must either be given no argument at all or given an argument of the unit or `!` type.
+`gen` blocks must diverge or return the unit type.  Specifically, the trailing expression must be of the unit or `!` type, and any `return` statements in the block must either be given no argument at all or given an argument of the unit or `!` type.
 
 ### Diverging iterators
 
-For example, a `#[rustc_gen]` block that produces the infinite sequence `0, 1, 0, 1, 0, 1, ...`, will never return `None`
+For example, a `gen` block that produces the infinite sequence `0, 1, 0, 1, 0, 1, ...`, will never return `None`
 from `next`, and only drop its captured data when the iterator is dropped:
 
 ```rust
-#[rustc_gen] {
+gen {
     loop {
         yield 0;
         yield 1;
@@ -125,11 +124,11 @@ from `next`, and only drop its captured data when the iterator is dropped:
 }
 ```
 
-If a `#[rustc_gen]` block panics, the behavior is very similar to `return`, except that `next` unwinds instead of returning `None`.
+If a `gen` block panics, the behavior is very similar to `return`, except that `next` unwinds instead of returning `None`.
 
 ## Error handling
 
-Within `#[rustc_gen]` blocks, the `?` operator desugars as follows.  When its
+Within `gen` blocks, the `?` operator desugars as follows.  When its
 argument returns a value indicating "do not short circuit"
 (e.g. `Option::Some(..)`, `Result::Ok(..)`, `ControlFlow::Continue(..)`), that
 value becomes the result of the expression as usual.  When its argument
@@ -138,18 +137,18 @@ returns a value indicating that short-circuiting is desired
 is first yielded (after being converted by `From::from` as usual), then the
 block returns immediately.
 
-Even when `?` is used within a `#[rustc_gen]` block, the block must return a
+Even when `?` is used within a `gen` block, the block must return a
 value of type unit or `!`.  That is, it does not return a value of `Some(..)`,
 `Ok(..)`, or `Continue(..)` as other such blocks might.
 
-However, note that when `?` is used within a `#[rustc_gen]` block, all `yield`
+However, note that when `?` is used within a `gen` block, all `yield`
 statements will need to be given an argument of a compatible type.  For
 example, if `None?` is used in an expression, then all `yield` statements will
 need to be given arguments of type `Option`.
 
 ## Fusing
 
-Like `Generators`, `Iterator`s produced by `#[rustc_gen]` panic when invoked again after they have returned `None` once.
+Like `Generators`, `Iterator`s produced by `gen` panic when invoked again after they have returned `None` once.
 This will probably be fixed by special casing the generator impl if `Generator::Return = ()`, as we can trivially
 produce infinite values of the unit type.
 
@@ -161,7 +160,7 @@ In the 2024 edition we reserve `gen` as a keyword. Previous editions will use `k
 
 ## Error handling
 
-`foo?` in `#[rustc_gen]` blocks will stop iteration after the first error by desugaring to:
+`foo?` in `gen` blocks will stop iteration after the first error by desugaring to:
 
 ```rust
 match foo.branch() {
@@ -181,25 +180,25 @@ on iterators over `Result`s.
 This feature is mostly implemented via existing generators.
 We'll need additional desugarings and lots of work to get good diagnostics.
 
-### `#[rustc_gen] fn`
+### `gen fn`
 
-`#[rustc_gen] fn` desugars to the function itself with the return type replaced by `impl Iterator<Item = $ret>` and its body wrapped in a `#[rustc_gen]` block.
-A `#[rustc_gen] fn`'s "return type" is its iterator's `yield` type.
+`gen fn` desugars to the function itself with the return type replaced by `impl Iterator<Item = $ret>` and its body wrapped in a `gen` block.
+A `gen fn`'s "return type" is its iterator's `yield` type.
 
-A `#[rustc_gen] fn` captures all lifetimes and #[rustc_gen]eric parameters into the `impl Iterator` return type (just like `async fn`).
+A `gen fn` captures all lifetimes and generic parameters into the `impl Iterator` return type (just like `async fn`).
 If more control over captures is needed, type alias impl trait can be used when it is stabilized.
 
 Like other uses of `impl Trait`, auto traits are revealed without being specified.
 
-### `#[rustc_gen]` blocks
+### `gen` blocks
 
-`#[rustc_gen]` blocks are the same as an unstable generator...
+`gen` blocks are the same as an unstable generator...
 
 * ...without arguments,
 * ...with an additional check forbidding holding borrows across `yield` points,
 * ...and with an automatic `Iterator` implementation.
 
-We'll probably be able to modularize the generator implementation and make it more robust on the implementation and diagnostics side for the `#[rustc_gen]` block case, but I believe the initial implementation should be a HIR lowering to a generator and wrapping that generator in [`from_generator`][].
+We'll probably be able to modularize the generator implementation and make it more robust on the implementation and diagnostics side for the `gen` block case, but I believe the initial implementation should be a HIR lowering to a generator and wrapping that generator in [`from_generator`][].
 
 ## Fusing
 
@@ -211,7 +210,7 @@ repeatedly produce values of the unit type.
 
 It's another language feature for something that can already be written entirely in user code.
 
-In contrast to `Generator`, `#[rustc_gen]` blocks that produce `Iterator`s cannot hold references across `yield` points.
+In contrast to `Generator`, `gen` blocks that produce `Iterator`s cannot hold references across `yield` points.
 See [`from_generator`][] which has an `Unpin` bound on the generator it takes to produce an `Iterator`.
 
 [`from_generator`]: https://doc.rust-lang.org/std/iter/fn.from_generator.html
@@ -236,8 +235,8 @@ Some of these new methods would need to be very generic.
 While it's not an `Iterator` example, [`array::try_map`][] is something that has very complex diagnostics that are hard to improve, even if it's nice once it works.
 
 Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) or [`propane`](https://crates.io/crates/propane) instead.
-`genawaiter` works on stable and provides `gen!` macro blocks that behave like `#[rustc_gen]` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator. The `propane` crate uses the `Generator` trait from nightly and works mostly
-like `#[rustc_gen]` would.
+`genawaiter` works on stable and provides `gen!` macro blocks that behave like `gen` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator. The `propane` crate uses the `Generator` trait from nightly and works mostly
+like `gen` would.
 
 The standard library includes [`std::iter::from_fn`][], which can be used in
 some cases, but as we saw in the example [above][motivation], often the
@@ -256,7 +255,7 @@ value that is `yield`ed before terminating iteration.
 We could do something magical where returning `()` terminates the iteration, so this code...
 
 ```rust
-#[rustc_gen] fn foo() -> i32 {
+gen fn foo() -> i32 {
     42
 }
 ```
@@ -264,7 +263,7 @@ We could do something magical where returning `()` terminates the iteration, so 
 ...could be a way to specify `std::iter::once(42)`. The issue I see with this is that this...
 
 ```rust
-#[rustc_gen] fn foo() -> i32 {
+gen fn foo() -> i32 {
     42; // note the semicolon
 }
 ```
@@ -274,12 +273,12 @@ We could do something magical where returning `()` terminates the iteration, so 
 Furthermore this would make it unclear what the behaviour of this...
 
 ```rust
-#[rustc_gen] fn foo() {}
+gen fn foo() {}
 ```
 
 ...is supposed to be, as it could be either `std::iter::once(())` or `std::iter::empty::<()>()`.
 
-## Different syntax for `#[rustc_gen] fn`:
+## Different syntax for `gen fn`:
 
 This RFC explicitly picks an attribute, as that has no conflicts with any other syntax, even within macros, and
 does not pick any option that may influence how experimental users think about syntax.
@@ -682,7 +681,7 @@ fn main() {
 
 ## Panicking
 
-What happens when `Iterator::next` is called again on a `#[rustc_gen]` block that panicked? Do we need to poison the iterator?
+What happens when `Iterator::next` is called again on a `gen` block that panicked? Do we need to poison the iterator?
 
 ## Contextual keyword
 
@@ -753,37 +752,37 @@ API could possibly be:
 2. It has arguments (`yield` returns the arguments passed to it in the subsequent invocations).
 
 Similar to the ideas around `async` closures,
-I think we could argue for `Generators` to be `#[rustc_gen]` closures while `#[rustc_gen]` blocks are a simpler concept that has no arguments and only captures variables.
+I think we could argue for `Generators` to be `gen` closures while `gen` blocks are a simpler concept that has no arguments and only captures variables.
 
 Either way, support for full `Generator`s should be discussed and implemented separately,
 as there are many more open questions around them beyond a simpler way to write `Iterator`s.
 
 ## `async` interactions
 
-We could support using `await` in `#[rustc_gen] async` blocks, similar to how we support `?` being used within `#[rustc_gen]` blocks.
+We could support using `await` in `gen async` blocks, similar to how we support `?` being used within `gen` blocks.
 We'd have similar limitations holding references held across `await` points as we do have with `yield` points.
-The solution space for `#[rustc_gen] async` is large enough that I will not explore it here.
+The solution space for `gen async` is large enough that I will not explore it here.
 This RFC's design is forward compatible with anything we decide on.
 
-At present it is only possible to have a `#[rustc_gen]` block yield futures, but not `await` within it, similar to how
+At present it is only possible to have a `gen` block yield futures, but not `await` within it, similar to how
 you cannot write iterators that `await`, but that return futures from `next`.
 
-## Self-referential `#[rustc_gen]` blocks
+## Self-referential `gen` blocks
 
-We can allow `#[rustc_gen]` blocks to hold borrows across `yield` points in the future.
+We can allow `gen` blocks to hold borrows across `yield` points in the future.
 
 There are a few options forward (though this list is probably not complete):
 
-* Add a separate trait for pinned iteration that is also usable with `#[rustc_gen]` and `for`.
+* Add a separate trait for pinned iteration that is also usable with `gen` and `for`.
     * *Downside*: We would have very similar traits for the same thing.
 * Backward-compatibly add a way to change the argument type of `Iterator::next`.
     * *Downside*: It's unclear whether this is possible.
-* Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `#[rustc_gen]` block).
+* Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block).
     * *Downside*: The thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
 
 This RFC is forward compatible with any such designs, so I will not explore it here.
 
 ## `try` interactions
 
-We could allow `#[rustc_gen] try fn foo() -> i32` to mean something akin to `#[rustc_gen] fn foo() -> Result<i32, E>`.
+We could allow `gen try fn foo() -> i32` to mean something akin to `gen fn foo() -> Result<i32, E>`.
 Whatever we do here, it should mirror whatever `try fn` means in the future.
