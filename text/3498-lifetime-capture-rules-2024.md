@@ -279,6 +279,33 @@ impl<T> Foo<T> {
 }
 ```
 
+### Capturing lifetimes from `for<..>` binders
+
+Once higher kinded lifetime bounds on nested opaque types are supported in Rust (see [#104288][]), the following code will become legal:
+
+```rust
+trait Trait<'a> {
+    type Assoc;
+}
+
+impl<'a, F: Fn(&'a ()) -> &'a ()> Trait<'a> for F {
+    type Assoc = &'a ();
+}
+
+fn foo() -> impl for<'a> Trait<'a, Assoc = impl Sized> {
+    //                                     ^^^^^^^^^^
+    //                      Captures `'a`. ^
+    fn f(x: &()) -> &() { x }
+    f
+}
+```
+
+That is, the `'a` lifetime parameter from the higher ranked trait bounds (HRTBs) `for<..>` binder is in scope for the `impl Sized` opaque type, so it is captured under the rules of this RFC.
+
+Note that support for higher kinded lifetime bounds is not required by this RFC and is not a blocker to stabilizing the rules specified in this RFC.
+
+[#104288]: https://github.com/rust-lang/rust/issues/104288
+
 ## TAIT as the solution to overcapturing
 
 [TAIT as the solution to overcapturing]: #tait-as-the-solution-to-overcapturing
