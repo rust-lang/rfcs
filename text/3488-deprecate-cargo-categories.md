@@ -42,15 +42,15 @@ The following numbers have been extracted from a recent
 - 56,694 crates have neither `categories`, nor `keywords`
 
 
-# Keywords vs. Categories
-
-**Keywords** (aka. tags) describe an open set of names to categorize packages.
-The set being "open" means that users can use arbitrary keywords without having
-to choose from a fixed list of available names.
+# Categories vs. Keywords
 
 **Categories** describe a closed set of names to categorize packages. The set 
 being "closed" means that users have to choose from a fixed list of available
 categories, and can't easily add new ones.
+
+**Keywords** (aka. tags) describe an open set of names to categorize packages.
+The set being "open" means that users can use arbitrary keywords without having
+to choose from a fixed list of available names.
 
 **Comparison:**
 
@@ -86,13 +86,17 @@ cases. One example being the [`cli` keyword](https://github.com/rust-lang/crates
 which includes libraries for building CLI applications, as well as CLI
 applications themselves.
 
-- **Politics:** There are users feeling that having a category exist on
-crates.io can be seen as an endorsement. This makes the introduction
-and deletion of categories feel political to some degree. One example of this
-being a [discussion about the "cryptocurrencies" category](https://github.com/rust-lang/crates.io/discussions/6762),
-and whether it should be deleted or not. Keywords do not have this issue as
-the crates.io team has no direct control over the creation of keywords (except
-for ones that violate e.g. the [Code of Conduct](https://www.rust-lang.org/policies/code-of-conduct)).
+- **Endorsement:** Some users feel that having a category exist on crates.io is an
+endorsement of that category by the Rust project. This makes the introduction
+and deletion of categories hold more weight than they should, and it puts an
+increased burden of discussion for all those involved. One example of this
+being a [discussion about the "cryptocurrencies" category](https://github.com/rust-lang/crates.io/discussions/6762), and
+whether it should be deleted or not. Keywords don't have this issue since they
+aren't added with any involvement from the crates.io team, and thus don't have
+the same authority. The crates.io team can still remove keywords that violate 
+e.g. the [Code of Conduct](https://www.rust-lang.org/policies/code-of-conduct),
+but that's much easier to decide than having to take a stance on whether
+keywords are endorsed or not.
 
 - **Grassroots:** Some users feel that the crates.io team dictating the list of
 available categories can be seen as ["top-down" decision-making](https://github.com/rust-lang/crates.io/pull/488#issuecomment-265593195),
@@ -113,7 +117,7 @@ work instead.
 
 # Combinations
 
-**Keywords && Categories** describes the current implementation where
+**Categories && Keywords** describes the current implementation where
 crates.io supports both concepts at the same time.
 
 **Recommended Keywords** (aka. noteworthy keywords, blessed keywords, official
@@ -142,19 +146,20 @@ being used and [only contain a single crate](https://crates.io/categories/scienc
 
 - **Duplicates:** With a list of recommended keywords the chance for duplicates
 can be reduced, but not eliminated completely. Categories have the advantage
-of not having that problem, but at the same time they are also restrict crate
+of not having that problem, but at the same time they also restrict crate
 authors to only those categories that have been pre-selected by the crates.io
 team.
 
-- **Clarity:** Similar to reducing the number of duplicates, having a list of
-recommended keywords with associated descriptions can help improve clarity
-on which crates should be labeled with certain keywords. The same applies to
-categories as well.
+- **Clarity:** In addition to having a list of recommending keywords to choose
+from, providing descriptions alongside those keywords helps users decide which
+crates should be labeled with those keywords too. The same applies to categories
+as well.
 
-- **Politics:** As discussed above, the introduction of a category is being seen
-as a political decision by some users. If recommended keywords are promoted
-primarily based on usage data then the political aspect does not come into
-play quite as much, reducing the psychological pressure on the crates.io team.
+- **Endorsement:** As discussed above, the introduction of a category is a very
+heavy decision since it can be seen as an endorsement from the Rust project
+itself. If keywords are promoted primarily based on usage data then this
+reflects less on the project and more on its users, reducing this pressure on
+the crates.io team.
 
 - **Grassroots:** When keywords are promoted to being recommended based
 primarily on usage data then there is less perception of "top-down
@@ -168,17 +173,18 @@ find any fitting keywords they can drop down to the full list of keywords or
 introduce a new one.
 
 - **Bike-shedding:** As with previous points in this list, promoting keywords
-based on usage data largely avoids the bike-shedding discussions that happen
-when adjusting the list of categories.
+based on usage data means that any bike-shedding discussions on what keywords to
+use have already happened by users, and the crates.io team only has to partake
+in the logistics of adding information about existing keywords.
 
 
 # Flat vs. Nested
 
-**Flat** means that there is no hierarchy of terms. A krate related to doing
+**Flat** means that there is no hierarchy of terms. A crate related to doing
 HTTP requests could for example use the keywords `web`, `http`, and
 `http-client`. 
 
-**Nested** means that there is a hierarchy of terms. The same krate could be
+**Nested** means that there is a hierarchy of terms. The same crate could be
 tagged with `web/http-client`, where `web` is the parent category and
 `http-client` the child.
 
@@ -245,7 +251,7 @@ This RFC proposes to migrate crates.io from using categories **and** keywords
 to using only keywords, with a list of recommended keywords to address
 the duplication and clarity concerns from above. Keywords will keep their
 structure as a flat hierarchy, allowing crate owners to express nested
-categories can keyword combinations instead.
+categories as keyword combinations instead.
 
 An automated migration from categories to keywords for existing crates is
 currently not planned as the majority of crates that use categories also use
@@ -267,11 +273,11 @@ implementing both.
 
 Another reason is the friction that is caused by the crates.io team having to
 decide upfront on whether to introduce a new category or not. As written above,
-this is seen by some people as legitimizing certain categories of crates and
-thus being a political decision. If the "recommended keywords" concept is
-implemented primarily based on usage data of existing keywords, this discussion
-can largely be sidestepped, and it gives the Rust community the power to decide
-what keywords should be recommended and presented on the crates.io frontpage.
+this is seen by some people as endorsing certain categories of crates and thus
+requires more work. If the "recommended keywords" concept is implemented
+primarily based on usage data of existing keywords, this discussion can largely
+be sidestepped, and it gives the Rust community the power to decide what
+keywords should be recommended and presented on the crates.io frontpage.
 
 Finally, having the community decide on the keywords recommendations through
 their usage data reduces the amount of bike-shedding discussions that currently
