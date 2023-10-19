@@ -174,7 +174,7 @@ The compiler then emits a lint if it encounters private
 dependencies exposed as `pub`.
 
 While unstable, this lint will be `warn` by default.
-If the presentatuion of the lint is what holds us back from stabilization,
+If the presentation of the lint is what holds us back from stabilization,
 one route to speed up the process is to change the level to `allow`.
 Once we feel comfortable with the presentation, we could then move it back towards
 `warn`.
