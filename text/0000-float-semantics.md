@@ -50,7 +50,7 @@ The [platform support page](https://doc.rust-lang.org/rustc/platform-support.htm
 
 This RFC specifies the behavior of `+`, `-` (unary and binary), `*`, `/`, `%`, `abs`, `copysign`, `mul_add`, `sqrt`, `as`-casts that involve floating-point types, and all comparison operations on floating-point types.
 Here, "floating-point types" are `f32` and `f64` and all similar types that might be added in the future such as `f16`, `f128`.
-Except for the cases handled below, these operations produce results that exactly match IEEE 754-2008 (with roundTiesToEven and default exception handling, without abruptUnderflow/flush-to-zero).
+Except for the cases handled below, these operations produce results that exactly match IEEE 754-2008 (with roundTiesToEven [except for float-to-int casts, which round towards zero] and default exception handling without traps, without abruptUnderflow/flush-to-zero).
 `%` matches the behavior of `fmod` in C (this operation is not in the IEEE spec).
 When a floating-point value is just passed around (i.e., outside the operations above or any library-provided float operation), its representation bits do *not* change.
 
