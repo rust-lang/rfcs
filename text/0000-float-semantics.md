@@ -58,7 +58,7 @@ Exceptions apply when the output of an operation is a NaN, and the operation is 
 In that case, we generally follow [the same rules as LLVM](https://llvm.org/docs/LangRef.html#behavior-of-floating-point-nan-values).
 
 To be concrete, we first establish some terminology:
-A floating-point NaN value consists of a sign bit, a quiet/signaling bit, and a payload (which makes up the rest of the mantissa except for the quiet/signaling bit). Rust assumes that the quiet/signaling bit being set to ``1`` indicates a quiet NaN (QNaN), and a value of ``0`` indicates a signaling NaN (SNaN). In the following we will hence just call it the "quiet bit".
+A floating-point NaN value consists of a sign bit, a quiet/signaling bit, and a payload (which makes up the rest of the significand (i.e., the mantissa) except for the quiet/signaling bit). Rust assumes that the quiet/signaling bit being set to ``1`` indicates a quiet NaN (QNaN), and a value of ``0`` indicates a signaling NaN (SNaN). In the following we will hence just call it the "quiet bit".
 
 For the operations listed above, the following rules apply when a NaN value is returned:
 the result has a non-deterministic sign; the quiet bit and payload are non-deterministically chosen from the following set of options:
@@ -71,7 +71,7 @@ the result has a non-deterministic sign; the quiet bit and payload are non-deter
   - If the output is larger than the input, the payload gets filled up with 0s in the low-order bits.
 - The quiet bit and payload are copied from any input operand that is a NaN.
   ("Unchanged NaN propagation" case)
-  If the inputs and outputs do not have the same size (i.e., for `as` casts), the same rules as for "quieting NaN propagation" apply, with one caveat: if the output is smaller than the input, droppig the low-order bits may result in a payload of 0; a payload of 0 is not possible with a signaling NaN (the all-0 mantissa encodes an infinity) so unchanged NaN propagation cannot occur with some inputs.
+  If the inputs and outputs do not have the same size (i.e., for `as` casts), the same rules as for "quieting NaN propagation" apply, with one caveat: if the output is smaller than the input, droppig the low-order bits may result in a payload of 0; a payload of 0 is not possible with a signaling NaN (the all-0 significand encodes an infinity) so unchanged NaN propagation cannot occur with some inputs.
 - The quiet bit is set and the payload is picked from a target-specific set of
   "extra" possible NaN payloads. The set can depend on the input operand values.
   This set is empty on x86, ARM, and RISC-V (32bit and 64bit), but can be non-empty on other architectures. Targets where this set is non-empty should document this in a suitable location, e.g. their platform support page.
@@ -238,6 +238,7 @@ C and C++ generally avoid saying anything about signaling NaNs, and also don't t
 GCC [says](https://gcc.gnu.org/wiki/FloatingPointMath) "Without any explicit options, GCC assumes round to nearest or even and does not care about signalling NaNs". It is unclear whether "does not care" also means "guarantees to never produce by itself", i.e. whether `0.0 / 0.0` is ever allowed to evaluate to a signaling NaN or not. If it *is* allowed to evaluate to a signaling NaN, that is probably a violation of the C standard, which guarantees that `pow(1, 0.0/0.0)` returns `1` -- but in practice, `pow(1, sNaN)` returns a NaN.
 
 LLVM [recently adopted](https://github.com/llvm/llvm-project/pull/66579) new NaN rules that this RFC copies exactly into Rust.
+LLVM does not actually document that they are using IEEE float semantics, but de-facto they do on almost all targets (the exception are targets that use x87 instructions, as noted above).
 
 Java requires exact IEEE 754-2008 compliance and goes through a lot of effort to realize that on 32bit x86 without SSE (see [here](https://open-std.org/jtc1/sc22/jsg/docs/m3/docs/jsgn325.pdf) and [here](https://open-std.org/JTC1/SC22/JSG/docs/m3/docs/jsgn326.pdf)). However, they do not seem to tackle the issue of specifying NaN payload bits, even though those bits [can be observed](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Float.html#floatToRawIntBits(float)).
 
