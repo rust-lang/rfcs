@@ -215,7 +215,7 @@ Crates.io should show public dependencies more prominently than private ones.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The warning message might not be the clearest in how to resolve as its emitted
+It might not be clear how to resolve the warning, as it's emitted
 by rustc but is resolved by changing information in the build system,
 generally, but not always, cargo.
 As a last resort, we could put a hack in cargo to intercept the lint and emit a
