@@ -37,7 +37,7 @@ Related problems with this scenario not handled by this RFC:
   version requirement on `B` that is semver incompatible with `A`s version
   requirement on `B`.
   - See [Dependency visibility and the resolver](#rationale-and-alternatives) for why this is excluded.
-- Allow mutually exclusiev features or overly-constrained version requirements
+- Allow mutually exclusive features or overly-constrained version requirements
   by not requiring private dependencies to be unified.
   - Private dependencies are not sufficient on their own for this
   - There are likely better alternatives, like [Pre-RFC: Mutually-exclusive, global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618)
