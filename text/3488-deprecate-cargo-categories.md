@@ -253,10 +253,14 @@ the duplication and clarity concerns from above. Keywords will keep their
 structure as a flat hierarchy, allowing crate owners to express nested
 categories as keyword combinations instead.
 
+The plan is for crates.io to not show any of the category user interface elements
+anymore. Eventually the crates.io server will also start to ignore the `categories`
+field for new uploads and remove the existing categories data from the database.
+
 An automated migration from categories to keywords for existing crates is
-currently not planned as the majority of crates that use categories also use
-keywords at the same time, while the reverse is not the case (see "Statistics"
-section above).
+currently not planned as the majority of crates that have been using categories
+are also using keywords at the same time, while the reverse is not the case
+(see "Statistics" section above).
 
 The lists of pros and cons above already hint at a couple of reasons that
 motivate this RFC:
