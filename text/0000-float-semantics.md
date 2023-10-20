@@ -128,8 +128,14 @@ Furthermore, observing the floating-point exception state yields entirely unspec
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This RFC is too restrictive for some targets and too vague for some users: it is too vague since NaN signs are still left completely non-deterministic, which is not actually the case on hardware. It is also too restrictive as shown by the following subsection.
-
+- This RFC is too restrictive for some targets and too vague for some users: it is too vague since NaN signs are still left completely non-deterministic, which is not actually the case on hardware.
+  It is also too restrictive as shown by the following subsection.
+- It [looks](https://reviews.freebsd.org/D33599) like some targets, such FreeBSD, leave the floating-point environment in signal handlers in an unspecified state.
+  This is something that [Linux specifically avoided](https://yarchive.net/comp/linux/fp_state_save.html) since it breaks e.g. the glibc `memcpy` implementation (which uses SSE registers if available).
+  Rust (just like C without `#pragma STD FENV_ACCESS`) cannot currently be used to write signal handlers on such targets.
+  There is little we can do here with the current state of LLVM; and even once LLVM provides the necessary features, these signal handlers will need annotations in the code that tell the compiler about the non-default floating point state.
+  Those targets chose to use a semantics that is hard to support well in a highly optimized language, and there's not much we can do to paper over such target quirks.
+  We can only hope that eventually those targets will decide to provide a reliable floating-point environment.
 
 ### Target-specific problems
 
