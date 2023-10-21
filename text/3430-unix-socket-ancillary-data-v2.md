@@ -103,7 +103,7 @@ fn send_file(stream: &UnixStream, file: std::fs::File) -> std::io::Result<()> {
 
     MessageSender::new(stream, b"\x00")
         .ancillary_data(&mut ancillary)
-        .send(&stream)?;
+        .send()?;
     Ok(())
 }
 ```
@@ -121,7 +121,7 @@ fn recv_file(stream: &UnixStream) -> std::io::Result<std::fs::File> {
     let mut buf = [0u8; 1];
     MessageReceiver::new(stream, &mut buf)
         .ancillary_data(&mut ancillary)
-        .recv(&stream)?;
+        .recv()?;
 
     // TODO: error handling (std::io::Error if not enough FDs returned)
     let mut owned_fds = ancillary.take_owned_fds().unwrap();
@@ -172,6 +172,7 @@ impl ControlMessages {
     fn as_bytes(&self) -> &[u8];
     fn is_empty(&self) -> bool;
     fn len(&self) -> usize;
+    fn iter(&self) -> ControlMessagesIter<'_>;
 }
 
 impl<'a> IntoIterator for &'a ControlMessages {
@@ -230,6 +231,8 @@ impl<'a> IntoIterator for &'a ControlMessagesBuf {
     type Item = ControlMessage<'a>;
     type IntoIter = ControlMessagesIter<'a>;
 }
+
+impl Extend<ControlMessage<'_>> for ControlMessagesBuf;
 ```
 
 ## Ancillary data
