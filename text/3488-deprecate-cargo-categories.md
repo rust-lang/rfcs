@@ -79,6 +79,13 @@ keywords.
   searches for a particular keyword. [Experience from libs.rs indicates that
   there is no trivial solution to this though](https://github.com/rust-lang/rfcs/pull/3488#issuecomment-1721208225) 
 
+  - The concept of duplicates itself is also more ambiguous than you'd think.
+  One good example is the endless decision on whether keywords should be
+  combined or split up: for example, using "http" and "server" or "http-server"
+  keywords. This problem isn't unique to keywords or categories, since there's
+  always overlap between different groups and it's never clear where to draw the
+  boundaries.
+
 - **Clarity:** Categories, as implemented on crates.io, have a description
 associated with them, so the chance of misunderstanding what kinds of crates
 belong to them is reduced. Keywords by themselves can be unclear in some
