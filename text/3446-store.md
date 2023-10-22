@@ -466,7 +466,7 @@ bump store.
 
 This RFC introduces 5 new traits.
 
-The core of this RFC is the `Store` trait, a super-trait of the `StoreDangling` trait:
+The core of this RFC is the `Store` trait, with `StoreDangling` as its super-trait:
 
 ```rust
 /// A trait allowing to get a dangling handle.
@@ -745,20 +745,6 @@ errors to prevent erroneous couplings.
 [^1]: With the exception, in the case of a call to `resolve`, of any pointer derived from a copy of the handle argument.
 
 
-##  Mutable Store: allocation.
-
-A previous incarnation of the API borrowed the store mutably to allocate, deallocate, grow, or shrink.
-
-This is tempting, as after all it is likely something within the store will need to be mutated.
-
-There is, however, a very good reason for `Allocator` to use a shared reference: concurrent uses. In a concurrent
-context, a `Sync` allocator is shared between threads.
-
-Suggestions were made to use `for<'a> &'a S: Store` in such cases, however, to the best of my knowledge, it is not
-possible today to refer to the associated type of such a bound. That is, it is not possible to declare a field as
-`handle: <for<'a> &'a S: Store>::Handle`, which greatly complicates things...
-
-
 ##  Mutable Store: resolution.
 
 A previous incarnation of the API borrowed the store mutably to resolve mutable handles, ie it offered both a `resolve`
@@ -770,10 +756,29 @@ as when retaining multiple mutable references yielded by an iterator.
 
 The problem is illustrated in [3446-store/aliasing-and-mutability.rs] on which Stacked Borrows chokes. While Tree
 Borrows _does_ accept the program as valid, it is not clear whether LLVM `noalias` would be compatible in such a case
-or not, now and in the future.
+or not, now and in the future. In fact, [Ralf Jung commented](https://github.com/rust-lang/rfcs/pull/3446#issuecomment-1773780909) they were not certain that even the proposed `UnsafeAliased` would solve this usecase, as
+it was made to allow aliasing `&mut` and `*mut`, not `&mut` and `&mut`.
 
 Opting for a single `Store::resolve` method taking `&self`, while it requires interior mutability, is therefore the
-conservative choice: it is known to work now, and highly likely to continue working in the future.
+conservative choice: it is known to work now, and will continue to work in the future.
+
+
+##  Mutable Store: allocation.
+
+A previous incarnation of the API borrowed the store mutably to allocate, deallocate, grow, or shrink.
+
+This is tempting, as after all it is likely something within the store will need to be mutated.
+
+There is, however, a very good reason for `Allocator` to use a shared reference: concurrent uses. It should be possbile
+to share a single store between various collections, hence passing `&dyn Store<Handle = X>` for example, and to still
+be able to allocate from such a store.
+
+Suggestions were made to use `for<'a> &'a S: Store` in such cases, however, to the best of my knowledge, it is not
+possible today to refer to the associated type of such a bound. That is, it is not possible to declare a field as
+`handle: <for<'a> &'a S: Store>::Handle`, which greatly complicates things...
+
+... Seeing as anyway interior mutability is required for `resolve`, as mentioned above, it seems pointless to vie for a
+less ergonomic API for allocate and co.
 
 
 ##  Owned Store
