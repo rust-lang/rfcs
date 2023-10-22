@@ -356,6 +356,12 @@ keyword.
 - Should crates.io automatically map submitted categories to keywords for new
 publishes? Should crates.io do the same for existing published versions?
 
+- Is "recommended keywords" a good name? One of the problems with categories is
+this sense of endorsement, and "recommended" keywords can have a similar 
+connotation, even though the idea is that these are recommended by the
+community, not crates.io itself. This RFC intentionally avoids bikeshedding the
+name because we could spend all day on that, but it's worth mentioning anyway.
+
 - What will be the initial list of recommended keywords?
 (out of scope for this RFC)
 
