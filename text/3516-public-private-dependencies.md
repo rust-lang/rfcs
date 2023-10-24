@@ -354,8 +354,9 @@ One possible approach for this:
 name = "some-cli"
 
 [dependencies]
-clap = { version.from ["clap_complete"] }
+clap = { version.from ["clap_complete", "clap_mangen"] }
 clap_complete = "3.4"
+clap_mangen = "3.4"
 ```
 When resolving the dependencies for `some-cli`,
 the resolver will not explicitly choose a version for `clap` but will continue resolving the graph.
