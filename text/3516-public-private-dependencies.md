@@ -78,7 +78,10 @@ impl std::str::FromStr for Diagnostic {
 The dependencies `serde` and `serde_json` are both public dependencies, meaning their types are referenced in the public API.
 This has the implication that a semver incompatible upgrade of these dependencies is a breaking change for this package.
 
-With this RFC, in pre-2024 editions, this will warn saying that `serde` and `serde_json` are private dependencies in a public API.
+With this RFC, in pre-2024 editions,
+you can enable add `lints.rust.external_private_dependency = "warn"` to your
+manifest and rustc will warn saying that `serde` and `serde_json` are private
+dependencies in a public API.
 In 2024+ editions, this will be an error.
 
 To resolve the warning in a semver compatible way, they would need to declare both dependencies as public:
@@ -170,15 +173,12 @@ features like `impl Trait` in type aliases if we had it.
 The main change to the compiler will be to accept a new modifier on the `--extern` flag that Cargo
 supplies which marks it as a private dependency.
 The modifier will be called `priv` (e.g. `--extern priv:serde`).
-The compiler then emits a lint if it encounters private
+The compiler then emits the lint `external_private_dependency` if it encounters private
 dependencies exposed as `pub`.
 
-While unstable, this lint will be `warn` by default.
-If the presentation of the lint is what holds us back from stabilization,
-one route to speed up the process is to change the level to `allow`.
-Once we feel comfortable with the presentation, we could then move it back towards
-`warn`.
-In the 2024 edition, we would change this lint to `deny`.
+`external_private_dependency` will be `allow` by default for pre-2024 editions.
+It will be a member of the `rust-2024-compatibility` lint group so that it gets automatically picked up by `cargo fix --edition`.
+In the 2024 edition, this lint will be `deny`.
 
 In some situations, it can be necessary to allow private dependencies to become
 part of the public API. In that case one can permit this with
@@ -215,7 +215,7 @@ Crates.io should show public dependencies more prominently than private ones.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It might not be clear how to resolve the warning, as it's emitted
+It might not be clear how to resolve the warning/error, as it's emitted
 by rustc but is resolved by changing information in the build system,
 generally, but not always, cargo.
 As a last resort, we could put a hack in cargo to intercept the lint and emit a
@@ -229,7 +229,7 @@ In the case where you depend on `foo = "300"`, there isn't a way to clarify that
 
 This doesn't cover the case where a dependency is public only if a feature is enabled.
 
-The warning is emitted even when a `pub` item isn't accessible.
+The warning/error is emitted even when a `pub` item isn't accessible.
 
 You can't definitively lint when a `pub = true` is unused since it may depend on which platform or features.
 
@@ -243,6 +243,9 @@ You can't definitively lint when a `pub = true` is unused since it may depend on
   - `pub` could be seen as ambiguous with `publish`
   - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
   - In the end, we went with `pub` because `public` would prevent our "no MSRV bump" approach because cargo versions exist with `public` being reserved
+- `rustc`: Instead of `allow` by default for pre-2024 editions, we could warn by default
+  - More people would get the benefit of the feature now
+  - However, this would be extremely noisy and likely make people grumpy
 - `Cargo.toml`: Instead of `pub = false` being the default and changing the warning level on an edition boundary, we could instead start with `pub = true` and change the default on an edition boundary.
   - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
 - `Cargo.toml`: Instead of `pub = false` being the default, we could have a "unchecked" / "unset" state
@@ -278,14 +281,6 @@ Within the cargo ecosystem:
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
-
-- Will the warning be too disruptive to the ecosystem to enable by default?
-  - Being automatically fixed with `cargo fix` (with cargo's reminder that you can run it) helps
-  - Not requiring an MSRV bump helps
-  - We could instead start it as `allow`
-    but in `rust-2024-compatibility` group,
-    still turning into an error in the 2024 edition,
-    and have the edition migration reduce the blast radius.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
