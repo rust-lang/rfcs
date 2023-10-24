@@ -254,6 +254,11 @@ You can't definitively lint when a `pub = true` is unused since it may depend on
 - `cargo add`: instead of `--pub <bool>` it could be `--pub` / `--no-pub` like `--optional` or `--public` / `--private`
 - `cargo add`: when adding a dependency, we could automatically add all of its `pub` dependencies.
   - This was passed up as being too noisy, especially when dealing with facade crates, those that fully re-export their `pub = true` dependency
+- We leave whether `pub` is in the Index as unspecified
+  - It isn't strictly needed now
+  - It would make `cargo add` easier
+  - If we rely on `pub` in the resolver, we might need it but we can always backfill it
+  - Parts of the implementation are already there from the original RFC
 
 ## Minimal version resolution
 
