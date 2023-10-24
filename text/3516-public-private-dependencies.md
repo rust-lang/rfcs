@@ -193,7 +193,8 @@ A new dependency field, `pub = <bool>` will be added that defaults to `false`.
 This field can be specified in `workspace.dependencies` and be overridden when `workspace = true` is in a dependency.
 When building a `lib`, Cargo will use the `priv` modifier with `--extern` for all private dependencies.
 What is private is what is left after recursively walking public dependencies (`pub = true`).
-We'll ignore this for other build target kinds (e.g. `bin`) as that would create extra noise.
+For other [`crate-type`s](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field) (e.g. `bin`),
+we'll tell rustc that all dependencies are public to reduce noise from inaccessible `pub` items.
 
 Old cargo versions will emit a warning when this key is encountered but otherwise continue,
 even if the feature is present but unstable.
@@ -230,6 +231,7 @@ In the case where you depend on `foo = "300"`, there isn't a way to clarify that
 This doesn't cover the case where a dependency is public only if a feature is enabled.
 
 The warning/error is emitted even when a `pub` item isn't accessible.
+We at least reduced the impact of this by not marking dependencies as private for `crate-type=["bin"]`.
 
 You can't definitively lint when a `pub = true` is unused since it may depend on which platform or features.
 
