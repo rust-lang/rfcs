@@ -242,6 +242,7 @@ You can't definitively lint when a `pub = true` is unused since it may depend on
   - The parallel with Rust seemed worth pursuing
   - `pub` could be seen as ambiguous with `publish`
   - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
+  - In the end, we went with `pub` because `public` would prevent our "no MSRV bump" approach because cargo versions exist with `public` being reserved
 - `Cargo.toml`: Instead of `pub = false` being the default and changing the warning level on an edition boundary, we could instead start with `pub = true` and change the default on an edition boundary.
   - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
 - `Cargo.toml`: Instead of `pub = false` being the default, we could have a "unchecked" / "unset" state
