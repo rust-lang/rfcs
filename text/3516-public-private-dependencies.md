@@ -395,4 +395,14 @@ If packages start relying on it,
 it could coerce callers into abusing this mechanism,
 having a cascading effect in the ecosystem in the wrong direction.
 
+## Warn about semver incompatible public dependency
+
+`cargo update` (or a manifest linter) could warn about public new incompatible
+public dependencies that are available to help the ecosystem progress in
+lockstep.
+
+## Warn about pre-1.0 public dependencies in 1.0+ packages
+
+See [rust-lang/cargo#6018](https://github.com/rust-lang/cargo/issues/6018)
+
 [RFC 1977]: https://github.com/rust-lang/rfcs/pull/1977
