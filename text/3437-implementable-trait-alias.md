@@ -120,7 +120,7 @@ error[E0404]: expected trait, found trait alias `Frobber`
 
 ## Speculative example: GATification of `Iterator`
 
-*This example relies on some language features that are currently pure speculation.Implementable trait aliases are potentially necessary to support this use-case, but not sufficent.*
+*This example relies on some language features that are currently pure speculation. Implementable trait aliases are potentially necessary to support this use-case, but not sufficent.*
 
 Ever since the GAT MVP was stabilized, there has been discussion about how to add `LendingIterator` to the standard library, without breaking existing uses of `Iterator`. The relationship between `LendingIterator` and `Iterator` is "weak"/"strong"—an `Iterator` is a `LendingIterator` with some extra guarantees about the `Item` associated type.
 
