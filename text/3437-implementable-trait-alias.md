@@ -367,7 +367,7 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
   - Also, such a change might break the commutativity of `+`, or make it less obvious which trait is being implemented.
   - Again, user feedback could help make this decision.
 - Another option is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules more explicit, at the cost of cluttering user code and the attribute namespace.
-- A previous version of this RFC required type parameters of implementable trait aliases to be used as type parameters of the alias's primary trait. This restriction was meant to avoid surprising errors:
+- A previous version of this RFC required generic parameters of implementable trait aliases to be used as generic parameters of the alias's primary trait. This restriction was meant to avoid surprising errors:
 
 ```rust
 trait Foo<T> = Copy;
