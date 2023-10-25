@@ -9,7 +9,7 @@ Extend `#![feature(trait_alias)]` to permit `impl` blocks for trait aliases with
 
 # Motivation
 
-Often, one desires to have a "weak" version of a trait, as well as a "strong" one providing additional guarantees. Subtrait relationships are commonly used for this, but they sometimes fall short—expecially when the "strong" version is expected to see more use, or was stabilized first.
+Often, one desires to have a "weak" version of a trait, as well as a "strong" one providing additional guarantees. Subtrait relationships are commonly used for this, but they sometimes fall short—especially when the "strong" version is expected to see more use, or was stabilized first.
 
 ## Example: AFIT `Send` bound aliases
 
@@ -120,7 +120,7 @@ error[E0404]: expected trait, found trait alias `Frobber`
 
 ## Speculative example: GATification of `Iterator`
 
-*This example relies on some language features that are currently pure speculation. Implementable trait aliases are potentially necessary to support this use-case, but not sufficent.*
+*This example relies on some language features that are currently pure speculation. Implementable trait aliases are potentially necessary to support this use-case, but not sufficient.*
 
 Ever since the GAT MVP was stabilized, there has been discussion about how to add `LendingIterator` to the standard library, without breaking existing uses of `Iterator`. The relationship between `LendingIterator` and `Iterator` is "weak"/"strong"—an `Iterator` is a `LendingIterator` with some extra guarantees about the `Item` associated type.
 
@@ -150,7 +150,7 @@ There has been some discussion about a variant of the `Future` trait with an `un
 
 # Guide-level explanation
 
-With `#![feature(trait_alias)]` (RFC #1733), one can define trait aliases, for use in bounds, trait objects, and `impl Trait`. This feature additionaly allows writing `impl` blocks for a subset of trait aliases.
+With `#![feature(trait_alias)]` (RFC #1733), one can define trait aliases, for use in bounds, trait objects, and `impl Trait`. This feature additionally allows writing `impl` blocks for a subset of trait aliases.
 
 Let's rewrite our AFIT example from before, in terms of this feature. Here's what it looks like now:
 
@@ -185,7 +185,7 @@ impl Frobber for MyType {
 
 Joe's original code Just Works.
 
-The rule of thumb is: if you can copy everything between the `=` and `;` of a trait alias, paste it between the `for` and `{` of a trait `impl` block, and the result is sytactically valid—then the trait alias is most likely implementable.
+The rule of thumb is: if you can copy everything between the `=` and `;` of a trait alias, paste it between the `for` and `{` of a trait `impl` block, and the result is syntactically valid—then the trait alias is most likely implementable.
 
 # Reference-level explanation
 
@@ -203,22 +203,9 @@ Implementable trait aliases must follow a more restrictive form:
 
 For example, `trait Foo<T> = PartialEq<T> where Self: Sync;` is a valid implementable alias. The `=` must be followed by a single trait (or implementable trait alias), and then some number of where clauses. The trait's generic parameter list may contain associated type constraints (for example `trait IntIterator = Iterator<Item = u32>`).
 
-There is another restriction that trait aliases must adhere to in order to be implementable: all generic parameters of the alias itself must be used as generic parameters of the alias's primary trait.
-
-```rust
-// Implementable
-trait Foo<T> = PartialEq<T>;
-
-// Not implementable
-trait Foo<T> = Copy;
-trait Foo<T> = Copy where T: Send;
-trait Foo<T> = Iterator<Item = T>;
-trait Foo<T> = Copy where Self: PartialEq<T>;
-```
-
 ## Usage in `impl` blocks
 
-An impl block for a trait alias looks just like an impl block for the underlying trait. The alias's where clauses are treated as if they had been written out in the `impl` header.
+An `impl` block for a trait alias looks just like an `impl` block for the underlying trait. The alias's where clauses are enforced as requirements that the `impl`ing type must meet—just like `where` clauses in trait declarations are treated.
 
 ```rust
 pub trait CopyIterator = Iterator<Item: Copy> where Self: Send;
@@ -236,8 +223,19 @@ impl CopyIterator for Foo {
 struct Bar;
 impl !Send for Bar;
 
-// ERROR: `Bar` is not `Send`
-// impl IntIterator for Bar { /* ... */ }
+//impl CopyIterator for Bar { /* ... */ } // ERROR: `Bar` is not `Send`
+```
+
+```rust
+trait Foo {}
+trait Bar = Foo where Self: Send;
+//impl<T> Bar for T {} // ERROR: Need to add `T: Send` bound
+```
+```rust
+#![feature(trivial_bounds)]
+trait Foo {}
+trait Bar = Foo where String: Copy;
+//impl Bar for () {} // ERROR: `String: Copy` not satisfied
 ```
 
 Bounds on generic parameters are also enforced at the `impl` site.
@@ -261,6 +259,28 @@ impl IntIterator for Baz {
     // The alias constrains `Self::Item` to `i32`, so we don't need to specify it
     // (though we are allowed to do so if desired).
     // type Item = i32;
+
+    fn next(&mut self) -> i32 {
+        -27
+    }
+}
+```
+
+Such constraints can be inferred indirectly:
+
+```rust
+trait Bar: Iterator<Item = i32> {}
+pub trait IntIterator = Iterator where Self: Bar;
+
+struct Baz;
+
+impl Bar for Baz {}
+
+impl IntIterator for Baz {
+    // `IntIterator` requires `Bar`,
+    // which requires `Iterator<Item = i32>`,
+    // so `Item` must be `i32`
+    // and we don't need to specify it.
 
     fn next(&mut self) -> i32 {
         -27
@@ -306,11 +326,13 @@ Trait aliases are `unsafe` to implement iff the underlying trait is marked `unsa
 Implementable trait aliases can also be used with trait-qualified and fully-qualified method call syntax, as well as in paths more generally. When used this way, they are treated equivalently to the underlying primary trait, with the additional restriction that all `where` clauses and type parameter/associated type bounds must be satisfied.
 
 ```rust
+use std::array;
+
 trait IntIter = Iterator<Item = u32> where Self: Clone;
 
 let iter = [1_u32].into_iter();
 let _: IntIter::Item = IntIter::next(&mut iter); // works
-let _: <std::array::IntoIter as IntIter>::Item = <std::array::IntoIter as IntIter>::next(); // works
+let _: <array::IntoIter as IntIter>::Item = <array::IntoIter as IntIter>::next(); // works
 //IntIter::clone(&iter); // ERROR: trait `Iterator` has no method named `clone()`
 let dyn_iter: &mut dyn Iterator<Item = u32> = &mut iter;
 //IntIter::next(dyn_iter); // ERROR: `dyn Iterator<Item = u32>` does not implement `Clone`
@@ -331,9 +353,7 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
 
 # Drawbacks
 
-- The sytactic distance between implementable and non-implementable aliases is short, which might confuse users. In particular, the fact that `trait Foo = Bar + Send;` means something different than `trait Foo = Bar where Self: Send;` will likely be surprising to many.
-  - On the other hand, the rules mirror those of `impl` blocks, which Rust programmers already understand.
-  - Ideally, we would collect user feedback before stabilizing this feature.
+- The syntactic distance between implementable and non-implementable aliases is short, which might confuse users. In particular, the fact that `trait Foo = Bar + Send;` means something different than `trait Foo = Bar where Self: Send;` will likely be surprising to many.
 - Adds complexity to the language, which might surprise or confuse users.
 - Many of the motivating use-cases involve language features that are not yet stable, or even merely speculative. More experience with those features might unearth better alternatives.
 
@@ -343,12 +363,43 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
 - Better ergonomics compared to purely proc-macro based solutions.
 - One alternative is to allow marker traits or auto traits to appear in `+` bounds of implementable aliases.
 (For example, `trait Foo = Bar + Send;` could be made implementable).
-  - This may make the implementablility rules more intutive to some, as the distinction between `+ Send` and `where Self: Send` would no longer be present.
+  - This may make the implementablility rules more intuitive to some, as the distinction between `+ Send` and `where Self: Send` would no longer be present.
   - However, it also might make the rules less intuitive, as the symmetry with `impl` blocks would be broken.
+  - Also, such a change might break the commutativity of `+`, or make it less obvious which trait is being implemented.
   - Again, user feedback could help make this decision.
 - Another option is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules more explicit, at the cost of cluttering user code and the attribute namespace.
+- A previous version of this RFC required type parameters of implementable trait aliases to be used as type parameters of the alias's primary trait. This restriction was meant to avoid surprising errors:
 
-## What about combining multiple primary traits, and their items, into one impl block?
+```rust
+trait Foo<T> = Copy;
+
+#[derive(Clone)]
+struct MyType;
+
+impl<T> Foo<T> for MyType {} // ERROR: `T`` is unconstrained
+```
+
+```rust
+trait Foo<T> = Iterator<Item = T>;
+
+struct MyType;
+
+impl Foo<u32> for MyType {
+    fn next(&mut Self) -> Option<u32> {
+        todo!()
+    }
+}
+
+impl Foo<i32> for MyType { // ERROR: overlapping impls
+    fn next(&mut Self) -> Option<i32> {
+        todo!()
+    }
+}
+```
+
+However, upon further discussion, I now lean toward allowing more flexibility, even at the risk of potential confusion.
+
+## What about combining multiple primary traits, and their items, into one `impl` block?
 
 It's possible to imagine an extension of this proposal, that allows trait aliases to be implementable even if they have multiple primary traits. For example:
 
@@ -385,7 +436,7 @@ trait B {
 trait C = A + B;
 ```
 
-Such a feature could also make it harder to find the declaration of a trait item from its implementation, especially if IDE "go to definition" is not available. One would need to first find the trait alias definition, and then look through every primary trait to find the item. (However, given the current situation with postfix method call syntax, maybe this is an acceptable tradeoff.)
+Such a feature could also make it harder to find the declaration of a trait item from its implementation, especially if IDE "go to definition" is not available. One would need to first find the trait alias definition, and then look through every primary trait to find the item. (However, given the current situation with postfix method call syntax, maybe this is an acceptable trade-off.)
 
 Perhaps a more narrowly tailored version of this extension, in which both subtrait and supertrait explicitly opt-in to support sharing an `impl` block with one another, would satisfy the backward-compatibility use-case while avoiding the above issues. I think exploring that is best left to a future RFC.
 
@@ -403,4 +454,5 @@ Perhaps a more narrowly tailored version of this extension, in which both subtra
   - Variance bounds would allow this feature to support backward-compatible GATification.
   - Method unsafety bounds would support the `Future` → `Async` use-case.
 - `trait Foo: Copy = Iterator;` could be allowed as an alternative to `trait Foo = Iterator where Self: Copy;`.
+- `impl Trait<Assoc = Ty> for Type { /* ... */ }` could be permitted in the future, to make the "copy-paste" rule of thumb work better.
 - The possible contents of `impl` bodies could be expanded, for example to support combining supertrait and subtrait implementations.
