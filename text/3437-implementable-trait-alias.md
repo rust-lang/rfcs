@@ -359,13 +359,14 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
 # Rationale and alternatives
 
 - Very lightweight, with no new syntax forms. Compare "trait transformers" proposals, for example—they are generally much heavier.
+	- However, trait transformers would also address more use-cases (for example, sync and async versions of a trait).
 - Better ergonomics compared to purely proc-macro based solutions.
 - One alternative is to allow marker traits or auto traits to appear in `+` bounds of implementable aliases.
 (For example, `trait Foo = Bar + Send;` could be made implementable).
   - This may make the implementablility rules more intuitive to some, as the distinction between `+ Send` and `where Self: Send` would no longer be present.
   - However, it also might make the rules less intuitive, as the symmetry with `impl` blocks would be broken.
   - Also, such a change might break the commutativity of `+`.
-  - It could also make it less obvious which trait is being implemented.
+  - It could also make it less obvious which trait is being implemented, versus required; are we implementing `Bar`, `Send`, or both?
   - Again, user feedback could help make this decision.
 - Another option is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules more explicit, at the cost of cluttering user code and the attribute namespace.
 - A previous version of this RFC required generic parameters of implementable trait aliases to be used as generic parameters of the alias's primary trait. This restriction was meant to avoid surprising errors:
@@ -456,3 +457,12 @@ Perhaps a more narrowly tailored version of this extension, in which both subtra
 - `trait Foo: Copy = Iterator;` could be allowed as an alternative to `trait Foo = Iterator where Self: Copy;`.
 - `impl Trait<Assoc = Ty> for Type { /* ... */ }` could be permitted in the future, to make the "copy-paste" rule of thumb work better.
 - The possible contents of `impl` bodies could be expanded, for example to support combining supertrait and subtrait implementations.
+- Trait aliases could be expanded to support associated items of their own. For example:
+	
+```rust
+trait FutIter = Iterator<Item: Future> {
+    type ItemOut = <Self::Item as Future>::Output;
+}
+```
+
+Type aliases might also want this capability.
