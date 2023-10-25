@@ -409,4 +409,12 @@ lockstep.
 
 See [rust-lang/cargo#6018](https://github.com/rust-lang/cargo/issues/6018)
 
+## Flag for `cargo doc` to skip inaccessible dependencies
+
+When building documentation for local development,
+a lot of times only the direct dependencies and their public dependencies are relevant but you can get stuck generating documentation for large dependencies
+([rust-lang/cargo#4049](https://github.com/rust-lang/cargo/issues/4049)).
+Instead, `cargo doc` could have a flag to skip any of the dependencies that aren't relevant to local development which are private transitive dependencies.
+See [rust-lang/cargo#2025](https://github.com/rust-lang/cargo/issues/2025).
+
 [RFC 1977]: https://github.com/rust-lang/rfcs/pull/1977
