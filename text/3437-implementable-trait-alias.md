@@ -84,14 +84,13 @@ use frob_lib::LocalFrobber;
 struct MyType;
 
 impl LocalFrobber for MyType {
-    #[refine]
     async fn frob(&self) {
         println!("Sloo is 120% klutzed. Initiating brop sequence...")
     }
 }
 ```
 
-This is distinctly worse. Joe now has to reference both `Frobber` and `LocalFrobber` in his code, and (assuming that the final AFIT feature ends up requiring it) also has to write `#[refine]`.
+This is distinctly worse; Joe now has to reference both `Frobber` and `LocalFrobber` in his code.
 
 ### With today's `#![feature(trait_alias)]`
 
