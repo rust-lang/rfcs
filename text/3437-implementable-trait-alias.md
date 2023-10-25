@@ -364,7 +364,8 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
 (For example, `trait Foo = Bar + Send;` could be made implementable).
   - This may make the implementablility rules more intuitive to some, as the distinction between `+ Send` and `where Self: Send` would no longer be present.
   - However, it also might make the rules less intuitive, as the symmetry with `impl` blocks would be broken.
-  - Also, such a change might break the commutativity of `+`, or make it less obvious which trait is being implemented.
+  - Also, such a change might break the commutativity of `+`.
+  - It could also make it less obvious which trait is being implemented.
   - Again, user feedback could help make this decision.
 - Another option is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`. This would make the otherwise-subtle implementability rules more explicit, at the cost of cluttering user code and the attribute namespace.
 - A previous version of this RFC required generic parameters of implementable trait aliases to be used as generic parameters of the alias's primary trait. This restriction was meant to avoid surprising errors:
