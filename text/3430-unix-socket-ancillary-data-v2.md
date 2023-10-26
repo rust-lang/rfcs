@@ -166,12 +166,12 @@ inspected and iterated over to obtain `ControlMessage` values.
 
 
 ```rust
-struct ControlMessages;
+struct ControlMessages { ... };
 
 impl ControlMessages {
+    fn from_bytes(bytes: &[u8]) -> &ControlMessages;
     fn as_bytes(&self) -> &[u8];
     fn is_empty(&self) -> bool;
-    fn len(&self) -> usize;
     fn iter(&self) -> ControlMessagesIter<'_>;
 }
 
@@ -184,6 +184,11 @@ struct ControlMessagesIter<'a> { ... }
 
 impl<'a> Iterator for ControlMessagesIter<'a> {
     type Item = ControlMessage<'a>;
+}
+
+impl ControlMessagesIter<'a> {
+    // For inspecting non-iterable fragment in truncated buffer.
+    fn into_bytes(self) -> &'a [u8];
 }
 ```
 
@@ -201,8 +206,7 @@ impl ControlMessagesBuf {
 
     fn capacity(&self) -> usize;
 
-    fn push(&mut self, message: &ControlMessage<'_>);
-    fn extend_from_slice(&mut self, messages: &[ControlMessage<'_>]);
+    fn push(&mut self, message: impl Into<ControlMessage<'_>>);
 
     fn reserve(&mut self, additional: usize);
 
@@ -220,12 +224,10 @@ impl ControlMessagesBuf {
 }
 
 impl AsRef<ControlMessages> for ControlMessagesBuf;
-impl AsMut<ControlMessages> for ControlMessagesBuf;
 
 impl Deref for ControlMessagesBuf {
     type Target = ControlMessages;
 }
-impl DerefMut for ControlMessagesBuf;
 
 impl<'a> IntoIterator for &'a ControlMessagesBuf {
     type Item = ControlMessage<'a>;
@@ -233,6 +235,7 @@ impl<'a> IntoIterator for &'a ControlMessagesBuf {
 }
 
 impl Extend<ControlMessage<'_>> for ControlMessagesBuf;
+impl Extend<&ControlMessage<'_>> for ControlMessagesBuf;
 ```
 
 ## Ancillary data
