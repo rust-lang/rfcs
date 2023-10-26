@@ -9,7 +9,12 @@ Extend `#![feature(trait_alias)]` to permit `impl` blocks for trait aliases with
 
 # Motivation
 
-Often, one desires to have a "weak" version of a trait, as well as a "strong" one providing additional guarantees. Subtrait relationships are commonly used for this, but they sometimes fall short—especially when the "strong" version is expected to see more use, or was stabilized first.
+Often, one desires to have a "weak" version of a trait, as well as a "strong" one providing additional guarantees. Specifically, this RFC addresses trait relationships with the following properties:
+
+- For any implementation of the "strong" variant, there is exactly one way to implement the "weak" variant.
+- For any implementation of the "weak" variant, there is at most one way to implement the "strong" variant.
+
+Subtrait relationships are commonly used to model this, but this often leads to coherence and backward compatibility issues—especially when the "strong" version is expected to see more use, or was stabilized first.
 
 ## Example: AFIT `Send` bound aliases
 
@@ -121,7 +126,7 @@ error[E0404]: expected trait, found trait alias `Frobber`
 
 *This example relies on some language features that are currently pure speculation. Implementable trait aliases are potentially necessary to support this use-case, but not sufficient.*
 
-Ever since the GAT MVP was stabilized, there has been discussion about how to add `LendingIterator` to the standard library, without breaking existing uses of `Iterator`. The relationship between `LendingIterator` and `Iterator` is "weak"/"strong"—an `Iterator` is a `LendingIterator` with some extra guarantees about the `Item` associated type.
+Ever since the GAT MVP was stabilized, there has been discussion about how to add `LendingIterator` to the standard library, without breaking existing uses of `Iterator`. The relationship between `LendingIterator` and `Iterator` is "weak"/"strong"; an `Iterator` is a `LendingIterator` with an extra guarantee about its `Item` associated type (namely, that it is bivariant in its lifetime parameter).
 
 Now, let's imagine that Rust had some form of "variance bounds", that allowed restricting the way in which a type's GAT can depend on said GAT's generic parameters. One could then define `Iterator` in terms of `LendingIterator`, like so:
 
