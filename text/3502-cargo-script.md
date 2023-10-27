@@ -330,15 +330,15 @@ the file.
 
 Inferred / defaulted manifest fields:
 - `package.name = <slugified file stem>`
-- `package.version = "0.0.0"` to [call attention to this crate being used in unexpected places](https://matklad.github.io/2021/08/22/large-rust-workspaces.html#Smaller-Tips)
-  - This may be altered with [rust-lang/cargo#9829](https://github.com/rust-lang/cargo/issues/9829)
-- `package.publish = false` to avoid accidental publishes, particularly if we
-  later add support for including them in a workspace.
 - `package.edition = <current>` to avoid always having to add an embedded
   manifest at the cost of potentially breaking scripts on rust upgrades
   - Warn when `edition` is unspecified.  Since piped commands are run with `--quiet`, this may not show up.
   - Based on feedback, we might add `cargo-<edition>-edition` proxies to put in `#!` as a shorthand
   - Based on feedback, we can switch to "edition is required as of <future> edition"
+
+Note: As of [rust-lang/cargo#123](https://github.com/rust-lang/cargo/pull/12786),
+when `package.version` is missing,
+it gets defaulted to `0.0.0` and `package.publish` gets defaulted to `false`.
 
 Disallowed manifest fields:
 - `[workspace]`, `[lib]`, `[[bin]]`, `[[example]]`, `[[test]]`, `[[bench]]`
