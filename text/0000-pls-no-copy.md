@@ -89,7 +89,7 @@ if let Err(err) = manipulate_state(handle) {
 do_something_else(handle);
 ```
 
-In this case, the user knows that they can continue if the function fails, but they don't request a new handler and instead (accidentally) reuse the old one. By annotating with `#[should_move]`, the user is correctly notified that the handle *should* have been moved by `manipulate_state`, and that they shouldn't just be reusing the old handler.
+In this case, the user knows that they can continue if the function fails, but they don't request a new handle and instead (accidentally) reuse the old one. By annotating with `#[should_move]`, the user is correctly notified that the handle *should* have been moved by `manipulate_state`, and that they shouldn't just be reusing the old handle.
 
 As a shorthand, `#[should_move]` can be applied to functions which have a `self` (note: not `&mut self` or `&self`) argument and it applies to that argument:
 
