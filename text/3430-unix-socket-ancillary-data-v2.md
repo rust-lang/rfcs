@@ -92,14 +92,16 @@ general knowledge of ancillary data and the Unix sockets API?
 Sending a file descriptor:
 
 ```rust
-use std::os::unix::net::{AncillaryData, MessageSender, UnixStream};
+use std::fs::File;
+use std::os::unix::net::{AncillaryDataBuf, MessageSender, UnixStream};
 use std::os::fd::AsFd;
 
-fn send_file(stream: &UnixStream, file: std::fs::File) -> std::io::Result<()> {
-    let mut ancillary = AncillaryData::new();
-    ancillary.add_file_descriptors(&[
+fn send_file(stream: &UnixStream, file: File) -> std::io::Result<()> {
+    let mut ancillary_buf = AncillaryDataBuf::new();
+    ancillary_buf.add_file_descriptors(&[
         file.as_fd(),
     ]);
+    let mut ancillary = ancillary_buf.to_ancillary_data();
 
     MessageSender::new(stream, b"\x00")
         .ancillary_data(&mut ancillary)
@@ -111,22 +113,28 @@ fn send_file(stream: &UnixStream, file: std::fs::File) -> std::io::Result<()> {
 Receiving a file descriptor:
 
 ```rust
-use std::os::unix::net::{AncillaryData, MessageReceiver, UnixStream};
+use std::fs::File;
+use std::os::unix::net::{AncillaryDataBuf, MessageReceiver, UnixStream};
 
-fn recv_file(stream: &UnixStream) -> std::io::Result<std::fs::File> {
+fn recv_file(stream: &UnixStream) -> std::io::Result<File> {
     // TODO: expose CMSG_SPACE() in a user-friendly way.
     const ANCILLARY_CAPACITY: usize = 100;
 
-    let mut ancillary = AncillaryData::with_capacity(ANCILLARY_CAPACITY);
+    let mut ancillary_buf = AncillaryDataBuf::with_capacity(ANCILLARY_CAPACITY);
+    let mut ancillary = ancillary_buf.to_ancillary_data();
+
     let mut buf = [0u8; 1];
     MessageReceiver::new(stream, &mut buf)
         .ancillary_data(&mut ancillary)
         .recv()?;
 
-    // TODO: error handling (std::io::Error if not enough FDs returned)
-    let mut owned_fds = ancillary.take_owned_fds().unwrap();
-    let sent_fd = owned_fds.swap_remove(0);
-    Ok(sent_fd.into())
+    let mut received_fds: Vec<_> = ancillary.received_fds().collect();
+    if received_fds.len() != 1 {
+        // TODO: error handling (std::io::Error if not enough FDs returned)
+        panic!("didn't receive enough FDs");
+    }
+    let received_fd = received_fds.pop().unwrap();
+    Ok(File::from(received_fd))
 }
 ```
 
@@ -166,7 +174,7 @@ inspected and iterated over to obtain `ControlMessage` values.
 
 
 ```rust
-struct ControlMessages { ... };
+struct ControlMessages;
 
 impl ControlMessages {
     fn from_bytes(bytes: &[u8]) -> &ControlMessages;
@@ -180,7 +188,7 @@ impl<'a> IntoIterator for &'a ControlMessages {
     type IntoIter = ControlMessagesIter<'a>;
 }
 
-struct ControlMessagesIter<'a> { ... }
+struct ControlMessagesIter<'a>;
 
 impl<'a> Iterator for ControlMessagesIter<'a> {
     type Item = ControlMessage<'a>;
@@ -192,105 +200,187 @@ impl ControlMessagesIter<'a> {
 }
 ```
 
-A `ControlMessagesBuf` is the owned variant of `ControlMessages`. It exposes a
-subset of the `Vec` capacity management functions, with a public API that only
-allows operations that won't reduce its length (since that would risk losing
-information about received file descriptors).
+## Ancillary data
+
+### `struct AncillaryData`
+
+An `AncillaryData` is responsible for combining the serialized control messages
+with a notion of file descriptor ownership, ensuring that (1) borrowed FDs live
+long enough to be sent, and (2) received FDs aren't leaked.
 
 ```rust
-struct ControlMessagesBuf;
+struct AncillaryData<'a, 'fd>;
 
-impl ControlMessagesBuf {
-    fn new() -> ControlMessagesBuf;
-    fn with_capacity(capacity: usize) -> ControlMessagesBuf;
+impl Drop for AncillaryData;
+
+impl AncillaryData<'a, 'fd> {
+    fn new(
+        control_messages_buf: &'a mut [MaybeUninit<u8>],
+    ) -> AncillaryData<'a, 'fd>;
+
+    // returns initialized portion of `control_messages_buf`.
+    fn control_messages(&self) -> &ControlMessages;
+
+    // copy a control message into the ancillary data; error on out-of-capacity.
+    fn add_control_message(
+        &mut self,
+        control_message: impl Into<ControlMessage<'_>>,
+    ) -> Result<(), AncillaryDataNoCapacity>;
+
+    // Add an `SCM_RIGHTS` control message with given borrowed FDs.
+    fn add_file_descriptors(
+        &mut self,
+        borrowed_fds: &[BorrowedFd<'fd>],
+    ) -> Result<(), AncillaryDataNoCapacity>;
+
+    // Transfers ownership of received FDs to the iterator.
+    fn received_fds(&mut self) -> AncillaryDataReceivedFds<'_>;
+
+    // Obtain a mutable buffer usable as the `msg_control` pointer in a call
+    // to `sendmsg()` or `recvmsg()`.
+    fn control_messages_buf(&mut self) -> Option<&mut [u8]>;
+
+    // Update the control messages buffer length according to the result of
+    // calling `sendmsg()` or `recvmsg()`.
+    fn set_control_messages_len(&mut self, len: usize);
+
+    // Scan the control messages buffer for `SCM_RIGHTS` and take ownership of
+    // any file descriptors found within.
+    unsafe fn take_ownership_of_scm_rights(&mut self);
+}
+
+struct AncillaryDataReceivedFds<'a>;
+
+impl<'a> Iterator for AncillaryDataReceivedFds<'a> {
+    type Item = OwnedFd;
+}
+```
+
+#### `fn AncillaryData::received_fds`
+
+By default an `AncillaryData` has no received FDs, and this method will
+ignore FDs added via `add_file_descriptors`. The iterator holds a mutable
+borrow on the `AncillaryData`, and will close any unclaimed FDs when
+it's dropped.
+
+Internally, the iteration works by scanning the control message buffer
+for `SCM_RIGHTS`. As the iteration proceeds the buffer is mutated to set
+the "taken" FDs to `-1` (a sentinal value for Unix file descriptors).
+
+#### `fn AncillaryData::control_messages_buf`
+
+The returned slice, if not `None`, will (1) be non-empty and (2) have the same
+length as the `control_messages_buf` passed to `AncillaryData::new()`. Any
+portion of the buffer not initialized by `add_control_message` or
+`add_file_descriptors` will be zeroed.
+
+When this method is called the `AncillaryData` will have its control
+messages length cleared, so a subsequent call to `control_messages_buf()`
+returns `None`. If the `AncillaryData` contains received FDs, they will
+be closed.
+
+#### `fn AncillaryData::set_control_messages_len`
+
+Does not take ownership of FDs in any `SCM_RIGHTS` control messages that
+might exist within the new buffer length.
+
+**Panics**:
+ * if `len > control_messages_buf.len()`
+ * if `control_messages_buf()` hasn't been called to clear the length.
+
+The second panic condition means that creating an `AncillaryData` and then
+immediately calling `set_control_messages_len` will panic to avoid potentially
+reading uninitialized data.
+
+Also, calling `set_control_messages_len()` twice without an intervening
+`control_messages_buf()` will panic to avoid leaking received FDs.
+
+#### `fn AncillaryData::take_ownership_of_scm_rights`
+
+**Panics**:
+  * if `set_control_messages_len()` hasn't been called since the most
+    recent call to `control_messages_buf()`.
+    * That method is what keeps track of how much of the received buffer
+      contains owned FDs, and trying to take ownership of `SCM_RIGHTS` without
+      knowing how much to scan is almost certainly a programming error.
+
+**Safety**: contents of control messages become `OwnedFd`, so this has all
+the safety requirements of `OwnedFd::from_raw_fd()`.
+
+### `struct AncillaryDataBuf`
+
+An `AncillaryDataBuf` is an owned variant of `AncillaryData`, using heap
+allocation (an internal `Vec<u8>`). It exposes a subset of the `Vec` capacity
+management methods.
+
+```rust
+struct AncillaryDataBuf<'fd>;
+
+impl AncillaryDataBuf<'fd> {
+    fn new() -> AncillaryDataBuf<'static>;
+    fn with_capacity(capacity: usize) -> AncillaryDataBuf<'static>;
 
     fn capacity(&self) -> usize;
 
-    fn push(&mut self, message: impl Into<ControlMessage<'_>>);
-
-    fn reserve(&mut self, additional: usize);
-
-    fn try_reserve(
-        &mut self,
-        additional: usize,
-    ) -> Result<(), TryReserveError>;
-
-    fn reserve_exact(&mut self, additional: usize);
-
-    fn try_reserve_exact(
-        &mut self,
-        additional: usize
-    ) -> Result<(), TryReserveError>
-}
-
-impl AsRef<ControlMessages> for ControlMessagesBuf;
-
-impl Deref for ControlMessagesBuf {
-    type Target = ControlMessages;
-}
-
-impl<'a> IntoIterator for &'a ControlMessagesBuf {
-    type Item = ControlMessage<'a>;
-    type IntoIter = ControlMessagesIter<'a>;
-}
-
-impl Extend<ControlMessage<'_>> for ControlMessagesBuf;
-impl Extend<&ControlMessage<'_>> for ControlMessagesBuf;
-```
-
-## Ancillary data
-
-The `AncillaryData` struct is responsible for combining the serialized control
-messages with a notion of file descriptor ownership, ensuring that (1) borrowed
-FDs live long enough to be sent, and (2) received FDs aren't leaked.
-
-```rust
-struct AncillaryData<'fd>;
-
-impl AncillaryData<'fd> {
-    fn new() -> AncillaryData<'fd>;
-    fn with_capacity(capacity: usize) -> AncillaryData<'fd>;
-
     fn control_messages(&self) -> &ControlMessages;
-    fn control_messages_mut(&mut self) -> &mut ControlMessagesBuf;
 
-    // Helper for control_messages_mut().push(message.into())
-    fn add_control_message<'b>(&mut self, message: impl Into<ControlMessage<'b>>);
+    // copy a control message into the ancillary data; panic on alloc failure.
+    fn add_control_message(
+        &mut self,
+        control_message: impl Into<ControlMessage<'_>>,
+    );
 
-    // Adds FDs to the control messages buffer so they can be sent.
-    fn add_file_descriptors(&mut self, borrowed_fds: &impl AsRef<[BorrowedFd<'fd>]>);
+    // Add an `SCM_RIGHTS` control message with given borrowed FDs; panic on
+    // alloc failure.
+    fn add_file_descriptors(&mut self, borrowed_fds: &[BorrowedFd<'fd>]);
 
-    // Clears the control message buffer and drops owned FDs.
+    // Used to obtain `AncillaryData` for passing to send/recv calls.
+    fn to_ancillary_data<'a>(&'a mut self) -> AncillaryData<'a, 'fd>;
+
+    // Clears the control message buffer, without affecting capacity.
+    //
+    // This will not leak FDs because the `AncillaryData` type holds a mutable
+    // reference to the `AncillaryDataBuf`, so if `clear()` is called then there
+    // are no outstanding `AncillaryData`s and thus no received FDs.
     fn clear(&mut self);
 
-    // Takes ownership of FDs received from the socket. After the FDs are
-    // taken, returns `None` until the next call to `finish_recvmsg`.
-    fn take_owned_fds(&mut self) -> Option<Vec<OwnedFd>>;
+    // as in Vec
+    fn reserve(&mut self, capacity: usize);
+    // as in Vec
+    fn reserve_exact(&mut self, capacity: usize);
 
-    // API for sockets performing `recvmsg`:
-    //
-    // 1. Call `start_recvmsg` to obtain a mutable buffer to pass into the
-    //    `cmsghdr`. The buffer len equals `control_messages().capacity()`.
-    //
-    // 2. Call `finish_recvmsg` to update the control messages buffer length
-    //    according to the new `cmsghdr` length. This function will also take
-    //    ownership of FDs received from the socket.
-    //
-    // The caller is responsible for ensuring that the control messages buffer
-    // content and length are provided by a successful call to `recvmsg`.
-    fn start_recvmsg(&mut self) -> Option<&mut [u8]>;
-    unsafe fn finish_recvmsg(&mut self, control_messages_len: usize);
+    // as in Vec
+    fn try_reserve(
+        &mut self,
+        capacity: usize,
+    ) -> Result<(), TryReserveError>;
 
-    // API for sockets performing `sendmsg` -- basically the same as the
-    // `recvmsg` version, but doesn't scan the message buffer for `SCM_RIGHTS`
-    // to take ownership of.
-    //
-    // The caller is responsible for ensuring that the control messages buffer
-    // content and length are provided by a successful call to `sendmsg`.
-    fn start_sendmsg(&mut self) -> Option<&mut [u8]>;
-    unsafe fn finish_sendmsg(&mut self, control_messages_len: usize);
+    // as in Vec
+    fn try_reserve_exact(
+        &mut self,
+        capacity: usize,
+    ) -> Result<(), TryReserveError>;
 }
+
+impl Extend<ControlMessage<'_>> for AncillaryDataBuf;
+impl Extend<&ControlMessage<'_>> for AncillaryDataBuf;
 ```
+
+#### `fn AncillaryDataBuf::to_ancillary_data`
+
+The returned `AncillaryData` will be initialized with the same control messages,
+capacity, and borrowed FDs as the `AncillaryDataBuf`. Specifically, it's as if
+the entire capacity of the internal `Vec` is passed to `AncillaryData::new()`.
+
+When the `AncillaryData` is dropped its received FDs will be closed. The
+`AncillaryDataBuf` does not retain ownership of received FDs. Otherwise the
+API to reuse an `AncillaryDataBuf` between calls gets really complicated.
+
+The only subtle part of `to_ancillary_data` is that it transfers logical
+ownership of the control messages, but not the control messages *buffer*. So
+after calling this function the `AncillaryDataBuf::control_messages()` method
+returns an empty `&ControlMessages`, and any calls to `add_control_message` or
+`add_file_descriptors`. It's basically an implicit `clear()`.
 
 ## Sending messages
 
@@ -306,7 +396,7 @@ trait SendMessage {
     fn send_message(
         &self,
         bufs: &[IoSlice<'_>],
-        ancillary_data: &mut AncillaryData<'_>,
+        ancillary_data: &mut AncillaryData<'_, '_>,
         options: SendOptions,
     ) -> io::Result<usize>;
 }
@@ -318,7 +408,7 @@ trait SendMessageTo {
         &self,
         addr: &Self::SocketAddr,
         bufs: &[IoSlice<'_>],
-        ancillary_data: &mut AncillaryData<'_>,
+        ancillary_data: &mut AncillaryData<'_, '_>,
         options: SendOptions,
     ) -> io::Result<usize>;
 }
@@ -389,7 +479,7 @@ impl<S, 'a> MessageSender<S, 'a> {
 
     fn ancillary_data(
         &mut self,
-        ancillary_data: &'a mut AncillaryData<'a>,
+        ancillary_data: &'a mut AncillaryData<'_, '_>,
     ) -> &mut MessageSender<S, 'a>;
 
     fn options(
@@ -421,7 +511,7 @@ trait RecvMessage {
     fn recv_message(
         &self,
         bufs: &mut [IoSliceMut<'_>],
-        ancillary_data: &mut AncillaryData<'_>,
+        ancillary_data: &mut AncillaryData<'_, '_>,
         options: RecvOptions,
     ) -> io::Result<(usize, RecvResult)>;
 }
@@ -432,7 +522,7 @@ trait RecvMessageFrom {
     fn recv_message_from(
         &self,
         bufs: &mut [IoSliceMut<'_>],
-        ancillary_data: &mut AncillaryData<'_>,
+        ancillary_data: &mut AncillaryData<'_, '_>,
         options: RecvOptions,
     ) -> io::Result<(usize, RecvResult, Self::SocketAddr)>;
 }
@@ -534,7 +624,7 @@ impl<S, 'a> MessageReceiver<S, 'a> {
 
     fn ancillary_data(
         &mut self,
-        ancillary_data: &'a mut AncillaryData<'a>,
+        ancillary_data: &'a mut AncillaryData<'_, '_>,
     ) -> &mut MessageReceiver<S, 'a>;
 
     fn options(
@@ -740,10 +830,8 @@ This RFC would significantly expand the public API surface of `os::unix::net`.
 The handling of file descriptor ownership is more complex than the current
 implementation, which uses `RawFd`. There may be soundness issues in the
 conversion of `SCM_RIGHTS` into a `Vec<OwnedFd>`, for example if a way is
-found to call `finish_recvmsg` on a user-defined buffer from safe code.
-
-The API described in this RFC doesn't provide a way for a stack-allocated
-buffer to be used as `AncillaryData` capacity.
+found to call `take_ownership_of_scm_rights` on a user-defined buffer from
+safe code.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
