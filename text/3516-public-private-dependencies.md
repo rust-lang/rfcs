@@ -361,19 +361,19 @@ One possible approach for this:
 name = "some-cli"
 
 [dependencies]
-clap = { version.from ["clap_complete", "clap_mangen"] }
+clap = { from = ["clap_complete", "clap_mangen"] }
 clap_complete = "3.4"
 clap_mangen = "3.4"
 ```
 When resolving the dependencies for `some-cli`,
 the resolver will not explicitly choose a version for `clap` but will continue resolving the graph.
-Upon completion, it will look to see what version of `clap_complete` was
+Upon completion, it will look to see what instance of `clap_complete` was
 resolved and act as if that was what was specified inside of the in-memory
 `clap` dependency.
 
-The packakge using `version.from` must be a public dependency of the `from` package.
+The packakge using `from` must be a public dependency of the `from` package.
 In this case, `clap` must be a public dependency of `clap_complete`.
-If the different packages in `version.from` do not agree on what the package
+If the different packages in `from` do not agree on what the package
 version should resolve to (clap 3.4 vs clap 4.0), then it is an error.
 
 Compared to the resolver doing this implicitly
@@ -384,6 +384,9 @@ Compared to the resolver doing this implicitly
 The downside is it feels like the declaration is backwards.
 If you have one core crate (e.g. `clap`) and many crates branching off (e.g. `clap_complete`, `clap_mangen`),
 it seems like those helper crates should have their version picked from `clap`.
+
+Whether this should be specified across all sources (`from`) or per source (`registry.from`, `git.from`, `path.from`) will need to be worked out.
+See [rust-lang/cargo#6921](https://github.com/rust-lang/cargo/issues/6921) for an example of using this for git dependencies.
 
 ## Missing feature declaration check
 
