@@ -73,7 +73,9 @@ fn main() {
 
 Another case is when the existence of a reference is, itself, semantically important — for example, reference counting, or if relayout of a UI should occur each time a mutable reference ceases to exist. In these cases it's not OK to allow a regular Rust reference to exist, and yet sometimes we still want to be able to call methods on a reference-like thing.
 
-In theory, users can define their own smart pointers. In practice, they're second-class citizens compared to the smart pointers in Rust's standard library. User-defined smart pointers to `T` can accept method calls only if the receiver (`self`) type is `&T` or `&mut T`, which isn't acceptable if we can't safely create native Rust references to a `T`.
+A third motivation is that taking smart pointer types as `self` parameters can enable functions to act on the smart pointer type, not just the underlying data. For example, taking `&Arc<T>` allows the functions to both clone the smart pointer (noting that the underlying `T` might not implement `Clone`) in addition to access the data inside the type, which is useful for some methods. Also, being able to change a method from accepting `&self` to `self: &Arc<Self>` can be done in a mostly frictionless way, whereas changing from `&self` to a static method accepting `&Arc<Self>` will always require some amount of refactoring. These options are currently open only to Rust's built-in smart pointer types, not to custom smart pointer types.
+
+In theory, users can define their own smart pointers. In practice, they're second-class citizens compared to the smart pointers in Rust's standard library. A type `T` can accept method calls using smart pointers as the `self` type only if they're one of Rust's built-in smart pointers.
 
 This RFC proposes to loosen this restriction to allow custom smart pointer types to be accepted as a `self` type just like for the standard library types.
 
