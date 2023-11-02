@@ -13,7 +13,7 @@ Allow types that implement the new `trait Receiver<Target=Self>` to be the recei
 
 Today, methods can only be received by value, by reference, or by one of a few blessed smart pointer types from `core`, `alloc` and `std` (`Arc<Self>`, `Box<Self>`, `Pin<P>` and `Rc<Self>`).
 
-It's been assumed that this will eventually be generalized to support any smart pointer, such as an `CustomPtr<Self>`. Since late 2017, it has been available on nightly under the `arbitrary_self_types` feature for types that implement `Deref<Target=Self>` and for raw pointers.
+It's been assumed that this will eventually be generalized to support any smart pointer, such as an `CustomPtr<Self>`. Since late 2017, it has been available on nightly under the `arbitrary_self_types` feature for types that implement `Deref<Target=T>` and for raw pointers.
 
 This RFC proposes some changes to the existing nightly feature based on the experience gained, with a view towards stabilizing the feature in the relatively near future.
 
@@ -83,20 +83,55 @@ See also [this blog post](https://medium.com/@adetaylor/the-case-for-stabilizing
 
 ## Motivation for the v2 changes
 
-Unstable Rust contains an implementation of arbitrary self types based around the `Deref<Target=T>` trait. Naturally, that trait also provides a means to create a `&T`.
+Unstable Rust contains an implementation of arbitrary self types based around the `Deref<Target=T>` trait. Naturally, that trait also provides a means to create a `&T`. Example:
 
-However, if it's OK to create a reference `&T`, you _probably don't need this feature_. You can probably simply use `&self` as your receiver type.
+```rust
+#[feature(arbitrary_self_types)]
 
-This feature is fundamentally aimed at smart pointer types `P<T>` where it's not safe to create a reference `&T`. As noted above, that's most commonly because of semantic differences to pointers in other languages, but it might be because references have special meaning or behavior in some pure Rust domain. Either way, it's not OK to create a Rust reference `&T` or `&mut T`, yet we may want to allow methods to be called on some reference-like thing.
+struct SmartPtr<T>(*const T);
 
-For this reason, implementing `Deref::deref` is problematic for _nearly everyone who wants to use arbitrary self types_.
+impl<T: ?Sized> Deref for SmartPtr<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        // never called, but smart pointers need to implement this method
+        // sometimes it's just not safe to create a reference to self.0
+    }
+}
 
-If you're implementing a smart pointer `P<T>` yet you can't allow a reference `&T` to exist, any option for implementing `Deref::deref` has drawbacks:
+struct ConcreteType;
+
+impl ConcreteType {
+    fn some_method(self: SmartPtr<ConcreteType>) {
+
+    }
+}
+
+fn main() {
+    let concrete: SmartPtr<ConcreteType> = ...;
+    concrete.some_method();
+}
+```
+
+However, if it's OK to create a reference `&T`, you _probably_ don't need this feature. You can simply use `&self` as your receiver type:
+
+```rust
+impl ConcreteType {
+    fn some_method(&self) {
+
+    }
+}
+```
+
+This feature is mostly aimed at smart pointer types `P<T>` where it's not safe to create a reference `&T`. As noted above, that's most commonly because of semantic differences to pointers in other languages, but it might be because references have special meaning or behavior in some pure Rust domain. Either way, it's not OK to create a Rust reference `&T` or `&mut T`, yet we may want to allow methods to be called on some reference-like thing.
+
+For this reason, implementing `Deref::deref` is problematic for most of the likely users of this "arbitrary self types" feature.
+
+If you're implementing a smart pointer `P<T>`, and you need to allow `impl T { fn method(self: P<T>) { ... }}`, yet you can't allow a reference `&T` to exist, any option for implementing `Deref::deref` has drawbacks:
 
 * Specify `Deref::Target=T` and panic in `Deref::deref`. Not good.
-* Specify `Deref::Target=*const T`. This works with the current arbitrary self types feature, but is only possible if your smart pointer type contains a `*const T` which you can reference - this isn't the case for (for instance) weak pointers or types containing `NonNull`.
+* Specify `Deref::Target=*const T`. This is only possible if your smart pointer type contains a `*const T` which you can reference - this isn't the case for (for instance) weak pointers or types containing `NonNull`.
 
-Therefore, the current Arbitrary Self Types v2 provides a separate `Receiver` trait.
+Therefore, the current Arbitrary Self Types v2 provides a separate `Receiver` trait, so that there's no need to provide an awkward `Deref::deref` implementation.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
