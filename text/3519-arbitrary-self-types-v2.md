@@ -260,11 +260,15 @@ impl<'a, T: ?Sized> Receiver for SmartPtrByRef<'a, T> {
 struct Concrete(u32);
 
 impl Concrete {
-    // n a(self: &SmartPtrByValue<Self>) -> &u32 { &self.0.0 } // does not compile
+    // fn a(self: &SmartPtrByValue<Self>) -> &u32 { &self.0.0 } // does not compile
     fn b<'a>(self: &'a SmartPtrByValue<Self>) -> &'a u32 { &self.0.0 }
     // fn c(self: &SmartPtrB<Self>) -> &u32 {} // does not compile
     fn d<'a, 'b>(self: &'a SmartPtrByRef<'b, Self>) -> &'a u32 { &self.0.0 }
     fn e<'a>(self: &'a SmartPtrByRef<Self>) -> &'a u32 { &self.0.0 }
+    fn f<'a>(self: &'_ SmartPtrByRef<'a, Self>) -> &'a u32 { &self.0.0 }
+    fn g<'a, 'b>(self: &'a SmartPtrByRef<'b, Self>) -> &'b u32 { &self.0.0 }
+    fn h<'a>(self: SmartPtrByRef<'a, Self>) -> &'a u32 { &self.0.0 }
+    // fn i(self: SmartPtrByRef<Self>) -> &u32 { &self.0.0 } // does not compile
 }
 
 fn free_function(param: &SmartPtrByValue<Concrete>) -> &u32 { &param.0.0 }
@@ -274,8 +278,7 @@ fn main() {
     assert_eq!(*by_val.b(), 14);
     let concrete = Concrete(16);
     let by_ref = SmartPtrByRef(&concrete);
-    assert_eq!(*by_ref.d(), 16);
-    assert_eq!(*by_ref.e(), 16);
+    assert_eq!(*by_ref.d(), 16); // same for e, f, g, h
     assert_eq!(*free_function(by_val), 16);
 }
 ```
