@@ -178,7 +178,7 @@ impl<T> Receiver for CustomPtr<T> {
 
 ## Recursive arbitrary receivers
 
-Receivers are recursive and therefore allowed to be nested. If type `T` implements `Receiver<Target=U>`, and type `U` implements `Receiver<Target=Self>`, `T` is a valid receiver (and so on outward).
+Receivers are recursive and therefore allowed to be nested. If type `T` implements `Receiver<Target=U>`, and type `U` implements `Receiver<Target=Self>`, `T` is a valid receiver (and so on outward). This is the behavior for the current special-cased self types (`Pin`, `Box` etc.) so as we remove the special-casing we need to retain this property.
 
 For example, this self type is valid:
 
