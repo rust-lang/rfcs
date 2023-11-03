@@ -238,25 +238,49 @@ This RFC does not propose any changes to `DispatchFromDyn`. Since `DispatchFromD
 
 ## Lifetime elision
 
-As discussed in the [motivation](#motivation), this new facility is _most likely_ to be used in cases where a standard reference can't normally be used. But in other cases a smart pointer self type might wrap a standard Rust reference, and thus might be parameterized by a lifetime.
+Arbitrary `self` parameters may involve lifetimes.
 
-Lifetime elision works in the expected fashion:
+This RFC currently proposes no changes to the standard lifetime elision rules. There are no known cases where ambiguity results. However, the opposite problem does apply: sometimes explicit lifetimes are required for methods with an arbitrary self type, even if they're not required for an equivalent free function. 
 
 ```rust
-struct SmartPtr<'a, T: ?Sized>(&'a T);
+use std::ops::Receiver;
 
-impl<'a, T: ?Sized> Receiver for SmartPtr<'a, T> {
+struct SmartPtrByValue<T: ?Sized>(T);
+
+impl<T: ?Sized> Receiver for SmartPtrByValue<T> {
     type Target = T;
 }
 
-struct MyType;
+struct SmartPtrByRef<'a, T: ?Sized>(&'a T);
 
-impl MyType {
-    fn m(self: SmartPtr<Self>) {}
-    fn n(self: SmartPtr<'_, Self>) {}
-    fn o<'a>(self: SmartPtr<'a, Self>) {}
+impl<'a, T: ?Sized> Receiver for SmartPtrByRef<'a, T> {
+    type Target = T;
+}
+
+struct Concrete(u32);
+
+impl Concrete {
+    // n a(self: &SmartPtrByValue<Self>) -> &u32 { &self.0.0 } // does not compile
+    fn b<'a>(self: &'a SmartPtrByValue<Self>) -> &'a u32 { &self.0.0 }
+    // fn c(self: &SmartPtrB<Self>) -> &u32 {} // does not compile
+    fn d<'a, 'b>(self: &'a SmartPtrByRef<'b, Self>) -> &'a u32 { &self.0.0 }
+    fn e<'a>(self: &'a SmartPtrByRef<Self>) -> &'a u32 { &self.0.0 }
+}
+
+fn free_function(param: &SmartPtrByValue<Concrete>) -> &u32 { &param.0.0 }
+
+fn main() {
+    let by_val = SmartPtrByValue(Concrete(14));
+    assert_eq!(*by_val.b(), 14);
+    let concrete = Concrete(16);
+    let by_ref = SmartPtrByRef(&concrete);
+    assert_eq!(*by_ref.d(), 16);
+    assert_eq!(*by_ref.e(), 16);
+    assert_eq!(*free_function(by_val), 16);
 }
 ```
+
+In case `a` the lifetime could be elided (as demonstrated by `free_function`) yet an explicit lifetime is currently demanded by the compiler. For now, this extra clarity seems actually desirable. We could relax this restriction in future. (The authors of this RFC are interested in other views here!)
 
 ## Diagnostics
 
