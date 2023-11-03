@@ -222,6 +222,8 @@ It is also implemented for `&T`, `&mut T`, `*const T` and `*mut T`.
 
 The existing Rust [reference section for method calls describes the algorithm for assembling method call candidates](https://doc.rust-lang.org/reference/expressions/method-call-expr.html). This algorithm changes in one simple way: instead of dereferencing types (using the `Deref<Target=T>`) trait, we use the new `Receiver<Target=T>` trait to determine the next step.
 
+(Note that the existing algorithm isn't quite as simple as following the chain of `Deref<Target=T>`. In particular, `&T` and `&mut T` are considered as candidates too at each step; this RFC does not change that.)
+
 Because a blanket implementation is provided for users of the `Deref` trait and for `&T`/`&mut T`, the net behavior is similar. But this provides the opportunity for types which can't implement `Deref` to act as method receivers.
 
 Dereferencing a raw pointer usually needs `unsafe` (for good reason!) but in this case, no actual dereferencing occurs. This is used only to determine a list of method candidates; no memory access is performed and thus no `unsafe` is needed.
