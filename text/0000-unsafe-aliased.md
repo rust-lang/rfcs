@@ -8,9 +8,10 @@
 # Summary
 [summary]: #summary
 
-Add a type `UnsafeAliased` that acts on `&mut` in a similar way to how `UnsafeCell` acts on `&`: it opts-out of the aliasing guarantees.
-However, `&mut UnsafeAliased` can still be `mem::swap`ed, so this is not a free ticket for arbitrary aliasing of mutable references.
-Abstractions built on top of `UnsafeAliased` must ensure proper encapsulation when handing such aliases references to clients (e.g. via pinning).
+Add a type `UnsafePinned` that indicates to the compiler that this field is "pinned" and there might be pointers elsewhere that point to the same memory.
+This means, in particular, that `&mut UnsafePinned` is not necessarily a unique pointer, and thus the compiler cannot just make aliasing assumptions.
+However, `&mut UnsafePinned` can still be `mem::swap`ed, so this is not a free ticket for arbitrary aliasing of mutable references.
+You need to use mechanisms such as `Pin` to ensure that mutable references cannot be used in incorrect ways by clients.
 
 This type is then used in generator lowering, finally fixing [#63818](https://github.com/rust-lang/rust/issues/63818).
 
@@ -160,11 +161,11 @@ We don't want to change the rules for mutable references in general (that would 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-To write this code in a UB-free way, wrap the fields that are *targets* of self-referential pointers in an `UnsafeAliased`:
+To write this code in a UB-free way, wrap the fields that are *targets* of self-referential pointers in an `UnsafePinned`:
 
 ```rust
 pub struct S {
-    data: UnsafeAliased<i32>, // <!---- here
+    data: UnsafePinned<i32>, // <!---- here
     ptr_to_data: *mut i32,
 }
 ```
@@ -174,12 +175,13 @@ That's entirely analogous to how `UnsafeCell` lets the compiler know that *share
 
 However, what is *not* analogous is that `&mut S`, when handed to safe code *you do not control*, must still be unique pointers!
 This is because of methods like `mem::swap` that can still assume that their two arguments are non-overlapping.
-(`mem::swap` on two `&mut UnsafeAliased<i32>` may soundly assume that they do not alias.)
+(`mem::swap` on two `&mut UnsafePinned<i32>` may soundly assume that they do not alias.)
 In other words, the safety invariant of `&mut S` still requires full ownership of the entire memory range `S` is stored at; for the duration that a function holds on to the borrow, nobody else may read and write this memory.
 But again, this is a *safety invariant*; it only applies to safe code you do not control. You can write your own code handling `&mut S` and as long as that code is careful not to make use of this memory in the wrong way, potential aliasing is fine.
-You can also hand out a `Pin<&mut S>` to external safe code; the `Pin` wrapper imposes exactly the restrictions needed to ensure that this remains sound (e.g., it prevents `mem::swap`).
 
-Similarly, the intrusive linked list from the motivation can be fixed by wrapping the entire `UnsafeListEntry` in `UnsafeAliased`.
+To hand such references to safe code, use `Pin`: the type `Pin<&mut S>` can be safely given to external code, since the `Pin` wrapper blocks access to operations like `mem::swap`.
+
+Similarly, the intrusive linked list from the motivation can be fixed by wrapping the entire `UnsafeListEntry` in `UnsafePinned`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -187,58 +189,57 @@ Similarly, the intrusive linked list from the motivation can be fixed by wrappin
 API sketch:
 
 ```rust
-/// The type `UnsafeAliased<T>` lets unsafe code violate
-/// the rule that `&mut UnsafeAliased<T>` may never alias anything else.
+/// The type `UnsafePinned<T>` lets unsafe code violate
+/// the rule that `&mut UnsafePinned<T>` may never alias anything else.
 ///
-/// However, it is still very risky to have two `&mut UnsafeAliased<T>` that alias
+/// However, it is still very risky to have two `&mut UnsafePinned<T>` that alias
 /// each other. For instance, passing those two references to `mem::swap`
-/// would cause UB. The general advice is to still have a single mutable
-/// reference, and then a bunch of raw pointers that alias it.
-/// If you want to pass such a reference to external safe code,
-/// you need to use techniques such as pinning (`Pin<&mut TypeWithUnsafeAliased>`)
-/// which ensure that both the mutable reference and its aliases remain valid.
+/// would cause UB. Techniques such as pinning via `Pin` help to avoid those pitfalls.
 ///
 /// Further note that this does *not* lift the requirement that shared references
 /// must be read-only! Use `UnsafeCell` for that.
 #[lang = "unsafe_aliased"]
 #[repr(transparent)]
-struct UnsafeAliased<T: ?Sized> {
+struct UnsafePinned<T: ?Sized> {
     value: T,
 }
 
 /// When this type is used, that almost certainly means safe APIs need to use pinning
 /// to avoid the aliases from becoming invalidated. Therefore let's mark this as `!Unpin`.
-impl<T> !Unpin for UnsafeAliased<T> {}
+impl<T> !Unpin for UnsafePinned<T> {}
 
-impl<T: ?Sized> UnsafeAliased<T> {
-    /// Constructs a new instance of `UnsafeAliased` which will wrap the specified
+impl<T: ?Sized> UnsafePinned<T> {
+    /// Constructs a new instance of `UnsafePinned` which will wrap the specified
     /// value.
-    pub fn new(value: T) -> UnsafeAliased<T> where T: Sized {
-        UnsafeAliased { value }
+    pub fn new(value: T) -> UnsafePinned<T> where T: Sized {
+        UnsafePinned { value }
     }
 
     pub fn into_inner(self) -> T where T: Sized {
         self.value
     }
 
-    /// Get read-write access to the contents of an `UnsafeAliased`.
-    pub fn get_mut(&mut self) -> *mut T {
-        self as *mut _ as *mut T
+    /// Get read-write access to the contents of an `UnsafePinned`.
+    /// Using `UnsafePinned` without pinning is dangerous,
+    /// so use `get_mut_pinned` instead whenever possible!
+    pub fn get_mut_unchecked(&mut self) -> *mut T {
+        ptr::addr_of_mut!(self.value)
     }
 
-    /// Get read-write access to the contents of a pinned `UnsafeAliased`.
-    pub fn get_mut_pinned(Pin<&mut self>) -> *mut T {
-        ..
+    /// Get read-write access to the contents of a pinned `UnsafePinned`.
+    pub fn get_mut_pinned(self: Pin<&mut Self>) -> *mut T {
+        // SAFETY: we're not using `get_unchecked_mut` to unpin anything
+        unsafe { ptr::addr_of_mut!(self.get_unchecked_mut().value) }
     }
 
-    /// Get read-only access to the contents of a shared `UnsafeAliased`.
-    /// Note that `&UnsafeAliased<T>` is read-only if `&T` is read-only.
+    /// Get read-only access to the contents of a shared `UnsafePinned`.
+    /// Note that `&UnsafePinned<T>` is read-only if `&T` is read-only.
     /// This means that if there is mutation of the `T`, future reads from the
     /// `*const T` returned here are UB!
     ///
     /// ```rust
     /// unsafe {
-    ///     let mut x = UnsafeAliased::new(0);
+    ///     let mut x = UnsafePinned::new(0);
     ///     let ref1 = &mut *addr_of_mut!(x);
     ///     let ref2 = &mut *addr_of_mut!(x);
     ///     let ptr = ref1.get(); // read-only pointer, assumes immutability
@@ -265,12 +266,12 @@ This implies that `duplicate` in the following example, while not causing immedi
 
 ```rust
 pub struct S {
-    data: UnsafeAliased<i32>,
+    data: UnsafePinned<i32>,
 }
 
 impl S {
     fn new(x: i32) -> Self {
-        S { data: UnsafeAliased::new(x) }
+        S { data: UnsafePinned::new(x) }
     }
 
     fn duplicate<'a>(s: &'a mut S) -> (&'a mut S, &'a mut S) {
@@ -289,7 +290,7 @@ let (s1, s2) = s.duplicate(); // no UB
 mem::swap(s1, s2); // UB
 ```
 
-We could even soundly make `get_mut` return an `&mut T`, given that the safety invariant is not affected by `UnsafeAliased`.
+We could even soundly make `get_mut_unchecked` return an `&mut T`, given that the safety invariant is not affected by `UnsafePinned`.
 But that would probably not be useful and only cause confusion.
 
 Reference diff:
@@ -298,25 +299,26 @@ Reference diff:
   * Breaking the [pointer aliasing rules]. `&mut T` and `&T` follow LLVM’s scoped
 -   [noalias] model, except if the `&T` contains an [`UnsafeCell<U>`].
 +   [noalias] model, except if the `&T` contains an [`UnsafeCell<U>`] or
-+   the `&mut T` contains an [`UnsafeAliased<U>`].
++   the `&mut T` contains an [`UnsafePinned<U>`].
 ```
 
 Async generator lowering changes:
-- Fields that represent local variables whose address is taken across a yield point must be wrapped in `UnsafeAliased`.
+- Fields that represent local variables whose address is taken across a yield point must be wrapped in `UnsafePinned`.
 
 Codegen and Miri changes:
 
-- We have a `Unique` auto trait similar to `Freeze` that is implemented if the type does not contain any by-val `UnsafeAliased`.
-- `noalias` on mutable references is only emitted for `Unique` types. (This replaces the current hack where it is only emitted for `Unpin` types.)
-- Miri will do `SharedReadWrite` retagging inside `UnsafeAliased` similar to what it does inside `UnsafeCell` already. (This replaces the current `Unpin`-based hack.)
+- We have a `UnsafeUnpin` auto trait similar to `Freeze` that is implemented if the type does not contain any by-val `UnsafePinned`.
+  This trait is an internal implementation detail and (for now) not exposed to users.
+- `noalias` on mutable references is only emitted for `UnsafeUnpin` types. (This replaces the current hack where it is only emitted for `Unpin` types.)
+- Miri will do `SharedReadWrite` retagging inside `UnsafePinned` similar to what it does inside `UnsafeCell` already. (This replaces the current `Unpin`-based hack.)
 
-Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=776f6640dcac5a303ce6af50dfe8dd91) that uses the `Unpin` hack to achieve mostly the same effect.
-("Mostly" because a safe `impl Unpin for ...` can un-do the effect of this, which would not be the case with the real `UnsafeAliased`.)
+Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e686152296347467f9c9b173ebd1e2d0) that uses the `Unpin` hack to achieve mostly the same effect.
+("Mostly" because a safe `impl Unpin for ...` can un-do the effect of this, which would not be the case with the real `UnsafePinned`.)
 
 ### Comparison with some other types that affect aliasing
 
 - `UnsafeCell`: disables aliasing (and affects but does not fully disable dereferenceable) behind shared refs, i.e. `&UnsafeCell<T>` is special. `UnsafeCell<&T>` (by-val, fully owned) is not special at all and basically like `&T`; `&mut UnsafeCell<T>` is also not special.
-- `UnsafeAliased`: disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafeAliased<T>` is special. `UnsafeAliased<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafeAliased<T>` is also not special.
+- `UnsafePinned`: disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafePinned<T>` is special. `UnsafePinned<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafePinned<T>` is also not special.
 - [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336): disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
 
 # Drawbacks
@@ -336,16 +338,16 @@ However, of course one could imagine alternatives:
 - Keep the status quo. The current sitaution is that we only make aliasing requirements on mutable references if the type they point to is `Unpin`. This is unsatisfying: `Unpin` was never meant to have this job. A consequence is that a stray `impl Unpin` on a `Wrapper<T>`-style type can [lead to subtle miscompilations](https://internals.rust-lang.org/t/surprising-soundness-trouble-around-pollfn/17484/15) since it re-adds aliasing requirements for the inner `T`.
   Contrast this with the `UnsafeCell` situation, where it is not possible for (stable) code to just `impl Freeze for T` in the wrong way -- `UnsafeCell` is *always* recognized by the compiler.
 
-  On the other hand, `UnsafeAliased` is rather quirky in its behavior and having two marker traits (`Unique` and `Unpin`) might be too confusing, so sticking with `Unpin` might not be too bad in comparison.
+  On the other hand, `UnsafePinned` is rather quirky in its behavior and having two marker traits (`Unique` and `Unpin`) might be too confusing, so sticking with `Unpin` might not be too bad in comparison.
 
   If we do that, however, it seems preferrable to transition `Unpin` to an unsafe trait. There *is* a clear statement about the types' invariants associated with `Unpin`, so an `impl Unpin` already comes with a proof obligation. It just happens to be the case that in a module without unsafe, one can always arrange all the pieces such that the proof obligation is satisifed.
   This is mostly a coincidence  and related to the fact that we don't have safe field projections on `Pin`. That said, solving this also requires solving the trouble around `Drop` and `Pin`, where effectively an `impl Drop` does an implicit `get_mut_unchecked`, i.e., implicitly assumes the type is `Unpin`.
-- `UnsafeAliased` could affect aliasing guarantees *both* on mutable and shared references. This would avoid the currently rather subtle situation that arises when one of many aliasing `&mut UnsafeAliased<T>` is cast or coerced to `&UnsafeAliased<T>`: that is a read-only shared reference and all aliases must stop writing!
-  It would make this type strictly more 'powerful' than `UnsafeCell` in the sense that replacing `UnsafeCell` by `UnsafeAliased` would always be correct. (Under the RFC as written, `UnsafeCell` and `UnsafeAliased` can be nested to remove aliasing requirements from both shared and mutable references.)
+- `UnsafePinned` could affect aliasing guarantees *both* on mutable and shared references. This would avoid the currently rather subtle situation that arises when one of many aliasing `&mut UnsafePinned<T>` is cast or coerced to `&UnsafePinned<T>`: that is a read-only shared reference and all aliases must stop writing!
+  It would make this type strictly more 'powerful' than `UnsafeCell` in the sense that replacing `UnsafeCell` by `UnsafePinned` would always be correct. (Under the RFC as written, `UnsafeCell` and `UnsafePinned` can be nested to remove aliasing requirements from both shared and mutable references.)
 
   If we don't do this, we could consider removing `get` since since it seems too much like a foot-gun.
-  But that makes shared references to `UnsafeAliased` fairly pointless. Shared references to generators/futures are basically useless so it is unclear what the potential use-cases here are.
-- Instead of introducing a new type, we could say that `UnsafeCell` affects *both* shared and mutable references. That would lose some optimization potential on types like `&mut Cell<T>`, but would avoid the footgun of coercing an `&mut UnsafeAliased<T>` to `&UnsafeAliased<T>`. That said, so far the author is not aware of Miri detecting code that would run into this footgun (and Miri is [able to do detect such issues](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=aab417b535f7dbd266fbfe470ea208c7)).
+  But that makes shared references to `UnsafePinned` fairly pointless. Shared references to generators/futures are basically useless so it is unclear what the potential use-cases here are.
+- Instead of introducing a new type, we could say that `UnsafeCell` affects *both* shared and mutable references. That would lose some optimization potential on types like `&mut Cell<T>`, but would avoid the footgun of coercing an `&mut UnsafePinned<T>` to `&UnsafePinned<T>`. That said, so far the author is not aware of Miri detecting code that would run into this footgun (and Miri is [able to do detect such issues](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=aab417b535f7dbd266fbfe470ea208c7)).
 - We could entirely avoid all these problems by not having aliasing restrictions on mutable references.
   But that is completely against the direction Rust has had for 8 years now, and it would mean removing LLVM `noalias` annotations for mutable references (and likely boxes) entirely.
   That is sacrificing optimization potential for the common case in favor of simplifying niche cases such as self-referential structs -- which is against the usual design philosophy of Rust.
@@ -363,18 +365,18 @@ Adding something like this to Rust has been discussed many times throughout the 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- How do we transition code that relies on `Unpin` opting-out of aliasing guarantees to the new type? Here's a plan: define the `PhantomPinned` type as `UnsafeAliased<()>`.
-  Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafeAliased` instead.
+- How do we transition code that relies on `Unpin` opting-out of aliasing guarantees to the new type? Here's a plan: define the `PhantomPinned` type as `UnsafePinned<()>`.
+  Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafePinned` instead.
   Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `Unique` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
-- The name of the type needs to be bikeshed. `UnsafeAliased` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect on aliasing rules when wrapped around the *pointer*.
+- The name of the type needs to be bikeshed. `UnsafePinned` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect on aliasing rules when wrapped around the *pointer*.
   Like `UnsafeCell`, the aliasing allowed here is "interior". Other possible names: `UnsafeSelfReferential`, `UnsafePinned`, ...
 - Relatedly, in which module should this type live?
 - Should this type `derive(Copy)`? `UnsafeCell` does not, which is unfortunate because it now means some people might use `T: Copy` as indication that there is no `UnsafeCell` in `T`.
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
-- When should `UnsafeAliased<T>` be `Send` or `Sync`?
+- When should `UnsafePinned<T>` be `Send` or `Sync`?
   Self-referential futures can be `Send` because once they are pinned, they cannot be moved, so certainly they cannot be sent -- in other words, `Send` only constrains the unpinned state of a type.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Similar to how we might want the ability to project from `&UnsafeCell<Struct>` to `&UnsafeCell<Field>`, the same kind of projection could also be interesting for `UnsafeAliased`.
+- Similar to how we might want the ability to project from `&UnsafeCell<Struct>` to `&UnsafeCell<Field>`, the same kind of projection could also be interesting for `UnsafePinned`.
