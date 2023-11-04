@@ -1,6 +1,7 @@
 - Feature Name: `lifetime_capture_rules_2024`
 - Start Date: 2023-07-26
 - RFC PR: [rust-lang/rfcs#3498](https://github.com/rust-lang/rfcs/pull/3498)
+- Tracking Issue: [rust-lang/rust#117587](https://github.com/rust-lang/rust/issues/117587)
 - Initiative: [`impl Trait` Initiative](https://github.com/rust-lang/impl-trait-initiative)
 
 # Summary
