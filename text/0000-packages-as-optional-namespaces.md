@@ -138,7 +138,7 @@ One thing that could mitigate `foo/bar` mapping to the potentially ambiguous `fo
 
 ### Using identical syntax in Cargo.toml and Rust source
 
-The `/` proposal does not require changes to Rust compiler to allow slash syntax (or whatever) to parse as a Rust path. Such changes could be made (though not with slash syntax due to parsing ambiguity, see [below](#Separator choice) for more options); this RFC is attempting to be minimal in its effects on rustc.
+The `/` proposal does not require changes to Rust compiler to allow slash syntax (or whatever) to parse as a Rust path. Such changes could be made (though not with slash syntax due to parsing ambiguity, see [below](#separator-choice) for more options); this RFC is attempting to be minimal in its effects on rustc.
 
 However, the divergence between Cargo.toml and rustc syntax does indeed have a complexity cost, and may be confusing to some users. Furthermore, it increases the chances of [Dash typosquatting](#Dash typosquatting) being effective.
 
