@@ -259,6 +259,10 @@ The sign bit is left unspecified, i.e., there are two canonical NaNs (and both a
 
 - Are there any other targets with floating-point trouble?
 - What exactly is the set of "extra" NaNs for all remaining targets?
+- To what extend does this specification apply to platform intrinsics?
+  On the one hand, it seems reasonable to expect platform intrinsics to have the behavior of the platform instructions.
+  On the other hand, we implement some platform intrinsics with the portable LLVM `simd` intrinsics, and those are subject to the NaN-non-determinism described above.
+  So the current de-facto semantics of at least some platform intrinsics is that they do *not* match what the platform does.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
