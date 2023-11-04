@@ -317,8 +317,8 @@ Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&
 
 ### Comparison with some other types that affect aliasing
 
-- `UnsafeCell`: disables aliasing (and affects but does not fully disable dereferenceable) behind shared refs, i.e. `&UnsafeCell<T>` is special. `UnsafeCell<&T>` (by-val, fully owned) is not special at all and basically like `&T`; `&mut UnsafeCell<T>` is also not special.
-- `UnsafePinned`: disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafePinned<T>` is special. `UnsafePinned<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafePinned<T>` is also not special.
+- `UnsafeCell`: disables aliasing (and affects but does not fully disable dereferenceable) behind shared refs, i.e. `&UnsafeCell<T>` is special. `UnsafeCell<&T>` (by-val, fully owned) is not special at all and basically like `&T`; `&mut UnsafeCell<T>` is also not special. Safe wrappers around this type can expose mutability behind shared references, such as `&RefCell<T>`.
+- `UnsafePinned`: disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafePinned<T>` is special. `UnsafePinned<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafePinned<T>` is also not special. Safe wrappers around this type can expose sharing that involves *pinned* mutable references, such as `Pin<&mut MyFuture>`.
 - [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336): disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
 
 # Drawbacks
@@ -326,7 +326,7 @@ Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&
 
 It's yet another wrapper type adjusting our aliasing rules and very easy to mix up with `UnsafeCell` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336).
 Furthermore, it is an extremely subtle wrapper type, as the `duplicate` example shows.
-`Unique` is a very strange trait, since it does not come with much of a safety requirement -- unlike `Freeze`, which quite clearly expresses some statement about the invariant of a type when shared, it is much less clear what the corresponding statement would be for `Unique`. (More work on RustBelt is needed to determine the details here.)
+`UnsafeUnpin` is a very strange trait, since it does not come with much of a safety requirement -- unlike `Freeze`, which quite clearly expresses some statement about the invariant of a type when shared, it is much less clear what the corresponding statement would be for `UnsafeUnpin`. (More work on RustBelt is needed to determine the details here.)
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -338,7 +338,7 @@ However, of course one could imagine alternatives:
 - Keep the status quo. The current sitaution is that we only make aliasing requirements on mutable references if the type they point to is `Unpin`. This is unsatisfying: `Unpin` was never meant to have this job. A consequence is that a stray `impl Unpin` on a `Wrapper<T>`-style type can [lead to subtle miscompilations](https://internals.rust-lang.org/t/surprising-soundness-trouble-around-pollfn/17484/15) since it re-adds aliasing requirements for the inner `T`.
   Contrast this with the `UnsafeCell` situation, where it is not possible for (stable) code to just `impl Freeze for T` in the wrong way -- `UnsafeCell` is *always* recognized by the compiler.
 
-  On the other hand, `UnsafePinned` is rather quirky in its behavior and having two marker traits (`Unique` and `Unpin`) might be too confusing, so sticking with `Unpin` might not be too bad in comparison.
+  On the other hand, `UnsafePinned` is rather quirky in its behavior and having two marker traits (`UnsafeUnpin` and `Unpin`) might be too confusing, so sticking with `Unpin` might not be too bad in comparison.
 
   If we do that, however, it seems preferrable to transition `Unpin` to an unsafe trait. There *is* a clear statement about the types' invariants associated with `Unpin`, so an `impl Unpin` already comes with a proof obligation. It just happens to be the case that in a module without unsafe, one can always arrange all the pieces such that the proof obligation is satisifed.
   This is mostly a coincidence  and related to the fact that we don't have safe field projections on `Pin`. That said, solving this also requires solving the trouble around `Drop` and `Pin`, where effectively an `impl Drop` does an implicit `get_mut_unchecked`, i.e., implicitly assumes the type is `Unpin`.
@@ -352,6 +352,12 @@ However, of course one could imagine alternatives:
   But that is completely against the direction Rust has had for 8 years now, and it would mean removing LLVM `noalias` annotations for mutable references (and likely boxes) entirely.
   That is sacrificing optimization potential for the common case in favor of simplifying niche cases such as self-referential structs -- which is against the usual design philosophy of Rust.
 
+### Naming
+
+An earlier proposal suggested to call the type `UnsafeAliased`, since the type is not inherently tied to pinning.
+However, it is not possible to write wrappers around `UnsafeAliased` such that we can have mutation behind `&mut MyType`. One has to use pinning for that: `Pin<&mut MyType>`.
+Because of that, the RFC proposes that we suggestively put pinning into the name of the type, so that people don't confuse it with a general mechanism for aliasing mutable references.
+It is more like the core primitive behind pinning, where whenever a type is pinned that is caused by an `UnsafePinned` field somewhere inside it.
 
 # Prior art
 [prior-art]: #prior-art
@@ -367,9 +373,7 @@ Adding something like this to Rust has been discussed many times throughout the 
 
 - How do we transition code that relies on `Unpin` opting-out of aliasing guarantees to the new type? Here's a plan: define the `PhantomPinned` type as `UnsafePinned<()>`.
   Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafePinned` instead.
-  Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `Unique` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
-- The name of the type needs to be bikeshed. `UnsafePinned` might be too close to `UnsafeCell`, but that is a deliberate choice to indicate that this type has an effect when it appears in the *pointee*, unlike types like `MaybeUninit` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336) that have an effect on aliasing rules when wrapped around the *pointer*.
-  Like `UnsafeCell`, the aliasing allowed here is "interior". Other possible names: `UnsafeSelfReferential`, `UnsafePinned`, ...
+  Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `UnsafeUnpin` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
 - Relatedly, in which module should this type live?
 - Should this type `derive(Copy)`? `UnsafeCell` does not, which is unfortunate because it now means some people might use `T: Copy` as indication that there is no `UnsafeCell` in `T`.
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
