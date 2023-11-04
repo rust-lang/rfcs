@@ -326,7 +326,14 @@ Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&
 
 It's yet another wrapper type adjusting our aliasing rules and very easy to mix up with `UnsafeCell` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336).
 Furthermore, it is an extremely subtle wrapper type, as the `duplicate` example shows.
-`UnsafeUnpin` is a very strange trait, since it does not come with much of a safety requirement -- unlike `Freeze`, which quite clearly expresses some statement about the invariant of a type when shared, it is much less clear what the corresponding statement would be for `UnsafeUnpin`. (More work on RustBelt is needed to determine the details here.)
+
+`UnsafeUnpin` is a somewhat unfortunate twin to `Unpin`.
+The purpose of `UnsafeUnpin` really is only to search for `UnsafePinned` fields, so that we can use the trait solver to determine whether an `&mut` reference gets `noalias` or not.
+The actual safety promise of `UnsafeUnpin` is likely going to be exactly the same as `Unpin`, but we can't use a stable and safe trait to determine `noalias`:
+`impl UnsafeUnpin for T` would add the `noalias` back to `&mut T`, and that can be unsound.
+(See [the `poll_fn` debacle](https://internals.rust-lang.org/t/surprising-soundness-trouble-around-pollfn/17484).)
+With a time machine we'd make `Unpin` unsafe;
+in lieu of that, we can add this unsafe trait unstably so that we can at least resolve the existing soundness trouble while we try to figure out if it worth transitioning `Unpin` to an unsafe trait somehow.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
