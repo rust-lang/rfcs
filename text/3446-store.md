@@ -44,8 +44,6 @@ The `Store` API is very closely related to the `Allocator` API, and largely mirr
     in general.
 -   The `StoreDangling` super trait, which allows acquiring a `dangling` handle, which can safely be resolved into a
     well-aligned pointer, if an invalid one.
--   Unless a specific store type implements `StoreMultiple`, any handle it allocated may be invalidated when the store
-    performs a new allocation.
 -   Unless a specific store type implements `StoreStable`, there is no guarantee that resolving the same handle after
     calling another method on the API -- including `resolve` with a different handle -- will return the same pointer. In
     particular, a call to `resolve` may lead to cache-eviction (think LRU), an allocation may result in reallocating the
@@ -289,19 +287,19 @@ a complete linked list, a box draft, a concurrent vector draft, and a skip list 
 
 ##  Store Implementer Guide
 
-The API of `Store` requires internal mutability, and that's it. I can otherwise provide as few or as many guarantees as
-I wish.
+The API of `StoreSingle` only requires that `resolve` and `resolve_mut` resolve to the same pointer. I can otherwise
+provide as few or as many guarantees as I wish.
 
 ```rust
-/// An implementation of `Store` providing a single, in-line, block of memory.
+/// An implementation of `Store` providing a single, inline, block of memory.
 ///
 /// The block of memory is aligned and sized as per `T`.
-pub struct InlineSingleStore<T>(UnsafeCell<MaybeUninit<T>>);
+pub struct InlineSingleStore<T>(MaybeUninit<T>);
 
 impl<T> InlineSingleStore<T> {
     /// Creates a new instance.
     pub const fn new() -> Self {
-        Self(UnsafeCell::new(MaybeUninit::uninit()))
+        Self(MaybeUninit::uninit())
     }
 }
 
@@ -323,8 +321,24 @@ unsafe impl<T> const StoreDangling for InlineSingleStore<T> {
     }
 }
 
-unsafe impl<T> const Store for InlineSingleStore<T> {
-    fn allocate(&self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
+unsafe impl<T> const StoreSingle for InlineSingleStore<T> {
+    unsafe fn resolve(&self, _handle: Self::Handle) -> NonNull<u8> {
+        let pointer = self.0.as_ptr() as *mut T;
+
+        //  Safety:
+        //  -   `self` is non null.
+        unsafe { NonNull::new_unchecked(pointer) }.cast()
+    }
+
+    unsafe fn resolve_mut(&mut self, _handle: Self::Handle) -> NonNull<u8> {
+        let pointer = self.0.as_mut_ptr();
+
+        //  Safety:
+        //  -   `self` is non null.
+        unsafe { NonNull::new_unchecked(pointer) }.cast()
+    }
+
+    fn allocate(&mut self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
         if Self::validate_layout(layout).is_err() {
             return Err(AllocError);
         }
@@ -332,18 +346,10 @@ unsafe impl<T> const Store for InlineSingleStore<T> {
         Ok(((), mem::size_of::<T>()))
     }
 
-    unsafe fn deallocate(&self, _handle: Self::Handle, _layout: Layout) {}
-
-    unsafe fn resolve(&self, _handle: Self::Handle) -> NonNull<u8> {
-        let pointer = self.0.get();
-
-        //  Safety:
-        //  -   `self` is non null.
-        unsafe { NonNull::new_unchecked(pointer) }.cast()
-    }
+    unsafe fn deallocate(&mut self, _handle: Self::Handle, _layout: Layout) {}
 
     unsafe fn grow(
-        &self,
+        &mut self,
         _handle: Self::Handle,
         _old_layout: Layout,
         new_layout: Layout,
@@ -361,7 +367,7 @@ unsafe impl<T> const Store for InlineSingleStore<T> {
     }
 
     unsafe fn shrink(
-        &self,
+        &mut self,
         _handle: Self::Handle,
         _old_layout: Layout,
         _new_layout: Layout,
@@ -374,12 +380,12 @@ unsafe impl<T> const Store for InlineSingleStore<T> {
         Ok(((), mem::size_of::<T>()))
     }
 
-    fn allocate_zeroed(&self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
+    fn allocate_zeroed(&mut self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
         if Self::validate_layout(layout).is_err() {
             return Err(AllocError);
         }
 
-        let pointer = self.0.get() as *mut u8;
+        let pointer = self.0.as_mut_ptr() as *mut u8;
 
         //  Safety:
         //  -   `pointer` is valid, since `self` is valid.
@@ -391,7 +397,7 @@ unsafe impl<T> const Store for InlineSingleStore<T> {
     }
 
     unsafe fn grow_zeroed(
-        &self,
+        &mut self,
         _handle: Self::Handle,
         old_layout: Layout,
         new_layout: Layout,
@@ -405,7 +411,7 @@ unsafe impl<T> const Store for InlineSingleStore<T> {
             return Err(AllocError);
         }
 
-        let pointer = self.0.get() as *mut u8;
+        let pointer = self.0.as_mut_ptr() as *mut u8;
 
         //  Safety:
         //  -   Both starting and resulting pointers are in bounds of the same allocated objects as `old_layout` fits
@@ -438,8 +444,16 @@ impl<T> fmt::Debug for InlineSingleStore<T> {
     }
 }
 
+//  Safety:
+//  -   Self-contained, so can be sent across threads safely.
+unsafe impl<T> Send for InlineSingleStore<T> {}
+
+//  Safety:
+//  -   Immutable (by itself), so can be shared across threads safely.
+unsafe impl<T> Sync for InlineSingleStore<T> {}
+
 impl<T> InlineSingleStore<T> {
-    fn validate_layout(layout: Layout) -> Result<(), AllocError> {
+    const fn validate_layout(layout: Layout) -> Result<(), AllocError> {
         let own = Layout::new::<T>();
 
         if layout.align() <= own.align() && layout.size() <= own.size() {
@@ -484,12 +498,12 @@ pub unsafe trait StoreDangling {
 /// Allocates and deallocates handles to blocks of memory, which can be temporarily resolved to pointers to actually
 /// access said memory.
 pub unsafe trait Store: StoreDangling {
-    /// Return a pointer to the block of memory associated to `handle`.
+    /// Returns a pointer to the block of memory associated to `handle`.
     unsafe fn resolve(&self, handle: Self::Handle) -> NonNull<u8>;
 
     //  The following methods are similar to `Allocator`, reformulated in terms of `Self::Handle`.
 
-    /// Allocates a new handle to a block of memory. On success, invalidates any existing handle.
+    /// Allocates a new handle to a block of memory.
     fn allocate(&self, layout: Layout) -> Result<(Self::Handle, usize), AllocError>;
 
     /// Deallocates a handle.
@@ -511,7 +525,7 @@ pub unsafe trait Store: StoreDangling {
         new_layout: Layout,
     ) -> Result<(Self::Handle, usize), AllocError>;
 
-    /// Allocates a new handle to a block of zeroed memory. On success, invalidates any existing handle.
+    /// Allocates a new handle to a block of zeroed memory.
     fn allocate_zeroed(&self, layout: Layout) -> Result<(Self::Handle, usize), AllocError> {
         ...
     }
@@ -531,20 +545,64 @@ pub unsafe trait Store: StoreDangling {
 _Note:  full-featured documentation of the trait and methods can be found in the companion repository at_
         https://github.com/matthieu-m/store/blob/main/src/interface.rs.
 
-The `Store` trait is supplemented by 3 additional marker traits, providing extra guarantees:
+A specialized form of the `Store` trait exists for stores only supporting a single allocation at a time.
 
 ```rust
-/// A refinement of `Store` which does not invalidate existing handles on allocation, and does not invalidate
-/// unrelated existing handles on deallocation.
-pub unsafe trait StoreMultiple: Store {}
+/// Allocates and deallocates a single handle to a single block of allocated memory at a time, which can be resolved to
+/// a pointer to actually access said memory.
+pub unsafe trait StoreSingle: StoreDangling {
+    /// Returns a (const) pointer to the block of memory associated to `handle`.
+    unsafe fn resolve(&self, handle: Self::Handle) -> NonNull<u8>;
 
-/// A refinement of `Store` which does not invalidate existing pointers on allocation, resolution, or deallocation, but
+    /// Returns a (mut) pointer to the block of memory associated to `handle`.
+    unsafe fn resolve_mut(&mut self, handle: Self::Handle) -> NonNull<u8>;
+
+    //  The following methods are similar to `Allocator`, reformulated in terms of `Self::Handle`.
+
+    /// Allocates a new handle to a block of memory.
+    fn allocate(&mut self, layout: Layout) -> Result<(Self::Handle, usize), AllocError>;
+
+    /// Deallocates a handle.
+    unsafe fn deallocate(&mut self, handle: Self::Handle, layout: Layout);
+
+    /// Grows the block of memory associated to a handle. On success, the handle is invalidated.
+    unsafe fn grow(
+        &mut self,
+        handle: Self::Handle,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<(Self::Handle, usize), AllocError>;
+
+    /// Shrinks the block of memory associated to a handle. On success, the handle is invalidated.
+    unsafe fn shrink(
+        &mut self,
+        handle: Self::Handle,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<(Self::Handle, usize), AllocError>;
+
+    /// Allocates a new handle to a block of zeroed memory.
+    fn allocate_zeroed(&mut self, layout: Layout) -> Result<(Self::Handle, usize), AllocError>;
+
+    /// Grows the block of memory associated to a handle with zeroed memory. On success, the handle is invalidated.
+    unsafe fn grow_zeroed(
+        &mut self,
+        handle: Self::Handle,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<(Self::Handle, usize), AllocError>;
+```
+
+The `Store` and `StoreSingle` traits are supplemented by 2 additional marker traits, providing extra guarantees:
+
+```rust
+/// A refinement of store which does not invalidate existing pointers on allocation, resolution, or deallocation, but
 /// may invalidate them on moves.
-pub unsafe trait StoreStable: Store {}
+pub unsafe trait StoreStable {}
 
-/// A refinement of `Store` which does not invalidate existing pointers, not even on moves. That is, this refinement
-/// guarantees that the blocks of memory are pinned in memory until the instance of the `Store` is dropped, or until
-/// the lifetime bound of `Store` concrete type expires, whichever comes first.
+/// A refinement of store which does not invalidate existing pointers, not even on moves. That is, this refinement
+/// guarantees that the blocks of memory are pinned in memory until the instance of the store is dropped, or until
+/// the lifetime bound of store concrete type expires, whichever comes first.
 pub unsafe trait StorePinning: StoreStable {}
 ```
 
@@ -562,68 +620,80 @@ the operations that may be soundly executed on those.
 
 A `Handle` may be in one of 3 states:
 
--   Invalid: it is Undefined Behavior to call any method of `Store` with this handle.
+-   Invalid: it is Undefined Behavior to call any method of a store with this handle.
 -   Valid, but Dangling: the handle can be _resolved_ into a pointer, but the resulting pointer itself is dangling.
--   Valid: the handle can be used with any method of `Store`, and the pointer it _resolves_ into can be used to access
+-   Valid: the handle can be used with any method of a store, and the pointer it _resolves_ into can be used to access
     the associated memory block.
 
 Creation of a `Handle`:
 
--   `Store::dangling` produces a Valid, but Dangling, handle. This handle may then become Invalid as usual.
--   `Store::allocate`, `Store::allocate_zeroed`, `Store::grow`, `Store::grow_zeroed`, and `Store::shrink` produce a
-    Valid handle. This handle may then become Invalid as usual.
+-   `dangling` produces a Valid, but Dangling, handle. This handle may then become Invalid as usual.
+-   `allocate`, `allocate_zeroed`, `grow`, `grow_zeroed`, and `shrink` produce a Valid handle. This handle may then
+    become Invalid as usual.
 -   A copy of a handle may be made by replicating its bitwise state, in any way. All copies of a handle share the same
     state, at any time.
 
-All handles created by a specific instance of `Store`, and the copies of those handles, are associated to this one
+All handles created by a specific instance of a store, and the copies of those handles, are associated to this one
 instance and no other, unless otherwise specified.
 
 Invalidation of a `Handle`:
 
--   All handles associated to a given instance of `Store` may be invalidated when any of `allocate`, `allocate_zeroed`,
-    `grow`, `grow_zeroed`, `shrink`, and `deallocate` is called on this instance, unless otherwise specified.
-    -   An instance of `StoreMultiple` does not invalidate existing handles on those calls.
+-   Calling `allocate`, `allocate_zeroed`, `grow`, `grow_zeroed`, `shrink`, or `deallocate` on an instance of `Store`
+    shall NOT invalidate any existing handle associated to this instance.
+    -   On the other, calling those methods on an instance of `StoreSingle` which does not _also_ implement `Store` may
+        invalidate any and all instances associated to this instance.
 -   A handle is immediately invalidated when used as an argument to `deallocate`.
--   A handle is invalidated in case of success when used as an argument to `grow`, grow_zeroed` or `shrink`. In case of
+-   A handle is invalidated in case of success when used as an argument to `grow`, `grow_zeroed` or `shrink`. In case of
     failure, the handle remains Valid.
 
-An instance of `Store` may provide extended guarantees, such as instances of `Store` also implementing `StoreMultiple`
-do.
+An instance of a store may provide extended guarantees.
 
 
 ### Pointers
 
 Creation of a `NonNull<u8>` from a `Handle`:
 
--   A Valid but Dangling handle may be _resolved_ into a pointer via `Store::resolve`. The resulting pointer is itself
-    dangling, as if obtained by `NonNull::dangling`.
--   A Valid handle may be _resolved_ into a pointer via `Store::resolve`. The resulting pointer is valid, and points to
-    the first byte of the block of memory associated to the handle.
+-   A Valid but Dangling handle may be _resolved_ into a pointer via `resolve` or `resolve_mut`. The resulting pointer
+    is itself dangling, as if obtained by `NonNull::dangling`.
+-   A Valid handle may be _resolved_ into a pointer via `resolve` or `resolve_mut`. The resulting pointer is valid, and
+    points to the first byte of the block of memory associated to the handle.
 -   A Valid possibly Dangling handle may be _resolved_ into a pointer by other means, such as the `Into` or `TryInto`
-    traits. The resulting pointer must be equal to the result of calling `Store::resolve` with the handle.
+    traits. The resulting pointer must be equal to the result of calling `resolve` or `resolve_mut` with the handle.
 
 All pointers resolved from a handle, or any of its copies, share the same state, at any time.
 
-All pointers resolved from a handle associated to a specific instance of `Store` are themselves associated to this one
+All pointers resolved from a handle associated to a specific instance of a store are themselves associated to this one
 instance and no other, unless otherwise specified.
 
 Invalidation of a `NonNull<u8>`:
 
 -   All pointers resolved from a handle are invalidated when this handle is invalidated.
--   All pointers associated to an instance of `Store` may be invalidated by dropping this instance.
--   All pointers associated to an instance of `Store` may be invalidated by moving this instance, unless otherwise
+-   All pointers associated to an instance of a store may be invalidated by dropping this instance.
+-   All pointers associated to an instance of a store may be invalidated by moving this instance, unless otherwise
     specified.
     -   An instance of `StorePinning` does not invalidate existing pointers on moves.
--   All pointers associated to an instance of `Store` may be invalidated when calling any of `allocate`,
+-   All pointers associated to an instance of a store may be invalidated when calling any of `allocate`,
     `allocate_zeroed`, `grow`, `grow_zeroed`, `shrink`, or `deallocate` on this instance, unless otherwise specified.
     -   An instance of `StoreStable` does not invalidate existing pointers on those calls.
--   All pointers associated to an instance of `Store` may be invalidated when calling `resolve` on this instance, unless
+-   All pointers associated to an instance of a store may be invalidated when calling `resolve` on this instance, unless
     otherwise specified.
     -   Pointers resolved from a copy of the handle passed to `resolve` are not invalidated.
     -   An instance of `StoreStable` does not invalidate existing pointers on those calls.
 
-An instance of `Store` may provide extended guarantees, such as instances of `Store` also implementing `StoreStable` or
+An instance of a store may provide extended guarantees, such as instances of a store also implementing `StoreStable` or
 `StorePinning` do.
+
+
+### Consistency
+
+When multiple methods can be used to achieve the same task, they should result in the same result. Specifically:
+
+-   `Store::resolve`, `StoreSingle::resolve` and `StoreSingle::resolve_mut` should resolve the same handle into the same
+    pointer.
+-   When a method exists both for `Store` and `StoreSingle`, calling one or the other should have the same effect.
+
+It is recommended that when a type implements both `Store` and `StoreSingle` all the methods of `StoreSingle` simply
+delegate to the methods of `Store`, to ensure consistency in their behavior.
 
 
 ##  Library Organization
@@ -643,8 +713,7 @@ Those types would then be re-exported as-is in the `alloc` crate, drastically re
 This RFC increases the surface of the standard library, with yet another `Allocator`.
 
 Furthermore, the natural consequence of adopting this RFC would be rewriting the existing collections in terms of
-`Store`, rather than `Allocator`. A mostly mechanical task, certainly, but an opportunity to introduce subtle bugs in
-the process, even if Miri would hopefully catch most such bugs.
+`Store` or `StoreSingle`, rather than `Allocator`. A mostly mechanical task, certainly, but an opportunity to introduce subtle bugs in the process, even if Miri would hopefully catch most such bugs.
 
 Finally, having two allocator-like APIs, `Store` and `Allocator`, means that users will forever wonder which trait they
 should implement[^1], and which trait they should use when implementing a collection[^2].
@@ -689,7 +758,7 @@ need for such specialized collections, but it may eliminate the need for most al
 
 ##  Allocator-like
 
-The API of `Store` is intentionally kept very close to that of `Allocator`.
+The API of Stores is intentionally kept very close to that of `Allocator`.
 
 This similarility, and the similarity of the safety requirements, means that any developer accustomed to the current
 `Allocator` API can quickly dive in, and also means that bridging between `Store` and `Allocator` is as easy as
@@ -700,8 +769,8 @@ There are 3 extra pieces:
 -   The `Handle` associated type is used, rather than `NonNull<u8>`. This is the key to the flexibility of `Store`.
 -   The `dangling` method, reminiscent of `NonNull::dangling`, and to be used for the same purposes. It is part of
     `Store` as the maximum available alignment may be limited by the type of `Store`.
--   The `resolve` method, which bridges from `Handle` to `NonNull<u8>`, since access to the allocated blocks of memory
-    require pointers to them.
+-   The `resolve` and `resolve_mut` methods, which bridges from `Handle` to `NonNull<u8>`, since access to the allocated
+    blocks of memory require pointers to them.
 
 Otherwise, the bulk of the API is a straightforward translation of the `Allocator` API, substituting `Handle` anytime
 `NonNull<_>` appears.
@@ -709,12 +778,13 @@ Otherwise, the bulk of the API is a straightforward translation of the `Allocato
 
 ##  Allocator-like (bis)
 
-The API of `Store` being intentionally kept very close to that of `Allocator` means that some questions worth asking on
+The API of Stores being intentionally kept very close to that of `Allocator` means that some questions worth asking on
 the `Allocator` API are also worth asking here:
 
 -   Should allocation methods return the actual allocated size? In theory, this may allow optimizations, in practice
     it seems unimplemented by `Allocator` and unused by callers.
 -   Should we have `reallocate` rather than `grow`/`shrink`?
+-   Should we have `try_grow`/`try_shrink` (in-place only)?
 
 It may be best to consider those questions orthogonal to this RFC, they can be resolved at once for both APIs.
 
@@ -724,13 +794,10 @@ _Note: the companion repository extensions do use the allocated size: for inline
 
 ##  Guarantees, or absence thereof
 
-The `Store` API is minimalist, providing a minimum of guarantees.
+The Stores API is minimalist, providing a minimum of guarantees.
 
 Beyond being untyped and unchecked, there are also a few oddities, compared to the `Allocator` API:
 
--   By default, using `Store::allocate` or `Store::allocate_zeroed` invalidates all existing handles. This oddity
-    stems from the requirement of minimizing the state to be stored in collections using a single allocation at a time
-    such as `Box`, `Vec`, `VecDeque`, ...
 -   By default, calling any method -- including `resolve` -- invalidates all resolved pointers[^1]. This oddity stems
     from the desire to leave the API flexible enough to allow caching stores, single-allocation stores, or copying
     stores.
@@ -745,52 +812,64 @@ errors to prevent erroneous couplings.
 [^1]: With the exception, in the case of a call to `resolve`, of any pointer derived from a copy of the handle argument.
 
 
-##  Mutable Store: resolution.
+##  Store, Allocator, and Aliasing
 
-A previous incarnation of the API borrowed the store mutably to resolve mutable handles, ie it offered both a `resolve`
-and a `resolve_mut` methods.
+The raison d'être of a Store or Allocator API is to allocate blocks of memory for their user, in general by carving them
+out of a bigger block of memory. While the resulting blocks of memory are all non-overlapping, by necessity they do overlap with the block they are carved out of. Aliasing has entered the chat.
 
-While this would, theoretically, allow implementing a store with no interior mutability, it unfortunately seems to run
-afoul of aliasing when obtaining multiple mutable references to distinct elements with overlapping lifetimes -- such
-as when retaining multiple mutable references yielded by an iterator.
+The Rust language, and the LLVM IR, have strict rules governing aliasing. In particular, `&mut` references and `noalias`
+represent a guarantee of _no aliasing_. Implementations of a Store or Allocator must strive to honor those rules, or be
+unsound.
 
-The problem is illustrated in [3446-store/aliasing-and-mutability.rs] on which Stacked Borrows chokes. While Tree
-Borrows _does_ accept the program as valid, it is not clear whether LLVM `noalias` would be compatible in such a case
-or not, now and in the future. In fact, [Ralf Jung commented](https://github.com/rust-lang/rfcs/pull/3446#issuecomment-1773780909) they were not certain that even the proposed `UnsafeAliased` would solve this usecase, as
-it was made to allow aliasing `&mut` and `*mut`, not `&mut` and `&mut`.
+In particular, it is unsound to obtain an `&mut` reference to the block of memory allocations are carved out of while at
+the same time having an `&mut` reference to one of the carved out memory allocations, since they overlap. As a result,
+any block of memory to carve out allocations of must either:
 
-Opting for a single `Store::resolve` method taking `&self`, while it requires interior mutability, is therefore the
-conservative choice: it is known to work now, and will continue to work in the future.
+-   Be accessed only via a pointer, not a reference.
+-   Be accessed only via `&UnsafeCell`.
 
+The _one_ exception to the above is that blocks of memory with no active oustanding allocation can be accessed via
+`&mut` references.
 
-##  Mutable Store: allocation.
+This inherent modelling limitation drives the existing of the mostly parallel `Store` and `StoreSingle` traits:
 
-A previous incarnation of the API borrowed the store mutably to allocate, deallocate, grow, or shrink.
-
-This is tempting, as after all it is likely something within the store will need to be mutated.
-
-There is, however, a very good reason for `Allocator` to use a shared reference: concurrent uses. It should be possbile
-to share a single store between various collections, hence passing `&dyn Store<Handle = X>` for example, and to still
-be able to allocate from such a store.
-
-Suggestions were made to use `for<'a> &'a S: Store` in such cases, however, to the best of my knowledge, it is not
-possible today to refer to the associated type of such a bound. That is, it is not possible to declare a field as
-`handle: <for<'a> &'a S: Store>::Handle`, which greatly complicates things...
-
-... Seeing as anyway interior mutability is required for `resolve`, as mentioned above, it seems pointless to vie for a
-less ergonomic API for allocate and co.
+-   `Store` uses `&` references _exclusively_ in its API so that it is sound to call its methods even in the presence of
+    active outstanding `&mut` references to associated allocated memory blocks.
+-   `StoreSingle` uses `&mut` references as appropriate, shielded by the fact that with a single outstanding allocation
+    at a time, there cannot be an active outstanding `&mut` reference to an associated allocated memory block when its
+    methods are called.
 
 
-##  Owned Store
+##  Is `StoreSingle` worth it?
 
-A third possibility -- beyond accepting `&self` and `&mut self` -- is of course to accept `self` and implement the
-`Store` trait for reference types, as appropriate.
+The API of `StoreSingle` is _very_ similar to that of `Store`. The differences being:
 
-This would require a `Sync` type to implement `Store` twice (once for immutable references, and once for mutable
-references) and would make it more difficult to declare bounds when using it.
+-   Different `resolve` and `resolve_mut`.
+-   Other methods taking `&mut` instead of `&`, and offering weaker guarantees.
 
-It also does not resolve the issue that a possible `resolve_mut` method runs afoul of the Stacked Borrows model, as
-illustrated above, and may not be compatible with `noalias`.
+There is a cost in having two separate-but-so-similar APIs, is this cost worth it?
+
+Any implementation of `Store` using in-line memory _must_ use `UnsafeCell` to wrap the in-line memory in order to be
+able to obtain an `&mut` reference to an associated allocated memory block starting from an `&` reference to the store
+itself.
+
+This seemingly innocuous requirement, unfortunately, does not play well with LLVM's attributes. `noalias`, `readonly`,
+`writeonly`, etc... are not granular: they apply to the entire span of memory pointed to when specified. Hence, any time
+a span of memory contains `UnsafeCell`, these attributes cannot be specified, and therefore `UnsafeCell` "infects" any
+struct it is a field of, recursively.
+
+One of the main motivations of this RFC is to allow in-line collections, and in particular `InlineBox` and `InlineVec`.
+Those types _can_ be built on top of `Store`, but at the cost of inner `UnsafeCell`, and the unfortunate ripple effects
+at the LLVM IR level.
+
+As noted in _Store, Allocator, and Aliasing_, however, `UnsafeCell` is only necessary in the presence of active
+outstanding allocations. Yet, a number of collections such as `Box`, `Vec`, `VecDeque`, or `HashMap` only ever require
+a _single_ allocation at a time.
+
+And while the set of collections only requiring a single allocation at a time is small, these few types are the most
+widely used in the wild!
+
+It seems, therefore, worth it to provide a specialized API avoiding the optimization woes of `UnsafeCell`.
 
 
 ##  Typed Handles
@@ -885,11 +964,13 @@ variables without requiring `OnceCell` or similar. This, in turn, requires `dang
 A `const` dangling, however, is no simple feat:
 
 1.  Trait associated functions cannot be `const`, today.
-2.  Even if trait associated functions could be `const`, they may never be conditionally `const`.
-3.  For flexibility, it should be possible for `Store` implementations NOT to be `const`, with a `const` `dangling`.
+    -   Even so, it may not be possible to have _conditional_ `const` associated functions.
+2.  For flexibility, it should be possible for `Store` implementations NOT to be `const`, with a `const` `dangling`.
     -   In particular, it should be noted that the `System` allocations cannot easily be `const`.
 
 In light of the above, one simple solution emerges: a separate, `StoreDangling` trait.
+
+_Note: see unresolved questions about `Store::dangling`._
 
 [^1]: _A separate `StoreDangling` is not sufficient, the `Default` trait needs to be marked `#[const_trait]` as well._
 
@@ -950,9 +1031,8 @@ directly with an `Allocator`:
 
 ##  Marker granularity
 
-As a reminder, there are 3 marker traits:
+As a reminder, there are 2 marker traits:
 
--   `StoreMultiple`: allows concurrent allocations from a single store.
 -   `StoreStable`: ensures existing pointers remain valid across calls to the API methods.
 -   `StorePinning`: ensures existing pointers remain valid even across moves.
 
@@ -1059,8 +1139,8 @@ It is possible to use ~~dark magic~~ specialization to have `UniqueHandle<T, H>`
 @CAD97 [worked out](https://github.com/rust-lang/rfcs/pull/3446#discussion_r1242780520), though it is unclear whether
 that is sufficient... or desirable.
 
-While this RFC does _not_ propose to re-implement `Box` in terms of `Store` immediately, it is a long-term goal, and
-thus it is crucial to ensure that the `Store` API allows achieving it.
+While this RFC does _not_ propose to re-implement `Box` in terms of `StoreSingle` immediately, it is a long-term goal,
+and thus it is crucial to ensure that the `StoreSingle` API allows achieving it.
 
 
 ##  (Medium) To `Clone`, to `Default`?
@@ -1128,10 +1208,10 @@ kept to a minimum, and users can always specify additional requirements if they 
 -   `Send` and `Sync` should definitely be kept out. `Allocator`-based stores could not use `NonNull<u8>` otherwise.
 
 
-##  (Minor) Should `Store::dangling` be `const`?
+##  (Minor) Would `Store::dangling` be better than `StoreDangling`?
 
 While const trait associated functions are still a maybe, it seems reasonable to ask ourselves whether some of the
-associated functions of `Store` should be `const` if it were possible.
+associated functions of `Store` or `StoreSingle` should be `const` if it were possible.
 
 There doesn't seem to be a practical advantage in doing so for most of the associated functions of `Store`: if
 allocation and deallocation need be executed in a const context, then a `const Store` is necessary, and there's no need
@@ -1144,7 +1224,7 @@ The one downside is that this would preclude some implementations of `dangling` 
 I/O. @CAD97 notably mentioned the possibility of using randomization for debugging or hardening purposes. Still, it
 would still be possible to initialize the instance of `Store` with a random seed, then use a PRNG within `dangling`.
 
-On the other hand, it leads to a simpler API than a separate `StoreDangling` base trait.
+On the other, it leads to a simpler API than a separate `StoreDangling` base trait.
 
 
 #   Future Possibilities
