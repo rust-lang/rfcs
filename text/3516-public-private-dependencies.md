@@ -384,6 +384,10 @@ Compared to the resolver doing this implicitly
 The downside is it feels like the declaration is backwards.
 If you have one core crate (e.g. `clap`) and many crates branching off (e.g. `clap_complete`, `clap_mangen`),
 it seems like those helper crates should have their version picked from `clap`.
+This can be worked around by publishing a `clap_distribution` package that has dependencies on every package.
+Users would depend on `clap_distribution` through a never-matching target-dependency so it doesn't affect builds.
+It exists so users would `version.from = ["clap_distribution"]` it, keeping the set in sync.
+This only helps when the packages are managed by a single project.
 
 Whether this should be specified across all sources (`from`) or per source (`registry.from`, `git.from`, `path.from`) will need to be worked out.
 See [rust-lang/cargo#6921](https://github.com/rust-lang/cargo/issues/6921) for an example of using this for git dependencies.
