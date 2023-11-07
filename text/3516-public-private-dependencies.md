@@ -91,10 +91,10 @@ name = "diagnostic"
 version = "1.0.0"
 
 [dependencies]
-serde = { version = "1", features = ["derive"], pub = true }
-serde_json = { version = "1", pub = true }
+serde = { version = "1", features = ["derive"], public = true }
+serde_json = { version = "1", public = true }
 ```
-For edition migrations, `cargo fix` will look for the warning code and mark those dependencies as `pub`.
+For edition migrations, `cargo fix` will look for the warning code and mark those dependencies as `public`.
 
 However, for this example, it was an oversight in exposing `serde_json` in the public API.
 Note that removing it from the public API is a semver incompatible change.
@@ -104,7 +104,7 @@ name = "diagnostic"
 version = "1.0.0"
 
 [dependencies]
-serde = { version = "1", features = ["derive"], pub = true }
+serde = { version = "1", features = ["derive"], public = true }
 serde_json = "1"
 ```
 ```rust
@@ -174,7 +174,7 @@ The main change to the compiler will be to accept a new modifier on the `--exter
 supplies which marks it as a private dependency.
 The modifier will be called `priv` (e.g. `--extern priv:serde`).
 The compiler then emits the lint `external_private_dependency` if it encounters private
-dependencies exposed as `pub`.
+dependencies exposed as `public`.
 
 `external_private_dependency` will be `allow` by default for pre-2024 editions.
 It will be a member of the `rust-2024-compatibility` lint group so that it gets automatically picked up by `cargo fix --edition`.
@@ -189,24 +189,20 @@ This most likely will also be necessary for the more complex relationship of
 
 ## cargo
 
-A new dependency field, `pub = <bool>` will be added that defaults to `false`.
+A new dependency field, `public = <bool>` will be added that defaults to `false`.
 This field can be specified in `workspace.dependencies` and be overridden when `workspace = true` is in a dependency.
 When building a `lib`, Cargo will use the `priv` modifier with `--extern` for all private dependencies.
-What is private is what is left after recursively walking public dependencies (`pub = true`).
+What is private is what is left after recursively walking public dependencies (`public = true`).
 For other [`crate-type`s](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-crate-type-field) (e.g. `bin`),
-we'll tell rustc that all dependencies are public to reduce noise from inaccessible `pub` items.
-
-Old cargo versions will emit a warning when this key is encountered but otherwise continue,
-even if the feature is present but unstable.
-While it is unstable, `cargo publish` will strip the field.
+we'll tell rustc that all dependencies are public to reduce noise from inaccessible `public` items.
 
 Cargo will not force a `rust-version` bump when using this feature as someone
-building with an old version of cargo depending on packages that set `pub =
+building with an old version of cargo depending on packages that set `public =
 true` will not start to fail when upgrading to new versions of cargo.
 
-`cargo add` will gain `--pub <bool>` flags to control this field.
+`cargo add` will gain `--public <bool>` flags to control this field.
 When adding a dependency today, the version requirement is reused from other dependency tables within your manifest.
-With this RFC, that will be extended to also checking your dependencies for any `pub` dependencies, and reusing their version requirement.
+With this RFC, that will be extended to also checking your dependencies for any `public` dependencies, and reusing their version requirement.
 This would be most easily done by having the field in the Index but `cargo add` could also read the `.crate` files as a fallback.
 
 ## crates.io
@@ -233,33 +229,35 @@ This doesn't cover the case where a dependency is public only if a feature is en
 The warning/error is emitted even when a `pub` item isn't accessible.
 We at least reduced the impact of this by not marking dependencies as private for `crate-type=["bin"]`.
 
-You can't definitively lint when a `pub = true` is unused since it may depend on which platform or features.
+You can't definitively lint when a `public = true` is unused since it may depend on which platform or features.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Misc
 
-- `Cargo.toml`: instead of `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html), we could name the field `public` (like [RFC 1977]) or name the field `visibility = "<public|private>"`
-  - The parallel with Rust seemed worth pursuing
+- `Cargo.toml`: instead of `public` (like [RFC 1977]), we could name the field `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html) or name the field `visibility = "<public|private>"`
+  - `pub` has a nice parallel with Rust
+  - `pub`: Cargo doesn't use abbreviations as much as Rust (though some are used)
   - `pub` could be seen as ambiguous with `publish`
+  - `public` already is reserved and requires a `cargo_features`, meaning using it requires an MSRV bump
   - While `visibility` would offer greater flexibility, it is unclear if we need that flexibility and if the friction of any feature leveraging it would be worth it
-  - In the end, we went with `pub` because `public` would prevent our "no MSRV bump" approach because cargo versions exist with `public` being reserved
 - `rustc`: Instead of `allow` by default for pre-2024 editions, we could warn by default
   - More people would get the benefit of the feature now
   - However, this would be extremely noisy and likely make people grumpy
-- `Cargo.toml`: Instead of `pub = false` being the default and changing the warning level on an edition boundary, we could instead start with `pub = true` and change the default on an edition boundary.
-  - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
-- `Cargo.toml`: Instead of `pub = false` being the default, we could have a "unchecked" / "unset" state
-  - This would require `cargo fix` marking all dependencies as `pub = true`, while using the warning means we can limit it to only those dependencies that need it.
-- `Cargo.toml`: In the long term, we decided on the default being `pub = false` as that is the common case and gives us more information than supporting a `pub = "unchecked"` and having that be the long term solution.
-- `cargo add`: instead of `--pub <bool>` it could be `--pub` / `--no-pub` like `--optional` or `--public` / `--private`
-- `cargo add`: when adding a dependency, we could automatically add all of its `pub` dependencies.
-  - This was passed up as being too noisy, especially when dealing with facade crates, those that fully re-export their `pub = true` dependency
-- We leave whether `pub` is in the Index as unspecified
+  - If we did this, we'd likely want to not require an MSRV bump so people can immediately silence the warning which would require using a key besides `public` (since its already reserved) and treating the field as an unused key when the `-Z` isn't enabled.
+- `Cargo.toml`: Instead of `public = false` being the default and changing the warning level on an edition boundary, we could instead start with `public = true` and change the default on an edition boundary.
+  - This would require `cargo fix` marking all dependencies as `public = true`, while using the warning means we can limit it to only those dependencies that need it.
+- `Cargo.toml`: Instead of `public = false` being the default, we could have a "unchecked" / "unset" state
+  - This would require `cargo fix` marking all dependencies as `public = true`, while using the warning means we can limit it to only those dependencies that need it.
+- `Cargo.toml`: In the long term, we decided on the default being `public = false` as that is the common case and gives us more information than supporting a `public = "unchecked"` and having that be the long term solution.
+- `cargo add`: instead of `--public <bool>` it could be `--public` / `--no-public` like `--optional` or `--public` / `--private`
+- `cargo add`: when adding a dependency, we could automatically add all of its `public` dependencies.
+  - This was passed up as being too noisy, especially when dealing with facade crates, those that fully re-export their `public = true` dependency
+- We leave whether `public` is in the Index as unspecified
   - It isn't strictly needed now
   - It would make `cargo add` easier
-  - If we rely on `pub` in the resolver, we might need it but we can always backfill it
+  - If we rely on `public` in the resolver, we might need it but we can always backfill it
   - Parts of the implementation are already there from the original RFC
 
 ## Minimal version resolution
@@ -273,7 +271,7 @@ This should be handled independent of this RFC.
 This is deferred to [Future possibilities](#future-possibilities)
 - This has been the main hang-up for stabilization over the last 6 years since the RFC was approved
   - For more on the complexity involved, see the thread starting at [this comment](https://github.com/rust-lang/rust/issues/44663#issuecomment-881965668)
-- More thought is needed as we found that making a dependency `pub = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
+- More thought is needed as we found that making a dependency `public = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
 - More thought is needed on what happens if you have multiple versions of a package that are public (via renaming like `tokio_03` and `tokio_1`)
 
 Related problems potentially blocked on this
@@ -347,7 +345,7 @@ How this will work:
 If we want to go this route, some hurdles to overcome include:
 - Difficulties in working with cargo's resolver as this has been the main hang-up for stabilization over the last 6 years since the [RFC 1977] was approved
   - For more on the complexity involved, see the thread starting at [this comment](https://github.com/rust-lang/rust/issues/44663#issuecomment-881965668)
-- More thought is needed as we found that making a dependency `pub = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
+- More thought is needed as we found that making a dependency `public = true` can be a breaking change if the caller also depends on it but with a different semver incompatible version
 - More thought is needed on what happens if you have multiple versions of a package that are public (via renaming like `tokio_03` and `tokio_1`)
 
 ### Caller-declared relations
@@ -378,7 +376,7 @@ version should resolve to (clap 3.4 vs clap 4.0), then it is an error.
 
 Compared to the resolver doing this implicitly
 - It is unclear if this would be any more difficult to implement in the resolver
-- Changing a dependency from `pub = false` to `pub = true` is backwards compatible because it has no affect on existing callers.
+- Changing a dependency from `public = false` to `public = true` is backwards compatible because it has no affect on existing callers.
 - It is unclear how this would handle multiple versions of a package that are public
 
 The downside is it feels like the declaration is backwards.
