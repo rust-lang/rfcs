@@ -131,6 +131,8 @@ If you're implementing a smart pointer `P<T>`, and you need to allow `impl T { f
 
 Therefore, the current Arbitrary Self Types v2 provides a separate `Receiver` trait, so that there's no need to provide an awkward `Deref::deref` implementation.
 
+In addition, this v2 proposes to block generic receivers, which are currently allowed by the v1 (unstable) arbitrary self types feature. See the [diagnostics section for reasoning](#diagnostics).
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -284,37 +286,20 @@ fn main() {
 In case `a` the lifetime could be elided (as demonstrated by `free_function`) yet an explicit lifetime is currently demanded by the compiler. For now, this extra clarity seems actually desirable. We could relax this restriction in future. (The authors of this RFC are interested in other views here!)
 
 ## Diagnostics
+[diagnostics]: #diagnostics
 
 The existing branches in the compiler for "arbitrary self types" already emit excellent diagnostics. We will largely re-use them, with the following improvements:
 
 - In the case where a self type is invalid because it doesn't implement `Receiver`, the existing excellent error message will be updated.
 - An easy mistake is to implement `Receiver` for `P<T>`, forgetting to specify `T: ?Sized`. `P<Self>` then only works as a `self` parameter in traits `where Self: Sized`, an unusual stipulation. It's not obvious that `Sized`ness is the problem here, so we will identify this case specifically and produce an error giving that hint.
 - There are certain types which feel like they "should" implement `Receiver` but do not: `Weak` and `NotNull`. If these are encountered as a self type, we should produce a specific diagnostic explaining that they do not implement `Receiver` and suggesting that they could be wrapped in a newtype wrapper if method calls are important. We hope this can be achieved with [diagnostic items](https://rustc-dev-guide.rust-lang.org/diagnostics/diagnostic-items.html).
-- Under some circumstances, the compiler identifies method candidates but then discovers that the self type doesn't match. This results currently in a simple "mismatched types" error; we can provide a more specific error message here. The only known case is where a method is generic over `Receiver`, and the caller explicitly specifies the wrong type:
-    ```rust
-    #![feature(receiver_trait)]
-
-    use std::ops::Receiver;
-
-    struct SmartPtr<'a, T: ?Sized>(&'a T);
-
-    impl<'a, T: ?Sized> Receiver for SmartPtr<'a, T> {
-        type Target = T;
-    }
-
-    struct Foo(u32);
-    impl Foo {
-        fn a<R: Receiver<Target=Self>>(self: R) { }
-    }
-
-    fn main() {
-        let foo = Foo(1);
-        let smart_ptr = SmartPtr(&foo);
-        smart_ptr.a(); // this compiles
-        smart_ptr.a::<&Foo>(); // currently results in "mismatched types"; we can probably do better
-    }
-    ```
-- If a method `m` is generic over `R: Receiver<Target=T>` (or, perhaps more commonly, `R: Deref<Target=T>`) and `self: R`, then someone calls it with `object_by_value.m()`, it won't work because Rust doesn't know to use `&object_by_value`, and the message `the trait bound Foo: 'Receiver/Deref' is not satisfied` is generated. While correct, this may be surprising because users expect to be able to use `object_by_value.m2()` where `fn m2(&self)`. The resulting error message already suggests that the user create a reference in order to match the `Receiver` trait, so this may be sufficient already, but we may add an additional note here.
+- The current unstable arbitrary self types feature allows generic receivers. For instance,
+  ```rust
+  impl Foo {
+    fn a<R: Deref<Target=Self>>(self: R) { }
+  }
+  ```
+  We don't know a use-case for this. There are several cases where this can result in misleading diagnostics. (For instance, if such a method is called with an incorrect type (for example `smart_ptr.a::<&Foo>()` instead of `smart_ptr.a::<Foo>()`). We could attempt to find and fix all those cases. However, we feel that generic receiver types might risk subtle interactions with method resolutions and other parts of the language. We think it is a safer choice to generate an error on any declaration of a generic `self` type.
 
 # Drawbacks
 [drawbacks]: #drawbacks
