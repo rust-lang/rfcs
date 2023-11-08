@@ -249,7 +249,7 @@ It doesn't say anything about the bit patterns inside NaNs.
 This means that strictly speaking, any form of NaN boxing has to re-normalize NaNs after every single operation.
 To the author's knowledge, this is not actually done in practice; code instead relies on compilers implementing a more strict semantics.
 The C standard also does not state explicitly whether signaling NaNs can ever be produced by arithmetic operations, though given that the IEEE 754 semantics do not permit this to happen, presumably C does not permit this, either.
-At least [two major C implementations violate this part of the spec](https://godbolt.org/z/6veef68xE).
+At least [two major C implementations violate this part of the spec](https://godbolt.org/z/6veef68xE) by optimizing `x * 1.0` to `x`.
 
 LLVM [recently adopted](https://github.com/llvm/llvm-project/pull/66579) new NaN rules that this RFC copies exactly into Rust.
 This means that even though arithmetic operations can produce signaling NaNs, there is a guarantee that signaling NaNs will never appear "out of thin air".
@@ -259,6 +259,8 @@ GCC [says](https://gcc.gnu.org/wiki/FloatingPointMath) "Without any explicit opt
 It is unclear whether "does not care" also means "guarantees to never produce by itself", i.e. whether `0.0 / 0.0` is ever allowed to evaluate to a signaling NaN or not.
 While IEEE 754 forbids such behavior, GCC does [return signaling NaNs from some arithmetic operations](https://godbolt.org/z/6veef68xE), so it is fair to ask under which exact conditions such signaling NaNs may occur.
 If `0.0 / 0.0` *is* allowed to evaluate to a signaling NaN, that is concerning for cases like `pow(1, 0.0/0.0)`, which should return `1` -- but in practice, `pow(1, sNaN)` returns a NaN.
+
+MSVCs [documentation of FP behavior](https://learn.microsoft.com/en-us/cpp/build/reference/fp-specify-floating-point-behavior?view=msvc-170) is similarly silent on the issue of whether and when exactly signaling NaNs may be generated, and what the bits of a NaN payload may look like.
 
 Java requires exact IEEE 754-2008 compliance and goes through a lot of effort to realize that on 32bit x86 without SSE (see [here](https://open-std.org/jtc1/sc22/jsg/docs/m3/docs/jsgn325.pdf) and [here](https://open-std.org/JTC1/SC22/JSG/docs/m3/docs/jsgn326.pdf)). However, they do not seem to tackle the issue of specifying NaN payload bits, even though those bits [can be observed](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/Float.html#floatToRawIntBits(float)).
 
