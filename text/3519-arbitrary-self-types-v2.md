@@ -184,6 +184,8 @@ impl MyType {
 }
 ```
 
+The Rust language doesn't provide a way for user code to explore this recursion, so this trait is unlikely to be useful except to the compiler. Nevertheless, we don't intend to _prevent_ use of the `Receiver` trait by user code: since the same recursive property applies to `Deref` yet it's been occasionally useful to [introduce `Deref` bounds](https://doc.rust-lang.org/std/pin/struct.Pin.html#method.new_unchecked).
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
