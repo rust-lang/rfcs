@@ -19,6 +19,10 @@ This RFC proposes some changes to the existing nightly feature based on the expe
 
 ## Motivation for the arbitrary self types feature overall
 
+Originally, "arbitrary self types" was built to allow self types of `Pin<&mut Self>` and similar types as part of async Rust work. At that time, certain types - `Pin`, but also `Rc`, `Box` etc. - were hard coded such that they could be supported as self types. That's been sufficient for many use-cases including async Rust, but it's resulted in these built-in smart pointer types having greater powers (in stable Rust) than user-contributed smart pointers, an undesirable state.
+
+Since then, other use-cases have become clear where crates need to make their own smart pointer types with similar powers.
+
 One use-case is cross-language interop (JavaScript, Python, C++), where other languages' references can’t guarantee the aliasing and exclusivity semantics required of a Rust reference. For example, the C++ `this` pointer can't be practically or safely represented as a Rust reference because C++ may retain other pointers to the data and it might mutate at any time. Yet, calling C++ methods intrinsically requires a `this` reference. With "arbitrary self types", smart pointer types can be created which obey foreign-language semantics and can be used in safe Rust code:
 
 ```rust
@@ -114,19 +118,11 @@ fn main() {
 }
 ```
 
-However, if it's OK to create a reference `&T`, you _probably_ don't need this feature. You can simply use `&self` as your receiver type:
+This works well for some smart pointer types where it's OK to create `&T` (but not necessarily `&mut T`). This includes `Pin` and the reference counted pointers. For that reason, the original arbitrary self types feature could be based around `Deref`. But in other smart pointer use-cases (especially those relating to foreign language semantics) it's not OK to create even `&T`.
 
-```rust
-impl ConcreteType {
-    fn some_method(&self) {
+The arbitrary self types feature should be enhanced so it works even when we can't allow `&T`. As noted above, that's most commonly because of semantic differences to pointers in other languages, but it might be because references have special meaning or behavior in some pure Rust domain. Either way, it may not be OK to create a Rust reference `&T`, yet we may want to allow methods to be called on some reference-like thing.
 
-    }
-}
-```
-
-This feature is mostly aimed at smart pointer types `P<T>` where it's not safe to create a reference `&T`. As noted above, that's most commonly because of semantic differences to pointers in other languages, but it might be because references have special meaning or behavior in some pure Rust domain. Either way, it's not OK to create a Rust reference `&T` or `&mut T`, yet we may want to allow methods to be called on some reference-like thing.
-
-For this reason, implementing `Deref::deref` is problematic for most of the likely users of this "arbitrary self types" feature.
+For this reason, implementing `Deref::deref` is problematic for many of the likely users of this "arbitrary self types" feature.
 
 If you're implementing a smart pointer `P<T>`, and you need to allow `impl T { fn method(self: P<T>) { ... }}`, yet you can't allow a reference `&T` to exist, any option for implementing `Deref::deref` has drawbacks:
 
