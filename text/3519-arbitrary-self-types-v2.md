@@ -23,7 +23,15 @@ Originally, "arbitrary self types" was built to allow self types of `Pin<&mut Se
 
 Since then, other use-cases have become clear where crates need to make their own smart pointer types with similar powers.
 
-One use-case is cross-language interop (JavaScript, Python, C++), where other languages' references can’t guarantee the aliasing and exclusivity semantics required of a Rust reference. For example, the C++ `this` pointer can't be practically or safely represented as a Rust reference because C++ may retain other pointers to the data and it might mutate at any time. Yet, calling C++ methods intrinsically requires a `this` reference. With "arbitrary self types", smart pointer types can be created which obey foreign-language semantics and can be used in safe Rust code:
+One use-case is cross-language interop (JavaScript, Python, C++). In many cases, automatic code generation tools need to represent foreign language pointers or references somehow in Rust, and often, we want to call methods on such types. But, other languages' references can’t guarantee the aliasing and exclusivity semantics required of a Rust reference. For example, the C++ `this` pointer can't be practically or safely represented as a Rust reference because C++ may retain other pointers to the data and it might mutate at any time.
+
+What is a code generator to do? Its options in current stable Rust are poor:
+
+* It can represent foreign pointers/references as `&T`, with a virtual certainty of undefined behavior due to different guarantees in different languages
+* It can represent foreign pointers/references as `*const T` or `*mut T` but can't attach methods.
+* It can represent foreign pointers/references as a smart pointer type (`CppRef<T>` or `CppPtr<T>`) but can't attach methods.
+
+ With "arbitrary self types", smart pointer types can be created which obey foreign-language semantics and yet allow method calls:
 
 ```rust
 #[repr(transparent)]
@@ -63,7 +71,7 @@ fn get_cpp_reference() -> CppRef<ConcreteCppType> {
 }
 
 fn main() {
-    // Safe Rust code manipulating C++ objects via C++-semantics references
+    // Rust code manipulating C++ objects via C++-semantics references
     let cpp_obj_reference: CppRef<ConcreteCppType> = get_cpp_reference();
     // cpp_obj_reference does not obey Rust reference semantics. Other
     // "references" to the same data may exist in the Rust or C++ domain.
