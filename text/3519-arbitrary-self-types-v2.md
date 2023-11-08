@@ -19,7 +19,7 @@ This RFC proposes some changes to the existing nightly feature based on the expe
 
 ## Motivation for the arbitrary self types feature overall
 
-Originally, "arbitrary self types" was built to allow self types of `Pin<&mut Self>` and similar types as part of async Rust work. At that time, certain types - `Pin`, but also `Rc`, `Box` etc. - became hard coded such that they could be supported as self types. That's been sufficient for many use-cases including async Rust, but it's resulted in these built-in smart pointer types having greater powers (in stable Rust) than user-contributed smart pointers, an undesirable state.
+The Rust async work identified a need to allow `self` types of `Pin<&mut Self>` (and similar). At that time, certain types - `Pin`, `Rc`, `Box` etc. - became hard coded in stable Rust as valid `self` types. That's been sufficient for many use-cases including async Rust, but this special power is currently restricted to these hard-coded types.
 
 Since then, other use-cases have become clear where crates need to make their own smart pointer types with similar powers.
 
