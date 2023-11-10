@@ -20,7 +20,7 @@ It is predictable that the authors of `com` and `org` are unlikely to introduce 
 The top-level `org` and `com` package namespaces at Cargo are extended to allow organizations to introduce their own crates to them,
 and Cargo packages are allowed to contain multiple `::` delimiters in their names. Packages originating from organization namespaces are referred to as *domain-tied* packages.
 
-Names that conflict with existing items of the existing crates `org` and `com` at crates.io result in a compile time error.
+Names that conflict with existing items of the existing crates `org` and `com` at crates.io result in a compile time error if they are in scope aand these items are modules.
 
 Publishing domain-tied packages currently requires that the GitHub user is a member of the domain's organization. The domain's organization
 is taken from the manifest's repository URL. Building domain-tied packages locally does not require authentication.
@@ -31,7 +31,7 @@ is taken from the manifest's repository URL. Building domain-tied packages local
 This proposal adds the following functionality to Cargo:
 
 * A package's name is allowed to contain multiple `::` delimiters. The subsequent segment in the name is a subcrate of the previous segment's crate.
-* Any user is allowed to publish domain-tied packages; that is, packages belonging the namespace of the existing packages `org` and `com`.
+* Any user is allowed to publish domain-tied packages; that is, packages belonging to the namespace of the existing packages `org` and `com`.
   * The publishing process deduces the domain's organization from the manifest's repository URL.
   * It is a publishing error if the manifest's repository URL does not specify an organization-authored repository but rather a personal-authored repository.
   * It is a publishing error if the authenticated GitHub user is not a member of the organization.
