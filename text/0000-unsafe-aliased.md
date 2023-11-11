@@ -186,7 +186,7 @@ Similarly, the intrusive linked list from the motivation can be fixed by wrappin
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-API sketch:
+**API sketch:**
 
 ```rust
 /// The type `UnsafePinned<T>` lets unsafe code violate
@@ -293,7 +293,10 @@ mem::swap(s1, s2); // UB
 We could even soundly make `get_mut_unchecked` return an `&mut T`, given that the safety invariant is not affected by `UnsafePinned`.
 But that would probably not be useful and only cause confusion.
 
-Reference diff:
+Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e686152296347467f9c9b173ebd1e2d0) that uses the `Unpin` hack to achieve mostly the same effect as this API.
+("Mostly" because a safe `impl Unpin for ...` can un-do the effect of this, which would not be the case with the real `UnsafePinned`.)
+
+**Reference diff:**
 
 ```diff
   * Breaking the [pointer aliasing rules]. `&mut T` and `&T` follow LLVM’s scoped
@@ -302,18 +305,15 @@ Reference diff:
 +   the `&mut T` contains an [`UnsafePinned<U>`].
 ```
 
-Async generator lowering changes:
+**Async generator lowering changes:**
 - Fields that represent local variables whose address is taken across a yield point must be wrapped in `UnsafePinned`.
 
-Codegen and Miri changes:
+**Codegen and Miri changes:**
 
 - We have a `UnsafeUnpin` auto trait similar to `Freeze` that is implemented if the type does not contain any by-val `UnsafePinned`.
   This trait is an internal implementation detail and (for now) not exposed to users.
 - `noalias` on mutable references is only emitted for `UnsafeUnpin` types. (This replaces the current hack where it is only emitted for `Unpin` types.)
 - Miri will do `SharedReadWrite` retagging inside `UnsafePinned` similar to what it does inside `UnsafeCell` already. (This replaces the current `Unpin`-based hack.)
-
-Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e686152296347467f9c9b173ebd1e2d0) that uses the `Unpin` hack to achieve mostly the same effect.
-("Mostly" because a safe `impl Unpin for ...` can un-do the effect of this, which would not be the case with the real `UnsafePinned`.)
 
 ### Comparison with some other types that affect aliasing
 
@@ -358,6 +358,12 @@ However, of course one could imagine alternatives:
 - We could entirely avoid all these problems by not having aliasing restrictions on mutable references.
   But that is completely against the direction Rust has had for 8 years now, and it would mean removing LLVM `noalias` annotations for mutable references (and likely boxes) entirely.
   That is sacrificing optimization potential for the common case in favor of simplifying niche cases such as self-referential structs -- which is against the usual design philosophy of Rust.
+
+In terms of rationale, the question that comes to mind first is **why is this so different from `UnsafeCell`.**
+`UnsafeCell` opts-out of read-only guarantees for shared references, can't we just have a type that opts-out of uniqueness guarantees for mutable references?
+The answer is no, because mutable references have some universal operations that exploit their uniqueness -- in particular, `mem::swap`.
+In contrast, there exists no operation available on all shared references that exploits their immutability.
+This is why we need pinning to make APIs around `UnsafePinned` actually sound.
 
 ### Naming
 
