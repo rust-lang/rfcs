@@ -176,9 +176,9 @@ let js = format!(#"function bar() { {#} }"#, "/* function body */");
 > STRING_LITERAL :\
 > &nbsp;&nbsp; STRING_CONTENT<sub>0..255</sub> SUFFIX<sup>?</sup>
 
-A _string literal_ opens with fewer than 256 of the character `U+0023` (`#`) (the _guarding prefix_) and a `U+0022` (double-quote) character. The _string body_ can contain any sequence of Unicode characters and is terminated only by another `U+0022` (double-quote) character, followed by the guarding prefix. A string literal started with one or more `U+0023` (`#`) characters is called a _guarded string literal_, but one without any opening `U+0023` (`#`) characters is a _bare string literal_.
+A _string literal_ opens with fewer than 256 of the character `U+0023` (`#`) (the _guarding prefix_) and a `U+0022` (double-quote) character. The _string body_ can contain any sequence of Unicode characters and is terminated only by another `U+0022` (double-quote) character, followed by the guarding sequence. A string literal started with one or more `U+0023` (`#`) characters is called a _guarded string literal_, but one without any opening `U+0023` (`#`) characters is a _bare string literal_.
 
-All Unicode characters contained in the _string body_ represent themselves, the characters `U+0022` (double-quote) or `U+005C` (`\`) only hold special meaning when followed by at least as many `U+0023` (`#`) characters as were used to start the string literal (zero for bare string literals). A `U+005C` (`\`) followed by the guarding prefix is interpreted as an _escape start_.
+All Unicode characters contained in the _string body_ represent themselves, the characters `U+0022` (double-quote) or `U+005C` (`\`) only hold special meaning when followed by at least as many `U+0023` (`#`) characters as were used to start the string literal (zero for bare string literals). A `U+005C` (`\`) followed by the guarding sequence is interpreted as an _escape start_.
 
 Line-breaks are allowed in string literals. A line-break is either a newline (`U+000A`) or a pair of carriage return and newline (`U+000D`, `U+000A`). Both byte sequences are normally translated to `U+000A`, but as a special exception, when an escape start occurs immediately before a line break, then the line break character(s), and all immediately following space (`U+0020`), `\t` (`U+0009`), `\n` (`U+000A`) and `\r` (`U+000D`) characters are ignored.
 
@@ -198,9 +198,9 @@ _Supported escapes are unchanged from those currently in the reference, aside fr
 
 ## Byte string literals
 
-A _byte string literal_ opens with the prefix `b`, followed by fewer than 256 of the character `U+0023` (`#`) (the _guarding prefix_) and a `U+0022` (double-quote) character. The _byte string body_ can contain any sequence of ASCII characters and is terminated only by another `U+0022` (double-quote) character, followed by the guarding prefix. A byte string literal started with one or more `U+0023` (`#`) characters is called a _guarded byte string literal_, but one without any opening `U+0023` (`#`) characters is a _bare byte string literal_.
+A _byte string literal_ opens with the prefix `b`, followed by fewer than 256 of the character `U+0023` (`#`) (the _guarding prefix_) and a `U+0022` (double-quote) character. The _byte string body_ can contain any sequence of ASCII characters and is terminated only by another `U+0022` (double-quote) character, followed by the guarding sequence. A byte string literal started with one or more `U+0023` (`#`) characters is called a _guarded byte string literal_, but one without any opening `U+0023` (`#`) characters is a _bare byte string literal_.
 
-All ASCII characters contained in the _string body_ represent themselves, the characters `U+0022` (double-quote) or `U+005C` (`\`) only hold special meaning when followed by at least as many `U+0023` (`#`) characters as were used to start the string literal (zero for bare string literals). A `U+005C` (`\`) followed by the guarding prefix is interpreted as an _escape start_.
+All ASCII characters contained in the _string body_ represent themselves, the characters `U+0022` (double-quote) or `U+005C` (`\`) only hold special meaning when followed by at least as many `U+0023` (`#`) characters as were used to start the string literal (zero for bare string literals). A `U+005C` (`\`) followed by the guarding sequence is interpreted as an _escape start_.
 
 _Supported escapes are unchanged from those currently in the reference, aside from requiring the guard prefix as explained above._
 
@@ -227,9 +227,9 @@ _Supported escapes are unchanged from those specified in RFC 3348 (union of stri
 
 A _format string_ is a string literal used as an argument to the `format_args!` family of macros. Format strings use curly braces surrounding an optional set of format parameters as _placeholders_ for variable substitution.
 
-Format placeholders start with the string literal guarding prefix followed by a single `{`, then an optional sequence of format parameters, and are terminated by a single `}`.
+Format placeholders start with a single `{`, followed by the string literal guarding sequence, then an optional sequence of format parameters, and are terminated by a single `}`.
 
-Bare string literals used as format strings can output the literal characters `{` and `}` by preceding them with the same character. For example, the `{` character is escaped with `{{` and the `}` character is escaped with `}}`. However, the body of a _guarded format string_ is literally passed through (following the processing of escape sequences discussed above), the sequences `{` (except when preceded by the guarding prefix), `}` (except when terminating a placeholder), `{{`, and `}}` do not have any special meaning.
+Bare string literals used as format strings can output the literal characters `{` and `}` by preceding them with the same character. For example, the `{` character is escaped with `{{` and the `}` character is escaped with `}}`. However, the body of a _guarded format string_ is literally passed through (following the processing of escape sequences discussed above), the sequences `{` (except when followed by the guarding sequence), `}` (except when terminating a placeholder), `{{`, and `}}` do not have any special meaning.
 
 ```rust
 format!("Hello, {}!", "world");    // => Hello, world!
@@ -238,7 +238,7 @@ format!("{{ Hello");               // => { Hello
 
 format!(#"Hello, {#}!"#, "world"); // => Hello, world!
 format!(#"Hello {}"#);             // => Hello {}
-format!(#"{ Hello"#);              // => { Hello
+format!(#"{{ Hello"#);             // => {{ Hello
 
 let five = 5;
 format!(#"five: {#five}!"#);       // => five: 5
@@ -248,7 +248,7 @@ format!(#"five hex: {#five:#x}"#); // => five: 0x5
 ### Implementation note
 [reference-format-placeholders-impl-note]: #reference-format-placeholders-impl-note
 
-Format placeholders are not a language lexing question at all. `#"this string has {#} in it"#` is just a string literal that in any other context resolves to the string `this string has {#} in it`. It is entirely the format macro's responsibility to parse the placeholders in accordance with the guarding prefix.
+Format placeholders are not a language lexing question at all. `#"this string has {#} in it"#` is just a string literal that in any other context resolves to the string `this string has {#} in it`. It is entirely the format macro's responsibility to parse the placeholders in accordance with the guarding sequence.
 
 When a macro is parsing a format string, it simply needs to know the prefix used:
 
@@ -264,27 +264,31 @@ However, proc macros which use a parser library like `syn` may encounter a situa
 ### Interaction with `concat!`
 [reference-format-placeholders-concat]: #reference-format-placeholders-concat
 
-We propose that `concat!` always return a bare string literal. Any string literals passed to it have escape sequences processed before being concatenated into a single string literal without a guarding prefix. `concat!(#"with "inner string", escape \#n, and placeholder {#} last"#)` would resolve to the string literal `"with \"inner string\", escape \n, and placeholder {#} last"`.
+We propose that `concat!` always return a bare string literal. Any string literals passed to it have escape sequences processed before being concatenated into a single string literal without a guarding sequence. `concat!(#"with "inner string", escape \#n, and placeholder {#} last"#)` would resolve to the string literal `"with \"inner string\", escape \n, and placeholder {#} last"`.
 
 Example `concat!` behavior:
 ```rust
 fn main() {
     let x = 42;
-    println!(#"{x} {#x}"#, x = x);              // {x} 42
-    println!("{x} {#x}", x = x);                // 42 #42
-    println!(concat!(#"{x} {#x}"#, ""), x = x); // 42 #42
-    println!(concat!(#"{x} {#x"#, "}"), x = x); // 42 #42
-    println!(concat!(#"{x} {#"#, "x}"), x = x); // 42 #42
-    println!(concat!(#"{x} "#, "{#x}"), x = x); // 42 #42
-    println!(concat!(#"{x} "#, "{#x}"), x = x); // 42 #42
-    println!(concat!(#"{x}"#, " {#x}"), x = x); // 42 #42
-    println!(concat!(#"{x"#, "} {#x}"), x = x); // 42 #42
-    println!(concat!(#"{"#, "x} {#x}"), x = x); // 42 #42
-    println!(concat!(#""#, "{x} {#x}"), x = x); // 42 #42
+    println!(#"{#x} {x}"#, x = x);              // => 42 {x}
+    println!("{#x} {x}", x = x);                // error: invalid format string
+    println!(concat!(#"{#x}"#, " {x}"), x = x); // error: invalid format string
 }
 ```
 
-We recommend that a lint be added (probably to clippy) to catch likely mistakes like those above. The lint could be avoided by adding an extra guarding level (making the placeholder in the guarded string literal unambiguous).
+Using a guarded format string with `concat!` will result in an "invalid format string" error, due to the `#` at the start of the placeholder. The diagnostic for this should be improved to note that `concat!` always resolves to a bare string literal:
+
+```diff
+  error: invalid format string: expected `'}'`, found `'#'`
+   --> src/main.rs:4:14
+    |
+  5 |     println!(concat!(#"{#x}"#, " {x}"), x = x);
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^ expected `'}'` in format string
+    |
++   = note: `concat!` always resolves to a bare string literal
+    = note: if you intended to print `{`, you can escape it using `{{`
+    = note: this error originates in the macro `concat`
+```
 
 ## Timeline
 
@@ -351,12 +355,12 @@ Also, since there is no prefix associated with the guarded literal form, this co
 Many suggest that string guarding should not be tied to format placeholders as suggested in this proposal. Placeholders would instead work the same as they do currently in string literals and raw string literals.
 
 Concerns:
-1. Layering violation, too magical: requires the lexer to interface with libraries, but formatting should onlyt depend on the content of the string
+1. Layering violation, too magical: requires the lexer to interface with libraries, but formatting should only depend on the content of the string
 2. Formatting should be orthogonal to escaping: proposal would require guarding placeholders even if you only want to avoid escaping quotes or backslashes
 3. Inconsistent with raw string literals: `r#"placeholder: {}"#` vs `#"placeholder: {#}"#`
 
 Addressing these concerns:
-1. Format macros already have to use the span of the literal even to just get the value of the string content. If we choose to add an API to expose the value, we can just as easily add an API for the guarding prefix. Macros have always worked at the syntax level, and Rust users generally understand that. Compared to other things macros do in the wild, this is pretty tame. 
+1. Format macros already have to use the span of the literal even to just get the value of the string content. If we choose to add an API to expose the value, we can just as easily add an API for the guarding sequence. Macros have always worked at the syntax level, and Rust users generally understand that. Compared to other things macros do in the wild, this is pretty tame. 
 2. In our view, format placeholders are a kind of contextual escape sequence. The definition of escape sequence is "a combination of characters that has a meaning other than the literal characters contained therein", which fits exactly. We're also only talking about a single additional `#` for each placeholder in most cases, compared to two extra characters for each pair of literal `{}` in the output string. Plus, the `#` inside the placeholder doesn't impact the ease of spotting placeholders, since users are used to a mix of controlling symbols within the braces.
 3. Raw string literals are just different, and users of the language understand that. We think this behavior maintains more consistency with how the other escapes work in these strings.
 
@@ -391,7 +395,7 @@ Guarded string literals should allow the user to avoid escaping of any kind (the
 
 #### Specify the placeholder prefix within the format string
 
-Using currently invalid syntax, specify the placeholder prefix independently of the string guarding prefix:
+Using currently invalid syntax, specify the placeholder prefix independently of the string guarding sequence:
 
 ```swift
 format!(#"{(#)}The natural numbers, denoted "N", are the set {#{}, #{}, ...}."#, 1, 2)
@@ -399,7 +403,7 @@ format!("{(%)}The natural numbers, denoted \"N\", are the set {%{}, %{}, ...}.",
 // The natural numbers, denoted "N", are the set {1, 2, ...}.
 ```
 
-This would be independent of the string literal syntax and more flexible (useable with unguarded strings, raw strings, and any other future string type).
+This would be independent of the string literal syntax and more flexible (useable with bare strings, raw strings, and any other future string type).
 
 However, it is more complex to implement and use. Independence from the string literal syntax is arguably a disadvantage, the flexibility is of limited usefulness beyond what our proposal offers, and the `"{(prefix)}` syntax is not exactly elegant.
 
@@ -463,7 +467,7 @@ This design is based on the raw string literal syntax of the Swift language. The
 Should we remove the legacy raw string syntax?
   + It can still be useful and more ergonomic when someone wants to ensure that absolutely no escapes are possible. Consider `#######"this is a \######n string"#######`, where it is difficult to tell from a glance that `\######n` is not a newline escape. `r"this is a \######n string"` makes that very clear, and is easier on the eyes.
   + But, cases like the above are quite rare. And there is overhead in keeping the raw string literal syntax around. It's hard to argue for continuing to teach raw string literals alongside both bare string literals and guarded string literals, multiplied by various literal types (`b`, `c`). If we plan on no longer teaching raw string literals, a user may have to look up what the `r` means when they come across a rare usage. Or a user may accidentally add an `r` without knowing what it means.
-  + Also, cases like the above can use a longer guarding prefix than necessary to make it clear what is and is not an escape: `#########"this is a \######n string"#########`. The `needless_raw_string_hashes` clippy lint will currently trigger on that, but this can easily be changed to allow for cases that can benefit from the extra clarity extra `#`s bring.
+  + Also, cases like the above can use a longer guarding sequence than necessary to make it clear what is and is not an escape: `#########"this is a \######n string"#########`. The `needless_raw_string_hashes` clippy lint will currently trigger on that, but this can easily be changed to allow for cases that can benefit from the extra clarity extra `#`s bring.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -495,6 +499,6 @@ f#"count: {#count}"# // => thing: 12
 
 ### Remove raw string literal syntax
 
-Guarded string literals make raw string literals largely redundant. Therefore, we may choose to remove them in a future edition and migrate all raw string literals to use guarded strings instead.
+Guarded string literals make raw string literals largely redundant. We can remove them in a future edition and migrate all raw string literals to use guarded strings instead.
 
-However, this is controversial and not necessary to decide right now. We leave this to a possible future RFC.
+However, this is a controversial choice and can be decided after guarded strings are introduced. We plan to introduce a follow-up RFC for removing raw strings after this RFC is merged.
