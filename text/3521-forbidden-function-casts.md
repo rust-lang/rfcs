@@ -61,7 +61,7 @@ Those changes can be automatically applied by an edition migration lint.
       - Note that function item types can also be casted to function pointers
 - On `edition < 2024`
   - Everything works as it used to
-  - In cases where we produce an error on `edition >= 2024` a FCW (Futurte Compatability Warning) is emited
+  - In cases where we produce an error on `edition >= 2024` an edition compatibility warning is emitted
 
 # Drawbacks
 [drawbacks]: #drawbacks
