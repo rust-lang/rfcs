@@ -79,7 +79,7 @@ Another option would be to still allow casts of function pointers to `usize` (bu
 
 We could also disallow more things:
 - Disallow casting of function item types to raw pointers, requiring an intermediate cast to a function pointer. This may be desirable as it makes things even more explicit.
-- Disallow casting on function pointers and function item types to any type using `as`. This removes all possible confusion, but requires us to provide a stable alternative (possibly a function accepting [`F: FnPtr`](https://doc.rust-lang.org/std/marker/trait.FnPtr.html), like [`FnPtr::addr`](https://doc.rust-lang.org/std/marker/trait.FnPtr.html#tymethod.addr)).
+- Disallow casting on function pointers and function item types to any type using `as`. This removes all possible confusion, but requires us to provide a stable alternative (possibly a function accepting [`F: FnPtr`](https://doc.rust-lang.org/1.73.0/std/marker/trait.FnPtr.html), like [`FnPtr::addr`](https://doc.rust-lang.org/1.73.0/std/marker/trait.FnPtr.html#tymethod.addr)).
 
 # Prior art
 [prior-art]: #prior-art
