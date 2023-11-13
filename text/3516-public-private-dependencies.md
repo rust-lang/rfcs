@@ -236,7 +236,7 @@ You can't definitively lint when a `public = true` is unused since it may depend
 
 ## Misc
 
-- `Cargo.toml`: instead of `public` (like [RFC 1977]), we could name the field `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html) or name the field `visibility = "<public|private>"`
+- `Cargo.toml`: instead of `public` (like [RFC 1977]), we could name the field `pub` (named after the [Rust keyword](https://doc.rust-lang.org/reference/visibility-and-privacy.html)) or name the field `visibility = "<public|private>"`
   - `pub` has a nice parallel with Rust
   - `pub`: Cargo doesn't use abbreviations as much as Rust (though some are used)
   - `pub` could be seen as ambiguous with `publish`
