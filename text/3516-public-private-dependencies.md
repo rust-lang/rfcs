@@ -79,7 +79,7 @@ The dependencies `serde` and `serde_json` are both public dependencies, meaning 
 This has the implication that a semver incompatible upgrade of these dependencies is a breaking change for this package.
 
 With this RFC, in pre-2024 editions,
-you can enable add `lints.rust.external_private_dependency = "warn"` to your
+you can enable add `lints.rust.exported_private_dependencies = "warn"` to your
 manifest and rustc will warn saying that `serde` and `serde_json` are private
 dependencies in a public API.
 In 2024+ editions, this will be an error.
@@ -145,7 +145,7 @@ Since the proc-macro can only guarantee that the namespace `clap` is accessible,
 As a last-ditch way of dealing with this, a user may allow the error:
 ```rust
 #[doc(hidden)]
-#[allow(external_private_dependency)]
+#[allow(exported_private_dependencies)]
 #[cfg(feature = "derive")]
 pub mod __derive_refs {
     #[doc(hidden)]
@@ -155,7 +155,7 @@ pub mod __derive_refs {
 A similar case is pub-in-private:
 ```rust
 mod private {
-    #[allow(external_private_dependency)]
+    #[allow(exported_private_dependencies)]
     pub struct Foo { pub x: some_dependency::SomeType }
 }
 ```
@@ -173,16 +173,16 @@ features like `impl Trait` in type aliases if we had it.
 The main change to the compiler will be to accept a new modifier on the `--extern` flag that Cargo
 supplies which marks it as a private dependency.
 The modifier will be called `priv` (e.g. `--extern priv:serde`).
-The compiler then emits the lint `external_private_dependency` if it encounters private
+The compiler then emits the lint `exported-private-dependencies` if it encounters private
 dependencies exposed as `public`.
 
-`external_private_dependency` will be `allow` by default for pre-2024 editions.
+`exported-private-dependencies` will be `allow` by default for pre-2024 editions.
 It will be a member of the `rust-2024-compatibility` lint group so that it gets automatically picked up by `cargo fix --edition`.
 In the 2024 edition, this lint will be `deny`.
 
 In some situations, it can be necessary to allow private dependencies to become
 part of the public API. In that case one can permit this with
-`#[allow(external_private_dependency)]`. This is particularly useful when
+`#[allow(exported_private_dependencies)]`. This is particularly useful when
 paired with `#[doc(hidden)]` and other already existing hacks.
 This most likely will also be necessary for the more complex relationship of
 `libcore` and `libstd` in Rust itself.
