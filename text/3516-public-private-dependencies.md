@@ -296,7 +296,7 @@ When upgrading one dependency, you might need to upgrade another because you
 use it to interact with the first, like `clap` and `clap_complete`.
 The existing error messages are not great, along the lines of "expected `clap::Command`, found `clap::Command`".
 Ideally, you would be presented instead with a message saying "clap_complete
-3.4 is not compatiblw with clap 4.0, try upgrading to clap_complete 4.0".
+3.4 is not compatible with clap 4.0, try upgrading to clap_complete 4.0".
 Even better if we could help users do this upgrade automatically.
 
 As solving this, via the resolver, has been the main sticking point for [RFC 1997],
