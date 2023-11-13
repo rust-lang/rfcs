@@ -245,7 +245,7 @@ You can't definitively lint when a `public = true` is unused since it may depend
 - `rustc`: Instead of `allow` by default for pre-2024 editions, we could warn by default
   - More people would get the benefit of the feature now
   - However, this would be extremely noisy and likely make people grumpy
-  - If we did this, we'd likely want to not require an MSRV bump so people can immediately silence the warning which would require using a key besides `public` (since its already reserved) and treating the field as an unused key when the `-Z` isn't enabled.
+  - If we did this, we'd likely want to not require an MSRV bump so people can immediately silence the warning which would require using a key besides `public` (since it's already reserved) and treating the field as an unused key when the `-Z` isn't enabled.
 - `Cargo.toml`: Instead of `public = false` being the default and changing the warning level on an edition boundary, we could instead start with `public = true` and change the default on an edition boundary.
   - This would require `cargo fix` marking all dependencies as `public = true`, while using the warning means we can limit it to only those dependencies that need it.
 - `Cargo.toml`: Instead of `public = false` being the default, we could have a "unchecked" / "unset" state
