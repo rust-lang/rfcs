@@ -369,7 +369,7 @@ Upon completion, it will look to see what instance of `clap_complete` was
 resolved and act as if that was what was specified inside of the in-memory
 `clap` dependency.
 
-The packakge using `from` must be a public dependency of the `from` package.
+The package using `from` must be a public dependency of the `from` package.
 In this case, `clap` must be a public dependency of `clap_complete`.
 If the different packages in `from` do not agree on what the package
 version should resolve to (clap 3.4 vs clap 4.0), then it is an error.
