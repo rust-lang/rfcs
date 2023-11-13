@@ -214,9 +214,17 @@ Python has a similar coupling of top-level namespaces and modules with the files
 
 # Unresolved questions
 
- - How exactly should the Cargo.toml `lib.name` key work in this world, and how does that integrate with `--extern` and `-L` and sysroots?
- - Should we allow renames like `"foo::bar" = { package = "foo_bar", version = "1.0" }` in Cargo.toml?
- - How precisely should this be represented in the index trie?
+Deferred to tracking issue to be resolved pre-stabilization:
+- How exactly should the Cargo.toml `lib.name` key work in this world, and how does that integrate with `--extern` and `-L` and sysroots?
+- Should we allow renames like `"foo::bar" = { package = "foo_bar", version = "1.0" }` in Cargo.toml?
+- How precisely should this be represented in the index trie?
+- How we should name the `.crate` file / download URL
+
+Third-parties, like Linux distributions, will need to decide how to encode
+cargo package names in their distribution package names according to their
+individual rules.
+Compared to existing ecosystems with namespaces that they package, the only new
+wrinkle is that there can be 0-1 namespace levels.
 
 # Future possibilities
 
