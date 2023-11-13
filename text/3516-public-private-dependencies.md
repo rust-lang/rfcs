@@ -41,7 +41,7 @@ Related problems with this scenario not handled by this RFC:
   by not requiring private dependencies to be unified.
   - Private dependencies are not sufficient on their own for this
   - There are likely better alternatives, like [Pre-RFC: Mutually-exclusive, global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618)
-- Help check for missing feature declarations by duplicating dependencies, rather than unifiying features
+- Help check for missing feature declarations by duplicating dependencies, rather than unifying features
   - See [Missing feature declaration check](#future-possibilities)
 
 # Guide-level explanation
