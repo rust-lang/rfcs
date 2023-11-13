@@ -217,6 +217,7 @@ Python has a similar coupling of top-level namespaces and modules with the files
  - How exactly should the Cargo.toml `lib.name` key work in this world, and how does that integrate with `--extern` and `-L` and sysroots?
  - Should we allow renames like `"foo::bar" = { package = "foo_bar", version = "1.0" }` in Cargo.toml?
  - How precisely should this be represented in the index trie?
+ - How we should name the `.crate` file / download URL
 
 # Future possibilities
 
