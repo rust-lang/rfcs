@@ -299,7 +299,7 @@ Ideally, you would be presented instead with a message saying "clap_complete
 3.4 is not compatible with clap 4.0, try upgrading to clap_complete 4.0".
 Even better if we could help users do this upgrade automatically.
 
-As solving this, via the resolver, has been the main sticking point for [RFC 1997],
+As solving this, via the resolver, has been the main sticking point for [RFC 1977],
 this was deferred out to take smaller,
 more incremental steps,
 that open the
