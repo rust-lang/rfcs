@@ -220,6 +220,12 @@ Deferred to tracking issue to be resolved pre-stabilization:
 - How precisely should this be represented in the index trie?
 - How we should name the `.crate` file / download URL
 
+Third-parties, like Linux distributions, will need to decide how to encode
+cargo package names in their distribution package names according to their
+individual rules.
+Compared to existing ecosystems with namespaces that they package, the only new
+wrinkle is that there can be 0-1 namespace levels.
+
 # Future possibilities
 
 We can allow multiple layers of nesting if people want it.
