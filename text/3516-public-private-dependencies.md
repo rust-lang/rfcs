@@ -376,7 +376,7 @@ version should resolve to (clap 3.4 vs clap 4.0), then it is an error.
 
 Compared to the resolver doing this implicitly
 - It is unclear if this would be any more difficult to implement in the resolver
-- Changing a dependency from `public = false` to `public = true` is backwards compatible because it has no affect on existing callers.
+- Changing a dependency from `public = false` to `public = true` is backwards compatible because it has no effect on existing callers.
 - It is unclear how this would handle multiple versions of a package that are public
 
 The downside is it feels like the declaration is backwards.
