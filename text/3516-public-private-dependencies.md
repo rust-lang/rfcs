@@ -29,7 +29,7 @@ crate `B` but some of the types from crate `B` are exposed through the API in cr
 - Brittle semver compatibility as `A` might not have intended to expose `B`,
   like when adding `impl From<B::error> for AError` for convenience in using `?` in the implementation of `A`.
 - When self-hosting documentation, you may want to render documentation for all of your public dependencies as well
-- When running `cargo doc`, users may way to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
+- When running `cargo doc`, users may want to render [documentation for their accessible dependencies](https://github.com/rust-lang/cargo/issues/2025) [without the cost of their inaccessible dependencies](https://github.com/rust-lang/cargo/issues/4049)
 - When linting for semver compatibility [there isn't enough information to reason about dependencies](https://github.com/obi1kenobi/cargo-semver-checks/issues/121)
 
 Related problems with this scenario not handled by this RFC:
