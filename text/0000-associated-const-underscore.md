@@ -572,6 +572,28 @@ The following details are called out as being worth testing:
     }
     ```
 
+7. Underscore constants are not dead code, despite not being referenced.
+
+    ```rust
+    #![deny(dead_code)]
+
+    pub struct Struct;
+
+    const _: () = {
+        let _ = Struct;
+    };
+
+    impl Struct {
+        const _: () = {
+            let _ = Struct;
+        };
+
+        const _: () = {
+            struct Unused;  // error: dead code
+        };
+    }
+    ```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
