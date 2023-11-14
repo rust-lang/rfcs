@@ -628,8 +628,11 @@ None identified.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- [ ] When does associated const code get run? Eagerly at type definition? When
-    substituting concrete types into generic arguments? Never?
+- [ ] When does associated const code get run? Eagerly at type definition?
+    [When substituting concrete types into generic arguments?][substituting]
+    Never?
+
+[substituting]: https://github.com/rust-lang/rfcs/pull/3527#issuecomment-1807591083
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
