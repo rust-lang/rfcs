@@ -149,7 +149,7 @@ themselves to a maximum of 1 request per second.
 We also require all API users to provide a user-agent header that allows us to
 uniquely identify your application. This allows us to more accurately monitor
 any impact your application may have on our service. Providing a user agent that
-only identifies your HTTP client library (such as `request/0.9.1`) increases the
+only identifies your HTTP client library (such as `reqwest/0.9.1`) increases the
 likelihood that we will block your traffic.
 
 It is recommended, to include contact information in your user-agent header:
