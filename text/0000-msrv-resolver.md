@@ -174,6 +174,9 @@ For example,
 by clap updating its MSRV from 1.64.0 to 1.70.0,
 it was able to drop the large [is-terminal](https://crates.io/crates/is-terminal) dependency,
 [cutting the build time from 6s to 3s](https://github.com/rosetta-rs/argparse-rosetta-rs/commit/378cd2c30679afdf9b9843dbadea3e8951090809).
+So if we can find a solution that allows maintainers to move forward, helping
+users more the edge, while not impacting users on older rust version, would be
+a big help.
 
 The sooner we improve the status quo, the better, as it can take years for
 these changes to percolate out to those exclusively developing with an older
