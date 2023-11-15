@@ -13,9 +13,9 @@ bound from `T: Sized` to `T: ?Sized + Aligned`.
 
 # Motivation
 
-Data structures and containers may be able to store unsized types only if their
-alignment can be known at compile-time. Alternatively, compile-time known
-alignment might enable more efficient algorithms or additional APIs. A built-in
+Some data structures and containers cam store unsized types only if their
+alignment can be known at compile-time. Additionally, compile-time known
+alignment can enable more efficient algorithms and additional APIs. A built-in
 `Aligned` trait allows Rust code to implement APIs that that are fully usable
 with all aligned types.
 
@@ -103,9 +103,9 @@ Main allocation (1 block = 4 bytes)
 │ 3u32 │      padding       │ 64-bit ptr  │   padding   │          42_u128          │
 └──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
 
-Metadata allocation (1 block = 1 word, "vt" = vtable, ofst = "offset")
+Metadata allocation (1 block = 1 word, "vp" = vtable pointer, ofst = "offset")
 ┌──────┬──────┬──────┬──────┬──────┬──────┐
-│vt u32 ofst16│vt&str ofst32│vtu128 ofst48│
+│vp u32 ofst16│vp&str ofst32│vpu128 ofst48│
 └──────┴──────┴──────┴──────┴──────┴──────┘
 ```
 
