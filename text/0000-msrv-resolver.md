@@ -379,6 +379,10 @@ This will err on the side of too low of an MSRV.
 While this might help with in this situation,
 it would lock us in to inaccurate information which might limit what analysis we could do in the future.
 
+We could add new fields to the Index's package summary to track this
+information so it can inform our decisions without losing the intent of the
+publisher.
+
 ## Integrate `cargo audit`
 
 If we [integrate `cargo audit`](https://github.com/rust-lang/cargo/issues/7678),
