@@ -77,7 +77,7 @@ fn main() {
     // "references" to the same data may exist in the Rust or C++ domain.
     // But it can effectively be used as an opaque token to pass safely
     // through Rust back into C++
-    let some_value: u32 = cpp_pbj_refence.get_int_field();
+    let some_value: u32 = cpp_obj_reference.get_int_field();
     let some_field = cpp_obj_reference.get_more_complex_field();
     cpp_obj_reference.equals(&get_cpp_reference());
 }
