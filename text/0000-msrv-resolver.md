@@ -238,7 +238,8 @@ This behavior can be bypassed with `--ignore-rust-version`
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This might further entrench rust-version stagnation in the ecosystem.
+While we hope this will give maintainers more freedom to upgrade their MSRV,
+this could instead further entrench rust-version stagnation in the ecosystem.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
