@@ -260,6 +260,20 @@ this could instead further entrench rust-version stagnation in the ecosystem.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Add `workspace.rust-version`
+
+Instead of using the lowest MSRV among workspace members, we could add `workspace.rust-version`.
+
+This opens its own set of questions
+- Do packages implicitly inherit this?
+- What are the semantics if its unset?
+- Would it be confusing to have this be set in mixed-MSRV workspaces?  Would blocking it be incompatible with the semantics when unset?
+- In mixed-MSRV workspaces, does it need to be the highest or lowest MSRV of your packages?
+  - For the resolver, it would need to be the lowest but there might be other use cases where it needs to be the highest
+
+The proposed solution does not block us from later going down this road but
+allows us to move forward without having to figure out all of these details.
+
 ## Make this opt-in
 
 As proposed, CI that tries to verify against the latest dependencies will no longer do so.
