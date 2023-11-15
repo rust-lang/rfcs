@@ -203,7 +203,8 @@ In solving this, we need to keep in mind
 
 Cargo's resolver will be updated to *prefer* MSRV compatible versions over
 incompatible versions when resolving versions.
-Packages without `package.rust-version` will be treated as compatible.
+Dependencies without `package.rust-version` will be treated as compatible.
+
 This can be overridden with `--ignore-rust-version`.
 
 Implications
@@ -216,6 +217,13 @@ As there is no `workspace.rust-version`,
 the resolver will pick the lowest version among workspace members.
 This will be less optimal for workspaces with multiple MSRVs and dependencies unique to the higher-MSRV packages.
 Users can workaround this by raising the version requirement or using `cargo update --precise`.
+
+If `package.rust-version` is unset among all workspace members,
+we'll fallback to `rustc --version`,
+ensuring a build that at least works for the current system.
+As this is just a preference for resolving dependencies, rather than prescriptive,
+this shouldn't cause churn.
+We already call `rustc` for feature resolution, so hopefully this won't have a performance impact.
 
 The resolver will only do this for local packages and not for `cargo install`.
 
@@ -297,14 +305,6 @@ If we change behavior with a new edition (assuming we treat this as a minor inco
 we get the fanfare needed but it requires waiting until people bump their MSRV,
 making it so the people who need it the most are the those who will least benefit.
 
-## Fallback to users rustc version
-
-If no `package.rust-version` is specified, we can fallback to `rustc --version` for resolving dependencies.
-
-As the dependency resolution is just a preference, this shouldn't cause churn.
-
-We already query `rustc` for feature resolution, so this hopefully won't impact performance.
-
 ## Sort order when `package.rust-version` is unspecified
 
 We could give versions without `package.rust-version` a lower priority, acting
@@ -338,7 +338,8 @@ This would also error or pick lower versions more than it needs to when a worksp
 We'd want to extend the resolver to treat Rust as yet another dependency and turn `package.rust-version` into dependencies on Rust.
 This could cause a lot more backtracking which could negatively affect resolver performance for people with lower MSRVs.
 
-If no `package.rust-version` is specified, we wouldn't want to fallback to the version of rustc being used because that could cause `Cargo.lock` churn if contributors are on different Rust versions.
+If no `package.rust-version` is specified,
+we wouldn't want to fallback to the version of rustc being used because that could cause `Cargo.lock` churn if contributors are on different Rust versions.
 
 # Prior art
 [prior-art]: #prior-art
