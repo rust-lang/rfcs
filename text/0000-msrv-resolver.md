@@ -298,7 +298,7 @@ making it so the people who need it the most are the those who will least benefi
 
 ## Fallback to users rustc version
 
-If no `package.rust-version` is specified, we can fallback to `rustc --version`.
+If no `package.rust-version` is specified, we can fallback to `rustc --version` for resolving dependencies.
 
 As the dependency resolution is just a preference, this shouldn't cause churn.
 
