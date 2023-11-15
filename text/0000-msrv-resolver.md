@@ -235,14 +235,52 @@ MSRV-compatible.
 
 This behavior can be bypassed with `--ignore-rust-version`
 
+## Cargo config
+
+We'll add a `build.rust-version = <true|false>` field to `.cargo/config.toml` that will control whether `package.rust-version` is respected or not.
+`--ignore-rust-version` can override this.
+
+This will let users effectively pass `--ignore-rust-version` to all commands,
+without having to support it on every single one.
+
+We can also stabilize this earlier than the rest of this so we can use it in our
+[Verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
+documentation so people will be more likely to prepared for this change.
+
 # Drawbacks
 [drawbacks]: #drawbacks
+
+Maintainers that commit their `Cargo.lock` and verify their latest dependencies
+will need to set `CARGO_BUILD_RUST_VERSION=false` in their environment.
+See Alternatives for more on this.
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
 this could instead further entrench rust-version stagnation in the ecosystem.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Make this opt-in
+
+As proposed, CI that tries to verify against the latest dependencies will no longer do so.
+Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RUST_VERSION=false`.
+
+If we consider this a major incompatibility, then it needs to be opted into.
+As `cargo fix` can't migrate a user's CI,
+this would be out of scope for migrating to with a new Edition.
+
+I would argue that the number of maintainers verifying latest dependencies is
+relatively low and they are more likely to be "in the know",
+making them less likely to be negatively affected by this.
+Therefore, I propose we consider this a minor incompatibility
+
+If we do a slow roll out (opt-in then opt-out), the visibility for the switch
+to opt-out will be a lot less than the initial announcement and we're more
+likely to miss people compared to making switch over when this gets released.
+
+If we change behavior with a new edition (assuming we treat this as a minor incompatibility),
+we get the fanfare needed but it requires waiting until people bump their MSRV,
+making it so the people who need it the most are the those who will least benefit.
 
 ## Fallback to users rustc version
 
@@ -318,3 +356,9 @@ See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for
 (slated to be released in 1.75) made it so `cargo install` will error upfront,
 suggesting a version of the package to use and to pass `--locked` assuming the
 bundled `Cargo.lock` has MSRV compatible dependencies.
+
+## `build.rust-version = "<x>.<y>"`
+
+We could allow people setting an effective rust-version within the config.
+This would be useful for people who have a reason to not set `package.rust-version`
+as well as to reproduce behavior with different Rust versions.
