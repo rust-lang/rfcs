@@ -191,6 +191,7 @@ In solving this, we need to keep in mind
 - We also want to continue to support people whose workflow is to develop with
   latest dependencies in a `Cargo.lock` and then verify MSRV with a carefully
   crafted `Cargo.lock`.
+- A `Cargo.lock` should not resolve differently on upgrade.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
