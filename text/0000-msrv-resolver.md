@@ -336,6 +336,35 @@ If no `package.rust-version` is specified, we wouldn't want to fallback to the v
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Encourage `package.rust-version` to be set more frequently
+
+The user experience for this is based on the extent and quality of the data.
+Ensuring we have `package.rust-version` populated more often (while maintaining
+quality of that data) is an important problem but does not have to be solved to
+get value out of this RFC and can be handled separately.
+
+We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`
+We don't want to default `package.rust-version` in `cargo new`.
+If people aren't committed to verifying it,
+it is likely to go stale and will claim an MSRV much older than what is used in practice.
+If we had the hard-error resolver mode and
+[clippy warning people when using API items stabilized after their MSRV](https://github.com/rust-lang/rust-clippy/issues/6324),
+this will at least annoy people into either being somewhat compatible or removing the field.
+
+When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.
+This will err on the side of a higher MSRV than necessry and the only way to
+workaround it is to set `CARGO_BUILD_RUST_VERSION=false` which will then lose
+all other protections.
+
+When missing, `cargo publish` could inject based on the rustup toolchain file.
+This will err on the side of a higher MSRV than necessary as well.
+
+When missing, `cargo publish` could inject `package.rust-version` inferred from
+`package.edition` and/or other `Cargo.toml` fields.
+This will err on the side of too low of an MSRV.
+While this might help with in this situation,
+it would lock us in to inaccurate information which might limit what analysis we could do in the future.
+
 ## Integrate `cargo audit`
 
 If we [integrate `cargo audit`](https://github.com/rust-lang/cargo/issues/7678),
