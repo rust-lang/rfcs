@@ -79,7 +79,7 @@ fn main() {
     // through Rust back into C++
     let some_value: u32 = cpp_pbj_refence.get_int_field();
     let some_field = cpp_obj_reference.get_more_complex_field();
-    cpp_obj_reference.compare_with(&get_cpp_reference());
+    cpp_obj_reference.equals(&get_cpp_reference());
 }
 ```
 
