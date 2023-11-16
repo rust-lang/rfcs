@@ -437,7 +437,54 @@ of which are adequate to this use case.
     };
     ```
 
-    As far as I know, this expansion is able to accomplish all technical
+    For a library containing `pub struct Thing { field: i32 }` and the above
+    `const _`, this produces an rlib that is 7.2 KB, containing a symbol for that
+    `assert_fields_are_total_eq` function.
+
+    ```console
+    $ llvm-dwarfdump target/debug/librepro.rlib
+
+    DW_TAG_namespace
+      DW_AT_name  ("repro")
+
+      DW_TAG_namespace
+        DW_AT_name  ("_")
+
+        DW_TAG_namespace
+          DW_AT_name  ("{impl#0}")
+
+          DW_TAG_subprogram
+            DW_AT_low_pc  (0x0000000000000000)
+            DW_AT_high_pc  (0x0000000000000001)
+            DW_AT_frame_base  (DW_OP_reg7 RSP)
+            DW_AT_linkage_name  ("_ZN67_$LT$repro..Thing$u20$as$u20$repro.._..__AssertFieldsAreTotalEq$GT$26assert_fields_are_total_eq17hc74c403364f7baa6E")
+            DW_AT_name  ("assert_fields_are_total_eq")
+            DW_AT_decl_file  ("src/lib.rs")
+            DW_AT_decl_line  (12)
+            DW_AT_external  (true)
+    ```
+
+    We can make an approach that is cheaper to compile by changing the
+    `__AssertFieldsAreTotalEq` trait's contents from a fn to a const. This way
+    there is no longer a need to compile the function's body to machine code;
+    just type-check it. This reduces the size of librepro.rlib by 35% to 4.7 KB.
+
+    ```rust
+    impl ::core::cmp::Eq for Thing {}
+
+    const _: () = {
+        trait __AssertFieldsAreTotalEq {
+            const ASSERT_FIELDS_ARE_TOTAL_EQ: ();
+        }
+        impl __AssertFieldsAreTotalEq for Thing {
+            const ASSERT_FIELDS_ARE_TOTAL_EQ: () = {
+                let _: ::core::cmp::AssertParamIsEq<Field>;
+            };
+        }
+    };
+    ```
+
+    As far as I know, this final expansion is able to accomplish all technical
     objectives. I considered making a PR to make `derive(Eq)` take this
     approach, but if possible, going straight to the associated const underscore
     proposed by this RFC would be preferable.
