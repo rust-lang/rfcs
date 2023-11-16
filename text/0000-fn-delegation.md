@@ -7,8 +7,8 @@
 
 In [this comment](https://github.com/rust-lang/rfcs/pull/3513#issuecomment-1771113458) nikomatsakis
 says that the eRFC process is dead and the
-[experimental feature gates](https://dead-link-to-lang-team-site) process should be preferred for
-proposals like this.
+[experimental feature gates](https://github.com/rust-lang/lang-team/blob/master/src/how_to/experiment.md)
+process should be preferred for proposals like this.
 
 I'll submit the "experimental feature gate" PR to rust-lang/rust as well, but I'm also submitting
 a markdown document to this repo to have git history, inline comments, etc.
@@ -228,12 +228,13 @@ First argument (often `self`) should supports arbitrary transformations, rather 
 projection to a field (`self.field`).
 In other words, the target expression should be an arbitrary expression.
 
-| arg0 preproc       |   count |                    |
-|:-------------------|---------|-------------------:|
-| Arg0Preproc.No     |    1724 | `arg0`             |
-| Arg0Preproc.Field  |    1580 | `arg0.field`       |
-| Arg0Preproc.Other  |    1407 | anything else      |
-| Arg0Preproc.Getter |     583 | `arg0.get_field()` |
+| arg0 preproc         |   count |                     |
+|:---------------------|---------|--------------------:|
+| Arg0Preproc.No       |    1734 | `arg0`              |
+| Arg0Preproc.Field    |    1582 | `arg0.field`        |
+| Arg0Preproc.Other    |    1270 | anything else       |
+| Arg0Preproc.Getter   |     583 | `arg0.get_field()`  |
+| Arg0Preproc.RefField |     136 | `&(mut) arg0.field` |
 
 `self.field` is not even the most common transformation, usually the first argument is not
 transformed at all, although delegation for static methods and free functions skews the statistics
@@ -245,12 +246,13 @@ If all static methods and free functions are filtered away, then half of `Arg0Pr
 and the statistics look like this, with `self.field` getting to the top, but still representing
 only 36% of cases.
 
-| arg0 preproc       |   count |                    |
-|:-------------------|---------|-------------------:|
-| Arg0Preproc.Field  |    1580 | `self.field`       |
-| Arg0Preproc.Other  |    1360 | anything else      |
-| Arg0Preproc.No     |     830 | `self`             |
-| Arg0Preproc.Getter |     576 | `self.get_field()` |
+| arg0 preproc         |   count |                     |
+|:---------------------|---------|--------------------:|
+| Arg0Preproc.Field    |    1582 | `self.field`        |
+| Arg0Preproc.Other    |    1223 | anything else       |
+| Arg0Preproc.No       |     833 | `self`              |
+| Arg0Preproc.Getter   |     576 | `self.get_field()`  |
+| Arg0Preproc.RefField |     136 | `&(mut) arg0.field` |
 
 When reading the previous RFCs, I considered support for arbitrary target expressions a no-brainer,
 because correctly supporting just fields is likely not any easier, from an implementation point of
@@ -324,12 +326,13 @@ should try extending the condition to "same up to `Self` type".
 | ArgsMatch.SameUpToSelfType |     321 | `fn foo(&self, other: &Self) { self.0.foo(&other.0) }`   |
 | ArgsMatch.Coerced          |      60 | `fn take_vec(&self, a: &Vec<u8>) { self.take_slice(a) }` |
 
-| args preproc       |   count |                   |                                                     |
-|:-------------------|---------|-------------------|----------------------------------------------------:|
-| ArgsPreproc.No     |    4976 | `arg`             | no result post-processing generally allowed         |
-| ArgsPreproc.Other  |     265 | anything else     | but `SameUpToSelfType` requires some pre-processing |
-| ArgsPreproc.Getter |      34 | `arg.get_field()` |                                                     |
-| ArgsPreproc.Field  |      19 | `arg.field`       |                                                     |
+| args preproc         |   count |                     |                                                     |
+|:---------------------|---------|---------------------|----------------------------------------------------:|
+| ArgsPreproc.No       |    4987 | `arg`               | no result pre-processing generally allowed          |
+| ArgsPreproc.Other    |     226 | anything else       | but `SameUpToSelfType` requires some pre-processing |
+| ArgsPreproc.RefField |      39 | `&(mut) arg0.field` |                                                     |
+| ArgsPreproc.Getter   |      34 | `arg.get_field()`   |                                                     |
+| ArgsPreproc.Field    |      19 | `arg.field`         |                                                     |
 
 ### Newtype support
 
@@ -379,8 +382,9 @@ You cannot delegate a whole impl without generating individual delegated functio
 The second layer can be supported later when the base layer is ready.
 It should be useful, delegatable functions in trait impls represent 60% of all delegation cases
 after all.
-We didn't collect statistics about all functions in a trait impl being delegetable (TODO: collect
-them, it's not hard).
+In our collected data about 48% of trait impls in which at least one function was delegatable
+could be delegated entirely, 38% contained associated types or constants but all functions in them
+could be delegated, and 14% could only be delegated partially.
 We need to make sure that the selected delegation syntax can be extended to this "glob delegation"
 case.
 
@@ -449,6 +453,9 @@ due to refinement.
 - Inheriting signature from the trait means not supporting refinements.
 - Inheriting signature from the callee means not supporting coercions
 (`RetMatch.Coerced`, `ArgsMatch.Coerced`, see above).
+
+The `#[refine]` attribute proposed by RFC 3245 could potentially be used for changing the behavior
+from one to another. We suggest inheriting signatures from the trait by default.
 
 If our delegation item has any other parent than a trait impl, then we have no other choice than to
 inherit the signature from the callee.
