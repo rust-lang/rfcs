@@ -33,8 +33,9 @@ When we have changed the syntax of Rust such that the syntax matched by a fragme
 
 - Add a new fragment specifier that preserves the behavior of the fragment specifier in the last edition.  If there is some semantically meaningful name that makes sense to use for this new fragment specifier, we'll use that.  Otherwise, we'll use the existing name with the identifier of the last edition added as a suffix.
 - Change the behavior of the fragment specifier to match the underlying grammar as of the release of Rust corresponding to first release of the new edition.
+- Have `cargo fix` replace all instances of the original fragment specifier in macro matchers with the new one that preserves the old behavior.
 
-For example, suppose that the behavior of the `expr` fragment specifier fell out of sync with the grammar for a Rust [expression][] during Rust 2021 and that Rust 2024 is the next edition.  Then in Rust 2024, we would add a new fragment specifier named `expr2021` (assuming no better semantically meaningful name could be found) that would preserve the behavior `expr` had in Rust 2021, and we would change the behavior of `expr` to match the underlying grammar.
+For example, suppose that the behavior of the `expr` fragment specifier fell out of sync with the grammar for a Rust [expression][] during Rust 2021 and that Rust 2024 is the next edition.  Then in Rust 2024, we would add a new fragment specifier named `expr2021` (assuming no better semantically meaningful name could be found) that would preserve the behavior `expr` had in Rust 2021, we would change the behavior of `expr` to match the underlying grammar, and we would have `cargo fix` replace all instances of `expr` fragment specifiers with `expr2021`.
 
 # Alternatives
 
@@ -42,7 +43,7 @@ For example, suppose that the behavior of the `expr` fragment specifier fell out
 
 Changing the behavior of existing fragment specifiers, even over an edition, has an obvious cost: we may change the meaning of existing macros and consequently change the code that they generate.
 
-One way to mitigate this would be for `cargo fix` to replace all instances of a changed fragment specifier with the new fragment specifier added for backward compatibility.  But that has some cost in terms of code churn.
+Having `cargo fix` replace all instances of a changed fragment specifier with the new fragment specifier added for backward compatibility does mitigate this.  But that has some cost in terms of code churn.
 
 Another alternative would be to *never* change the meaning of existing fragment specifiers.  Instead, when changing the grammar of Rust, we would add *new* fragment specifiers that would correspond with this new grammar.  We would not have to wait for new editions to add these.  We could add, e.g., `expr2023_11`, `expr2023_12`, etc. each time that we change the grammar.
 
