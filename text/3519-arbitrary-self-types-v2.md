@@ -320,14 +320,16 @@ Why should we *not* do this?
 ## Method shadowing
 [method-shadowing]: #method-shadowing
 
-For a smart pointer `P<T>`, a method call `p.m()` might call a method on the smart pointer type itself (`P::m`), or, if the smart pointer implements `Deref<Target=T>`, it might already call `T::m`. This already gives the possibility that `T::m` would be shadowed by `P::m`.
+For a smart pointer `P<T>` that implements `Deref<Target = T>`, a method call `p.m()` might call a method `P::m` on the smart pointer type itself, or it might call `T::m`. If both methods are declared, this results in an error.
 
-Current Rust standard library smart pointers are designed with this shadowing behavior in mind:
+Rust standard library smart pointers are designed with this shadowing behavior in mind:
 
-* `Box`, `Pin`, `Rc` and `Arc` already heavily use associated functions rather than methods
-* Where they use methods, it's often with the _intention_ of shadowing a method in the inner type (e.g. `Arc::clone`)
+* `Box`, `Pin`, `Rc` and `Arc` heavily use associated functions rather than methods.
+* Where they use methods, it's often with the _intention_ of shadowing a method in the inner type (e.g. `Arc::clone`).
 
-These method shadowing risks are effectively the same for `Deref` and `Receiver`. This RFC does not make things worse (it just adds additional flexibility to the `self` parameter type for `T::m`). However it does mean that the `Receiver` trait cannot be added to smart pointer types which were not designed with these concerns in mind.
+Furthermore, the `Deref` trait itself [documents this possible compatibility hazard](https://doc.rust-lang.org/nightly/std/ops/trait.Deref.html#when-to-implement-deref-or-derefmut), and the Rust API Guidelines has [a guideline about avoiding inherent methods on smart pointers](https://rust-lang.github.io/api-guidelines/predictability.html#smart-pointers-do-not-add-inherent-methods-c-smart-ptr).
+
+These method shadowing risks also apply to `Receiver`. This RFC does not make things worse for types that implement `Deref`, it only adds additional flexibility to the `self` parameter type for `T::m`.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
