@@ -191,7 +191,7 @@ In solving this, we need to keep in mind
 - We also want to continue to support people whose workflow is to develop with
   latest dependencies in a `Cargo.lock` and then verify MSRV with a carefully
   crafted `Cargo.lock`.
-- A `Cargo.lock` should not resolve differently on upgrade.
+- A `Cargo.lock` should not resolve differently when upgrading Rust.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -205,7 +205,7 @@ Cargo's resolver will be updated to *prefer* MSRV compatible versions over
 incompatible versions when resolving versions.
 Dependencies without `package.rust-version` will be treated as compatible.
 
-This can be overridden with `--ignore-rust-version`.
+This can be overridden with `--ignore-rust-version` and config's `build.rust-version`.
 
 Implications
 - If you use do `cargo update --precise <msrv-incompatible-ver>`, it will work
@@ -309,6 +309,7 @@ making it so the people who need it the most are the those who will least benefi
 
 We could give versions without `package.rust-version` a lower priority, acting
 as if they are always too new.
+I suspect that no matter which direction we go on this, we'll negatively impact someone.
 
 ## Hard-error
 
