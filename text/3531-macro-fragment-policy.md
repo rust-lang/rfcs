@@ -29,13 +29,15 @@ Periodically, we need a way to bring the language and the fragment specifiers ba
 
 This section is normative.
 
-When we have changed the syntax of Rust such that the syntax matched by a fragment specifier no longer exactly aligns with the actual syntax for that production in the Rust grammar, then for the next edition of Rust, we will:
+When we change the syntax of Rust such that the syntax matched by a fragment specifier no longer exactly aligns with the actual syntax for that production in the Rust grammar, we will:
 
-- Add a new fragment specifier that preserves the behavior of the fragment specifier in the last edition.  If there is some semantically meaningful name that makes sense to use for this new fragment specifier, we'll use that.  Otherwise, we'll use the existing name with the identifier of the last edition added as a suffix.
-- Change the behavior of the fragment specifier to match the underlying grammar as of the release of Rust corresponding to first release of the new edition.
-- Have `cargo fix` replace all instances of the original fragment specifier in macro matchers with the new one that preserves the old behavior.
+- In all editions, add a new fragment specifier that preserves the behavior of the existing fragment specifier.  If there is some semantically meaningful name that makes sense to use for this new fragment specifier, we'll use that.  Otherwise, we'll use the existing name with the identifier of the current stable edition added as a suffix.
+- In the next edition, change the behavior of the original fragment specifier to match the underlying grammar as of the release of Rust corresponding to first release of that edition.
+- When migrating existing code to the new edition, have `cargo fix` replace all instances of the original fragment specifier in macro matchers with the new one that preserves the old behavior.
 
-For example, suppose that the behavior of the `expr` fragment specifier fell out of sync with the grammar for a Rust [expression][] during Rust 2021 and that Rust 2024 is the next edition.  Then in Rust 2024, we would add a new fragment specifier named `expr2021` (assuming no better semantically meaningful name could be found) that would preserve the behavior `expr` had in Rust 2021, we would change the behavior of `expr` to match the underlying grammar, and we would have `cargo fix` replace all instances of `expr` fragment specifiers with `expr2021`.
+For example, suppose that the current stable edition is Rust 2021, the behavior of the `expr` fragment specifier has fallen out of sync with the grammar for a Rust [expression][], and that Rust 2024 is the next edition.  Then in all editions of Rust, we would add a new fragment specifier named `expr2021` (assuming no better semantically meaningful name could be found) that would preserve the behavior `expr` had in Rust 2021, we would in Rust 2024 change the behavior of `expr` to match the underlying grammar, and when migrating code to Rust 2024, we would have `cargo fix` replace all instances of `expr` fragment specifiers with `expr2021`.
+
+A new fragment specifier that preserves the old behavior *must* be made available no later than the first release of Rust for the new edition, but it *should* be made available as soon as the original fragment specifier first diverges from the underlying grammar.
 
 # Alternatives
 
