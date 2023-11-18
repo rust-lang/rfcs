@@ -216,6 +216,39 @@ of which are adequate to this use case.
 
     [dtolnay/syn#370]: https://github.com/dtolnay/syn/issues/370
 
+    There's this less successful alternative using a where-clause with 0 trait
+    bounds on a wacky array type:
+
+    ```rust
+    impl ::core::cmp::Eq for Thing
+    where
+        [(); {
+            let _: ::core::cmp::AssertParamIsEq<Field>;
+            0
+        }]:
+    {}
+    ```
+
+    This does not work when the type has generic parameters, even with
+    `feature(generic_const_exprs)` enabled. The diagnostic pushes us toward
+    using a const function. For this use case, if a const function were
+    sufficient, there wouldn't be any use for a where-clause.
+
+    ```console
+    error: overly complex generic constant
+      --> src/lib.rs:13:10
+       |
+    13 |       [(); {
+       |  __________^
+    14 | |         let _: ::core::cmp::AssertParamIsEq<Field<'a, T>>;
+    15 | |         0
+    16 | |     }]:
+       | |_____^ blocks are not supported in generic constants
+       |
+       = help: consider moving this anonymous constant into a `const` function
+       = note: this operation may be supported in the future
+   ```
+
 4. **Is free const underscore not sufficient?**
 
     Let's go through a series of decreasingly naïve ways that one might try to
@@ -654,8 +687,8 @@ The do-nothing alternative is worth examining for the following reason: **unlike
 RFC 2526 (free const underscore), this RFC does not add expressiveness.**
 
 That previous RFC was exceedingly well motivated by use cases that were
-genuinely impossible to solve prior to the language change. Some examples
-include [inventory#8] and [static\_assertions].
+impossible to solve prior to the language change. Some examples include
+[inventory#8] and [static\_assertions].
 
 [inventory#8]: https://github.com/dtolnay/inventory/issues/8
 [static\_assertions]: https://github.com/rust-lang/rust/issues/54912#issuecomment-480594120
@@ -688,6 +721,158 @@ The former is something that I think would be great to convert the standard
 library's `derive(Eq)` to as soon as available. The latter is something that
 would be a hard sell despite advantages over the current less-verbose expansion
 of `derive(Eq)`.
+
+### Alternative: eagerly evaluate all possible associated underscore constants when a type is instantiated
+
+As described by **@programmerjake** in https://github.com/rust-lang/rfcs/pull/3527#issuecomment-1807591083.
+
+In discussing the do-nothing alternative, I wrote that my RFC as currently
+written does not add expressiveness. Jacob's alternative _does_ add
+expressiveness. It gives a way to express invariants on the instantiations of a
+generic type, with those invariants being eagerly checked any time the type is
+mentioned with enough generic parameters provided. This kind of checking cannot
+be implemented in Rust today.
+
+```rust
+pub struct Struct<T, U>(T, U);
+
+impl<T, U> Struct<T, U> {
+    const _: () = assert!(mem::size_of::<T>() == 8, "invariant A");
+
+    const _: () = assert!(mem::size_of::<T>() == mem::size_of::<U>(), "invariant B");
+}
+
+pub fn f<T, U>(s: Struct<T, U>) {}  // no error
+
+pub fn g<U>(s: Struct<u8, U>) {}  // ERROR (invariant A)
+
+pub fn h(s: Struct<usize, i32>) {}  // ERROR (invariant B)
+```
+
+This alternative remains compatible with what the `derive(Eq)` macro needs.
+`derive(Eq)` would never need to generate a constant that fails to evaluate. It
+would only generate constants that potentially fail to type-check. Evaluating
+the constants makes no difference.
+
+Eager evaluation of associated underscore constants would have some limitations
+of what constants it's able to trigger evaluation of. One interesting example in
+the ecosystem I know about through `trybuild` is [`objc2::Encode`] which
+contains the following arrangement.
+
+[`objc2::Encode`]: https://github.com/madsmtm/objc2/blob/objc-0.4.1/crates/objc2/src/encode/mod.rs
+
+```rust
+pub unsafe trait Encode {
+    const ENCODING: Encoding;
+}
+
+// SAFETY: requires T has same layout as Option<T>
+pub unsafe trait OptionEncode {}
+
+unsafe impl<T: Encode + OptionEncode> Encode for Option<T> {
+    const ENCODING: Encoding = {
+        if mem::size_of::<T>() != mem::size_of::<Option<T>>() {
+            panic!("invalid OptionEncode + Encode implementation");
+        }
+        T::ENCODING
+    };
+}
+```
+
+When I last thought about this crate for about an hour some months ago, I was
+not able to come up with any way of rewriting this impl whereby `cargo check`
+would report incorrect impls of `OptionEncode`, not even in the cases where
+`<Option<BadT> as Encoding>::ENCODING` is mentioned somewhere in the program.
+Only `cargo build` would catch that (refer to [RFC 3477]). I don't see a way
+that eagerly evaluated associated underscore constant would help, either. The
+use case isn't something that falls obviously in scope for this RFC to address,
+but it's mentioned here only to convey that the underscore associated const
+eager evaluation alternative is still not an associated constant
+eager-evaluation panacea in general.
+
+[RFC 3477]: https://github.com/rust-lang/rfcs/pull/3477
+
+### Alternative: const blocks as where-clauses
+
+As described by **@JulianKnodt** in https://github.com/rust-lang/lang-team/issues/163.
+
+The previous alternative's "invariants on the instantiations of a generic type"
+does not sound like a job for an associated constant. It sounds like a job for a
+where-clause.
+
+```rust
+pub struct Struct<T, U>(T, U)
+where
+    const { mem::size_of::<T>() == 8 };
+```
+
+Adapting this to `derive(Eq)` might look as follows.
+
+```rust
+// input:
+#[derive(Eq)]
+pub struct Thing<'a, T> {
+    field: Field<'a, T>,
+}
+
+// expansion:
+impl<'a, T> ::core::cmp::Eq for Thing<'a, T>
+where
+    T: ::core::cmp::Eq,
+    const {
+        let _: ::core::cmp::AssertParamIsEq<Field<'a, T>>;
+        true
+    },
+{}
+```
+
+### Alternative: private functions inside trait impls, not declared by the trait
+
+Brianstormed by **@scottmcm** in https://github.com/rust-lang/rfcs/pull/3527#issuecomment-1817352170.
+
+```rust
+// input:
+pub struct Thing<'a, T> {
+    field: Field<'a, T>,
+}
+
+// expansion:
+impl<'a, T> ::core::cmp::Eq for Thing<'a, T>
+where
+    T: ::core::cmp::Eq,
+{
+    // even though the following function is not a member of core::cmp::Eq
+    #[coverage(off)]
+    priv fn _assert_fields_are_total_eq() {
+        let _: ::core::cmp::AssertParamIsEq<Field<'a, T>>;
+    }
+}
+```
+
+The priv function is visible only inside that one impl block. There is no
+conflict with other impl blocks, which might contain their own priv function
+with the same name, similar to how there is no conflict between multiple
+associated `const _` on the same type in this RFC.
+
+No need for `doc(hidden)` because priv functions would be treated the same as
+other non-pub things and only included in docs when `--document-private-items`
+is passed to rustdoc.
+
+Being a function means the fact that it's not ever evaluated seem more expected,
+compared against accomplishing the same thing via associated const.
+
+Scott proposes that allowing trait impls to hold helper functions that don't
+have to go in a different inherent impl block would be a useful feature in its
+own right, beyond those use cases which overlap with associated underscore
+constant. (But also a bigger one, because anything that deals in visibility is
+complicated.)
+
+### Alternative: anonymous modules
+
+Brainstormed by **@nikomatsakis** in https://github.com/rust-lang/rfcs/pull/3527#issuecomment-1817497844.
+
+TODO: flesh this out. I can see how modules would supplant some uses of free
+underscore const, but not the `derive(Eq)` use case.
 
 # Prior art
 [prior-art]: #prior-art
