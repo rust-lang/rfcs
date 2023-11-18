@@ -50,3 +50,18 @@ Having `cargo fix` replace all instances of a changed fragment specifier with th
 Another alternative would be to *never* change the meaning of existing fragment specifiers.  Instead, when changing the grammar of Rust, we would add *new* fragment specifiers that would correspond with this new grammar.  We would not have to wait for new editions to add these.  We could add, e.g., `expr2023_11`, `expr2023_12`, etc. each time that we change the grammar.
 
 This would be burdensome in other ways, so we've decided not to do this.
+
+## Add specifier for new edition behavior in all editions
+
+In addition to doing what is specified in this RFC, when releasing a new edition we could also add a new fragment specifier to all editions whose behavior would match that of the original fragment specifier in the new edition.  E.g., when releasing Rust 2024, we would add an `expr2024` fragment specifier to all editions that would match the behavior of `expr` in Rust 2024.
+
+The upside of doing this would be that people could take advantage of the new behavior without migrating their crates to the new edition.  Conceivably, this could help to allow some crates to make incremental transitions.
+
+However, if later, during the life of the Rust 2024 edition, we were to change the grammar of expressions again and come up with a semantically meaningful name for the fragment specifier that would preserve the Rust 2024 behavior, then we would end up with two identical fragment specifiers for this, `expr2024` and `expr_some_better_name`.
+
+More importantly, making changed new edition behavior optionally available in older editions is not what we generally do.  As [RFC 3085][] said, [editions are meant to be adopted][].  The way for a crate to opt in to the behavior of the new edition is to upgrade to that edition.
+
+Consequently, we've decided not to do this.
+
+[RFC 3085]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md
+[editions are meant to be adopted]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md#editions-are-meant-to-be-adopted
