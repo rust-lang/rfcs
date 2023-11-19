@@ -27,17 +27,23 @@ Periodically, we need a way to bring the language and the fragment specifiers ba
 
 # Policy
 
+[policy]: #policy
+
 This section is normative.
 
 When we change the syntax of Rust such that the syntax matched by a fragment specifier no longer exactly aligns with the actual syntax for that production in the Rust grammar, we will:
 
-- In all editions, add a new fragment specifier that preserves the behavior of the existing fragment specifier.  If there is some semantically meaningful name that makes sense to use for this new fragment specifier, we'll use that.  Otherwise, we'll use the existing name with the identifier of the current stable edition added as a suffix.
+- In the current edition, the next edition, and as many other editions as practical, add a new fragment specifier that preserves the behavior of the existing fragment specifier.  If there is some semantically meaningful name that makes sense to use for this new fragment specifier, we'll use that.  Otherwise, we'll use the existing name with the identifier of the current stable edition added as a suffix.
 - In the next edition, change the behavior of the original fragment specifier to match the underlying grammar as of the release of Rust corresponding to first release of that edition.
 - When migrating existing code to the new edition, have `cargo fix` replace all instances of the original fragment specifier in macro matchers with the new one that preserves the old behavior.
 
-For example, suppose that the current stable edition is Rust 2021, the behavior of the `expr` fragment specifier has fallen out of sync with the grammar for a Rust [expression][], and that Rust 2024 is the next edition.  Then in all editions of Rust, we would add a new fragment specifier named `expr2021` (assuming no better semantically meaningful name could be found) that would preserve the behavior `expr` had in Rust 2021, we would in Rust 2024 change the behavior of `expr` to match the underlying grammar, and when migrating code to Rust 2024, we would have `cargo fix` replace all instances of `expr` fragment specifiers with `expr2021`.
+For example, suppose that the current stable edition is Rust 2021, the behavior of the `expr` fragment specifier has fallen out of sync with the grammar for a Rust [expression][], and that Rust 2024 is the next edition.  Then in Rust 2021, Rust 2024, and as many other editions of Rust as practical, we would add a new fragment specifier named `expr2021` (assuming no better semantically meaningful name could be found) that would preserve the behavior `expr` had in Rust 2021, we would in Rust 2024 change the behavior of `expr` to match the underlying grammar, and when migrating code to Rust 2024, we would have `cargo fix` replace all instances of `expr` fragment specifiers with `expr2021`.
 
 A new fragment specifier that preserves the old behavior *must* be made available no later than the first release of Rust for the new edition, but it *should* be made available as soon as the original fragment specifier first diverges from the underlying grammar.
+
+As specified above, we will add the new fragment specifier that preserves the old behavior to the current edition, the next edition, and to as many other editions as practical.  Adding the new specifier to the current and next edition will be done to facilitate migration.  Adding it to as many other editions as practical will be done in keeping with our policy of preferring [uniform behavior across editions][].  Sometimes, however, it may not be practical to add the specifier to some other edition.  E.g., the behavior being preserved may include handling a token that is a keyword in only some editions.  In these cases, we'll add the new fragment specifier only to those editions where it makes sense.
+
+[uniform behavior across editions]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md#uniform-behavior-across-editions
 
 # Alternatives
 
@@ -61,7 +67,9 @@ However, if later, during the life of the Rust 2024 edition, we were to change t
 
 More importantly, making changed new edition behavior optionally available in older editions is not what we generally do.  As [RFC 3085][] said, [editions are meant to be adopted][].  The way for a crate to opt in to the behavior of the new edition is to upgrade to that edition.
 
-Consequently, we've decided not to do this.
+Further, there could be cases where the changed behavior of the fragment specifier does not make sense in older editions, similar to what is discussed in the [policy][] for when it may not be practical to add the new fragment specifier to all other editions.
+
+Consequently, for these reasons, we've decided not to do this.
 
 [RFC 3085]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md
 [editions are meant to be adopted]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md#editions-are-meant-to-be-adopted
