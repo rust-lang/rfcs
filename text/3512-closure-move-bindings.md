@@ -44,7 +44,8 @@ This RFC proposes a more concise syntax to express these moving semantics.
 [guide-level-explanation]: #guide-level-explanation
 
 A closure may capture bindings in its defining scope.
-Bindings are captured by reference by default:
+By default, bindings are captured by usage,
+i.e. by the first possible of shared reference, mutable reference or move.
 
 ```rs
 let mut foo = 1;
@@ -54,8 +55,8 @@ dbg!(foo); // foo is now 2
 ```
 
 You can add a `move` keyword in front of the closure
-to indicate that all captured bindings are moved into the closure
-instead of referenced:
+to indicate that all captured bindings are always moved into the closure,
+useful for avoiding references to local variables:
 
 ```rs
 let mut foo = 1;
@@ -69,7 +70,7 @@ as `i32` implements `Copy`.
 
 If a closure captures multiple bindings,
 the `move` keyword makes them all captured by moving.
-To move only specific bindings,
+To only indicate this for specific bindings,
 list them in parentheses after `move`:
 
 ```rs
@@ -85,6 +86,7 @@ dbg!(foo, bar); // foo = 1, bar = 12
 
 Note that the outer `foo` no longer requires `mut`;
 it is relocated to the closure since it defines a new binding.
+Meanwhile, `bar` continues to capture by usage (i.e. by reference).
 
 Moved bindings may also be renamed:
 
@@ -109,10 +111,6 @@ closure();
 dbg!(foo); // the outer `foo` is still [1] because only the cloned copy was mutated
 ```
 
-The above may be simplified to `move(mut foo.clone())` as well.
-This simplification is only allowed
-when the transformation expression is a method call on the captured binding.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -130,37 +128,36 @@ A closure expression has the following syntax:
 > _NamedMoveBinding_ :\
 > &nbsp;&nbsp; _PatternNoTopAlt_ `=` _Expression_\
 > _UnnamedMoveBinding_ :\
-> &nbsp;&nbsp; `mut`<sup>?</sup> ( _IdentifierExpression_ | _MethodCallExpression_ )\
+> &nbsp;&nbsp; `mut`<sup>?</sup> _IdentifierExpression_ \
 > _ClosureParameters_ :\
 > &nbsp;&nbsp; _ClosureParam_ (`,` _ClosureParam_)<sup>\*</sup> `,`<sup>?</sup>\
 > _ClosureParam_ :\
 > &nbsp;&nbsp; _OuterAttribute_<sup>\*</sup> _PatternNoTopAlt_&nbsp;( `:` _Type_  )<sup>?</sup>
 
 Closure expressions are classified into two main types,
-namely _ImplicitReference_ and _ImplicitMove_.
-A closure expression is _ImplicitMove_ IF AND ONLY IF
+namely _ByUsage_ and _FullMove_.
+A closure expression is _FullMove_ IF AND ONLY IF
 it starts with a `move` token immediately followed by a `|` token,
 without any parentheses in between.
 
-## _ImplicitReference_ closures
+## _ByUsage_ closures
 
-When the parentheses for _MoveBindings_ is present, or when the `move` keyword is absent,
-the closure expression is of the _ImplicitReference_ type, where
+When the parentheses for _MoveBindings_ is present,
+or when the `move` keyword is absent,
+the closure expression is of the _ByUsage_ type, where
 all local variables in the closure construction scope not shadowed by any _MoveBinding_
-are implicitly captured into the closure by shared or mutable reference on demand,
-preferring shared reference if possible.
+are implicitly captured into the closure
+by shared reference, mutable reference or move on demand,
+preferring the first possible type.
 
 Each _MoveBinding_ declares binding(s) in its left-side pattern,
 assigned with the value of the right-side expression evaluated during closure construction,
 thus referencing any relevant local variables if necessary.
 
 If the left-side pattern is omitted (_UnnamedMoveBinding_),
-the expression must be either a single-segment (identifier) `PathExpression`
-or a _MethodCallExpression_,
-the receiver expression of which must be a single identifier variable,
-and the argument list must not reference any local variables.
-The left-side pattern is then automatically inferred to be a simple _IdentifierPattern_
-using the identifier/receiver as the new binding.
+the expression must be a single-segment (identifier) `PathExpression`.
+The left-side pattern is then automatically inferred to be a _IdentifierPattern_
+using the identifier as the new binding.
 
 ### Mutable bindings
 
@@ -177,10 +174,10 @@ If it is implicitly captured from the parent scope
 instead of declared in a _MoveBinding_,
 the local variable declaration must be declared `mut` too.
 
-## _ImplicitMove_ closures
+## _FullMove_ closures
 
 When the `move` keyword is present but _MoveBindings_ is absent (with its parentheses absent as well),
-the closure expression is of the _ImplicitMove_ type, where
+the closure expression is of the _FullMove_ type, where
 all local variables in the closure construction scope
 are implicitly moved or copied into the closure on demand.
 
@@ -277,7 +274,7 @@ consideration for the new syntax includes possibility for both enhancements.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Should we consider deprecating the _ImplicitMove_ syntax
+- Should we consider deprecating the _FullMove_ syntax
 in favor of explicitly specifying what gets moved,
 especially for mutable variables,
 considering that moved variables actually create a new, shadowing binding?
