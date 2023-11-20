@@ -623,7 +623,25 @@ The following details are called out as being worth testing:
     }
     ```
 
-6. The underscore const's value is evaluated in exactly the situations that an
+6. They are allowed syntactically but not semantically.
+
+    ```rust
+    struct Struct;
+
+    trait Trait {
+        #[cfg(any())]
+        const _: () = {};
+    }
+
+    impl Trait for Struct {
+        #[cfg(any())]
+        const _: () = {};
+    }
+    ```
+
+    This code already works on stable since Rust 1.43 (https://github.com/rust-lang/rust/pull/69194).
+
+7. The underscore const's value is evaluated in exactly the situations that an
     ordinary named associated constant would be evaluated. Named associated
     constants are evaluated when accessed. Underscore associated constants
     cannot be accessed, so are never evaluated &mdash; only typechecked.
@@ -652,7 +670,7 @@ The following details are called out as being worth testing:
     }
     ```
 
-7. Underscore constants are not dead code, despite not being referenced.
+8. Underscore constants are not dead code, despite not being referenced.
 
     ```rust
     #![deny(dead_code)]
