@@ -909,7 +909,7 @@ None identified.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Consider lifting the restriction that the `Self` type of the impl must be
+1. Consider lifting the restriction that the `Self` type of the impl must be
     local.
 
     Associated const underscore does not add any externally accessible API to a
@@ -918,6 +918,17 @@ None identified.
     having associated const underscore on an arbitrary type, but I have not
     aggregated the justification for supporting this. I will consider RFC-ing
     this separately with a strong justification.
+
+2. Consider allowing the expression part of underscore const to be omitted,
+    resulting in a way to type-check only the type.
+
+    ```rust
+    impl ::core::cmp::Eq for Thing {}
+
+    impl Thing {
+        const _: ::core::cmp::AssertParamIsEq<Field>;
+    }
+    ```
 
 Separately, refer to the "Possible future work" section of the stabilization
 proposal for the original const underscore, of which this RFC is one part.
