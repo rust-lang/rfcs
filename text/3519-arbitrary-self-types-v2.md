@@ -150,7 +150,7 @@ Aside from these differences, Arbitrary Self Types v2 is similar to the existing
 
 When declaring a method, users can declare the type of the `self` receiver to be any type `T` where `T: Receiver<Target = Self>` or `Self`.
 
-The `Receiver` trait is simple and only requires to specify the `Target` type:
+The `Receiver` trait is simple and only requires specifying the `Target` type:
 
 ```rust
 trait Receiver {
