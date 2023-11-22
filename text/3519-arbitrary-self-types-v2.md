@@ -159,7 +159,7 @@ trait Receiver {
 ```
 
 The `Receiver` trait is already implemented for many standard library types:
-- smart pointers in the standard library: `Rc<Self>`, `Arc<Self>`, `Box<Self>`, and `Pin<Ptr<Self>>` (and in fact, any type which implements `Deref`)
+- smart pointers in the standard library: `Rc<Self>`, `Arc<Self>`, `Box<Self>`, and `Pin<SomeSmartPtr<Self>>` (and in fact, any type which implements `Deref`)
 - references: `&Self` and `&mut Self`
 - pointers: `*const Self` and `*mut Self`
 
