@@ -93,6 +93,8 @@ In theory, users can define their own smart pointers. In practice, they're secon
 
 This RFC proposes to loosen this restriction to allow custom smart pointer types to be accepted as a `self` type just like for the standard library types.
 
+The current unstable `arbitrary_self_type` feature also allows raw pointers (e.g. `*const Self`) to be a method receiver. This is highly beneficial for unsafe code where the semantics of a reference cannot be guaranteed.
+
 See also [this blog post](https://medium.com/@adetaylor/the-case-for-stabilizing-arbitrary-self-types-b07bab22bb45), especially for a list of more specific use-cases.
 
 ## Motivation for the v2 changes
@@ -140,6 +142,8 @@ If you're implementing a smart pointer `P<T>`, and you need to allow `impl T { f
 Therefore, the current Arbitrary Self Types v2 provides a separate `Receiver` trait, so that there's no need to provide an awkward `Deref::deref` implementation.
 
 In addition, this v2 proposes to block generic receivers, which are currently allowed by the v1 (unstable) arbitrary self types feature. See the [diagnostics section for reasoning](#diagnostics).
+
+Aside from these differences, Arbitrary Self Types v2 is similar to the existing unstable `arbitrary_self_types` feature, including in its support for raw pointers as method receivers.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
