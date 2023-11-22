@@ -252,50 +252,16 @@ This RFC does not propose any changes to `DispatchFromDyn`. Since `DispatchFromD
 
 Arbitrary `self` parameters may involve lifetimes.
 
-This RFC currently proposes no changes to the standard lifetime elision rules. There are no known cases where ambiguity results. However, the opposite problem does apply: sometimes explicit lifetimes are required for methods with an arbitrary self type, even if they're not required for an equivalent free function. 
+Even in existing stable Rust, there are [bugs in lifetime elision for complex `Self` types such as `&Box<Self>`](https://github.com/rust-lang/rust/issues/117715). We're aiming to fix them whether or not this RFC is accepted. The net rules will be:
 
-```rust
-use std::ops::Receiver;
+* If a parameter is the first parameter, and
+* Called `self`, and
+* Its type involves `Self` anywhere, and
+* Its type contains _exactly one_ lifetime anywhere
 
-struct SmartPtrByValue<T: ?Sized>(T);
+then that lifetime may be used to elide lifetimes on return types, and will take precedence over any lifetimes in other parameters.
 
-impl<T: ?Sized> Receiver for SmartPtrByValue<T> {
-    type Target = T;
-}
-
-struct SmartPtrByRef<'a, T: ?Sized>(&'a T);
-
-impl<'a, T: ?Sized> Receiver for SmartPtrByRef<'a, T> {
-    type Target = T;
-}
-
-struct Concrete(u32);
-
-impl Concrete {
-    // fn a(self: &SmartPtrByValue<Self>) -> &u32 { &self.0.0 } // does not compile
-    fn b<'a>(self: &'a SmartPtrByValue<Self>) -> &'a u32 { &self.0.0 }
-    // fn c(self: &SmartPtrB<Self>) -> &u32 {} // does not compile
-    fn d<'a, 'b>(self: &'a SmartPtrByRef<'b, Self>) -> &'a u32 { &self.0.0 }
-    fn e<'a>(self: &'a SmartPtrByRef<Self>) -> &'a u32 { &self.0.0 }
-    fn f<'a>(self: &'_ SmartPtrByRef<'a, Self>) -> &'a u32 { &self.0.0 }
-    fn g<'a, 'b>(self: &'a SmartPtrByRef<'b, Self>) -> &'b u32 { &self.0.0 }
-    fn h<'a>(self: SmartPtrByRef<'a, Self>) -> &'a u32 { &self.0.0 }
-    // fn i(self: SmartPtrByRef<Self>) -> &u32 { &self.0.0 } // does not compile
-}
-
-fn free_function(param: &SmartPtrByValue<Concrete>) -> &u32 { &param.0.0 }
-
-fn main() {
-    let by_val = SmartPtrByValue(Concrete(14));
-    assert_eq!(*by_val.b(), 14);
-    let concrete = Concrete(16);
-    let by_ref = SmartPtrByRef(&concrete);
-    assert_eq!(*by_ref.d(), 16); // same for e, f, g, h
-    assert_eq!(*free_function(by_val), 16);
-}
-```
-
-In case `a` the lifetime could be elided (as demonstrated by `free_function`) yet an explicit lifetime is currently demanded by the compiler. For now, this extra clarity seems actually desirable. We could relax this restriction in future. (The authors of this RFC are interested in other views here!)
+If this seems wrong, please discuss this over on [the linked bug](https://github.com/rust-lang/rust/issues/117715) rather than here in this RFC, because none of that should change with this RFC (though it does make it more likely users will run into the current inconsistencies). We'll try to keep this RFC up to date with the outcome of those discussions.
 
 ## Diagnostics
 [diagnostics]: #diagnostics
