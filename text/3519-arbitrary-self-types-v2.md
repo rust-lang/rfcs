@@ -238,8 +238,6 @@ The existing Rust [reference section for method calls describes the algorithm fo
 
 Because a blanket implementation is provided for users of the `Deref` trait and for `&T`/`&mut T`, the net behavior is similar. But this provides the opportunity for types which can't implement `Deref` to act as method receivers.
 
-Dereferencing a raw pointer usually needs `unsafe` (for good reason!) but in this case, no actual dereferencing occurs. This is used only to determine a list of method candidates; no memory access is performed and thus no `unsafe` is needed.
-
 ## Object safety
 
 Receivers are object safe if they implement the (unstable) `core::ops::DispatchFromDyn` trait.
