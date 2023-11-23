@@ -25,7 +25,7 @@ error: expected type, found `#`
   |                                    ^ expected type
 ```
 
-As in RFC #3399, some workarounds exist, but they can result in combinatorial boilerplate:
+As with [RFC #3399](https://rust-lang.github.io/rfcs/3399-cfg-attribute-in-where.html), some workarounds exist, but they can result in combinatorial boilerplate:
 
 ```rust
 // GOAL: 
@@ -88,7 +88,7 @@ As with any feature, this adds complication to the language and grammar. Conditi
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-(See RFC #3399 for a similar write-up.)
+(See [RFC #3399](https://rust-lang.github.io/rfcs/3399-cfg-attribute-in-where.html) for a similar write-up.)
 
 The need for conditionally compiling tuple types can arise in applications with different deployment targets or that want to release 
 builds with different sets of functionality (e.g. client, server, editor, demo, etc.). It would be useful to support cfg-attributes 
