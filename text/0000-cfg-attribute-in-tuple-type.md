@@ -47,9 +47,9 @@ type ConditionalTuple = (u32, i32, i8);
 type ConditionalTuple = (u32, i32);
 ```
 
-One could also use a struct and attach cfg-attributes to its members, but this loses the compositional advantages of using a tuple. There are situations, especially when working with generics, where tuples are used purely for type communication rather than actual structure or storage. Structs can't easily serve this use case.
+One could also use a struct and attach cfg-attributes to its members, but this loses the compositional and syntactical advantages of using a tuple. For example, there are situations (e.g. with generics) where tuples are used for type communication rather than actual structure or storage. Structs can't easily serve this use case.
 
-Importantly, Rust already supports per-element cfg-attributes in tuple *initialization*. The following is legal Rust code and functions as expected:
+Importantly, Rust already supports per-element cfg-attributes in tuple *initialization*. The following is legal Rust code and functions as expected, even though the resulting type of `x` can't be expressed very easily:
 
 ```rust
 pub fn main() {
