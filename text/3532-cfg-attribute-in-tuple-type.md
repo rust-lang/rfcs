@@ -1,6 +1,6 @@
 - Feature Name: `cfg_attribute_in_tuple_type`
 - Start Date: 2023-11-23
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3532](https://github.com/rust-lang/rfcs/pull/3532)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
