@@ -218,11 +218,11 @@ pub trait Receiver {
 A blanket implementation is provided for any type that implements `Deref`:
 
 ```rust
-impl<P: ?Sized, T: ?Sized> Receiver for P
+impl<P: ?Sized> Receiver for P
 where
-    P: Deref<Target = T>,
+    P: Deref,
 {
-    type Target = T;
+    type Target = <P as Deref>::Target;
 }
 ```
 
