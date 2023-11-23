@@ -112,4 +112,4 @@ I don't have any unresolved questions for this RFC.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I believe this change is relatively self-contained, though I do believe it's worth continuing to look for additional places where support for cfg-attributes makes sense to add. Conditional compilation is very important, especially in some domains, and requiring workarounds and additional boilerplate to support it is not ideal.
+I believe this change is relatively self-contained, though I also think it's worth continuing to look for additional places where support for cfg-attributes makes sense to add. Conditional compilation is very important, especially in some domains, and requiring workarounds and additional boilerplate to support it is not ideal.
