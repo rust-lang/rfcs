@@ -3,17 +3,6 @@
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Process disclaimer
-
-In [this comment](https://github.com/rust-lang/rfcs/pull/3513#issuecomment-1771113458) nikomatsakis
-says that the eRFC process is dead and the
-[experimental feature gates](https://github.com/rust-lang/lang-team/blob/master/src/how_to/experiment.md)
-process should be preferred for proposals like this.
-
-I'll submit the "experimental feature gate" PR to rust-lang/rust as well, but I'm also submitting
-a markdown document to this repo to have git history, inline comments, etc.
-This document will be linked from that PR.
-
 # Summary
 
 This RFC proposes a syntactic sugar for delegating implementations of functions to other already
