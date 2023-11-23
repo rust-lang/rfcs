@@ -148,7 +148,7 @@ Aside from these differences, Arbitrary Self Types v2 is similar to the existing
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When declaring a method, users can declare the type of the `self` receiver to be any type `T` where `T: Receiver<Target = Self>` or `Self`.
+When declaring a method, users can also declare the type of the `self` receiver to be any type `T` where `T: Receiver<Target = Self>`, in addition to using `Self` by value or reference.
 
 The `Receiver` trait is simple and only requires specifying the `Target` type:
 
