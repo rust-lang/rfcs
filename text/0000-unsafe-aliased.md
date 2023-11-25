@@ -365,6 +365,12 @@ However, of course one could imagine alternatives:
 - We could entirely avoid all these problems by not having aliasing restrictions on mutable references.
   But that is completely against the direction Rust has had for 8 years now, and it would mean removing LLVM `noalias` annotations for mutable references (and likely boxes) entirely.
   That is sacrificing optimization potential for the common case in favor of simplifying niche cases such as self-referential structs -- which is against the usual design philosophy of Rust.
+- Instead of adding a new type that needs to be used as `Pin<&mut UnsafePinned<T>>`, can't we just make `Pin<&mut T>` special?
+  The answer is no, because working with `Pin<&mut T>` in unsafe code usually involves getting direct access to the `&mut` and then using it "carefully".
+  But being careful is not enough when the compiler makes non-aliasing assumptions!
+  We need to preserve the fact that the `&mut T` may have aliases even after `Pin::get_unchecked_mut` was used and inside `Pin::map_unchecked_mut`.
+  In a different universe where pinning is a first-class concept with native support for projections and no need for `get_unchecked_mut`, this might not have been required,
+  but with pinning being introduced as a library type, there is no (currently known) alternative to `UnsafePinned`.
 
 In terms of rationale, the question that comes to mind first is **why is this so different from `UnsafeCell`.**
 `UnsafeCell` opts-out of read-only guarantees for shared references, can't we just have a type that opts-out of uniqueness guarantees for mutable references?
