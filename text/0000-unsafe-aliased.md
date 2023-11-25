@@ -192,9 +192,13 @@ Similarly, the intrusive linked list from the motivation can be fixed by wrappin
 /// The type `UnsafePinned<T>` lets unsafe code violate
 /// the rule that `&mut UnsafePinned<T>` may never alias anything else.
 ///
-/// However, it is still very risky to have two `&mut UnsafePinned<T>` that alias
-/// each other. For instance, passing those two references to `mem::swap`
-/// would cause UB. Techniques such as pinning via `Pin` help to avoid those pitfalls.
+/// However, it is still very risky to have an `&mut UnsafePinned<T>` that aliases
+/// anything else. Many functions that work generically on `&mut T` assume that the
+/// memory that stores `T` is uniquely owned (such as `mem::swap`). In other words,
+/// while having aliasing with `&mut UnsafePinned<T>` is not immediate Undefined
+/// Behavior, it is still unsound to expose such a mutable reference to code you do
+/// not control!
+/// Techniques such as pinning via `Pin` are needed to ensure soundness.
 ///
 /// Further note that this does *not* lift the requirement that shared references
 /// must be read-only! Use `UnsafeCell` for that.
@@ -220,8 +224,11 @@ impl<T: ?Sized> UnsafePinned<T> {
     }
 
     /// Get read-write access to the contents of an `UnsafePinned`.
-    /// Using `UnsafePinned` without pinning is dangerous,
-    /// so use `get_mut_pinned` instead whenever possible!
+    ///
+    /// If you need to use this function, something is likely going wrong.
+    /// Exposing an `&mut UnsafePinned` that aliases other pointers to code outside your
+    /// crate is unsound. Only `Pin<&mut UnsafePinned>` can be exposed soundly.
+    /// Use `get_mut_pinned` instead whenever possible!
     pub fn get_mut_unchecked(&mut self) -> *mut T {
         ptr::addr_of_mut!(self.value)
     }
