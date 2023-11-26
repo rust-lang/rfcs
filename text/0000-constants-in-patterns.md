@@ -52,7 +52,7 @@ This new RFC takes the stance it does based on the following main design goals:
 [guide-level-explanation]: #guide-level-explanation
 
 Constants can be used as patterns, but only if their type implements `PartialEq`.
-Morevoer, this implementation must be the automatically derived one, and that also applies recursively for the types of their fields (recursively):
+Moreover, this implementation must be the automatically derived one, and that also applies recursively for the types of their fields (recursively):
 
 ```rust
 #[derive(PartialEq)] // code fails to build if we remove this or replace it by a manual impl
@@ -100,7 +100,7 @@ Most of the values of primitive Rust types have structural equality (integers, `
 
 - Pointer types (raw pointers and function pointers): these compare by test the memory address for equality.
   It is unclear whether that should be considered "structural", but it is fairly clear that this should be considered a bad idea:
-  Rust makes basically no guarantees for when two function pointers are equal or inequal
+  Rust makes basically no guarantees for when two function pointers are equal or unequal
   (the "same" function can be duplicated across codegen units and this have different addresses,
   and different functions can be merged when they compile to the same assembly and thus have the same address).
   Similarly, there are no or few guarantees for equality of pointers that are generated in constants.
@@ -189,7 +189,7 @@ This RFC breaks code that compiles today, but only code that already emits a fut
   This only recently landed (Rust 1.75, currently in beta), and is not currently shown in dependencies.
   Crater found [three cases](https://github.com/rust-lang/rust/pull/116930#issuecomment-1784648989) across the ecosystem where `match` was used to compare function pointers;
   that code is buggy for the reasons mentioned above that make comparing function pointers unreliable.
-- Matching on floats triggers illegal_floating_point_literal_pattern`. This triggers on *all* float matches, not juts the forbidden ones.
+- Matching on floats triggers `illegal_floating_point_literal_pattern`. This triggers on *all* float matches, not just the forbidden ones.
   It has been around for years, but is not currently shown in dependencies.
 
 When the RFC gets accepted, the floating-point lint should be adjusted to only cover the cases we are really going to reject,
