@@ -287,7 +287,7 @@ type ShipArchetype = EcsArchetype<(
 )>;
 ```
 
-This would likely need to be generated via macro in practice, and the macro itself would have to parse the cfg-attributes to produce these combinatorial outputs. However, macros aren't supported in all positions where tuples are supported (e.g. as type arguments), and so even with macros this would create levels of indirection and require alias definitions. The hecs query example above could not have an element conditionally gated via a macro without first declaring an alias for that query's tuple type outside of the position where the query iteration occurs.
+This would likely need to be generated via macro in practice, and the macro itself would have to parse the cfg-attributes to produce these combinatorial outputs. However, macros aren't an easy fix in all positions where tuples are supported (e.g. as type arguments), and so even with macros this would create levels of indirection and require alias definitions. The hecs query example above could not easily have an element conditionally gated via a macro without first declaring an alias for that query's tuple type outside of the position where the query iteration occurs. This is because doing so would likely require the macro to be able to generate code outside of its immediate context to function (i.e. to branch based on each cfg-attribute involved).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
