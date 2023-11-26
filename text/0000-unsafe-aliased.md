@@ -202,6 +202,8 @@ Similarly, the intrusive linked list from the motivation can be fixed by wrappin
 ///
 /// Further note that this does *not* lift the requirement that shared references
 /// must be read-only! Use `UnsafeCell` for that.
+///
+/// This type blocks niches the same way `UnsafeCell` does.
 #[lang = "unsafe_aliased"]
 #[repr(transparent)]
 struct UnsafePinned<T: ?Sized> {
@@ -315,11 +317,12 @@ Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&
 **Async generator lowering changes:**
 - Fields that represent local variables whose address is taken across a yield point must be wrapped in `UnsafePinned`.
 
-**Codegen and Miri changes:**
+**rustc and Miri changes:**
 
 - We have a `UnsafeUnpin` auto trait similar to `Freeze` that is implemented if the type does not contain any by-val `UnsafePinned`.
   This trait is an internal implementation detail and (for now) not exposed to users.
 - `noalias` on mutable references is only emitted for `UnsafeUnpin` types. (This replaces the current hack where it is only emitted for `Unpin` types.)
+- Niches are blocked on `UnsafePinned`.
 - Miri will do `SharedReadWrite` retagging inside `UnsafePinned` similar to what it does inside `UnsafeCell` already. (This replaces the current `Unpin`-based hack.)
 
 ### Comparison with some other types that affect aliasing
