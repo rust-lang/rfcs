@@ -381,7 +381,7 @@ This is why we need pinning to make APIs around `UnsafePinned` actually sound.
 ### Naming
 
 An earlier proposal suggested to call the type `UnsafeAliased`, since the type is not inherently tied to pinning.
-However, it is not possible to write wrappers around `UnsafeAliased` such that we can have mutation behind `&mut MyType`. One has to use pinning for that: `Pin<&mut MyType>`.
+However, it is not possible to write sound wrappers around `UnsafeAliased` such that we can have aliasing `&mut MyType`. One has to use pinning for that: `Pin<&mut MyType>`.
 Because of that, the RFC proposes that we suggestively put pinning into the name of the type, so that people don't confuse it with a general mechanism for aliasing mutable references.
 It is more like the core primitive behind pinning, where whenever a type is pinned that is caused by an `UnsafePinned` field somewhere inside it.
 
