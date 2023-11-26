@@ -154,9 +154,7 @@ type ShipArchetype = EcsArchetype<(
 This represents our archetype with the various common and situational components based on its build and deployment target. With this decoration each component is decorated with the context in which it appears, and requires no inference or indirection via macros to generate or read. By comparison, here is how this would be written in Rust today, keeping in mind that a build could be any combination of client, server, and editor for development and debugging purposes (akin to Unreal Engine's "play in editor" feature):
 
 ```rust
-#[cfg(feature = "client")]
-#[cfg(feature = "server")]
-#[cfg(feature = "editor")]
+#[cfg(all(feature = "client", feature = "server", feature = "editor"))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -173,9 +171,7 @@ type ShipArchetype = EcsArchetype<(
     DebugDrawComponent,
 )>;
 
-#[cfg(not(feature = "client"))]
-#[cfg(feature = "server")]
-#[cfg(feature = "editor")]
+#[cfg(all(not(feature = "client"), feature = "server", feature = "editor"))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -190,9 +186,7 @@ type ShipArchetype = EcsArchetype<(
     DebugDrawComponent,
 )>;
 
-#[cfg(feature = "client")]
-#[cfg(not(feature = "server"))]
-#[cfg(feature = "editor")]
+#[cfg(all(feature = "client", not(feature = "server"), feature = "editor"))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -207,9 +201,7 @@ type ShipArchetype = EcsArchetype<(
     DebugDrawComponent,
 )>;
 
-#[cfg(not(feature = "client"))]
-#[cfg(not(feature = "server"))]
-#[cfg(feature = "editor")]
+#[cfg(all(not(feature = "client"), not(feature = "server"), feature = "editor")))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -222,9 +214,7 @@ type ShipArchetype = EcsArchetype<(
     DebugDrawComponent,
 )>;
 
-#[cfg(feature = "client")]
-#[cfg(feature = "server")]
-#[cfg(not(feature = "editor"))]
+#[cfg(all(feature = "client", feature = "server", not(feature = "editor")))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -240,9 +230,7 @@ type ShipArchetype = EcsArchetype<(
     DeltaCompressionComponent,
 )>;
 
-#[cfg(not(feature = "client"))]
-#[cfg(feature = "server")]
-#[cfg(not(feature = "editor"))]
+#[cfg(all(not(feature = "client"), feature = "server", not(feature = "editor")))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -256,9 +244,7 @@ type ShipArchetype = EcsArchetype<(
     DeltaCompressionComponent,
 )>;
 
-#[cfg(feature = "client")]
-#[cfg(not(feature = "server"))]
-#[cfg(not(feature = "editor"))]
+#[cfg(all(feature = "client", not(feature = "server"), not(feature = "editor")))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
@@ -272,9 +258,7 @@ type ShipArchetype = EcsArchetype<(
     AudioComponent,
 )>;
 
-#[cfg(not(feature = "client"))]
-#[cfg(not(feature = "server"))]
-#[cfg(not(feature = "editor"))]
+#[cfg(all(not(feature = "client"), not(feature = "server"), not(feature = "editor")))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
