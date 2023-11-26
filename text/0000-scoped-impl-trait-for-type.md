@@ -377,6 +377,10 @@ fn main() {
 
 ¹ With the current implementation, this would likely say `Generic<_>: From<Generic<_>>>`, which isn't helpful. With [explicit-binding], it could say `Generic<Type: Trait in mod2>: From<Generic<Type: Trait in mod1>>>`.
 
+## Layout-compatibility
+
+Types whose identities are only distinct because of a difference in captured scoped implementations remain layout-compatible as if one was a `#[repr(transparent)]` newtype of the other.
+
 ## No interception/no proxies
 
 That each scoped `impl Trait for Type { /*...*/ }` is in scope for itself makes use of the implementation it shadows in the consumer scope *inexpressible*. There can be no scoped implementation constrained to always shadow another.
