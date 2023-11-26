@@ -60,7 +60,7 @@ pub fn main() {
 
 Similarly, cfg-attributes are permitted on types in tuple structs, like so:
 
-```
+```rust
 pub struct SomeStruct(u32, #[cfg(feature = "foo")] bool);
 ```
 
@@ -201,7 +201,7 @@ type ShipArchetype = EcsArchetype<(
     DebugDrawComponent,
 )>;
 
-#[cfg(all(not(feature = "client"), not(feature = "server"), feature = "editor")))]
+#[cfg(all(not(feature = "client"), not(feature = "server"), feature = "editor"))]
 type ShipArchetype = EcsArchetype<(
     TransformComponent,
     VelocityComponent,
