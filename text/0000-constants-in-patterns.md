@@ -276,12 +276,11 @@ None at this time.
   + Should `StructuralPartialEq` be an unsafe trait?
     That trait has a clear semantic meaning, so making it `unsafe` to be able to rely on it for soundness is appealing.
     In particular, we could then be *sure* that pattern matching always has the same semantics as `==`.
-    However, that would mean `forbid(unsafe_code)` crates could not `derive(PartialEq)` any more, which is clearly not acceptable.
-    As a consequence of `StructuralPartialEq` being safe, it is actually possible to write patterns that behave different from the `PartialEq` that is explicitly defined and intentionally exposed on that type,
+    With the trait being safe, it is actually possible to write patterns that behave different from the `PartialEq` that is explicitly defined and intentionally exposed on that type,
     but only if one of the involved crates implements `StructuralPartialEq` incorrectly.
     This can lead to semver issues and logic bugs, but that is all allowed for safe traits.
     However, this also means unsafe code cannot rely on `==` and pattern matching having the same behavior.
-    One could consider doing some special magic to `derive(PartialEq)` to remain compatible with `forbid(unsafe_code)`, but that still seems suboptimal.
+    To make the trait unsafe, the logic for `derive(PartialEq)` should use `#[allow_internal_unsafe]` to still pass `forbid(unsafe_code)`.
   + What should the `StructuralPartialEq` trait be called?
     The current name can be considered confusing because the trait reflects a shallow property, while the value-based check performed when a constant is used in a pattern is defined recursively.
   + Trait bounds `T: StructuralPartialEq` seem like a strange concept. Should we really allow them?
