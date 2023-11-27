@@ -15,9 +15,11 @@ Each macro is composed of one or more *rules*.  Each of these rules has a *match
 
 Within a matcher, different parts of the input Rust syntax can be bound to metavariables using *[fragment specifiers][]*.  These fragment specifiers define what Rust syntax will be matched and bound to each metavariable.  For example, the `item` fragment specifier matches an [item][], `block` matches a [block expression][], `expr` matches an [expression][], and so on.
 
-As we add new features to Rust, sometimes we change its syntax.  This means that, even within an edition, the definition of what exactly constitutes an [expression][], e.g., can change.  However, to avoid breaking macros in existing code covered by our stability guarantee, we do not update within an edition what code is matched by the relevant fragment specifier (e.g., `expr`).  This *skew* or divergence between the language and the fragment specifiers creates problems over time, including that macros become unable to match newer Rust syntax without dropping down to lower-level specifiers such as `tt`.
+As we add new features to Rust, sometimes we change its syntax.  This means that, even within an edition, the definition of what exactly constitutes an [expression][], e.g., can change.  However, to avoid breaking macros in existing code covered by our stability guarantee, we often do not update within an edition what code is matched by the relevant fragment specifier (e.g., `expr`).[^no-update-exception]  This *skew* or divergence between the language and the fragment specifiers creates problems over time, including that macros become unable to match newer Rust syntax without dropping down to lower-level specifiers such as `tt`.
 
 Periodically, we need a way to bring the language and the fragment specifiers back into sync.  This RFC defines a policy for how we do that.
+
+[^no-update-exception]: In certain cases we may be able to update the fragment specifier simultaneously with adding new syntax as described in the [policy][].
 
 ["macros by example"]: https://doc.rust-lang.org/reference/macros-by-example.html
 [block expression]: https://doc.rust-lang.org/reference/expressions/block-expr.html
@@ -42,6 +44,8 @@ For example, suppose that the current stable edition is Rust 2021, the behavior 
 A new fragment specifier that preserves the old behavior *must* be made available no later than the first release of Rust for the new edition, but it *should* be made available as soon as the original fragment specifier first diverges from the underlying grammar.
 
 As specified above, we will add the new fragment specifier that preserves the old behavior to the current edition, the next edition, and to as many other editions as practical.  Adding the new specifier to the current and next edition will be done to facilitate migration.  Adding it to as many other editions as practical will be done in keeping with our policy of preferring [uniform behavior across editions][].  Sometimes, however, it may not be practical to add the specifier to some other edition.  E.g., the behavior being preserved may include handling a token that is a keyword in only some editions.  In these cases, we'll add the new fragment specifier only to those editions where it makes sense.
+
+In cases where we're adding new syntax and updating the grammar to include that new syntax, if we can update the corresponding fragment specifier simultaneously to match the new grammar in such a way that we do not risk changing the behavior of existing macros (i.e., because the new syntax previously would have failed parsing), then we will do that so as to prevent or minimize divergence between the fragment specifier and the new grammar.  If that entirely prevents divergence, then no further action will be needed.  Otherwise, the policy defined in this RFC will be used to correct any remaining divergence in the next edition.
 
 [uniform behavior across editions]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md#uniform-behavior-across-editions
 
