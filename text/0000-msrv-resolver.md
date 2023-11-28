@@ -395,6 +395,18 @@ The reasons we didnn't go with this approach are
 - We want to encourage developing on the latest version of rustc/cargo to get all of the latest workflow improvements (e.g. error messages, sparse registry for cargo, etc), rather than lock people into the MSRV with `rust-toolchain.toml`
   - The toolchain is another type of dependency so this might seem contradictory but we feel the value-add of a new toolchain outweighs the cost while the value add of new dependencies doesn't
 
+## Configuring the resolver mode on the command-line or `Cargo.toml`
+
+The Cargo team is very interested in [moving project-specific config to manifests](https://github.com/rust-lang/cargo/issues/12738).
+However, there is a lot more to define for us to get there.  Some routes that need further exploration include:
+- If its a CLI flag, then its transient, and its unclear which modes should be transient now and in the future
+  - We could make it sticky by tracking this in `Cargo.lock` but that becomes less obvious what resolver mode you are in and how to change
+- We could put this in `Cargo.toml` but that implies it unconditionally applies to everything
+  - But we want `cargo install` to use the latest dependencies so people get bug/security fixes
+  - This gets in the way of the split MSRV workflow
+
+By relying on config we can have a stabilized solution sooner and we can work out more of the details as we better understand the relevant problems.
+
 ## Hard-error
 
 Instead of *preferring* MSRV-compatible dependencies, the resolver could hard error if only MSRV-incompatible versions are available.
@@ -417,7 +429,7 @@ perhaps a crate was updated and forgotten to be re-vendored?
 
 It would also be a breaking change to hard-error.
 We'd need to provide a way for some people to opt-in while some people opt-out and remember that.
-We could add a sticky flag to `Cargo.lock` though that could also be confusing.
+We could add a sticky flag to `Cargo.lock` though that could also be confusing, see "Configuring the resolver mode on the command-line or `Cargo.toml`".
 
 This would also error or pick lower versions more than it needs to when a workspace contains multiple MSRVs.
 We'd want to extend the resolver to treat Rust as yet another dependency and turn `package.rust-version` into dependencies on Rust.
