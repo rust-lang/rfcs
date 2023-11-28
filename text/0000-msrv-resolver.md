@@ -272,6 +272,7 @@ Implications
 - If you use `--ignore-rust-version` once, you don't need to specify it again to keep those dependencies though you might need it again on the next edit of `Cargo.toml` or `cargo update` run
 - If a dependency doesn't specify `package.rust-version` but its transitive dependencies specify an incompatible `package.rust-version`,
   we won't backtrack to older versions of the dependency to find one with a MSRV-compatible transitive dependency.
+- A package with multiple MSRVs, depending on the features selected, can still do this as version requirements can still require versions newer than the MSRV and `Cargo.lock` can depend on those as well.
 
 As there is no `workspace.rust-version`,
 the resolver will pick the lowest version among workspace members.
