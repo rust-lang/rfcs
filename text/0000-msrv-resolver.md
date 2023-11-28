@@ -527,3 +527,7 @@ bundled `Cargo.lock` has MSRV compatible dependencies.
 We could allow people setting an effective rust-version within the config.
 This would be useful for people who have a reason to not set `package.rust-version`
 as well as to reproduce behavior with different Rust versions.
+
+## rustup supporting `+msrv`
+
+See https://github.com/rust-lang/rustup/issues/1484#issuecomment-1494058857
