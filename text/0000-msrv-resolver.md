@@ -459,7 +459,7 @@ If we had the hard-error resolver mode and
 this will at least annoy people into either being somewhat compatible or removing the field.
 
 ~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
-However, this will err on the side of a higher MSRV than necessry and the only way to
+However, this will err on the side of a higher MSRV than necessary and the only way to
 workaround it is to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` which will then lose
 all other protections.
 
