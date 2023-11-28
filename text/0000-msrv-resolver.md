@@ -196,6 +196,63 @@ In solving this, we need to keep in mind
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## The `rust-version` field
+
+*(update to [manifest documentation](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field))*
+
+The `rust-version` field is an optional key that tells cargo what version of the
+Rust language and compiler your package can be compiled with. If the currently
+selected version of the Rust compiler is older than the stated version, cargo
+will exit with an error, telling the user what version is required.
+To support this, Cargo will prefer dependencies that are compatible with your `rust-version`.
+
+The first version of Cargo that supports this field was released with Rust 1.56.0.
+In older releases, the field will be ignored, and Cargo will display a warning.
+
+```toml
+[package]
+# ...
+rust-version = "1.56"
+```
+
+The Rust version must be a bare version number with two or three components; it
+cannot include semver operators or pre-release identifiers. Compiler pre-release
+identifiers such as -nightly will be ignored while checking the Rust version.
+The `rust-version` must be equal to or newer than the version that first
+introduced the configured `edition`.
+
+The `rust-version` may be ignored using the `--ignore-rust-version` option.
+
+Setting the `rust-version` key in `[package]` will affect all targets/crates in
+the package, including test suites, benchmarks, binaries, examples, etc.
+
+## Rust Version
+
+*(update to [Dependency Resolution's Other Constraints documentation](https://doc.rust-lang.org/cargo/reference/resolver.html))*
+
+When multiple versions of a dependency satisfy all version requirements,
+cargo will prefer those with a compatible `package.rust-version` over those that
+aren't compatible.
+Some details may change over time though `cargo check && rustup update && cargo check` should not cause `Cargo.lock` to change.
+
+#### `build.resolver.precedence`
+
+*(update to [Configuration](https://doc.rust-lang.org/cargo/reference/config.html))*
+
+* Type: string
+* Default: "rust-version=package"
+* Environment: `CARGO_BUILD_RESOLVER_PRECEDENCE`
+
+Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `cargo update`.  This does not affect `cargo install`.
+
+* `maximum`: Prefer the highest compatible versions of dependencies
+* `minimum`: Prefer the lowest versions of dependencies
+* `rust-version=package`: Prefer dependencies where their `rust-version` is compatible with `package.rust-version`
+* `rust-version=rustc`: Prefer dependencies where their `rust-version` is compatible with `rustc --version`
+* `rust-version=<X>[.<Y>[.<Z>]]`: Prefer dependencies where their `rust-version` is compatible with the specified version
+
+`rust-version=` values can be overridden with `--ignore-rust-version` which will fallback to `maximum`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
