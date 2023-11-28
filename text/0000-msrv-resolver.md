@@ -531,3 +531,18 @@ as well as to reproduce behavior with different Rust versions.
 ## rustup supporting `+msrv`
 
 See https://github.com/rust-lang/rustup/issues/1484#issuecomment-1494058857
+
+## Language-version lints
+
+We could make developing with the latest toolchain with old MSRVs easier if we provided lints.
+Due to accuracy of information, this might start as a clippy lint, see
+[#6324](https://github.com/rust-lang/rust-clippy/issues/6324).
+This doesn't have to be perfect (covering all facets of the lanuage) to be useful in helping developers identify their change is MSRV incompatible as early as possible.
+
+If we allowed this to bypass caplints,
+then you could more easily track when a dependency with an unspecified MSRV is incompatible.
+
+## Language-version awareness for rust-analyzer
+
+rust-analyzer could mark auto-complete options as being incompatible with the MSRV and
+automatically bump the MSRV if selected, much like auto-adding a `use` statement.
