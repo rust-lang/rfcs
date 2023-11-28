@@ -260,13 +260,16 @@ Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `carg
 
 Cargo's resolver will be updated to *prefer* MSRV compatible versions over
 incompatible versions when resolving versions.
-Dependencies without `package.rust-version` will be treated as compatible.
+Dependencies without `package.rust-version` will be preferred over those without an MSRV but less than those with one.
+The exact details for how preferences are determined may change over time but,
+since the currently resolved dependencies always get preference,
+this shouldn't affect existing `Cargo.lock` files.
 
-This can be overridden with `--ignore-rust-version` and config's `build.rust-version`.
+This can be overridden with `--ignore-rust-version` and config's `build.resolver.precedence`.
 
 Implications
 - If you use do `cargo update --precise <msrv-incompatible-ver>`, it will work
-- If you use `--ignore-rust-version` once, you don't need to specify it again to keep those dependencies
+- If you use `--ignore-rust-version` once, you don't need to specify it again to keep those dependencies though you might need it again on the next edit of `Cargo.toml` or `cargo update` run
 - If a dependency doesn't specify `package.rust-version` but its transitive dependencies specify an incompatible `package.rust-version`,
   we won't backtrack to older versions of the dependency to find one with a MSRV-compatible transitive dependency.
 
@@ -304,21 +307,32 @@ This behavior can be bypassed with `--ignore-rust-version`
 
 ## Cargo config
 
-We'll add a `build.rust-version = <true|false>` field to `.cargo/config.toml` that will control whether `package.rust-version` is respected or not.
-`--ignore-rust-version` can override this.
+We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` that will control the control pick the mechanisms for preferring one compatible version over another.
 
+```toml
+[build]
+resolver.precedence = "rust-version=package"  # Default
+```
+with support values being:
+- `maximum`: behavior today
+  - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
+- `minimum` (unstable): `-Zminimal-versions`
+  - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
+- `rust-version=` (assumes `maximum` is the fallback)
+  - `package`: what is defined in the package (default)
+  - `rustc`: the current running version
+    - Needed for "separate development / publish MSRV" workflow
+  - `<x>[.<y>[.<z>]]` (future possibility): manually override the version used
+
+If a `rust-version=` value is used, we'd switch to `maximum` when `--ignore-rust-version` is set.
 This will let users effectively pass `--ignore-rust-version` to all commands,
-without having to support it on every single one.
-
-We can also stabilize this earlier than the rest of this so we can use it in our
-[Verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
-documentation so people will be more likely to prepared for this change.
+without having to support the flag on every single command.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 Maintainers that commit their `Cargo.lock` and verify their latest dependencies
-will need to set `CARGO_BUILD_RUST_VERSION=false` in their environment.
+will need to set `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version=rustc` in their environment.
 See Alternatives for more on this.
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
@@ -326,6 +340,10 @@ this could instead further entrench rust-version stagnation in the ecosystem.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+Misc
+- Config was put under `build` to associate it with local development, as compared with `install` which could be supported in the future
+- Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 
 ## Add `workspace.rust-version`
 
@@ -344,11 +362,11 @@ allows us to move forward without having to figure out all of these details.
 ## Make this opt-in
 
 As proposed, CI that tries to verify against the latest dependencies will no longer do so.
-Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RUST_VERSION=false`.
+Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
 
 If we consider this a major incompatibility, then it needs to be opted into.
 As `cargo fix` can't migrate a user's CI,
-this would be out of scope for migrating to with a new Edition.
+this would be out of scope for migrating to this with a new Edition.
 
 I would argue that the number of maintainers verifying latest dependencies is
 relatively low and they are more likely to be "in the know",
@@ -363,11 +381,19 @@ If we change behavior with a new edition (assuming we treat this as a minor inco
 we get the fanfare needed but it requires waiting until people bump their MSRV,
 making it so the people who need it the most are the those who will least benefit.
 
-## Sort order when `package.rust-version` is unspecified
+## Make `rust-version=rustc` the default
 
-We could give versions without `package.rust-version` a lower priority, acting
-as if they are always too new.
-I suspect that no matter which direction we go on this, we'll negatively impact someone.
+This proposal elevates "shared development / publish rust-version" workflow over "separate development and publish rust-version" workflow.
+We could instead do the opposite, picking `rust-version=rustc` as a "safe" default for assuming the development rust-version.
+Users of the "shared development / publish rust-version" workflow could either set the config or use a `rust-toolchain.toml` file.
+
+The reasons we didnn't go with this approach are
+- The user explicitly told us the MSRV for the project; we do not have the granularity for different MSRVs for different workflows (or `features`) and likely the complexity would not be worth it.
+- Split MSRV workflows are inherently more complex to support with more caveats of where they apply, making single MSRV workflows the path of least resistance for users.
+- Without configuration, defaulting to single MSRV workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the split MSRV workflows.
+- Single MSRV workflows catch too-new API problems sooner
+- We want to encourage developing on the latest version of rustc/cargo to get all of the latest workflow improvements (e.g. error messages, sparse registry for cargo, etc), rather than lock people into the MSRV with `rust-toolchain.toml`
+  - The toolchain is another type of dependency so this might seem contradictory but we feel the value-add of a new toolchain outweighs the cost while the value add of new dependencies doesn't
 
 ## Hard-error
 
@@ -410,6 +436,10 @@ we wouldn't want to fallback to the version of rustc being used because that cou
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+The config field is fairly rought
+  - The location (within `build`) needs more consideration
+  - The name isn't very clear
+  - The values are awkward
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -430,7 +460,7 @@ this will at least annoy people into either being somewhat compatible or removin
 
 ~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
 However, this will err on the side of a higher MSRV than necessry and the only way to
-workaround it is to set `CARGO_BUILD_RUST_VERSION=false` which will then lose
+workaround it is to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` which will then lose
 all other protections.
 
 ~~When missing, `cargo publish` could inject based on the rustup toolchain file.~~
@@ -465,6 +495,8 @@ we'll want to make it respect MSRV as well
 ## cargo install
 
 `cargo install` could auto-select a top-level package that is compatible with the version of rustc that will be used to build it.
+This could be controlled through a config field `install.resolver.precedence`,
+mirroring `build.resolver.precedence`.
 
 See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for more discussion.
 
