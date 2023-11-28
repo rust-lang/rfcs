@@ -175,12 +175,14 @@ by clap updating its MSRV from 1.64.0 to 1.70.0,
 it was able to drop the large [is-terminal](https://crates.io/crates/is-terminal) dependency,
 [cutting the build time from 6s to 3s](https://github.com/rosetta-rs/argparse-rosetta-rs/commit/378cd2c30679afdf9b9843dbadea3e8951090809).
 So if we can find a solution that allows maintainers to move forward, helping
-users more the edge, while not impacting users on older rust version, would be
+users more on the edge, while not impacting users on older rust version, would be
 a big help.
 
 The sooner we improve the status quo, the better, as it can take years for
 these changes to percolate out to those exclusively developing with an older
 Rust version (in contrast with the example above).
+This delay can be reduced somewhat if a newer development version can be used
+without upgrading the MSRV.
 
 In solving this, we need to keep in mind
 - Users need to be aware when they are on old versions for evaluating security risk and when debugging issues
@@ -188,10 +190,8 @@ In solving this, we need to keep in mind
   because users are stuck on 3-20 year old versions of the language specification.
   The compatibility story is fairly strong with Rust, helping us keep
   compiler and dependency upgrades cheap.
-- We also want to continue to support people whose workflow is to develop with
-  latest dependencies in a `Cargo.lock` and then verify MSRV with a carefully
-  crafted `Cargo.lock`.
-- A `Cargo.lock` should not resolve differently when upgrading Rust.
+- Some people keep their development and production MSRVs the same while others keep them separate, like with a `Cargo.msrv.lock`
+- A `Cargo.lock` should not resolve differently when upgrading Rust without any other action.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -234,6 +234,7 @@ The resolver will only do this for local packages and not for `cargo install`.
 
 **Note:** other operations that cause `Cargo.lock` entries to be changed (like
 editing `Cargo.toml` and running `cargo check`) will not inform the user.
+If they want to check the status of things, they can run `cargo update -n`.
 
 ## `cargo add`
 
@@ -345,6 +346,9 @@ we wouldn't want to fallback to the version of rustc being used because that cou
 # Prior art
 [prior-art]: #prior-art
 
+- Python: instead of tying packages to a particular tooling version, the community instead focuses on their equivalent of the [`rustversion` crate](https://crates.io/crates/rustversion) combined with tool-version-conditional dependencies that allow polyfills.
+  - We have [cfg_accessible](https://github.com/rust-lang/rust/issues/64797) as a first step though it has been stalled
+  - These don't have to be mutually exclusive solutions as conditional compilation offers flexibility at the cost of maintenance.  Different maintainers might make different decisions in how much they leverage each
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -353,38 +357,43 @@ we wouldn't want to fallback to the version of rustc being used because that cou
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Encourage `package.rust-version` to be set more frequently
+## Improve the experience with lack of `rust-version`
 
 The user experience for this is based on the extent and quality of the data.
 Ensuring we have `package.rust-version` populated more often (while maintaining
 quality of that data) is an important problem but does not have to be solved to
 get value out of this RFC and can be handled separately.
 
-We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`
-We don't want to default `package.rust-version` in `cargo new`.
-If people aren't committed to verifying it,
+~~We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`.~~
+However, if people aren't committed to verifying it,
 it is likely to go stale and will claim an MSRV much older than what is used in practice.
 If we had the hard-error resolver mode and
 [clippy warning people when using API items stabilized after their MSRV](https://github.com/rust-lang/rust-clippy/issues/6324),
 this will at least annoy people into either being somewhat compatible or removing the field.
 
-When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.
-This will err on the side of a higher MSRV than necessry and the only way to
+~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
+However, this will err on the side of a higher MSRV than necessry and the only way to
 workaround it is to set `CARGO_BUILD_RUST_VERSION=false` which will then lose
 all other protections.
 
-When missing, `cargo publish` could inject based on the rustup toolchain file.
-This will err on the side of a higher MSRV than necessary as well.
+~~When missing, `cargo publish` could inject based on the rustup toolchain file.~~
+However, this will err on the side of a higher MSRV than necessary as well.
 
-When missing, `cargo publish` could inject `package.rust-version` inferred from
-`package.edition` and/or other `Cargo.toml` fields.
-This will err on the side of too low of an MSRV.
+~~When missing, `cargo publish` could inject `package.rust-version` inferred from
+`package.edition` and/or other `Cargo.toml` fields.~~
+However, this will err on the side of too low of an MSRV.
 While this might help with in this situation,
 it would lock us in to inaccurate information which might limit what analysis we could do in the future.
 
-We could add new fields to the Index's package summary to track this
-information so it can inform our decisions without losing the intent of the
-publisher.
+Alternatively, `cargo publish` / the registry could add new fields to the Index
+to represent an inferred MSRV, the published version, etc
+so it can inform our decisions without losing the intent of the publisher.
+
+On the resolver side, we could
+- Assume the MSRV of the next published package with an MSRV set
+- Sort no-MSRV versions by minimal versions, the lower the version the more likely it is to be compatible
+  - This runs into quality issues with version requirements that are likely too low for what the package actually needs
+  - For dependencies that never set their MSRV, this effectively switches us from maximal versions to minimal versions.
 
 ## Integrate `cargo audit`
 
