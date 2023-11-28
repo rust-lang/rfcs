@@ -345,6 +345,9 @@ The actual safety promise of `UnsafeUnpin` is likely going to be exactly the sam
 With a time machine we'd make `Unpin` unsafe;
 in lieu of that, we can add this unsafe trait unstably so that we can at least resolve the existing soundness trouble while we try to figure out if it worth transitioning `Unpin` to an unsafe trait somehow.
 
+It is unfortunate that `&mut UnsafePinned` and `&mut TypeThatContainsUnsafePinned` lose their no-alias assumptions even when they are not currently pinned.
+However, since pinning was implemented as a library concept, there's not really any way the compiler can know whether an `&mut UnsafePinned` is pinned or not -- working with `Pin<&mut TypeThatContainsUnsafePinned>` generally requires using `Pin::get_unchecked_mut` and `Pin::map_unchecked_mut`, which exposes `&mut TypeThatContainsUnsafePinned` and `&mut UnsafePinned` that still need to be considered aliased.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
