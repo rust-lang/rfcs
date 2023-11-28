@@ -334,18 +334,22 @@ Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&
 # Drawbacks
 [drawbacks]: #drawbacks
 
-It's yet another wrapper type adjusting our aliasing rules and very easy to mix up with `UnsafeCell` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336).
+- It's yet another wrapper type adjusting our aliasing rules and very easy to mix up with `UnsafeCell` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336).
 Furthermore, it is an extremely subtle wrapper type, as the `duplicate` example shows.
 
-`UnsafeUnpin` is a somewhat unfortunate twin to `Unpin`.
+- `UnsafeUnpin` is a somewhat unfortunate twin to `Unpin`.
 The purpose of `UnsafeUnpin` really is only to search for `UnsafePinned` fields, so that we can use the trait solver to determine whether an `&mut` reference gets `noalias` or not.
 The actual safety promise of `UnsafeUnpin` is likely going to be exactly the same as `Unpin`, but we can't use a stable and safe trait to determine `noalias`:
-`impl UnsafeUnpin for T` would add the `noalias` back to `&mut T`, and that can be unsound.
-(See [the `poll_fn` debacle](https://internals.rust-lang.org/t/surprising-soundness-trouble-around-pollfn/17484).)
-With a time machine we'd make `Unpin` unsafe;
-in lieu of that, we can add this unsafe trait unstably so that we can at least resolve the existing soundness trouble while we try to figure out if it worth transitioning `Unpin` to an unsafe trait somehow.
+`impl UnsafeUnpin for T` would add the `noalias` back to `&mut T`, and that can lead to very surprising aliasing issues as [the `poll_fn` debacle](https://internals.rust-lang.org/t/surprising-soundness-trouble-around-pollfn/17484) showed.
+(Note that `PollFn` has already been fixed, but that doesn't mean nobody will make similar mistakes in the future so it is worth discussing how the original, problematic `PollFn` would fare under this RFC.)
+Splitting up the traits partially mitigates such issues: after `impl<T> Unpin for PollFn<T>`, `PollFn<T>` is (in general) `Unpin + !UnsafeUnpin`.
+The known examples of UB that Miri found all were caused by bad aliasing assumptions, which no longer occur when the aliasing assumptions are tied to `UnsafeUnpin` rather than `Unpin`.
+Actually moving the `PollFn` would still cause problems (and that can be done in safe code since it implements `Unpin`), but now the chances of code causing UB are much reduced since one must *both* pin data that's moved into a closure, and move that closure -- even though the Rust compiler will not help prevent such moves, programmers thinking carefully about pinning are hopefully less likely to then try to move that closure.
+In conclusion, `Unpin + !UnsafeUnpin` types are somewhat foot-gunny but less foot-gunny than the status quo.
+Maybe in a future edition `Unpin` can be transitioned to an unsafe trait and then this situation can be re-evaluated; for now, `UnsafeUnpin` remains an unstable implementation detail similar to `Freeze`.
+(`UnsafeUnpin + !Unpin` types are harmless, one just loses the ability to call `Pin::deref_mut` for no good reason.)
 
-It is unfortunate that `&mut UnsafePinned` and `&mut TypeThatContainsUnsafePinned` lose their no-alias assumptions even when they are not currently pinned.
+- It is unfortunate that `&mut UnsafePinned` and `&mut TypeThatContainsUnsafePinned` lose their no-alias assumptions even when they are not currently pinned.
 However, since pinning was implemented as a library concept, there's not really any way the compiler can know whether an `&mut UnsafePinned` is pinned or not -- working with `Pin<&mut TypeThatContainsUnsafePinned>` generally requires using `Pin::get_unchecked_mut` and `Pin::map_unchecked_mut`, which exposes `&mut TypeThatContainsUnsafePinned` and `&mut UnsafePinned` that still need to be considered aliased.
 
 # Rationale and alternatives
@@ -362,15 +366,19 @@ However, of course one could imagine alternatives:
 
   If we do that, however, it seems preferrable to transition `Unpin` to an unsafe trait. There *is* a clear statement about the types' invariants associated with `Unpin`, so an `impl Unpin` already comes with a proof obligation. It just happens to be the case that in a module without unsafe, one can always arrange all the pieces such that the proof obligation is satisifed.
   This is mostly a coincidence  and related to the fact that we don't have safe field projections on `Pin`. That said, solving this also requires solving the trouble around `Drop` and `Pin`, where effectively an `impl Drop` does an implicit `get_mut_unchecked`, i.e., implicitly assumes the type is `Unpin`.
+
 - `UnsafePinned` could affect aliasing guarantees *both* on mutable and shared references. This would avoid the currently rather subtle situation that arises when one of many aliasing `&mut UnsafePinned<T>` is cast or coerced to `&UnsafePinned<T>`: that is a read-only shared reference and all aliases must stop writing!
   It would make this type strictly more 'powerful' than `UnsafeCell` in the sense that replacing `UnsafeCell` by `UnsafePinned` would always be correct. (Under the RFC as written, `UnsafeCell` and `UnsafePinned` can be nested to remove aliasing requirements from both shared and mutable references.)
 
   If we don't do this, we could consider removing `get` since since it seems too much like a foot-gun.
   But that makes shared references to `UnsafePinned` fairly pointless. Shared references to generators/futures are basically useless so it is unclear what the potential use-cases here are.
+
 - Instead of introducing a new type, we could say that `UnsafeCell` affects *both* shared and mutable references. That would lose some optimization potential on types like `&mut Cell<T>`, but would avoid the footgun of coercing an `&mut UnsafePinned<T>` to `&UnsafePinned<T>`. That said, so far the author is not aware of Miri detecting code that would run into this footgun (and Miri is [able to do detect such issues](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=aab417b535f7dbd266fbfe470ea208c7)).
+
 - We could entirely avoid all these problems by not having aliasing restrictions on mutable references.
   But that is completely against the direction Rust has had for 8 years now, and it would mean removing LLVM `noalias` annotations for mutable references (and likely boxes) entirely.
   That is sacrificing optimization potential for the common case in favor of simplifying niche cases such as self-referential structs -- which is against the usual design philosophy of Rust.
+
 - Instead of adding a new type that needs to be used as `Pin<&mut UnsafePinned<T>>`, can't we just make `Pin<&mut T>` special?
   The answer is no, because working with `Pin<&mut T>` in unsafe code usually involves getting direct access to the `&mut` and then using it "carefully".
   But being careful is not enough when the compiler makes non-aliasing assumptions!
