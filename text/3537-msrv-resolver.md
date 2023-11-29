@@ -241,18 +241,15 @@ Some details may change over time though `cargo check && rustup update && cargo 
 *(update to [Configuration](https://doc.rust-lang.org/cargo/reference/config.html))*
 
 * Type: string
-* Default: "rust-version=package"
+* Default: "rust-version"
 * Environment: `CARGO_BUILD_RESOLVER_PRECEDENCE`
 
 Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `cargo update`.  This does not affect `cargo install`.
 
 * `maximum`: Prefer the highest compatible versions of dependencies
-* `minimum`: Prefer the lowest versions of dependencies
-* `rust-version=package`: Prefer dependencies where their `rust-version` is compatible with `package.rust-version`
-* `rust-version=rustc`: Prefer dependencies where their `rust-version` is compatible with `rustc --version`
-* `rust-version=<X>[.<Y>[.<Z>]]`: Prefer dependencies where their `rust-version` is compatible with the specified version
+* `rust-version`: Prefer dependencies where their `rust-version` is compatible with `package.rust-version`
 
-`rust-version=` values can be overridden with `--ignore-rust-version` which will fallback to `maximum`.
+`rust-version` can be overridden with `--ignore-rust-version` which will fallback to `maximum`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -313,16 +310,17 @@ We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` that will
 
 ```toml
 [build]
-resolver.precedence = "rust-version=package"  # Default
+resolver.precedence = "rust-version"  # Default
 ```
 with support values being:
 - `maximum`: behavior today
   - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
 - `minimum` (unstable): `-Zminimal-versions`
   - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
+- `rust-version`:  what is defined in the package (default)
 - `rust-version=` (assumes `maximum` is the fallback)
-  - `package`: what is defined in the package (default)
-  - `rustc`: the current running version
+  - `package`: long from of `rust-version`
+  - `rustc` (future possibility): the current running version
     - Needed for "separate development / publish MSRV" workflow
   - `<x>[.<y>[.<z>]]` (future possibility): manually override the version used
 
@@ -516,6 +514,11 @@ we'll want to make it respect MSRV as well
 `cargo install` could auto-select a top-level package that is compatible with the version of rustc that will be used to build it.
 This could be controlled through a config field `install.resolver.precedence`,
 mirroring `build.resolver.precedence`.
+
+A smaller step towards this is we could stabilize `install.resolver.precedence
+= "rust-version=rustc"` without changing the default away from `maximum`,
+allowing people to intentionally opt-in to rust-version compatible
+installation.
 
 See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for more discussion.
 
