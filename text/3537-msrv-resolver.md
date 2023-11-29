@@ -319,7 +319,7 @@ with support values being:
   - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
 - `rust-version`:  what is defined in the package (default)
 - `rust-version=` (assumes `maximum` is the fallback)
-  - `package`: long from of `rust-version`
+  - `package`: long form of `rust-version`
   - `rustc` (future possibility): the current running version
     - Needed for "separate development / publish MSRV" workflow
   - `<x>[.<y>[.<z>]]` (future possibility): manually override the version used
