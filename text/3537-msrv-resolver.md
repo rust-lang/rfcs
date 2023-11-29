@@ -512,13 +512,15 @@ we'll want to make it respect MSRV as well
 ## cargo install
 
 `cargo install` could auto-select a top-level package that is compatible with the version of rustc that will be used to build it.
-This could be controlled through a config field `install.resolver.precedence`,
-mirroring `build.resolver.precedence`.
 
-A smaller step towards this is we could stabilize `install.resolver.precedence
-= "rust-version=rustc"` without changing the default away from `maximum`,
-allowing people to intentionally opt-in to rust-version compatible
-installation.
+This could be controlled through a config field and
+a smaller step towards this is we could stabilize the field
+without changing the default away from `maximum`,
+allowing people to intentionally opt-in to auto-selecting a compatible top-level paclage.
+
+Dependency resolution could be controlled through a config field `install.resolver.precedence`,
+mirroring `build.resolver.precedence`.
+The value add of this compared to `--locked` is unclear.
 
 See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for more discussion.
 
