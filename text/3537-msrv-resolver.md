@@ -542,7 +542,7 @@ See https://github.com/rust-lang/rustup/issues/1484#issuecomment-1494058857
 We could make developing with the latest toolchain with old MSRVs easier if we provided lints.
 Due to accuracy of information, this might start as a clippy lint, see
 [#6324](https://github.com/rust-lang/rust-clippy/issues/6324).
-This doesn't have to be perfect (covering all facets of the lanuage) to be useful in helping developers identify their change is MSRV incompatible as early as possible.
+This doesn't have to be perfect (covering all facets of the language) to be useful in helping developers identify their change is MSRV incompatible as early as possible.
 
 If we allowed this to bypass caplints,
 then you could more easily track when a dependency with an unspecified MSRV is incompatible.
@@ -562,7 +562,7 @@ we at least made it explicit that people should verify their MSRV.
 Ideally, we'd at least facilitate people in setting their MSRV.  Some data that could help includes:
 - A report of rust-versions used making requests to crates.io as determined by the user-agent
 - A report of `package.rust-version` for the latest versions of packages on crates.io
-- A report of `package.rust-version` for the recently downloaded versons of packages on crates.io
+- A report of `package.rust-version` for the recently downloaded versions of packages on crates.io
 
 Once people have more data to help them in picking an MSRV policy,
 it would help to also document trade-offs on whether an MSRV policy should proactive or reactive on when to bump it.
