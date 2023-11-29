@@ -156,7 +156,7 @@ How wide spread is this?  Take this with a grain of salt but based on crates.io 
 People have tried to reduce the pain from MSRV with its own costs:
 - Treating it as a breaking change:
   - This leads to extra churn in the ecosystem when a fraction of users are likely going to benefit
-  - We have the precedence elsewhere in the Rust ecosystem for build and runtime system requirement changes not being breaking, like when rustc requires new glibc, AndroiNDK, etc
+  - We have the precedence elsewhere in the Rust ecosystem for build and runtime system requirement changes not being breaking, like when rustc requires newer versions of glibc, Android NDK, etc.
 - Adding upper limits to version requirements:
   - This fractures the ecosystem by making packages incompatible with each other and the Cargo team [discourages doing this](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#multiple-requirements)
 
