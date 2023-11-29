@@ -548,3 +548,18 @@ then you could more easily track when a dependency with an unspecified MSRV is i
 
 rust-analyzer could mark auto-complete options as being incompatible with the MSRV and
 automatically bump the MSRV if selected, much like auto-adding a `use` statement.
+
+## Establish a policy on MSRV
+
+For us to say "your MSRV should be X" would likely be both premature and would have a lot of caveats for different use cases.
+
+With [rust-lang/cargo#13056](https://github.com/rust-lang/cargo/pull/13056),
+we at least made it explicit that people should verify their MSRV.
+
+Ideally, we'd at least facilitate people in setting their MSRV.  Some data that could help includes:
+- A report of rust-versions used making requests to crates.io as determined by the user-agent
+- A report of `package.rust-version` for the latest versions of packages on crates.io
+- A report of `package.rust-version` for the recently downloaded versons of packages on crates.io
+
+Once people have more data to help them in picking an MSRV policy,
+it would help to also document trade-offs on whether an MSRV policy should proactive or reactive on when to bump it.
