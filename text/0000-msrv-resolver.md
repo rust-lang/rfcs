@@ -449,6 +449,7 @@ we wouldn't want to fallback to the version of rustc being used because that cou
 - Python: instead of tying packages to a particular tooling version, the community instead focuses on their equivalent of the [`rustversion` crate](https://crates.io/crates/rustversion) combined with tool-version-conditional dependencies that allow polyfills.
   - We have [cfg_accessible](https://github.com/rust-lang/rust/issues/64797) as a first step though it has been stalled
   - These don't have to be mutually exclusive solutions as conditional compilation offers flexibility at the cost of maintenance.  Different maintainers might make different decisions in how much they leverage each
+  - One big difference is Python continues to support previous releases which sets a standard within the community for "MSRV" policies.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
