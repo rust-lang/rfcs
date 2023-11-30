@@ -389,15 +389,15 @@ making it so the people who need it the most are the those who will least benefi
 
 ## Make `rust-version=rustc` the default
 
-This proposal elevates "shared development / publish rust-version" workflow over "separate development and publish rust-version" workflow.
+This proposal elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
 We could instead do the opposite, picking `rust-version=rustc` as a "safe" default for assuming the development rust-version.
 Users of the "shared development / publish rust-version" workflow could either set the config or use a `rust-toolchain.toml` file.
 
 The reasons we didn't go with this approach are
 - The user explicitly told us the MSRV for the project; we do not have the granularity for different MSRVs for different workflows (or `features`) and likely the complexity would not be worth it.
-- Split MSRV workflows are inherently more complex to support with more caveats of where they apply, making single MSRV workflows the path of least resistance for users.
-- Without configuration, defaulting to single MSRV workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the split MSRV workflows.
-- Single MSRV workflows catch too-new API problems sooner
+- "Separate development / publish MSRV" workflows are inherently more complex to support with more caveats of where they apply, making "shared development / publish MSRV" workflows the path of least resistance for users.
+- Without configuration, defaulting to "shared development / publish MSRV" workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the "separate development / publish MSRV" workflows.
+- "Shared development / publish MSRV" workflows catch too-new API problems sooner
 - We want to encourage developing on the latest version of rustc/cargo to get all of the latest workflow improvements (e.g. error messages, sparse registry for cargo, etc), rather than lock people into the MSRV with `rust-toolchain.toml`
   - The toolchain is another type of dependency so this might seem contradictory but we feel the value-add of a new toolchain outweighs the cost while the value add of new dependencies doesn't
 
@@ -409,7 +409,7 @@ However, there is a lot more to define for us to get there.  Some routes that ne
   - We could make it sticky by tracking this in `Cargo.lock` but that becomes less obvious what resolver mode you are in and how to change
 - We could put this in `Cargo.toml` but that implies it unconditionally applies to everything
   - But we want `cargo install` to use the latest dependencies so people get bug/security fixes
-  - This gets in the way of the split MSRV workflow
+  - This gets in the way of the "separate development / publish MSRV" workflow
 
 By relying on config we can have a stabilized solution sooner and we can work out more of the details as we better understand the relevant problems.
 
