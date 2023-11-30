@@ -9,6 +9,10 @@
 When a constant appears as a pattern, this is syntactic sugar for writing a pattern that corresponds to the constant's value by hand.
 This operation is only allowed when (a) the type of the constant implements `PartialEq`, and (b) the *value* of the constant being matched on has "structural equality", which means that `PartialEq` behaves the same way as that desugared pattern.
 
+This RFC does not allow any new code, compared to what already builds on stable today.
+Its purpose is to explain the rules for constants in patterns in one coherent document,
+and to justify why we will start *rejecting* some code that currently works (see the [breaking changes](#breaking-changes) below).
+
 # Motivation
 [motivation]: #motivation
 
@@ -190,11 +194,11 @@ This RFC breaks code that compiles today, but only code that already emits a fut
   This only recently landed (Rust 1.75, currently in beta), and is not currently shown in dependencies.
   Crater found [three cases](https://github.com/rust-lang/rust/pull/116930#issuecomment-1784648989) across the ecosystem where `match` was used to compare function pointers;
   that code is buggy for the reasons mentioned above that make comparing function pointers unreliable.
-- Matching on floats triggers `illegal_floating_point_literal_pattern`. This triggers on *all* float matches, not just the forbidden ones.
+- Matching on floats triggers `illegal_floating_point_literal_pattern`. This triggers on *all* float matches, not just the ones forbidden by this RFC.
   It has been around for years, but is not currently shown in dependencies.
 
 When the RFC gets accepted, the floating-point lint should be adjusted to only cover the cases we are really going to reject,
-and all of them should be shown in dependencies.
+and all of them should be shown in dependencies or directly turned into hard errors.
 
 ## Compiler/library cleanup
 
