@@ -334,7 +334,7 @@ without having to support the flag on every single command.
 [drawbacks]: #drawbacks
 
 Maintainers that commit their `Cargo.lock` and verify their latest dependencies
-will need to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` in their environment.
+will need to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` in their environment or run `cargo update --ignore-rust-version`.
 See Alternatives for more on this.
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
