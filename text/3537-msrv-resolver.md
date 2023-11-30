@@ -191,7 +191,8 @@ In solving this, we need to keep in mind
   because users are stuck on 3-20 year old versions of the language specification.
   The compatibility story is fairly strong with Rust, helping us keep
   compiler and dependency upgrades cheap.
-- Some people keep their development and production MSRVs the same while others keep them separate, like with a `Cargo.msrv.lock`
+- Some people keep their development and production MSRVs the same (henceforth referred to as "shared development / publish MSRV" workflow)
+  while others keep them separate, e.g. tracking two sets of dependencies via a `Cargo.msrv.lock` (henceforth referred to as "separate development / publish MSRV" workflow)
 - A `Cargo.lock` should not resolve differently when upgrading Rust without any other action.
 
 # Guide-level explanation
