@@ -258,10 +258,12 @@ Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `carg
 
 Cargo's resolver will be updated to *prefer* MSRV compatible versions over
 incompatible versions when resolving versions.
-Dependencies without `package.rust-version` will be preferred over those without an MSRV but less than those with one.
-The exact details for how preferences are determined may change over time but,
-since the currently resolved dependencies always get preference,
-this shouldn't affect existing `Cargo.lock` files.
+Initially, dependencies without `package.rust-version` will be preferred over
+MSRV-incompatible packages but less than those that are compatible.
+The exact details for how preferences are determined may change over time,
+particularly when no MSRV is specified,
+but this shouldn't affect existing `Cargo.lock` files since the currently
+resolved dependencies always get preference.
 
 This can be overridden with `--ignore-rust-version` and config's `build.resolver.precedence`.
 
