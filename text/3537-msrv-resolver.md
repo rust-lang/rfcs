@@ -391,7 +391,7 @@ This proposal elevates "shared development / publish rust-version" workflow over
 We could instead do the opposite, picking `rust-version=rustc` as a "safe" default for assuming the development rust-version.
 Users of the "shared development / publish rust-version" workflow could either set the config or use a `rust-toolchain.toml` file.
 
-The reasons we didnn't go with this approach are
+The reasons we didn't go with this approach are
 - The user explicitly told us the MSRV for the project; we do not have the granularity for different MSRVs for different workflows (or `features`) and likely the complexity would not be worth it.
 - Split MSRV workflows are inherently more complex to support with more caveats of where they apply, making single MSRV workflows the path of least resistance for users.
 - Without configuration, defaulting to single MSRV workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the split MSRV workflows.
