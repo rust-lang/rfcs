@@ -453,7 +453,7 @@ we wouldn't want to fallback to the version of rustc being used because that cou
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-The config field is fairly rought
+The config field is fairly rough
   - The location (within `build`) needs more consideration
   - The name isn't very clear
   - The values are awkward
