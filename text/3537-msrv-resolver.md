@@ -280,7 +280,7 @@ This will be less optimal for workspaces with multiple MSRVs and dependencies un
 Users can workaround this by raising the version requirement or using `cargo update --precise`.
 
 If `package.rust-version` is unset among all workspace members,
-we'll fallback to `rustc --version`,
+we'll fallback to `rustc --version` (implicitly picking up `rust-toolchain.toml` files),
 ensuring a build that at least works for the current system.
 As this is just a preference for resolving dependencies, rather than prescriptive,
 this shouldn't cause churn.
