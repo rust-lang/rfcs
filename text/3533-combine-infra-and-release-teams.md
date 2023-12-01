@@ -15,7 +15,7 @@ Historically the Release team has had a much smaller scope than other teams. It 
 
 [RFC 3392](https://github.com/rust-lang/rfcs/blob/master/text/3392-leadership-council.md#top-level-teams) outlines what typically qualifies a team as "top-level". While one could make the argument that the Release team fits these points, there are arguably two aspects where it does not neatly fit:
 * "Have a purview that is foundational to the Rust Project": while Rust releases are obviously extremely important, it is hard to argue that they are "foundational". Just like there is no CI team (despite CI also being extremely important), the release process is not a foundational piece of what makes Rust, Rust.
-* "Have a purview that not is a subset of another team's purview": this is hard to argue exactly as most teams don't have well defined purviews, but one could argue that the Infrastructure team's purview is roughly "to maintain and administer all logistical activities for the continuing operation of the Rust project" which would then be a superset of what the Release team's purview is.
+* "Have a purview that not is a subset of another team's purview": this is hard to argue exactly as most teams don't have well defined purviews, but one could argue that the Infrastructure team's purview is roughly "to maintain and administer all logistical activities for the continuing operation of the Rust project" which would then be a superset of what the Release team's purview is. The Infrastructure team's purview already contains user-facing components (e.g.,the Rust Playground and crates.io CDN infrastructure) so adding additional user-facing concerns is not a categorical expansion of that purview.
 
 In the past, whether a team is "top-level" or not has not been of huge consequence. However, this is no longer true since [RFC 3392](https://github.com/rust-lang/rfcs/pull/3392) introduced the Leadership Council whose representation is based on top-level team status. This RFC specifically called out the need for re-examination of which teams are top-level, and this proposal is the first attempt at such a re-examination. The most immediate practical reason for being strict with the definition of "top-level" is to balance "the desire for a diverse and relatively shallow structure while still being practical for productive conversation and consent."
 
@@ -28,6 +28,10 @@ For the purposes of actual decision making, the Release subteam retains all deci
 Once this proposal is accepted, the Release team will move to be a subteam of Infrastructure. The Infrastructure team does not change its top-level form.
 
 The Infrastructure team's Council representative would continue to serve on the Council while the Release representative would immediately stop counting as a representative for all purposes.[^plan]
+
+As part of this change, wg-triage will move out from under the Release team and move to be a part of Launching Pad until a more appropriate home for the working group can be found.
+
+[^plan]: It is currently the unofficial plan that Ryan Levick will step down in his role as the Infrastructure representative, and Mark Rousskov would take over as the rep, but this would be made official after the merger through internal Infrastructure team process.
 
 # Alternatives
 
@@ -48,10 +52,3 @@ It is not clear that there are any benefits to this alternative that are worth t
 Crates.io is arguably the other team next to Release with the smallest purview compared to other teams. We may want to merge at least part of the team (i.e., the part responsible for running the crates.io infra) into Infrastructure.
 
 This is not included in this proposal, because there are more open questions in this case than in the case of the Release team (e.g., where would the other part of the crates.io team - in charge of crates.io policy - go?).
-
-# Open questions
-
-* Should the team still be called *Infrastructure*?
-* What happens to wg-triage? Should this be moved out of Release as a working group of Infrastructure? Should it instead move to another team (perhaps compiler)?
-
-[^plan]: It is currently the unofficial plan that Ryan Levick will step down in his role as the Infrastructure representative, and Mark Rousskov would take over as the rep, but this would be made official after the merger through internal Infrastructure team process.
