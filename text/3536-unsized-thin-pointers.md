@@ -263,6 +263,11 @@ amount of payload data.
 [IPC]: https://en.wikipedia.org/wiki/Inter-process_communication
 [FUSE]: https://www.kernel.org/doc/html/v6.3/filesystems/fuse.html
 
+C++ does not currently support flexible array members; proposals to add them
+(or similar functionality) include:
+- [Exploring classes of runtime size](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4025.pdf)
+- [Flexible Array Members for C++](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p1039r0.html)
+
 In the context of Rust, the two RFCs mentioned earlier both cover thin-pointer
 DSTs as part of their more general extensions to the Rust type system:
 - [RFC 1861: `extern_types`](https://rust-lang.github.io/rfcs/1861-extern-types.html)
