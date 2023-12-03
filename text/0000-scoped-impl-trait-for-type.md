@@ -19,9 +19,11 @@ For example, while many crates support `serde::{Deserialize, Serialize}` directl
 
 Wrapper types, commonly used as workaround, add clutter to call sites or field types, and introduce mental overhead for developers as they have to manage distinct types without associated state transitions to work around the issues laid out in this section. They also require a distinct implementation for each combination of traits and lack discoverability through tools like rust-analyzer.
 
-Another pain point are sometimes missing `Into<>`-conversions when propagating errors with `?`, even though one external residual (payload) type may (sometimes *contextually*) be cleanly convertible into another. As-is, this usually requires a custom intermediary type, or explicit conversion using `.map_err(|e| ...)` (or equivalent function/extension trait). If an appropriate `From<>`-conversion can be provided *in scope*, then just `?` can be used.
+Another pain point are sometimes missing `Into<>`-conversions when propagating errors with `?`, even though one external residual (payload) type may (sometimes *contextually*) be cleanly convertible into another. As-is, this usually requires a custom intermediary type, or explicit conversion using `.map_err(|e| …)` (or an equivalent function/extension trait). If an appropriate `From<>`-conversion can be provided *in scope*, then just `?` can be used.
 
-This RFC aims to address these pain points by creating a new path of least resistance that is easy to use and very easy to teach, intuitive to existing Rust-developers, readable without prior specific knowledge, discoverable as needed, has opportunity for rich tooling support in e.g. rust-analyzer and helpful error messages, is quasi-perfectly composable including decent re-use of composition, improves maintainability and (slightly) robustness to minor-version dependency changes compared to newtype wrappers, and does not restrict crate API evolution, compromise existing coherence rules or interfere with future developments like specialisation. Additionally, it allows the implementation of more expressive (but no less explicit) extension APIs using syntax traits like in the `PartialEq<>`-example below, without complications should these traits be later implemented in the type-defining crate.
+This RFC aims to address these pain points by creating a new path of least resistance that is easy to use and very easy to teach, intuitive to existing Rust-developers, readable without prior specific knowledge, discoverable as needed, has opportunity for rich tooling support in e.g. rust-analyzer and helpful error messages, is quasi-perfectly composable including decent re-use of composition, improves maintainability and (slightly) robustness to major-version dependency changes compared to newtype wrappers, and does not restrict crate API evolution, compromise existing coherence rules or interfere with future developments like specialisation. Additionally, it allows the implementation of more expressive (but no less explicit) extension APIs using syntax traits like in the `PartialEq<>`-example below, without complications should these traits be later implemented in the type-defining crate.
+
+For realistic examples of the difference this makes, please check the [rationale-and-alternatives] section.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -90,7 +92,13 @@ Note that the scoped implementation of `UnsafeTrait` is imported without the `un
 
 Generic parameters, bounds and `where`-clauses can be used as normal in each of these locations, though you usually have to brace `impl</*...*/> Trait for Type where /*...*/` individually in `use`-declarations.
 
-You can import a subset of a blanket implementation, by narrowing bounds or replacing type parameters with concrete types in the `use`-declaration.
+You can import a subset of a generic implementation, by narrowing bounds or replacing type parameters with concrete types in the `use`-declaration.
+
+Global implementations can be imported from the root namespace, for example to shadow a scoped implementation:
+
+```rust
+use ::{impl Trait for Type};
+```
 
 ### Scoped implementations and generics
 [scoped-implementations-and-generics]: #scoped-implementations-and-generics
@@ -228,7 +236,7 @@ The core Rust language grammar is extended as follows:
 
   (This can be distinguished from `use`-declarations with a lookahead up to and including `impl` or `unsafe`, meaning at most four shallowly tested token trees with I believe no groups. No other lookaheads are introduced into the grammar by this RFC.)
 
-  **The scoped implementation defined by this item is implicitly always in scope for its own definition.** This means that it's not possible to refer to any shadowed implementation inside of it (including generic parameters and where clauses), except by re-importing specific scoped implementations inside nested associated functions. Calls to generic functions cannot be used as backdoor either (see [resolution-at-type-instantiation-site]).
+  **The scoped implementation defined by this item is implicitly always in scope for its own definition.** This means that it's not possible to refer to any shadowed implementation inside of it (including generic parameters and where clauses), except by re-importing specific scoped implementations inside nested associated functions. Calls to generic functions cannot be used as backdoor either (see [generic-type-parameters-capture-scoped-implementations]).
 
   [*TraitImpl*]: https://doc.rust-lang.org/reference/items/implementations.html?highlight=TraitImpl#implementations
 
@@ -248,13 +256,13 @@ The core Rust language grammar is extended as follows:
 
   [E0178]: https://doc.rust-lang.org/error_codes/E0178.html
 
-  (Allowing unbraced imports like `use some_crate::impl<A, B> Trait<A> for Type<B> where A: Debug, B: Debug;` would break the source code's visual hierarchy pretty badly, so I won't suggest it here, but it is possible without ambiguity too. If that is added, then I'm strongly in favour of rustfmt bracing the *TraitCoverage* by default and rust-analyzer suggesting it only braced.)
+  (Allowing unbraced imports like `use some_crate::impl<A, B> Trait<A> for Type<B> where A: Debug, B: Debug;` would break the source code's visual hierarchy quite badly, so I won't suggest it here, but it is possible without ambiguity too. If that is added for convenience, then I'm strongly in favour of rustfmt bracing the *TraitCoverage* by default and rust-analyzer suggesting it only braced.)
 
   Here, *TraitCoverage* imports the specified scoped `impl Trait for Type` for binding and conflict checks as if defined in the scope containing the `use`-declaration. The resulting visibility is taken from *UseDeclaration*, like with *SimplePath*-imported items.
 
   *TraitCoverage* must be fully covered by the scoped implementation visible in the source module. Otherwise, a compile-error occurs explaining the uncovered case (similarly to the current error(s) for missing trait implementations).
 
-  ***TraitCoverage* may subset the source module's implementation** by having more narrow bounds or using concrete types in place of one or more generic type parameters. This causes only the specified subset of the scoped implementation to be imported.
+  ***TraitCoverage* may subset the source module's implementation** by having narrower bounds or using concrete types in place of one or more generic type parameters. This causes only the specified subset of the scoped implementation to be imported.
 
   Note that scoped implementations of `unsafe` traits are imported without `unsafe`. It is the exporting crate's responsibility to ensure a scoped implementation is sound everywhere it is visible.
 
@@ -282,21 +290,64 @@ is syntactically valid, but rejected by the compiler with a specific error. (See
 
 This also applies to `impl Trait`s in `use`-declarations (even though the items they would import cannot be defined anyway. Having a specific error saying that this *isn't possible* would be much clearer than one saying that the imported item doesn't exist).
 
-## Resolution at type instantiation site
-[resolution-at-type-instantiation-site]: #resolution-at-type-instantiation-site
+## No external scoped implementations of sealed traits
+[no-external-scoped-implementations-of-sealed-traits]: #no-external-scoped-implementations-of-sealed-traits
 
-When a generic like the type of a generic function or a generic struct type is instantiated into a less generic type, trait implementations **on generic type parameters** are bound in the scope of the consumer performing the instantiation. This also applies to bounds on associated types of generic type parameters. See [trait-binding-site] for more details.
-
-As an exception to this, type parameter defaults bind traits where they are defined. These bindings are used whenever the type parameter default is used.
-
-If an additional trait must be resolved on a generic type parameter, for example due to a bound on an implementation, then an implementation is resolved at the place where implementations for inherent bounds on that type parameter (would) have been resolved.
-
-## Type identity
-
-Instances of generics with distinct implementations available to their generic type parameters are distinct:
+Consider this library crate:
 
 ```rust
+pub struct Generic<T>(T);
+
+mod private {
+    // Implemented only on traits that are also `Sealed`.
+    pub trait Sealing {}
+}
+use private::Sealing;
+
+pub trait Sealed: Sealing {
+    fn assumed {
+        // (2)
+    }
+}
+
+impl<T: Sealed> Generic {
+    fn assuming {
+        // (1)
+    }
+}
+```
+
+In this crate, any code at (1) is currently allowed to make safety-critical assumptions about code at (2) and other implementations of `assumed`.
+
+To ensure this stays sound, scoped `impl Trait for Type` where `Trait` is external requires that all supertraits of `Trait` are visible to the crate defining the scoped implementation or are defined not in `Trait`'s definition crate (meaning they must still be exported from a crate somewhere in the dependency tree).
+
+See also [scoped-implementation-of-external-sealed-trait].
+
+## Generic type parameters capture scoped implementations
+[generic-type-parameters-capture-scoped-implementations]: #generic-type-parameters-capture-scoped-implementations
+
+When a type parameter is specified, either explicitly or inferred from an expression, it captures *all* scoped implementations from its scope that are applicable to its type.
+
+When implementations are resolved on the host type, bounds on the type parameter can only be satisfied according to this captured view. This means that implementations on generic type parameters are 'baked' into discretised generics and can be used even in other modules or crates where this discretised type is accessible (possibly because a value of this type is accessible). Conversely, additional or changed implementations on a generic type parameter in an already-discretised type *cannot* be provided anywhere other than where the type parameter is specified.
+
+When a generic type parameter is used to discretise another generic, the view captured in the latter is based on the view captured in the former and modified by scoped implementations and shadowing applicable to that generic type parameter's opaque type.
+
+Note that type parameter defaults too capture implementations where they are specified, so at the initial definition site of the generic. This capture is used whenever the type parameter default is used.
+
+## Type identity of discrete types
+[type-identity-of-discrete-types]: #type-identity-of-discrete-types
+
+The type identity and `TypeId::of::<…>()` of discrete types, including discretised generics, are not affected by scoped implementations *on* them.
+
+## Type identity of generic types
+[type-identity-of-generic-types]: #type-identity-of-generic-types
+
+The type identity of generic types is derived from the types specified for their type parameters as well as the *full* captured view of available implementations for each of their type parameters:
+
+```rust
+#[derive(Default)]
 struct Type;
+#[derive(Default)]
 struct Generic<T>(T);
 trait Trait {}
 
@@ -343,13 +394,14 @@ use mod5::Alias5;
 
 fn main() {
     use std::any::TypeId;
+
     use tap::Conv;
 
     // Distinct implementations produce distinct types.
     assert_ne!(TypeId::of::<Alias1>(), TypeId::of::<Alias2>());
     assert_ne!(TypeId::of::<Alias1>(), TypeId::of::<Alias3>());
 
-    // Types with the same implementations available are the same type.
+    // Types with the same captured implementations are still the same type.
     assert_eq!(TypeId::of::<Alias2>(), TypeId::of::<Alias3>());
 
     // Top-level implementations are not part of type identity.
@@ -363,9 +415,9 @@ fn main() {
     // as from its perspective, the binding is stripped due to being top-level.
     Alias1::nested_convertible(Alias2::default());
 
-    // The reflexive `impl<T> Into<T> for T` does not apply here,
-    // as the distinct binding is on a type parameter.
-    // (It's unfortunately not possible to blanket-implement this conversion without specialisation.)
+    // The reflexive `impl<T> Into<T> for T` does not to the generic here,
+    // as the distinct capture in the type parameter affects its inherent identity.
+    // (It's unfortunately not possible to generically implement this conversion without specialisation.)
     // Alias1::default().conv::<Alias2>();
     //                   ^^^^ error[E0277]: the trait bound `[…]¹` is not satisfied
 
@@ -375,15 +427,168 @@ fn main() {
 }
 ```
 
+As mentioned in [type-identity-of-discrete-types], implementations on the generic type *itself* do *not* affect its type identity, as can be seen with `Alias4` above.
+
+The `TypeId` of discretised generics varies alongside their identity. Note that due to the transmutation permission defined in [layout-compatibility], consumer code is effectively allowed to change the `TypeId` of instances of generics between calls to generic implementations in most cases. Due to this, implementations of generics that manage types at runtime should usually rely on the [typeid-of-generic-type-parameters-opaque-types] instead.
+
 ¹ With the current implementation, this would likely say `Generic<_>: From<Generic<_>>>`, which isn't helpful. With [explicit-binding], it could say `Generic<Type: Trait in mod2>: From<Generic<Type: Trait in mod1>>>`.
 
-## Layout-compatibility
+## `TypeId` of generic type parameters' opaque types
+[typeid-of-generic-type-parameters-opaque-types]: #typeid-of-generic-type-parameters-opaque-types
 
-Types whose identities are only distinct because of a difference in captured scoped implementations remain layout-compatible as if one was a `#[repr(transparent)]` newtype of the other.
+In addition to the type identity of the specified type, the `TypeId` of opaque generic type parameter types varies according to captured view of *only implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
+
+```rust
+use std::any::TypeId;
+
+#[derive(Default)]
+struct Type;
+trait Trait {}
+impl Trait for Type {}
+
+mod nested {
+    use super::{Trait, Type};
+    use impl Trait for Type {};
+    pub type Distinct = (Type,);
+}
+use nested::Distinct;
+
+fn no_bound<T: 'static, U: 'static>(_: (T,), _: (U,)) {
+    assert_eq!(TypeId::of::<T>(), TypeId::of::<U>());
+    assert_ne!(TypeId::of::<(T,)>(), TypeId::of::<(U,)>());
+
+    assert_eq!(TypeId::of::<T>(), TypeId::of::<Type>());
+    assert_eq!(TypeId::of::<U>(), TypeId::of::<Type>());
+}
+
+fn yes_bound<T: Trait + 'static, U: Trait + 'static>(_: (T,), _: (U,)) {
+    assert_ne!(TypeId::of::<T>(), TypeId::of::<U>());
+    assert_ne!(TypeId::of::<(T,)>(), TypeId::of::<(U,)>());
+
+    assert_eq!(TypeId::of::<T>(), TypeId::of::<Type>());
+    assert_ne!(TypeId::of::<U>(), TypeId::of::<Type>());
+}
+
+fn main() {
+    no_bound((Type,), Distinct::default());
+    yes_bound((Type,), Distinct::default());
+}
+
+```
+
+In particular:
+
+- If no bound-relevant scoped implementations are captured in a type parameter, then the `TypeId` of the opaque type of that type parameter is identical to that of the discrete type specified for that type parameter.
+- Distinct sets of bound-relevant captured scoped implementations lead to distinct `TypeId`s of the opaque type of a type parameter.
+- If the set of bound-relevant captured scoped implementations in two generic type parameters is the same, and the captured discrete type is identical, then the `TypeId` of the opaque types of these generic type parameters is identical.
+- If a generic type parameter is distinguishable this way, it remains distinguishable in called implementations even if those have fewer bounds - the relevant distinction is 'baked' into the generic type parameter's opaque type.
+
+These rules (and the transmutation permission in [layout-compatibility]) allow the following collection to remain sound with minimal perhaps unexpected behaviour:
+
+```rust
+use std::{
+    any::TypeId,
+    collections::{
+        hash_map::{HashMap, RandomState},
+        HashSet,
+    },
+    hash::{BuildHasher, Hash},
+    mem::drop,
+};
+
+use ondrop::OnDrop;
+
+#[derive(Default)]
+pub struct ErasedHashSet<'a, S: 'a + BuildHasher + Clone = RandomState> {
+    storage: HashMap<TypeId, *mut (), S>,
+    droppers: Vec<OnDrop<Box<dyn FnOnce() + 'a>>>,
+}
+
+impl ErasedHashSet<'_, RandomState> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl<'a, S: BuildHasher + Clone> ErasedHashSet<'a, S> {
+    pub fn with_hasher(hasher: S) -> Self {
+        Self {
+            storage: HashMap::with_hasher(hasher),
+            droppers: vec![],
+        }
+    }
+
+    // This is the important part.
+    pub fn insert<T: 'a>(&mut self, value: T) -> bool
+    where
+        T: Hash + Eq + 'static, // <-- Bounds.
+    {
+        let type_id = TypeId::of::<T>(); // <-- `TypeId` depends on implementations of bounds.
+        let storage: *mut () = if let Some(storage) = self.storage.get_mut(&type_id) {
+            *storage
+        } else {
+            let pointer = Box::into_raw(Box::new(HashSet::<T, S>::with_hasher(
+                self.storage.hasher().clone(),
+            )));
+            self.droppers.push(OnDrop::new(Box::new(move || unsafe {
+                // SAFETY: Only called once when the `ErasedHashSet` is dropped.
+                //         The type is still correct since the pointer wasn't `.cast()` yet and
+                //         both `S` and `T` are bounded on `'a`, so they are still alive at this point.
+                drop(Box::from_raw(pointer));
+            })));
+            self.storage
+                .insert(type_id, pointer.cast::<()>())
+                .expect("always succeeds")
+        };
+
+        let storage: &mut HashSet<T, S> = unsafe {
+            // SAFETY: Created with (close to) identical type above.
+            //         Different `Hash` and `Eq` implementations are baked into `T`'s identity because of the bounds, so they result in distinct `TypeId`s above.
+            //         It's allowed to transmute between types that differ in identity only by bound-irrelevant captured implementations.
+            //         The borrowed reference isn't returned.
+            &mut *(storage.cast::<HashSet<T, S>>())
+        };
+        storage.insert(value)
+    }
+
+    // ...
+}
+```
+
+In particular, this code will ignore any scoped implementations on `T` that are not `Hash`, `Eq` or (implicitly) `PartialEq`, while any distinct set of discrete type, `Hash`, `Eq` and `PartialEq` is cleanly separated.
+
+See also [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for how to lint for an implementation of this collection that uses `TypeId::of::<Self>()` as key, which *also* remains sound and deterministic but distinguishes too aggressively by irrelevant scoped implementations in consumer code, leading to unexpected behaviour.
+
+## Layout-compatibility
+[layout-compatibility]: #layout-compatibility
+
+Types whose identities are only distinct because of a difference in captured scoped implementations on their generic type parameters remain layout-compatible as if one was a `#[repr(transparent)]` newtype of the other.
+
+It is sound to transmute an instance between these types **if** no inconsistency is observed on that instance by the bounds of any external-to-the-`transmute` implementation or combination of implementations, including scoped implementations and implementations on discrete variants of the generic. As a consequence, the `Self`-observed `TypeId` of instances of generic types **may** change in some cases.
+
+For example, given a library
+
+```rust
+#[derive(Debug)]
+pub struct Type<T>(T);
+
+impl Type<usize> {
+    pub fn method(&self) {}
+}
+```
+
+then in another crate
+
+- if `Debug` is used on an instance of `Type<T>`, then this instance may *not* be transmuted to one where `T: Debug` uses a different implementation and have `Debug` used on it again then and
+- if `Type<usize>::method()` is used on an instance of `Type<usize>`, then that instance may not be transmuted (and used) to or from any other variant, including ones that only differ by captured implementations, because `method` has observed the *exact* type parameter through its constraints.
+
+(In short: Don't use external-to-your-code implementations with the instance in any combination that couldn't have been done without transmuting the instance, pretending implementations can only observe the type identity according to their bounds.)
+
+See [typeid-of-generic-type-parameters-opaque-types] for details on what this partial transmutation permission is for, and [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for a future incompatibility lint that could be used to warn implementations where this is relevant.
 
 ## No interception/no proxies
 
-That each scoped `impl Trait for Type { /*...*/ }` is in scope for itself makes use of the implementation it shadows in the consumer scope *inexpressible*. There can be no scoped implementation constrained to always shadow another.
+That each scoped `impl Trait for Type { /*...*/ }` is in scope for itself makes the use of the implementation it shadows in the consumer scope *inexpressible*. There can be no scoped implementation constrained to always shadow another.
 
 This is intentional, as it makes the following code trivial to reason about:
 
@@ -399,12 +604,12 @@ This is intentional, as it makes the following code trivial to reason about:
 
 (The main importance here is to not allow non-obvious dependencies of imports. Implementations can still access associated items of a *specific* other implementation by bringing it into a nested scope or binding to its associated items elsewhere. See also [independent-trait-implementations-on-discrete-types-may-still-call-shadowed-implementations].)
 
-## Contextual monomorphisation of blanket implementations and generic functions
-[contextual-monomorphisation-of-blanket-implementations-and-generic-functions]: #contextual-monomorphisation-of-blanket-implementations-and-generic-functions
+## Contextual monomorphisation of generic implementations and generic functions
+[contextual-monomorphisation-of-generic-implementations-and-generic-functions]: #contextual-monomorphisation-of-generic-implementations-and-generic-functions
 
-Traits of generic type parameters (and of their associated types, recursively) are resolved to implementations according to the binding site of the blanket-implemented trait or generic function, which is in the code consuming that implementation.
+Traits of generic type parameters (and of their associated types, recursively) are resolved to implementations according to the binding site of the generically implemented trait or generic function, which is in the code consuming that implementation.
 
-This means blanket implementations are monomorphised in different ways for the same type(s) when there is a difference in relevant scoped implementations for these types.
+This means generic implementations are monomorphised in different ways for the same type(s) when there is a difference in relevant scoped implementations for these types.
 
 ```rust
 struct Type;
@@ -429,7 +634,7 @@ impl<T: Trait1> Trait2 for T {
 }
 
 trait Trait3 {
-  fn trait3(&self);
+    fn trait3(&self);
 }
 impl<T> Trait3 for Type2<T>
 where
@@ -452,23 +657,23 @@ Type2(Type).trait3(); // "global"
     Type2(Type).trait3(); // "scoped1"
 
     {
-      use impl Trait1 for Type {
-          fn trait1(&self) {
-              print!("scoped2");
-          }
-      }
+        use impl Trait1 for Type {
+            fn trait1(&self) {
+                print!("scoped2");
+            }
+        }
 
-      Type2(Type).trait3(); // "scoped2"
+        Type2(Type).trait3(); // "scoped2"
     }
 
     {
-      use impl Trait1 for Type {
-          fn trait1(&self) {
-              print!("scoped3");
-          }
-      }
+        use impl Trait1 for Type {
+            fn trait1(&self) {
+                print!("scoped3");
+            }
+        }
 
-      Type2(Type).trait3(); // "scoped3"
+        Type2(Type).trait3(); // "scoped3"
     }
 }
 ```
@@ -520,7 +725,7 @@ Clearly, `function1` cannot be used here, as its generic bounds would have to bi
 
 But what about `function2`? Here, the bound is implicit but `Deref::deref` can still be accessed. For type compatibility, this would have to be the shadowed global implementation, which is most likely unintended decoherence.
 
-As such, **shadowing a trait implementation also shadows all respective subtrait implementations**. Note that the subtrait *may* still be immediately available (again), if it is blanket-implemented and all bounds can be satisfied in the relevant scope:
+As such, **shadowing a trait implementation also shadows all respective subtrait implementations**. Note that the subtrait *may* still be immediately available (again), if it is implemented with a generic target and all bounds can be satisfied in the relevant scope:
 
 ```rust
 trait Trait1 {
@@ -551,7 +756,7 @@ impl Trait1 for Type {
 }
 ```
 
-If a subtrait implementation is brought into scope, it must be either a blanket implementation, or an implementation on a discrete type making use of the identical supertrait implementations in that scope. (This rule is automatically fulfilled by scoped implementation definitions, so it's only relevant for which scoped implementations can be imported via `use`-declaration.)
+If a subtrait implementation is brought into scope, it must be either an implementation with a generic target, or an implementation on a discrete type making use of the identical supertrait implementations in that scope. (This rule is automatically fulfilled by scoped implementation definitions, so it's only relevant for which scoped implementations can be imported via `use`-declaration.)
 
 ## Independent trait implementations on discrete types may still call shadowed implementations
 [independent-trait-implementations-on-discrete-types-may-still-call-shadowed-implementations]: #independent-trait-implementations-on-discrete-types-may-still-call-shadowed-implementations
@@ -625,8 +830,7 @@ assert_ne!(TypeId::of::<Alias>(), TypeId::of::<Generic<Type>>());
 
 Here, the scoped implementation `use impl Trait for Type {}` **is** used as it is captured into the type identity of `Alias`.
 
-Since `Alias` is exported, the compiler cannot determine within the library alone that the type identity is unobserved.  
-If it can ensure that that is the case, a (different!) warning could in theory still be shown here.
+Since `Alias` is exported, the compiler cannot determine within the library alone that the type identity is unobserved. If it can ensure that that is the case, a (different!) warning could in theory still be shown here.
 
 ### Global trait implementation available
 [global-trait-implementation-available]: #global-trait-implementation-available
@@ -634,6 +838,8 @@ If it can ensure that that is the case, a (different!) warning could in theory s
 Scoped implementations and `use`-declarations of such receive a specific warning if only shadowing a global implementation that would fully cover them. This warning also informs about the origin of the global implementation, with a "defined here" marker if in the same workspace. This warning is not applied to scoped implementations that at least partially (in either sense) shadow another scoped implementation.
 
 (Partial overlap with a shadowed scoped implementation should be enough to suppress this because setting the import up to be a precise subset could get complex fairly quickly. In theory just copying `where`-clauses is enough, but in practice the amount required could overall scale with the square of scoped implementation shadowing depth and some imports may even have to be duplicated.)
+
+It would make sense to let the definitions and also alternatively specific global implementations of traits with high implementation stability requirements like `serde::{Deserialize, Serialize}` deactivate this warning too, so that the latter don't cause it on the respective covered scoped implementations.
 
 ### Self-referential bound of scoped implementation
 
@@ -644,7 +850,7 @@ use impl<T> Foo for T where T: Foo { }
             ---------       ^^^^^^
 ```
 
-A Rust developer may write the above to mean 'this scoped implementation can only be used on types that already implement this trait' or 'this scoped implementation uses functionality of the shadowed implementation'. However, since scoped `impl Trait for Type` uses item scope rules, any shadowed implementation is functionally absent in the entire scope. As such, this implementation, like the same global implementation, cannot apply to any types at all.
+A Rust developer may write the above to mean 'this scoped implementation can only be used on types that already implement this trait' or 'this scoped implementation uses functionality of the shadowed implementation'. However, since scoped `impl Trait for Type` uses item scope rules, any shadowed implementation is functionally absent in the entire scope. As such, this implementation, like the equivalent global implementation, cannot apply to any types at all.
 
 The warning should explain that and why the bound is impossible to satisfy.
 
@@ -680,6 +886,80 @@ pub use impl Trait for Type {}
 ```
 
 should produce two distinct warnings similarly to those for private items in public signatures, as the limited visibilities of `Type` and `Trait` independently prevent the implementation from being imported in modules for which it is declared as visible.
+
+### Scoped implementation is less visible than item/field it is captured in
+[scoped-implementation-is-less-visible-than-itemfield-it-is-captured-in]: #scoped-implementation-is-less-visible-than-itemfield-it-is-captured-in
+
+The code
+
+```rust
+pub struct Type;
+pub struct Generic<U, V>(U, V);
+
+trait Trait {} // <-- Visibility of the trait doesn't matter for *this* warning.
+
+use impl Trait for Type {}
+-----------------------
+
+pub type Alias = Generic<Type, Type>;
+                         ^^^^  ^^^^
+
+pub fn function(value: Generic<Type, Type>) -> Generic<Type, Type> {
+                               ^^^^  ^^^^              ^^^^  ^^^^
+    value
+}
+
+pub struct Struct {
+  private: Generic<Type, Type>, // This is fine.
+  pub public: Generic<Type, Type>,
+                      ^^^^  ^^^^
+}
+```
+
+should produce eight warnings (or four/three warnings with multiple primary spans each, if possible). The warning should explain that the type can't be referred to by fully specified name outside the crate/module and that the implementation may be callable from code outside the crate/module.
+
+(If [explicit-binding] is added to the RFC and used in such a way, then the warning should show up on the `Trait in module` span instead.)
+
+Note that as with other private-in-public warnings, replacing
+
+```rust
+use impl Trait for Type {}
+```
+
+with
+
+```rust
+mod nested {
+    use super::{Trait, Type};
+    pub use impl Trait for Type {}
+}
+use nested::{impl Trait for Type};
+```
+
+in the code sample above should silence the warning.
+
+### Imported implementation is less visible than item/field it is captured in
+[imported-implementation-is-less-visible-than-itemfield-it-is-captured-in]: #imported-implementation-is-less-visible-than-itemfield-it-is-captured-in
+
+This occurs under the same circumstances as above, except that
+
+```rust
+trait Trait {}
+use impl Trait for Type {}
+```
+
+is replaced with
+
+```rust
+use a_crate::{
+    Trait,
+    impl Trait for Type,
+};
+```
+
+(where here the implementation import is subsetting a blanket import, but that technicality isn't relevant. What matters is that the implementation is from another crate).
+
+If the imported implementation is captured in a public item's signature, that can accidentally create a public dependency. As such this should be a warning too (unless something from that crate occurs explicitly in a public signature or item?).
 
 ## Errors
 
@@ -745,6 +1025,51 @@ use nested::{impl Sub for Type};
 Rustc should suggest to import the required scoped implementation, if possible.
 
 See also the warning [private-supertrait-implementation-required-by-public-implementation]. See also [implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types] for a potential way to improve the ergonomics here.
+
+### Scoped implementation of external sealed trait
+[scoped-implementation-of-external-sealed-trait]: #scoped-implementation-of-external-sealed-trait
+
+Given crate `a`:
+
+```rust
+mod private {
+    pub trait Sealing {}
+}
+use private::Sealing;
+
+pub trait Sealed: Sealing {}
+
+pub use impl<T> Sealed for T {} // Ok.
+```
+
+And crate `b`:
+
+```rust
+use a::{
+    Sealed,
+    impl Sealed for usize, // Ok.
+};
+
+use impl Sealed for () {} // Error.
+         ^^^^^^
+```
+
+Crate `b` cannot define scoped implementations of the external sealed trait `Sealed`, but can still import them.
+
+See [no-external-scoped-implementations-of-sealed-traits] for why this is necessary.
+
+## Behaviour change/Warning: `TypeId` of generic discretised using generic type parameters
+[behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters]: #behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters
+
+As a result of the transmutation permission given in [layout-compatibility], which is needed to let the `ErasedHashSet` example in [typeid-of-generic-type-parameters-opaque-types] *remain sound*, monomorphisations of a function that observe distinct `TypeId`s for generics they discretise using type parameters may be called on the same value instance.
+
+Notably, this affects `TypeId::of::<Self>()` in implementations with generic targets, but not in unspecific blanket implementations on the type parameter itself.
+
+This would have to become a future incompatibility lint ahead of time, and should also remain a warning after the feature is implemented since the behaviour of `TypeId::of::<Self>()` in generics is likely to be unexpected.
+
+In most cases, implementations should change this to `TypeId::of::<T>()`, where `T` is the type parameter used for discretisation, since that should show the expected `TypeId` distinction.
+
+Instead of `TypeId::of::<(U, V, W)>()`, `(TypeId::of::<U>(), TypeId::of::<V>(), TypeId::of::<W>())` can usually be used.
 
 ## Resolution on generic type parameters
 [resolution-on-generic-type-parameters]: #resolution-on-generic-type-parameters
@@ -864,108 +1189,7 @@ where
 
 Scoped `impl Trait for Type` has *the same* method resolution priority as an equivalent global implementation would have if it was visible for method-binding in that scope. This means that directly type-associated functions still bind with higher priority than those available through scoped implementations.
 
-## Trait binding site
-[trait-binding-site]: #trait-binding-site
-
-This is analogous to the site of resolution of not fully qualified type paths, and of function items and attached functions at function call sites, which depend on which items are in scope.
-
-Unlike bindings on discretised generic type parameters, which are reused from the original type annotation or inference site, binding of top-level implementations can happen in more places and is transient (unless captured into an inferred generic type parameter).
-
-The exact token/token-span from which to start the lookup does matter here, both for [`Span::def_site()`] and mitigations for [first-party-implementation-assumptions-in-macros].
-
-Whenever possible, the explicitly stated [*Type*] is used, unless it is [*InferredType*]. Otherwise, the most narrow token or span *in that statement* that represents the value whose type is inferred is used.
-
-[`Span::def_site()`]: https://doc.rust-lang.org/stable/proc_macro/struct.Span.html#method.def_site
-[*Type*]: https://doc.rust-lang.org/stable/reference/types.html?highlight=Type#type-expressions
-[*InferredType*]: https://doc.rust-lang.org/stable/reference/types/inferred.html?highlight=InferredType#inferred-type
-
-An almost certainly incomplete list of examples:
-
-(*This section is pretty rough. I think I need more information here to form a clearer picture. See also the relevant remark in [unresolved-questions].*)
-
-### *Type* in *GenericParams* in *Struct*
-
-Implementations for type parameter defaults are captured from the top-level implementations on the defined default:
-
-```rust
-pub struct MyHashSet<T, S: BuildHasher = RandomState> { /*...*/ }
-                                         -----------
-```
-
-This means that the type identity is never split by scoped implementations on the default type parameter, as every such use sees the same set here. To capture different scoped implementations, the type parameter has to be explicitly inferred or stated by the consumer.
-
-### *Type* in *StructField*, *TypeAlias* and in *LetBinding*
-
-```rust
-struct MyStruct {
-    set: MyHashSet<usize, RandomState>,
-                   -----  -----------
-
-    // Binds on `usize` here, but uses trait bindings of/at default definition `RandomState` in `MyHashSet`'s definition.
-    set: MyHashSet<usize>,
-                   -----
-}
-```
-
-```rust
-let set: MyHashSet<usize, RandomState>;
-                   -----  -----------
-
-// Does not bind implementations.
-// The bindings are inferred along with the generic type parameters.
-let inferred: MyHashSet<_, _>;
-
-// Fully written-out types bind/capture regardless of expression.
-let set2: MyHashSet<usize, RandomState> = any_expression;
-                    -----  -----------
-```
-
-### Qualified calls of type-associated functions
-
-```rust
-// Binds at `usize` for the first generic type parameter, but infers the second entirely through `set`.
-// The binds on the first parameter must match exactly.
-MyHashSet::<usize, _>>::insert(&mut set, any_value)
-            -----                   ~~~
-
-// Binds implementations for both type parameters here.
-// The type of `set` must be identical including those bindings!
-MyHashSet::<usize, RandomState>::insert(&mut set, any_value)
-            -----  -----------
-```
-
-### Qualified calls of trait-associated functions
-
-```rust
-// Captures implementations on `usize` here. `set`'s type must match that exactly.
-// The binding of `Debug` on the `MyHashSet` type is transient and *doesn't have* to match!
-<MyHashSet::<usize, _> as Debug>::fmt(&set, &mut formatter)
-             -----                     ~~~
- ---------------------    -----
-
-// Infers all type parameters through `set`.
-// As above, the top-level binding is transient.
-<MyHashSet as Debug>::fmt(&set, &mut formatter)
-                           ~~~
- ---------    -----
-```
-
-### Coercion to trait objects
-
-```rust
-// Binds the trait `Debug` at the expression `1`, as the type is not explicitly stated.
-// Bindings on `i32` here are erased from the type identity by the trait object coercion.
-// However: Any scoped implementations available on the trait object `dyn Debug` are captured into the type identity of `&dyn Debug` here and may distinguish it!
-let d: &dyn Debug = &1;
-                     ^
-        ---------
-
-// Binds the trait `Debug` at the expression `1`, as the type is not explicitly stated.
-// Bindings on `()` here are erased from the type identity by the trait object coercion.
-// However: Any scoped implementations available on the trait object `dyn Debug` are captured into the type identity of `Box<dyn Debug>` here and may distinguish it!
-let b: Box<dyn Debug> = Box::<()>::new(());
-                              ^^
-```
+## Coercion to trait objects
 
 Due to the coercion into a trait object in the following code, the scoped implementation becomes attached to the value through the pointer meta data. This means it can then be called from other scopes:
 
@@ -984,6 +1208,12 @@ fn function() -> &'static dyn Display {
 
 println!("{}", function()); // "scoped"
 ```
+
+This behaves exactly as a global implementation would.
+
+Note that the [`DynMetadata<dyn Display>`]s of the reference returned above and one that uses the global implementation would compare as distinct even if both are "`&()`".
+
+[`DynMetadata<dyn Display>`]: https://doc.rust-lang.org/stable/core/ptr/struct.DynMetadata.html
 
 ## Interaction with return-position `impl Trait`
 
@@ -1130,7 +1360,7 @@ There are a few ways to mitigate this, but they all have significant drawbacks:
 
 - Opt-in scoped-`impl Trait` transparency for macros
 
-  This would make scoped `impl Trait for Type`s much less useful, as they couldn't be used with for example most derive macros by default. It would also be necessary to teach the opt-in along with macros, which may not be realistic considering existing community-made macro primers.
+  This would make scoped `impl Trait for Type`s much less useful, as they couldn't be used with for example some derive macros by default. It would also be necessary to teach the opt-in along with macros, which may not be realistic considering existing community-made macro primers.
 
   Implementation is likely complicated because many procedural macros emit tokens only with `Span::call_site()` hygiene, so information on the distinct binding site origin may not be readily available.
 
@@ -1151,6 +1381,12 @@ There are a few ways to mitigate this, but they all have significant drawbacks:
 - Forbid scoped `impl Trait for Type` if `Trait` and `Type` are from the same crate
 
   This would at best be a partial fix and would block some interesting uses of [using-scoped-implementations-to-implement-external-traits-on-external-types].
+
+## Unexpected behaviour of `TypeId::of::<Self>()` in implementations on generics in the consumer-side presence of scoped implementations and `transmute`
+
+As explained in [layout-compatibility] and [type-identity-of-generic-types], an observed `TypeId` can change for an instance under specific circumstances that are previously-legal `transmute`s in e.g. type-erased value-keyed collection like the `ErasedHashSet` example in the latter section.
+
+This use case appears to be niche enough in Rust to not have an obvious example on crates.io, but see [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for a lint that aims to mitigate issues in this regard and could be used to survey potential issues.
 
 ## More `use`-declaration clutter, potential inconsistencies between files
 
@@ -1197,9 +1433,9 @@ Fortunately, at least checking whether scoped implementations exist at all for a
 
 That implementation binding on generic type parameters is centralised to the type discretisation site(s) may also help a little in this regard.
 
-## Cost of additional blanket implementation instances
+## Cost of additional monomorphised implementation instances
 
-The [contextual-monomorphisation-of-blanket-implementations-and-generic-functions] and the resulting additional instantiations of these implementations could have a detrimental effect on compile times and .text size (depending on optimisations).
+The [contextual-monomorphisation-of-generic-implementations-and-generic-functions] and the resulting additional instantiations of these implementations could have a detrimental effect on compile times and .text size (depending on optimisations).
 
 This isn't unusual for anything involving *GenericParams*, but use of this feature could act as a multiplier to some extent. It's likely a good idea to evaluate relatively fine-grained caching in this regard, if that isn't in place already.
 
@@ -1212,175 +1448,566 @@ There may be tricky to debug issues for their consumers if a `TypeId` doesn't ma
 
 A partial mitigation would be to have rustc include such captures on generic type parameters when printing types, but that wouldn't solve the issue entirely.
 
-Note that with this RFC implemented, `TypeId` would still report the same value iff evaluated on generic type parameters with distinct captured implementations directly, as long as only these top-level implementations differ and no further nested ones.
+Note that with this RFC implemented, `TypeId` would still report the same value iff evaluated on generic type parameters with distinct but bound-irrelevant captured implementations directly, as long as only these top-level implementations differ and no further nested ones.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- As outlined in the [motivation], there is considerable friction in the current form of Rust when combining traits and types from unrelated crates. Implementing newtypes for each combination is cumbersome and adds noise to consuming code, and these newtypes are often not well-reusable and usually don't compose well.
+## Avoid newtypes' pain points
 
-- With scoped `impl Trait for Type` as in this RFC, scoped implementations must be implemented or imported explicitly in the same file as they are bound, which stops this feature from introducing hard-to-follow non-local side-effects. Consumption of discretised generics also does not affect their identity, as the set of available - rather than actually used - scoped implementations on their type parameters is evaluated.
+Alternative keywords: ergonomics and compatibility.
 
-- Usage at the binding site is concise: An existing scoped implementation can always be imported in a single `use`-declaration as long as it is visible. A new scoped implementation can be created directly via `use impl Trait for Type { /*...*/ }`. Nothing else is needed compared to when a global implementation is available.
+### Recursively dependent `#[derive(…)]`
 
-  - This is also true for blanket imports, which remain easy to parse visually due to the surrounding braces:
+Many derives, like `Clone`, `Debug`, partial comparisons, `serde::{Deserialize, Serialize}` and `bevy_reflect::{FromReflect, Reflect}` require the trait to be implemented for each field type. Even with the more common third-party traits like Serde's, there are many crates with useful data structures that do not implement these traits directly.
 
-    ```rust
-    // This does NOT reliably redact information,
-    // as the scoped implementation is NOT bound on non-generic calls!
-    // Please use privacy wrappers like `redact::Secret<T>` instead.
-    use omit_debug::{impl<T> Debug for T};
+As such, glue code is necessary.
 
-    Err(()).unwrap(); // Does not show the usual `()`.
-    ```
+#### Current pattern
 
-    ```rust
-    use debug_by_display::{impl<T: Display> Debug for T};
+Some crates go out of their way to provide a compatibility mechanism for their derives, but this is neither the default nor has it (if available) any sort of consistency between crates, which means finding and interacting with these mechanisms requires studying the crate's documentation in detail.
 
-    print!("{:?}", "Hello!"); // Prints `Hello!` *without* surrounding double-quotes.
-    ```
+For derives that do not provide such a mechanism, often only newtypes like `NewSerdeCompatible` and `NewNeitherCompatible` below can be used. However, these do not automatically forward all traits (and forwarding implementations may be considerably more painful than the `derive`s), so additional glue code between glue crates may be necessary.
 
-    ```rust
-    use std::fmt;
+```rust
+use bevy_reflect::Reflect;
+use serde::{Deserialize, Serialize};
 
-    // `Debug` and `Display` all `Pointer`-likes as addresses.
-    // The `Display` import is different only to show the long form
-    // with `where`. It could be written like the `Debug` import.
-    use cross_formatting::by_pointer::{
-        impl<T: fmt::Pointer> Debug for T,
-        {impl<T> Display for T where T: fmt::Pointer},
-    };
+use bevy_compatible::BevyCompatible;
+use neither_compatible::NeitherCompatible;
+use serde_compatible::SerdeCompatible;
 
-    println!("{}", &()); // For example: 0x7ff75584c360
-    ```
+// I could not actually find much information on how to implement the Bevy-glue.
+// I assume it's possible to provide at least this API by creating a newtype and implementing the traits manually.
+use bevy_compatible_serde_glue::BevyCompatibleDef;
+use neither_compatible_bevy_glue::NewNeitherCompatible; // Assumed to have `From`, `Into` conversions.
+use neither_compatible_serde_glue::NeitherCompatibleDef;
+use serde_compatible_bevy_glue::NewSerdeCompatible; // Assumed to have `From`, `Into` conversions.
 
-  - The newtype pattern requires an additional wrapper type and, usually, `.into()`-conversions or other explicit function calls where the inner type is received or returned. If the newtype (for coherence-proofing) doesn't implement `Deref`, explicit field access is also necessary in some places.
+/// A typical data transfer object as it may appear in a service API.
+#[derive(Deserialize, Serialize, Reflect)]
+#[non_exhaustive] // Just a reminder, since the fields aren't public anyway.
+pub struct DataBundle {
+    // Serde provides a way to use external implementations on fields (but it has to be specified for each field separately).
+    // Bevy does not have such a mechanism so far, so newtypes are required.
+    // The newtypes should be an implementation detail, so the fields are (for consistency all) private.
+    #[serde(with = "NewSerdeCompatibleDef")]
+    serde: NewSerdeCompatible,
+    #[serde(with = "BevyCompatibleDef")]
+    bevy: BevyCompatible,
+    #[serde(with = "NewNeitherCompatibleDef")]
+    neither: NewNeitherCompatible,
+}
 
-- This RFC introduces few new grammar elements and concepts. Rather, it mainly allows existing concepts to be reused elsewhere:
+// Some of the newtypes don't implement `Default` (maybe it was added to the underlying types later and the glue crate doesn't want to bump the dependency),
+// so this has to be implemented semi-manually instead of using the `derive`-macro.
+impl Default for DataBundle {
+    fn default() -> Self {
+        DataBundleParts::default().into()
+    }
+}
 
-  - *UseDeclaration* and *TraitImpl* are changed in a way that's quick to summarise and remains easy to parse. (See [grammar-changes])
+// If the Bevy glue doesn't forward the Serde implementations, this is necessary.
+#[derive(Deserialize, Serialize)]
+#[serde(remote = "NewSerdeCompatible")]
+#[serde(transparent)]
+struct NewSerdeCompatibleDef(SerdeCompatible);
 
-  - Shadowing of scoped implementations exactly matches that of other items.
+// Same as above, but here the implementation is redirected to another glue crate.
+#[derive(Deserialize, Serialize)]
+#[serde(remote = "NewNeitherCompatible")]
+#[serde(transparent)]
+struct NewNeitherCompatibleDef(#[serde(with = "NeitherCompatibleDef")] NeitherCompatible);
 
-  - Coherence rules for scoped implementations defined or imported in the same scope exactly match those for global implementations, minus orphan rules.
+impl DataBundle {
+    // These conversions are methods for discoverability.
+    pub fn from_parts(parts: DataBundleParts) -> Self {
+        parts.into()
+    }
+    pub fn into_parts(self) -> DataBundleParts {
+        self.into()
+    }
 
-    (Notably, this means that two potentially-conflicting blanket implementations still are not allowed. If *really* necessary, precedence can be disambiguated by nesting scopes, but narrowing the implementations or narrowly importing from a wide implementation in an inline submodule should be preferred where at all feasible!)
+    // Necessary to mutate multiple fields at once.
+    pub fn parts_mut(&mut self) -> DataBundlePartsMut<'_> {
+        DataBundlePartsMut {
+            serde: &mut self.serde.0,
+            bevy: &mut self.bevy,
+            neither: &mut self.neither.0,
+        }
+    }
 
-    - This contrasts with Genus's proper-named models, which allow mixed use in the same scope.
+    // Accessors to the actual instances with the public types.
+    pub fn serde(&self) -> &SerdeCompatible {
+        &self.serde.0
+    }
+    pub fn serde_mut(&mut self) -> &mut SerdeCompatible {
+        &mut self.serde.0
+    }
 
-    - This contrasts with 𝒢's overload mixing throughout the scope hierarchy.
+    // This also uses an accessor just for consistency.
+    pub fn bevy(&self) -> &BevyCompatible {
+        &self.bevy
+    }
+    pub fn bevy_mut(&mut self) -> &mut BevyCompatible {
+        &mut self.bevy
+    }
 
-    - If a crate wishes to provide alternative implementations (for example to blanket-provide a scoped `Display` implementation for all types that are `LowerHex` or `UpperHex`), it can still easily export them from distinct modules.
+    // More accessors.
+    pub fn neither(&self) -> &NeitherCompatible {
+        &self.neither.0
+    }
+    pub fn neither_mut(&mut self) -> &mut NeitherCompatible {
+        &mut self.neither.0
+    }
+}
 
-- Scoped `impl Trait for Type`s compose very well:
+// Conversions for convenience
+impl From<DataBundleParts> for DataBundle {
+    fn from(value: DataBundleParts) -> Self {
+        Self {
+            serde: value.serde.into(),
+            bevy: value.bevy.into(),
+            neither: value.neither.into(),
+        }
+    }
+}
+
+impl From<DataBundle> for DataBundleParts {
+    fn from(value: DataBundle) -> Self {
+        Self {
+            serde: value.serde.into(),
+            bevy: value.bevy,
+            neither: value.neither.into(),
+        }
+    }
+}
+
+/// Used to construct and destructure [`DataBundle`].
+#[derive(Default)] // Assume that all the actual field types have useful defaults.
+#[non_exhaustive]
+pub struct DataBundleParts {
+    pub serde: SerdeCompatible,
+    pub bevy: BevyCompatible,
+    pub neither: NeitherCompatible,
+}
+
+/// Return type of [`DataBundle::parts_mut`].
+#[non_exhaustive]
+pub struct DataBundlePartsMut<'a> {
+    pub serde: &'a mut SerdeCompatible,
+    pub bevy: &'a mut BevyCompatible,
+    pub neither: &'a mut NeitherCompatible,
+}
+```
+
+If two traits that require newtype wrappers need to be added for the same type, the process can be even more painful than what's shown above, involving `unsafe` reinterpret casts to borrow a wrapped value correctly as each newtype and forwarding-implementing each trait manually if no transparent derive is available.
+
+#### With scoped `impl Trait for Type`
+
+Scoped `impl Trait for Type` eliminates these issues, in a standardised way that doesn't require any special consideration from the trait or derive crates:
+
+```rust
+use bevy_reflect::Reflect;
+use serde::{Deserialize, Serialize};
+
+use bevy_compatible::BevyCompatible;
+use neither_compatible::NeitherCompatible;
+use serde_compatible::SerdeCompatible;
+
+// I could not actually find much information on how to implement Bevy-glue.
+// It's about the same as manually implementing the traits for newtypes, though.
+// Since many traits are required for `bevy_reflect`'s derives, those glue crates use the prelude pattern and provide one for each target type.
+use bevy_compatible_serde_glue::{
+    impl Deserialize<'_> for BevyCompatible,
+    impl Serialize for BevyCompatible,
+};
+use neither_compatible_bevy_glue::preludes::neither_compatible::*;
+use neither_compatible_serde_glue::{
+    impl Deserialize<'_> for NeitherCompatible,
+    impl Serialize for NeitherCompatible,
+};
+use serde_compatible_bevy_glue::preludes::serde_compatible::*;
+
+/// A typical data transfer object as it may appear in a service API.
+#[derive(Default, Deserialize, Serialize, Reflect)]
+#[non_exhaustive]
+pub struct DataBundle {
+    // Everything just works.
+    pub serde: SerdeCompatible,
+    pub bevy: BevyCompatible,
+    pub neither: NeitherCompatible,
+}
+
+// `Default` was derived normally.
+// No glue for the glue is necessary.
+// No conversions are needed to construct or destructure.
+// `&mut`-splitting is provided seamlessly by Rust.
+// No accessors are needed since the fields are public.
+```
+
+Even in cases where the glue API cannot be removed, it's still possible to switch to this simplified, easier to consume implementation and deprecate the original indirect API.
+
+Note that the imported scoped implementations are *not* visible in the public API here, since they do not appear on generic type parameters in public items. There may still be situations in which defining a type alias is necessary to keep some scoped implementations away from generic type parameters. For a possible future way to eliminate that remaining friction, see [explicit-binding] in the [future-possibilities] section below.
+
+Unlike with external newtypes, there are no potential conflicts beyond overlapping imports and definitions in the same scope. These conflicts can *always* be resolved both without editing code elsewhere and without adding an additional implementation:
+
+- either by narrowing a local blanket implementation,
+- by narrowing a blanket implementation import to a subset of the external implementation,
+- or at worst by moving a generic implementation into a submodule and importing it for discrete types.
+
+### Error handling and conversions
+
+When implementing services, it's a common pattern to combine a framework that dictates function signatures with one or more unrelated middlewares that have their own return and error types. The example below is a very abridged example of this.
+
+Note that in either version, the glue code may be project-specific. Glue code is *very slightly* more concise when implemented with scoped `impl Trait for Type`, as intermediary `struct` definitions and the resulting field access can be avoided.
+
+#### Current pattern
+
+```rust
+// crate `service`
+
+use framework::{Error, Returned};
+use middleware_a::{fallible_a, Error as ErrorA};
+use middleware_b::{fallible_b, Error as ErrorB};
+
+use framework_middleware_a_glue::{IntoReturnedExt as _, NewErrorA};
+use framework_middleware_b_glue::{IntoReturnedExt as _, NewErrorB};
+
+pub fn a() -> Result<Returned, Error> {
+    // A `try` block should work eventually, but it may be not much less verbose.
+    Ok((|| -> Result<_, NewErrorA> {
+        fallible_a()?;
+        Ok(fallible_a()?)
+    })()?
+    .into_returned())
+}
+
+pub fn b() -> Result<Returned, Error> {
+    // The same as above.
+    Ok((|| -> Result<_, NewErrorB> {
+        fallible_b()?;
+        Ok(fallible_b()?)
+    })()?
+    .into_returned())
+}
+
+pub fn mixed(condition: bool) -> Result<Returned, Error> {
+    // Neither 'NewError' type provided by third-party crates can be used directly here.
+    Ok((move || -> Result<_, NewError> {
+        Ok(if condition {
+            fallible_b()?;
+            fallible_a()?.into_returned()
+        } else {
+            fallible_a()?;
+            fallible_b()?.into_returned()
+        })
+    })()?)
+}
+
+// Custom glue to connect all three errors:
+struct NewError(Error);
+impl From<NewError> for Error {
+    fn from(value: NewError) -> Self {
+        value.0
+    }
+}
+impl From<ErrorA> for NewError {
+    fn from(value: ErrorA) -> Self {
+        let intermediate: NewErrorA = value.into();
+        Self(intermediate.into())
+    }
+}
+impl From<ErrorB> for NewError {
+    fn from(value: ErrorB) -> Self {
+        let intermediate: NewErrorB = value.into();
+        Self(intermediate.into())
+    }
+}
+```
+
+```rust
+use service::{a, b, mixed};
+
+fn main() {
+    framework::setup()
+        .add_route("a", a)
+        .add_route("b", b)
+        .add_route("mixed", mixed)
+        .build()
+        .run();
+}
+```
+
+#### With scoped `impl Trait for Type`
+
+```rust
+// crate `service`
+
+// More concise, since middleware errors are used only once in imports.
+use framework::{Error, Returned};
+use middleware_a::fallible_a;
+use middleware_b::fallible_b;
+
+// Note: It is often better to import `impl Into` here over `impl From`,
+//       since middleware types often don't appear in public signatures.
+//
+//       If the target type of the import must appear as type parameter in a public signature,
+//       a module that is wildcard-imported into each function body can be used instead,
+//       which would amount to 6 additional and 2 modified lines here.
+//
+//       This RFC includes a warning for unintentionally exposed scoped implementations.
+use framework_middleware_a_glue::{
+    impl Into<Returned> for middleware_a::Returned,
+    impl Into<Error> for middleware_a::Error,
+};
+use framework_middleware_b_glue::{
+    impl Into<Returned> for middleware_b::Returned,
+    impl Into<Error> for middleware_b::Error,
+};
+
+pub fn a() -> Result<Returned, Error> {
+    // It just works.
+    fallible_a()?;
+    Ok(fallible_a()?.into())
+}
+
+pub fn b() -> Result<Returned, Error> {
+    // Here too.
+    fallible_b()?;
+    Ok(fallible_b()?.into())
+}
+
+pub fn mixed(condition: bool) -> Result<Returned, Error> {
+    // This too just works, as conversions bind separately.
+    Ok(if condition {
+        fallible_b()?;
+        fallible_a()?.into()
+    } else {
+        fallible_a()?;
+        fallible_b()?.into()
+    })
+}
+
+// No custom glue is necessary at all.
+```
+
+```rust
+// Unchanged. No change in the API of `service`, either.
+
+use service::{a, b, mixed};
+
+fn main() {
+    framework::setup()
+        .add_route("a", a)
+        .add_route("b", b)
+        .add_route("mixed", mixed)
+        .build()
+        .run();
+}
+```
+
+Note that to export *discrete* scoped `impl Into` in addition to their scoped `impl From`, the glue crates can use the following pattern, which discretises the global implementation and as such binds each scoped `impl From`:
+
+```rust
+pub use ::{
+    impl Into<framework::Returned> for middleware_a::Returned,
+    impl Into<framework::Error> for middleware_a::Error,
+};
+```
+
+## Preserve coherence
+
+### Cross-crate stability
+
+With this RFC, scopes are a 'mini version' of the environment that global implementations exist in. As this environment is sealed within one scope, and not composed from multiple crates that may update independently, the *orphan rule* is not necessary.
+
+*All other* coherence rules and (for exported implementations) rules for what is and is not a breaking change apply *within each scope exactly like for global implementations*. In particular:
+
+- Blanket implementations like
 
   ```rust
-  use serde::{Deserialize, Serialize};
-  use bevy_reflect::{FromReflect, Reflect};
+  // (Does not compile!)
 
-  use serde_compatible::A;
-  use bevy_compatible::B;
-  use neither_compatible::C;
+  use std::fmt::{Debug, LowerHex, Pointer};
+  mod debug_by_lower_hex;
 
-  // This module actually contains the blanket implementations
-  // `pub use impl<T: Reflect> Serialize for T { /*...*/ }` and
-  // `pub use impl<T: FromReflect> Deserialize<'_> for T { /*...*/ }`,
-  // so the import narrows it down.
-  use serde_by_bevy_reflect::{
-      impl Serialize for B,
-      impl Deserialize<'_> for B,
-  };
+  use debug_by_lower_hex::{impl<T: LowerHex> Debug<T> for T}; // <--
 
-  use bevy_reflect_for_b::{
-      impl FromReflect for B,
-      impl Reflect for B,
-  };
-
-  // You can concisely import all implementations from a module along with other items:
-  mod traits_for_c;
-  use traits_for_c::*;
-  // However, avoid this for external modules except `prelude`.
-  // Expanding the coverage of a scoped implementation visible in a `prelude` onto a previously existing type should always be considered a breaking change, so please be careful with blanket implementations there!
-
-  #[derive(Debug, Clone, Reflect, Deserialize, Serialize)]
-  pub Type {
-      a: A,
-      b: B,
-      c: C,
+  use impl<T: Pointer> Debug<T> for T { // <--
+    // ...
   }
   ```
 
-  - Unlike with external newtypes, there are no potential conflicts beyond overlapping imports and definitions in the same scope.  
-    These conflicts can *always* be resolved both without editing code elsewhere and without adding an additional implementation (either by narrowing local blanket implementations, possibly moving it into a submodule and importing for discrete types, or by narrowing a blanket implementation import to a subset of the external implementation).
+  still conflict regardless of actual implementations of `LowerHex` and `Pointer` because they may overlap later and
 
-- Since the trait implementation binding isn't stated explicitly at the binding site, this feature integrates well with implicit uses of traits, like in `?`-chains.
+- because scoped implementation are *explicitly subset* where they are imported, *it is not a breaking change to widen an exported scoped implementation*.
 
-  This would make it easier for middleware and application frameworks to slot into each other concisely, as glue crates could provide seamless conversions. The configuration of this kind of glue would be easily reusable:
+  (This is part of the reason why scoped `impl Trait for Type`s are anonymous; names would make these imports more verbose rather than shorter, since the subsetting still needs to happen in every case.)
 
-  ```rust
-  // glue.rs
-  use database_middleware::ConnectionError;
-  use authentication_middleware::ActAsError;
-  use storage_middleware::StoreError;
-  use application_framework::IntentError;
+### Logical consistency
 
-  pub use database_application_glue::{impl From<ConnectionError> for IntentError};
-  pub use authentication_application_glue::{impl From<ActAsError> for IntentError};
+Binding external top-level implementations to types is equivalent to using their public API in different ways, so no instance-associated consistency is expected here. Rather, values that are used in the same scope behave consistently with regard to that scope's visible implementations.
 
-  pub use impl From<StoreError> for IntentError {
-      // ...
-  }
-  ```
+Generics are trickier, as their instances often do expect trait implementations on generic type parameters that are consistent between uses but not necessarily declared as bounded on the struct definition itself.
 
-  ```rust
-  use application_framework::IntentError;
-  use crate::glue::*;
+This problem is solved by making the `impl`s available to each type parameter part of the the type identity of the discretised host generic, including a difference in `TypeId` as with existing monomorphisation. That said, implementations, especially generic functions where the distinction is not statically caught by a host instance's consistency, are not expected to care about implementations unrelated to their bounds. It is for this reason that the `TypeId` of generic type parameters disregards irrelevant implementations somewhat.
 
-  async fn submit_data(user: User, data: Data) -> Result<DataId, IntentError> {
-      Ok(SERVER_CONNECTIONS.lock_one()?.act_as(user)?.store_data(data)?)
-  }
-  ```
+(See [generic-type-parameters-capture-scoped-implementations], [type-identity-of-generic-types] and [typeid-of-generic-type-parameters-opaque-types] in the [reference-level-explanation] above for more detailed information.)
 
-- Public scoped implementations in other modules/crates are discoverable.
+### Logical stability
 
-  - Unlike newtypes, rustc and rust-analyzer can index these and suggest fitting (non-blanket) `use`-declarations for a trait-type-pair, just as they suggest trait imports.
+- Non-breaking changes to external crates cannot change the meaning of the program.
+- Breaking changes should result in compile-time errors rather than a behaviour change.
 
-    - For scoped implementations in the current crate, it may be better to suggest a full blanket import of the implementation where applicable (e.g. `use crate::some_module::{impl<T: OtherTrait> Trait for T};`, where that coverage is copied *exactly* from the `use impl<T: OtherTrait> ...` item). That also nicely teaches that that's possible.
+This is another consequence of subsetting rather than named-model imports, as narrowing a scoped implementation can only make the `use`-declaration fail to compile, rather than changing which implementations are shadowed.
 
-    - Generic type parameters that are *not* the target should be suggested by default too, e.g. `use other_crate::{impl<T> Trait for Container<T>};` should be suggested instead of `use other_crate::{impl Trait for Container<Item>};`, even if the external implementation is the broader `pub use impl<T> Trait for T { /*...*/ }`. A narrower import can still be suggested if the broad import would conflict.
+Similarly, types of generics with different captured implementations are strictly distinct from each other, so that assigning them inconsistently does not compile. This is weighed somewhat against ease of refactoring, so in cases where a type parameter is inferred and the host is used in isolation, which are assumed to not care about implementation details, the code will continue to align with the definition instead of breaking.
 
-  - rust-analyzer can suggest and create a new `use impl Trait for Type { /*...*/ }` item where no fitting implementation is visible. This is likely to be seen by someone about to use the newtype pattern, which makes the feature itself more discoverable too.
+## Encourage readable code
 
-    However, for example `Debug`-implementations are often feature-gated, so it would be good if rust-analyzer had a way to suggest activating the feature more prominently than suggesting a local implementation.
+This RFC aims to further decreases the mental workload required for code review, by standardising glue code APIs to some degree and by clarifying their use in other modules.
 
-- Scoped `impl Trait for Type`s lead to better maintenance lints:
+It also aims to create an import grammar that can be understood more intuitively than external newtypes when first encountering it, which should improve the accessibility of Rust code somewhat.
 
-  - If a covering global implementation later becomes available through a dependency, a warning can be shown on the local trait implementation for review. (See [global-trait-implementation-available])
+### Clear imports
 
-    It would make sense to let the definitions and also alternatively specific global implementations of traits like `serde::{Deserialize, Serialize}` deactivate this warning too, so that the latter don't cause it on the respective covered scoped implementations.
+As scoped implementations bind implicitly like global ones, two aspects must be immediately clear at a glace:
 
-- Like abandoning orphan rules, scoped `impl Trait for Type` allows third-party crates to provide compatibility implementations for arbitrary combinations of other crates.
+- *Which trait* is implemented?
+- *Which type* is targeted?
 
-  Unlike abandoning orphan rules, using one of these implementations is an explicit consumer-choice (or directly inferred from one) and overlapping scoped implementations can exist without issue in the dependency graph or even in the same crate in distinct scopes, even if they overlap for an actually-used type for which that trait is actually bound.
+Restating this information in the `use`-declaration means that it is available without leaving the current file, in plaintext without any tooling assists. This is another improvement compared to newtypes or external definitions, where the relationship may not be immediately clear depending on their names.
 
-- Like with newtype wrappers, use of the custom implementation is explicit, unambiguous, and robust/stable against all later-added or expanded trait implementations elsewhere, whether they are scoped or global.
+Spelling scoped implementation imports out with keywords rather than just symbols makes their purpose easy to guess for someone unfamiliar with the scoped `impl Trait for Type` feature, possibly even for most English-speaking developers unfamiliar with Rust.
 
-  - This sets the feature apart from weakening coherence rules, which could introduce additional conflicts through feature additions.
+This is also true for blanket imports with `where`, which remain easy to parse visually due to the surrounding braces:
 
-  - Scoped implementations are actually *more* robust than newtypes:
+```rust
+use std::fmt::{Debug, Display, Pointer};
 
-    A newtype that implements multiple traits could later gain a global blanket implementation of one of its traits for types that implement another of its trait, causing a conflict. In the presence of a scoped `impl Trait for Type`, the new blanket implementation would be unambiguously shadowed for existing code.
+// `Debug` and `Display` all `Pointer`-likes as addresses.
+// The `Display` import is different only to show the long form
+// with `where`. It could be written like the `Debug` import.
+use cross_formatting::by_pointer::{
+    impl<T: Pointer> Debug for T,
+    {impl<T> Display for T where T: Pointer},
+};
 
-    (Side-note: This also means it's not a great idea to put `Deref` on a newtype, but it's tempting to do so to avoid explicit field access everywhere. That seems like a bit of a footgun in the status quo.)
+println!("{:?}", &()); // For example: 0x7ff75584c360
+println!("{}", &()); // For example: 0x7ff75584c360
+```
 
-- Additionally splitting type identity (including `TypeId`) only by bindings on generic type parameters already satisfies consistency requirements for each of instantiated, static and dynamically managed collection use cases.
+### Familiar grammar
 
-  - Not splitting type identity by top-level bindings avoids a large amount of unnecessary friction when passing values between modules. Types can rely on consistent implementations of traits on their generic type parameters, but they *already* cannot rely on outside use of their API aside from `unsafe` features.
+The grammar for scoped implementations differs from that for global implementations by only a prefixed `use` and an optional visibility. As such, it should be easy to parse for developers not yet familiar with scoped implementations specifically.
+
+The clear prefix (starting with at least two keywords instead of one) should still be enough to distinguish scoped implementations at a glance from global ones.
+
+The header (the part before the `{}` block) of global implementations is reused unchanged for scoped implementation imports, including all bounds specifications, so there is very little grammar to remember additionally in order to `use` scoped `impl Trait for Type`s.
+
+In each case, the meaning of identical grammar elements lines up exactly - only their context and perspective vary due to immediately surrounding tokens.
+
+(See [grammar-changes] for details.)
+
+### Stop tokens for humans
+
+When looking for the scoped implementation affecting a certain type, strict shadowing ensures that it is always the closest matching one that is effective.
+
+As such, readers can stop scanning once they encounter a match, instead of checking the entire file's length for another implementation that may be present in the outermost scope.
+
+Outside of implementations captured *inside* generics, scoped implementations cannot influence the behaviour of another file without being mentioned explicitly.
+
+## Unblock ecosystem evolution
+[unblock-ecosystem-evolution]: #unblock-ecosystem-evolution
+
+As any number of scoped glue implementations can be applied directly to application code without additional compatibility shims, it becomes far easier to upgrade individual dependencies to their next major version. Compatibility with multiple versions of crates like Serde and `bevy_reflect` can be provided in parallel through officially supported glue crates.
+
+Additionally, scoped implementations are actually *more* robust than newtypes regarding certain breaking changes:
+
+A newtype that implements multiple traits could eventually gain a global blanket implementation of one of its traits for types that implement another of its traits, causing a conflict during the upgrade.
+
+In the presence of an overlapping scoped `impl Trait for Type`, the new blanket implementation is just unambiguously shadowed where it would conflict, which means no change is necessary to preserve the code's behaviour. A [global-trait-implementation-available] warning is still shown where applicable to alert maintainers of new options they have.
+
+(See also [glue-crate-suggestions] for possible future tooling related to this pattern.)
+
+### Side-effect: Parallelise build plans (somewhat) more
+
+Serde often takes a long time to build even without its macros. If another complex crate depends on it just to support its traits, this can significantly stretch the overall build time.
+
+If glue code for 'overlay' features like Serde traits is provided in a separate crate, that incidentally helps to reduce that effect somewhat:
+
+Since the glue forms a second dependency chain that normally only rejoins in application code, the often heavier core functionality of libraries can build in parallel to Serde and/or earlier glue. Since the glue chain is likely to be less code, it matters less for overall build time whether it has to wait for one or two large crates first.
+
+## Provide opportunities for rich tooling
+
+### Discovery of implementations
+
+As scoped implementations clearly declare the link between the trait and type(s) they connect, tools like rust-analyzer are able to index them and suggest imports where needed, just like for global traits.
+
+(At least when importing from another crate, the suggested import should be for a specific type or generic, even if the export in question is a blanket implementation. Other generics of the export can usually be preserved, though.)
+
+### Discovery of the feature itself
+
+In some cases (where a trait implementations cannot be found at all), tools can suggest creating a scoped implementation, unless adding it in that place would capture it in a type parameter of an item visible outside the current crate.
+
+That said, it would be great if rust-analyzer could detect and suggest/enable feature-gated global implementations to some extent, with higher priority than creating a new scoped implementation.
+
+### Rich and familiar warnings and error messages
+
+Since scoped implementations work much like global ones, many of the existing errors and warnings can be reused with at most small changes. This means that, as developers become more familiar with either category of trait-related issues, they learn how to fix them for global and scoped implementations at the same time.
+
+The implementation of the errors and warnings in the compiler can also benefit from the existing work done for global implementations, or in some cases outright apply the same warning to both scoped and global implementations.
+
+Since available-but-not-imported scoped implementations are easily discoverable by the compiler, they can be used to improve existing errors like *error[E0277]: the trait bound `[…]` is not satisfied* and *error[E0599]: no method named `[…]` found for struct `[…]` in the current scope* with quick-fix suggestions in at least some cases.
+
+### Maintenance warnings for ecosystem evolution
+
+Scoped `impl Trait for Type`s lead to better maintenance lints:
+
+If a covering global implementation later becomes available through a dependency, a warning can be shown on the local trait implementation for review. (See [global-trait-implementation-available].)
+
+In the long run, this can lead to less near-duplicated functionality in the dependency graph, which can lead to smaller executable sizes.
+
+### Automatic documentation
+
+Scoped implementations can be documented and appear as separate item category in rustdoc-generated pages.
+
+Rustdoc should be able to detect and annotate captured implementations in public signatures automatically. This, in addition to warnings, should be another tool to help avoid accidental exposure of scoped implementations.
+
+Implementation origin and documentation could be surfaced by rust-analyzer in relevant places.
+
+## Alternatives
+
+### Named implementations
+
+Named implementations/models could be used to more-easily use potentially conflicting implementations in the same scope, but in exchange they would have to always be bound explicitly, which would likely hinder use outside of `derive`s and generics to an inconvenient level.
+
+Additionally, the use of named implementations is not as obvious as stating the origin-trait-type triple in close proximity.
+
+Scoped `impl Trait for Type` would not require proper-named models for later [explicit-binding], as the module already uniquely identifies an implementation for each type-trait combination.
+
+(See also [prior-art]: [lightweight-flexible-object-oriented-generics].)
+
+### Weakening coherence rules
+
+There is likely still some leeway here before the Rust ecosystem becomes brittle, but at least the orphan rule specifically is essential for ensuring that global trait implementations do not lead to hard ecosystem splits due to strictly incompatible framework crates.
+
+If *other* coherence rules are relaxed, scoped `impl Trait for Type` also benefits immediately since it is subject to all of them.
+
+### Crate-private implementations as distinct feature
+
+There is a previous [RFC: Hidden trait implementations] from 2018-2021 where the result was general acceptance, but postponement for logistical reasons.
+
+Scoped `impl Trait for Type` together with its warnings [scoped-implementation-is-less-visible-than-itemfield-it-is-captured-in] and [imported-implementation-is-less-visible-than-itemfield-it-is-captured-in] can mostly cover this use-case, though with slightly more boilerplate (`use`-declarations) and not as-strict a limitation.
+
+[RFC: Hidden trait implementations]: https://github.com/rust-lang/rfcs/pull/2529
 
 # Prior art
 [prior-art]: #prior-art
 
 ## Lightweight, Flexible Object-Oriented Generics
+[lightweight-flexible-object-oriented-generics]: #lightweight-flexible-object-oriented-generics
 
 Yizhou Zhang, Matthew Loring, Guido Salvaneschi, Barbara Liskov and Andrew C. Myers, May 2015
 
@@ -1389,18 +2016,18 @@ Yizhou Zhang, Matthew Loring, Guido Salvaneschi, Barbara Liskov and Andrew C. My
 There are some parallels between Genus's models and the scoped `impl Trait for Type`s proposed in this RFC, but for the most part they are quite distinct due to Rust's existing features:
 
 | Genus | scoped `impl Trait for Type` | reasoning |
-|---|---|---| 
+|---|---|---|
 | Proper-named models | Anonymous scoped implementations | Use of existing coherence constraints for validation. Forced subsetting in `use`-declarations improves stability. The `impl Trait for Type` syntax stands out in `use`-declarations and is intuitively readable. |
-| Explicit bindings of non-default models | Only implicit bindings | Focus on simplicity. Mixed bindings for definitions with the same scope/type/trait triple are rare and can be emulated with newtypes where needed. More natural use with specialisation. |
+| Explicit bindings of non-default models | Only implicit bindings | Focus on simplicity. Mixed bindings for definitions with the same scope/type/trait triple are rare and can be emulated with newtypes where needed. More natural use with future specialisation. |
 | Comparing containers inherently constrain type parameters in their type definition. | Available scoped implementations for discretised type parameters become part of the type identity. | <p>This is a tradeoff towards integration with Rust's ecosystem, as generics are generally not inherently bounded on collection types in Rust.</p><p>There is likely some friction here with APIs that make use of runtime type identity. See [split-type-identity-may-be-unexpected].</p> |
 
 Some features are largely equivalent:
 
 | Genus | Rust | notes / scoped `impl Trait for Type` |
-|---|---|---| 
-| Implicit default models | Explicit global trait implementations | Implicit implementation of unknown external interfaces is unnecessary if third party crates' are as conveniently usable in scope as if global, as with scoped `impl Trait for Type`. |
-| Runtime model information / Wildcard models | Trait objects | Scoped implementations can be captured in trait objects.<br>This does not allow for invisible runtime specialisation in all cases. |
-| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available scoped implementations on discretised type parameters are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of blanket implementations in Rust can simply be monomorphised accordingly, and existing reflexive conversions and comparisons can bind between similar type parameters.</p> |
+|---|---|---|
+| Implicitly created default models | Explicit global trait implementations | Duck-typed implementation of unknown external traits is unnecessary since third party crates' implementations are as conveniently usable in scope as if global. |
+| Runtime model information / Wildcard models | Trait objects | Scoped implementations can be captured in trait objects, and the `TypeId` of generic type parameters can be examined. This does not allow for invisible runtime specialisation in all cases. |
+| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available scoped implementations on discretised type parameters are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive conversions and comparisons can bind between similar type parameters.</p> |
 
 ## A Language for Generic Programming in the Large
 
@@ -1413,7 +2040,7 @@ Jeremy G. Siek, Andrew Lumsdaine, 2007
 A few notable similarities, in the paper's words:
 
 - equivalent retroactive modeling (where existing Rust's is limited by orphan rules),
-- (retained) separate compilation (though *some* information can flow between items in this RFC, but only where such information flows exist in Rust already),
+- (retained) separate compilation (though *some* information can flow between items in this RFC, but only where such information flows already exist in Rust currently),
 - lexically scoped models,
 - seemingly the same binding rules on generic type parameters within constrained models/generic implementations,
 
@@ -1421,7 +2048,7 @@ and key differences:
 
 | 𝒢 | Rust / scoped `impl Trait for Type` | notes |
 |---|---|---|
-| Only discrete model imports | Includes blanket imports and re-exports | This is pointed out as '[left] for future work' in the paper. Here, it follows directly from the syntax combination of Rust's `use` and `impl Trait for Type` items. |
+| Only discrete model imports | Includes generic imports and re-exports | This is pointed out as '[left] for future work' in the paper. Here, it follows directly from the syntax combination of Rust's `use` and `impl Trait for Type` items. |
 | - | (Rust) Global implementations | The automatic availability of global implementations between separately imported traits and types offers more convenience especially when working with common traits, like those backing operators in Rust. |
 | Model overloading, mixed into nested scopes | Strict shadowing | Strict shadowing is easier to reason about for developers (especially when writing macros!), as the search stops at the nearest matching implementation.<br>See Rust's trait method resolution behaviour and [interaction-with-specialisation] for how this is still practically compatible with a form of overload resolution.<br>See [scoped-fallback-implementations] for a possible future way to better enable adaptive behaviour in macro output. |
 | - | (Rust) Trait objects | 𝒢 does not appear to support runtime polymorphism beyond function pointers. Scoped `impl Trait for Type` is seamlessly compatible with `dyn Trait` coercions (iff `Trait` is object-safe). |
@@ -1437,10 +2064,6 @@ and key differences:
   This doesn't matter for `Span::call_site()` vs. `Span::mixed_site()` since scoped implementations would resolve transparently through both, but it does matter for `Span::def_site()` which should exclude them.
 
   It very much does matter if one of the opt-in mitigations for [first-party-implementation-assumptions-in-macros] is implemented.
-
-  The [trait-binding-site] section above has a range of examples, but these likely don't cover everything.
-
-- I used some example crates above that don't exist. If that makes it into the documentation, I think those should be created with the described features.
 
 - Should outer generic type parameters be visible on/in scoped `impl Trait for Type`, including `use`-declarations?
 
@@ -1488,12 +2111,6 @@ and key differences:
 
   See [explicit-binding] in *Future possibilities* below for one possibility.
 
-- How to bring a global implementation into a scope as if scoped?
-
-  This may be necessary to fix some [incompatible-or-missing-supertrait-implementation] errors without larger code reorganisation, and would also give macro authors a better way to force use of the global implementation.
-
-  The syntax should translate well to [explicit-binding] and also support re-exporting the implementation.
-
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -1527,6 +2144,9 @@ If the trait implementation is later made available plainly (that is: without `u
 
 (However, I assume binding to implementations not-from dependencies or the same crate in this way has a lot of implications for code generation.)
 
+There is previous discussion regarding a similar suggestion in a slightly different context: [[Pre-RFC] Forward impls](https://internals.rust-lang.org/t/pre-rfc-forward-impls/4628)  
+Perhaps the downsides here could be mitigated by allowing `#[unstable_use_as_global]` very strictly only in application crates compiled with the `cargo --locked` flag.
+
 ## Scoped `impl Trait for Type` of auto traits, `Drop` and/or `Copy` with orphan rules
 
 The crate in which a type is defined could in theory safely provide scoped implementations for it also for these traits.
@@ -1551,7 +2171,7 @@ This could be considered as more-robust alternative to non-object-safe extension
 
 A good example of this use case could be the [tap] crate, which provides generic extension methods applicable to *all* types, but where its use is *theoretically* vulnerable to instability regarding the addition of type-associated methods of the same name(s).
 
-If instead of (or in addition to!) ...:
+If instead of (or in addition to!) …:
 
 ```rust
 // pipe.rs
@@ -1572,7 +2192,7 @@ pub trait Pipe {
 impl<T> Pipe for T where T: ?Sized {}
 ```
 
-...the extension could be defined as ...:
+…the extension could be defined as …:
 
 ```rust
 pub use impl<T> T where T: ?Sized {
@@ -1589,7 +2209,7 @@ pub use impl<T> T where T: ?Sized {
 }
 ```
 
-...then:
+…then:
 
 - The consumer crate could choose which types to import the extension for, weighing
 
@@ -1818,8 +2438,13 @@ while let Some(min) in min_heap.pop() {
 dbg!(<u32 as Ord>::cmp(&1, &2)); // […] = Less
 
 // Explicit binding. Requirements are like for a discrete import.
-// (How to specify a scoped implementation with supertraits?)
 dbg!(<u32 as PartialOrd in reverse>::cmp(&1, &2)); // […] = Greater
+
+// The previous example is syntactic sugar for general top-level binding:
+dbg!(<(u32: PartialOrd in reverse) as PartialOrd>::cmp(&1, &2)); // […] = Greater
+
+// The forms can be mixed to bind supertraits:
+dbg!(<(u32: PartialOrd in _) as Ord in reverse>::cmp(&1, &2)); // […] = Greater
 
 {
     let mut a = max_heap;
@@ -1830,13 +2455,36 @@ dbg!(<u32 as PartialOrd in reverse>::cmp(&1, &2)); // […] = Greater
 }
 ```
 
+```rust
+mod custom_defaults {
+    use impl Default for &'static str {
+        // ...
+    }
+}
+
+#[derive(Default)]
+pub struct Struct<'a> {
+    pub a: (&'a str: Default in custom_defaults),
+
+    // The custom `Default` is not captured here,
+    // since it's not actually in scope.
+    pub b: Vec<&'a str>,
+}
+```
+
 This is of course syntax bikeshedding.
+
+Specifying implementations on fields manually is a way to provide them only to `derive` and other attribute macros, as these top-level implementations do *not* bind to the type and as such are not used by code that doesn't restate the type explicitly. (The built-in macros should be defined as doing so from the get-go. Unfortunately, for other macros this is likely an optional implementation detail.)
+
+Since the specified top-level implementation doesn't bind persistently inside `Struct`, the exported signature is just `struct Struct<'a> {pub a: &'a str, pub b: Vec<&'a str>}`.
 
 Binding only `PartialEq` would still shadow the discrete global `Ord` implementation, so binding both is required.
 
 As the scoped implementation of `Ord` in `reverse` is on a discrete type, it requires the specific supertrait implementation that is in scope for its definition. This should make it possible to infer the module here. (See also [implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types] below.)
 
-For stability reasons (against relaxation of bounds) and because they matter for type identity, explicit bindings should be allowed where no matching bound is present, but should produce an "unused" warning iff neither published nor used in the same crate (including for type identity distinction).
+Top-level bindings require parentheses. To explicitly bind a global implementation, `::` can be used in place of the module path.
+
+For stability reasons (against relaxation of bounds) and because they matter for type identity, explicit bindings should be allowed where no matching bound is present, but should produce an 'unused' warning iff neither published nor used in the same crate (including for type identity distinction).
 
 ## Implicit import of supertrait implementations of scoped implementations defined on discrete types
 [implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types]: #implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types
@@ -1871,3 +2519,81 @@ dbg!(<u32 as Ord in reverse>::cmp(&1, &2)); // […] = Greater
 The downside is that `use`-declarations would become less obvious. Implied supertrait implementation imports could be enabled only for [explicit-binding] to avoid this.
 
 If this is added later than scoped `impl Trait for Type`, then private scoped implementations **must not** be implicitly exported through this mechanism. (It's likely a good idea to not allow that anyway, as it would be surprising.) Making previously crate-private implementations available that way could lead to unsoundness.
+
+## Conversions where a generic only cares about specific bounds' consistency
+
+With specialisation and more expressive bounds, an identity conversion like the following could be implemented:
+
+```rust
+// In the standard library.
+
+use std::mem;
+
+impl<T, U, S: BuildHasher> From<HashSet<T, S>> for HashSet<U, S>
+where
+    T: ?Hash + ?Eq, // Observe implementations without requiring them.
+    U: ?Hash + ?Eq,
+    T == U, // Comparison in terms of innate type identity and observed implementations.
+{
+    fn from(value: HashSet<T, S>) -> Self {
+        unsafe {
+            // SAFETY: This type requires only the `Hash` and `Eq` implementations to
+            //         be consistent for correct function. All other implementations on
+            //         generic type parameters may be exchanged freely.
+            //         For the nested types this is an identity-transform, as guaranteed
+            //         by `T == U` and the shared `S` which means the container is also
+            //         guaranteed to be layout compatible.
+            mem::transmute(value)
+        }
+    }
+}
+```
+
+## Scoped bounds as contextual alternative to sealed traits
+
+This is probably pretty strange, and may not be useful at all, but it likely doesn't hurt to mention this.
+
+Consider [explicit-binding] in bounds like here:
+
+```rust
+use another_crate::{Trait, Type1, Type2};
+
+pub fn function<T: Trait in self>() {}
+
+pub use impl Trait for Type1 {}
+pub use impl Trait for Type2 {}
+```
+
+With this construct, `function` could privately rely on implementation details of `Trait` on `Type1` and `Type2` without defining a new sealed wrapper trait.
+
+If the caller is allowed to use this function without restating the binding, then removing the scope would be a breaking change (as it is already with bindings captured on type parameters in public signatures, so that would be consistent for this syntactical shape).
+
+## Glue crate suggestions
+[glue-crate-suggestions]: #glue-crate-suggestions
+
+If crates move some of their overlay features into glue crates, as explained in [unblock-ecosystem-evolution], it would be nice if they could suggest them if both they and e.g. Serde were `cargo add`ed to the project dependencies.
+
+An example of what this could look like:
+
+```toml
+[package]
+name = "my-crate"
+version = "0.1.2"
+edition = "2021"
+
+[dependencies]
+# none
+
+[suggest-with.serde."1"]
+my-crate_serde_glue = "0.1.0"
+
+[suggest-with.bevy_reflect."0.11"]
+my-crate_bevy_reflect_glue = "0.1.2"
+
+[suggest-with.bevy_reflect."0.12"]
+my-crate_bevy_reflect_glue = "0.2.1"
+```
+
+(This sketch doesn't take additional registries into account.)
+
+Ideally, crates.io should only accept existing crates here (but with non-existing version numbers) and Cargo should by default validate compatibility where possible during `cargo publish`.
