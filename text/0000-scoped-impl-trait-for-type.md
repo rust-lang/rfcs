@@ -1520,7 +1520,7 @@ struct NewSerdeCompatibleDef(SerdeCompatible);
 struct NewNeitherCompatibleDef(#[serde(with = "NeitherCompatibleDef")] NeitherCompatible);
 
 impl DataBundle {
-    // These conversions are methods for discoverability.
+    // These conversions are associated functions for discoverability.
     pub fn from_parts(parts: DataBundleParts) -> Self {
         parts.into()
     }
