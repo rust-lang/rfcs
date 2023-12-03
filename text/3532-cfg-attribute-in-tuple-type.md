@@ -112,7 +112,7 @@ type ShipArchetype = EcsArchetype<(
 )>;
 ```
 
-Additionally, we need some components to handle serializing the network state, performing dead reckoning, and sending that information to the client from the server. So we will add a `StateStorageComponent` and a `DeltaCompressionComponent`, and restrict those to the server, since the client does not perform these calculations and we want to avoid giving clients this information to help defeat, or at least delay the arms race against, cheaters.
+Additionally, we need some components to handle serializing the network state, performing dead reckoning, and sending that information to the client from the server. So we will add a `StateStorageComponent` and a `DeltaCompressionComponent`, and restrict those to the server, since the client does not perform these calculations and we want to avoid giving clients this information to help confound, or at least delay, cheaters.
 
 ```rust
 type ShipArchetype = EcsArchetype<(
