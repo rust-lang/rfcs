@@ -1971,9 +1971,9 @@ Circles denote *implementation environment*s:
 
 | | |
 |-|-|
-| `◯` | indistinct from global |
-| `ⓐ`, `ⓑ`, `ⓒ`, `ⓓ` | respectively as in module `a`, `b`, `c`, `d` |
-| `⊙` | caller-side |
+| ◯ | indistinct from global |
+| ⓐ, ⓑ, ⓒ, ⓓ | respectively as in module `a`, `b`, `c`, `d` |
+| ⊙ | caller-side |
 
 The calls infer discrete `HashSet`s with different `Hash` implementations as follows:
 
