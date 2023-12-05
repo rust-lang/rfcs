@@ -1967,7 +1967,7 @@ pub mod d {
 
 Note that the lines annotated with `// ⚠` produce a warning due to the lower visibility of the scoped implementation in `b`.
 
-Circles denote *implementation environment*s:
+Circles denote *implementation environments*:
 
 | | |
 |-|-|
@@ -2154,7 +2154,7 @@ The combination ∘ is not directly expressible in `TypeId::of::<>` calls (as ev
     use d::{impl Hash for A};
 
     fn observe<T: Hash + 'static>() {
-        TypeId::of::<T>; // '`A` ∘ `Hash in d`'
+        TypeId::of::<T>(); // '`A` ∘ `Hash in d`'
     }
 
     observe::<A>();
