@@ -6,16 +6,25 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes adding scoped `impl Trait for Type` items into the core language, as coherent but orphan-rule-free alternative to implementing traits globally. It also proposes extending the syntax of `use`-declarations to allow importing these scoped implementations into other scopes (including other crates), and to differentiate type identity of generics by which scoped trait implementations are available to each discretised generic type parameter.
+This proposal adds scoped `impl Trait for Type` items into the core language, as coherent but orphan-rule-free alternative to implementing traits globally. It also extends the syntax of `use`-declarations to allow importing these scoped implementations into other scopes (including other crates), and to differentiate type identity of generics by which scoped trait implementations are available to each discretised generic type parameter.
 
-(This document uses "scoped implementation" and "scoped `impl Trait for Type`" interchangeably. As such, the former should always be interpreted to mean the latter below.)
+This (along with some details specified below) enables any crate to
+
+- locally, in item scopes, implement nearly any trait for any expressible type,
+- publish these trivially composable implementations to other crates,
+- import and use such implementations safely and seamlessly and
+- completely ignore this feature when it's not needed\*.
+
+\* aside from one hopefully very obscure `TypeId` edge case that's easy to accurately lint for.
+
+This document uses "scoped implementation" and "scoped `impl Trait for Type`" interchangeably. As such, the former should always be interpreted to mean the latter below.
 
 # Motivation
 [motivation]: #motivation
 
 While orphan rules regarding trait implementations are necessary to allow crates to add features freely without fear of breaking dependent crates, they limit the composability of third party types and traits, especially in the context of derive macros.
 
-For example, while many crates support `serde::{Deserialize, Serialize}` directly, implementations of the similarly-derived `bevy_reflect::{FromReflect, Reflect}` traits are less common. Sometimes, a `Debug`¹, `Clone` or (maybe only contextually sensible) `Default` implementation for a field is missing to derive those traits. While crates like Serde often do provide ways to supply custom implementations for fields, this usually has to be restated on each such field. Additionally, the syntax for doing so tends to differ between crates.
+For example, while many crates support `serde::{Deserialize, Serialize}` directly, implementations of the similarly-derived `bevy_reflect::{FromReflect, Reflect}` traits are less common. Sometimes, a `Debug`, `Clone` or (maybe only contextually sensible) `Default` implementation for a field is missing to derive those traits. While crates like Serde often do provide ways to supply custom implementations for fields, this usually has to be restated on each such field. Additionally, the syntax for doing so tends to differ between crates.
 
 Wrapper types, commonly used as workaround, add clutter to call sites or field types, and introduce mental overhead for developers as they have to manage distinct types without associated state transitions to work around the issues laid out in this section. They also require a distinct implementation for each combination of traits and lack discoverability through tools like rust-analyzer.
 
@@ -236,7 +245,7 @@ The core Rust language grammar is extended as follows:
 
   (This can be distinguished from `use`-declarations with a lookahead up to and including `impl` or `unsafe`, meaning at most four shallowly tested token trees with I believe no groups. No other lookaheads are introduced into the grammar by this RFC.)
 
-  **The scoped implementation defined by this item is implicitly always in scope for its own definition.** This means that it's not possible to refer to any shadowed implementation inside of it (including generic parameters and where clauses), except by re-importing specific scoped implementations inside nested associated functions. Calls to generic functions cannot be used as backdoor either (see [generic-type-parameters-capture-scoped-implementations]).
+  **The scoped implementation defined by this item is implicitly always in scope for its own definition.** This means that it's not possible to refer to any shadowed implementation inside of it (including generic parameters and where clauses), except by re-importing specific scoped implementations inside nested associated functions. Calls to generic functions cannot be used as backdoor either (see [type-parameters-capture-their-implementation-environment]).
 
   [*TraitImpl*]: https://doc.rust-lang.org/reference/items/implementations.html?highlight=TraitImpl#implementations
 
@@ -323,16 +332,16 @@ To ensure this stays sound, scoped `impl Trait for Type` where `Trait` is extern
 
 See also [scoped-implementation-of-external-sealed-trait].
 
-## Generic type parameters capture scoped implementations
-[generic-type-parameters-capture-scoped-implementations]: #generic-type-parameters-capture-scoped-implementations
+## Type parameters capture their *implementation environment*
+[type-parameters-capture-their-implementation-environment]: #type-parameters-capture-their-implementation-environment
 
-When a type parameter is specified, either explicitly or inferred from an expression, it captures *all* scoped implementations from its scope that are applicable to its type.
+When a type parameter is specified, either explicitly or inferred from an expression, it captures a view of *all* implementations that are applicable to its type there. This is called the type parameter's *implementation environment*.
 
 When implementations are resolved on the host type, bounds on the type parameter can only be satisfied according to this captured view. This means that implementations on generic type parameters are 'baked' into discretised generics and can be used even in other modules or crates where this discretised type is accessible (possibly because a value of this type is accessible). Conversely, additional or changed implementations on a generic type parameter in an already-discretised type *cannot* be provided anywhere other than where the type parameter is specified.
 
-When a generic type parameter is used to discretise another generic, the view captured in the latter is based on the view captured in the former and modified by scoped implementations and shadowing applicable to that generic type parameter's opaque type.
+When a generic type parameter is used to discretise another generic, the captured environment is the one captured in the former but overlaid with modifications applicable to that generic type parameter's opaque type.
 
-Note that type parameter defaults too capture implementations where they are specified, so at the initial definition site of the generic. This capture is used whenever the type parameter default is used.
+Note that type parameter defaults too capture their *implementation environment* where they are specified, so at the initial definition site of the generic. This environment is used whenever the type parameter default is used.
 
 ## Type identity of discrete types
 [type-identity-of-discrete-types]: #type-identity-of-discrete-types
@@ -342,7 +351,7 @@ The type identity and `TypeId::of::<…>()` of discrete types, including discret
 ## Type identity of generic types
 [type-identity-of-generic-types]: #type-identity-of-generic-types
 
-The type identity of generic types is derived from the types specified for their type parameters as well as the *full* captured view of available implementations for each of their type parameters:
+The type identity of generic types is derived from the types specified for their type parameters as well as the *full* *implementation environment* of each of their type parameters:
 
 ```rust
 #[derive(Default)]
@@ -401,7 +410,7 @@ fn main() {
     assert_ne!(TypeId::of::<Alias1>(), TypeId::of::<Alias2>());
     assert_ne!(TypeId::of::<Alias1>(), TypeId::of::<Alias3>());
 
-    // Types with the same captured implementations are still the same type.
+    // Types with identical captured implementation environments are still the same type.
     assert_eq!(TypeId::of::<Alias2>(), TypeId::of::<Alias3>());
 
     // Top-level implementations are not part of type identity.
@@ -433,10 +442,12 @@ The `TypeId` of discretised generics varies alongside their identity. Note that 
 
 ¹ With the current implementation, this would likely say `Generic<_>: From<Generic<_>>>`, which isn't helpful. With [explicit-binding], it could say `Generic<Type: Trait in mod2>: From<Generic<Type: Trait in mod1>>>`.
 
+(For a practical example, see [logical-consistency] [of-generic-collections].)
+
 ## `TypeId` of generic type parameters' opaque types
 [typeid-of-generic-type-parameters-opaque-types]: #typeid-of-generic-type-parameters-opaque-types
 
-In addition to the type identity of the specified type, the `TypeId` of opaque generic type parameter types varies according to captured view of *only implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
+In addition to the type identity of the specified type, the `TypeId` of opaque generic type parameter types varies according to the captured *implementation environment*, but *only according implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
 
 ```rust
 use std::any::TypeId;
@@ -555,14 +566,16 @@ impl<'a, S: BuildHasher + Clone> ErasedHashSet<'a, S> {
 }
 ```
 
-In particular, this code will ignore any scoped implementations on `T` that are not `Hash`, `Eq` or (implicitly) `PartialEq`, while any distinct set of discrete type, `Hash`, `Eq` and `PartialEq` is cleanly separated.
+In particular, this code will ignore any scoped implementations on `T` that are not `Hash`, `Eq` or (implicitly) `PartialEq`, while any combination of distinct discrete type and *implementation environments* with distinct `Hash`, `Eq` or `PartialEq` implementations is cleanly separated.
 
 See also [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for how to lint for an implementation of this collection that uses `TypeId::of::<Self>()` as key, which *also* remains sound and deterministic but distinguishes too aggressively by irrelevant scoped implementations in consumer code, leading to unexpected behaviour.
+
+(For an example of `TypeId` behaviour, see [logical-consistency] [of-type-erased-collections].)
 
 ## Layout-compatibility
 [layout-compatibility]: #layout-compatibility
 
-Types whose identities are only distinct because of a difference in captured scoped implementations on their generic type parameters remain layout-compatible as if one was a `#[repr(transparent)]` newtype of the other.
+Types whose identities are only distinct because of a difference in *implementation environments* remain layout-compatible as if one was a `#[repr(transparent)]` newtype of the other.
 
 It is sound to transmute an instance between these types **if** no inconsistency is observed on that instance by the bounds of any external-to-the-`transmute` implementation or combination of implementations, including scoped implementations and implementations on discrete variants of the generic. As a consequence, the `Self`-observed `TypeId` of instances of generic types **may** change in some cases.
 
@@ -580,7 +593,7 @@ impl Type<usize> {
 then in another crate
 
 - if `Debug` is used on an instance of `Type<T>`, then this instance may *not* be transmuted to one where `T: Debug` uses a different implementation and have `Debug` used on it again then and
-- if `Type<usize>::method()` is used on an instance of `Type<usize>`, then that instance may not be transmuted (and used) to or from any other variant, including ones that only differ by captured implementations, because `method` has observed the *exact* type parameter through its constraints.
+- if `Type<usize>::method()` is used on an instance of `Type<usize>`, then that instance may not be transmuted (and used) to or from any other variant, including ones that only differ by captured *implementation environment*, because `method` has observed the *exact* type parameter through its constraints.
 
 (In short: Don't use external-to-your-code implementations with the instance in any combination that couldn't have been done without transmuting the instance, pretending implementations can only observe the type identity according to their bounds.)
 
@@ -828,7 +841,7 @@ use library::{Alias, Generic, Type};
 assert_ne!(TypeId::of::<Alias>(), TypeId::of::<Generic<Type>>());
 ```
 
-Here, the scoped implementation `use impl Trait for Type {}` **is** used as it is captured into the type identity of `Alias`.
+Here, the scoped implementation `use impl Trait for Type {}` **is** accounted for as it is captured into the type identity of `Alias`.
 
 Since `Alias` is exported, the compiler cannot determine within the library alone that the type identity is unobserved. If it can ensure that that is the case, a (different!) warning could in theory still be shown here.
 
@@ -959,7 +972,7 @@ use a_crate::{
 
 (where here the implementation import is subsetting a blanket import, but that technicality isn't relevant. What matters is that the implementation is from another crate).
 
-If the imported implementation is captured in a public item's signature, that can accidentally create a public dependency. As such this should be a warning too (unless something from that crate occurs explicitly in a public signature or item?).
+If the imported implementation is captured in a public item's signature, that can accidentally create a public dependency. As such this should be a warning too (unless something from that crate occurs explicitly in that public signature or item?).
 
 ## Errors
 
@@ -1444,11 +1457,11 @@ This isn't unusual for anything involving *GenericParams*, but use of this featu
 
 Consider crates like `inventory` or Bevy's systems and queries.
 
-There may be tricky to debug issues for their consumers if a `TypeId` doesn't match between uses of generics with superficially the same type parameters, especially without prior knowledge of distinction by captured available scoped implementations.
+There may be tricky to debug issues for their consumers if a `TypeId` doesn't match between uses of generics with superficially the same type parameters, especially without prior knowledge of distinction by captured *implementation environments*.
 
-A partial mitigation would be to have rustc include such captures on generic type parameters when printing types, but that wouldn't solve the issue entirely.
+A partial mitigation would be to have rustc include captured scoped implementations on generic type parameters when printing types, but that wouldn't solve the issue entirely.
 
-Note that with this RFC implemented, `TypeId` would still report the same value iff evaluated on generic type parameters with distinct but bound-irrelevant captured implementations directly, as long as only these top-level implementations differ and no further nested ones.
+Note that with this RFC implemented, `TypeId` would still report the same value iff evaluated on generic type parameters with distinct but bound-irrelevant captured implementations directly, as long as only these top-level implementations differ and no nested captured *implementation environments* do.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -1846,14 +1859,307 @@ With this RFC, scopes are a 'mini version' of the environment that global implem
   (This is part of the reason why scoped `impl Trait for Type`s are anonymous; names would make these imports more verbose rather than shorter, since the subsetting still needs to happen in every case.)
 
 ### Logical consistency
+[logical-consistency]: #logical-consistency
 
 Binding external top-level implementations to types is equivalent to using their public API in different ways, so no instance-associated consistency is expected here. Rather, values that are used in the same scope behave consistently with regard to that scope's visible implementations.
 
+#### of generic collections
+[of-generic-collections]: #of-generic-collections
+
 Generics are trickier, as their instances often do expect trait implementations on generic type parameters that are consistent between uses but not necessarily declared as bounded on the struct definition itself.
 
-This problem is solved by making the `impl`s available to each type parameter part of the the type identity of the discretised host generic, including a difference in `TypeId` as with existing monomorphisation. That said, implementations, especially generic functions where the distinction is not statically caught by a host instance's consistency, are not expected to care about implementations unrelated to their bounds. It is for this reason that the `TypeId` of generic type parameters disregards irrelevant implementations somewhat.
+This problem is solved by making the `impl`s available to each type parameter part of the the type identity of the discretised host generic, including a difference in `TypeId` there as with existing monomorphisation.
 
-(See [generic-type-parameters-capture-scoped-implementations], [type-identity-of-generic-types] and [typeid-of-generic-type-parameters-opaque-types] in the [reference-level-explanation] above for more detailed information.)
+(See [type-parameters-capture-their-implementation-environment] and [type-identity-of-generic-types] in the [reference-level-explanation] above for more detailed information.)
+
+Here is an example of how captured *implementation environments* safely flow across module boundaries, often seamlessly due to type inference:
+
+```rust
+pub mod a {
+    // ⓐ == ◯
+
+    use std::collections::HashSet;
+
+    #[derive(PartialEq, Eq)]
+    pub struct A;
+
+    pub type HashSetA = HashSet<A>;
+    pub fn aliased(_: HashSetA) {}
+    pub fn discrete(_: HashSet<A>) {}
+    pub fn generic<T>(_: HashSet<T>) {}
+}
+
+pub mod b {
+    // ⓑ
+
+    use std::{
+        collections::HashSet,
+        hash::{Hash, Hasher},
+    };
+
+    #[derive(PartialEq, Eq)]
+    pub struct B;
+    use impl Hash for B {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+
+    pub type HashSetB = HashSet<B>; // ⚠
+    pub fn aliased(_: HashSetB) {}
+    pub fn discrete(_: HashSet<B>) {} // ⚠
+    pub fn generic<T>(_: HashSet<T>) {}
+}
+
+pub mod c {
+    // ⓒ == ◯
+
+    use std::collections::HashSet;
+
+    #[derive(PartialEq, Eq, Hash)]
+    pub struct C;
+
+    pub type HashSetC = HashSet<C>;
+    pub fn aliased(_: HashSetC) {}
+    pub fn discrete(_: HashSet<C>) {}
+    pub fn generic<T>(_: HashSet<T>) {}
+}
+
+pub mod d {
+    // ⓓ
+
+    use std::{
+        collections::HashSet,
+        hash::{Hash, Hasher},
+        iter::once,
+    };
+
+    use super::{
+        a::{self, A},
+        b::{self, B},
+        c::{self, C},
+    };
+
+    use impl Hash for A {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+    use impl Hash for B {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+    use impl Hash for C {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+
+    fn call_functions() {
+        a::aliased(HashSet::new()); // ⓐ == ◯
+        a::discrete(HashSet::new()); // ⓐ == ◯
+        a::generic(HashSet::from_iter(once(A))); // ⊙ == ⓓ
+
+        b::aliased(HashSet::from_iter(once(B))); // ⓑ
+        b::discrete(HashSet::from_iter(once(B))); // ⓑ
+        b::generic(HashSet::from_iter(once(B))); // ⊙ == ⓓ
+
+        c::aliased(HashSet::from_iter(once(C))); // ⓒ == ◯
+        c::discrete(HashSet::from_iter(once(C))); // ⓒ == ◯
+        c::generic(HashSet::from_iter(once(C))); // ⊙ == ⓓ
+    }
+}
+
+```
+
+Note that the lines annotated with `// ⚠` produce a warning due to the lower visibility of the scoped implementation in `b`.
+
+Circles denote *implementation environment*s:
+
+| | |
+|-|-|
+| `◯` | indistinct from global |
+| `ⓐ`, `ⓑ`, `ⓒ`, `ⓓ` | respectively as in module `a`, `b`, `c`, `d` |
+| `⊙` | caller-side |
+
+The calls infer discrete `HashSet`s with different `Hash` implementations as follows:
+
+| call in `call_functions` | `impl Hash` in | captured in/at | notes |
+|-|-|-|-|
+| `a::aliased` | - | `type` alias | The implementation cannot be 'inserted' into an already-specified type parameter, even if it is missing. |
+| `a::discrete` | - | `fn` signature | See `a::aliased`. |
+| `a::generic` | `d` | `once<T>`&nbsp;call | |
+| `b::aliased` | `b` | `type` alias | |
+| `b::discrete` | `b` | `fn` signature | |
+| `b::generic` | `d` | `once<T>`&nbsp;call | `b`'s narrow implementation cannot bind to the opaque `T`. |
+| `c::aliased` | `::` | `type` alias | Since the global implementation is visible in `c`. |
+| `c::discrete` | `::` | `fn` signature | See `c::aliased`.
+| `c::generic` | `d` | `once<T>`&nbsp;call | The narrow global implementation cannot bind to the opaque `T`. |
+
+#### of type-erased collections
+[of-type-erased-collections]: #of-type-erased-collections
+
+Type-erased collections such as the `ErasedHashSet` shown in [typeid-of-generic-type-parameters-opaque-types] require slightly looser behaviour, as they are expected to mix instances between environments where only irrelevant implementations differ (since they don't prevent this mixing statically like `std::collections::HashSet`, as their generic type parameters are transient on their methods).
+
+It is for this reason that the `TypeId` of generic type parameters disregards bounds-irrelevant implementations.
+
+The example is similar to the previous one, but `aliased` has been removed since it continues to behave the same as `discrete`. A new set of functions `bounded` is added:
+
+```rust
+#![allow(unused_must_use)] // For the `TypeId::…` lines.
+
+trait Trait {}
+
+pub mod a {
+    // ⓐ == ◯
+
+    use std::{collections::HashSet, hash::Hash};
+
+    #[derive(PartialEq, Eq)]
+    pub struct A;
+
+    pub fn discrete(_: HashSet<A>) {
+        TypeId::of::<HashSet<A>>(); // ❶
+        TypeId::of::<A>(); // ❷
+    }
+    pub fn generic<T: 'static>(_: HashSet<T>) {
+        TypeId::of::<HashSet<T>>(); // ❶
+        TypeId::of::<T>(); // ❷
+    }
+    pub fn bounded<T: Hash + 'static>(_: HashSet<T>) {
+        TypeId::of::<HashSet<T>>(); // ❶
+        TypeId::of::<T>(); // ❷
+    }
+}
+
+pub mod b {
+    // ⓑ
+
+    use std::{
+        collections::HashSet,
+        hash::{Hash, Hasher},
+    };
+
+    use super::Trait;
+
+    #[derive(PartialEq, Eq)]
+    pub struct B;
+    use impl Hash for B {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+    use impl Trait for B {}
+
+    pub fn discrete(_: HashSet<B>) { // ⚠⚠
+        TypeId::of::<HashSet<B>>(); // ❶
+        TypeId::of::<B>(); // ❷
+    }
+    pub fn generic<T: 'static>(_: HashSet<T>) {
+        TypeId::of::<HashSet<T>>(); // ❶
+        TypeId::of::<T>(); // ❷
+    }
+    pub fn bounded<T: Hash + 'static>(_: HashSet<T>) {
+        TypeId::of::<HashSet<T>>(); // ❶
+        TypeId::of::<T>(); // ❷
+    }
+}
+
+pub mod c {
+    // ⓒ == ◯
+
+    use std::{collections::HashSet, hash::Hash};
+
+    use super::Trait;
+
+    #[derive(PartialEq, Eq, Hash)]
+    pub struct C;
+    impl Trait for C {}
+
+    pub fn discrete(_: HashSet<C>) {
+        TypeId::of::<HashSet<C>>(); // ❶
+        TypeId::of::<C>(); // ❷
+    }
+    pub fn generic<T: 'static>(_: HashSet<T>) {
+        TypeId::of::<HashSet<T>>(); // ❶
+        TypeId::of::<T>(); // ❷
+    }
+    pub fn bounded<T: Hash + 'static>(_: HashSet<T>) {
+        TypeId::of::<HashSet<T>>(); // ❶
+        TypeId::of::<T>(); // ❷
+    }
+}
+
+pub mod d {
+    // ⓓ
+
+    use std::{
+        collections::HashSet,
+        hash::{Hash, Hasher},
+        iter::once,
+    };
+
+    use super::{
+        a::{self, A},
+        b::{self, B},
+        c::{self, C},
+        Trait,
+    };
+
+    use impl Hash for A {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+    use impl Hash for B {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+    use impl Hash for C {
+        fn hash<H: Hasher>(&self, _state: &mut H) {}
+    }
+
+    use impl Trait for A {}
+    use impl Trait for B {}
+    use impl Trait for C {}
+
+    fn call_functions() {
+        a::discrete(HashSet::new()); // ⓐ == ◯
+        a::generic(HashSet::from_iter(once(A))); // ⊙ == ⓓ
+        a::bounded(HashSet::from_iter(once(A))); // ⊙ == ⓓ
+
+        b::discrete(HashSet::from_iter(once(B))); // ⓑ
+        b::generic(HashSet::from_iter(once(B))); // ⊙ == ⓓ
+        b::bounded(HashSet::from_iter(once(B))); // ⊙ == ⓓ
+
+        c::discrete(HashSet::from_iter(once(C))); // ⓒ == ◯
+        c::generic(HashSet::from_iter(once(C))); // ⊙ == ⓓ
+        c::bounded(HashSet::from_iter(once(C))); // ⊙ == ⓓ
+    }
+}
+
+```
+
+`// ⚠` and non-digit circles have the same meanings as above.
+
+The following table describes how the types are observed at runtime in the lines marked with ❶ and ❷. It borrows some syntax from [explicit-binding] to express this clearly, but **denotes types as if seen from the global *implementation environment***.
+
+| within function<br>(called by `call_functions`) | ❶ (collection) | ❷ (item) |
+|-|-|-|
+| `a::discrete` | `HashSet<A>` | `A` |
+| `a::generic` | `HashSet<A: Hash in d + Trait in d>` | `A` |
+| `a::bounded` | `HashSet<A: Hash in d + Trait in d>` | `A` ∘ `Hash in d` |
+| `b::discrete` | `HashSet<B: Hash in `***`b`***` + Trait in`***` b`***`>` | `B` |
+| `b::generic` | `HashSet<B: Hash in d + Trait in d>` | `B` |
+| `b::bounded` | `HashSet<B: Hash in d + Trait in d>` | `B` ∘ `Hash in d` |
+| `c::discrete` | `HashSet<C>` | `C` |
+| `c::generic` | `HashSet<C: Hash in d + Trait in d>` | `C` |
+| `c::bounded` | `HashSet<C: Hash in d + Trait in d>` | `C` ∘ `Hash in d` |
+
+The combination ∘ is not directly expressible in `TypeId::of::<>` calls (as even a direct top-level annotation would be ignored without bounds). Rather, it represents an observation like this:
+
+```rust
+{
+    use std::{any::TypeId, hash::Hash};
+
+    use a::A;
+    use d::{impl Hash for A};
+
+    fn observe<T: Hash + 'static>() {
+        TypeId::of::<T>; // '`A` ∘ `Hash in d`'
+    }
+
+    observe::<A>();
+}
+```
 
 ### Logical stability
 
@@ -1862,13 +2168,13 @@ This problem is solved by making the `impl`s available to each type parameter pa
 
 This is another consequence of subsetting rather than named-model imports, as narrowing a scoped implementation can only make the `use`-declaration fail to compile, rather than changing which implementations are shadowed.
 
-Similarly, types of generics with different captured implementations are strictly distinct from each other, so that assigning them inconsistently does not compile. This is weighed somewhat against ease of refactoring, so in cases where a type parameter is inferred and the host is used in isolation, which are assumed to not care about implementation details, the code will continue to align with the definition instead of breaking.
+Similarly, types of generics with different captured *implementation environments* are strictly distinct from each other, so that assigning them inconsistently does not compile. This is weighed somewhat against ease of refactoring, so in cases where a type parameter is inferred and the host is used in isolation, which are assumed to not care about implementation details like that, the code will continue to align with the definition instead of breaking.
 
 ## Encourage readable code
 
 This RFC aims to further decreases the mental workload required for code review, by standardising glue code APIs to some degree and by clarifying their use in other modules.
 
-It also aims to create an import grammar that can be understood more intuitively than external newtypes when first encountering it, which should improve the accessibility of Rust code somewhat.
+It also aims to create an import grammar that can be understood more intuitively than external newtypes when first encountered, which should improve the accessibility of Rust code somewhat.
 
 ### Clear imports
 
@@ -1916,7 +2222,7 @@ When looking for the scoped implementation affecting a certain type, strict shad
 
 As such, readers can stop scanning once they encounter a match, instead of checking the entire file's length for another implementation that may be present in the outermost scope.
 
-Outside of implementations captured *inside* generics, scoped implementations cannot influence the behaviour of another file without being mentioned explicitly.
+Aside from *implementation environments* captured *inside* generics, scoped implementations cannot influence the behaviour of another file without being mentioned explicitly.
 
 ## Unblock ecosystem evolution
 [unblock-ecosystem-evolution]: #unblock-ecosystem-evolution
@@ -1949,7 +2255,7 @@ As scoped implementations clearly declare the link between the trait and type(s)
 
 ### Discovery of the feature itself
 
-In some cases (where a trait implementations cannot be found at all), tools can suggest creating a scoped implementation, unless adding it in that place would capture it in a type parameter of an item visible outside the current crate.
+In some cases (where a trait implementations cannot be found at all), tools can suggest creating a scoped implementation, unless adding it in that place would capture it as part of the *implementation environment* of a type parameter specified in an item definition visible outside the current crate.
 
 That said, it would be great if rust-analyzer could detect and suggest/enable feature-gated global implementations to some extent, with higher priority than creating a new scoped implementation.
 
@@ -1973,7 +2279,7 @@ In the long run, this can lead to less near-duplicated functionality in the depe
 
 Scoped implementations can be documented and appear as separate item category in rustdoc-generated pages.
 
-Rustdoc should be able to detect and annotate captured implementations in public signatures automatically. This, in addition to warnings, should be another tool to help avoid accidental exposure of scoped implementations.
+Rustdoc should be able to detect and annotate captured scoped implementations in public signatures automatically. This, in addition to warnings, should be another tool to help avoid accidental exposure of scoped implementations.
 
 Implementation origin and documentation could be surfaced by rust-analyzer in relevant places.
 
@@ -2027,7 +2333,7 @@ Some features are largely equivalent:
 |---|---|---|
 | Implicitly created default models | Explicit global trait implementations | Duck-typed implementation of unknown external traits is unnecessary since third party crates' implementations are as conveniently usable in scope as if global. |
 | Runtime model information / Wildcard models | Trait objects | Scoped implementations can be captured in trait objects, and the `TypeId` of generic type parameters can be examined. This does not allow for invisible runtime specialisation in all cases. |
-| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available scoped implementations on discretised type parameters are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive conversions and comparisons can bind between similar type parameters.</p> |
+| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available scoped implementations on discretised type parameters are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of a type parameter's captured *implementation environment*.</p> |
 
 ## A Language for Generic Programming in the Large
 
@@ -2474,7 +2780,7 @@ pub struct Struct<'a> {
 
 This is of course syntax bikeshedding.
 
-Specifying implementations on fields manually is a way to provide them only to `derive` and other attribute macros, as these top-level implementations do *not* bind to the type and as such are not used by code that doesn't restate the type explicitly. (The built-in macros should be defined as doing so from the get-go. Unfortunately, for other macros this is likely an optional implementation detail.)
+Specifying implementations on fields manually is a way to provide them only to `derive` and other attribute macros, as these top-level implementations do *not* bind to the type and as such are *not* used by code that doesn't restate the type explicitly. (The built-in macros should be defined as doing so from the get-go. Unfortunately, for other macros this is likely an optional implementation detail.)
 
 Since the specified top-level implementation doesn't bind persistently inside `Struct`, the exported signature is just `struct Struct<'a> {pub a: &'a str, pub b: Vec<&'a str>}`.
 
