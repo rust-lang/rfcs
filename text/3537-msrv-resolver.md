@@ -366,6 +366,23 @@ This opens its own set of questions
 The proposed solution does not block us from later going down this road but
 allows us to move forward without having to figure out all of these details.
 
+## Reporting
+
+Alternative to or in addition to the `cargo update` output to report when things are held back (both MSRV and semver),
+we can run the resolver twice on the original input, once for MSRV and once without.
+We then do a depth-first diff of the trees, stopping and reporting on the first different node.
+This would let us report on any command that changes the way the tree is resolved.
+We'd likely want to limit the output to only the sub-tree that changed.
+
+We could either always do the second resolve or only do the second resolve if the resolver changed anything,
+whichever is faster.
+
+Its unknown whether making the inputs available for multiple resolves would have a performance impact.
+
+While a no-change resolve is fast, if this negatively impacts it enough, we
+could explore hashing the resolve inputs and storing that in the lockfile,
+allowing us to detect if the inputs have changed and only resolving then.
+
 ## Make this opt-in
 
 As proposed, CI that tries to verify against the latest dependencies will no longer do so.
