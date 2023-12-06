@@ -187,15 +187,19 @@ Downsides:
 - Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 - If viewed from the lens of a comment, it isn't a variant of comment syntax like doc-comments
 
-### Alternative 1: Static-site generator frontmatter
+### Alternative 1: Vary the opening/closing character
 
-Note: this alternative was kept close to its source of inspiration, maintaining
-no infostring, despite being subject to the same questions that would be
-present for fenced code blocks, see [Future possibilities](#future-possibilities).
+Instead of backticks, we could do another character, like
+- `-`, making it look like YAML presentation streams, following the pattern of static site generators
+  - `+` like [zola's frontmatter](https://www.getzola.org/documentation/getting-started/overview/#markdown-content)
+- `~`, using a lesser known markdown character
+- `=`
+- Open with `>>>` and close with `<<<`, like with HEREDOC (or invert it)
 
+In practice:
 ```rust
 #!/usr/bin/env cargo
----
+---cargo
 [package]
 edition = "2018"
 ---
@@ -203,23 +207,72 @@ edition = "2018"
 fn main() {
 }
 ```
-This is a subset/specialization of YAML presentation streams that mirrors people's experience with static site generators:
-- The first line post-shebang-stripping is 3+ dashes, then capture all content until a matching pair of dashes on a dedicated line.  This would be captured into a `#![frontmatter = ""]`.  `frontmatter` attribute is reserved for crate roots.  The 3+ with matching pair is a "just in case" a TOML multi-line string has that syntax in it)
-- Future evolution: Allow a markdown-like infostring on the frontmatter opening dashes to declare the format with `cargo` being the default
-- Future evolution: Allow `frontmatter` attribute on any module
+```rust
+#!/usr/bin/env cargo
++++cargo
+[package]
+edition = "2018"
++++
+
+fn main() {
+}
+```
+```rust
+#!/usr/bin/env cargo
+~~~cargo
+[package]
+edition = "2018"
+~~~
+
+fn main() {
+}
+```
+```rust
+#!/usr/bin/env cargo
+===cargo
+[package]
+edition = "2018"
+===
+
+fn main() {
+}
+```
+```rust
+#!/usr/bin/env cargo
+>>>cargo
+[package]
+edition = "2018"
+<<<
+
+fn main() {
+}
+```
+```rust
+#!/usr/bin/env cargo
+<<<cargo
+[package]
+edition = "2018"
+>>>
+
+fn main() {
+}
+```
 
 Benefits
-- Visually/syntactically lightweight
-- Has parallels to ideas outside of Rust, building on external knowledge that might exist
-- Easy for cargo to parse and modify
-- Can easily be leveraged by buck2, meson, etc in the future
-- Users can edit/copy/paste the manifest without dealing with leading characters
+- With `-`, it builds on people's familiarity with static site generators
+- People can insert cargo-scripts into markdown (like chat, github issues)
+  without being familiar enough with markdown to know how to escape backticks
+  and to actually remember how to do it
 
 Downsides
-- Too general that people might abuse it
-- We've extended the frontmatter syntax, undoing some of the "familiarity" benefit
-- People are used to YAML going in frontmatter (though some systems allow other syntaxes)
+- With `-`
+  - We've extended the frontmatter syntax with an infostring, undoing some of the "familiarity" benefit
+  - Potential congantive disonance as those familiar with frontmatter are used to YAML being there
+- With `>>>` it isn't quite like HEREDOC to have less overhead
 - Doesn't feel very rust-like
+
+Note:
+- `"` was not considered because that can feel too familiar and users might carry over their expectations for how strings work
 
 ### Alternative 2: Extended Shebang
 
@@ -240,6 +293,15 @@ The hope would be that we could get buy-in from other languages.
 - Future evolution: Allow `cargo` being the default `info` string
 - Future evolution: Allow any `info` string with cargo checking for `content.starts_with(["cargo", "cargo,"])`
 - Future evolution: Allow `frontmatter` attribute on any module
+
+If we dropped future possibilities for additional content, we could remove the opening/closing syntax and tweak it to avoid attribute ambiguity,
+greatly reducing the minimum syntax needed in some cases.
+````rust
+#!/usr/bin/env cargo
+## package.edition = "2018"
+
+fn main() {}
+````
 
 Benefits
 - Visually connected to the shebang
@@ -277,13 +339,14 @@ Benefits
 - Depending on doc-comment style used, users may be able to edit/copy/paste the manifest without dealing with leading characters
 
 Downsides:
+- **Blocker** Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
+  - If we extend additional restrictions to make it more tool friendly, then we break from user expectations for how this syntax works
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
   - Having the explain the overloading of concepts to new users
   - Unpredictable location (both the doc comment and the cargo code block within it)
   - Visual clutter (where clutter is overwhelming already in Rust)
 - Might be a bit complicated to do edits (translating between location within
   `toml_edit` spans to the location within `syn` spans especially with different comment styles)
-- Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
 - Requires pulling in a full markdown parser to extract the manifest
   - Incorrectly formatted markdown would lead to a missing manifest and confusing error messages at best or silent incorrect behavior at worse
 
@@ -311,12 +374,13 @@ Benefits
 - Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
+- **Blocker** Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
+  - If we extend additional restrictions to make it more tool friendly, then we break from user expectations for how this syntax works
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
   - Unpredictable location (both the doc comment and the cargo code block within it)
 - From talking to a teacher, users are more forgiving of not understanding the details for structure data in an unstructured format (doc comments / comments) but something that looks meaningful, they will want to understand it all requiring dealing with all of the concepts
  - The attribute approach requires explaining multiple "advanced" topics: One teacher doesn't get to teaching any attributes until the second level in his crash course series and two teachers have found it difficult to teach people raw strings
 - Attributes look "scary" (and they are in some respects for the hidden stuff they do)
-- Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
 
 ### Alternative 5: Regular Comment
 
@@ -356,6 +420,11 @@ Benefits
 - Depending on the exact syntax decided on, users may be able to edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
+- **Blocker** Assuming it can't be parsed with `syn` and either we need to write a
+  sufficiently compatible comment parser or pull in a much larger rust parser
+  to extract and update comments.
+  - If we extend additional restrictions to make it more tool friendly, then we break from user expectations for how this syntax works
+  - Like with doc comments, this should map to an attribute and then we'd just start the MVP with that attribute
 - Unfamiliar syntax
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
   - Having the explain the overloading of concepts to new users
@@ -363,10 +432,6 @@ Downsides
   - Visual clutter (where clutter is overwhelming already in Rust)
 - New style of structured comment for the ecosystem to support with potential
   compatibility issues, likely requiring a new edition
-- Assuming it can't be parsed with `syn` and either we need to write a
-  sufficiently compatible comment parser or pull in a much larger rust parser
-  to extract and update comments.
-  - Like with doc comments, this should map to an attribute and then we'd just start the MVP with that attribute
 
 ### Alternative 6: Macro
 
@@ -386,13 +451,14 @@ Benefits
 - Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
+- **Blocker** Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
+  - If we extend additional restrictions to make it more tool friendly, then we break from user expectations for how this syntax works
 - When discussing with a Rust crash course teacher, it was felt their students would have a hard time learning to write these manifests from scratch
   - Unpredictable location (both the doc comment and the cargo code block within it)
 - The `cargo` macro would need to come from somewhere (`std`?) which means it is taking on `cargo`-specific knowledge
   - An unexplored direction we could go with this is a `meta!` macro (e.g. we'd need to have a format marker in it)
 - A lot of tools/IDEs have problems in dealing with macros
 - Free-form rust code makes it harder for cargo to make edits to the manifest
-- Either we expose `syn`s lesser parse errors or we skip errors, deferring to rustc's, but then have the wrong behavior on commands that don't invoke rustc, like `cargo metadata`
 
 ### Alternative 7: Presentation Streams
 
@@ -417,7 +483,7 @@ Benefits
 - Users can edit/copy/paste the manifest without dealing with leading characters
 
 Downsides
-- Difficult to parse without assistance from something like `syn` as we'd need to distinguish what the start of a stream is vs content of a string literal
+- **Blocker** Difficult to parse without assistance from something like `syn` as we'd need to distinguish what the start of a stream is vs content of a string literal
 - Being a new file format (a "text tar" format), there would be a lot of details to work out, including
   - How to delineate and label documents
   - How to allow escaping to avoid conflicts with content in a documents
