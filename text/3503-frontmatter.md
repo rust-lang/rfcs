@@ -528,24 +528,30 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Treat `cargo` as the default infostring
-  - Since this is a one-way door, we want to make sure we are confident that that is the right default / policy
-  - If there aren't guard rails (e.g. rustc enforcement) that no-infostring
-    means `cargo`, it can easily be a free-for-all and we need to decide if we
-    want that or if there is enough guard rails to discourage it.
-- Support more infostring languages
-  - We need to better understand use cases for how this should be extended, particularly what the syntax should be
-    - For reference, infostrings in commonmark (language + attributes) is just
-      all non-backtick characters, supports `\` escapes, and entity / numeric
-      character references with a vague notion of the language being the first "word"
-    - A safe starting point could be to say that it must be an identifier
-  - Hard coding it for now is much like how rustc has hard coded support for `#[rustdoc]` or `clippy`/`rustdoc` lint categories
 - Support infostring attributes
   - We need to better understand use cases for how this should be extended, particularly what the syntax should be (see infostring language)
   - A safe starting point could be to say that a space or comma separates attributes and everything after it is defined as part of the "language"
 - Loosen the code-fence syntax, like allowing newlines
 - Add support for a `#[frontmatter(info = "", content = "")]` attribute that this syntax maps to.
   - Since nothing will read this, whether we do it now or in the future will have no affect
+
+## Optional or additional infostrings
+
+We could support:
+- Treat `cargo` as the default infostring
+- Support more infostring languages
+
+The question comes down to whether
+- rustc owns the definition of the infostring, allowing us to add additional types of metadata (rustfmt config, static analyzer config, etc)
+  - This would be similar to our [hard coding of "tool" attributes](https://github.com/rust-lang/rust/issues/44690)
+- the shebang tool owns the definition of the infostring
+
+By us hard coding `cargo` in the infostring in rustc,
+we are intentionally deferring the decision for which path we should go down.
+
+We can add additional infostrings on a case-by-case basis.
+In doing so, we can learn more about the use cases involved which can help us
+get a better picture for which route we should go down.
 
 ## Multiple frontmatters
 
