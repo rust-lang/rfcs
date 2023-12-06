@@ -109,6 +109,18 @@ Like with Python, this allows any file in a package (with the correct deps and `
 
 As for the hard-coded infostring used by cargo, that is a decision for [RFC 3502].
 
+## Required vs Optional Shebang
+
+We could require the shebang to be present for all cargo-scripts.
+This would most negatively impact Windows users as the shebang is a no-op.
+We still care about Windows because cargo-scripts can still be used for exploration and prototyping,
+even if they can't directly be used as drop-in utilities.
+
+The main reason to require a shebang is to positively identify the associated "interpreter".
+However, statically analyzing a shebang is [complicated](https://stackoverflow.com/questions/38059830/how-does-perl-avoid-shebang-loops)
+and we are wanting to avoid it in the core workflow.
+This isn't to say that tools like rust-analyzer might choose to require it to help their workflow.
+
 ## Syntax
 
 [RFC 3502] lays out some design principles, including
