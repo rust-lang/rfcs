@@ -383,38 +383,7 @@ Misc
   - `cargo add` selecting rust-version-compatible minimum bounds helps
   - This bypasses a lot of complexity either from exploding the number of states we support or giving users control over the fallback by making the field an array of strategies.
 
-## Add `workspace.rust-version`
-
-Instead of using the lowest MSRV among workspace members, we could add `workspace.rust-version`.
-
-This opens its own set of questions
-- Do packages implicitly inherit this?
-- What are the semantics if its unset?
-- Would it be confusing to have this be set in mixed-MSRV workspaces?  Would blocking it be incompatible with the semantics when unset?
-- In mixed-MSRV workspaces, does it need to be the highest or lowest MSRV of your packages?
-  - For the resolver, it would need to be the lowest but there might be other use cases where it needs to be the highest
-
-The proposed solution does not block us from later going down this road but
-allows us to move forward without having to figure out all of these details.
-
-## Reporting
-
-Alternative to or in addition to the `cargo update` output to report when things are held back (both MSRV and semver),
-we can run the resolver twice on the original input, once for MSRV and once without.
-We then do a depth-first diff of the trees, stopping and reporting on the first different node.
-This would let us report on any command that changes the way the tree is resolved.
-We'd likely want to limit the output to only the sub-tree that changed.
-
-We could either always do the second resolve or only do the second resolve if the resolver changed anything,
-whichever is faster.
-
-Its unknown whether making the inputs available for multiple resolves would have a performance impact.
-
-While a no-change resolve is fast, if this negatively impacts it enough, we
-could explore hashing the resolve inputs and storing that in the lockfile,
-allowing us to detect if the inputs have changed and only resolving then.
-
-## Make this opt-in
+## Make this opt-in rather than opt-out
 
 By requiring `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version` to get the proposed resolver behavior,
 users don't need to update CI to verify the latest dependencies
@@ -453,18 +422,6 @@ As for CI, it will be dependent on which toolchain is used (at least `stable`).
 If you do check-in your `Cargo.lock` as is suggested (but not prescribed),
 then you are subject to whatever versions were compatible with the toolchain of each developer who caused a `Cargo.lock` change.
 
-## Configuring the resolver mode on the command-line or `Cargo.toml`
-
-The Cargo team is very interested in [moving project-specific config to manifests](https://github.com/rust-lang/cargo/issues/12738).
-However, there is a lot more to define for us to get there.  Some routes that need further exploration include:
-- If its a CLI flag, then its transient, and its unclear which modes should be transient now and in the future
-  - We could make it sticky by tracking this in `Cargo.lock` but that becomes less obvious what resolver mode you are in and how to change
-- We could put this in `Cargo.toml` but that implies it unconditionally applies to everything
-  - But we want `cargo install` to use the latest dependencies so people get bug/security fixes
-  - This gets in the way of the "separate development / publish MSRV" workflow
-
-By relying on config we can have a stabilized solution sooner and we can work out more of the details as we better understand the relevant problems.
-
 ## Hard-error
 
 Instead of *preferring* MSRV-compatible dependencies, the resolver could hard error if only MSRV-incompatible versions are available.
@@ -495,6 +452,49 @@ This could cause a lot more backtracking which could negatively affect resolver 
 
 If no `package.rust-version` is specified,
 we wouldn't want to fallback to the version of rustc being used because that could cause `Cargo.lock` churn if contributors are on different Rust versions.
+
+## Reporting
+
+Alternative to or in addition to the `cargo update` output to report when things are held back (both MSRV and semver),
+we can run the resolver twice on the original input, once for MSRV and once without.
+We then do a depth-first diff of the trees, stopping and reporting on the first different node.
+This would let us report on any command that changes the way the tree is resolved.
+We'd likely want to limit the output to only the sub-tree that changed.
+
+We could either always do the second resolve or only do the second resolve if the resolver changed anything,
+whichever is faster.
+
+Its unknown whether making the inputs available for multiple resolves would have a performance impact.
+
+While a no-change resolve is fast, if this negatively impacts it enough, we
+could explore hashing the resolve inputs and storing that in the lockfile,
+allowing us to detect if the inputs have changed and only resolving then.
+
+## Configuring the resolver mode on the command-line or `Cargo.toml`
+
+The Cargo team is very interested in [moving project-specific config to manifests](https://github.com/rust-lang/cargo/issues/12738).
+However, there is a lot more to define for us to get there.  Some routes that need further exploration include:
+- If its a CLI flag, then its transient, and its unclear which modes should be transient now and in the future
+  - We could make it sticky by tracking this in `Cargo.lock` but that becomes less obvious what resolver mode you are in and how to change
+- We could put this in `Cargo.toml` but that implies it unconditionally applies to everything
+  - But we want `cargo install` to use the latest dependencies so people get bug/security fixes
+  - This gets in the way of the "separate development / publish MSRV" workflow
+
+By relying on config we can have a stabilized solution sooner and we can work out more of the details as we better understand the relevant problems.
+
+## Add `workspace.rust-version`
+
+Instead of using the lowest MSRV among workspace members, we could add `workspace.rust-version`.
+
+This opens its own set of questions
+- Do packages implicitly inherit this?
+- What are the semantics if its unset?
+- Would it be confusing to have this be set in mixed-MSRV workspaces?  Would blocking it be incompatible with the semantics when unset?
+- In mixed-MSRV workspaces, does it need to be the highest or lowest MSRV of your packages?
+  - For the resolver, it would need to be the lowest but there might be other use cases where it needs to be the highest
+
+The proposed solution does not block us from later going down this road but
+allows us to move forward without having to figure out all of these details.
 
 # Prior art
 [prior-art]: #prior-art
