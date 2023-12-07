@@ -352,9 +352,21 @@ without having to support the flag on every single command.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Maintainers that commit their `Cargo.lock` and verify their latest dependencies
-will need to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` in their environment or run `cargo update --ignore-rust-version`.
-See Alternatives for more on this.
+As proposed, CI that tries to verify against the latest dependencies will no longer do so.
+Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
+- If we consider this a major incompatibility, then it needs to be opted into.
+  As `cargo fix` can't migrate a user's CI,
+  this would be out of scope for migrating to this with a new Edition.
+- I would argue that the number of maintainers verifying latest dependencies is
+  relatively low and they are more likely to be "in the know",
+  making them less likely to be negatively affected by this.
+  Therefore, I propose we consider this a minor incompatibility
+- If we do a slow roll out (opt-in then opt-out), the visibility for the switch
+  to opt-out will be a lot less than the initial announcement and we're more
+  likely to miss people compared to making switch over when this gets released.
+- If we change behavior with a new edition (assuming we treat this as a minor incompatibility),
+  we get the fanfare needed but it requires waiting until people bump their MSRV,
+  making it so the people who need it the most are the those who will least benefit.
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
 this could instead further entrench rust-version stagnation in the ecosystem.
@@ -403,25 +415,8 @@ allowing us to detect if the inputs have changed and only resolving then.
 
 ## Make this opt-in
 
-As proposed, CI that tries to verify against the latest dependencies will no longer do so.
-Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
-
-If we consider this a major incompatibility, then it needs to be opted into.
-As `cargo fix` can't migrate a user's CI,
-this would be out of scope for migrating to this with a new Edition.
-
-I would argue that the number of maintainers verifying latest dependencies is
-relatively low and they are more likely to be "in the know",
-making them less likely to be negatively affected by this.
-Therefore, I propose we consider this a minor incompatibility
-
-If we do a slow roll out (opt-in then opt-out), the visibility for the switch
-to opt-out will be a lot less than the initial announcement and we're more
-likely to miss people compared to making switch over when this gets released.
-
-If we change behavior with a new edition (assuming we treat this as a minor incompatibility),
-we get the fanfare needed but it requires waiting until people bump their MSRV,
-making it so the people who need it the most are the those who will least benefit.
+By requiring `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version` to get the proposed resolver behavior,
+users don't need to update CI to verify the latest dependencies
 
 On the surface, encouraging people to primarily use maximal version resolution by
 making this opt-in encourages more testing of the latest depednencies.
