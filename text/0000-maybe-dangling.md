@@ -247,6 +247,9 @@ The author cannot think of prior art in other languages; the issue arises becaus
 Inside Rust, we do have precedent for wrapper types altering language semantics; most prominently, there are `UnsafeCell` and `MaybeUninit`.
 Notice that `UnsafeCell` acts "behind references" while `MaybeDangling`, like `MaybeUninit`, acts "around references": `MaybeDangling<&T>` vs `&UnsafeCell<T>`.
 
+There is a [crate](https://docs.rs/maybe-dangling) offering these semantics on stable Rust via `MaybeUninit`.
+(This is not "prior" art, it was published after this RFC came out. "Related work" would be more apt. Alas, the RFC template forces this structure on us.)
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
