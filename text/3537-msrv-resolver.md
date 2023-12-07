@@ -161,6 +161,7 @@ So why are people on old versions?
 - Re-validation costs for updating core parts of the image for an embedded Linux developers can be high, keeping them on older versions
 - Updates can be slow within tightly controlled environments (airgaps, paperwork, etc)
 - Qualifying Rust toolchains takes time and money, see [Ferrocene](https://ferrous-systems.com/ferrocene/)
+- Build on or for systems that are no longer supported by rustc (e.g. old glibc, AndroidNDK, etc)
 
 We need to keep in mind though that the Rust Project only provides support (e.g
 bug and security fixes) for the latest version and the burden for support for
