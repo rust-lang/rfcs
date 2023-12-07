@@ -153,6 +153,24 @@ How wide spread is this?  Take this with a grain of salt but based on crates.io 
 
 *([source](https://rust-lang.zulipchat.com/#narrow/stream/318791-t-crates-io/topic/cargo.20version.20usage/near/401440149))*
 
+So why are people on old versions?
+- Not everyone is focused on Rust development and might only touch their Rust code once every couple of months,
+  making it a pain if they have to update every time
+- While a distribution provides rust to build other packages in the distribution,
+  users might assume that is a version to use.
+- Re-validation costs for updating core parts of the image for an embedded Linux developers can be high, keeping them on older versions
+- Updates can be slow within tightly controlled environments (airgaps, paperwork, etc)
+- Qualifying Rust toolchains takes time and money, see [Ferrocene](https://ferrous-systems.com/ferrocene/)
+
+We need to keep in mind though that the Rust Project only provides support (e.g
+bug and security fixes) for the latest version and the burden for support for
+older versions is on the vendor providing the older Rust toolchain.
+Similarly, open source developers are not obligated to support older toolchains
+and it is reasonable that the burden for these cases should be paid by those
+who need it.
+That said, we can still make the process less onerous for those who wish to
+support users on older toolchains.
+
 People have tried to reduce the pain from MSRV with its own costs:
 - Treating it as a breaking change:
   - This leads to extra churn in the ecosystem when a fraction of users are likely going to benefit
