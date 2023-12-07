@@ -210,8 +210,12 @@ In solving this, we need to keep in mind
   because users are stuck on 3-20 year old versions of the language specification.
   The compatibility story is fairly strong with Rust, helping us keep
   compiler and dependency upgrades cheap.
-- Some people keep their development and production MSRVs the same (henceforth referred to as "shared development / publish MSRV" workflow)
-  while others keep them separate, e.g. tracking two sets of dependencies via a `Cargo.msrv.lock` (henceforth referred to as "separate development / publish MSRV" workflow)
+- The MSRV for a package depends on the context
+  - It can be dependent on which features are enabled
+    (e.g. [moka](https://docs.rs/moka/0.12.1/moka/#minimum-supported-rust-versions))
+  - Some projects might treat building the package from crates.io and from the repo the same
+    (henceforth referred to as "shared development / publish MSRV" workflow)
+    while others might have a higher MSRV for building the repo (e.g. `Cargo.lock` with newer dependencies, reliance on cargo features that get stripped on publish), henceforth referred to as "separate development / publish MSRV"
 - A `Cargo.lock` should not resolve differently when upgrading Rust without any other action.
 
 # Guide-level explanation
