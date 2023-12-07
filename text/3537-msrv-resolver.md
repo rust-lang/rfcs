@@ -423,6 +423,17 @@ If we change behavior with a new edition (assuming we treat this as a minor inco
 we get the fanfare needed but it requires waiting until people bump their MSRV,
 making it so the people who need it the most are the those who will least benefit.
 
+On the surface, encouraging people to primarily use maximal version resolution by
+making this opt-in encourages more testing of the latest depednencies.
+Before we [changed our guidance on lockfiles](https://github.com/rust-lang/cargo/pull/12382),
+this was already limited as `bin`s should have a `Cargo.lock` file which is
+infectious to their entire workspace.
+This was also subject to the velocity of the project;
+for passively maintain projects they can go a year without a CI run.
+Now that we've changed our guidance on lockfiles,
+we encourage people to verify their latest dependencies.
+Assuming they are, this point becomes moot.
+
 ## Make `rust-version=rustc` the default
 
 This proposal elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
@@ -436,6 +447,15 @@ The reasons we didn't go with this approach are
 - "Shared development / publish MSRV" workflows catch too-new API problems sooner
 - We want to encourage developing on the latest version of rustc/cargo to get all of the latest workflow improvements (e.g. error messages, sparse registry for cargo, etc), rather than lock people into the MSRV with `rust-toolchain.toml`
   - The toolchain is another type of dependency so this might seem contradictory but we feel the value-add of a new toolchain outweighs the cost while the value add of new dependencies doesn't
+
+As for encouraging testing of the latest dependencies,
+this falls somewhere between the opt-in and opt-out proposals for resoling to `package.rust-version`,
+depending on the scenario.
+If you don't check-in your `Cargo.lock`,
+what developers will test with is anyone's guess.
+As for CI, it will be dependent on which toolchain is used (at least `stable`).
+If you do check-in your `Cargo.lock` as is suggested (but not prescribed),
+then you are subject to whatever versions were compatible with the toolchain of each developer who caused a `Cargo.lock` change.
 
 ## Configuring the resolver mode on the command-line or `Cargo.toml`
 
