@@ -210,6 +210,12 @@ In solving this, we need to keep in mind
   because users are stuck on 3-20 year old versions of the language specification.
   The compatibility story is fairly strong with Rust, helping us keep
   compiler and dependency upgrades cheap.
+- MSRV stands for "minimum **supported** rust version".
+  People have different definitions of "support",
+  ranging from "if it works for you"
+  (much like Rust's [Tier 3 platform support](https://doc.rust-lang.org/nightly/rustc/platform-support.html#tier-3))
+  to "we validate it"
+  (much like Rust's [Tier 1 platform support](https://doc.rust-lang.org/nightly/rustc/platform-support.html#tier-1))
 - The MSRV for a package depends on the context
   - It can be dependent on which features are enabled
     (e.g. [moka](https://docs.rs/moka/0.12.1/moka/#minimum-supported-rust-versions))
