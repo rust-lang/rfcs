@@ -1,6 +1,6 @@
 - Feature Name: `closure_eq`
 - Start Date: 2023-10-30
-- RFC PR: None yet
+- RFC PR: [rust-lang/rfcs#3538](https://github.com/rust-lang/rfcs/pull/3538)
 - Rust Issue: None yet
 
 # Summary
