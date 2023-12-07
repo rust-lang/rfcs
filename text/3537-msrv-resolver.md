@@ -406,24 +406,25 @@ Assuming they are, this point becomes moot.
 ## Make `rust-version=rustc` the default
 
 This proposal elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
-We could instead do the opposite, picking `rust-version=rustc` as a "safe" default for assuming the development rust-version.
-Users of the "shared development / publish rust-version" workflow could either set the config or use a `rust-toolchain.toml` file.
+We could instead do the opposite, adding support for `CARGO_BUILD_RESOLVER_PRECEDENCE=rustc` instead as a "safe" default for assuming the development rust-version.
 
-The downsides to "use `rust-toolchain.toml`" are
+In terms of keeping this proposal minimal, this means we are likely to not include `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`.
+For people with the "shared development / publish rust-version" workflow, this would push them to using a `rust-toolchain.toml` file.
+The downsides to using a `rust-toolchain.toml`" are:
+- People are being "locked in" to unsupported versions of Rust
+  - **This does not align with us wanting to drive behavior we want because we are
+    pushing people to develop with unsupported toolchains.**
 - Its environment config, and not project config, and is infectious in other situations without explicit action by a user who knows how to resolve it
 - You lose out on new toolchain features like
+  improved error messages,
   improved clippy lints,
+  sparse registry support,
   `cargo publish` waiting until publish is complete,
   `Cargo.toml`s `[lints]`,
   or this proposal once implemented.
-
-The reasons we didn't go with this approach are
-- The user explicitly told us the MSRV for the project; we do not have the granularity for different MSRVs for different workflows (or `features`) and likely the complexity would not be worth it.
-- "Separate development / publish MSRV" workflows are inherently more complex to support with more caveats of where they apply, making "shared development / publish MSRV" workflows the path of least resistance for users.
-- Without configuration, defaulting to "shared development / publish MSRV" workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the "separate development / publish MSRV" workflows.
-- "Shared development / publish MSRV" workflows catch too-new API problems sooner
-- We want to encourage developing on the latest version of rustc/cargo to get all of the latest workflow improvements (e.g. error messages, sparse registry for cargo, etc), rather than lock people into the MSRV with `rust-toolchain.toml`
-  - The toolchain is another type of dependency so this might seem contradictory but we feel the value-add of a new toolchain outweighs the cost while the value add of new dependencies doesn't
+  - While the toolchain is another type of dependency so this might seem
+    contradictory but we feel the value-add of a new toolchain outweighs the cost
+    while the value add of new dependencies doesn't
 
 As for encouraging testing of the latest dependencies,
 this falls somewhere between the opt-in and opt-out proposals for resoling to `package.rust-version`,
@@ -433,6 +434,12 @@ what developers will test with is anyone's guess.
 As for CI, it will be dependent on which toolchain is used (at least `stable`).
 If you do check-in your `Cargo.lock` as is suggested (but not prescribed),
 then you are subject to whatever versions were compatible with the toolchain of each developer who caused a `Cargo.lock` change.
+
+Like with `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` being the default, some other downsides are:
+- The user explicitly told us the MSRV for the project; we do not have the granularity for different MSRVs for different workflows (or `features`) and likely the complexity would not be worth it.
+- "Separate development / publish MSRV" workflows are inherently more complex to support with more caveats of where they apply, making "shared development / publish MSRV" workflows the path of least resistance for users.
+- Without configuration, defaulting to "shared development / publish MSRV" workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the "separate development / publish MSRV" workflows.
+- "Shared development / publish MSRV" workflows catch too-new API problems sooner
 
 ## Hard-error
 
