@@ -457,6 +457,8 @@ This could cause a lot more backtracking which could negatively affect resolver 
 If no `package.rust-version` is specified,
 we wouldn't want to fallback to the version of rustc being used because that could cause `Cargo.lock` churn if contributors are on different Rust versions.
 
+Without further design work, this would be incompatible with feature-dependent MSRV and likely with the "separate development / publish MSRV" workflow.
+
 ## Reporting
 
 Alternative to or in addition to the `cargo update` output to report when things are held back (both MSRV and semver),
