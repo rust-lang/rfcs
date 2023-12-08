@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This proposal adds scoped `impl Trait for Type` items into the core language, as coherent but orphan-rule-free alternative to implementing traits globally. It also extends the syntax of `use`-declarations to allow importing these scoped implementations into other scopes (including other crates), and to differentiate type identity of generics by which scoped trait implementations are available to each discretised generic type parameter.
+This proposal adds scoped `impl Trait for Type` items into the core language, as coherent but orphan-rule-free alternative to implementing traits globally. It also extends the syntax of `use`-declarations to allow importing these scoped implementations into other scopes (including other crates), and differentiates type identity of most generics by which scoped trait implementations are available to each specified generic type parameter.
 
 This (along with some details specified below) enables any crate to
 
@@ -112,7 +112,7 @@ use ::{impl Trait for Type};
 ### Scoped implementations and generics
 [scoped-implementations-and-generics]: #scoped-implementations-and-generics
 
-Scoped implementations are resolved on generic type parameters where those are specified, and become part of the (now less generic) host type's identity:
+Scoped implementations are resolved on most generics' type parameters where those are specified, and become part of the (now less generic) host type's identity:
 
 ```rust
 struct Type<T>(T);
@@ -148,6 +148,8 @@ Alias::type_fn(); // "nested"
 ```
 
 This works equally not just for type aliases but also fields, `let`-bindings and also where generic type parameters are inferred automatically from expressions (for example to call a constructor).
+
+Note that some utility types, like references, tuples, `Option`, `Result` and closure traits, do not bind implementations eagerly but only when used to specify another generic. You can find a list of these types in the reference. (← i.e. "insert link here".)
 
 ## **19.2.** Advanced Traits
 
@@ -240,7 +242,7 @@ The core Rust language grammar is extended as follows:
   >
   > **TraitCoverageNoWhereClause**:  
   > &emsp; `impl` *GenericParams*<sup>?</sup> `!`<sup>?</sup> *TypePath* `for` *Type*  
-  
+
   where a trait implementation with that `use`-prefix provides the implementation *only* as item in the containing item scope.
 
   (This can be distinguished from `use`-declarations with a lookahead up to and including `impl` or `unsafe`, meaning at most four shallowly tested token trees with I believe no groups. No other lookaheads are introduced into the grammar by this RFC.)
@@ -337,6 +339,8 @@ See also [scoped-implementation-of-external-sealed-trait].
 
 When a type parameter is specified, either explicitly or inferred from an expression, it captures a view of *all* implementations that are applicable to its type there. This is called the type parameter's *implementation environment*.
 
+(For trait objects, associated types are treated as type parameters for the purposes of this proposal.)
+
 When implementations are resolved on the host type, bounds on the type parameter can only be satisfied according to this captured view. This means that implementations on generic type parameters are 'baked' into discretised generics and can be used even in other modules or crates where this discretised type is accessible (possibly because a value of this type is accessible). Conversely, additional or changed implementations on a generic type parameter in an already-discretised type *cannot* be provided anywhere other than where the type parameter is specified.
 
 When a generic type parameter is used to discretise another generic, the captured environment is the one captured in the former but overlaid with modifications applicable to that generic type parameter's opaque type.
@@ -351,7 +355,12 @@ The type identity and `TypeId::of::<…>()` of discrete types, including discret
 ## Type identity of generic types
 [type-identity-of-generic-types]: #type-identity-of-generic-types
 
-The type identity of generic types is derived from the types specified for their type parameters as well as the *full* *implementation environment* of each of their type parameters:
+### Implementation-aware generics
+[implementation-aware-generics]: #implementation-aware-generics
+
+Generics that are not [implementation-invariant-generics] are implementation-aware generics.
+
+The type identity of implementation-aware generic types is derived from the types specified for their type parameters as well as the *full* *implementation environment* of each of their type parameters and their associated types:
 
 ```rust
 #[derive(Default)]
@@ -438,16 +447,39 @@ fn main() {
 
 As mentioned in [type-identity-of-discrete-types], implementations on the generic type *itself* do *not* affect its type identity, as can be seen with `Alias4` above.
 
-The `TypeId` of discretised generics varies alongside their identity. Note that due to the transmutation permission defined in [layout-compatibility], consumer code is effectively allowed to change the `TypeId` of instances of generics between calls to generic implementations in most cases. Due to this, implementations of generics that manage types at runtime should usually rely on the [typeid-of-generic-type-parameters-opaque-types] instead.
+The `TypeId` of these generics varies alongside their identity. Note that due to the transmutation permission defined in [layout-compatibility], consumer code is effectively allowed to change the `TypeId` of instances of generics between calls to generic implementations in most cases. Due to this, implementations of generics that manage types at runtime should usually rely on the [typeid-of-generic-type-parameters-opaque-types] or `(…,)`-tuple-types combining them instead.
 
 ¹ With the current implementation, this would likely say `Generic<_>: From<Generic<_>>>`, which isn't helpful. With [explicit-binding], it could say `Generic<Type: Trait in mod2>: From<Generic<Type: Trait in mod1>>>`.
 
 (For a practical example, see [logical-consistency] [of-generic-collections].)
 
+### Implementation-invariant generics
+[implementation-invariant-generics]: #implementation-invariant-generics
+
+The following generics that never rely in the consistency of implementation of their type parameters are implementation-invariant:
+
+- `&T`, `&mut T` (references),
+- `*const T`, `*mut T` (pointers),
+- `[T; N]`, `[T]` (arrays and slices),
+- `(T,)`, `(T, U, ..)` (tuples),
+- *superficially*\* `fn(T) -> U` and similar (function pointers),
+- *superficially*\* `Fn(T) -> U`, `FnMut(T) -> U`, `FnOnce(T) -> U`, `Future<Output = T>`, `Iterator<Item = T>`, `std::ops::Coroutine` and similar (closures),
+- `Pin<P>`, `NonNull<T>`, `Box<T>`, `Rc<T>`, `Arc<T>`, `Weak<T>`, `Option<T>`, `Result<T, E>`\*\*.
+
+Implementation-invariant generics never capture implementation environments on their own. Instead, their effective implementation environments follow that of their host, acting as if they were captured in the same scope.
+
+The type identity of implementation-invariant generics seen on their own does not depend on the implementation environment.
+
+\* superficially: The underlying instance may well use a captured implementation, but this isn't surfaced in signatures. For example, a closure defined where `usize: PartialOrd in reverse + Ord in reverse` is just `FnOnce(usize)` but will use `usize: PartialOrd in reverse + Ord in reverse` privately when called.
+
+\*\* but see [which-structs-should-be-implementation-invariant].
+
+See also [why-specific-implementation-invariant-generics].
+
 ## `TypeId` of generic type parameters' opaque types
 [typeid-of-generic-type-parameters-opaque-types]: #typeid-of-generic-type-parameters-opaque-types
 
-In addition to the type identity of the specified type, the `TypeId` of opaque generic type parameter types varies according to the captured *implementation environment*, but *only according implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
+In addition to the type identity of the specified type, the `TypeId` of opaque generic type parameter types varies according to the captured *implementation environment*, but *only according to implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
 
 ```rust
 use std::any::TypeId;
@@ -568,7 +600,7 @@ impl<'a, S: BuildHasher + Clone> ErasedHashSet<'a, S> {
 
 In particular, this code will ignore any scoped implementations on `T` that are not `Hash`, `Eq` or (implicitly) `PartialEq`, while any combination of distinct discrete type and *implementation environments* with distinct `Hash`, `Eq` or `PartialEq` implementations is cleanly separated.
 
-See also [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for how to lint for an implementation of this collection that uses `TypeId::of::<Self>()` as key, which *also* remains sound and deterministic but distinguishes too aggressively by irrelevant scoped implementations in consumer code, leading to unexpected behaviour.
+See also [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters] for how to lint for an implementation of this collection that uses `TypeId::of::<HashSet<T, S>>()` as key, which *also* remains sound and deterministic but distinguishes too aggressively by irrelevant scoped implementations in consumer code, leading to unexpected behaviour.
 
 (For an example of `TypeId` behaviour, see [logical-consistency] [of-type-erased-collections].)
 
@@ -595,9 +627,9 @@ then in another crate
 - if `Debug` is used on an instance of `Type<T>`, then this instance may *not* be transmuted to one where `T: Debug` uses a different implementation and have `Debug` used on it again then and
 - if `Type<usize>::method()` is used on an instance of `Type<usize>`, then that instance may not be transmuted (and used) to or from any other variant, including ones that only differ by captured *implementation environment*, because `method` has observed the *exact* type parameter through its constraints.
 
-(In short: Don't use external-to-your-code implementations with the instance in any combination that couldn't have been done without transmuting the instance, pretending implementations can only observe the type identity according to their bounds.)
+(In short: Don't use external-to-your-code implementations with the instance in any combination that wouldn't have been possible without transmuting the instance, pretending implementations can only observe the type identity according to their bounds.)
 
-See [typeid-of-generic-type-parameters-opaque-types] for details on what this partial transmutation permission is for, and [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for a future incompatibility lint that could be used to warn implementations where this is relevant.
+See [typeid-of-generic-type-parameters-opaque-types] for details on what this partial transmutation permission is for, and [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters] for a future incompatibility lint that could be used to warn implementations where this is relevant.
 
 ## No interception/no proxies
 
@@ -1071,18 +1103,18 @@ Crate `b` cannot define scoped implementations of the external sealed trait `Sea
 
 See [no-external-scoped-implementations-of-sealed-traits] for why this is necessary.
 
-## Behaviour change/Warning: `TypeId` of generic discretised using generic type parameters
-[behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters]: #behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters
+## Behaviour change/Warning: `TypeId` of implementation-aware generic discretised using generic type parameters
+[behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters]: #behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters
 
-As a result of the transmutation permission given in [layout-compatibility], which is needed to let the `ErasedHashSet` example in [typeid-of-generic-type-parameters-opaque-types] *remain sound*, monomorphisations of a function that observe distinct `TypeId`s for generics they discretise using type parameters may be called on the same value instance.
+As a result of the transmutation permission given in [layout-compatibility], which is needed to let the `ErasedHashSet` example in [typeid-of-generic-type-parameters-opaque-types] *remain sound*, monomorphisations of a function that observe distinct `TypeId`s for [implementation-aware-generics] they discretise using type parameters may be called on the same value instance.
 
-Notably, this affects `TypeId::of::<Self>()` in implementations with generic targets, but not in unspecific blanket implementations on the type parameter itself.
+Notably, this affects `TypeId::of::<Self>()` in implementations with most generic targets, but not in unspecific blanket implementations on the type parameter itself.
 
 This would have to become a future incompatibility lint ahead of time, and should also remain a warning after the feature is implemented since the behaviour of `TypeId::of::<Self>()` in generics is likely to be unexpected.
 
 In most cases, implementations should change this to `TypeId::of::<T>()`, where `T` is the type parameter used for discretisation, since that should show the expected `TypeId` distinction.
 
-Instead of `TypeId::of::<(U, V, W)>()`, `(TypeId::of::<U>(), TypeId::of::<V>(), TypeId::of::<W>())` can usually be used.
+Instead of `TypeId::of::<AStruct<U, V, W>>()`, `TypeId::of::<(U, V, W)>()` can be used, as tuples are [implementation-invariant-generics].
 
 ## Resolution on generic type parameters
 [resolution-on-generic-type-parameters]: #resolution-on-generic-type-parameters
@@ -1397,9 +1429,9 @@ There are a few ways to mitigate this, but they all have significant drawbacks:
 
 ## Unexpected behaviour of `TypeId::of::<Self>()` in implementations on generics in the consumer-side presence of scoped implementations and `transmute`
 
-As explained in [layout-compatibility] and [type-identity-of-generic-types], an observed `TypeId` can change for an instance under specific circumstances that are previously-legal `transmute`s in e.g. type-erased value-keyed collection like the `ErasedHashSet` example in the latter section.
+As explained in [layout-compatibility] and [type-identity-of-generic-types], an observed `TypeId` can change for an instance under specific circumstances that are previously-legal `transmute`s as e.g. for the `HashSet`s inside the type-erased value-keyed collection like the `ErasedHashSet` example in the [typeid-of-generic-type-parameters-opaque-types] section.
 
-This use case appears to be niche enough in Rust to not have an obvious example on crates.io, but see [behaviour-changewarning-typeid-of-generic-discretised-using-generic-type-parameters] for a lint that aims to mitigate issues in this regard and could be used to survey potential issues.
+This use case appears to be niche enough in Rust to not have an obvious example on crates.io, but see [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters] for a lint that aims to mitigate issues in this regard and could be used to survey potential issues.
 
 ## More `use`-declaration clutter, potential inconsistencies between files
 
@@ -1670,6 +1702,7 @@ Unlike with external newtypes, there are no potential conflicts beyond overlappi
 - or at worst by moving a generic implementation into a submodule and importing it for discrete types.
 
 ### Error handling and conversions
+[error-handling-and-conversions]: #error-handling-and-conversions
 
 When implementing services, it's a common pattern to combine a framework that dictates function signatures with one or more unrelated middlewares that have their own return and error types. The example below is a very abridged example of this.
 
@@ -2161,6 +2194,40 @@ The combination ∘ is not directly expressible in `TypeId::of::<>` calls (as ev
 }
 ```
 
+##### with multiple erased type parameters
+
+By replacing the lines
+
+```rust
+TypeId::of::<HashSet<T>>(); // ❶
+TypeId::of::<T>(); // ❷
+```
+
+with
+
+```rust
+TypeId::of::<HashSet<(T,)>>(); // ❶
+TypeId::of::<(T)>(); // ❷
+```
+
+(and analogous inside the discrete functions), the `TypeId` table above changes as follows:
+
+| within function<br>(called by `call_functions`) | ❶ (collection) | ❷ (item) |
+|-|-|-|
+| `a::discrete` | `HashSet<(A,)>` | `(A,)` |
+| `a::generic` | `HashSet<(A: Hash in d + Trait in d,)>` | `(A,)` |
+| `a::bounded` | `HashSet<(A: Hash in d + Trait in d,)>` | `(A` ∘ `Hash in d,)` |
+| `b::discrete` | `HashSet<(B: Hash in `***`b`***` + Trait in`***` b`***`,)>` | `(B,)` |
+| `b::generic` | `HashSet<(B: Hash in d + Trait in d,)>` | `(B,)` |
+| `b::bounded` | `HashSet<(B: Hash in d + Trait in d,)>` | `(B` ∘ `Hash in d,)` |
+| `c::discrete` | `HashSet<(C,)>` | `(C,)` |
+| `c::generic` | `HashSet<(C: Hash in d + Trait in d,)>` | `(C,)` |
+| `c::bounded` | `HashSet<(C: Hash in d + Trait in d,)>` | `(C` ∘ `Hash in d,)` |
+
+As you can see, the type identity of the tuples appears distinct when contributing to an implementation-aware generic's type identity but (along with the `TypeId`) remains appropriately fuzzy when used alone.
+
+This scales up to any number of type parameters used in implementation-invariant generics, which means an efficient `ErasedHashMap<S: BuildHasher>` can be constructed by keying storage on the `TypeId::of::<(K, V)>()` where `K: Hash + Eq` and `V` are the generic type parameters of its functions.
+
 ### Logical stability
 
 - Non-breaking changes to external crates cannot change the meaning of the program.
@@ -2283,6 +2350,27 @@ Rustdoc should be able to detect and annotate captured scoped implementations in
 
 Implementation origin and documentation could be surfaced by rust-analyzer in relevant places.
 
+## Why specific [implementation-invariant-generics]?
+[why-specific-implementation-invariant-generics]: #why-specific-implementation-invariant-generics
+
+This is a *not entirely clean* ergonomics/stability trade-off, as well as a clean resolution path for [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters].
+
+> It is also the roughest part of this proposal, in my eyes. If you have a better way of dealing with the aware/invariant distinction, please do suggest it!
+
+The main issue is that generics in the Rust ecosystem do not declare which trait implementations on their type parameters need to be consistent during their instances' lifetime, if any, and that traits like `PartialOrd` that do provide logical consistency guarantees over time are not marked as such in a compiler-readable way.
+
+Ignoring this and not having distinction of [implementation-aware-generics]' discretised variants would badly break logical consistency of generic collections like `BTreeSet<T>`, which relies on `Ord` to function.
+
+On the other hand, certain types (e.g. references and (smart) pointers) that often wrap values in transit between modules *really* don't care about implementation consistency on these types. If these were distinct depending on available implementations on their values, it would create *considerable* friction while defining public APIs in the same scope as `struct` or `enum` definitions that require scoped implementations for `derive`s.
+
+Drawing a line manually here is an attempt to un-break this *by default* for the most common cases while maintaining full compatibility with existing code and keeping awareness of scoped `impl Trait for Type` entirely optional for writing correct and user-friendly APIs.
+
+As a concrete example, this ensures that `Box<dyn Future<Output = Result<(), Error>>>` is automatically interchangeable even if spelled out in the presence of scoped [error-handling-and-conversions] affecting `Error`, but that `BinaryHeap<Box<u8>>` and `BinaryHeap<Box<u8: PartialEq in reverse + Ord in reverse>>` don't mix.
+
+Functions pointers and closure trait( object)s should probably be fairly easy to pass around, with their internally-used bindings being an implementation detail. Fortunately, the Rust ecosystem already uses more specific traits for most configuration for better logical safety, so it's likely not too messy to make these implementation-invariant.
+
+Traits and trait objects cannot be implementation invariant (including for their associated types!) because it's possible to define `OrderedExtend` and `OrderedIterator` traits with logical consistency requirement on `Ord` between them.
+
 ## Alternatives
 
 ### Named implementations
@@ -2309,6 +2397,12 @@ Scoped `impl Trait for Type` together with its warnings [scoped-implementation-i
 
 [RFC: Hidden trait implementations]: https://github.com/rust-lang/rfcs/pull/2529
 
+### Required-explicit binding of scoped implementations inside generics
+
+This could avoid the distinction between [implementation-aware-generics] and [implementation-invariant-generics] to some extent, at the cost of likely overall worse ergonomics when working with scoped implementations.
+
+It's also likely to make `derive`-compatibility of scoped implementations inconsistent, because some macros may require explicit binding on field types while others would not.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -2333,7 +2427,7 @@ Some features are largely equivalent:
 |---|---|---|
 | Implicitly created default models | Explicit global trait implementations | Duck-typed implementation of unknown external traits is unnecessary since third party crates' implementations are as conveniently usable in scope as if global. |
 | Runtime model information / Wildcard models | Trait objects | Scoped implementations can be captured in trait objects, and the `TypeId` of generic type parameters can be examined. This does not allow for invisible runtime specialisation in all cases. |
-| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available scoped implementations on discretised type parameters are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of a type parameter's captured *implementation environment*.</p> |
+| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available implementations on type parameters of discretised implementation-aware generics are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of a type parameter's captured *implementation environment*.</p><p>However, typical Rust code also very heavily uses generics like references and closures to represent values passed through crate boundaries. To keep friction acceptably low by default, specific utility types are exempt from capturing implementations.</p> |
 
 ## A Language for Generic Programming in the Large
 
@@ -2358,7 +2452,7 @@ and key differences:
 | - | (Rust) Global implementations | The automatic availability of global implementations between separately imported traits and types offers more convenience especially when working with common traits, like those backing operators in Rust. |
 | Model overloading, mixed into nested scopes | Strict shadowing | Strict shadowing is easier to reason about for developers (especially when writing macros!), as the search stops at the nearest matching implementation.<br>See Rust's trait method resolution behaviour and [interaction-with-specialisation] for how this is still practically compatible with a form of overload resolution.<br>See [scoped-fallback-implementations] for a possible future way to better enable adaptive behaviour in macro output. |
 | - | (Rust) Trait objects | 𝒢 does not appear to support runtime polymorphism beyond function pointers. Scoped `impl Trait for Type` is seamlessly compatible with `dyn Trait` coercions (iff `Trait` is object-safe). |
-| (unclear?) | Available implementations on discretised type parameters become part of the type identity. | <p>This allows code elsewhere to access scoped implementations that are already available at the definition site, and leads to overall more semantically consistent behaviour.</p><p>The tradeoff is that it may be difficult to explicitly annotate types in cases of mixed bindings with this RFC. As newtypes and named configuration token types are still preferred for changed behaviour, such cases will hopefully be limited. Otherwise, see [explicit-binding] for bikeshedded syntax.</p> |
+| (unclear?) | Available implementations on discretised type parameters become part of the type identity of implementation-aware generics. | <p>This allows code elsewhere to access scoped implementations that are already available at the definition site, and leads to overall more semantically consistent behaviour.</p><p>The tradeoff is that it may be difficult to explicitly annotate types in cases of mixed bindings with this RFC. As newtypes and named configuration token types are still preferred for changed behaviour, such cases will hopefully be limited. Otherwise, see [explicit-binding] for bikeshedded syntax.</p> |
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -2416,6 +2510,40 @@ and key differences:
 - How important is explicit binding? If it should be included here, which syntax should it use?
 
   See [explicit-binding] in *Future possibilities* below for one possibility.
+
+## Which `struct`s should be implementation-invariant?
+[which-structs-should-be-implementation-invariant]: #which-structs-should-be-implementation-invariant
+
+This is a tough question because, runtime behaviour difference of [of-type-erased-collections] aside, the following makes shifting a type from [implementation-aware-generics] to [implementation-invariant-generics] a compilation-breaking change:
+
+```rust
+struct Type;
+struct Generic<T>(T);
+trait Trait {}
+
+mod a {
+    use super::{Type, Generic, Trait};
+    pub use impl Trait for Type {}
+    pub type Alias = Generic<T>;
+}
+
+mod b {
+    use super::{Type, Generic, Trait};
+    pub use impl Trait for Type {}
+    pub type Alias = Generic<T>;
+}
+
+use impl Trait for a::Alias {}
+use impl Trait for b::Alias {}
+```
+
+(It is *theoretically* possible to do such a later adjustment as part of an edition, even considering `TypeId` behaviour I think, but it's certainly not pretty.)
+
+Splitting this along the line of "structs that use `<>` around type parameters" would feel cleaner, but the basic smart pointers, `Pin<P>`, `Option<T>` and `Result<T, E>` appear in crate API signatures enough that not including them would create considerable friction.
+
+Other candidates for consideration:
+
+- Other `DispatchFromDyn` types in the standard library like `Cell`, `SyncUnsafeCell`, `UnsafeCell`
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -2854,6 +2982,35 @@ where
     }
 }
 ```
+
+This could also enable adjusted borrowing:
+
+```rust
+// In the standard library.
+
+use std::mem;
+
+impl<T, S: BuildHasher> HashSet<T, S> {
+    fn as_with_item_impl<U>(&self) -> HashSet<U, S>
+    where
+        T: ?Hash + ?Eq, // Observe implementations without requiring them.
+        U: ?Hash + ?Eq,
+        T == U, // Comparison in terms of innate type identity and observed implementations.
+    {
+        unsafe {
+            // SAFETY: This type requires only the `Hash` and `Eq` implementations to
+            //         be consistent for correct function. All other implementations on
+            //         generic type parameters may be exchanged freely.
+            //         For the nested types this is an identity-transform, as guaranteed
+            //         by `T == U` and the shared `S` which means the container is also
+            //         guaranteed to be layout compatible.
+            &*(self as *const HashSet<T, S> as *const HashSet<U, S>)
+        }
+    }
+}
+```
+
+(But at that point, it may be better to use something like an unsafe marker trait or unsafe trait with default implementations.)
 
 ## Scoped bounds as contextual alternative to sealed traits
 
