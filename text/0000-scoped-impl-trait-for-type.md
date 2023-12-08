@@ -466,11 +466,11 @@ The following generics that never rely in the consistency of implementation of t
 - *superficially*\* `Fn(T) -> U`, `FnMut(T) -> U`, `FnOnce(T) -> U`, `Future<Output = T>`, `Iterator<Item = T>`, `std::ops::Coroutine` and similar (closures),
 - `Pin<P>`, `NonNull<T>`, `Box<T>`, `Rc<T>`, `Arc<T>`, `Weak<T>`, `Option<T>`, `Result<T, E>`\*\*.
 
-Implementation-invariant generics never capture implementation environments on their own. Instead, their effective implementation environments follow that of their host, acting as if they were captured in the same scope.
+Implementation-invariant generics never capture *implementation environments* on their own. Instead, their effective *implementation environments* follow that of their host, acting as if they were captured in the same scope.
 
 The type identity of implementation-invariant generics seen on their own does not depend on the implementation environment.
 
-\* superficially: The underlying instance may well use a captured implementation, but this isn't surfaced in signatures. For example, a closure defined where `usize: PartialOrd in reverse + Ord in reverse` is just `FnOnce(usize)` but will use `usize: PartialOrd in reverse + Ord in reverse` privately when called.
+\* superficially: The underlying instance may well use a captured implementation internally, but this isn't surfaced in signatures. For example, a closure defined where `usize: PartialOrd in reverse + Ord in reverse` is just `FnOnce(usize)` but will use `usize: PartialOrd in reverse + Ord in reverse` privately when called.
 
 \*\* but see [which-structs-should-be-implementation-invariant].
 
