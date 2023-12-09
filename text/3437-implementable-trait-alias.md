@@ -632,6 +632,54 @@ impl IntoIterator for IntoIter {
 }
 ```
 
+### Trait aliases constrained by their associated items
+
+If trait aliases with associated items are additionally allowed to refer to
+those items from the definition of the alias itself, it would be possible to
+express certain kinds of trait bounds that current `where` clauses do not
+support.
+
+For example:
+
+```rust
+/// An `Iterator` that yields `Result`s.
+trait ResultIterator = Iterator<Item = Result<Self::Ok, Self::Err>> {
+    type Ok;
+    type Err;
+}
+```
+
+In the context of the above example, a `T: ResultIterator` bound would mean
+"there exist unique types `Ok` and `Err` such that
+`T: Iterator<Item = Result<Ok, Err>>` holds". Current Rust provides no mechanism
+for expressing a bound like that; you need a separate trait, like [`TryFuture`](https://docs.rs/futures-core/latest/futures_core/future/trait.TryFuture.html).
+
+This feature could even allow GATification of `Iterator` (or `FnMut`, etc)
+without variance bounds:
+
+```rust
+pub trait LendingIterator {
+    type LentItem<'a>
+    where
+        Self: 'a;
+
+    fn next<'a>(&'a mut self) -> Option<Self::LentItem<'a>>;
+}
+
+// `T: Iterator` means
+// "there exists a unique type `Item` such that
+// `T: LendingIterator where for<'a> Self::LentItem<'a> = Item`"
+// (which holds iff `Self::LentItem<'a>` is bivariant in `'a`).
+pub trait Iterator = LendingIterator
+where
+    // Still need to solve implied `'static` bound problem
+    // (https://blog.rust-lang.org/2022/10/28/gats-stabilization.html#implied-static-requirement-from-higher-ranked-trait-bounds)
+    for<'a> Self::LentItem<'a> = Self::Item,
+{
+    type Item;
+}
+```
+
 ### Name conflicts
 
 One wrinkle with the above scheme, is that it is possible for the trait being
