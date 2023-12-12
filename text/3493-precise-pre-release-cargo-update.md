@@ -18,7 +18,14 @@ the resolver ignoring pre-releases like yanked packages, with an override flag.
 # Motivation
 [motivation]: #motivation
 
-Pre-release crates are currently challenging to use in large projects with complex dependency trees.
+Today, version requirements ignore pre-release versions,
+so `1.0.0` cannot be used with `1.1.0-alpha.1`.
+Specifying a pre-release in a version requirement has two affects
+- Specifies the minimum compatible pre-release.
+- Opts-in to matching version requirements (within a version)
+
+However, coupling these concerns makes it difficult to try out pre-releases
+because every dependency in the tree has to opt-in.
 For example, if a maintainer releases `dep = "0.1.1-pre.0"`.
 They may ask one of their users to try the new API additions in a large project so that the user can give feedback on the release before the maintainer stabilises the new parts of the API.
 Unfortunately, since `dep = "0.1.0"` is a transitive dependency of several dependencies of the large project, `cargo` refuses the upgrade, stating that `0.1.1-pre.0` is incompatible with `0.1.0`.
