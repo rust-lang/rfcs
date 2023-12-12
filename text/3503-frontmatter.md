@@ -30,8 +30,8 @@ fn main() {
 }
 ````
 
-Note that to share these in markdown, a priority use case, extra backticks for the markdown code fence to escape the frontmatter code fence.
-We expect most users will not be familiar enough with the markdown spec to know this, especially one of our primary target audience: those new to Rust.
+Note that to share these in markdown, a priority use case, extra backticks are needed for the markdown code fence to escape the frontmatter code fence.
+We expect most users will not be familiar enough with the markdown spec to know this, especially for one of our primary target audiences: those new to Rust.
 This can also be frustrating for experienced users as three backticks is an ingrained habbit and it is common to need to go back and edit a post to properly escape the frontmatter.
 However, when weighing out the syntactic needs and the alternatives, we felt this was the least bad option.
 
