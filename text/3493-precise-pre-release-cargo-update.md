@@ -78,12 +78,12 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 
 | Cargo.toml spec | Cargo.lock version | Target version | Selected by cargo update  | Selected by cargo update --precise  |
 | --------------- | ------------------ | -------------- | ------------------------- | ----------------------------------- |
-| `^a.b.c`         | `a.b.c`            | `x.y.z`        | ✅                        | ✅                                  |
-| `^a.b.c`         | `a.b.c`            | `x.y.z-pre.0`   | ❌                        | ✅                                  |
-| `^a.b.c`         | `x.y.z-pre.0`       | `x.y.z-pre.1`   | ❌                        | ✅                                  |
-| `^a.b.c-pre.0`    | `a.b.c-pre.0`       | `a.b.c-pre.1`   | ✅¹                       | ✅                                  |
-| `^a.b.c-pre.0`    | `a.b.c-pre.0`       | `x.y.z`        | ✅¹                       | ✅                                  |
-| `^a.b.c`         | `a.b.c`            | `a.b.c-pre.0`   | ❌                        | ❌                                  |
+| `^a.b.c`        | `a.b.c`            | `x.y.z`        | ✅                        | ✅                                  |
+| `^a.b.c`        | `a.b.c`            | `x.y.z-pre.0`  | ❌                        | ✅                                  |
+| `^a.b.c`        | `x.y.z-pre.0`      | `x.y.z-pre.1`  | ❌                        | ✅                                  |
+| `^a.b.c-pre.0`  | `a.b.c-pre.0`      | `a.b.c-pre.1`  | ✅¹                       | ✅                                  |
+| `^a.b.c-pre.0`  | `a.b.c-pre.0`      | `x.y.z`        | ✅¹                       | ✅                                  |
+| `^a.b.c`        | `a.b.c`            | `a.b.c-pre.0`  | ❌                        | ❌                                  |
 
 ✅: Will upgrade
 
