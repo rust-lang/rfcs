@@ -71,9 +71,6 @@ location searched: crates.io index
 required by package `tmp-oyyzsf v0.1.0 (/home/ethan/.cache/cargo-temp/tmp-OYyZsF)`
 ```
 
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
-
 Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 
 | Cargo.toml spec | Cargo.lock version | Target version | Selected by cargo update  | Selected by cargo update --precise  |
@@ -92,6 +89,9 @@ Consider this table where `a.b.c` is compatible with `x.y.z` and `x.y.z > a.b.c`
 ¹This behaviour is considered by some to be undesirable and may change as proposed in [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263).
 This RFC preserves this behaviour to remain backwards compatible.
 Since this RFC is concerned with the behaviour of `cargo update --precise` changes to bare `cargo update` made in future RFCs should have no impact on this proposal.
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
 
 To determine if a version can be selected with `--precise` for a specification that isn't listed above cosider where pre-releases exist within version ranges.
 
