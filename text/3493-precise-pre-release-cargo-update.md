@@ -169,6 +169,8 @@ through by modifying `Cargo.toml`.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+## Pre-release dep "allows" pre-release everywhere
+
 It would be nice if cargo could unify pre-release version requirements with stable versions.
 
 Take for example this dependency tree.
