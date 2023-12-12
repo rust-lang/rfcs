@@ -530,6 +530,12 @@ allows us to move forward without having to figure out all of these details.
   - We have [cfg_accessible](https://github.com/rust-lang/rust/issues/64797) as a first step though it has been stalled
   - These don't have to be mutually exclusive solutions as conditional compilation offers flexibility at the cost of maintenance.  Different maintainers might make different decisions in how much they leverage each
   - One big difference is Python continues to support previous releases which sets a standard within the community for "MSRV" policies.
+- [PHP Platform Packages](https://getcomposer.org/doc/01-basic-usage.md#platform-packages) is a more general mechanism than MSRV that allows declaring dependencies on external runtime requirements, like the interpreter version, interpreter extensions presence and version, or even whether the interpreter is 64-bit.
+  - Resolves to current system
+  - Can be overridden to so current system is always considered compatible
+  - Not tracked in their lockfile
+  - When run on an incompatible system, it will error and require running a command to re-resolve the dependencies for the current system
+  - One difference is that PHP is interpreted and that their lockfile must encompass not just development dependencies but deployment dependencies.  This is in contrast to Rust which has development and deployment-build dependencies tracked with a lockfile while deployment uses OS-specific dependencies, like shared-object dependencies of ELF binaries which are not locked by their nature but instead developers rely on other technologies like docker or Nix (not even static linking can help as they that still leaves them subject to the kernel version in non-bare metal deployments).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
