@@ -119,6 +119,17 @@ Put in simple terms the relationship between a pre-release and its stable releas
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## One-time opt-in
+
+With this proposal, pre-release is like yanked:
+having `foo@1.2.3-alpha.0` in your `Cargo.lock` does not implicitly mean you can use `foo@1.2.3-alpha.1`.
+To update within pre-releases, you'll have to use `--precise` again.
+
+Instead, the lockfile could identify that `foo@1.2.3-alpha.0` is a pre-release allow updating to any `1.2.3` pre-release.
+`cargo update` focuses on compatible updates and pre-releases aren't necesarrily compatible with each other
+(see also [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263)).
+Alternatively, in [future-possibilities] is `cargo update -p foo --allow-prerelease` which would be an explicit way to update.
+
 ## Use overrides
 
 Cargo overrides can be used instead using `[patch]`.
