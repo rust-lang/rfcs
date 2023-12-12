@@ -114,6 +114,7 @@ Put in simple terms the relationship between a pre-release and its stable releas
 - Pre-release versions are not easily auditable when they are only specified in the lock file.
   A change that makes use of a pre-release version may not be noticed during code review as reviewers don't always check for changes in the lock file.
 - Library crates that require a pre-release version are not well supported since their lock files are ignored by their users (see [future-possibilities])
+- This is an invasive change to cargo with a significant risk for bugs.  This also extends out to packages in the ecosystem that deal with depednency versions.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
