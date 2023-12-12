@@ -91,20 +91,49 @@ Since this RFC is concerned with the behaviour of `cargo update --precise` chang
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-To determine if a version can be selected with `--precise` for a specification that isn't listed above cosider where pre-releases exist within version ranges.
+## Version requirements
 
-For example consider the version `~1.2.3`.
-The range for `~1.2.3` is [stated in the cargo book](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#tilde-requirements).
+Version requirement operator semantics will change to encompass pre-release versions, compared to before where the presence of pre-release would change matching modes.
+This will also better align with the mathematical properties associated with some of the operators (see the closed [RFC 3266](https://github.com/rust-lang/rfcs/pull/3266)).
 
+So before,
 ```
-~1.2.3  := >=1.2.3, <1.3.0
+1.2.3  -> ^1.2.3 -> >=1.2.3, <2.0.0 (with implicit holes excluding pre-release versions)
 ```
+would become
+```
+1.2.3  -> ^1.2.3 -> >=1.2.3, <2.0.0-0
+```
+Note that the old syntax implicitly excluded `2.0.0-<prelease>` which we have have to explicitly exclude by referencing the smallest possible pre-release version of `-0`.
 
-Intuitively `1.2.4-pre.0` satisfies this inequality, therefore it can be selected with `cargo update --precise`.
-Since it is a pre-release and the specification is not, `1.2.4-pre.0` would not be selected by a bare `cargo update`.
-`1.3.0-pre.0` also satisfies the inequality but `1.2.3-pre.0` and `1.3.1-pre.0` do not.
+This change applies to all operators.
 
-Put in simple terms the relationship between a pre-release and its stable release is always `a.b.c-pre.0 < a.b.c`.
+## Dependency Resolution
+
+The intent is to mirror the behavior of yanked today.
+
+When parsing a `Cargo.lock`, any pre-release version would be tracked in an allow-list.
+When resolving, we would exclude from consideration any pre-release version unless:
+- It is in the allow-list
+- It matches the version requirement under the old pre-release version requirement semantics.
+
+## `cargo update`
+
+The version passed in via `--precise` would be added to the allow-list.
+
+**Note:** overriding of yanked via this mechanism is not meant to be assumed to be a part of this proposal.
+Support for selecting yanked with `--precise` should be decided separately from this RFC, instead see [rust-lang/cargo#4225](https://github.com/rust-lang/cargo/issues/4225)
+
+## [`semver`](https://crates.io/crates/semver)
+
+`cargo` will need both the old and new behavior exposed.
+To reduce risk of tools in the ecosystem unintentionally matching pre-releases (despite them still needing an opt-in),
+it might be reasonable for the
+`semver`
+package to offer this new matching behavior under a different name
+(e.g. `VersionReq::matches_prerelease` in contrast to the existing `VersionReq::matches`)
+(also avoiding a breaking change).
+However, we leave the exact API details to the maintainer of the `semver` package.
 
 # Drawbacks
 [drawbacks]: #drawbacks
