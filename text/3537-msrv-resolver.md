@@ -403,11 +403,25 @@ Misc alternatives
 
 ## Make this opt-in rather than opt-out
 
-By requiring `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version` to get the proposed resolver behavior,
-users don't need to update CI to verify the latest dependencies
+This proposed solution elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
+We could instead do the opposite, carrying forward our existing behavior as the default (`CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`).
+CI verifying MSRV and users of the "shared development / publish rust-version" workflow would need to set `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`.
+
+When building with old Rust versions, error messages could suggest re-resolving with `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`.
+The next corrective step (and suggestion from cargo) depends on what the user is doing and could be either
+- `git checkout main -- Cargo.lock && cargo check`
+- `cargo generate-lockfile`
+
+We should update the "incompatible rust-version" checks to be top-down, rather
+than bottom up,
+so users see the root of their problem, rather than the leaves.
+
+This has no impact on `cargo add`; it will still pick a version requirement that is MSRV-compatible.
+
+This avoids changing behavior for CI jobs that are trying to test the latest dependencies,.
 
 On the surface, encouraging people to primarily use maximal version resolution by
-making this opt-in encourages more testing of the latest depednencies.
+making this opt-in encourages more testing of the latest dependencies.
 Before we [changed our guidance on lockfiles](https://github.com/rust-lang/cargo/pull/12382),
 this was already limited as `bin`s should have a `Cargo.lock` file which is
 infectious to their entire workspace.
@@ -416,6 +430,101 @@ for passively maintain projects they can go a year without a CI run.
 Now that we've changed our guidance on lockfiles,
 we encourage people to verify their latest dependencies.
 Assuming they are, this point becomes moot.
+
+A lot of this comes down to a mixture of usability and what behavior we want to drive.
+When driving behavior, the intention is to help people find a known good path
+without preventing them from doing things differently if they have the need
+(cargo is intended to be [opinionated](https://doc.crates.io/contrib/design.html#design-principles)).
+When done right, this is frictionless and people are understanding.
+When done wrong, it is frustrating and people feel condescended towards.
+
+One area of particular concern for the Rust project is stagnation.
+We want to encourage people to actively upgrade Rust and their dependencies.
+- Upgrading comes at a cost that you can pay now incrementally or pay all at once when forced, like with a security vulnerability.  That said, the community puts a strong emphasis on keeping the cost low.
+- The longer the delay for using new features, implementing new ones has greater diminishing returns, discouraging progress generally.
+- The more separated people are from nightly, the more costly it is for them to test out new features on their project, causing the Rust project to lose out on a valuable source of feedback.
+- When people push their needs for old versions onto their dependencies, this shifts the cost from the exception case to the maintainer and all of the dependents.
+
+For **"MSRV is stable"**, they are unaffected by either opt-in or opt-out.
+
+The **"separate development / publish rust-version"** workflow is interesting.
+
+This aligns with the opt-in approach, making it implicitly endorsed.
+
+At this time, validating MSRV with this workflow is complicated, either
+juggling two separate lockfiles or being compatible with and using the unstable
+feature `-Zminimal-version`.
+This suggests that those following this workflow, at least for now, are more
+advanced users who are less likely to be impacted by needing to opt-in to a new
+flag.
+Of course, this only reflects on the transition cost and how surprising changing the behavior would be for existing Rust users and not on what is the right choice long term.
+
+If your building and testing becomes dependent on the capabilities of the newer toolchain for development,
+your dependents can't patch in the git dependency to try out a fix or feature and
+you can't validate your package's MSRV [without heroics](https://github.com/taiki-e/cargo-hack/issues/216).
+In some cases, people have leveraged this workflow to intentionally not verify their MSRV,
+treating their MSRV as [tier 3](https://doc.rust-lang.org/nightly/rustc/platform-support.html#tier-3).
+Instead, we should be driving people towards patchable dependencies and verified MSRVs and away from intentionally unverifiable MSRVs.
+
+A potential side effect of less-verified MSRVs is that frees maintainers up to have larger MSRV policies than their dependents as they aren't being forced to update their MSRV to get a bug fix
+(assuming it won't be backported to a patch release within a compatible MSRV).
+However, longer MSRV policies encourage more stagnation
+as falling behind in dependencies represents a risk when it comes to security vulnerabilities.
+For when longer MSRVs are needed, maintainers should reserve MSRV bumps for when bumping their minor version,
+giving them room to backport fixes.
+
+In addition, without support for more granular MSRV declarations,
+I would suggest that the behavior we should drive is that `package.rust-version` applies generally,
+including for local development.
+In this way, MSRV is different than minimal version resolution,
+despite rustc being yet another dependency.
+
+Application development is a potential specialization in this area.
+There are already likely differences between development and production, including
+- Loading of assets locally vs bundling
+- `debug` vs `release` profiles
+- Default target CPU vs specialized target CPU
+
+An application developer might be willing to say "I'll support old MSRVs for
+Debian but my regular releases get all the latest bells and whistles" (from cargo dependencies only) and
+decide to develop with the latest dependencies, while verifying an MSRV in CI.
+For the subset of applications that are being installed via `cargo install`,
+this runs into a problem.
+The standing assumption is that `cargo install` does not reuse the associated `Cargo.lock` to ensure the latest bug and security fixes are used
+(except when they are stuck behind breaking changes)
+but that if something goes wrong,
+`--locked` is available to use the `Cargo.lock` file to build with a known, good (i.e. verified) state
+(e.g. [rust-lang/cargo#10891](https://github.com/rust-lang/cargo/issues/10891)).
+Without more granular MSRV declarations,
+users should be able to expect that the MSRV means that `Cargo.lock` is verified against the MSRV so that `cargo install --locked` can work for these users as well.
+
+For the **"shared development / publish rust-version"** workflow,
+the user will discover this the first time they validate with their MSRV.
+The error will help guide them to how to fix this (set a config and re-resolve)
+This will most likely be checked in via a config file which will make this a fix-and-forget.
+
+There can be some mild frustration in the vein of "if it can figure it out, why doesn't it".
+This is the type of "guiding" of a user that can put people off and borderlines on condescending.
+This also shows it fails the principle of least surprise for people supporting old rustc's.
+Users know cargo has the information and are surprised that it doesn't use it.
+
+By having this behavior be non-default, we are implicitly steering people away from this approach.
+
+A side benefit for those following the "shared development / publish rust-version" workflow
+(which we are steering people away from)
+is that they get feedback earlier about using APIs from dependencies too new for their MSRV
+(though this does not replace validation in CI).
+There are more ideal solutions, like stable use of `#[stable]` and telling rustc about the minimum possible version of a dependency.
+The path and time table for that is unclear.
+This does not justify prioritizing this workflow on its own but contributes to the whole picture
+and is not a precedence for switching to minimal version resolution.
+
+As the opt-in is a one-and-done (and likely not by someone setting policy),
+it is unlikely to discourage stagnation.
+Whether its opt-in or opt-out, keeping users informed that they are behind on dependencies is much more likely to drive people to updating.
+Opt-in for MSRV resolution is also putting focus on a lower area of cost/risk for stagnation
+while nothing is being done for major version.
+Improving things for major versions will likely improve things for MSRV.
 
 ## Make `rust-version=rustc` the default
 
