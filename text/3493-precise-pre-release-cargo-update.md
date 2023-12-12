@@ -18,7 +18,7 @@ the resolver ignoring pre-releases like yanked packages, with an override flag.
 # Motivation
 [motivation]: #motivation
 
-Today, version requirements ignore pre-release versions,
+Today, version requirements ignore pre-release versions by default,
 so `1.0.0` cannot be used with `1.1.0-alpha.1`.
 Specifying a pre-release in a version requirement has two affects
 - Specifies the minimum compatible pre-release.
