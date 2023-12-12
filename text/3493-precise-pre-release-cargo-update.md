@@ -26,8 +26,9 @@ Specifying a pre-release in a version requirement has two affects
 
 However, coupling these concerns makes it difficult to try out pre-releases
 because every dependency in the tree has to opt-in.
-For example, if a maintainer releases `dep = "0.1.1-pre.0"`.
-They may ask one of their users to try the new API additions in a large project so that the user can give feedback on the release before the maintainer stabilises the new parts of the API.
+For example, a maintainer asks one of their users to try new API additions in
+`dep = "0.1.1-pre.0"` in a large project so that the user can give feedback on
+the release before the maintainer stabilises the new parts of the API.
 Unfortunately, since `dep = "0.1.0"` is a transitive dependency of several dependencies of the large project, `cargo` refuses the upgrade, stating that `0.1.1-pre.0` is incompatible with `0.1.0`.
 The user is left with no upgrade path to the pre-release unless they are able to convince all of their transitive uses of `dep` to release pre-releases of their own.
 
