@@ -30,6 +30,11 @@ fn main() {
 }
 ````
 
+Note that to share these in markdown, a priority use case, extra backticks for the markdown code fence to escape the frontmatter code fence.
+We expect most users will not be familiar enough with the markdown spec to know this, especially one of our primary target audience: those new to Rust.
+This can also be frustrating for experienced users as three backticks is an ingrained habbit and it is common to need to go back and edit a post to properly escape the frontmatter.
+However, when weighing out the syntactic needs and the alternatives, we felt this was the least bad option.
+
 # Motivation
 [motivation]: #motivation
 
@@ -97,7 +102,7 @@ the responsibility for high quality error messages will largely fall on cargo.
 
 - A new concept for Rust syntax, adding to overall cognitive load
 - Ecosystem tooling updates to deal with new syntax
-- When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)
+- **When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)**
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -182,7 +187,7 @@ Benefits:
 - In the future, this can be leveraged by other build systems or tools
 
 Downsides:
-- When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)
+- **When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)**
   - Maintainers seeding GitHub issue templates with 4 backticks can help
 - Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 - If viewed from the lens of a comment, it isn't a variant of comment syntax like doc-comments
