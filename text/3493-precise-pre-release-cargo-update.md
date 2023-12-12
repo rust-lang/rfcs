@@ -158,6 +158,11 @@ Implementation-wise, this is very similar to how yanked packages work.
 The only difference being that `--precise` does not allow overriding the "ignore yank" behavior
 (though [it is desired by some](https://github.com/rust-lang/cargo/issues/4225)).
 
+For `--precise` forcing a version through, we have precedence in
+[an approved-but-not-implemented proposal](https://github.com/rust-lang/cargo/issues/12425)
+for `cargo update --precise` for incompatible versions to force its way
+through by modifying `Cargo.toml`.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
