@@ -186,3 +186,8 @@ Since crates ignore the lock files of their dependencies there is no way for `a`
 To enable this we could use the same concept of compatible pre-releases in `Cargo.toml`, not just `Cargo.lock`.
 This would require that pre-releases are specified with `=` and would allow pre-release versions to be requested anywhere within the dependency tree without causing the resolver to throw an error.
 
+## `--allow-prelease`
+
+Instead of manually selecting a version with `--precise`, we could support `cargo update --package foo --allow-prelease`.
+
+If we made this flag work without `--package`, we could the extend it also to `cargo generate-lockfile`.
