@@ -2,7 +2,7 @@
 
 - Feature Name: `async-drop`
 - Start Date: 2023-12-12
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3541](https://github.com/rust-lang/rfcs/pull/3541)
 - Rust Issue: TBD
 
 # Summary
