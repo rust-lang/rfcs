@@ -11,6 +11,10 @@ This effectively splits the notion of compatibility in `cargo`.
 A pre-release version may be considered compatible when the version is explicitly requested with `--precise`.
 Cargo will not automatically select that version via a basic `cargo update`.
 
+One way to think of this is that we are changing from the the version
+requirements syntax requiring opt-in to match pre-release of higher versions to
+the resolver ignoring pre-releases like yanked packages, with an override flag.
+
 # Motivation
 [motivation]: #motivation
 
@@ -146,6 +150,13 @@ This RFC may be a stepping stone in that direction since it lays the groundwork 
 
 [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263) aims to solve a similar but different issue where `cargo update` opts to upgrade 
 pre-release versions to new pre-releases when one is released.
+
+Implementation-wise, this is very similar to how yanked packages work.
+- Not selected under normal conditions
+- Once its in the lockfile, that gets respected and stays in the lockfile
+
+The only difference being that `--precise` does not allow overriding the "ignore yank" behavior
+(though [it is desired by some](https://github.com/rust-lang/cargo/issues/4225)).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
