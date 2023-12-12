@@ -11,7 +11,7 @@ This effectively splits the notion of compatibility in `cargo`.
 A pre-release version may be considered compatible when the version is explicitly requested with `--precise`.
 Cargo will not automatically select that version via a basic `cargo update`.
 
-One way to think of this is that we are changing from the the version
+One way to think of this is that we are changing from the version
 requirements syntax requiring opt-in to match pre-release of higher versions to
 the resolver ignoring pre-releases like yanked packages, with an override flag.
 
