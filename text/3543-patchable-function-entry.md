@@ -79,11 +79,15 @@ This flag sets the default nop padding for all functions in the crate. Notably, 
 
 `prefix` is calculated as `offset`. `entry` is calculated as `nop_count - offset`. This unusual mode of specification is intended to mimic the compiler flags of `clang` and `gcc` for ease of build system integration.
 
+Specifying the compiler flag for a backend or architecture which does not support this feature will result in an error.
+
 ## Attribute `#[patchable_function_entry]`
 
 This attribute allows specification of either the `prefix` or `entry` values or both, using the format `#[patchable_function_entry(prefix(n), entry(n))]`. If either is left unspecified, it overrides them to a default value of 0.
 
 As this is specified via an attribute, it will persist across crate boundaries unlike the compiler flag.
+
+Specifying any amount of padding other than 0 in an attribute will result in an error on backends or architectures which do not support this feature.
 
 # Drawbacks
 [drawbacks]: #drawbacks
