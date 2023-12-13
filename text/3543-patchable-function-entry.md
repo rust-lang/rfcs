@@ -190,6 +190,7 @@ I'm not sure why we would do this.
 
 - Should we use LLVM or `gcc`/`clang` style for a per-function attribute? Should we support both styles?
 - Should we support a more explicit command line argument style?
+- Should we reject linking crates with different default padding configurations?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
