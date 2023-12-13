@@ -30,7 +30,7 @@ nop
 // Code goes here
 ```
 
-To set this for all functions in a crate, use `-Z patchable-function-entry=nop_count,offset` where `nop_count = prefix + entry`, and `offset = prefix`. Usually, you'll want to copy this value from a corresponding `-fpatchable-function-entry=` being passed to the C compiler in your project.
+To set this for all functions in a crate, use `-C patchable-function-entry=nop_count,offset` where `nop_count = prefix + entry`, and `offset = prefix`. Usually, you'll want to copy this value from a corresponding `-fpatchable-function-entry=` being passed to the C compiler in your project.
 
 To set this for a specific function, use `#[patchable_function_entry(prefix(m), entry(n))]` to pad with m nops before the symbol and n after the symbol, but before the prelude. This will override the flag value.
 
@@ -64,18 +64,18 @@ Nop padding may not be supported on all architectures. As of the time of writing
 `f_pad` addresses for every padded symbol are aggregated in the `__patchable_function_entries` section of the resulting object.
 This is not a real symbol, just a collected location.
 
-## Compiler flag `-Z patchable-function-entry`
+## Compiler flag `-C patchable-function-entry`
 
 This flag comes in two forms:
 
-- `-Z patchable-function-entry=nop_count,offset`
-- `-Z patchable-function-entry=nop_count`
+- `-C patchable-function-entry=nop_count,offset`
+- `-C patchable-function-entry=nop_count`
 
 In the latter, offset is assumed to be zero. `nop_count` must be greater than or equal to `offset`, or it will be rejected.
 
 If unspecified, the current behavior is maintained, which is equivalent to `=0` here.
 
-This flag sets the default nop padding for all functions in the crate. Notably, this default *only applies to codegenned functions*. If a function is monomorphized during the compilation of another crate or any similar scenario, it will use the default from that crate's compilation. In most cases, all crates in a compilation should use the same value of `-Z patchable-function-entry` to reduce confusion.
+This flag sets the default nop padding for all functions in the crate. Notably, this default *only applies to codegenned functions*. If a function is monomorphized during the compilation of another crate or any similar scenario, it will use the default from that crate's compilation. In most cases, all crates in a compilation should use the same value of `-C patchable-function-entry` to reduce confusion.
 
 `prefix` is calculated as `offset`. `entry` is calculated as `nop_count - offset`. This unusual mode of specification is intended to mimic the compiler flags of `clang` and `gcc` for ease of build system integration.
 
@@ -102,7 +102,7 @@ This alternative runs the risk of the Rust-for-Linux experiment not leaving expe
 The primary advantage of this design is that it does not require us to do anything.
 
 ### Only compiler flag
-In this design, we only add the `-Z patchable-function-entry` flag and not the attribute. This is enough for today - it would allow Rust to participate in these schemes, and in the event that a user *deeply* needed an uninstrumented function, they could build it as a separate crate.
+In this design, we only add the `-C patchable-function-entry` flag and not the attribute. This is enough for today - it would allow Rust to participate in these schemes, and in the event that a user *deeply* needed an uninstrumented function, they could build it as a separate crate.
 
 This design has two drawbacks:
 
@@ -159,10 +159,10 @@ as modifiers to the attribute. We could make `prefix`/`entry` vs `nop_count`/`of
 
 In addition to supporting `nop_count`/`offset` for attributes, we could support this on the command line as well. This would have three forms:
 
-- `-Z patchable-function-entry=m` (`nop_count=m`, `offset=0`, compat format)
-- `-Z patchable-function-entry=m,n` (`nop_count=m`, `offset=n`, compat format)
-- `-Z patchable-function-entry=nop_count=m,offset=n` (`nop_count=m`, `offset=n`, modern format, offset optional)
-- `-Z patchable-function-entry=prefix=m,entry=n` (`prefix=m`, `entry=n`, modern format, either optional)
+- `-C patchable-function-entry=m` (`nop_count=m`, `offset=0`, compat format)
+- `-C patchable-function-entry=m,n` (`nop_count=m`, `offset=n`, compat format)
+- `-C patchable-function-entry=nop_count=m,offset=n` (`nop_count=m`, `offset=n`, modern format, offset optional)
+- `-C patchable-function-entry=prefix=m,entry=n` (`prefix=m`, `entry=n`, modern format, either optional)
 
 This would have the benefit of making it more clear what's being specified and allowing users to employ the simpler format on the command line if not integrating with an existing build.
 
