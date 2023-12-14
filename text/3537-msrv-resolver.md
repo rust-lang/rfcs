@@ -385,7 +385,7 @@ this could instead further entrench rust-version stagnation in the ecosystem.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Misc
+Misc alternatives
 - Config was put under `build` to associate it with local development, as compared with `install` which could be supported in the future
 - Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 - The resolver doesn't support backtracking as that is extra complexity that we can always adopt later as we've reserved the right to make adjustments to what `cargo generate-lockfile` will produce over time.
