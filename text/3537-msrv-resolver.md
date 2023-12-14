@@ -531,6 +531,8 @@ Improving things for major versions will likely improve things for MSRV.
 This proposal elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
 We could instead do the opposite, adding support for `CARGO_BUILD_RESOLVER_PRECEDENCE=rustc` instead as a "safe" default for assuming the development rust-version.
 
+This has no impact on `cargo add`; it will still pick a version requirement that is MSRV-compatible.
+
 In terms of keeping this proposal minimal, this means we are likely to not include `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`.
 For people with the "shared development / publish rust-version" workflow, this would push them to using a `rust-toolchain.toml` file.
 The downsides to using a `rust-toolchain.toml`" are:
@@ -558,11 +560,10 @@ As for CI, it will be dependent on which toolchain is used (at least `stable`).
 If you do check-in your `Cargo.lock` as is suggested (but not prescribed),
 then you are subject to whatever versions were compatible with the toolchain of each developer who caused a `Cargo.lock` change.
 
-Like with `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` being the default, some other downsides are:
-- The user explicitly told us the MSRV for the project; we do not have the granularity for different MSRVs for different workflows (or `features`) and likely the complexity would not be worth it.
-- "Separate development / publish MSRV" workflows are inherently more complex to support with more caveats of where they apply, making "shared development / publish MSRV" workflows the path of least resistance for users.
-- Without configuration, defaulting to "shared development / publish MSRV" workflows will lead to the least number of errors from cargo as the resulting lockfile is compatible with the "separate development / publish MSRV" workflows.
-- "Shared development / publish MSRV" workflows catch too-new API problems sooner
+In the scenario where the `Cargo.lock` is not committed, every contributor will be using a different set of dependencies,
+making supporting them through problems more difficult.
+
+As this encourages "shared development / publish rust-version" workflow, see the "opt-in" solution for the caveats of encouraging that workflow.
 
 ## Hard-error
 
