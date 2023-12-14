@@ -382,6 +382,14 @@ Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RE
 While we hope this will give maintainers more freedom to upgrade their MSRV,
 this could instead further entrench rust-version stagnation in the ecosystem.
 
+For projects with larger MSRVs than their dependencies,
+this introduces another form of drift from the latest dependencies
+(in addition to [lockfiles](https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control)).
+However, we already recommend people
+[verify their latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies),
+so the only scenario this degrades it further is when lockfiles are verified by always updating to the latest, like with RenovateBot,
+and only in the sense that the user needs to know to explicitly take action to add another verification job to CI.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
