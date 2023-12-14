@@ -465,6 +465,8 @@ Downsides
 - A lot of tools/IDEs have problems in dealing with macros
 - Free-form rust code makes it harder for cargo to make edits to the manifest
 
+Bazel has an [import proc-macro](https://github.com/bazelbuild/rules_rust/pull/1142) but its more for simplifying the writing of `extern crate`.
+
 ### Alternative 7: Presentation Streams
 
 ```rust
