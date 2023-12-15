@@ -309,11 +309,14 @@ the resolver will pick the lowest version among workspace members.
 This will be less optimal for workspaces with multiple MSRVs and dependencies unique to the higher-MSRV packages.
 Users can workaround this by raising the version requirement or using `cargo update --precise`.
 
-If `package.rust-version` is unset among all workspace members,
-we'll fallback to `rustc --version` (implicitly picking up `rust-toolchain.toml` files),
-ensuring a build that at least works for the current system.
+When `rust-version` is unset,
+we'll fallback to `rustc --version`.
+This is primarily targeted at helping users with a
+[`rust-toolchain.toml` file](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
+(to reduce duplication)
+though this would also help users who happen to be on an old rustc, for whatever reason.
 As this is just a preference for resolving dependencies, rather than prescriptive,
-this shouldn't cause churn.
+this shouldn't cause churn of the `Cargo.lock` file.
 We already call `rustc` for feature resolution, so hopefully this won't have a performance impact.
 
 The resolver will only do this for local packages and not for `cargo install`.
