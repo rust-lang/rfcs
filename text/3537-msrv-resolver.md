@@ -473,8 +473,8 @@ A potential side effect of less-verified MSRVs is that frees maintainers up to h
 (assuming it won't be backported to a patch release within a compatible MSRV).
 However, longer MSRV policies encourage more stagnation
 as falling behind in dependencies represents a risk when it comes to security vulnerabilities.
-Alternatively for when longer MSRVs are needed, maintainers could [reserve MSRV bumps for when bumping their minor version](https://doc.rust-lang.org/cargo/reference/semver.html#env-new-rust),
-giving them room to backport fixes.
+Alternatively when supporting dependents with older MSRVs is needed, maintainers could reserve MSRV bumps for when bumping their minor version,
+leaving room in their version numbers to release backported fixes.
 
 In addition, without support for more granular MSRV declarations,
 I would suggest that the behavior we should drive is that `package.rust-version` applies generally,
