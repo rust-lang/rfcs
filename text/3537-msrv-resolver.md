@@ -366,7 +366,7 @@ without having to support the flag on every single command.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-As proposed, CI that tries to verify against the latest dependencies will no longer do so.
+As proposed, CI that tries to verify against the latest dependencies will no longer do so when `rust-version` is set.
 Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
 - If we consider this a major incompatibility, then it needs to be opted into.
   As `cargo fix` can't migrate a user's CI,
