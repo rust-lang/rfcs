@@ -60,6 +60,115 @@ async fn main() {
 }
 ```
 
+Moreover, to seamlessly integrate native async drop support into Rust, it is essential to outline how executors should handle asynchronous resource cleanup. This section also provides guidelines for developers using executors to ensure consistent and correct execution of async drop logic.
+
+1. **Recognition of AsyncDrop Trait**
+   Executors, such as `MyExecutor` in the following example, should be updated to recognize types implementing the `AsyncDrop` trait. This can be achieved through a mechanism such as trait bounds or associated types to identify futures that require special handling for asynchronous cleanup.
+
+   ```rust
+   trait Executor {
+       fn spawn(&self, future: impl Future);
+   }
+
+   impl<T: AsyncDrop> Executor for MyExecutor {
+       // Your custom cleanup logic goes here
+   }
+   ```
+
+   Here, `T: AsyncDrop` indicates that this executor can work with futures (`T`) that implement the AsyncDrop trait. The `AsyncDrop` trait serves as a marker, signaling that the associated type requires special handling for asynchronous cleanup.
+
+1. **Async Drop Invocation**
+   Executors must ensure that the async `drop` method is invoked when a future implementing the `AsyncDrop` trait goes out of scope or completes. This involves tracking the lifecycle of futures and, upon termination, triggering the async drop logic before releasing associated resources.
+
+   ```rust
+   async fn execute_future<T: AsyncDrop>(&self, fut: T) {
+       // Execute the future
+       let result = block_on(fut);
+   
+       // Perform async drop before releasing resources
+       fut.drop().await;
+   }
+   ```
+
+   The `futures::executor::block_on` function is employed to execute the future (`fut`), pausing the current thread until the future completes and produces a result. Following the completion of the future's execution, the executor invokes the `drop` method on the future (`fut`). This ensures the execution of asynchronous drop logic, allowing the future to perform any necessary cleanup operations before resources are released.
+
+1. **Context Propagation**
+   To maintain a consistent execution context for async drops, executors should propagate the appropriate `Waker` and `Context` information to the async drop method. This ensures that async drops can interact with the executor environment and make executor-specific decisions during cleanup.
+
+   ```rust
+   async fn execute_future<T: AsyncDrop + Future + Copy>(&self, fut: T) {
+       // Set up the execution context
+       let waker = Waker::noop();
+       let mut cx = Context::from_waker(&waker);
+       
+       // Execute the future with the provided context
+       let mut pinned = std::pin::pin!(fut);
+       let _ = pinned.as_mut().poll(&mut cx); 
+       
+       // Perform async drop within the same context
+       fut.drop().await;
+   }
+   ```
+
+   After the future is polled, the `drop` method of the future (`fut`) is invoked. This ensures that the async drop logic is executed in the same context established earlier.
+
+Here is a fully working example:
+
+```rust
+#![feature(noop_waker)]
+
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll, Waker};
+
+// AsyncDrop trait that should be implemented internally
+trait AsyncDrop {
+    async fn drop(&mut self);
+}
+
+// Future type for demonstration purposes
+#[derive(Clone, Copy)]
+struct MyFuture;
+
+impl Future for MyFuture {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // Your custom future's poll logic goes here
+        Poll::Ready(())
+    }
+}
+
+impl AsyncDrop for MyFuture {
+    async fn drop(&mut self) {
+        // Your asynchronous cleanup logic goes here
+        println!("Async cleanup executed");
+    }
+}
+
+// Custom executor
+async fn execute_future<T: AsyncDrop + Future + Copy>(mut fut: T) {
+    // Set up the execution context
+    let waker = Waker::noop();
+    let mut cx = Context::from_waker(&waker);
+
+    // Execute the future
+    let mut pinned = std::pin::pin!(fut);
+    let _ = pinned.as_mut().poll(&mut cx);
+
+    // Perform async drop
+    fut.drop().await;
+}
+
+#[tokio::main]
+async fn main() {
+    let my_future = MyFuture;
+    execute_future(my_future).await;
+}
+```
+
+By following these recommendations, executors can seamlessly integrate with the native async drop support, providing a standardized and reliable mechanism for handling asynchronous resource cleanup in Rust. These guidelines ensure that async drops are executed appropriately within the executor's lifecycle, enhancing the overall consistency and predictability of asynchronous resource management in Rust.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
