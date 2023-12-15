@@ -341,7 +341,7 @@ This behavior can be bypassed with `--ignore-rust-version`
 
 ## Cargo config
 
-We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` that will control the control pick the mechanisms for preferring one compatible version over another.
+We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
 
 ```toml
 [build]
