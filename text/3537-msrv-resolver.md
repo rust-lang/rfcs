@@ -378,9 +378,6 @@ Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RE
 - If we do a slow roll out (opt-in then opt-out), the visibility for the switch
   to opt-out will be a lot less than the initial announcement and we're more
   likely to miss people compared to making switch over when this gets released.
-- If we change behavior with a new edition (assuming we treat this as a minor incompatibility),
-  we get the fanfare needed but it requires waiting until people bump their MSRV,
-  making it so the people who need it the most are the those who will least benefit.
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
 this could instead further entrench rust-version stagnation in the ecosystem.
