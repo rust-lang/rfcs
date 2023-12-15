@@ -425,6 +425,8 @@ making this opt-in encourages more testing of the latest dependencies.
 Before we [changed our guidance on lockfiles](https://github.com/rust-lang/cargo/pull/12382),
 this was already limited as `bin`s should have a `Cargo.lock` file which is
 infectious to their entire workspace.
+For local development, you are reusing the same `Cargo.lock` over time, adjusted only when a version requirement forces it, causing you to not get "maximal versions" at the time of a change.
+So that leaves CI for seeing / verifying maximal versions.
 This was also subject to the velocity of the project;
 for passively maintain projects they can go a year without a CI run.
 Now that we've changed our guidance on lockfiles,
