@@ -63,34 +63,37 @@ async fn main() {
 Moreover, to seamlessly integrate native async drop support into Rust, it is essential to outline how executors should handle asynchronous resource cleanup. This section also provides guidelines for developers using executors to ensure consistent and correct execution of async drop logic.
 
 1. **Recognition of AsyncDrop Trait**
-   Executors, such as `MyExecutor` in the following example, should be updated to recognize types implementing the `AsyncDrop` trait. This can be achieved through a mechanism such as trait bounds or associated types to identify futures that require special handling for asynchronous cleanup.
+   Futures, such as those utilized in async Rust programming, should be updated to recognize types implementing the `AsyncDrop` trait. This can be achieved through a mechanism such as trait bounds or associated types to identify futures that require special handling for asynchronous cleanup.
 
    ```rust
-   trait Executor {
-       fn spawn(&self, future: impl Future);
+   trait AsyncDrop {
+       async fn drop(&mut self);
    }
 
-   impl<T: AsyncDrop> Executor for MyExecutor {
-       // Your custom cleanup logic goes here
+   impl AsyncDrop for MyFuture {
+       // Your asynchronous cleanup logic goes here
+       async fn drop(&mut self) {
+           println!("Async cleanup executed");
+       }
    }
    ```
 
-   Here, `T: AsyncDrop` indicates that this executor can work with futures (`T`) that implement the AsyncDrop trait. The `AsyncDrop` trait serves as a marker, signaling that the associated type requires special handling for asynchronous cleanup.
+   Here, the `AsyncDrop` trait declares an asynchronous `drop` method, which should be implemented internally, allowing futures to define their asynchronous cleanup logic independently. In the example implementation for `MyFuture`, the `AsyncDrop` trait is implemented, and the asynchronous cleanup logic is executed when the `drop` method is called. This approach provides flexibility in handling resource management during asynchronous execution for different types of futures.
 
 1. **Async Drop Invocation**
    Executors must ensure that the async `drop` method is invoked when a future implementing the `AsyncDrop` trait goes out of scope or completes. This involves tracking the lifecycle of futures and, upon termination, triggering the async drop logic before releasing associated resources.
 
    ```rust
-   async fn execute_future<T: AsyncDrop>(&self, fut: T) {
+   async fn execute_future<T: AsyncDrop + Future + Copy>(&self, mut fut: T) {
        // Execute the future
-       let result = block_on(fut);
-   
+       let result = fut.await;
+
        // Perform async drop before releasing resources
        fut.drop().await;
    }
    ```
 
-   The `futures::executor::block_on` function is employed to execute the future (`fut`), pausing the current thread until the future completes and produces a result. Following the completion of the future's execution, the executor invokes the `drop` method on the future (`fut`). This ensures the execution of asynchronous drop logic, allowing the future to perform any necessary cleanup operations before resources are released.
+   The `fut.await` call will execute the future (`fut`), pausing the current thread until the future completes and produces a result. Following the completion of the future's execution, the executor invokes the `drop` method on the future (`fut`). This ensures the execution of asynchronous drop logic, allowing the future to perform any necessary cleanup operations before resources are released. The `Copy` trait is used here to allow the future (`fut`) to be moved into the await call without consuming its ownership, ensuring that it can still be used later.
 
 1. **Context Propagation**
    To maintain a consistent execution context for async drops, executors should propagate the appropriate `Waker` and `Context` information to the async drop method. This ensures that async drops can interact with the executor environment and make executor-specific decisions during cleanup.
