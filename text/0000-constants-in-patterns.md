@@ -28,7 +28,7 @@ That RFC is incomplete in several ways:
 [rfc-1445]: https://rust-lang.github.io/rfcs/1445-restrict-constants-in-patterns.html
 
 RFC 1445 had the goal of leaving it open whether we want constants in patterns to be treated like sugar for primitive patterns or for `PartialEq`-based equality tests.
-This new RFC takes the stance it does based on the following main design goals:
+This new RFC takes the stance it does the former based on the following main design goals:
 
 - Refactoring a pattern that has no binders, wildcards, or ranges into a constant should never change behavior.
   This aligns with the oft-repeated intuition that a constant works "as if" its value was just copy-pasted everywhere the constant is used.
@@ -96,6 +96,9 @@ enum MyEnum { GoodVariant(i32), NonStructuralVariant(NonStructuralEq) }
 // This constant *can* be used in a pattern.
 const C: MyEnum = MyEnum::GoodVariant(0);
 ```
+
+This means the eligibility of a constant for a pattern depends on its value, not just on its type.
+That is already the case on stable Rust for many years and relied upon by widely-used crates such as [`http`](https://github.com/rust-lang/rust/issues/62411#issuecomment-510604193).
 
 Overall we say that the *value* of the constant must have recursive structural equality,
 which is the case when all the types that actually appear recursively in the type (ignoring "other" enum variants) have structural equality.
