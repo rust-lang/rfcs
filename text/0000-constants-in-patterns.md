@@ -307,3 +307,4 @@ None at this time.
   These pattern aliases could even have binders.
 - Eventually we might want to allow matching in constants that do *not* have a structural equality operation, and instead have completely user-defined matching behavior.
   By rejecting matching on non-structural-equality constants, this proposal remains future compatible with such a new language feature.
+- In the future, we could consider allowing more types in range patterns via a further opt-in, e.g. something like `StructuralPartialOrd`.
