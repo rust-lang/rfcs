@@ -225,6 +225,13 @@ as they make the fundamental closure expression syntax
 unnecessarily dependent on the `clone` language item,
 and does not offer possibilities for alternative transformers.
 
+## `move` inside parameter list
+
+As an alternative to having `move(binding)` ahead of a closure, we could put `move binding` in the parameter list: `|x: T, move y, move z = z.clone()| { ... }`.
+
+This would have the advantage of keeping the list of declared names in one place, and giving a view of closures as having some bindings passed in as arguments and other bindings captured from the containing scope.
+
+However, this would have the disadvantage of visually looking like the caller could pass the value in as a parameter, which it cannot.
 # Prior art
 [prior-art]: #prior-art
 
