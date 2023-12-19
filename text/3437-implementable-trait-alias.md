@@ -21,127 +21,154 @@ relationships with the following properties:
   implement the "strong" variant.
 
 Subtrait relationships are commonly used to model this, but this often leads to
-coherence and backward compatibility issues—especially when the "strong" version
-is expected to see more use, or was stabilized first.
+coherence and backward compatibility issues.
 
-## Example: AFIT `Send` bound aliases
-
-### With subtraits
+## AFIT `Send` bound aliases
 
 Imagine a library, `frob-lib`, that provides a trait with an async method.
-(Think `tower::Service`.)
 
 ```rust
-//! crate frob-lib
-pub trait Frobber {
+//! crate `frob-lib`
+pub trait Frob {
     async fn frob(&self);
 }
 ```
 
-Most of `frob-lib`'s users will need `Frobber::frob`'s return type to be `Send`,
+Most of `frob-lib`'s users will need `Frob::frob`'s return type to be `Send`,
 so the library wants to make this common case as painless as possible. But
 non-`Send` usage should be supported as well.
 
-`frob-lib`, following the recommended practice, decides to design its API in the
-following way:
+### MVP: `trait_variant`
+
+Because Return Type Notation isn't supported yet, `frob-lib` follows the
+recommended practice of using the [`trait-variant`](https://docs.rs/trait-variant/)
+crate to have `Send` and non-`Send` variants.
 
 ```rust
-//! crate frob-lib
+//! crate `frob-lib``
 
-pub trait LocalFrobber {
+#[trait_variant::make(Frob: Send)]
+pub trait LocalFrob {
+    async fn frob(&mut self);
+}
+```
+
+However, this API has limitations. Fox example, `frob-lib` may want to offer a
+`DoubleFrob` wrapper:
+
+```rust
+pub struct DoubleFrob<T: LocalFrob>(T);
+
+impl<T: LocalFrob> LocalFrob for DoubleFrob<T> {
+    async fn frob(&mut self) {
+        self.0.frob().await;
+        self.0.frob().await;
+    }
+}
+```
+
+As written, this wrapper only implements `LocalFrob`, which means that it's not
+fully compatible with work-stealing executors. So `frob-lib` tries to add a
+`Frob` implementation as well:
+
+```rust
+impl<T: Frob> Frob for DoubleFrob<T> {
+    async fn frob(&mut self) {
+        self.0.frob().await;
+        self.0.frob().await;
+    }
+}
+```
+
+Coherence, however, rejects this.
+
+```
+error[E0119]: conflicting implementations of trait `LocalFrob` for type `DoubleFrob<_>`
+ --> src/lib.rs:1:1
+  |
+1 | #[trait_variant::make(Frob: Send)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `DoubleFrob<_>`
+...
+8 | impl<T: LocalFrob> LocalFrob for DoubleFrob<T> {
+  | ---------------------------------------------- first implementation here
+  |
+  = note: this error originates in the attribute macro `trait_variant::make` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+For more information about this error, try `rustc --explain E0119`.
+```
+
+With the `trait_variant`-based design, it's impossible to support both `Send`
+and non-`Send` usage in the same `DoubleFrob` type.
+
+### Migrating to Return Type Notation
+
+A few Rust releases later, Return Type Notation is stabilized. `frob-lib` wants
+to migrate to it in order to address the issues with the `trait_variant`
+solution:
+
+```rust
+//! crate `frob-lib``
+
+pub trait LocalFrob {
     async fn frob(&self);
 }
 
 // or whatever RTN syntax is decided on
-pub trait Frobber: LocalFrobber<frob(..): Send> + Send {}
-impl<T: ?Sized> Frobber for T where T: LocalFrobber<frob(..): Send> + Send {}
+pub trait Frob: LocalFrob<frob(..): Send> + Send {}
+impl<T: ?Sized> Frob for T where T: LocalFrob<frob(..): Send> + Send {}
 ```
 
-These two traits are, in a sense, one trait with two forms: the "weak"
-`LocalFrobber`, and "strong" `Frobber` that offers an additional `Send`
-guarantee.
-
-Because `Frobber` (with `Send` bound) is the common case, `frob-lib`'s
-documentation and examples put it front and center. So naturally, Joe User tries
-to implement `Frobber` for his own type.
+However, this is an incompatible change; all implementations of `Frob` are
+broken!
 
 ```rust
-//! crate joes-crate
-use frob_lib::Frobber;
+//! crate `downstream`
+use frob_lib::Frob;
 
 struct MyType;
 
-impl Frobber for MyType {
-    async fn frob(&self) {
-        println!("Sloo is 120% klutzed. Initiating brop sequence...")
-    }
+impl Frob for MyType {
+    // Now an error, "trait `Frob` has no method `frob`"
+    async fn frob(&self) { /* ... */ }
 }
 ```
 
-But one `cargo check` later, Joe is greeted with:
-
-```
-error[E0277]: the trait bound `MyType: LocalFrobber` is not satisfied
-  --> src/lib.rs:6:18
-   |
-6  | impl Frobber for MyType {
-   |                  ^^^^^^ the trait `LocalFrobber` is not implemented for `MyType`
-
-error[E0407]: method `frob` is not a member of trait `Frobber`
-  --> src/lib.rs:7:5
-   |
-7  | /     async fn frob(&self) {
-8  | |         println!("Sloo is 120% klutzed. Initiating brop sequence...")
-9  | |     }
-   | |_____^ not a member of trait `Frobber`
-```
-
-Joe is confused. "What's a `LocalFrobber`? Isn't that only for non-`Send` use
-cases? Why do I need to care about all that?" But he eventually figures it out:
+All `impl` blocks for `Frob` must be migrated to reference `LocalFrob` instead.
 
 ```rust
-//! crate joes-crate
-use frob_lib::LocalFrobber;
+//! crate `downstream`
+use frob_lib::LocalFrob;
 
 struct MyType;
 
-impl LocalFrobber for MyType {
-    async fn frob(&self) {
-        println!("Sloo is 120% klutzed. Initiating brop sequence...")
-    }
+impl LocalFrob for MyType {
+    async fn frob(&self) { /* ... */ }
 }
 ```
 
-This is distinctly worse; Joe now has to reference both `Frobber` and
-`LocalFrobber` in his code.
+Not only is this change disruptive, it also results in more confusing code.
+`downstream` is written for work-stealing executors, but needs to reference
+`LocalFrob` anyway.
 
 ### With today's `#![feature(trait_alias)]`
 
 What if `frob-lib` looked like this instead?
 
 ```rust
-//! crate frob-lib
+//! crate `frob-lib`
 #![feature(trait_alias)]
 
-pub trait LocalFrobber {
+pub trait LocalFrob {
     async fn frob(&self);
 }
 
-pub trait Frobber = LocalFrobber<frob(..): Send> + Send;
+pub trait Frob = LocalFrob<frob(..): Send> + Send;
 ```
 
-With today's `trait_alias`, it wouldn't make much difference for Joe. He would
-just get a slightly different error message:
+With today's `trait_alias`, it wouldn't make much difference for `downstream`.
+`impl` blocks for `Frob` would still be broken.
 
-```
-error[E0404]: expected trait, found trait alias `Frobber`
-  --> src/lib.rs:6:6
-   |
-6  | impl Frobber for MyType {
-   |      ^^^^^^^ not a trait
-```
-
-## Speculative example: GATification of `Iterator`
+## (Speculative) GATification of `Iterator`
 
 *This example relies on some language features that are currently pure
 speculation. Implementable trait aliases are potentially necessary to support
@@ -160,7 +187,7 @@ parameters. One could then define `Iterator` in terms of `LendingIterator`, like
 so:
 
 ```rust
-//! core::iter
+//! `core::iter`
 pub trait LendingIterator {
     type Item<'a>
     where
@@ -179,14 +206,14 @@ But, as with the previous example, we are foiled by the fact that trait aliases
 aren't `impl`ementable, so this change would break every `impl Iterator` block
 in existence.
 
-## Speculative example: `Async` trait
+## (Speculative) `Async` trait
 
 There has been some discussion about a variant of the `Future` trait with an
-`unsafe` poll method, to support structured concurrency ([here](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html)
-for example). *If* such a change ever happens, then the same "weak"/"strong"
-relationship will arise: the safe-to-poll `Future` trait would be a "strong"
-version of the unsafe-to-poll `Async`. As the linked design notes explain, there
-are major problems with expressing that relationship in today's Rust.
+`unsafe` poll method, to support structured concurrency ([wg-async design notes](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html)).
+*If* such a change ever happens, then the same "weak"/"strong" relationship will
+arise: the safe-to-poll `Future` trait would be a "strong" version of the
+unsafe-to-poll `Async`. As the linked design notes explain, there are major
+problems with expressing that relationship in today's Rust.
 
 # Guide-level explanation
 
@@ -194,43 +221,41 @@ With `#![feature(trait_alias)]` (RFC #1733), one can define trait aliases, for
 use in bounds, trait objects, and `impl Trait`. This feature additionally allows
 writing `impl` blocks for a subset of trait aliases.
 
-Let's rewrite our AFIT example from before, in terms of this feature. Here's
-what it looks like now:
+Let's rewrite our AFIT example from before using this feature. Here's what it
+looks like now:
 
 ```rust
-//! crate frob-lib
+//! crate `frob-lib`
 #![feature(trait_alias)]
 
-pub trait LocalFrobber {
+pub trait LocalFrob {
     async fn frob(&self);
 }
 
-pub trait Frobber = LocalFrobber<frob(..): Send> 
+pub trait Frob = LocalFrob<frob(..): Send> 
 where
     // not `+ Send`!
     Self: Send;
 ```
 
 ```rust
-//! crate joes-crate
+//! crate `downstream`
 #![feature(trait_alias_impl)]
 
-use frob_lib::Frobber;
+use frob_lib::Frob;
 
 struct MyType;
 
-impl Frobber for MyType {
-    async fn frob(&self) {
-        println!("Sloo is 120% klutzed. Initiating brop sequence...")
-    }
+impl Frob for MyType {
+    async fn frob(&self) { /* ... */ }
 }
 ```
 
-Joe's original code Just Works.
+`impl`s of `Frob` now Just Work.
 
 The rule of thumb is: if you can copy everything between the `=` and `;` of a
 trait alias, paste it between the `for` and `{` of a trait `impl` block, and the
-result is syntactically valid—then the trait alias is most likely implementable.
+result is syntactically valid—then the trait alias is implementable.
 
 # Reference-level explanation
 
@@ -323,7 +348,6 @@ struct Baz;
 impl IntIterator for Baz {
     // The alias constrains `Self::Item` to `i32`, so we don't need to specify it
     // (though we are allowed to do so if desired).
-    // type Item = i32;
 
     fn next(&mut self) -> i32 {
         -27
@@ -359,28 +383,26 @@ Alias `impl`s also allow omitting implied `#[refine]`s:
 //! crate frob-lib
 #![feature(trait_alias)]
 
-pub trait LocalFrobber {
+pub trait LocalFrob {
     async fn frob(&self);
 }
 
 // not `+ Send`!
-pub trait Frobber = LocalFrobber<frob(..): Send> where Self: Send;
+pub trait Frob = LocalFrob<frob(..): Send> where Self: Send;
 ```
 
 ```rust
 //! crate joes-crate
 #![feature(trait_alias_impl)]
 
-use frob_lib::Frobber;
+use frob_lib::Frob;
 
 struct MyType;
 
-impl Frobber for MyType {
+impl Frob for MyType {
     // The return future of this method is implicitly `Send`, as implied by the alias.
     // No `#[refine]` is necessary.
-    async fn frob(&self) {
-        println!("Sloo is 120% klutzed. Initiating brop sequence...")
-    }
+    async fn frob(&self) { /* ... */ }
 }
 ```
 
@@ -495,8 +517,8 @@ even at the risk of potential confusion.
 
 # Unresolved questions
 
-- How does `rustdoc` render these? Consider the `Frobber` example—ideally,
-  `Frobber` should be emphasized compared to `LocalFrobber`, but it's not clear
+- How does `rustdoc` render these? Consider the `Frob` example—ideally,
+  `Frob` should be emphasized compared to `LocalFrob`, but it's not clear
   how that would work.
 
 # Future possibilities
