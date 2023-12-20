@@ -13,7 +13,7 @@ bound from `T: Sized` to `T: ?Sized + Aligned`.
 
 # Motivation
 
-Some data structures and containers cam store unsized types only if their
+Some data structures and containers can store unsized types only if their
 alignment can be known at compile-time. Additionally, compile-time known
 alignment can enable more efficient algorithms and additional APIs. A built-in
 `Aligned` trait allows Rust code to implement APIs that that are fully usable
