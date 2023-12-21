@@ -22,6 +22,10 @@ the type of the const seems trivial. However, this isn't always the case:
 - When creating macros, the precise type might not be known to the macro author.
 - Code generators may not have enough information to easily determine the type.
 
+This change aims to make Rust code more concise and maintainable, especially in scenarios where the types of
+const items are complicated or not easily expressible.
+
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -33,10 +37,6 @@ const PI = 3.1415; // inferred as f64
 static MESSAGE = "Hello, World!"; // inferred as &'static str
 const FN_PTR = std::string::String::default; // inferred as fn() -> String
 ```
-
-This change aims to make Rust code more concise and maintainable, especially in scenarios where the types of
-const items are complicated or not easily expressible.
-
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -77,7 +77,7 @@ instead of emitting an error.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Impact of Not Doing This: Rust code remains more verbose than necessary, especially in complex scenarios, and macro authors face challenges with type specifications.
-
+- Alternative: Allowing the naming of function types as in [#3476](https://github.com/rust-lang/rfcs/pull/3476) may help resolve some of the cases where type inference is needed.
 
 # Prior art
 [prior-art]: #prior-art
