@@ -111,4 +111,4 @@ note: however, the inferred type `[closure@render_pass.rs:28:11]` cannot be name
    | |_^
 ```
 
-If this significantly complicates the implementation, we can leave it outside the scope of thie RFC.
+If this significantly complicates the implementation, we can leave it outside the scope of this RFC.
