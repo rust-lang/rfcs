@@ -1,6 +1,6 @@
 - Feature Name: const_type_inference
 - Start Date: 2023-12-21
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3546](https://github.com/rust-lang/rfcs/pull/3546)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
