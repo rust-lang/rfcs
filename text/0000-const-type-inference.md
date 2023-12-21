@@ -90,7 +90,7 @@ In [RFC#1623](https://github.com/rust-lang/rfcs/pull/1623) we added `'static` li
 
 Should we allow assignment of unnameable types? For example,
 ```rs
-let A = |a: u32| {
+const A = |a: u32| {
     123_i32
 };
 
