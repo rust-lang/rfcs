@@ -12,6 +12,7 @@ Allow type inference for `const` or `static` when the type of the initial value 
 [motivation]: #motivation
 
 Rust currently requires explicit type annotations for `const` and `static` items.
+It was decided that all public API points should be "obviously semver stable" rather than "quick to type".
 
 
 In simple cases, explicitly writing out
@@ -74,10 +75,13 @@ instead of emitting an error.
 [drawbacks]: #drawbacks
 
 - Potential Loss of Clarity: In some cases, omitting the type might make the code less clear,
-  especially to newcomers or in codebases where explicit types are part of the documentation style.
+  especially to newcomers or when explicit types are needed to understanding the purpose of the item.
   It is my belief that this is a choice better left for the developers as in the case of `let` bindings.
-  This drawback could be addressed using an allow-by-default clippy lint for `const` and `static` types.
-- Anything else?
+- Semvar compatibilty: It's a good idea that public API endpoints should be "obviously semvar stable".
+  However, not all `const` or `static` items are public, and explicit typing isn't always important for semvar stability.
+  Requiring explicit typing for this reason seems a bit heavy handed.
+
+Both of these drawback could be addressed using an allow-by-default clippy lint for `const` and `static` types.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
