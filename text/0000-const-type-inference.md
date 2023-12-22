@@ -71,6 +71,7 @@ instead of emitting an error.
 - Potential Loss of Clarity: In some cases, omitting the type might make the code less clear,
   especially to newcomers or in codebases where explicit types are part of the documentation style.
   It is my belief that this is a choice better left for the developers as in the case of `let` bindings.
+  This drawback could be addressed using an allow-by-default clippy lint for `const` and `static` types.
 - Anything else?
 
 # Rationale and alternatives
