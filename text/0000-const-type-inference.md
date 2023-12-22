@@ -77,7 +77,7 @@ instead of emitting an error.
 - Potential Loss of Clarity: In some cases, omitting the type might make the code less clear,
   especially to newcomers or when explicit types are needed to understanding the purpose of the item.
   It is my belief that this is a choice better left for the developers as in the case of `let` bindings.
-- Semvar compatibilty: It's a good idea that public API endpoints should be "obviously semvar stable".
+- Semver compatibilty: The API surface of the type is implicit, changing the right-hand side in subtle ways can change the type in a way that can be hard to notice, for example between different integer types. 
   However, not all `const` or `static` items are public, and explicit typing isn't always important for semvar stability.
   Requiring explicit typing for this reason seems a bit heavy handed.
 
