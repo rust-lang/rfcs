@@ -27,7 +27,7 @@ This change aims to make Rust code more concise and maintainable, especially in 
 const items are complicated or not easily expressible.
 
 Inferring constant types also improves the ergonomics of the language, particularly for new users. Some users are
-coming from languages where most (or all) types are inferred. So inferring obvious types matches their
+coming from languages where most (or all) types are inferred, so inferring obvious types matches their
 expectations. Other new users are focused on learning ownership, or other core Rust concepts. Reducing the
 amount of boilerplate reduces their mental load. This reduction in mental load also helps experienced programmers.
 
