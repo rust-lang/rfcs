@@ -32,10 +32,16 @@ def main():
 
     for path in os.listdir('text'):
         symlink(f'../text/{path}', f'src/{path}')
+    symlink(f'../compiler_changes.md', f'src/compiler_changes.md')
+    symlink(f'../lang_changes.md', f'src/lang_changes.md')
+    symlink(f'../libs_changes.md', f'src/libs_changes.md')
     symlink('../README.md', 'src/introduction.md')
 
     with open('src/SUMMARY.md', 'w') as summary:
         summary.write('[Introduction](introduction.md)\n\n')
+        summary.write('- [Guidelines for compiler changes](compiler_changes.md)\n')
+        summary.write('- [Guidelines for language changes](lang_changes.md)\n')
+        summary.write('- [Guidelines for library changes](libs_changes.md)\n')
         collect(summary, 'text', 0)
 
     subprocess.call(['mdbook', 'build'])
