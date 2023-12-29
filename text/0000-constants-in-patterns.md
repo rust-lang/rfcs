@@ -274,7 +274,13 @@ This RFC came out of discussions in a [t-lang design meeting](https://github.com
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None at this time.
+- When a constant is used as a pattern in a `const fn`, what exactly should we require?
+  Writing `x == C` would *not* be possible here since calling trait methods like `partial_eq` is not possible in `const fn` currently.
+  In the future, writing `x == C` will likely require a `const impl PartialEq`.
+  So by allowing `match x { C => ... }`, we are allowing uses of `C` that would not otherwise be permitted, which is exactly what the `PartialEq` check was intended to avoid.
+  On the other hand, all this does is to allow at compile-time what could already be done at run-time, so maybe that's okay?
+  Rejecting this would definitely be a breaking change; we currently don't even lint against these cases.
+  Also see [this issue](https://github.com/rust-lang/rust/issues/119398).
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
