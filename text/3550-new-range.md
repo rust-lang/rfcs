@@ -390,7 +390,7 @@ We believe that it is best to keep the `Range` naming for several reasons:
 
 We could choose to make `new_range.into_iter()` resolve to a legacy range type. This would reduce the number of new types we need to add to the standard library.
 
-But the legacy range types have a much larger API surface than other `Iterator`s in the standard library, which typically only implement the various iterator traits and maybe have a `remainder` method. This can reduce optimization potential for the iterators, possibly limiting performance.
+But the legacy range types have a much larger API surface than other `Iterator`s in the standard library, which typically only implement the various iterator traits and maybe have a `remainder` method. Using the legacy range types this way would break convention and could reduce optimization potential for the iterators, possibly limiting performance.
 
 # Prior art
 [prior-art]: #prior-art
