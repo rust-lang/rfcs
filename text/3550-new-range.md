@@ -45,7 +45,7 @@ Rust has several different types of "range" syntax, including the following:
   The iterator for `RangeInclusive` will yield values from `a` (inclusive) to `b` (inclusive) in steps of one.
 
 - `a..` denotes a range from `a` (inclusive) with no upper bound. It resolves to the type `std::ops::range::RangeFrom`.  
-  The iterator for `RangeFrom` will yield values starting with `a` and increasing in steps on one.
+  The iterator for `RangeFrom` will yield values starting with `a` and increasing in steps of one.
 
 These types implement the `IntoIterator` trait, enabling their use directly in a `for` loop:
 ```rust
@@ -130,9 +130,9 @@ To reduce the need for conversions, we recommend the following:
 pub fn takes_range(range: std::ops::Range<usize>) { ... }
 
 // After
-pub fn takes_range(range: std::ops::RangeBounds<usize>) { ... }
+pub fn takes_range(range: impl std::ops::RangeBounds<usize>) { ... }
 // Or
-pub fn takes_range(range: impl Into<std::ops::Range<usize>>) { ... }
+pub fn takes_range(range: impl Into<std::ops::range::legacy::Range<usize>>) { ... }
 ```
 
 - Change any trait bounds that assume `Range*: Iterator` to use `IntoIterator` instead  
@@ -359,7 +359,9 @@ impl<Idx> TryFrom<range::legacy::RangeInclusive<Idx>> for range::RangeInclusive<
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This change has the potential to cause a significant amount of churn in the ecosystem. The largest source of this churn will be cases where ranges are assumed to be `Iterator`. While experimenting with implementing the library part of these changes, I 
+This change has the potential to cause a significant amount of churn in the ecosystem. The largest source of this churn will be cases where ranges are assumed to be `Iterator`. Unlike normal syntax churn, changes will be required to support the new range types, even on older editions.
+
+For example: while experimenting with implementing the library part of these changes, we had to modify [`quote`](https://github.com/pitaj/quote/commit/44feebf0594b255a511ff20890a7acbf4d6aeed1) and [`rustc-rayon`](https://github.com/pitaj/rustc-rayon/commit/e76e554512ce25abb48f4118576ede5d7a457918).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
