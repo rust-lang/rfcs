@@ -28,7 +28,8 @@ not RFCs. It is therefore likely that you should file an MCP instead of an RFC f
   and then uplifted later.
 * Changing the API presented to syntax extensions or other compiler plugins in
   non-trivial ways
-* Adding, removing, or changing a stable compiler flag (needs an [MCP])
+* Adding, removing, or changing a stable compiler flag
+  (needs an FCP somewhere, like on an [MCP] or just on a PR)
 * Adding unstable API for tools (note that all compiler API is currently unstable)
 * Adding, removing, or changing an unstable compiler flag (if the compiler flag
   is widely used there should be at least some discussion on discuss, or an RFC
