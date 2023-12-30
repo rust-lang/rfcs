@@ -22,7 +22,7 @@ not RFCs. It is therefore likely that you should file an MCP instead of an RFC f
 
 * Bug fixes, improved error messages, etc.
 * Minor refactoring/tidying up
-* Large refactorings or redesigns of the compiler (needs an [MCP])
+* Large internal refactorings or redesigns of the compiler (needs an [MCP])
 * Implementing language features which have an accepted RFC.
 * New lints (these fall under the lang team). Lints are best first tried out in clippy
   and then uplifted later.
