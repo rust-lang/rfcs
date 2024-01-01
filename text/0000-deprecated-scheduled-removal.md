@@ -146,6 +146,8 @@ it is used to specify whether the deprecated item will be removed in a future ve
 
 - How should this new attribute be named? (Albeit `scheduled_removal` sounds kind of weird to me, it is the currently the best name after [discussion
 on Rust Internals](https://internals.rust-lang.org/t/pre-rfc-scheduled-removal-parameter-for-deprecated-attribute/19324)).
+  - The name `scheduled_removal` seems to be a bit long given that it is a hard compile error not to remove a certain item after its scheduled removal version.
+    Can the `scheduled_` prefix be removed?
 - How should the diagnostics be updated to accommodate for this? Currently, simply a `note` line is added. Is that good enough?
 
 # Future possibilities
