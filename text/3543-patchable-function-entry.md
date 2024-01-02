@@ -30,9 +30,9 @@ nop
 // Code goes here
 ```
 
-To set this for all functions in a crate, use `-C patchable-function-entry=nop_count,offset` where `nop_count = prefix + entry`, and `offset = prefix`. Usually, you'll want to copy this value from a corresponding `-fpatchable-function-entry=` being passed to the C compiler in your project.
+To set this for all functions in a crate, use `-C patchable-function-entry=nop_count=m,offset=n` where `nop_count = prefix + entry`, and `offset = prefix`. Usually, you'll want to copy this value from a corresponding `-fpatchable-function-entry=` being passed to the C compiler in your project.
 
-To set this for a specific function, use `#[patchable_function_entry(prefix(m), entry(n))]` to pad with m nops before the symbol and n after the symbol, but before the prelude. This will override the flag value.
+To set this for a specific function, use `#[patchable(prefix = m, entry = n)]` to pad with m nops before the symbol and n after the symbol, but before the prelude. This will override the flag value. To disable padding for a specific function, for example because it is part of the instrumentation framework, use `#[unpatchable]`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -68,12 +68,12 @@ This is not a real symbol, just a collected location.
 
 This flag comes in two forms:
 
-- `-C patchable-function-entry=nop_count,offset`
-- `-C patchable-function-entry=nop_count`
+- `-C patchable-function-entry=nop_count=m,offset=n`
+- `-C patchable-function-entry=nop_count=m`
 
 In the latter, offset is assumed to be zero. `nop_count` must be greater than or equal to `offset`, or it will be rejected.
 
-If unspecified, the current behavior is maintained, which is equivalent to `=0` here.
+If unspecified, the current behavior is maintained, which is equivalent to `nop_count=0` here.
 
 This flag sets the default nop padding for all functions in the crate. Notably, this default *only applies to codegenned functions*. If a function is monomorphized during the compilation of another crate or any similar scenario, it will use the default from that crate's compilation. In most cases, all crates in a compilation should use the same value of `-C patchable-function-entry` to reduce confusion.
 
@@ -81,13 +81,15 @@ This flag sets the default nop padding for all functions in the crate. Notably, 
 
 Specifying the compiler flag for a backend or architecture which does not support this feature will result in an error.
 
-## Attribute `#[patchable_function_entry]`
+## Attributes `#[patchable]` and `#[unpatchable]`.
 
-This attribute allows specification of either the `prefix` or `entry` values or both, using the format `#[patchable_function_entry(prefix(n), entry(n))]`. If either is left unspecified, it overrides them to a default value of 0.
+This attribute allows specification of either the `prefix` or `entry` values or both, using the format `#[patchable(prefix = m, entry = n)]`. If either is left unspecified, it overrides them to a default value of 0. Specifying neither prefix nor entry is an error, but explicitly setting them both to 0 is allowed.
 
 As this is specified via an attribute, it will persist across crate boundaries unlike the compiler flag.
 
 Specifying any amount of padding other than 0 in an attribute will result in an error on backends or architectures which do not support this feature.
+
+`#[unpatchable]` is a built-in alias for `#[patchable(prefix = 0, entry = 0)]`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -152,19 +154,17 @@ Users are unlikely to be directly copying code with a manual attribute, and usua
 
 Our attribute system is more powerful than `clang` and `gcc`, so we have the option to support:
 
-- `prefix(n)`
-- `entry(n)`
-- `nop_count(n)`
-- `offset(n)`
+- `prefix = n`
+- `entry = n`
+- `nop_count = n`
+- `offset = n`
 
 as modifiers to the attribute. We could make `prefix`/`entry` vs `nop_count`/`offset` an exclusive choice, and support both. This would provide the advantage of allowing users copying from or familiar with the other specification system to continue using it. The disadvantages would be more complex attribute parsing and potential confusion for people reading code.
 
 ## Support both styles for flags and arguments
 
-In addition to supporting `nop_count`/`offset` for attributes, we could support this on the command line as well. This would have three forms:
+In addition to supporting `nop_count`/`offset` for attributes, we could support this on the command line as well. This would have two forms:
 
-- `-C patchable-function-entry=m` (`nop_count=m`, `offset=0`, compat format)
-- `-C patchable-function-entry=m,n` (`nop_count=m`, `offset=n`, compat format)
 - `-C patchable-function-entry=nop_count=m,offset=n` (`nop_count=m`, `offset=n`, modern format, offset optional)
 - `-C patchable-function-entry=prefix=m,entry=n` (`prefix=m`, `entry=n`, modern format, either optional)
 
