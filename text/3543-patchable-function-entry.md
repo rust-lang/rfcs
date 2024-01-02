@@ -117,15 +117,15 @@ This design has two drawbacks:
 
 The primary advantage of this design is that it is purely a compiler feature, with no change to the language.
 
-## Compiler flag and no-padding attribute
+### Compiler flag and no-padding attribute
 In this design, we add the compiler flag and an attribute that zeroes out padding for a function. This covers all the use cases I see in the Linux kernel today, so the only real downside is missing the opportunity to match `gcc` and `clang`'s capabilities with only a small bit more code.
 
 Some other project might use explicit padding configuration per-function, but a quick search across github only finds the `patchable_function_entry` attribute set to `(0, 0)` other than in compiler tests.
 
-## Everything (proposed design)
+### Everything (proposed design)
 The only real downside I see here is the complexity of adding one more thing to the language.
 
-# Argument style
+## Argument style
 
 There are two basic ways being used today to specify this nop padding:
 
@@ -136,21 +136,21 @@ The primary advantage of the first format is that it is used in `gcc` and `clang
 
 The advantage of the second style is that `prefix` and `entry` don't have validity constraints (`nop_count` must be greater than `offset`) and it's more obvious what the user is asking for.
 
-## Copy `gcc`/`clang` everywhere
+### Copy `gcc`/`clang` everywhere
 
 This approach has the advantage of matching all existing docs and programmers coming over not being confused.
 
-## Use LLVM-style everywhere
+### Use LLVM-style everywhere
 
 This format doesn't require validation and is likely easier to understand for users not already exposed to this concept.
 
-## Use `gcc`/`clang` for flags, LLVM-style for arguments (proposed)
+### Use `gcc`/`clang` for flags, LLVM-style for arguments (proposed)
 
 Build systems tend to interact with our flag interface, and they already have `nop_count,offset` format flags constructed for their C compilers, so this is likely the easiest way for them to interface.
 
 Users are unlikely to be directly copying code with a manual attribute, and usually are just going to be disabling padding per a github search for the attribute. Setting padding to `(0, 0)` is compatible across both styles, and setting `prefix` and `entry` manually is likely to be more understandable for a new user.
 
-## Use `gcc`/`clang` for flags, Support both styles for arguments
+### Use `gcc`/`clang` for flags, Support both styles for arguments
 
 Our attribute system is more powerful than `clang` and `gcc`, so we have the option to support:
 
@@ -161,7 +161,7 @@ Our attribute system is more powerful than `clang` and `gcc`, so we have the opt
 
 as modifiers to the attribute. We could make `prefix`/`entry` vs `nop_count`/`offset` an exclusive choice, and support both. This would provide the advantage of allowing users copying from or familiar with the other specification system to continue using it. The disadvantages would be more complex attribute parsing and potential confusion for people reading code.
 
-## Support both styles for flags and arguments
+### Support both styles for flags and arguments
 
 In addition to supporting `nop_count`/`offset` for attributes, we could support this on the command line as well. This would have two forms:
 
@@ -172,7 +172,7 @@ This would have the benefit of making it more clear what's being specified and a
 
 The primary disadvantage of this is having many ways to say the same thing.
 
-## Use LLVM-style for flags, `gcc`/`clang` for arguments
+### Use LLVM-style for flags, `gcc`/`clang` for arguments
 
 I'm not sure why we would do this.
 
