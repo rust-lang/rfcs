@@ -91,6 +91,10 @@ Specifying any amount of padding other than 0 in an attribute will result in an 
 
 `#[unpatchable]` is a built-in alias for `#[patchable(prefix = 0, entry = 0)]`.
 
+## Optimization Notes
+
+Neither `#[patchable]` nor `-C patchable-function-entry` imply any restriction on inlining by themselves. If it is critical that patched code in the `entry` section be executed on *every* function invocation, not only in an advisory capacity, annotate the relevant functions with `#[inline(never)]` in addition.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -175,6 +179,71 @@ The primary disadvantage of this is having many ways to say the same thing.
 ### Use LLVM-style for flags, `gcc`/`clang` for arguments
 
 I'm not sure why we would do this.
+
+## Inlining
+
+Inlining a function will prevent code in the `entry` patchable section from being executed. This raises the question of whether we should suppress or lint about inlining around this attribute or flag.
+
+Existing support in `gcc` and `clang` does not suppress inlining at all, but `rustc` makes much heavier use of inlining than they do by default, making it possible that we might want to make a different call.
+
+Linux's usage of this flag does not consider inlining suppression to be desirable. The two primary usages are:
+
+- Hardening, where only indirect calls are considered, and so inlining is a non-issue
+- Tracing, where inlined calls are explicitly out of scope, and `noinline` is already explicitly added to C code which should be traced.
+
+Possible signals we could consider include beyond whether any padding is present:
+
+- Whether the `entry` padding is nonzero, not considering `prefix` - `prefix` padding would not be executed by a direct call anyways
+- Whether the padding was specified by an attribute or a flag
+- Whether an explicit inlining annotation is present
+
+Possible actions we could take include:
+
+- Nothing
+- Warning/linting
+- Suppress inlining implicitly
+
+Since we don't have a way to "reset" inlining to default, any plan involving suppression of inlining also needs to come with additional configuration to suppress the suppression.
+
+### Inline suppresssion
+If the function has nonzero `entry` padding, prevent inlining.
+
+Add `-C allow-patchable-function-inlining` to disable this behavior.
+
+Add `#[patchable(inlinable = yes)]` to suppress inline suppression in the attribute.
+
+The advantage of this approach is that any instrumentation will always trigger when the function is called.
+
+Disadvantages:
+
+- When the flag is passed, we will disable inlining *nearly everywhere*. This would be disasterous for performance, given the number of functions Rust depends on inlining to optimize.
+- This does not match C/C++ behavior, which means most existing use cases will be surprised.
+- We need to add flag complexity to match existing use cases.
+
+We could mitigate a portion of the disadvantages of this approach by only suppressing for the attribute rather than the flag. This would prevent the use of a flag to trace all function invocations.
+
+### Lint on attribute
+If the function has nonzero `entry` padding specified via attribute, and `#[inline]` is not explicitly set, trigger a lint.
+
+Use `#[allow]` to accept the inlinability, the same as any other lint.
+
+The advantage of this approach is that if the attribute is explicitly set, it will surface to the user to think about inlining. By using a lint, we avoid introducing new syntax, allow it to be ignored crate-wide if needed, and avoid user surprise.
+
+Disadvantages:
+
+- There are no instances of the C/C++ side variants of this attribute in the wild being used with nonzero entry padding, so we don't know if this behavior would actually be unexpected.
+- There is no way for a user to use load-bearing entry padding on the whole program without annotating every function.
+- The user would not be informed when patchability was triggered via a compilation flag.
+
+### Do not suppress inlining (proposed)
+Take no action on inlining other than mentioning it in the reference.
+
+This approach mirrors what C/C++ does today. It doesn't close the door on taking the lint approach in the future, but we wouldn't be able to do suppression in the future without reversing the sense of the extra flags.
+
+Disadvantages:
+
+- There is no way for a user to use load-bearing entry padding on the whole program without annotating every function.
+- Users not familiar with the C/C++ usage of the flag might be surprised when Rust's more aggressive inlining fails to run an `entry` prelude in some scenarios.
 
 # Prior art
 [prior-art]: #prior-art
