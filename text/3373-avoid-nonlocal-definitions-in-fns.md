@@ -34,7 +34,7 @@ The following types of items, "expression-containing items", can contain
 expressions, including the definitions of other items:
 - Functions
 - Closures
-- The values assigned to `static`/`const` items
+- The values assigned to `static` items or non-anonymous `const` items.
 - The discriminant values assigned to `enum` variants
 
 Rust will emit a warn-by-default lint for all of the following cases:
