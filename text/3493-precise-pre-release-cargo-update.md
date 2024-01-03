@@ -234,7 +234,7 @@ Intuitively the user may expect this range to match all `0.14` pre-releases, how
 There are two ways we could go about solving this.
 
 - Only add the implicit `-0` to the upper bound if there is no pre-release on the lower bound.
-- Accept the existance of this unexpected behaviour.
+- Accept the existence of this unexpected behaviour.
 
 Either way, it may be desirable to introduce a dedicated warning for this case.
 
