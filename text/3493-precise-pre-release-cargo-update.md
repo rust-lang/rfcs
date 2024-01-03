@@ -214,6 +214,30 @@ through by modifying `Cargo.toml`.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+# Version ranges with pre-release upper bounds
+
+[As stated earlier](#reference-level-explanation), this RFC proposes that semver version semantics change to encompass pre-release versions.
+
+```
+^1.2.3 -> >=1.2.3, <2.0.0-0
+```
+
+The addition of an implicit `-0` excludes `2.0.0-<prelease>` releases.
+This transformation will also be made when the user explicitly specifies a multiple-version requirement range.
+
+```
+>=1.2.3, <2.0.0 -> >=1.2.3, <2.0.0-0
+```
+
+This leaves a corner case for `>=0.14-0, <0.14.0`.
+Intuitively the user may expect this range to match all `0.14` pre-releases, however, due to the implicit `-0` on the second version requirement, this range will not match any versions.
+There are two ways we could go about solving this.
+
+- Only add the implicit `-0` to the upper bound if there is no pre-release on the lower bound.
+- Accept the existance of this unexpected behaviour.
+
+Either way, it may be desirable to introduce a dedicated warning for this case.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
