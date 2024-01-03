@@ -7,7 +7,7 @@
 
 This RFC proposes merging the Release team into the Infrastructure team as a subteam. The membership of the Infrastructure and Release teams proper remain the same.[^subteam]
 
-[^subteam]: Note: Members of subteams are not automatically members of their parent team. So Release members will be part of the Infra team family but *not* members of the team proper.
+[^subteam]: Note: Members of subteams are not automatically direct members of their parent team. So Release members will be part of the wider Infra team family but *not* direct members of the team proper. In practical terms this means, among other things, that Release team members would not have checkbox authority associated with direct Infra team membership, but Release team members could serve as the Leadership Council representative for Infra.
 
 # Motivation
 
