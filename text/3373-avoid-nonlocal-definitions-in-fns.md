@@ -52,6 +52,9 @@ In a future edition, we may consider making this lint deny-by-default, or
 eventually making it a hard error. We'll evaluate the impact on the ecosystem
 and existing use cases before doing so.
 
+The lint is considered to attach to the `impl` token of an `impl` block, or the
+`macro_rules!` token of a macro definition.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
