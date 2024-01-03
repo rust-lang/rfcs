@@ -104,7 +104,7 @@ would become
 ```
 1.2.3  -> ^1.2.3 -> >=1.2.3, <2.0.0-0
 ```
-Note that the old syntax implicitly excluded `2.0.0-<prelease>` which we have have to explicitly exclude by referencing the smallest possible pre-release version of `-0`.
+Note that the old syntax implicitly excluded `2.0.0-<prerelease>` which we have have to explicitly exclude by referencing the smallest possible pre-release version of `-0`.
 
 This change applies to all operators.
 
@@ -141,7 +141,7 @@ However, we leave the exact API details to the maintainer of the `semver` packag
 - Pre-release versions are not easily auditable when they are only specified in the lock file.
   A change that makes use of a pre-release version may not be noticed during code review as reviewers don't always check for changes in the lock file.
 - Library crates that require a pre-release version are not well supported since their lock files are ignored by their users (see [future-possibilities])
-- This is an invasive change to cargo with a significant risk for bugs.  This also extends out to packages in the ecosystem that deal with depednency versions.
+- This is an invasive change to cargo with a significant risk for bugs.  This also extends out to packages in the ecosystem that deal with dependency versions.
 - There is a risk that error messages from the resolver may be negatively affected and we might be limited in fixes due to the resolver's current design.
 
 # Rationale and alternatives
@@ -154,7 +154,7 @@ having `foo@1.2.3-alpha.0` in your `Cargo.lock` does not implicitly mean you can
 To update within pre-releases, you'll have to use `--precise` again.
 
 Instead, the lockfile could identify that `foo@1.2.3-alpha.0` is a pre-release allow updating to any `1.2.3` pre-release.
-`cargo update` focuses on compatible updates and pre-releases aren't necesarrily compatible with each other
+`cargo update` focuses on compatible updates and pre-releases aren't necessarily compatible with each other
 (see also [RFC: Precise Pre-release Deps](https://github.com/rust-lang/rfcs/pull/3263)).
 Alternatively, in [future-possibilities] is `cargo update -p foo --allow-prerelease` which would be an explicit way to update.
 
@@ -222,7 +222,7 @@ through by modifying `Cargo.toml`.
 ^1.2.3 -> >=1.2.3, <2.0.0-0
 ```
 
-The addition of an implicit `-0` excludes `2.0.0-<prelease>` releases.
+The addition of an implicit `-0` excludes `2.0.0-<prerelease>` releases.
 This transformation will also be made when the user explicitly specifies a multiple-version requirement range.
 
 ```
@@ -258,8 +258,8 @@ Since crates ignore the lock files of their dependencies there is no way for `a`
 To enable this we could use the same concept of compatible pre-releases in `Cargo.toml`, not just `Cargo.lock`.
 This would require that pre-releases are specified with `=` and would allow pre-release versions to be requested anywhere within the dependency tree without causing the resolver to throw an error.
 
-## `--allow-prelease`
+## `--allow-prerelease`
 
-Instead of manually selecting a version with `--precise`, we could support `cargo update --package foo --allow-prelease`.
+Instead of manually selecting a version with `--precise`, we could support `cargo update --package foo --allow-prerelease`.
 
 If we made this flag work without `--package`, we could the extend it also to `cargo generate-lockfile`.
