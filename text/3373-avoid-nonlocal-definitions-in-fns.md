@@ -77,6 +77,9 @@ the signature without reflecting those properties in the signature.
 We'll need a crater run to look at how widespread this pattern is in existing
 code.
 
+Should we flag these definitions in anonymous `const` items as well, or would
+that produce unwanted warnings?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
