@@ -16,7 +16,7 @@ Note: `cargo install` is intentionally left out for now to decouple discussions 
 # Motivation
 [motivation]: #motivation
 
-Let's step through a simple scenario where a developer can develop with the
+Let's step through a simple scenario where a user develops with the
 latest Rust version but production uses an older version:
 ```console
 $ cargo new msrv-resolver
