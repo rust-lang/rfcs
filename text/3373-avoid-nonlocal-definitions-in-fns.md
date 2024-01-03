@@ -6,9 +6,10 @@
 # Summary
 [summary]: #summary
 
-Starting in Rust 2024, stop allowing items inside functions or expressions to
+Add a warn-by-default lint for items inside functions or expressions that
 implement methods or traits that are visible outside the function or
-expression.
+expression. Consider ramping that lint to deny-by-default for Rust 2024, and
+evaluating a hard error for 2027.
 
 # Motivation
 [motivation]: #motivation
@@ -21,9 +22,10 @@ not cross-reference those definitions at all.
 Humans cross-referencing such uses and definitions may find themselves
 similarly baffled.
 
-With this change, both humans and tools can limit the scope of their search and
-avoid looking for definitions inside other functions or items, without missing
-any relevant definitions.
+This change helps humans limit the scope of their search and avoid looking for
+definitions inside other functions or items, without missing any relevant
+definitions. If in the future we manage to forbid it entirely within a
+subsequent Rust edtion, tools will be able to rely on this as well.
 
 # Explanation
 [explanation]: #explanation
@@ -35,7 +37,7 @@ expressions, including the definitions of other items:
 - The values assigned to `static`/`const` items
 - The discriminant values assigned to `enum` variants
 
-Starting in the Rust 2024 edition:
+Rust will emit a warn-by-default lint for all of the following cases:
 - An item nested inside an expression-containing item (through any level of
   nesting) may not define an `impl Type` block unless the `Type` is also nested
   inside the same expression-containing item.
@@ -46,8 +48,9 @@ Starting in the Rust 2024 edition:
   nesting) may not define an exported macro visible outside the
   expression-containing item (e.g. using `#[macro_export]`).
 
-Rust 2015, 2018, and 2021 continue to permit this, but will produce a
-warn-by-default lint.
+In a future edition, we may consider making this lint deny-by-default, or
+eventually making it a hard error. We'll evaluate the impact on the ecosystem
+and existing use cases before doing so.
 
 # Drawbacks
 [drawbacks]: #drawbacks
