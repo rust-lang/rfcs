@@ -201,7 +201,7 @@ Providing strict IEEE 754-2008 guarantees precludes many transformations, such a
 We could provide weaker guarantees to allow such transformations.
 (That would also make using the higher-precision x87 instructions conforming with the spec.)
 However, there is no way to bound the effect of such transformations on program behavior: they lead to different outcome observable via `to_bits` and even via pure float operations, which can balloon into arbitrary changes in behavior.
-There is also no "monotonicity of precision": while e.g. an FMA instead of mul-then-add will lead to a higher-precision result for this particular operation, this can in principle lead to a lower-precision result in later computations.
+There is also no "monotonicity of precision": while e.g. an FMA instead of mul-then-add will lead to a higher-precision result for this particular operation, this can in principle lead to a lower-precision result in later computations (e.g., `x*x - x*x` can produce non-zero results after being transformed to `x.mul_add(x, -x*x)`).
 
 Given all these caveats, it seems preerrable to have explicit opt-in for such semantics-alterating transformations, e.g. via "fast" floating point operation intrinsics that don't provide strict IEEE semantics (and a type that uses those intrinsics for its operations).
 
