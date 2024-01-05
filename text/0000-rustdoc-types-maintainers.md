@@ -39,7 +39,7 @@ Additionally, if an update to `rustdoc-json-types` happens while i'm away from a
 This involves:
 
 1. Moving the [github.com/aDotInTheVoid/rustdoc-types](https://github.com/aDotInTheVoid/rustdoc-types/) repo to the `rust-lang` organization, and make `rust-lang/rustdoc` maintainers/owners.
-2. Move overship of `rustdoc-types` on crates.io to the rustdoc team.
+2. Move ownership of `rustdoc-types` on crates.io to the rustdoc team.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -48,21 +48,19 @@ This involves:
 
 Republishing `rustdoc-json-types` as `rustdoc-types` is done with [a script](https://github.com/aDotInTheVoid/rustdoc-types/blob/577a774c2433beda669271102a201910c4169c0c/update.sh) so that it is as low maintenance as possible. This also ensures that all format/documentation changes happen in the rust-lang/rust repo, and go through the normal review process there.
 
-`rustdoc-types` is a republishing of the in-tree [`rustdoc-json-types`](https://github.com/rust-lang/rust/tree/b8536c1aa1973dd2438841815b1eeec129480e45/src/rustdoc-json-types) crate. `rustdoc-json-types` is a dependency of `librustdoc`, and is the canonical source of truth for the canonical description of the rustdoc-json output format. Changes to the format are made a a PR to `rust-lang/rust`, and will modify `src/rustdoc-json-types`, `src/librustdoc/json` and `tests/rustdoc-json`. None of this will change.
-
 The update/publishing process will be moved to T-Rustdoc. In the medium term, I (`@aDotInTheVoid`) will still do it, but
-- In an offical capacity
+- In an official capacity
 - With bus factor for when I stop.
 
 ## Actual Mechanics of the move
 
 ### Github
 
-Github has a [list of requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) for transfering repositories.
+Github has a [list of requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) for transferring repositories.
 
 
 - When you transfer a repository that you own to another personal account, the new owner will receive a confirmation email. The confirmation email includes instructions for accepting the transfer. If the new owner doesn't accept the transfer within one day, the invitation will expire.
-   - N/A: Not transfering to 
+   - N/A: Not transferring to another personal account
 - To transfer a repository that you own to an organization, you must have permission to create a repository in the target organization.
    - I (`@aDotInTheVoid`) don't have create-repo perms in the `rust-lang` org. Therefore I'll add a member of T-Infra as an owner to `aDotInTheVoid/rustdoc-types` (I can't add teams, as it's not in an org). They'll then move it to the repo to the `rust-lang` org. Once moved, T-Infra can become owners.
 - The target account must not have a repository with the same name, or a fork in the same network.
@@ -98,12 +96,12 @@ The `rust-lang-owner` is needed because team owners cannot add new owners.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- We could keep `rustdoc-types` as a personal project. This preserves the status quo (and is what will happen if this RFC (or something similar) isn't addopted). This is undesirable because
-      - Bus factor: If I am unable or unwilling to maintain `rustdoc-types`, we cause a load of unnessessary churn when it becomes out of sync with 
+- We could keep `rustdoc-types` as a personal project. This preserves the status quo (and is what will happen if this RFC (or something similar) isn't adopted). This is undesirable because
+      - Bus factor: If I am unable or unwilling to maintain `rustdoc-types`, we cause a load of unnecessary churn when it becomes out of sync with the in-tree `rustdoc-json-types`
 - We could bundle `rustdoc-types` through rustup. This is undesirable as it means users can't depend on it in stable rust, and can't depend on multiple versions.
 - We could publish `rustdoc-json-types` directly from `rust-lang/rust`. However
    - `rust-lang/rust` doesn't currently publish to crates.io.
-   - `rustdoc-json-types` doesn't currently bump the version field in cargo.toml
+   - `rustdoc-json-types` doesn't currently bump the version field in `Cargo.toml`
    - It may be desirable to use different types in rustdoc vs users, eg to have a specialized version of `Id` that doesn't allocate
    - `rustdoc-types` is a nicer name, and what people already depend on.
 
@@ -112,7 +110,7 @@ The `rust-lang-owner` is needed because team owners cannot add new owners.
 [prior-art]: #prior-art
 
 - [Rust RFC 3119](https://rust-lang.github.io/rfcs/3119-rust-crate-ownership.html) establishes the Rust crate ownership policy. Under it's categories, `rustdoc-types` would be a **Intentional artifact**
-- [Some old zulip discussion about why `rustdoc-json-types` was created.](https://rust-lang.zulipchat.com/#narrow/stream/266220-t-rustdoc/topic/JSON.20Format/near/223685843) What was said then is that if T-Rustdoc want's to publish a crate, it needs to go through an RFC. This is that RFC.
+- [Some old zulip discussion about why `rustdoc-json-types` was created.](https://rust-lang.zulipchat.com/#narrow/stream/266220-t-rustdoc/topic/JSON.20Format/near/223685843) What was said then is that if T-Rustdoc wants to publish a crate, it needs to go through an RFC. This is that RFC.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
