@@ -153,25 +153,6 @@ How wide spread is this?  Take this with a grain of salt but based on crates.io 
 
 *([source](https://rust-lang.zulipchat.com/#narrow/stream/318791-t-crates-io/topic/cargo.20version.20usage/near/401440149))*
 
-So why are people on old versions?
-- Not everyone is focused on Rust development and might only touch their Rust code once every couple of months,
-  making it a pain if they have to update every time
-- While a distribution provides rust to build other packages in the distribution,
-  users might assume that is a version to use.
-- Re-validation costs for updating core parts of the image for an embedded Linux developers can be high, keeping them on older versions
-- Updates can be slow within tightly controlled environments (airgaps, paperwork, etc)
-- Qualifying Rust toolchains takes time and money, see [Ferrocene](https://ferrous-systems.com/ferrocene/)
-- Build on or for systems that are no longer supported by rustc (e.g. old glibc, AndroidNDK, etc)
-
-We need to keep in mind though that the Rust Project only provides support (e.g
-bug and security fixes) for the latest version and the burden for support for
-older versions is on the vendor providing the older Rust toolchain.
-Similarly, open source developers are not obligated to support older toolchains
-and it is reasonable that the burden for these cases should be paid by those
-who need it.
-That said, we can still make the process less onerous for those who wish to
-support users on older toolchains.
-
 People have tried to reduce the pain from MSRV with its own costs:
 - Treating it as a breaking change:
   - This leads to extra churn in the ecosystem when a fraction of users are likely going to benefit
@@ -186,43 +167,138 @@ For example:
 - [libc](https://github.com/rust-lang/libs-team/issues/72)
 - [time](https://github.com/time-rs/time/discussions/535)
 
-Supporting older MSRVs means maintainers don't have access to all of the latest
-resources for improving their project.
-This indirectly affects users as it can slow maintainers down.
-This can also directly affect users.
-For example,
-by clap updating its MSRV from 1.64.0 to 1.70.0,
-it was able to drop the large [is-terminal](https://crates.io/crates/is-terminal) dependency,
-[cutting the build time from 6s to 3s](https://github.com/rosetta-rs/argparse-rosetta-rs/commit/378cd2c30679afdf9b9843dbadea3e8951090809).
-So if we can find a solution that allows maintainers to move forward, helping
-users more on the edge, while not impacting users on older rust version, would be
-a big help.
-
 The sooner we improve the status quo, the better, as it can take years for
 these changes to percolate out to those exclusively developing with an older
 Rust version (in contrast with the example above).
-This delay can be reduced somewhat if a newer development version can be used
-without upgrading the MSRV.
+This delay can be reduced somewhat if a newer toolchain can be used for
+development version without upgrading the MSRV.
 
-In solving this, we need to keep in mind
-- Users need to be aware when they are on old versions for evaluating security risk and when debugging issues
-- We don't want to end up like other ecosystems where no one can use new features
-  because users are stuck on 3-20 year old versions of the language specification.
-  The compatibility story is fairly strong with Rust, helping us keep
-  compiler and dependency upgrades cheap.
-- MSRV stands for "minimum *supported* rust version".
-  People have different definitions of "support",
-  ranging from "if it works for you"
-  (much like Rust's [Tier 3 platform support](https://doc.rust-lang.org/nightly/rustc/platform-support.html#tier-3))
-  to "we validate it"
-  (much like Rust's [Tier 1 platform support](https://doc.rust-lang.org/nightly/rustc/platform-support.html#tier-1))
-- The MSRV for a package depends on the context
-  - It can be dependent on which features are enabled
-    (e.g. [moka](https://docs.rs/moka/0.12.1/moka/#minimum-supported-rust-versions))
-  - Some projects might treat building the package from crates.io and from the repo the same
-    (henceforth referred to as "shared development / publish MSRV" workflow)
-    while others might have a higher MSRV for building the repo (e.g. `Cargo.lock` with newer dependencies, reliance on cargo features that get stripped on publish), henceforth referred to as "separate development / publish MSRV"
-- A `Cargo.lock` should not resolve differently when upgrading Rust without any other action.
+## Workflows
+
+In solving this, we need to keep in mind how people are using Cargo and how to prioritize when needs of different workflows conflict.
+We will then look at the potential designs within the context of this framework.
+
+Some design criteria we can use for evaluating use cases:
+- Low barrier to entry
+- Encourage a standard of quality within the ecosystem
+- Encourage progress and avoid stagnation
+  - Proactively upgrading means the total benefit to developers from investments made in Rust is higher
+  - Conversely, when most of the community is on old versions, it has a chilling effect on improvements
+  - This also means feedback can come more quickly, making it easier and cheaper to pivot with user needs
+- The costs of “non-recommended” setups should be isolated to those that need them
+- Being transparent makes debugging easier, helps in evaluating risks (including security), and builds confidence in users
+- Cargo must not make major breaking changes
+- Every feature has a cost and we should balance the cost against the value we expect
+  - Features can further constrain what can be done in the future due to backwards compatibility
+  - Features increase maintenance burden
+  - The larger the user-facing surface, the less likely users will find the feature they need and instead use the quickest shortcut
+- When not competing with the above, we should do the right thing for the user rather than disrupt their flow to telling them what they should instead do
+
+And keeping in mind
+- The Rust project only supports the latest version
+  (e.g bug and security fixes)
+  and the burden for support for older versions is on the vendor providing the older Rust toolchain.
+- A `Cargo.lock` is expected to not change from contributors using different versions of the Rust toolchain.
+
+Some implications:
+- "Support" in MSRV implies the same quality and responsiveness to bug reports, regardless of Rust version
+- MSRV applies to all interactions with a project
+  (including registry dependency, git dependency, `cargo install`, contributor experience),
+  unless documented otherwise
+  - Some projects may document that enabling a feature will affect the MSRV (e.g. [moka](https://docs.rs/moka/0.12.1/moka/#minimum-supported-rust-versions))
+  - Some projects may have a higher MSRV for building the repo (e.g. `Cargo.lock` with newer dependencies, reliance on cargo features that get stripped on publish)
+- The cost for maintaining support for older versions of Rust should be on the user of the old version and not on the maintainer or the users of the library
+  - Costs include lower developer productivity due to lack of access to features,
+    APIs that don't integrate with the latest features,
+    and slower build times due to pulling in extra code to make up for missing features
+    (e.g. clap dropping its dependency on
+    [is-terminal](https://crates.io/crates/is-terminal) in favor of
+    [`IsTerminal`](https://doc.rust-lang.org/std/io/trait.IsTerminal.html)
+    cut build time from [6s to 3s](https://github.com/rosetta-rs/argparse-rosetta-rs/commit/378cd2c30679afdf9b9843dbadea3e8951090809))
+
+### Latest Rust with no MSRV
+
+A user runs `cargo new` and starts development.
+
+Priority 0:
+- No MSRV is fine as pushing people to have an MSRV would either lead to
+  - an inaccurate reported MSRV from going stale which would lower the quality of the ecosystem
+  - raise the barrier to entry by requiring more process for packages and pushing the cost of old Rust versions on people who don't care
+
+Currently, we do not provide a way to help users know new versions are available to support them in being up-to-date.
+MSRV build errors from new dependency versions is one way to do it though not ideal as this disrupts the user.
+Otherwise, they must actively run `rustup update` or follow Rust news.
+
+### Latest Rust as the MSRV
+
+A maintainer regularly updates their MSRV to latest.
+They can choose to provide a level of support for old MSRVs by reserving MSRV
+changes to minor version bumps,
+giving them room to backport fixes.
+
+Priority 0:
+- Low barrier to maintaining a high quality of support for their MSRV
+- Costs for dealing with old Rust toolchains is shifted from the maintainer and the users on a supported toolchain to those on an unsupported toolchain
+- By focusing new development on latest MSRV, this provides a carrot to encourage others to actively upgrading
+
+Currently, we do not help these users with keeping their MSRV up-to-date.
+They can use other tools like
+[RenovateBot](https://github.com/rust-lang/cargo/blob/87eb374d499100bc945dc0e50ae5194ae539b964/.github/renovate.json5#L12-L24)
+though that causes extra churn in the repo.
+
+A package could offer a lower MSRV in an unofficial capacity or with a lower quality of support
+but the requirement that dependents always pass `--ignore-rust-version` makes this disruptive.
+
+### Extended MSRV
+
+This could really be people exclusively running one version or that support a range a versions.
+
+So why are people on old versions?
+- Not everyone is focused on Rust development and might only touch their Rust code once every couple of months,
+  making it a pain if they have to update every time.
+  - Think back to slow git index updates when you've stepped away and consider people who we'd be telling to run `rustup update` every time they touch Rust
+- While a distribution provides rust to build other packages in the distribution,
+  users might assume that is a version to use, rather than getting Rust through `rustup`
+- Re-validation costs for updating core parts of the image for an embedded Linux developers can be high, keeping them on older versions
+- Updates can be slow within tightly controlled environments (airgaps, paperwork, etc)
+- Qualifying Rust toolchains takes time and money, see [Ferrocene](https://ferrous-systems.com/ferrocene/)
+- Build on or for systems that are no longer supported by rustc (e.g. old glibc, AndroidNDK, etc)
+- Library and tool maintainers catering to the above use cases
+
+Depending on the reason they are working with an old version,
+they might be developing the project with it or they might be using the latest toolchain.
+
+Priority 1:
+- MSRV applies to all interactions to the project which also means that the level of "support" is consistent
+- This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
+- For library and tool maintainers, they are absorbing costs from these less common use cases
+  - They could shift these costs to those that need old versions by switching to the "Latest MSRV" workflow by allowing their users to backport fixes to prior MSRV releases
+
+Currently, maintaining a working `Cargo.lock` is frustrating, as demonstrated earlier.
+When developing with the latest toolchain,
+delaying feedback to CI or an embedded image build process can be frustrating
+(using too-new dependencies, using too-new Cargo or Rust features, etc).
+
+### Extended published MSRV w/ latest development MSRV
+
+This is where the published package for a project claims an extended MSRV but interactions within the repo require the latest toolchain.
+The requirement on the latest MSRV could from the `Cargo.lock` containing dependencies with the latest MSRV or they could be using Cargo features that don't affect the published package.
+In some cases, the advertised MSRV might be for a lower tier of support than what is supported for the latest version.
+For instance, a project might intentionally skip testing against their MSRV because of known bugs that will fail the test suite.
+
+Compared to the above workflow, this is likely targeted at just library and tool maintainers as other use cases don't have access to the latest version or they are needing the repo to be compatible with their MSRV.
+
+Priority 2:
+- The MSRV has various carve outs, providing an inconsistent experience compared to other packages using other workflows and affecting the quality of the ecosystem
+  - For workspaces with bins, `cargo install --locked` is expected to work with the MSRV but won't
+  - If they use new Cargo features, then `[patch]`ing in a git source for the dependency won't work
+  - For contributors, they must be on an unspecified Rust toolchain version
+- The caveats involved in this approach (see prior item) would lead to worse documentation which lowers the quality to users
+- This still leads to stagnation despite being able to use the latest dependencies as they are limited in what they can use from them and they can't use features from the latest Rust toolchain
+- These library and tool maintainers are absorbing costs from the less common use cases of their dependents
+  - They could shift these costs to those that need old versions by switching to the "Latest MSRV" workflow by allowing their users to backport fixes to prior MSRV releases
+
+Currently to verify their MSRV, they must either juggle two lockfiles, keeping them in sync, or use the unstable `-Zminimal-versions`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
