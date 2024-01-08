@@ -270,6 +270,12 @@ they might be developing the project with it or they might be using the latest t
 
 For some of these use cases, they might controlling their "MSRV" via `rust-toolchain.toml`, rather than `package.rust-version`, as its their only supported Rust version.
 
+When multiple Rust versions are supported, like with library and tool maintainers,
+they will need to verify at least their MSRV and latest.
+Ideally, they also [verify their latest dependencies](https://doc.rust-lang.org/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
+though this is already a recommended practice when people follow the
+[default choice to commit their lockfile](https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control).
+
 Priority 1:
 - MSRV applies to all interactions to the project which also means that the level of "support" is consistent
 - This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
