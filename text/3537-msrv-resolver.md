@@ -268,6 +268,8 @@ So why are people on old versions?
 Depending on the reason they are working with an old version,
 they might be developing the project with it or they might be using the latest toolchain.
 
+For some of these use cases, they might controlling their "MSRV" via `rust-toolchain.toml`, rather than `package.rust-version`, as its their only supported Rust version.
+
 Priority 1:
 - MSRV applies to all interactions to the project which also means that the level of "support" is consistent
 - This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
