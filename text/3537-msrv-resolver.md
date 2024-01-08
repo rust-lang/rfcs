@@ -236,7 +236,7 @@ They can choose to provide a level of support for old MSRVs by reserving MSRV
 changes to minor version bumps,
 giving them room to backport fixes.
 
-Priority 0:
+Priority 1:
 - Low barrier to maintaining a high quality of support for their MSRV
 - Costs for dealing with old Rust toolchains is shifted from the maintainer and the users on a supported toolchain to those on an unsupported toolchain
 - By focusing new development on latest MSRV, this provides a carrot to encourage others to actively upgrading
@@ -276,7 +276,7 @@ Ideally, they also [verify their latest dependencies](https://doc.rust-lang.org/
 though this is already a recommended practice when people follow the
 [default choice to commit their lockfile](https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control).
 
-Priority 1:
+Priority 2:
 - MSRV applies to all interactions to the project which also means that the level of "support" is consistent
 - This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
 - For library and tool maintainers, they are absorbing costs from these less common use cases
@@ -296,7 +296,7 @@ For instance, a project might intentionally skip testing against their MSRV beca
 
 Compared to the above workflow, this is likely targeted at just library and tool maintainers as other use cases don't have access to the latest version or they are needing the repo to be compatible with their MSRV.
 
-Priority 2:
+Priority 3:
 - The MSRV has various carve outs, providing an inconsistent experience compared to other packages using other workflows and affecting the quality of the ecosystem
   - For workspaces with bins, `cargo install --locked` is expected to work with the MSRV but won't
   - If they use new Cargo features, then `[patch]`ing in a git source for the dependency won't work
