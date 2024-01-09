@@ -36,12 +36,23 @@ amount of boilerplate reduces their mental load. This reduction in mental load a
 [guide-level-explanation]: #guide-level-explanation
 
 You may declare constants and static variables without specifying their types when the type can be inferred
-from the initial value. For example:
+from the initial value, subjecting to the following constraints:
+- All numerical types contributing to the inference must be specified.
+- The type must be partially specified. At the very least, a `_` placeholder must be used, but the `_` placeholder
+  may also appear anywhere in a nested type.
+
+For example:
 
 ```rs
-const PI = 3.1415; // inferred as f64
-static MESSAGE = "Hello, World!"; // inferred as &'static str
-const FN_PTR = std::string::String::default; // inferred as fn() -> String
+const NO = false; //  missing type for `const` item; hint: provide a type or add `_` placeholder
+const PI: _ = 3.1415; // Ambiguous numeric type
+const PI: _ = 3.1415_f32; // Ok
+const WRAPPED_PI: MyStruct<_> = MyStruct(3.1415_f32); // Ok
+
+
+static MESSAGE: _ = "Hello, World!"; // inferred as &'static str
+static ARR: [u8; _] = [12, 23, 34, 45]; // inferred as [u8; 4]
+const FN_PTR: _ = std::string::String::default; // inferred as fn() -> String
 ```
 
 # Reference-level explanation
@@ -78,16 +89,24 @@ instead of emitting an error.
   especially to newcomers or when explicit types are needed to understanding the purpose of the item.
   It is my belief that this is a choice better left for the developers as in the case of `let` bindings.
 - Semver compatibilty: The API surface of the type is implicit, changing the right-hand side in subtle ways can change the type in a way that can be hard to notice, for example between different integer types. 
-  However, not all `const` or `static` items are public, and in many cases the type is obvious enough that semver isn't a concern.
-  Requiring explicit typing for this reason seems a bit heavy handed.
+  However, not all `const` or `static` items are public, and in many cases the type is obvious enough that semver isn't a concern. Requiring explicit typing for this reason seems a bit heavy handed.
 
-Both of these drawback could be addressed using an allow-by-default clippy lint for `const` and `static` types.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Impact of Not Doing This: Rust code remains more verbose than necessary, especially in complex scenarios, and macro authors face challenges with type specifications.
-- Alternative: Allowing the naming of function types as in [#3476](https://github.com/rust-lang/rfcs/pull/3476) may help resolve some of the cases where type inference is needed.
+## Impact of Not Doing This:
+
+Rust code remains more verbose than necessary, especially in complex scenarios, and macro authors face challenges with type specifications.
+
+## Alternatives
+
+Allowing the naming of function types as in [#3476](https://github.com/rust-lang/rfcs/pull/3476) may help resolve some of the cases where type inference is needed.
+
+`type_alias_impl_trait` may also partially address the problem. In particular, it helps with unnameable types
+and macro / code generator output, without the drawbacks of loss of clarity and semvar trouble.
+However, there might be cases where we do not want the type to be hidden behind an `impl Trait`.
+This also won't help with array lengths or types that do not implement a particular trait.
 
 # Prior art
 [prior-art]: #prior-art
@@ -98,27 +117,4 @@ In [RFC#1623](https://github.com/rust-lang/rfcs/pull/1623) we added `'static` li
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Should we allow assignment of unnameable types? For example,
-```rs
-const A = |a: u32| {
-    123_i32
-};
-
-```
-
-```
-error: missing type for `const` item
-   |
-28 | const A = |a: u32| {
-   |        ^
-   |
-note: however, the inferred type `[closure@render_pass.rs:28:11]` cannot be named        
-   |
-28 |   const A = |a: u32| {
-   |  ___________^
-29 | |     1_i32
-30 | | };
-   | |_^
-```
-
-If this significantly complicates the implementation, we can leave it outside the scope of this RFC.
+None.
