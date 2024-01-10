@@ -403,6 +403,8 @@ Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `carg
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+We expect these changes to be beneficial enough on there own that they can be stabilized as each is completed.
+
 ## Cargo Resolver
 
 Cargo's resolver will be updated to *prefer* MSRV compatible versions over
