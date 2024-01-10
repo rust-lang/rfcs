@@ -220,12 +220,14 @@ Some implications:
 
 A user runs `cargo new` and starts development.
 
-Priority 0:
+Priority 0 because:
 - No MSRV is fine as pushing people to have an MSRV would either lead to
   - an inaccurate reported MSRV from going stale which would lower the quality of the ecosystem
   - raise the barrier to entry by requiring more process for packages and pushing the cost of old Rust versions on people who don't care
 
-Currently, we do not provide a way to help users know new versions are available to support them in being up-to-date.
+Pain points:
+
+We do not provide a way to help users know new versions are available to support them in being up-to-date.
 MSRV build errors from new dependency versions is one way to do it though not ideal as this disrupts the user.
 Otherwise, they must actively run `rustup update` or follow Rust news.
 
@@ -236,12 +238,14 @@ They can choose to provide a level of support for old MSRVs by reserving MSRV
 changes to minor version bumps,
 giving them room to backport fixes.
 
-Priority 1:
+Priority 1 because:
 - Low barrier to maintaining a high quality of support for their MSRV
 - Costs for dealing with old Rust toolchains is shifted from the maintainer and the users on a supported toolchain to those on an unsupported toolchain
 - By focusing new development on latest MSRV, this provides a carrot to encourage others to actively upgrading
 
-Currently, we do not help these users with keeping their MSRV up-to-date.
+Pain points:
+
+We do not help these users with keeping their MSRV up-to-date.
 They can use other tools like
 [RenovateBot](https://github.com/rust-lang/cargo/blob/87eb374d499100bc945dc0e50ae5194ae539b964/.github/renovate.json5#L12-L24)
 though that causes extra churn in the repo.
@@ -276,13 +280,15 @@ Ideally, they also [verify their latest dependencies](https://doc.rust-lang.org/
 though this is already a recommended practice when people follow the
 [default choice to commit their lockfile](https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control).
 
-Priority 2:
+Priority 2 because:
 - MSRV applies to all interactions to the project which also means that the level of "support" is consistent
 - This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
 - For library and tool maintainers, they are absorbing costs from these less common use cases
   - They could shift these costs to those that need old versions by switching to the "Latest MSRV" workflow by allowing their users to backport fixes to prior MSRV releases
 
-Currently, maintaining a working `Cargo.lock` is frustrating, as demonstrated earlier.
+Pain points:
+
+Maintaining a working `Cargo.lock` is frustrating, as demonstrated earlier.
 When developing with the latest toolchain,
 delaying feedback to CI or an embedded image build process can be frustrating
 (using too-new dependencies, using too-new Cargo or Rust features, etc).
@@ -296,7 +302,7 @@ For instance, a project might intentionally skip testing against their MSRV beca
 
 Compared to the above workflow, this is likely targeted at just library and tool maintainers as other use cases don't have access to the latest version or they are needing the repo to be compatible with their MSRV.
 
-Priority 3:
+Priority 3 because:
 - The MSRV has various carve outs, providing an inconsistent experience compared to other packages using other workflows and affecting the quality of the ecosystem
   - For workspaces with bins, `cargo install --locked` is expected to work with the MSRV but won't
   - If they use new Cargo features, then `[patch]`ing in a git source for the dependency won't work
@@ -306,7 +312,9 @@ Priority 3:
 - These library and tool maintainers are absorbing costs from the less common use cases of their dependents
   - They could shift these costs to those that need old versions by switching to the "Latest MSRV" workflow by allowing their users to backport fixes to prior MSRV releases
 
-Currently to verify their MSRV, they must either juggle two lockfiles, keeping them in sync, or use the unstable `-Zminimal-versions`.
+Pain points:
+
+To verify their MSRV, they must either juggle two lockfiles, keeping them in sync, or use the unstable `-Zminimal-versions`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
