@@ -37,8 +37,9 @@ amount of boilerplate reduces their mental load. This reduction in mental load a
 
 You may declare constants and static variables without specifying their types when the type can be inferred
 from the initial value, subjecting to the following constraints:
-- All numerical types contributing to the inference must be specified.
-- The type must be partially specified. At the very least, a `_` placeholder must be used, but the `_` placeholder
+- The types of all literals must be fully constrained, which generally means numeric literals must either
+  have a type suffix, or the type must specify their type
+- The typing may not be entirely omitted. At the very least, a `_` placeholder must be used, but the `_` placeholder
   may also appear anywhere in a nested type.
 
 For example:
