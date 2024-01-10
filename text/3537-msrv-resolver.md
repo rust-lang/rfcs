@@ -159,13 +159,15 @@ People have tried to reduce the pain from MSRV with its own costs:
   - We have the precedence elsewhere in the Rust ecosystem for build and runtime system requirement changes not being breaking, like when rustc requires newer versions of glibc, Android NDK, etc.
 - Adding upper limits to version requirements:
   - This fractures the ecosystem by making packages incompatible with each other and the Cargo team [discourages doing this](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#multiple-requirements)
-
-Another way the status quo exhibits pain on the ecosystem is long
-arguments over what is the right policy for updating a minimum-supported Rust
-version (MSRV), wearing on all parties.
-For example:
-- [libc](https://github.com/rust-lang/libs-team/issues/72)
-- [time](https://github.com/time-rs/time/discussions/535)
+- Avoiding dependencies, re-implementing it themselves at the cost of their time and the risk for bugs, especially if `unsafe` is involved
+- Ensuring dependencies have a more inclusive MSRV policy then themselves
+  - This has lead to long arguments in the ecosystem over what is the right
+    policy for updating a minimum-supported Rust version (MSRV),
+    wearing on all
+    (e.g.
+    [libc](https://github.com/rust-lang/libs-team/issues/72)
+    [time](https://github.com/time-rs/time/discussions/535)
+    )
 
 The sooner we improve the status quo, the better, as it can take years for
 these changes to percolate out to those exclusively developing with an older
