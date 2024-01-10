@@ -403,12 +403,15 @@ Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `carg
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-We expect these changes to be beneficial enough on there own that they can be stabilized as each is completed.
+We expect these changes to be independent enough and beneficial on there own that they can be stabilized as each is completed.
 
 ## Cargo Resolver
 
-Cargo's resolver will be updated to *prefer* MSRV compatible versions over
-incompatible versions when resolving versions.
+We will be adding a v3 resolver, specified through `workspace.resolver` / `package.resolver`.
+This will become default with the next Edition.
+
+When `resolver = "3"` is set, Cargo's resolver will change to *prefer* MSRV compatible versions over
+incompatible versions when resolving versions except for `cargo install`.
 Initially, dependencies without `package.rust-version` will be preferred over
 MSRV-incompatible packages but less than those that are compatible.
 The exact details for how preferences are determined may change over time,
@@ -439,8 +442,6 @@ though this would also help users who happen to be on an old rustc, for whatever
 As this is just a preference for resolving dependencies, rather than prescriptive,
 this shouldn't cause churn of the `Cargo.lock` file.
 We already call `rustc` for feature resolution, so hopefully this won't have a performance impact.
-
-The resolver will only do this for local packages and not for `cargo install`.
 
 ## `cargo update`
 
@@ -487,18 +488,9 @@ without having to support the flag on every single command.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-As proposed, CI that tries to verify against the latest dependencies will no longer do so when `rust-version` is set.
-Instead, they'll have to make a change to their CI, like setting `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
-- If we consider this a major incompatibility, then it needs to be opted into.
-  As `cargo fix` can't migrate a user's CI,
-  this would be out of scope for migrating to this with a new Edition.
-- I would argue that the number of maintainers verifying latest dependencies is
-  relatively low and they are more likely to be "in the know",
-  making them less likely to be negatively affected by this.
-  Therefore, I propose we consider this a minor incompatibility
-- If we do a slow roll out (opt-in then opt-out), the visibility for the switch
-  to opt-out will be a lot less than the initial announcement and we're more
-  likely to miss people compared to making switch over when this gets released.
+Users upgrading to the next Edition (or changing to `resolver = '3"`), will have to manually update their CI to test the latest dependencies with `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
+
+Workspaces have no `edition`, so its easy for users to not realize they need to set `resolver = "3"` or to update their `resolver = "2"` to `"3"`.
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
 this could instead further entrench rust-version stagnation in the ecosystem.
@@ -521,6 +513,13 @@ Misc alternatives
 - `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version` assumes maximal resolution as generally minimal resolution will pick packages with compatible rust-versions as rust-version tends to (but doesn't always) increase over time.
   - `cargo add` selecting rust-version-compatible minimum bounds helps
   - This bypasses a lot of complexity either from exploding the number of states we support or giving users control over the fallback by making the field an array of strategies.
+- Instead of `resolver = "3"`, we could just change the default for everyone
+  - The number of maintainers verifying latest dependencies is likely
+    relatively low and they are more likely to be "in the know",
+    making them less likely to be negatively affected by this.
+    Therefore, we could probably get away with treating this as a minor incompatibility
+  - Either way, the big care about is there being attention drawn to the change.
+    We couldn't want this to be like sparse registries where a setting exists and we change the default and people hardly notice (besides any improvements)
 
 ## Make this opt-in rather than opt-out
 
