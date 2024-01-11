@@ -56,7 +56,7 @@ This new RFC takes the stance it does the former based on the following main des
 [guide-level-explanation]: #guide-level-explanation
 
 Constants can be used as patterns, but only if their type implements `PartialEq`.
-Moreover, this implementation must be the automatically derived one, and that also applies recursively for the types of their fields (recursively):
+Moreover, this implementation must be the automatically derived one, and that also applies recursively for the types of their fields:
 
 ```rust
 #[derive(PartialEq)] // code fails to build if we remove this or replace it by a manual impl
@@ -101,11 +101,11 @@ This means the eligibility of a constant for a pattern depends on its value, not
 That is already the case on stable Rust for many years and relied upon by widely-used crates such as [`http`](https://github.com/rust-lang/rust/issues/62411#issuecomment-510604193).
 
 Overall we say that the *value* of the constant must have recursive structural equality,
-which is the case when all the types that actually appear recursively in the type (ignoring "other" enum variants) have structural equality.
+which is the case when all the types that actually appear recursively in the value (ignoring "other" enum variants) have structural equality.
 
 Most of the values of primitive Rust types have structural equality (integers, `bool`, `char`, references), but two families of types need special consideration:
 
-- Pointer types (raw pointers and function pointers): these compare by test the memory address for equality.
+- Pointer types (raw pointers and function pointers): these compare by testing the memory address for equality.
   It is unclear whether that should be considered "structural", but it is fairly clear that this should be considered a bad idea:
   Rust makes basically no guarantees for when two function pointers are equal or unequal
   (the "same" function can be duplicated across codegen units and this have different addresses,
@@ -184,7 +184,7 @@ Range patterns are only allowed on integers, `char`, and floats; for floats, nei
 
 The *behavior* of such a constant as a pattern is the same as the corresponding native pattern.
 On floats are raw pointers, pattern matching behaves like `==`,
-which means in particular that the value `-0.0` matches the pattern `0.0`, and NaN values match no pattern.
+which means in particular that the value `-0.0` matches the pattern `0.0`, and NaN values match no pattern (except for wildcards).
 
 ## Breaking changes
 
