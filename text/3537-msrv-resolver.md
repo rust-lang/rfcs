@@ -861,6 +861,7 @@ The config field is fairly rough
   - The location (within `build`) needs more consideration
   - The name isn't very clear
   - The values are awkward
+  - Should we instead just have a `resolver.rust-version = true`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
