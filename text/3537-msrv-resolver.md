@@ -191,7 +191,7 @@ Some design criteria we can use for evaluating use cases:
   - Our commitment to compatibility helps keep the cost of upgrade low
 - The costs of “non-recommended” setups should be isolated to those that need them
 - Being transparent makes debugging easier, helps in evaluating risks (including security), and builds confidence in users
-- Cargo must not make major breaking changes
+- Cargo should not make major breaking changes
 - Every feature has a cost and we should balance the cost against the value we expect
   - Features can further constrain what can be done in the future due to backwards compatibility
   - Features increase maintenance burden
