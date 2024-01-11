@@ -459,6 +459,10 @@ without requiring `--ignore-rust-version` on every invocation.
 editing `Cargo.toml` and running `cargo check`) will not inform the user.
 If they want to check the status of things, they can run `cargo update -n`.
 
+Users may pass
+- `--ignore-rust-version` to pick the latest dependencies
+- `--update-rust-version` to pick the `rustc --version`-compatible dependencies, updating your `package.rust-version` if needed to match the highest of your dependencies
+
 ## `cargo add`
 
 `cargo add <pkg>` (no version) will pick a version requirement that is low
@@ -466,7 +470,9 @@ enough so that when it resolves, it will pick a dependency that is
 MSRV-compatible.
 `cargo add` will warn when it does this.
 
-This behavior can be bypassed with `--ignore-rust-version`
+Users may pass
+- `--ignore-rust-version` to pick the latest dependencies
+- `--update-rust-version` to pick the `rustc --version`-compatible dependencies, updating your `package.rust-version` if needed to match the highest of your dependencies
 
 ## Cargo config
 
@@ -528,6 +534,11 @@ Misc alternatives
   - Either way, the big care about is there being attention drawn to the change.
     We couldn't want this to be like sparse registries where a setting exists and we change the default and people hardly notice (besides any improvements)
 - `cargo build` will treat incompatible MSRVs as a workspace-level lint, rather than a package level lint, to avoid the complexity of mapping the package to a workspace-member for `[lint]` and dealing with unifying conflicting levels in `[lint]`.
+- `--ignore-rust-version` picks absolutely the latest dependencies to support (1) users on latest rustc and (2) users wanting "unsupported" dependencies, at the cost of users not on the latest rustc but still want latest more up-to-date dependencies than their MSRV allows
+- `--update-rust-version` picks `rustc --version`-compatible dependencies so users, no matter their `rustc` version, can easily walk the treadmill of updating their dependencies / MSRV
+  - There is little reason to select an MSRV higher than their Rust toolchain
+  - We should still be warning the user that new dependencies are available if they upgrade their Rust toolchain
+  - This comes at the cost of inconsistency with `--ignore-rust-version`.
 
 ## Make this opt-in rather than opt-out
 
