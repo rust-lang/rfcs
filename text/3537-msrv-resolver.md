@@ -259,7 +259,8 @@ likely pushing them to not specify their MSRV.
 
 **Pain points (in addition to the prior workflow):**
 
-We do not help these users with keeping their MSRV up-to-date.
+In addition to their toolchain version, we do not help these users with keeping
+their MSRV up-to-date.
 They can use other tools like
 [RenovateBot](https://github.com/rust-lang/cargo/blob/87eb374d499100bc945dc0e50ae5194ae539b964/.github/renovate.json5#L12-L24)
 though that causes extra churn in the repo.
