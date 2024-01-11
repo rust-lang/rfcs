@@ -240,6 +240,8 @@ We do not provide a way to help users know new versions are available, to suppor
 MSRV build errors from new dependency versions is one way to do it though not ideal as this disrupts the user.
 Otherwise, they must actively run `rustup update` or follow Rust news.
 
+For dependents, this makes it harder to know what versions are "safe" to use.
+
 ### Latest Rust as the MSRV
 
 A maintainer regularly updates their MSRV to latest.
