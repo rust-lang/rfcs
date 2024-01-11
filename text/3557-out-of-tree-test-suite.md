@@ -192,9 +192,9 @@ We envision support for the following use cases:
 
 1. The actor uses `rustup` to download the OOTTS distributable.
 
-    $ rustup toolchain install ???_channel --component ootts
-    or
-    $ rustup component add ootts
+        $ rustup toolchain install ???_channel --component ootts
+        or
+        $ rustup component add ootts
 
 1. `rustup` installs the OOTTS in the Rust root directory. The test driver executable is made visible on the `PATH`.
 
@@ -212,7 +212,7 @@ Alternatively, the actor could download the OOTTS distributable from the Rust Fo
 
 1. The actor runs the OOTTS, passing in relevant `arguments` such as the target, testables, sub-suites, etc.
 
-    $ test-driver run <arguments>
+        $ test-driver run <arguments>
 
 1. The actor examines the output of the testing run.
 
@@ -235,11 +235,11 @@ Alternatively, the actor could download the OOTTS distributable from the Rust Fo
 
 1. The actor uses the `rust-lang/rust` infrastructure to initiate an OOTTS build.
 
-    rust$ ./x build ootts
+        rust$ ./x build ootts
 
-Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS infrastructure, effectively executing:
+    Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS infrastructure, effectively executing:
 
-    rust/ootts$ ./infra build
+        rust/ootts$ ./infra build
 
 ### In-tree testing
 [in-tree-testing]: #in-tree-testing
@@ -253,11 +253,11 @@ Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS infrastru
 
 1. The actor uses the `rust-lang/rust` infrastructure to run the OOTTS, passing in relevant arguments such as the target, testables, sub-suites, etc.
 
-    rust$ ./x test <arguments>
+        rust$ ./x test <arguments>
 
-Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS test driver, effectively executing:
+    Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS test driver, effectively executing:
 
-    rust/build/<target>/ootts: ./test-driver run <arguments>
+        rust/build/<target>/ootts: ./test-driver run <arguments>
 
 1. The actor examines the output of the testing run.
 
@@ -271,11 +271,11 @@ Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS test driv
 
 1. The actor uses the `rust-lang/rust` infrastructure to package the OOTS.
 
-    rust$ ./x dist ootts
+        rust$ ./x dist ootts
 
-Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS infrastructure, effectively executing:
+    Internally, the `rust-lang/rust` infrastructure delegates to the OOTTS infrastructure, effectively executing:
 
-    rust/ootts$ ./infra dist
+        rust/ootts$ ./infra dist
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -291,7 +291,7 @@ We admit that certain parts of the design have been left open-ended as we do not
 
 It should be noted that at one point we considered the following design:
 
-The OOTTS would not be usable in-tree. Instead, a Rust developer would perform an OOTTS out-of-tree installation, and update the `config.toml` of their `rust-lang/rust` clone to indicate the path to the test driver. Development would then proceed as usual, however a testing run initiated by ``./x test` would require a full `build-dist-install` cycle of a testable prior to invoking the test driver.
+The OOTTS would not be usable in-tree. Instead, a Rust developer would perform an OOTTS out-of-tree installation, and update the `config.toml` of their `rust-lang/rust` clone to indicate the path to the test driver. Development would then proceed as usual, however a testing run initiated by `./x test` would require a full `build-dist-install` cycle of a testable prior to invoking the test driver.
 
 Even though this design is closer to the install-then-test paradigm, it severely slows down the Rust developer workflows by effectively carrying out a Rust toolchain "mini" release just to test a small change in a tool or a library. Instead, we opted for a design that allows for the OOTTS to be used in-tree.
 
@@ -335,7 +335,7 @@ We proposed that the OOTTS driver be configured via a `config.toml` file, where 
 
 **What are the test driver CLI arguments?**
 
-Currently, ``./x test` accepts a large number of CLI arguments. We already outlined several "must have" CLI arguments that the test driver should support, but given that the OOTTS is supposed to be a full testing replacement, most or all `./x test` CLI arguments may need to be migrated.
+Currently, `./x test` accepts a large number of CLI arguments. We already outlined several "must have" CLI arguments that the test driver should support, but given that the OOTTS is supposed to be a full testing replacement, most or all `./x test` CLI arguments may need to be migrated.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
