@@ -474,6 +474,13 @@ Users may pass
 - `--ignore-rust-version` to pick the latest dependencies
 - `--update-rust-version` to pick the `rustc --version`-compatible dependencies, updating your `package.rust-version` if needed to match the highest of your dependencies
 
+## `cargo publish`
+
+We will add `"auto"` for `package.rust-version`.
+On publish, `rustc --version` will replace `"auto"`.
+
+`cargo new` will include `package.rust-version = "auto"`.
+
 ## Cargo config
 
 We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
@@ -540,7 +547,58 @@ Misc alternatives
   - We should still be warning the user that new dependencies are available if they upgrade their Rust toolchain
   - This comes at the cost of inconsistency with `--ignore-rust-version`.
 
-## Make this opt-in rather than opt-out
+## Ensuring the registry Index has `rust-version` without affecting quality
+
+The user experience for this is based on the extent and quality of the data.
+Ensuring we have `package.rust-version` populated more often (while maintaining
+quality of that data) is an important problem but does not have to be solved to
+get value out of this RFC and can be handled separately.
+
+We chose an opt-in for populating `package.rust-version` based on `rustc --version`.
+This will encourage a baseline of quality as are developing with that version and `cargo publish` will do a verification step, by default.
+This will help seed the Index with more `package.rust-version` data for the resolver to work with.
+The downside is that the `package.rust-version` will likely be higher than it absolutely needs.
+However, considering our definition of "support" and that the user isn't bothering to set an MSRV themself,
+aggressively updating is likely fine in this case.
+
+Alternatively...
+
+~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
+However, this will err on the side of a higher MSRV than necessary and the only way to
+workaround it is to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` which will then lose
+all other protections.
+As we said, this is likely fine but then there will be no way to opt-out for the subset of maintainers who want to keep their support definition vague.
+As things evolve, we could re-evaluate making `"auto"` the default.
+
+~~We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`.~~
+However, if people aren't committed to verifying it,
+it is likely to go stale and will claim an MSRV much older than what is used in practice.
+If we had the hard-error resolver mode and
+[clippy warning people when using API items stabilized after their MSRV](https://github.com/rust-lang/rust-clippy/issues/6324),
+this will at least annoy people into either being somewhat compatible or removing the field.
+
+~~When missing, `cargo publish` could inject `package.rust-version` inferred from
+`package.edition` and/or other `Cargo.toml` fields.~~
+However, this will err on the side of too low of an MSRV.
+While this might help with in this situation,
+it would lock us in to inaccurate information which might limit what analysis we could do in the future.
+
+Alternatively, `cargo publish` / the registry could add new fields to the Index
+to represent an inferred MSRV, the published version, etc
+so it can inform our decisions without losing the intent of the publisher.
+
+We could help people keep their MSRV up to date, by letting them specify a policy (e.g. `rust-version-policy = "stable - 2"` or `rust-version-policy = "stable"`); then, every time the user runs `cargo update`, we could automatically update their `rust-version` field as well.
+This would also be an alternative to `--update-rust-version`.
+
+On the resolver side, we could
+- Assume the MSRV of the next published package with an MSRV set
+- Sort no-MSRV versions by minimal versions, the lower the version the more likely it is to be compatible
+  - This runs into quality issues with version requirements that are likely too low for what the package actually needs
+  - For dependencies that never set their MSRV, this effectively switches us from maximal versions to minimal versions.
+
+## Resolver behavior
+
+### Make this opt-in rather than opt-out
 
 This proposed solution elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
 We could instead do the opposite, carrying forward our existing behavior as the default (`CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`).
@@ -667,7 +725,7 @@ Opt-in for MSRV resolution is also putting focus on a lower area of cost/risk fo
 while nothing is being done for major version.
 Improving things for major versions will likely improve things for MSRV.
 
-## Make `rust-version=rustc` the default
+### Make `rust-version=rustc` the default
 
 This proposal elevates "shared development / publish rust-version" workflow over "separate development / publish rust-version" workflow.
 We could instead do the opposite, adding support for `CARGO_BUILD_RESOLVER_PRECEDENCE=rustc` instead as a "safe" default for assuming the development rust-version.
@@ -706,7 +764,7 @@ making supporting them through problems more difficult.
 
 As this encourages "shared development / publish rust-version" workflow, see the "opt-in" solution for the caveats of encouraging that workflow.
 
-## Hard-error
+### Hard-error
 
 Instead of *preferring* MSRV-compatible dependencies, the resolver could hard error if only MSRV-incompatible versions are available.
 This means that we would also backtrack on transitive dependencies, trying alternative versions of direct dependencies, which would create an MSRV-compatible `Cargo.lock` in more cases.
@@ -806,46 +864,6 @@ The config field is fairly rough
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-## Improve the experience with lack of `rust-version`
-
-The user experience for this is based on the extent and quality of the data.
-Ensuring we have `package.rust-version` populated more often (while maintaining
-quality of that data) is an important problem but does not have to be solved to
-get value out of this RFC and can be handled separately.
-
-~~We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`.~~
-However, if people aren't committed to verifying it,
-it is likely to go stale and will claim an MSRV much older than what is used in practice.
-If we had the hard-error resolver mode and
-[clippy warning people when using API items stabilized after their MSRV](https://github.com/rust-lang/rust-clippy/issues/6324),
-this will at least annoy people into either being somewhat compatible or removing the field.
-
-~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
-However, this will err on the side of a higher MSRV than necessary and the only way to
-workaround it is to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` which will then lose
-all other protections.
-
-~~When missing, `cargo publish` could inject based on the rustup toolchain file.~~
-However, this will err on the side of a higher MSRV than necessary as well.
-
-~~When missing, `cargo publish` could inject `package.rust-version` inferred from
-`package.edition` and/or other `Cargo.toml` fields.~~
-However, this will err on the side of too low of an MSRV.
-While this might help with in this situation,
-it would lock us in to inaccurate information which might limit what analysis we could do in the future.
-
-Alternatively, `cargo publish` / the registry could add new fields to the Index
-to represent an inferred MSRV, the published version, etc
-so it can inform our decisions without losing the intent of the publisher.
-
-We could help people keep their MSRV up to date, by letting them specify a policy (e.g. `rust-version-policy = "stable - 2"` or `rust-version-policy = "stable"`); then, every time the user runs `cargo update`, we could automatically update their `rust-version` field as well.
-
-On the resolver side, we could
-- Assume the MSRV of the next published package with an MSRV set
-- Sort no-MSRV versions by minimal versions, the lower the version the more likely it is to be compatible
-  - This runs into quality issues with version requirements that are likely too low for what the package actually needs
-  - For dependencies that never set their MSRV, this effectively switches us from maximal versions to minimal versions.
 
 ## Integrate `cargo audit`
 
