@@ -869,7 +869,8 @@ The config field is fairly rough
 ## Integrate `cargo audit`
 
 If we [integrate `cargo audit`](https://github.com/rust-lang/cargo/issues/7678),
-we can better help users on older dependencies identify security vulnerabilities.
+we can better help users on older dependencies identify security vulnerabilities,
+reducing the risks associated with being on older versions.
 
 ## "cargo upgrade"
 
