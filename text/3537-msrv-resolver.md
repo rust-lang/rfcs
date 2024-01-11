@@ -187,6 +187,8 @@ Some design criteria we can use for evaluating use cases:
   - Proactively upgrading means the total benefit to developers from investments made in Rust is higher
   - Conversely, when most of the community is on old versions, it has a chilling effect on improving Rust
   - This also means feedback can come more quickly, making it easier and cheaper to pivot with user needs
+  - Spreading the cost of upgrades over time makes forced-upgrades (e.g. for a security vulnerability) less of an emergency
+  - Our commitment to compatibility helps keep the cost of upgrade low
 - The costs of “non-recommended” setups should be isolated to those that need them
 - Being transparent makes debugging easier, helps in evaluating risks (including security), and builds confidence in users
 - Cargo must not make major breaking changes
@@ -200,6 +202,7 @@ And keeping in mind
 - The Rust project only supports the latest version
   (e.g bug and security fixes)
   and the burden for support for older versions is on the vendor providing the older Rust toolchain.
+- Even keeping upgrade costs low, there is still a re-validation cost that mission critical applications must pay
 - A `Cargo.lock` is expected to not change from contributors using different versions of the Rust toolchain without an explicit action like changing `Cargo.toml` or running `cargo update`
   - e.g. If the maintainer does `cargo add foo && git commit && git push`,
     then a contributor doing `git pull && cargo check` should have an unchanged `Cargo.lock`
