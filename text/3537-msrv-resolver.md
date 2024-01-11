@@ -443,6 +443,13 @@ As this is just a preference for resolving dependencies, rather than prescriptiv
 this shouldn't cause churn of the `Cargo.lock` file.
 We already call `rustc` for feature resolution, so hopefully this won't have a performance impact.
 
+## `cargo build`
+
+The MSRV-compatibility build check will be demoted from an error to a `deny`-by-default workspace
+[diagnostic](https://github.com/rust-lang/cargo/issues/12235),
+allowing users to intentionally use dependencies on an unsupported (or less supported) version of Rust
+without requiring `--ignore-rust-version` on every invocation.
+
 ## `cargo update`
 
 `cargo update` will inform users when an MSRV or semver incompatible version is available.
@@ -520,6 +527,7 @@ Misc alternatives
     Therefore, we could probably get away with treating this as a minor incompatibility
   - Either way, the big care about is there being attention drawn to the change.
     We couldn't want this to be like sparse registries where a setting exists and we change the default and people hardly notice (besides any improvements)
+- `cargo build` will treat incompatible MSRVs as a workspace-level lint, rather than a package level lint, to avoid the complexity of mapping the package to a workspace-member for `[lint]` and dealing with unifying conflicting levels in `[lint]`.
 
 ## Make this opt-in rather than opt-out
 
