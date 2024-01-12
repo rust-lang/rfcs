@@ -461,7 +461,7 @@ without requiring `--ignore-rust-version` on every invocation.
 `cargo update -n` will also report this information so that users can check on the status of this at any time.
 
 **Note:** other operations that cause `Cargo.lock` entries to be changed (like
-editing `Cargo.toml` and running `cargo check`) will not inform the user.
+editing `Cargo.toml` and running `cargo check`) may not inform the user.
 If they want to check the status of things, they can run `cargo update -n`.
 
 Users may pass
