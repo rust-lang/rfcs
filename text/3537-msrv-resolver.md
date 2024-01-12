@@ -595,7 +595,7 @@ so it can inform our decisions without losing the intent of the publisher.
 We could help people keep their MSRV up to date, by letting them specify a policy (e.g. `rust-version-policy = "stable - 2"` or `rust-version-policy = "stable"`); then, every time the user runs `cargo update`, we could automatically update their `rust-version` field as well.
 This would also be an alternative to `--update-rust-version`.
 
-On the resolver side, we could
+When there still isn't an MSRV set, the resolver could
 - Assume the MSRV of the next published package with an MSRV set
 - Sort no-MSRV versions by minimal versions, the lower the version the more likely it is to be compatible
   - This runs into quality issues with version requirements that are likely too low for what the package actually needs
