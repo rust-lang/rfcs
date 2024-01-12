@@ -564,7 +564,7 @@ This will encourage a baseline of quality as are developing with that version an
 This will help seed the Index with more `package.rust-version` data for the resolver to work with.
 The downside is that the `package.rust-version` will likely be higher than it absolutely needs.
 However, considering our definition of "support" and that the user isn't bothering to set an MSRV themself,
-aggressively updating is likely fine in this case.
+aggressively updating is likely fine in this case, especially since we'll let dependents override the build failure for MSRV-incompatible packages.
 
 Alternatively...
 
