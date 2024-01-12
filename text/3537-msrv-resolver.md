@@ -390,13 +390,13 @@ cargo will prefer those with a compatible `package.rust-version` over those that
 aren't compatible.
 Some details may change over time though `cargo check && rustup update && cargo check` should not cause `Cargo.lock` to change.
 
-#### `build.resolver.precedence`
+#### `resolver.precedence`
 
 *(update to [Configuration](https://doc.rust-lang.org/cargo/reference/config.html))*
 
 * Type: string
 * Default: "rust-version"
-* Environment: `CARGO_BUILD_RESOLVER_PRECEDENCE`
+* Environment: `CARGO_RESOLVER_PRECEDENCE`
 
 Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `cargo update`.  This does not affect `cargo install`.
 
@@ -424,7 +424,7 @@ particularly when no MSRV is specified,
 but this shouldn't affect existing `Cargo.lock` files since the currently
 resolved dependencies always get preference.
 
-This can be overridden with `--ignore-rust-version` and config's `build.resolver.precedence`.
+This can be overridden with `--ignore-rust-version` and config's `resolver.precedence`.
 
 Implications
 - If you use do `cargo update --precise <msrv-incompatible-ver>`, it will work
@@ -450,7 +450,7 @@ We already call `rustc` for feature resolution, so hopefully this won't have a p
 
 ## Cargo config
 
-We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
+We'll add a `resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
 
 ```toml
 [build]
@@ -513,7 +513,7 @@ On publish, `rustc --version` will replace `"auto"`.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Users upgrading to the next Edition (or changing to `resolver = '3"`), will have to manually update their CI to test the latest dependencies with `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum`.
+Users upgrading to the next Edition (or changing to `resolver = '3"`), will have to manually update their CI to test the latest dependencies with `CARGO_RESOLVER_PRECEDENCE=maximum`.
 
 Workspaces have no `edition`, so its easy for users to not realize they need to set `resolver = "3"` or to update their `resolver = "2"` to `"3"`.
 
@@ -535,7 +535,7 @@ Misc alternatives
 - Config was put under `build` to associate it with local development, as compared with `install` which could be supported in the future
 - Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 - The resolver doesn't support backtracking as that is extra complexity that we can always adopt later as we've reserved the right to make adjustments to what `cargo generate-lockfile` will produce over time.
-- `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version` assumes maximal resolution as generally minimal resolution will pick packages with compatible rust-versions as rust-version tends to (but doesn't always) increase over time.
+- `CARGO_RESOLVER_PRECEDENCE=rust-version` assumes maximal resolution as generally minimal resolution will pick packages with compatible rust-versions as rust-version tends to (but doesn't always) increase over time.
   - `cargo add` selecting rust-version-compatible minimum bounds helps
   - This bypasses a lot of complexity either from exploding the number of states we support or giving users control over the fallback by making the field an array of strategies.
 - Instead of `resolver = "3"`, we could just change the default for everyone
@@ -570,7 +570,7 @@ Alternatively...
 
 ~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
 However, this will err on the side of a higher MSRV than necessary and the only way to
-workaround it is to set `CARGO_BUILD_RESOLVER_PRECEDENCE=maximum` which will then lose
+workaround it is to set `CARGO_RESOLVER_PRECEDENCE=maximum` which will then lose
 all other protections.
 As we said, this is likely fine but then there will be no way to opt-out for the subset of maintainers who want to keep their support definition vague.
 As things evolve, we could re-evaluate making `"auto"` the default.
@@ -663,8 +663,8 @@ Affects of current solution on workflows (including non-resolver behavior):
 
 ### Make this opt-in rather than opt-out
 
-Instead of adding `resolver = "3"`, we could keep the default resolver the same as today but allow opt-in to MSRV-aware resolver via `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`.
-- When building with old Rust versions, error messages could suggest re-resolving with `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`.
+Instead of adding `resolver = "3"`, we could keep the default resolver the same as today but allow opt-in to MSRV-aware resolver via `CARGO_RESOLVER_PRECEDENCE=rust-version`.
+- When building with old Rust versions, error messages could suggest re-resolving with `CARGO_RESOLVER_PRECEDENCE=rust-version`.
   The next corrective step (and suggestion from cargo) depends on what the user is doing and could be either
   - `git checkout main -- Cargo.lock && cargo check`
   - `cargo generate-lockfile`
@@ -692,12 +692,12 @@ Affects on workflows (including non-resolver behavior):
   - 🟰 ~~Maintainers will have to opt-in to latest dependencies, in a `.cargo/config.toml`~~
   - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
-### Make `CARGO_BUILD_RESOLVER_PRECEDENCE=rustc` the default
+### Make `CARGO_RESOLVER_PRECEDENCE=rustc` the default
 
-Instead of `resolver = "3"` changing the behavior to `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version`,
-it is changed to `CARGO_BUILD_RESOLVER_PRECEDENCE=rustc` where the resolver selects packages compatible with current toolchain,
+Instead of `resolver = "3"` changing the behavior to `CARGO_RESOLVER_PRECEDENCE=rust-version`,
+it is changed to `CARGO_RESOLVER_PRECEDENCE=rustc` where the resolver selects packages compatible with current toolchain,
 matching the `cargo build` incompatible dependency error.
-- We would still support `CARGO_BUILD_RESOLVER_PRECEDENCE=rust-version` to help "Extended MSRV" users
+- We would still support `CARGO_RESOLVER_PRECEDENCE=rust-version` to help "Extended MSRV" users
 - We'd drop from this proposal `cargo update [--ignore-rust-version|--update-rust-version]` as they don't make sense with this new defaul
 
 This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "auto"`, `cargo build` error to diagnostic).
@@ -773,7 +773,6 @@ Affects on workflows (including non-resolver behavior):
 [unresolved-questions]: #unresolved-questions
 
 The config field is fairly rough
-  - The location (within `build`) needs more consideration
   - The name isn't very clear
   - The values are awkward
   - Should we instead just have a `resolver.rust-version = true`?
@@ -802,7 +801,7 @@ without changing the default away from `maximum`,
 allowing people to intentionally opt-in to auto-selecting a compatible top-level paclage.
 
 Dependency resolution could be controlled through a config field `install.resolver.precedence`,
-mirroring `build.resolver.precedence`.
+mirroring `resolver.precedence`.
 The value add of this compared to `--locked` is unclear.
 
 See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for more discussion.
@@ -812,7 +811,7 @@ See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for
 suggesting a version of the package to use and to pass `--locked` assuming the
 bundled `Cargo.lock` has MSRV compatible dependencies.
 
-## `build.resolver.precedence = "rust-version=<X>[.<Y>[.<Z>]]"`
+## `resolver.precedence = "rust-version=<X>[.<Y>[.<Z>]]"`
 
 We could allow people setting an effective rust-version within the config.
 This would be useful for people who have a reason to not set `package.rust-version`
