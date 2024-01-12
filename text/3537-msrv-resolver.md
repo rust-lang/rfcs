@@ -454,19 +454,19 @@ We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` which wil
 
 ```toml
 [build]
-resolver.precedence = "rust-version"  # Default
+resolver.precedence = "rust-version"  # Default with `v3`
 ```
-with support values being:
-- `maximum`: behavior today
+with potential values being:
+- `maximum`: behavior today (default for v1 and v2 resolvers)
   - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
 - `minimum` (unstable): `-Zminimal-versions`
   - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
-- `rust-version`:  what is defined in the package (default)
-- `rust-version=` (assumes `maximum` is the fallback)
+- `rust-version`:  what is defined in the package (default for v3 resolver)
+- `rust-version=` (future possibility)
   - `package`: long form of `rust-version`
-  - `rustc` (future possibility): the current running version
+  - `rustc`: the current running version
     - Needed for "separate development / publish MSRV" workflow
-  - `<x>[.<y>[.<z>]]` (future possibility): manually override the version used
+  - `<x>[.<y>[.<z>]]`: manually override the version used
 
 If a `rust-version` value is used, we'd switch to `maximum` when `--ignore-rust-version` is set.
 This will let users effectively pass `--ignore-rust-version` to all commands,
