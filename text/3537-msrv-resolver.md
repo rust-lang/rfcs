@@ -236,7 +236,7 @@ A maintainer may also want to avoid constraining their dependents, for a variety
 
 **Pain points:**
 
-We do not provide a way to help users know new versions are available, to support the users in saying up-to-date.
+We do not provide a way to help users know new versions are available, to support the users in staying up-to-date.
 MSRV build errors from new dependency versions is one way to do it though not ideal as this disrupts the user.
 Otherwise, they must actively run `rustup update` or follow Rust news.
 
@@ -270,7 +270,7 @@ but the requirement that dependents always pass `--ignore-rust-version` makes th
 
 ### Extended MSRV
 
-This could be people exclusively running one version or that support a range a versions.
+This could be people exclusively running one version or that support a range of versions.
 So why are people on old versions?
 - Not everyone is focused on Rust development and might only touch their Rust code once every couple of months,
   making it a pain if they have to update every time.
@@ -280,7 +280,7 @@ So why are people on old versions?
 - Re-validation costs for updating core parts of the image for an embedded Linux developers can be high, keeping them on older versions
 - Updates can be slow within tightly controlled environments (airgaps, paperwork, etc)
 - Qualifying Rust toolchains takes time and money, see [Ferrocene](https://ferrous-systems.com/ferrocene/)
-- Build on or for systems that are no longer supported by rustc (e.g. old glibc, AndroidNDK, etc)
+- Built on or for systems that are no longer supported by rustc (e.g. old glibc, AndroidNDK, etc)
 - Library and tool maintainers catering to the above use cases
 
 The MSRV may extend back only a couple releases or to a year+ and
@@ -288,7 +288,6 @@ they may choose to update on an as-need basis or keep to a strict cadence.
 
 Depending on the reason they are working with an old version,
 they might be developing the project with it or they might be using the latest toolchain.
-
 For some of these use cases, they might controlling their "MSRV" via `rust-toolchain.toml`, rather than `package.rust-version`, as its their only supported Rust version (e.g. an application with a vetted toolchain).
 
 When multiple Rust versions are supported, like with library and tool maintainers,
