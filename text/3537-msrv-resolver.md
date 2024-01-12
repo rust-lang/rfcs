@@ -321,7 +321,7 @@ For instance, a project might intentionally skip testing against their MSRV beca
 
 In some cases, the MSRV-incompatible dependencies might be restricted to `dev-dependencies`.
 Though local development can't be performed with the MSRV,
-the fact that the tests are verifying (on a newer MSRV) that the dependencies work gives a good amount of confidence that they will work on the MSRV so long as they compile.
+the fact that the tests are verifying (on a newer toolchain) that the build/normal dependencies work gives a good amount of confidence that they will work on the MSRV so long as they compile.
 
 Compared to the above workflow, this is likely targeted at just library and tool maintainers as other use cases don't have access to the latest version or they are needing the repo to be compatible with their MSRV.
 
