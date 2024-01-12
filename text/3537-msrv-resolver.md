@@ -471,7 +471,7 @@ Users may pass
 ## `cargo add`
 
 `cargo add <pkg>` (no version) will pick a version requirement that is low
-enough so that when it resolves, it will pick a dependency that is
+enough so that when it resolves, it can pick a dependency that is
 MSRV-compatible.
 `cargo add` will warn when it does this.
 
