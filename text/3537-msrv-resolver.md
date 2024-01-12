@@ -229,7 +229,7 @@ A user runs `cargo new` and starts development.
 
 A maintainer may also want to avoid constraining their dependents, for a variety of reasons, and leave MSRV support as a gray area.
 
-**Priority 0 because:**
+**Priority 1 because:**
 - No MSRV is fine as pushing people to have an MSRV would lead to either
   - an inaccurate reported MSRV from it going stale which would lower the quality of the ecosystem
   - raise the barrier to entry by requiring more process for packages and pushing the cost of old Rust versions on people who don't care
@@ -251,7 +251,7 @@ giving them room to backport fixes.
 Due to the pain points listed below, the target audience for this workflow is likely small,
 likely pushing them to not specify their MSRV.
 
-**Priority 1 because:**
+**Priority 2 because:**
 - Low barrier to maintaining a high quality of support for their MSRV
 - Being willing to advertising an MSRV, even if latest, improves the information available to developers, increasing the quality of the ecosystem
 - Costs for dealing with old Rust toolchains is shifted from the maintainer and the users on a supported toolchain to those on an unsupported toolchain
@@ -298,7 +298,7 @@ though this is already a recommended practice when people follow the
 The way they verify dependencies is restricted as they can't rely on always updating via Dependabot/RenovateBot as a way to verify them.
 Maintainers likely only need to do a compilation check for MSRV as their regular CI runs ensure that the behavior (which is usually independent of rust version) is correct for the MSRV-compatible dependencies.
 
-**Priority 2 because:**
+**Priority 3 because:**
 - MSRV applies to all interactions to the project which also means that the level of "support" is consistent
 - This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
 - For library and tool maintainers, they are absorbing costs from these less common use cases
@@ -325,7 +325,7 @@ the fact that the tests are verifying (on a newer toolchain) that the build/norm
 
 Compared to the above workflow, this is likely targeted at just library and tool maintainers as other use cases don't have access to the latest version or they are needing the repo to be compatible with their MSRV.
 
-**Priority 3 because:**
+**Priority 4 because:**
 - The MSRV has various carve outs, providing an inconsistent experience compared to other packages using other workflows and affecting the quality of the ecosystem
   - For workspaces with bins, `cargo install --locked` is expected to work with the MSRV but won't
   - If they use new Cargo features, then `[patch]`ing in a git source for the dependency won't work
@@ -647,18 +647,19 @@ allows us to move forward without having to figure out all of these details.
 ## Resolver behavior
 
 Affects of current solution on workflows (including non-resolver behavior):
-- Latest Rust with no MSRV
+1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ✅ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
-- Latest Rust as the MSRV
+2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
     - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - `cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
-- Extended MSRV
+3. Extended MSRV
   - ✅ `Cargo.lock` will Just Work
-- Extended published MSRV w/ latest development MSRV
+4. Extended published MSRV w/ latest development MSRV
   - ❌ Maintainers will have to opt-in to latest dependencies, in a `.cargo/config.toml`
+  - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
 ### Make this opt-in rather than opt-out
 
@@ -675,19 +676,19 @@ Instead of adding `resolver = "3"`, we could keep the default resolver the same 
 This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "auto"`, `cargo build` error to diagnostic).
 
 Affects on workflows (including non-resolver behavior):
-- Latest Rust with no MSRV
+1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - 🟰 ~~Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)~~
-- Latest Rust as the MSRV
+2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
     - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - ~~`cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV~~
   - ❌ Without `cargo update --update-rust-version`, `"auto"` will be more of a default path, leading to more maintainers updating their MSRV more aggressively and waiting until minors
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
-- Extended MSRV
-  - ✅ Users be able to opt-in to MSRV-compatible dependencies, in a `.cargo/config.toml`
+3. Extended MSRV
+  - ✅ Users will be able to opt-in to MSRV-compatible dependencies, in a `.cargo/config.toml`
   - ❌ Users will be frustrated that the tool knew what they wanted and didn't do it
-- Extended published MSRV w/ latest development MSRV
+4. Extended published MSRV w/ latest development MSRV
   - 🟰 ~~Maintainers will have to opt-in to latest dependencies, in a `.cargo/config.toml`~~
   - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
@@ -706,21 +707,22 @@ This is an auto-adapting variant where
 - If their toolchain matches their MSRV, they get an MSRV-aware resolver
 
 Affects on workflows (including non-resolver behavior):
-- Latest Rust with no MSRV
+1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ✅ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
-- Latest Rust as the MSRV
+2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
     - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - ~~`cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV~~
   - ❌ Without `cargo update --update-rust-version`, `"auto"` will be more of a default path, leading to more maintainers updating their MSRV more aggressively and waiting until minors
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
-- Extended MSRV
-  - ✅ Users be able to opt-in to MSRV-compatible dependencies, in a `.cargo/config.toml`
+3. Extended MSRV
+  - ✅ Users will be able to opt-in to MSRV-compatible dependencies, in a `.cargo/config.toml`
   - ❌ Users will be frustrated that the tool knew what they wanted and didn't do it
   - ❌ This may encourage maintainers to develop using their MSRV, reducing the quality of their experience (not getting latest lints, not getting latest cargo features like "wait for publish", etc)
-- Extended published MSRV w/ latest development MSRV
+4. Extended published MSRV w/ latest development MSRV
   - ❌ Maintainers will have to opt-in to ensure they get the latest dependencies in a `.cargo/config.toml`
+  - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
 ### Hard-error
 
@@ -737,18 +739,18 @@ This would block stabilization indefinitely.
 We could adopt this approach in the future, if desired
 
 Affects on workflows (including non-resolver behavior):
-- Latest Rust with no MSRV
+1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ❌ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
-- Latest Rust as the MSRV
+2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
     - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - `cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
-- Extended MSRV
+3. Extended MSRV
   - ✅ `Cargo.lock` will Just Work for `package.rust-version`
   - ❌ Application developers using `rust-toolchain.toml` will have to duplicate that in `package.rust-version` and keep it in sync
-- Extended published MSRV w/ latest development MSRV
+4. Extended published MSRV w/ latest development MSRV
   - ❌ A design not been worked out to allow this workflow
   - ❌ If this is done unconditionally, then the `Cargo.lock` will change on upgrade
   - ❌ This is incompatible with per-`feature` MSRVs
