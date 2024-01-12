@@ -183,7 +183,7 @@ We will then look at the potential designs within the context of this framework.
 Some design criteria we can use for evaluating workflows:
 - Cargo should not make major breaking changes
 - Low barrier to entry
-- The costs of “non-recommended” setups should be isolated to those that need them
+- The costs of “non-recommended” setups should focused on those that need them
 - Encourage a standard of quality within the ecosystem
 - Every feature has a cost and we should balance the cost against the value we expect
   - Features can further constrain what can be done in the future due to backwards compatibility
