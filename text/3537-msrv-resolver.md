@@ -165,7 +165,7 @@ People have tried to reduce the pain from MSRV with its own costs:
     policy for updating a minimum-supported Rust version (MSRV),
     wearing on all
     (e.g.
-    [libc](https://github.com/rust-lang/libs-team/issues/72)
+    [libc](https://github.com/rust-lang/libs-team/issues/72),
     [time](https://github.com/time-rs/time/discussions/535)
     )
 
