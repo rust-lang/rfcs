@@ -180,22 +180,22 @@ development version without upgrading the MSRV.
 In solving this, we need to keep in mind how people are using Cargo and how to prioritize when needs of different workflows conflict.
 We will then look at the potential designs within the context of this framework.
 
-Some design criteria we can use for evaluating use cases:
+Some design criteria we can use for evaluating workflows:
+- Cargo should not make major breaking changes
 - Low barrier to entry
+- The costs of “non-recommended” setups should be isolated to those that need them
 - Encourage a standard of quality within the ecosystem
+- Every feature has a cost and we should balance the cost against the value we expect
+  - Features can further constrain what can be done in the future due to backwards compatibility
+  - Features increase maintenance burden
+  - The larger the user-facing surface, the less likely users will find the feature they need and instead use the quickest shortcut
+- Being transparent makes debugging easier, helps in evaluating risks (including security), and builds confidence in users
 - Encourage progress and avoid stagnation
   - Proactively upgrading means the total benefit to developers from investments made in Rust is higher
   - Conversely, when most of the community is on old versions, it has a chilling effect on improving Rust
   - This also means feedback can come more quickly, making it easier and cheaper to pivot with user needs
   - Spreading the cost of upgrades over time makes forced-upgrades (e.g. for a security vulnerability) less of an emergency
   - Our commitment to compatibility helps keep the cost of upgrade low
-- The costs of “non-recommended” setups should be isolated to those that need them
-- Being transparent makes debugging easier, helps in evaluating risks (including security), and builds confidence in users
-- Cargo should not make major breaking changes
-- Every feature has a cost and we should balance the cost against the value we expect
-  - Features can further constrain what can be done in the future due to backwards compatibility
-  - Features increase maintenance burden
-  - The larger the user-facing surface, the less likely users will find the feature they need and instead use the quickest shortcut
 - When not competing with the above, we should do the right thing for the user rather than disrupt their flow to telling them what they should instead do
 
 And keeping in mind
