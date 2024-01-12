@@ -807,7 +807,7 @@ The value add of this compared to `--locked` is unclear.
 See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for more discussion.
 
 **Note:** [rust-lang/cago#12798](https://github.com/rust-lang/cargo/pull/12798)
-(slated to be released in 1.75) made it so `cargo install` will error upfront,
+(released in 1.75) made it so `cargo install` will error upfront,
 suggesting a version of the package to use and to pass `--locked` assuming the
 bundled `Cargo.lock` has MSRV compatible dependencies.
 
