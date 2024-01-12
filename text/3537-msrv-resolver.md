@@ -626,7 +626,7 @@ However, there is a lot more to define for us to get there.  Some routes that ne
   - We could make it sticky by tracking this in `Cargo.lock` but that becomes less obvious what resolver mode you are in and how to change
 - We could put this in `Cargo.toml` but that implies it unconditionally applies to everything
   - But we want `cargo install` to use the latest dependencies so people get bug/security fixes
-  - This gets in the way of the "separate development / publish MSRV" workflow
+  - This gets in the way of "Extended published MSRV w/ latest development MSRV" being able to change it in CI to verify MSRV and "Extended MSRV" being able to change it in CI to verify latest dependencies
 
 By relying on config we can have a stabilized solution sooner and we can work out more of the details as we better understand the relevant problems.
 
