@@ -448,6 +448,30 @@ As this is just a preference for resolving dependencies, rather than prescriptiv
 this shouldn't cause churn of the `Cargo.lock` file.
 We already call `rustc` for feature resolution, so hopefully this won't have a performance impact.
 
+## Cargo config
+
+We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
+
+```toml
+[build]
+resolver.precedence = "rust-version"  # Default
+```
+with support values being:
+- `maximum`: behavior today
+  - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
+- `minimum` (unstable): `-Zminimal-versions`
+  - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
+- `rust-version`:  what is defined in the package (default)
+- `rust-version=` (assumes `maximum` is the fallback)
+  - `package`: long form of `rust-version`
+  - `rustc` (future possibility): the current running version
+    - Needed for "separate development / publish MSRV" workflow
+  - `<x>[.<y>[.<z>]]` (future possibility): manually override the version used
+
+If a `rust-version` value is used, we'd switch to `maximum` when `--ignore-rust-version` is set.
+This will let users effectively pass `--ignore-rust-version` to all commands,
+without having to support the flag on every single command.
+
 ## `cargo build`
 
 The MSRV-compatibility build check will be demoted from an error to a `deny`-by-default workspace
@@ -485,30 +509,6 @@ We will add `"auto"` for `package.rust-version`.
 On publish, `rustc --version` will replace `"auto"`.
 
 `cargo new` will include `package.rust-version = "auto"`.
-
-## Cargo config
-
-We'll add a `build.resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
-
-```toml
-[build]
-resolver.precedence = "rust-version"  # Default
-```
-with support values being:
-- `maximum`: behavior today
-  - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
-- `minimum` (unstable): `-Zminimal-versions`
-  - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
-- `rust-version`:  what is defined in the package (default)
-- `rust-version=` (assumes `maximum` is the fallback)
-  - `package`: long form of `rust-version`
-  - `rustc` (future possibility): the current running version
-    - Needed for "separate development / publish MSRV" workflow
-  - `<x>[.<y>[.<z>]]` (future possibility): manually override the version used
-
-If a `rust-version` value is used, we'd switch to `maximum` when `--ignore-rust-version` is set.
-This will let users effectively pass `--ignore-rust-version` to all commands,
-without having to support the flag on every single command.
 
 # Drawbacks
 [drawbacks]: #drawbacks
