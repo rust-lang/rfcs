@@ -299,6 +299,7 @@ The way they verify dependencies is restricted as they can't rely on always upda
 Maintainers likely only need to do a compilation check for MSRV as their regular CI runs ensure that the behavior (which is usually independent of rust version) is correct for the MSRV-compatible dependencies.
 
 **Priority 3 because:**
+- Several use cases for this workflow have little alternative
 - MSRV applies to all interactions to the project which also means that the level of "support" is consistent
 - This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
 - For library and tool maintainers, they are absorbing costs from these less common use cases
