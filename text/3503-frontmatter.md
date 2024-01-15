@@ -274,6 +274,7 @@ Downsides
   - We've extended the frontmatter syntax with an infostring, undoing some of the "familiarity" benefit
   - Potential congantive disonance as those familiar with frontmatter are used to YAML being there
 - With `>>>` it isn't quite like HEREDOC to have less overhead
+- `>>>`, `<<<`, `|||`, `===` at the beginning of lines start to look like merge conflicts which might confuse external tools
 - Doesn't feel very rust-like
 
 Note:
