@@ -597,7 +597,14 @@ We could help people keep their MSRV up to date, by letting them specify a polic
 (e.g. `rust-version-policy = "stable - 2"` or `rust-version-policy = "stable"`);
 then, every time the user runs `cargo update`,
 we could automatically update their `rust-version` field as well.
-This would also be an alternative to `--update-rust-version`.
+This would also be an alternative to `--update-rust-version` that can be further explored in the future if desired.
+There are aspects of this that need to be worked out before going down this route
+- Without gating this behind a flag, this will push people away from bumping their MSRV only on minor version bumps.
+- Tying this to `cargo update` encourages other side effects by default (`--workspace` flag would be needed to do no other update) which pushes people to a more casual approach to MSRV updating, even if we have a flag
+- We need to figure out what policies are appropriate and what syntax to use for them
+  - While a continuous sliding window (`N-M`) is most commonly used today,
+    it is unclear if that is the right policy to bake in compared to others like periodic updates (`*/M` in cron syntax) to be helping the "Extended MSRV" users along with everyone else.
+- Is `stable` clear enough to mean "current version a time of `cargo update` with ratcheting semantics"?  What name can work best?
 
 When there still isn't an MSRV set, the resolver could
 - Assume the MSRV of the next published package with an MSRV set
