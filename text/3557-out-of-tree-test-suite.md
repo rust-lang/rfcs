@@ -20,7 +20,7 @@ Currently, the Rust infrastructure does not support this behavior. Instead, test
 
 Similarly, the Rust infrastructure builds several versions of `rustc`'s native libraries, one for each stage. For a cross target, the Rust infrastructure builds two two distinct versions of a library - one for `rustc` running on the host, and one to link against for the target executable. Testing may validate the wrong version of a library or validate a corrupted / incomplete intermediate state of the library.
 
-Out-of-tree testing solves these problems by testing the release artifacts of the Rust toolchain.
+Out-of-tree testing mitigates these problems by testing the release artifacts of the Rust toolchain.
 
 ## Testing on multiple hosts
 [testing-on-multiple-hosts]: #testing-on-multiple-hosts
