@@ -822,6 +822,15 @@ See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for
 suggesting a version of the package to use and to pass `--locked` assuming the
 bundled `Cargo.lock` has MSRV compatible dependencies.
 
+## cargo publish
+
+If you publish a library using your MSRV and MSRV-incompatible dependencies exist, the publish verification step will fail.
+You can workaround this by
+- Upgrading
+- Running with `--no-verify`
+
+See [rust-lang/cargo#13306](https://github.com/rust-lang/cargo/issues/13306).
+
 ## `resolver.precedence = "rust-version=<X>[.<Y>[.<Z>]]"`
 
 We could allow people setting an effective rust-version within the config.
