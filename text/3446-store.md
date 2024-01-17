@@ -91,7 +91,7 @@ impl<T, const N: usize> MaxPick<T, N> {
 
     pub fn as_slice(&self) -> &[T] { &self.0 }
 
-    pub fn clear(&mut self) { self.clear(); }
+    pub fn clear(&mut self) { self.0.clear(); }
 }
 
 impl<T: Ord, const N: usize> MaxPick<T, N> {
