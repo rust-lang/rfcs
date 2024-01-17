@@ -98,7 +98,35 @@ that wants to show the receiver expression.
 
 A postfix macro may accept `self` by value, by reference, or by mutable
 reference; the compiler will automatically use the appropriate type of
-reference, just as it does for closure captures.
+reference, just as it does for closure captures. For instance, consider a
+simple macro that shows an expression and its value:
+
+```rust
+macro_rules! dbg {
+    ($self:self) => { eprintln!("{}: {}", stringify!($self), $self) }
+}
+
+some_struct.field.dbg!(); // This does not consume or copy the field
+some_struct_ref.field.dbg!(); // This works as well
+```
+
+Or, consider a simple postfix version of `writeln!`:
+
+```rust
+macro_rules! writeln {
+    ($self:self, $args:tt) => { writeln!($self, $args) }
+    ... // remaining rules for the non-postfix version
+}
+
+some_struct.field.writeln!("hello world")?; // This does not consume the field
+some_struct.field.writeln!("hello {name}")?; // So it can be called repeatedly
+some_struct.field.write_all(b"just like methods can")?;
+```
+
+This makes the `.writeln!(...)` macro work similarly to a method, which uses
+`&mut self` but similarly can be called on an expression without explicitly
+writing `&mut`. This allows postfix macros to call methods on the receiver,
+whether those methods take `self`, `&self`, or `&mut self`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
