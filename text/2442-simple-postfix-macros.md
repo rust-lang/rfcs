@@ -352,6 +352,9 @@ control-flow mechanism from prefix to postfix.
 
 # Future work
 
+- We may want to add postfix support to some existing macros in the standard
+  library. This RFC does not make any specific proposals for doing so, but once
+  the capability exists, the standard library may wish to use it.
 - We may also want a means of creating postfix proc macros.
 - We *may* want to expose `k#autoref` for other purposes. We may also want to
   use it in the definition of other syntax desugaring in the future.
