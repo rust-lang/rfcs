@@ -204,6 +204,12 @@ between the delimiters after the macro name in its invocation.
 A macro may attach the designator `self` to a parameter not named `$self`, such
 as `$x:self`. Using `$self:self` is a convention, not a requirement.
 
+A single macro may define multiple rules, some that use `$self:self` and some
+that do not, which allows it to be invoked either as a postfix macro or as a
+non-postfix macro. Rules specifying `$self:self` will only match postfix
+invocations, and rules not specifying `$self:self` will only match non-postfix
+invocations.
+
 A postfix macro invocation, like any other macro invocation, may use any form
 of delimiters around the subsequent arguments: parentheses (`expr.m!()`),
 braces (`expr.m!{}`), or square brackets (`expr.m![]`).
