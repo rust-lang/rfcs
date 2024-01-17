@@ -90,6 +90,12 @@ This method-like syntax allows macros to cleanly integrate in a left-to-right
 method chain, while still making use of control flow and other features that
 only a macro can provide.
 
+If a postfix macro calls `stringify!($self)`, it will get a stringified
+representation of the full receiver expression. For instance, given
+`a.b()?.c.m!()`, `stringify!($self)` will return `"a.b()?.c"`. This allows
+postfix macros to provide debugging functionality such as `dbg!` or `assert!`
+that wants to show the receiver expression.
+
 A postfix macro may accept `self` by value, by reference, or by mutable
 reference; the compiler will automatically use the appropriate type of
 reference, just as it does for closure captures.
@@ -183,8 +189,8 @@ Even though `$self` represents an internal temporary location provided by the
 compiler, calling `stringify!` on `$self` will return a stringified
 representation of the full receiver expression. For instance, given
 `a.b()?.c.m!()`, `stringify!($self)` will return `"a.b()?.c"`. This allows
-postfix macros to provide functionality such as `dbg!` or `assert!` that wants
-to show the receiver expression.
+postfix macros to provide debugging functionality such as `dbg!` or `assert!`
+that wants to show the receiver expression.
 
 If passed to another macro, `$self` will only match a macro argument using a
 designator of `:expr`, `:tt`, or `:self`.
