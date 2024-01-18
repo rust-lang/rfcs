@@ -106,13 +106,38 @@ Allowing the naming of function types as in [#3476](https://github.com/rust-lang
 
 `type_alias_impl_trait` may also partially address the problem. In particular, it helps with unnameable types
 and macro / code generator output, without the drawbacks of loss of clarity and semvar trouble.
-However, there might be cases where we do not want the type to be hidden behind an `impl Trait`.
-This also won't help with array lengths or types that do not implement a particular trait.
+However, it cannot fully replace inference because
+- There are cases where we do not want the type to be hidden behind an `impl Trait`.
+- Defining a trait for the const item might be difficult - for example, when the
+  const item is a function pointer with a variable number of arguments.
+- The const item might be generated from a macro, and the macro might not
+  want to require a separate trait to be defined.
+- This also won't help with array lengths or types that do not implement a particular trait.
 
 # Prior art
 [prior-art]: #prior-art
 
 In [RFC#1623](https://github.com/rust-lang/rfcs/pull/1623) we added `'static` lifetimes to every reference or generics lifetime value in `static` or `const` declarations.
+
+In [RFC#2010](https://github.com/rust-lang/rfcs/pull/2010) const/static type inference
+was proposed, but the RFC was **postponed**. The [reason](https://github.com/rust-lang/rfcs/pull/2010#issuecomment-325827854) can be summarized as follows:
+
+- Things we can do with const/static was quite limited at the time.
+Const/static type inference fails to provide value for simple cases such as `const SOMETHING = 32;`
+- The team wanted to move forward in other areas (e.g. impl Trait) before moving on to solve this problem.
+
+However, after 7 years it is now time to revisit this topic:
+
+- The things that can be done in a const expression has been greatly expanded since
+  2017, which means that it is more likely to use a complicated type or an unnameable type on const/static items.
+- It is now possible to use impl types in function returns (although having impl type aliases could provide a similar solution for const and statics)
+- Const and static aren't necessarily at the top level. It feels weird that the type can be elided on a let statement inside a function, but not on a const or static inside a function
+- The original RFC resolution of **postpone** was made at least partially based on
+  statistics done by @schuster. This RFC was proposed with the motivation of enabling the use
+  of unnameable types in const/static items. Because this RFC enables new behaviors,
+  data on current usage isn't very useful for determining how much it might improve language
+  expressiveness.
+
 
 
 # Unresolved questions
