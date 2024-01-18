@@ -19,7 +19,7 @@ In simple cases, explicitly writing out
 the type of the const seems trivial. However, this isn't always the case:
 
 - Sometimes the constant's value is complex, making the explicit type overly verbose.
-- In some cases, the type may be unnameable.
+- In some cases, the type may be unnamable.
 - When creating macros, the precise type might not be known to the macro author.
 - Code generators may not have enough information to easily determine the type.
 
@@ -50,7 +50,7 @@ const WRAPPED_PI: MyStruct<_> = MyStruct(3.1415_f32); // Ok
 
 static MESSAGE: _ = "Hello, World!"; // inferred as &'static str
 static ARR: [u8; _] = [12, 23, 34, 45]; // inferred as [u8; 4]
-const FN: _ = std::string::String::default; // inferred as the unnameable type of ZST closure asociated with this item. Its type is reported by `type_name_of_val` as ::std::string::String::default
+const FN: _ = std::string::String::default; // inferred as the unnamable type of ZST closure associated  with this item. Its type is reported by `type_name_of_val` as ::std::string::String::default
 ```
 
 In summary, globals should have sandboxed inference context, where their type would be fully known after all constraints in const expr block has been applied; i.e. no default types for literals, nor implicit casts should be allowed.
@@ -111,7 +111,7 @@ Rust code remains more verbose than necessary, especially in complex scenarios, 
 
 Allowing the naming of function types as in [#3476](https://github.com/rust-lang/rfcs/pull/3476) may help resolve some of the cases where type inference is needed.
 
-`type_alias_impl_trait` may also partially address the problem. In particular, it helps with unnameable types
+`type_alias_impl_trait` may also partially address the problem. In particular, it helps with unnamable types
 and macro / code generator output, without the drawbacks of loss of clarity and semvar trouble.
 However, it cannot fully replace inference because
 - There are cases where we do not want the type to be hidden behind an `impl Trait`.
@@ -136,12 +136,12 @@ Const/static type inference fails to provide value for simple cases such as `con
 However, after 7 years it is now time to revisit this topic:
 
 - The things that can be done in a const expression has been greatly expanded since
-  2017, which means that it is more likely to use a complicated type or an unnameable type on const/static items.
+  2017, which means that it is more likely to use a complicated type or an unnamable type on const/static items.
 - It is now possible to use impl types in function returns (although having impl type aliases could provide a similar solution for const and statics)
 - Const and static aren't necessarily at the top level. It feels weird that the type can be elided on a let statement inside a function, but not on a const or static inside a function
 - The original RFC resolution of **postpone** was made at least partially based on
   statistics done by @schuster. This RFC was proposed with the motivation of enabling the use
-  of unnameable types in const/static items. Because this RFC enables new behaviors,
+  of unnamable types in const/static items. Because this RFC enables new behaviors,
   data on current usage isn't very useful for determining how much it might improve language
   expressiveness.
 
