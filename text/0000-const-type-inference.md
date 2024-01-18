@@ -95,8 +95,9 @@ language expressiveness and usability.
 
 Not all `const` or `static` items are public, and in many cases the type is obvious enough that semver isn't a concern. Requiring explicit typing for this reason seems a bit heavy handed.
 
-It is for this reason that we require "opt-in" for all places where type inference is desired
-by requiring at least a "_" placeholder for top level items.
+It is for this reason that we require "opt-in" where type inference is desired
+by requiring at least a "_" placeholder for top level items. A clippy lint will also be added
+when such top level item may in fact be named.
 
 
 # Rationale and alternatives
