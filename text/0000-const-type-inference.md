@@ -12,7 +12,8 @@ Allow type inference for `const` or `static` when the type of the initial value 
 [motivation]: #motivation
 
 Rust currently requires explicit type annotations for `const` and `static` items.
-It was decided that all public API points should be "obviously semver stable" rather than "quick to type".
+It was decided that all public API and top level items must be "obviously semver stable" rather than "quick to type". However, this philosophy needs to be carefully weighted against
+language expressiveness.
 
 
 In simple cases, explicitly writing out
@@ -23,13 +24,10 @@ the type of the const seems trivial. However, this isn't always the case:
 - When creating macros, the precise type might not be known to the macro author.
 - Code generators may not have enough information to easily determine the type.
 
-This change aims to make Rust code more concise and maintainable, especially in scenarios where the types of
+This change aims to make Rust more expressive, concise and maintainable, especially in scenarios where the types of
 const items are complicated or not easily expressible.
 
-Inferring constant types also improves the ergonomics of the language, particularly for new users. Some users are
-coming from languages where most (or all) types are inferred, so inferring obvious types matches their
-expectations. Other new users are focused on learning ownership, or other core Rust concepts. Reducing the
-amount of boilerplate reduces their mental load. This reduction in mental load also helps experienced programmers.
+Inferring constant types also improves the ergonomics and consistency of the language, particularly for new users. Types are already being inferred for `let` items, and not allowing inference for obvious types creates a mismatch of expectations, especially considering that const/static items may also be defined inside a function and directly next to a `let` binding.
 
 
 # Guide-level explanation
@@ -55,6 +53,8 @@ static MESSAGE: _ = "Hello, World!"; // inferred as &'static str
 static ARR: [u8; _] = [12, 23, 34, 45]; // inferred as [u8; 4]
 const FN_PTR: _ = std::string::String::default; // inferred as fn() -> String
 ```
+
+In summary, globals should have sandboxed inference context, where their type would be fully known after all constraints in const expr block has been applied; i.e. no default types for literals, nor implicit casts should be allowed.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
