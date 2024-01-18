@@ -27,7 +27,7 @@ the type of the const seems trivial. However, this isn't always the case:
 This change aims to make Rust more expressive, concise and maintainable, especially in scenarios where the types of
 const items are complicated or not easily expressible.
 
-Inferring constant types also improves the ergonomics and consistency of the language, particularly for new users. Types are already being inferred for `let` items, and not allowing inference for obvious types creates a mismatch of expectations, especially considering that const/static items may also be defined inside a function and directly next to a `let` binding.
+Inferring constant types also improves the ergonomics and consistency of the language, particularly for new users. Types are already being inferred for `let` bindings, and not allowing inference for obvious `const` or `static` items creates a mismatch of expectations, especially when `const`/`static` items may be defined inside a function, directly next to a `let` binding.
 
 
 # Guide-level explanation
