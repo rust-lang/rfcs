@@ -12,8 +12,7 @@ Allow type inference for `const` or `static` when the type of the initial value 
 [motivation]: #motivation
 
 Rust currently requires explicit type annotations for `const` and `static` items.
-It was decided that all public API and top level items must be "obviously semver stable" rather than "quick to type". However, this philosophy needs to be carefully weighted against
-language expressiveness.
+It was decided that all public API and top level items must be "obviously semver stable" rather than "quick to type".
 
 
 In simple cases, explicitly writing out
@@ -37,7 +36,7 @@ You may declare constants and static variables without specifying their types wh
 from the initial value, subjecting to the following constraints:
 - The types of all literals must be fully constrained, which generally means numeric literals must either
   have a type suffix, or the type must specify their type
-- The typing may not be entirely omitted. At the very least, a `_` placeholder must be used, but the `_` placeholder
+- When declaring a top-level item, the typing may not be entirely omitted. At the very least, a `_` placeholder must be used, but the `_` placeholder
   may also appear anywhere in a nested type.
 
 For example:
@@ -51,7 +50,7 @@ const WRAPPED_PI: MyStruct<_> = MyStruct(3.1415_f32); // Ok
 
 static MESSAGE: _ = "Hello, World!"; // inferred as &'static str
 static ARR: [u8; _] = [12, 23, 34, 45]; // inferred as [u8; 4]
-const FN_PTR: _ = std::string::String::default; // inferred as fn() -> String
+const FN: _ = std::string::String::default; // inferred as the unnameable type of ZST closure asociated with this item. Its type is reported by `type_name_of_val` as ::std::string::String::default
 ```
 
 In summary, globals should have sandboxed inference context, where their type would be fully known after all constraints in const expr block has been applied; i.e. no default types for literals, nor implicit casts should be allowed.
@@ -89,8 +88,15 @@ instead of emitting an error.
 - Potential Loss of Clarity: In some cases, omitting the type might make the code less clear,
   especially to newcomers or when explicit types are needed to understanding the purpose of the item.
   It is my belief that this is a choice better left for the developers as in the case of `let` bindings.
-- Semver compatibilty: The API surface of the type is implicit, changing the right-hand side in subtle ways can change the type in a way that can be hard to notice, for example between different integer types. 
-  However, not all `const` or `static` items are public, and in many cases the type is obvious enough that semver isn't a concern. Requiring explicit typing for this reason seems a bit heavy handed.
+- Semver compatibilty: The API surface of the type is implicit, changing the right-hand side in subtle ways can change the type in a way that can be hard to notice, for example between different integer types. This goes against the rule that "all top-level items must be fully type-annotated".
+
+However, this philosophy needs to be carefully weighted against
+language expressiveness and usability.
+
+Not all `const` or `static` items are public, and in many cases the type is obvious enough that semver isn't a concern. Requiring explicit typing for this reason seems a bit heavy handed.
+
+It is for this reason that we require "opt-in" for all places where type inference is desired
+by requiring at least a "_" placeholder for top level items.
 
 
 # Rationale and alternatives
