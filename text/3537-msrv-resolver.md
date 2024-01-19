@@ -793,6 +793,8 @@ The config field is fairly rough
   - The values are awkward
   - Should we instead just have a `resolver.rust-version = true`?
 
+Whether we report stale dependencies only on `cargo update` or on every command.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
