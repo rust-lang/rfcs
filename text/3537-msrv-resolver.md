@@ -507,7 +507,8 @@ Users may pass
 ## `cargo publish`
 
 We will add `"auto"` for `package.rust-version`.
-On publish, `rustc --version` will replace `"auto"`.
+On `cargo publish`, `"auto"` in `Cargo.toml` will be replaced by `rustc --version`.
+If `rustc --version` is a pre-release, it will be left as unspecified.
 
 `cargo new` will include `package.rust-version = "auto"`.
 
