@@ -620,7 +620,8 @@ When there still isn't an MSRV set, the resolver could
 Alternative to or in addition to the `cargo update` output to report when things are held back (both MSRV and semver),
 we can run the resolver twice on the original input, once for MSRV and once without.
 We then do a depth-first diff of the trees, stopping and reporting on the first different node.
-This would let us report on any command that changes the way the tree is resolved.
+This would let us report on any command that changes the way the tree is resolved
+(from explicit changes with `cargo update` to `cargo build` syncing `Cargo.toml` changes to `Cargo.lock`).
 We'd likely want to limit the output to only the sub-tree that changed.
 
 We could either always do the second resolve or only do the second resolve if the resolver changed anything,
