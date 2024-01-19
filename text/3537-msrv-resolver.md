@@ -461,7 +461,7 @@ with potential values being:
 - `maximum`: behavior today (default for v1 and v2 resolvers)
   - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
 - `minimum` (unstable): `-Zminimal-versions`
-  - As this just just precedence, `-Zdirect-minimal-versions` doesn't fit into this
+  - As this is just precedence, `-Zdirect-minimal-versions` doesn't fit into this
 - `rust-version`:  what is defined in the package (default for v3 resolver)
 - `rust-version=` (future possibility)
   - `package`: long form of `rust-version`
