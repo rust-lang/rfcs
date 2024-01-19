@@ -493,6 +493,8 @@ Users may pass
 - `--ignore-rust-version` to pick the latest dependencies, ignoring all `rust-version` fields (your own and from dependencies)
 - `--update-rust-version` to pick the `rustc --version`-compatible dependencies, updating your `package.rust-version` if needed to match the highest of your dependencies
 
+Those flags will also be added to `cargo generate-lockfile`
+
 ## `cargo add`
 
 `cargo add <pkg>` (no version) will pick a version requirement that is low
