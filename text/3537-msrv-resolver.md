@@ -623,6 +623,7 @@ We then do a depth-first diff of the trees, stopping and reporting on the first 
 This would let us report on any command that changes the way the tree is resolved
 (from explicit changes with `cargo update` to `cargo build` syncing `Cargo.toml` changes to `Cargo.lock`).
 We'd likely want to limit the output to only the sub-tree that changed.
+If there wasn't previously a `Cargo.lock`, this would mean everything.
 
 We could either always do the second resolve or only do the second resolve if the resolver changed anything,
 whichever is faster.
