@@ -402,7 +402,7 @@ Some details may change over time though `cargo check && rustup update && cargo 
 Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `cargo update`.  This does not affect `cargo install`.
 
 * `maximum`: prefer the highest compatible versions of dependencies
-* `rust-version`: prefer dependencies where their `package.rust-version` is greater than or equal to your `package.rust-version`
+* `rust-version`: prefer dependencies where their `package.rust-version` is less than or equal to your `package.rust-version`
 
 `rust-version` can be overridden with `--ignore-rust-version` which will fallback to `maximum`.
 
