@@ -10,6 +10,7 @@
 Provide a happy path for developers needing to work with older versions of Rust by
 - Preferring MSRV (minimum-supported-rust-version) compatible dependencies when Cargo resolves dependencies
 - Ensuring compatible version requirements when `cargo add` auto-selects a version
+- Smoothing out the path for setting and maintaining a verified MSRV so the above will be more likely to pick a working version.
 
 Note: `cargo install` is intentionally left out for now to decouple discussions on how to handle the security ramifications.
 
