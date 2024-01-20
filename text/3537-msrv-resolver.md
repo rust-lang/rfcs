@@ -417,7 +417,7 @@ We will be adding a v3 resolver, specified through `workspace.resolver` / `packa
 This will become default with the next Edition.
 
 When `resolver = "3"` is set, Cargo's resolver will change to *prefer* MSRV compatible versions over
-incompatible versions when resolving versions except for `cargo install`.
+incompatible versions when resolving new dependencies, except for `cargo install`.
 Initially, dependencies without `package.rust-version` will be preferred over
 MSRV-incompatible packages but less than those that are compatible.
 The exact details for how preferences are determined may change over time,
