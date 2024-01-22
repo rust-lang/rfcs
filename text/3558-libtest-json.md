@@ -97,7 +97,7 @@ Comments made on libtests format
 - [Benches need love](https://github.com/rust-lang/rust/issues/49359#issuecomment-467994590)
 - [Type field is overloaded](https://github.com/rust-lang/rust/issues/49359#issuecomment-467994590)
 - [Suite/child relationship is missing](https://github.com/rust-lang/rust/issues/49359)
-- [Suite lacks a name](https://github.com/rust-lang/rust/issues/49359#issuecomment-699691296)
+- [Lack of suite name makes it hard to use programmatic output from Cargo](https://github.com/rust-lang/rust/issues/49359#issuecomment-533154674) (see also [1](https://github.com/rust-lang/rust/issues/49359#issuecomment-699691296))
 - [Format is underspecified](https://github.com/rust-lang/rust/issues/49359#issuecomment-706566635)
 - ~~[Lacks ignored reason](https://github.com/rust-lang/rust/issues/49359#issuecomment-715877950)~~ ([resolved?](https://github.com/rust-lang/rust/issues/49359#issuecomment-1531369119))
 - [Lack of `rendered` field](https://github.com/rust-lang/rust/issues/49359#issuecomment-1531369119)
