@@ -56,7 +56,7 @@ Those changes can be automatically applied by an edition migration lint.
 [reference-level-explanation]: #reference-level-explanation
 
 - On `edition >= 2024`
-  - Casting function pointers or function defenitions to an integer type is a hard error
+  - Casting function pointers or function definitions to an integer type is a hard error
       - Note that you can still cast function pointers and function item types to `*const V` and `*mut V` where `V: Sized`
       - Note that function item types can also be casted to function pointers
 - On `edition < 2024`
