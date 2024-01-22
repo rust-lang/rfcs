@@ -493,6 +493,9 @@ If they want to check the status of things, they can run `cargo update -n`.
 Users may pass
 - `--ignore-rust-version` to pick the latest dependencies, ignoring all `rust-version` fields (your own and from dependencies)
 - `--update-rust-version` to pick the `rustc --version`-compatible dependencies, updating your `package.rust-version` if needed to match the highest of your dependencies
+- `<pkgname> --precise <version>` to pick a specific version, independent of the `rust-version` field
+
+We expect the notice to inform users of these options for allowing them to upgrade.
 
 Those flags will also be added to `cargo generate-lockfile`
 
