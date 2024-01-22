@@ -54,6 +54,12 @@ Our rough plan for vetting a proposal is:
 3. Add experimental support for cargo to interact with test binaries through the unstable programmatic output
 4. Create a stabilization report for programmatic output for T-libs-api and a cargo RFC for custom test harnesses to opt into this new protocol
 
+It is expected that the experimental test harness have functional parity with `libtest`, including
+- Ignored tests
+- Parallel running of tests
+- Benches being both a bench and a test
+- Test discovery
+
 We should evaluate the design against the capabilities of test runners from different ecosystems to ensure the format has the expandability for what people may do with custom test harnesses or `cargo test`, including:
 - Ability to implement different format modes on top
   - Both test running and `--list` mode
