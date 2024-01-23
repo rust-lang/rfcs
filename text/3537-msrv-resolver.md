@@ -353,7 +353,9 @@ one lockfile can be used but it can be difficult to edit the `Cargo.lock` to ens
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## The `rust-version` field
+## Example documentation updates
+
+### The `rust-version` field
 
 *(update to [manifest documentation](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field))*
 
@@ -383,7 +385,7 @@ The `rust-version` may be ignored using the `--ignore-rust-version` option.
 Setting the `rust-version` key in `[package]` will affect all targets/crates in
 the package, including test suites, benchmarks, binaries, examples, etc.
 
-## Rust Version
+### Rust Version
 
 *(update to [Dependency Resolution's Other Constraints documentation](https://doc.rust-lang.org/cargo/reference/resolver.html))*
 
@@ -392,7 +394,7 @@ cargo will prefer those with a compatible `package.rust-version` over those that
 aren't compatible.
 Some details may change over time though `cargo check && rustup update && cargo check` should not cause `Cargo.lock` to change.
 
-#### `resolver.precedence`
+##### `resolver.precedence`
 
 *(update to [Configuration](https://doc.rust-lang.org/cargo/reference/config.html))*
 
