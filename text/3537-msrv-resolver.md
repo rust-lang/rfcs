@@ -797,6 +797,19 @@ The config field is fairly rough
   - The values are awkward
   - Should we instead just have a `resolver.rust-version = true`?
 
+`rust-version = "auto"`'s field name is unsettled and deciding on it is not blocking for stabilization.
+Ideally, we make it clear that this this is not inferred from syntax,
+that this is the currently running toolchain,
+that we ignore pre-release toolchains,
+and the name works well for resolver config if we decide to add "resolve to toolchain version" and want these consistent.
+Some options include:
+- `auto` can imply "infer from syntactic minimum"
+- `latest` can imply "latest globally (ie from rust-lang.org)
+- `stable` can imply "latest globally (ie from rust-lang.org)
+- `toolchain` might look weird?
+- `local` implies a `remote`
+- `current` is like `latest` but a little softer and might work
+
 Whether we report stale dependencies only on `cargo update` or on every command.
 
 # Future possibilities
