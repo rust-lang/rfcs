@@ -902,3 +902,10 @@ Ideally, we'd at least facilitate people in setting their MSRV.  Some data that 
 
 Once people have more data to help them in picking an MSRV policy,
 it would help to also document trade-offs on whether an MSRV policy should proactive or reactive on when to bump it.
+
+## Warn when adding dependencies with unspecified MSRVs
+
+When adding packages without an MSRV,
+its not clear whether it will work with your project.
+Knowing that they haven't declared support for your toolchain version could be important,
+after we've made it easier to declare an MSRV.
