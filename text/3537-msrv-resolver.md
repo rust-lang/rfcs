@@ -555,6 +555,10 @@ Misc alternatives
     We couldn't want this to be like sparse registries where a setting exists and we change the default and people hardly notice (besides any improvements)
 - `cargo build` will treat incompatible MSRVs as a workspace-level lint, rather than a package level lint, to avoid the complexity of mapping the package to a workspace-member for `[lint]` and dealing with unifying conflicting levels in `[lint]`.
 - `--ignore-rust-version` picks absolutely the latest dependencies to support (1) users on latest rustc and (2) users wanting "unsupported" dependencies, at the cost of users not on the latest rustc but still want latest more up-to-date dependencies than their MSRV allows
+- Compilation commands (e.g. `cargo check`) will take on two meanings for `--ignore-rust-version`, (1) `allow` the workspace diagnostic and (2) resolve changed dependencies to latest when syncing `Cargo.toml` to `Cargo.lock`.
+  - This expansion of scope is for consistency
+  - Being a flag to turn the `deny` into an `allow` is a high friction workflow that we expect users to not be too negatively impacted by this expansion.
+  - With the resolver config and the configurable lint, we also expect the flag on compilation commands to be diminished in value.  Maybe in the future we could even deprecate it and/or hide it.
 - `--update-rust-version` picks `rustc --version`-compatible dependencies so users, no matter their `rustc` version, can easily walk the treadmill of updating their dependencies / MSRV
   - There is little reason to select an MSRV higher than their Rust toolchain
   - We should still be warning the user that new dependencies are available if they upgrade their Rust toolchain
