@@ -18,7 +18,7 @@ Integrating Rust code into this and other large projects which expect all native
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`patchable-function-entry` provides configurable nop padding before function symbols and after function symbols but before any generated code. We refer to the former as `prefix` padding and the latter as `entry` padding. For example, if we had a function `f` with `prefix` set to 3 and `entry` to 2, we'd expect to see:
+`patchable-function-entry` provides configurable nop padding before function symbols and after function symbols but before any generated code. We refer to the former as `prefix` padding and the latter as `entry` padding. For example, if we had a function `f` with `prefix_nops` set to 3 and `entry_nops` to 2, we'd expect to see:
 
 ```
 nop
@@ -30,14 +30,14 @@ nop
 // Code goes here
 ```
 
-To set this for all functions in a crate, use `-C patchable-function-entry=nop_count=m,offset=n` where `nop_count = prefix + entry`, and `offset = prefix`. Usually, you'll want to copy this value from a corresponding `-fpatchable-function-entry=` being passed to the C compiler in your project.
+To set this for all functions in a crate, use `-C patchable-function-entry=total_nops=m,prefix_nops=n` where `total_nops = prefix_nops + entry_nops`. Usually, you'll want to copy this value from a corresponding `-fpatchable-function-entry=` being passed to the C compiler in your project - `total_nops` will match the first parameter used by your C compiler, and the optional `offset` parameter passed to the C compiler will match `prefix_nops`.
 
-To set this for a specific function, use `#[patchable(prefix = m, entry = n)]` to pad with m nops before the symbol and n after the symbol, but before the prelude. This will override the flag value. To disable padding for a specific function, for example because it is part of the instrumentation framework, use `#[unpatchable]`.
+To set this for a specific function, use `#[patchable_function_entry(prefix_nops = m, entry_nops = n)]` to pad with m nops before the symbol and n after the symbol, but before the prelude. This will override the flag value. To disable padding for a specific function, for example because it is part of the instrumentation framework, use `#[patchable_function_entry(entry_nops = 0, prefix_nops = 0)]`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`patchable-function-entry` provides configurable nop padding before function symbols and after function symbols but before any generated code. We refer to the former as `prefix` padding and the latter as `entry` padding. For example, if we had a function `f` with `prefix` set to 3 and `entry` to 2, we'd expect to see:
+`patchable-function-entry` provides configurable nop padding before function symbols and after function symbols but before any generated code. We refer to the former as `prefix` padding and the latter as `entry` padding. For example, if we had a function `f` with `prefix_nops` set to 3 and `entry_nops` to 2, we'd expect to see:
 
 ```
 f_pad:
@@ -68,28 +68,26 @@ This is not a real symbol, just a collected location.
 
 This flag comes in two forms:
 
-- `-C patchable-function-entry=nop_count=m,offset=n`
-- `-C patchable-function-entry=nop_count=m`
+- `-C patchable-function-entry=total_nops=m,prefix_nops=n`
+- `-C patchable-function-entry=total_nops=m`
 
-In the latter, offset is assumed to be zero. `nop_count` must be greater than or equal to `offset`, or it will be rejected.
+In the latter, `prefix_nops` is assumed to be zero. `total_nops` must be greater than or equal to `prefix_nops`, or it will be rejected.
 
-If unspecified, the current behavior is maintained, which is equivalent to `nop_count=0` here.
+If unspecified, the current behavior is maintained, which is equivalent to `total_nops=0` here.
 
 This flag sets the default nop padding for all functions in the crate. In most cases, all crates in a compilation should use the same value of `-C patchable-function-entry` to reduce confusion. If not all crates in the compilation graph share the same `patchable-function-entry` configuration, the compiler may produce an error *or* use any patchability specification present in the graph as the default for any function.
 
-`prefix` is calculated as `offset`. `entry` is calculated as `nop_count - offset`. This unusual mode of specification is intended to mimic the compiler flags of `clang` and `gcc` for ease of build system integration.
+`entry_nops` is calculated as `total_nops - prefix_nops`. This unusual mode of specification is intended to mimic the compiler flags of `clang` and `gcc` for ease of build system integration. The first mandatory parameter to their flags matches `total_nops`, and the optional parameter matches `prefix_nops`.
 
-Specifying the compiler flag for a backend or architecture which does not support this feature will result in an error. Some backend / architecture combinations may only support some values of `entry` and `prefix`, in which case an error will also be generated for invalid values.
+Specifying the compiler flag for a backend or architecture which does not support this feature will result in an error. Some backend / architecture combinations may only support some values of `entry_nops` and `prefix_nops`, in which case an error will also be generated for invalid values.
 
-## Attributes `#[patchable]` and `#[unpatchable]`.
+## Attribute `#[patchable_function_entry]`
 
-This attribute allows specification of either the `prefix` or `entry` values or both, using the format `#[patchable(prefix = m, entry = n)]`. If either is left unspecified, it overrides them to a default value of 0. Specifying neither prefix nor entry is an error, but explicitly setting them both to 0 is allowed.
+This attribute allows specification of either the `prefix_nops` or `entry_nops` values or both, using the format `#[patchable_function_entry(prefix_nops = m, entry_nops = n)]`. If either is left unspecified, it overrides them to a default value of 0. Specifying neither `prefix_nops` nor `entry_nops` is an error, but explicitly setting them both to 0 is allowed.
 
 As this is specified via an attribute, it will persist across crate boundaries unlike the compiler flag.
 
 Specifying any amount of padding other than 0 in an attribute will result in an error on backends or architectures which do not support this feature. Some architecture/backend combinations may only support a subset of prefix and entry nop counts, and may generate errors when other counts are requested.
-
-`#[unpatchable]` is a built-in alias for `#[patchable(prefix = 0, entry = 0)]`.
 
 ## Optimization Notes
 
