@@ -79,7 +79,7 @@ This flag sets the default nop padding for all functions in the crate. In most c
 
 `prefix` is calculated as `offset`. `entry` is calculated as `nop_count - offset`. This unusual mode of specification is intended to mimic the compiler flags of `clang` and `gcc` for ease of build system integration.
 
-Specifying the compiler flag for a backend or architecture which does not support this feature will result in an error.
+Specifying the compiler flag for a backend or architecture which does not support this feature will result in an error. Some backend / architecture combinations may only support some values of `entry` and `prefix`, in which case an error will also be generated for invalid values.
 
 ## Attributes `#[patchable]` and `#[unpatchable]`.
 
@@ -87,7 +87,7 @@ This attribute allows specification of either the `prefix` or `entry` values or 
 
 As this is specified via an attribute, it will persist across crate boundaries unlike the compiler flag.
 
-Specifying any amount of padding other than 0 in an attribute will result in an error on backends or architectures which do not support this feature.
+Specifying any amount of padding other than 0 in an attribute will result in an error on backends or architectures which do not support this feature. Some architecture/backend combinations may only support a subset of prefix and entry nop counts, and may generate errors when other counts are requested.
 
 `#[unpatchable]` is a built-in alias for `#[patchable(prefix = 0, entry = 0)]`.
 
