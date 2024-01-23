@@ -75,7 +75,7 @@ In the latter, offset is assumed to be zero. `nop_count` must be greater than or
 
 If unspecified, the current behavior is maintained, which is equivalent to `nop_count=0` here.
 
-This flag sets the default nop padding for all functions in the crate. Notably, this default *only applies to codegenned functions*. If a function is monomorphized during the compilation of another crate or any similar scenario, it will use the default from that crate's compilation. In most cases, all crates in a compilation should use the same value of `-C patchable-function-entry` to reduce confusion.
+This flag sets the default nop padding for all functions in the crate. In most cases, all crates in a compilation should use the same value of `-C patchable-function-entry` to reduce confusion. If not all crates in the compilation graph share the same `patchable-function-entry` configuration, the compiler may produce an error *or* use any patchability specification present in the graph as the default for any function.
 
 `prefix` is calculated as `offset`. `entry` is calculated as `nop_count - offset`. This unusual mode of specification is intended to mimic the compiler flags of `clang` and `gcc` for ease of build system integration.
 
