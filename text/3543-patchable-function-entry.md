@@ -263,3 +263,7 @@ Disadvantages:
 [future-possibilities]: #future-possibilities
 
 We could potentially use these for dynamic tracing of rust programs, similar to `#[instrument]` in the `tracing` today, but with more configurable behavior and even lower overhead (since there will be no conditionals to check, just a nop sled to go down).
+
+We could consider adding `#[unpatchable]` as a shorthand for `#[patchable_function_entry(entry_nops = 0, prefix-nops = 0)]`.
+
+We could define the behavior around differing default patchability in the crate graph more narrowly (either require a hard error, or require that the compiler follows the declaring crate's padding spec).
