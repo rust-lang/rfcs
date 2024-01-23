@@ -793,9 +793,11 @@ Affects on workflows (including non-resolver behavior):
 [unresolved-questions]: #unresolved-questions
 
 The config field is fairly rough
-  - The name isn't very clear
-  - The values are awkward
-  - Should we instead just have a `resolver.rust-version = true`?
+- The name isn't very clear
+- The values are awkward
+- Should we instead just have a `resolver.rust-version = true`?
+  - If we later add "resolve to toolchain" version, this might be confusing.
+  - Maybe enumeration, like `resolver.rust-version = <manifest|toolchain|ignore>`?
 
 `rust-version = "auto"`'s field name is unsettled and deciding on it is not blocking for stabilization.
 Ideally, we make it clear that this this is not inferred from syntax,
