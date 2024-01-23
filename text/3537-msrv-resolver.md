@@ -722,7 +722,7 @@ Instead of `resolver = "3"` changing the behavior to `CARGO_RESOLVER_PRECEDENCE=
 it is changed to `CARGO_RESOLVER_PRECEDENCE=rustc` where the resolver selects packages compatible with current toolchain,
 matching the `cargo build` incompatible dependency error.
 - We would still support `CARGO_RESOLVER_PRECEDENCE=rust-version` to help "Extended MSRV" users
-- We'd drop from this proposal `cargo update [--ignore-rust-version|--update-rust-version]` as they don't make sense with this new defaul
+- We'd drop from this proposal `cargo update [--ignore-rust-version|--update-rust-version]` as they don't make sense with this new default
 
 This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "auto"`, `cargo build` error to diagnostic).
 
