@@ -206,7 +206,7 @@ And keeping in mind
 - Even keeping upgrade costs low, there is still a re-validation cost that mission critical applications must pay
 - Dependencies in `Cargo.lock` are not expected to change from contributors using different versions of the Rust toolchain without an explicit action like changing `Cargo.toml` or running `cargo update`
   - e.g. If the maintainer does `cargo add foo && git commit && git push`,
-    then a contributor doing `git pull && cargo check` should not have a different selection of dependencies.
+    then a contributor doing `git pull && cargo check` should not have a different selection of dependencies, independent of their toolchain versions (which might mean the second user sees an error about an incompatible package).
 
 Some implications:
 - "Support" in MSRV implies the same quality and responsiveness to bug reports, regardless of Rust version
