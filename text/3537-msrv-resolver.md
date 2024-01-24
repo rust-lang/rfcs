@@ -483,6 +483,14 @@ The MSRV-compatibility build check will be demoted from an error to a `deny`-by-
 allowing users to intentionally use dependencies on an unsupported (or less supported) version of Rust
 without requiring `--ignore-rust-version` on every invocation.
 
+Ideally, we present all of the MSRV issues upfront to be resolved together.
+At minimum, we should present a top-down message, rather than bottom up.
+
+If `package.rust-version` is unset or `"auto"`, the diagnostic should suggest setting it
+to help raise awareness of `package.rust-version` being able to reduce future
+resolution errors.
+This would benefit from knowing the oldest MSRV.
+
 ## `cargo update`
 
 `cargo update` will inform users when an MSRV or semver incompatible version is available.
@@ -694,9 +702,6 @@ Instead of adding `resolver = "3"`, we could keep the default resolver the same 
   The next corrective step (and suggestion from cargo) depends on what the user is doing and could be either
   - `git checkout main -- Cargo.lock && cargo check`
   - `cargo generate-lockfile`
-- We should update the "incompatible rust-version" checks to be top-down, rather
-  than bottom up,
-  so users see the root of their problem, rather than the leaves.
 - We'd drop from this proposal `cargo update [--ignore-rust-version|--update-rust-version]` as they don't make sense with this new default
 
 This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "auto"`, `cargo build` error to diagnostic).
