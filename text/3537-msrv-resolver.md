@@ -353,6 +353,288 @@ one lockfile can be used but it can be difficult to edit the `Cargo.lock` to ens
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## Example workflows
+
+We'll step through several scenarios to highlight the changes in the user experience.
+
+### Latest Rust with MSRV
+
+I'm learning Rust and wanting to write my first application.
+The book suggested I install using `rustup`.
+
+I've recently updated my toolchain
+```console
+$ rustup update
+Downloading and install 1.92
+```
+
+At some point, I start a project:
+```console
+$ cargo new foo
+$ cat foo/Cargo.toml
+```
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "auto"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+```
+```console
+$ cargo add clap -F derive
+Adding clap 5.10.30
+```
+*(note: this user would traditionally be a "Latest Rust" user but `package.rust-version` automatically them moved to "Latest Rust with MSRV" without extra validation effort or risk of their MSRV going stale)*
+
+After some time, I get back to my project and decide to add completion support:
+```console
+$ cargo add clap_complete
+Adding clap_complete 5.10.40
+warning: clap_complete 5.11.0 exists but requires Rust 1.93 while you are running 1.92.
+To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup && cargo add clap_complete@5.11.0`.
+To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo add clap_complete@5.11.0`
+```
+Wanting to be on the latest version, I run
+```console
+$ rustup update
+Downloading and install 1.94
+$ cargo update
+Updating clap v5.10.30 -> v5.11.0
+Updating clap_complete v5.10.40 -> v5.11.0
+```
+
+**Alternate:** But what if I manually edited `Cargo.toml` instead of `cargo add`?
+Here, we can shortcut some questions about version requirements because clap aligns on minor releases.
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "auto"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "5.10.30", features = ["derive"] }
+clap_complete = "5.10"  # <-- new
+```
+And away I go:
+```console
+$ cargo check
+Warning: adding clap_complete@5.10.40 because 5.11.0 requires Rust 1.93 while you are running 1.92.
+To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup && cargo update`.
+To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo update --ignore-rust-version`
+```
+But I am in a hurry and don't want to disrupt my flow.
+`clap_complete@5.10.40` is likely fine.
+I am running `clap@5.10.30` and that has been working for me.
+I might even run [`cargo deny`](https://crates.io/crates/cargo-deny) to see if there are known vulnerabilities.
+So I continue development.
+
+Later I run:
+```console
+$ cargo update
+Name          Current Latest Note
+============= ======= ====== ==================
+clap          5.10.30 5.11.0 requires Rust 1.93
+clap_complete 5.10.40 5.11.0 requires Rust 1.93
+note: To use the latest depednencies, run `rustup && cargo update`.
+To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
+$ rustup update
+Downloading and install 1.94
+$ cargo update
+Updating clap v5.10.30 -> v5.11.0
+Updating clap_complete v5.10.40 -> v5.11.0
+```
+
+At this point, I want to publish
+```console
+$ cargo publish
+... crates.io error about missing fields
+$ $EDITOR `Cargo.toml`
+$ cargo publish
+Published foo 0.1.0
+```
+If I look on crates.io, the new 0.1.0 version shows up with a rust-version of 1.94
+without me having to manual update the field and
+relying on the `cargo publish`s verify step to verify the correctness of that MSRV.
+
+### Extended "MSRV" with an application
+
+I am developing an application using a certified toolchain.
+I specify this toolchain using a `rust-toolchain.toml` file.
+
+Rust 1.94 is the latest but my certified toolchain is 1.92.
+
+At some point, I start a project:
+```console
+$ cargo new foo
+$ cat foo/Cargo.toml
+```
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "auto"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+```
+```console
+$ cargo add clap -F derive
+Adding clap 5.10.30
+warning: clap 5.11.0 exists but requires Rust 1.93 while you are running 1.92.
+To use the clap@5.11.0 with a compatible Rust version, run `rustup && cargo add clap@5.10.0`.
+To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo add clap@5.10.0`
+```
+At this point, I have a couple of options
+1. I check and clap advertises that they "support" Rust 1.92 by cherry-picking fixes into 5.10 and I feel comfortable with that
+2. I check `cargo deny` and don't see any vulnerabilities and that is good enough for me, knowing that the majority of my users are likely on newer versions
+3. I decide that clap doesn't align with my interests and use something else
+
+Assuming (1) or (2) applies, I ignore the warning and move on.
+
+### Extended MSRV with an application targeting multiple Rust versions
+
+*(this is a re-imagining of the Motivation's example)*
+
+I'm building an application that is deployed to multiple embedded Linux targets.
+Each target's image builder uses a different Rust toolchain version to avoid re-validating the image.
+
+I've recently updated my toolchain
+```console
+$ rustup update
+Downloading and install 1.94
+```
+
+At some point, I start a project:
+```console
+$ cargo new foo
+$ cat foo/Cargo.toml
+```
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "auto"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+```
+```console
+$ cargo add clap -F derive
+Adding clap 5.11.0
+```
+
+I send this to my image builder and I get this failure for one of my embedded targets:
+```
+$ cargo build
+error: clap 5.11.0 requires Rust 1.93.0 while you are running 1.92.0
+
+note: downgrade to 5.10.30 for a version compatible with Rust 1.92.0
+note: set `package.rust-version = "1.92.0"` to ensure compatible versions are selected in the future
+note: lint `cargo::incompatible-msrv` is denied by default
+
+```
+I make the prescribed changes:
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"  # <-- was "auto" before I edited it
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "5.10.30", features = ["derive"] }  # <-- downgraded
+```
+And my image build works!
+
+After some time, I run:
+```console
+$ cargo update
+Name          Current Latest Note
+============= ======= ====== ==================
+clap          5.10.30 5.11.0 requires Rust 1.93
+clap_complete 5.10.40 5.11.0 requires Rust 1.93
+note: To use the latest depednencies, run `rustup && cargo update`.
+To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
+```
+We've EOLed the last embedded target that supported 1.92 and so we can update our `package.rust-version`,
+so we can update it and our dependencies:
+```console
+$ cargo update --update-rust-version
+Updating clap 5.10.30 to 5.11.0
+Updating foo's rust-version from 1.92 to 1.93
+```
+
+### Extended MSRV for a Library
+
+I'm developing a new library and am willing to take on some costs for supporting people on older toolchains.
+
+I've recently updated my toolchain
+```console
+$ rustup update
+Downloading and install 1.94
+```
+
+At some point, I start a project:
+```console
+$ cargo new foo --lib
+```
+I've decided on an "N-2" MSRV policy:
+```toml
+[package]
+name = "foo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"  # <-- was "auto" before I edited it
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+```
+```console
+$ cargo add clap -F derive
+Adding clap 5.10.30
+warning: clap 5.11.0 exists but requires Rust 1.93 while `foo` has `package.rust-version = "1.92"`
+To use clap@5.11.0 with a compatible package.rust-version, run `cargo add clap@5.11.0 --update-rust-version`
+To force the use of clap@5.11.0 independent of your toolchain, run `cargo add clap@5.11.0`
+```
+At this point, I have a couple of options
+1. I check and clap advertises that they "support" Rust 1.92 by cherry-picking fixes into 5.10 and I feel comfortable with that
+2. I check `cargo deny` and don't see any vulnerabilities and that is good enough for me, knowing that the majority of my users are likely on newer versions
+3. I decide that clap doesn't align with my interests and use something else
+
+Assuming (1) or (2) applies, I ignore the warning and move on.
+
+After some time, I run:
+```console
+$ cargo update
+Name          Current Latest Note
+============= ======= ====== ==================
+clap          5.10.30 5.11.0 requires Rust 1.93
+clap_complete 5.10.40 5.11.0 requires Rust 1.93
+note: To use the latest depednencies, run `rustup && cargo update`.
+To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
+```
+At this point, 1.95 is out, so I'm fine updating my MSRV and I run:
+```console
+$ cargo update --update-rust-version
+Updating clap 5.10.30 to 5.11.0
+Updating foo's rust-version from 1.92 to 1.93
+```
+Instead, if a newer clap version was out needing 1.94 or 1.95, I would instead edit `Cargo.toml` myself.
+
 ## Example documentation updates
 
 ### The `rust-version` field
