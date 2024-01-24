@@ -509,6 +509,30 @@ We expect the notice to inform users of these options for allowing them to upgra
 
 Those flags will also be added to `cargo generate-lockfile`
 
+## Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command
+
+In addition to the `cargo update` output to report when things are held back (both MSRV and semver),
+We can attempt to have resolves to call out the new dependency versions that were held back from MSRV or semver.
+Whether we do this and how much will be subject to factors like noisy output, performance, etc.
+
+Implementation ideas...
+
+We then do a depth-first diff of the trees, stopping and reporting on the first different node.
+This would let us report on any command that changes the way the tree is resolved
+(from explicit changes with `cargo update` to `cargo build` syncing `Cargo.toml` changes to `Cargo.lock`).
+We'd likely want to limit the output to only the sub-tree that changed.
+If there wasn't previously a `Cargo.lock`, this would mean everything.
+
+We could either always do the second resolve or only do the second resolve if the resolver changed anything,
+whichever is faster.
+
+Its unknown whether making the inputs available for multiple resolves would have a performance impact.
+
+While a no-change resolve is fast, if this negatively impacts it enough, we
+could explore hashing the resolve inputs and storing that in the lockfile,
+allowing us to detect if the inputs have changed and only resolving then.
+
+
 ## `cargo add`
 
 `cargo add <pkg>` (no version) will pick a version requirement that is low
@@ -632,25 +656,6 @@ When there still isn't an MSRV set, the resolver could
 - Sort no-MSRV versions by minimal versions, the lower the version the more likely it is to be compatible
   - This runs into quality issues with version requirements that are likely too low for what the package actually needs
   - For dependencies that never set their MSRV, this effectively switches us from maximal versions to minimal versions.
-
-## Reporting
-
-Alternative to or in addition to the `cargo update` output to report when things are held back (both MSRV and semver),
-we can run the resolver twice on the original input, once for MSRV and once without.
-We then do a depth-first diff of the trees, stopping and reporting on the first different node.
-This would let us report on any command that changes the way the tree is resolved
-(from explicit changes with `cargo update` to `cargo build` syncing `Cargo.toml` changes to `Cargo.lock`).
-We'd likely want to limit the output to only the sub-tree that changed.
-If there wasn't previously a `Cargo.lock`, this would mean everything.
-
-We could either always do the second resolve or only do the second resolve if the resolver changed anything,
-whichever is faster.
-
-Its unknown whether making the inputs available for multiple resolves would have a performance impact.
-
-While a no-change resolve is fast, if this negatively impacts it enough, we
-could explore hashing the resolve inputs and storing that in the lockfile,
-allowing us to detect if the inputs have changed and only resolving then.
 
 ## Configuring the resolver mode on the command-line or `Cargo.toml`
 
@@ -824,6 +829,7 @@ Some options include:
 - `current` is like `latest` but a little softer and might work
 
 Whether we report stale dependencies only on `cargo update` or on every command.
+See "Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command".
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
