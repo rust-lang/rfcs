@@ -143,7 +143,24 @@ For a number of reasons, Rust as a project has opted to avoid exposing too many 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-This RFC makes it possible to re-export all symbols from a linked staticlib by iterating over all the symbols in a build script and writing them into an extern block that gets `include!`d into the cdylib crate. A more ergonomic re-export of all symbols from a staticlib included via `+whole-archive` may be desirable. It's not clear to the RFC author if this should always be the behavior of `+whole-archive` when pulling a staticlib into a cdylib, or if an additional flag is appropriate - the [original RFC](https://rust-lang.github.io/rfcs/2951-native-link-modifiers.html) that introduced `+whole-archive` is not fully illuminating for this case.
+## Re-exporting everything from a linked staticlib
+
+This RFC makes it possible to re-export all symbols from a linked staticlib by iterating over all the symbols in a build script and writing them into an extern block that gets `include!`d into the cdylib crate. A more ergonomic re-export of all symbols from a staticlib included via `+whole-archive` may be desirable.
+
+It's not clear to the RFC author if this should always be the behavior of `+whole-archive` when pulling a staticlib into a cdylib, or if an additional flag is appropriate - the [original RFC](https://rust-lang.github.io/rfcs/2951-native-link-modifiers.html) that introduced `+whole-archive` is not fully illuminating for this case.
+
+## Re-exporting types not representable by Rust
+
+One limitation of this RFC is the lack of support for types not easily representable in Rust, e.g. C++'s `std::vector`. Users in this situation will have two options after this RFC:
+
+1. manually writing an 'appropriate' FFI declaration for the type - e.g. given a particular platform, a type of the same size and alignment may be considered 'compatible'
+2. relying on the lack of type information in symbols - many binary formats, including ELF, do not have any type information as part of the symbol itself, so re-exporting can be correctly performed with completely incorrect type information (as linkers will ignore any type information coming from Rust)
+
+Unfortunately, each of these have drawbacks - 1 requires that the Rust developer pay careful attention to the size (and other relevant meta information, like alignment) of the type in case it changes between versions. 2 works for many compiled formats, but not all (e.g. asm.js associates function symbols with information about their return types and arguments) and a mismatch could cause miscompilations.
+
+Future work could consider true 'passthrough' re-exports, where you just tell Rust the name of a symbol and it figures how to pass all the relevant detail through itself, without needing to worry about `fn` vs `static` or type information.
+
+## Additional linking scenarios
 
 Scenarios out of scope of this RFC include:
 
