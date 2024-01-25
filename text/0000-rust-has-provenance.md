@@ -76,7 +76,7 @@ Since `p1_ptr` and `p2_ptr` are equal, assuming "pointers are just integers" (i.
 
 However, from the perspective of alias analysis, we want this program to have UB: looking at `q` and all pointers to `p2` (which is only `p2_ptr`), we can see that none of them are ever written to, so `p2` will always contain its initial value 42.
 Therefore, alias analysis would like to conclude that if this program prints anything, it must print 42, and replace `println!("{}", p2)` by `println!("{}", 42)`.
-After this transformation, the program might now print nothing or print 0, even though the original program would never print 0.
+After this transformation, the program might now print nothing or print 42, even though the original program would never print 42.
 Changing program behavior in this way is a violation of the "as-if" rule that governs what the compiler may do.
 The only way to make that transformation legal is to say that the given program has UB.
 The only way to make the given program have UB, while keeping the alternative program (that writes to `p2_ptr`) allowed, is to say that `p1_ptr` and `p2_ptr` are somehow different, and writing through one of these pointers is *not* like writing through the other.
@@ -213,7 +213,7 @@ The biggest downside of provenance is complexity. The existence of provenance me
 
 The other main drawback is the lack of proper treatment of provenance in LLVM, our primary codegen backend.
 LLVM suffers from various long-standing provenance-related bugs ([[1]](https://github.com/llvm/llvm-project/issues/34577), [[2]](https://github.com/llvm/llvm-project/issues/33896)), and there is currently no concrete plan for how to resolve them.
-The opinion on the RFC author is that LLVM needs to stop using pointer comparisons in GVN, and it needs to stop folding ptr2int2ptr cast roundtrips.
+The opinion of the RFC author is that LLVM needs to stop using pointer comparisons in GVN, and it needs to stop folding ptr2int2ptr cast roundtrips.
 Furthermore, LLVM needs to decide whether the `iN` type carries provenance or not.
 To keep all the integer-related optimization, it is likely necessary to decide that it does *not* carry provenance.
 This would then necessitate the introduction of a "byte" type that *does* carry provenance, as without such a type it would be impossible to load and store individual bytes (or in general, anything but a ptr-sized chunk of memory) in a provenance-preserving manner.
