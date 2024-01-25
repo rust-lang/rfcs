@@ -12,7 +12,8 @@ Pointers (this includes values of reference type) in Rust have **two** component
 
 (This is disregarding any "metadata" that may come with wide pointers, it only talks about thin pointers / the data part of a wide pointer.)
 
-Accessing memory using a pointer with incorrect provenance causes undefined behavior (UB), regardless of the address value of the pointer.
+Whether a memory access with a given pointer causes undefined behavior (UB) depends on both the address and the provenance:
+the same address may be fine to access with one provenance, and UB to access with another provenance.
 
 In contrast, integers do **not** have a provenance component.
 
@@ -108,7 +109,7 @@ fn foo(x: &mut i32) -> i32 {
 
 It's very difficult to see how to make this optimization sound without provenance. Ralf J. has [attempted](https://www.ralfj.de/blog/2017/07/17/types-as-contracts.html) such a model in the past, but it was unsuccessful in a number of ways: the optimizations it allows are fairly weak (replacing `bar` by an unknown block of code within the same function would already inhibit the optimizations), while at the same time the model was incompatible with common unsafe code patterns (to the extent that even the standard library needed a long allowlist to make the Miri test suite pass).
 
-In contrast, Ralf's successor model [Stacked Borrows](https://github.com/rust-lang/unsafe-code-guidelines/blob/master/wip/stacked-borrows.md) and the more recent [Tree Borrows](https://perso.crans.org/vanille/treebor/) do enable powerful optimizations for references while being compatible with the majority of existing unsafe code.
+In contrast, Ralf's successor model [Stacked Borrows](https://github.com/rust-lang/unsafe-code-guidelines/blob/a4a6e5f28b6542da759db247db7db8b34d5f0ead/wip/stacked-borrows.md) and the more recent [Tree Borrows](https://perso.crans.org/vanille/treebor/) do enable powerful optimizations for references while being compatible with the majority of existing unsafe code.
 Both of these models heavily rely on provenance.
 
 ## LLVM
@@ -251,7 +252,7 @@ That said, (2) would still be a valid option for surface Rust, so this RFC delib
 ### Prior discussion in Rust
 
 * The question of provenance has been discussed for many years. See for instance the [provenance label in the UCG](https://github.com/rust-lang/unsafe-code-guidelines/issues?q=is%3Aissue+label%3AA-provenance), and the [strict provenance discussion](https://github.com/rust-lang/rust/issues/95228).
-* There was a 2022-10-05 [lang team design meeting](https://github.com/rust-lang/lang-team/blob/master/design-meeting-minutes/2022-10-05-provenance.md) on this subject. The most relevant parts of those meeting notes were used as the starting point for this RFC.
+* There was a 2022-10-05 [lang team design meeting](https://github.com/rust-lang/lang-team/blob/c8f61dd9d933091b0487153d9db49034f8fa1002/design-meeting-minutes/2022-10-05-provenance.md) on this subject. The most relevant parts of those meeting notes were used as the starting point for this RFC.
 * This RFC was discussed [on Zulip](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/Pre-RFC.3A.20Rust.20Has.20Provenance).
 
 # Unresolved questions
