@@ -30,14 +30,21 @@ This tightly-scoped RFC adds support for re-exporting explicitly listed symbols 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-When producing a cdylib from a Rust crate and linking to a staticlib, adding `#[no_mangle]` and `pub` to an item in an extern block in the top level crate as follows:
+When producing a cdylib from a Rust crate and linking to a staticlib, adding `#[no_mangle]` and `pub` to items in an extern block in the top level crate as follows:
 
 ```
-#[no_mangle]
-pub fn foo();
+// kind is optional if it's been specified elsewhere, e.g. via the `-l` flag to rustc
+#[link(name="ext", kind="static")]
+extern {
+    #[no_mangle]
+    pub fn foo();
+
+    #[no_mangle]
+    pub static bar: std::ffi::c_int;
+}
 ```
 
-will make the `foo` symbol from the static library (e.g. `libext.a` on Linux) visible in the final produced `libcrate.so`.
+will make the `foo` and `bar` symbols from the static library (e.g. `libext.a` on Linux) visible in the final produced `libcrate.so`. This is supported for all item types supported in an `extern` block - at time of writing, this means `fn`s and `static`s.
 
 If the crate is not being build as a cdylib the `#[no_mangle]` annotation will be ignored - this includes when the crate is a dependency of a cdylib crate.
 
@@ -47,36 +54,56 @@ If `ext` is not _explicitly_ linked as a static library the result is unspecifie
 warning: `#[no_mangle]` with `pub` is only valid for re-export when the library is explicitly a `staticlib`
 ```
 
+If the item is marked as `#[no_mangle]` without being publicly visible in the crate (e.g. the `pub` annotation is missing or the `extern` block is in a private module), the `#[no_mangle]` annotation will have no effect. A non-fatal warning will be emitted:
+
+```
+warning: `#[no_mangle]` will not re-export private items from `extern` block
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature [works today](https://github.com/aidanhs/rust-re-export-lib/) (at least on Linux), with a single caveat - a warning from the compiler:
+This feature [works today](https://github.com/aidanhs/rust-re-export-lib/) (at least on Linux), showing the following key output which demonstrates that `pub` items with `#[no_mangle]` are exported from the dynamic library, and correctly excludes the items missing either of those annotations:
 
 ```
-   Compiling x v0.1.0 (/tmp/tmp.Sig2rLZept/rust-re-export-lib)
+$ ONLY_DYNAMIC_SYMBOLS=1 ./script.sh | grep rfc3556
+=== DYNAMIC SYMBOLS ===
+0000000000054008 D foo_rfc3556_global_pub_with_no_mangle
+0000000000006f56 T foo_rfc3556_pub_with_no_mangle
+```
+
+However, there is a caveat - a collection of similar warnings from the compiler:
+
+```
 warning: `#[no_mangle]` has no effect on a foreign function
- --> src/lib.rs:5:5
-  |
-5 |     #[no_mangle]
-  |     ^^^^^^^^^^^^ help: remove this attribute
-6 |     pub fn foo();
-  |     ------------- foreign function
-  |
-  = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
-  = note: symbol names in extern blocks are not mangled
-  = note: `#[warn(unused_attributes)]` on by default
-
-warning: `x` (lib) generated 1 warning (run `cargo fix --lib -p x` to apply 1 suggestion)
-    Finished dev [unoptimized + debuginfo] target(s) in 0.25s
+  --> src/lib.rs:21:5
+   |
+21 |     #[no_mangle]
+   |     ^^^^^^^^^^^^ help: remove this attribute
+22 |     pub fn foo_rfc3556_pub_with_no_mangle();
+   |     ---------------------------------------- foreign function
+   |
+   = warning: this was previously accepted by the compiler but is being phased out; it will become a hard error in a future release!
+   = note: symbol names in extern blocks are not mangled
 ```
 
-This warning is incorrect - `#[no_mangle]` does indeed have an effect on a foreign function, and it's exactly what this RFC needs. The implementation strategy for this PR then becomes:
+This warning is incorrect - `#[no_mangle]` does have an effect on a foreign function, and it's exactly what this RFC needs. The warning was added in a PR that [justifies the warning](https://github.com/rust-lang/rust/pull/86376#issuecomment-905864909) with the following reasoning:
+
+1. `#[no_mangle]` marks symbols as globally visible ("the behavior of `#[no_mangle]` causing symbols to be made global (regardless of rust's visibility rules) is not well explained")
+2. it does not make sense for imported symbols to be marked as globally visible ("It also does not make sense for those imports to additionally be exported by `#[no_mangle]`'s effects (and I would expect possible linker errors if they were)"
+
+Point 1 is reasonable - to some extent this RFC could be seen as partly rectifying that issue. Point 2, per the motivation section, isn't true in at least the linking scenario considered by this RFC.
+
+The implementation strategy for this RFC *on Linux* is:
 
 1. remove the above warning
 2. document the new behavior
-3. add a warning for re-exporting a symbol when the library is not explicitly marked as a staticlib
+3. add a warning for re-exporting a symbol when the symbol is not globally visible
+4. add a warning for re-exporting a symbol when the library is not explicitly marked as a staticlib
 
 On point 3 - the goal is to catch cases where a) the user has specified non-staticlib link kind or b) the user has not specified any link kind. The semantics of case (a) are not defined in this RFC (see [future-possibilities](#future-possibilities)), and catching (b) is to avoid the user accidentally falling into case (a) where the linker selects a dylib automatically.
+
+The RFC author isn't clear on the current implementation state of this on Windows but suggests the repository linked above as a starting point to test implementation correctness.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -106,7 +133,7 @@ The RFC author believes that re-using this annotation would give it two very dif
 
 The RFC author believes (but is not 100% sure) that languages and build systems where users might want this level of control often just require the user to instruct the system linker appropriately. This typically requires more knowledge of platform executable formats, but also permits much more fine control over final produced artifacts.
 
-For a number of reasons, Rust as a project has opted to avoid exposing too many platform intricacies, which sacrifices control in favor of more consistent cross-platform behavior.
+For a number of reasons, Rust as a project has opted to avoid exposing too many platform intricacies, which sacrifices control in favor of more consistent cross-platform behavior. As a result, the author isn't sure of any good places to look for prior art.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
