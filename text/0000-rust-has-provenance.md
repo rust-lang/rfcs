@@ -24,7 +24,7 @@ This RFC very deliberately aims to be as **minimal** as possible, to just get th
 # Motivation
 [motivation]: #motivation
 
-"Shared references (and pointers derived from it) are read-only" is a well-established principle in Rust.
+"Shared references (and pointers derived from them) are read-only" is a well-established principle in Rust.
 The presence of provenance follows directly from that principle, as can be seen by the following example:
 
 ```rust
