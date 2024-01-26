@@ -147,6 +147,7 @@ let x = if b { y/2 } else { z+42 };
 Program analysis might want to track which variables can influence the value of `x`, and this is often called "provenance".
 In our example, `x` would have provenance of `{y, z}`, indicating that those are the two variables that can affect the value of `x`.
 However, this kind of provenance is purely *descriptive*, it just states facts about program executions.
+This is just a way of talking about data dependencies (and possibly control dependencies).
 The language standard would never even mention this form of provenance; a compiler would justify the correctness of its provenance analysis by relating them to the semantics specified in the standard.
 It is safe to "forget" descriptive provenance during analysis (and it doesn't exist outside analysis to begin with); that just means the compiler cannot do provenance-based optimizations on the affected values.
 Programmers do not have to think about descriptive provenance ever when judging the correctness of their code.
@@ -164,10 +165,15 @@ Sanitizers and undefined behavior detectors like [Miri](https://github.com/rust-
 [^erase]: It is of course still possible to erase provenance during compilation, *if* the target that we are compiling to does not actually do the access checks that the abstract machine does. What is not safe is having a language operation that strips provenance, and inserting that in arbitrary places in the program.
 
 The point of this RFC is that Rust has *prescriptive* provenance.
+The author is not aware of cases of descriptive provenance that actually use the term "provenance"; usually people simply talk about data/control dependencies.
+So while the term "provenance" might initially raise wrong expectations, there's also no pressing need to pick a different term.
+Ultimately, wrong expectations will ensue with pretty much any name, since few people actually expect anything like prescriptive provenance to exist.
+(This includes the author of this RFC, who was firmly anti-prescriptive-provenance around 2017, but has since come to the conclusion that there's no credible alternative.)
 
 *Historical note:* The author assumes that provenance in C was originally intended to be purely descriptive.
 However, the moment compilers started doing optimizations that exploit undefined behavior depending on the provenance of a pointer, provenance of de-facto-C became prescriptive.
 A lot of the confusion around provenance arises from the fact that many people still think it is purely descriptive.
+They will hence accept both "we do provenance-based alias analysis" and "pointers are just integers" as true statements, not realizing that these statements are contradicting each other.
 The standard has not (yet) been updated to clarify this, but in 2022 the committee has accepted a Technical Specification that does explicitly state that C has prescriptive provenance.
 
 # Guide-level explanation
