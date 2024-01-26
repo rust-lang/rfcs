@@ -233,7 +233,7 @@ However, having `const` results depend on NaN bits should be very rare, and we a
 ### Alternative: `const` tracks NaN values, fails when their bits matter during compile-time
 
 `const` could in principle track NaNs symbolically, similar to how it tracks pointers, and delay choosing NaN payload bits until codegen.
-Const-evaluation would then abort if the bits of a NaN are observed (eg. if `to_bits`is called during const-evaluation).
+Const-evaluation would then abort if the bits of a NaN are observed (eg. if `to_bits` is called during const-evaluation).
 This would keep `const C = 0.0/0.0;` working, but requires `const fn is_nan` to be an intrinsic.
 However, it would require massive amounts of work in the compile-time interpreter, comparable in complexity to all the work that is already required to support symbolic pointers (and the RFC author doubts that there will be a lot of opportunity for those two kinds of symbolic state to share infrastructure).
 That effort should only be invested if there is a significant payoff.
