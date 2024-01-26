@@ -305,6 +305,10 @@ This is deliberate; the RFC discussion should not attempt to delve into those de
 
 The appropriate standard library API functions to let programmers correctly work with provenance (strict provenance APIs) are not yet finalized; their exact shape can be left to T-libs-api in collaboration with T-opsem.
 
+There might be a better name than "provenance".
+But (for reasons discussed [above](#descriptive-vs-prescriptive-provenance)), it's not an entirely bad term either.
+Ultimately, the biggest hurdle is the concept itself, not its name.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
