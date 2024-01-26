@@ -265,6 +265,9 @@ wasm [guarantees](https://webassembly.github.io/spec/core/exec/numerics.html#nan
 (We are departing from wasm terminology since "canonical" already has a different meaning in the IEEE spec. For similar reasons, we consider the NaN payload to *not* include the quiet/signaling bit, whereas wasm considers the quiet/signaling bit to be part of the payload.)
 The sign bit is left unspecified, i.e., there are two canonical NaNs (and both are quiet under the standard interpretation of the signaling/quiet bit).
 
+In Rust itself, questions around float semantics have been discussed for a long time.
+[This issue](https://github.com/rust-lang/unsafe-code-guidelines/issues/237) collects a lot of that discussion, which culminated in this RFC.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
