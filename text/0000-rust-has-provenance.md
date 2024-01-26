@@ -75,7 +75,7 @@ The indicated [alternative](https://play.rust-lang.org/?version=stable&mode=debu
 That program will hence either print nothing or print 10, but never have UB.
 Since `p1_ptr` and `p2_ptr` are equal, assuming "pointers are just integers" (i.e., assuming that there is *no* pointer provenance, or at least it is not relevant for program behavior), we can replace one by the other, and therefore the given program must also be allowed and have the same behavior: print nothing or print 10, but never have UB.
 
-However, from the perspective of alias analysis, we want this program to have UB: looking at `q` and all pointers to `p2` (which is only `p2_ptr`), we can see that none of them are ever written to, so `p2` will always contain its initial value 42.
+However, from the perspective of alias analysis, we want this program to have UB: looking at `p2` and all pointers to it (which is only `p2_ptr`), we can see that none of them are ever written to, so `p2` will always contain its initial value 42.
 Therefore, alias analysis would like to conclude that if this program prints anything, it must print 42, and replace `println!("{}", p2)` by `println!("{}", 42)`.
 After this transformation, the program might now print nothing or print 42, even though the original program would never print 42.
 Changing program behavior in this way is a violation of the "as-if" rule that governs what the compiler may do.
