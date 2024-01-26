@@ -1,3 +1,8 @@
+- Feature `static_mut_2024`
+- Start Date: 2024-01-26
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
 # Summary
 [summary]: #summary
 
@@ -23,8 +28,7 @@ fn main() {
 }
 ```
 Recall Rust's borrowing rules: 
-- At any given time, you can have either one mutable reference or any number of
-immutable references to a place.
+- At any given time, you can have either one mutable reference or any number of immutable references to a place.
 - References must always be valid.
 
 The first rule is violated as we have 2 exclusive (mutable) references to the same datum at the same time and are actively using them in an entirely overlapping fashion. This violation means that our code's behaviour is undefined, and the optimiser is free to do with it as it wishes, potentially breaking it. The code is not guaranteed to print "0 0" and may fail to do so under some circumstances.
