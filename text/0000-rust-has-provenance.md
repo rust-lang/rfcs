@@ -163,10 +163,12 @@ Sanitizers and undefined behavior detectors like [Miri](https://github.com/rust-
 [^exists]: This is the same sense in which the distinction between initialized and uninitialized memory "exists" during program execution, even though it cannot be observed on most hardware.
 [^erase]: It is of course still possible to erase provenance during compilation, *if* the target that we are compiling to does not actually do the access checks that the abstract machine does. What is not safe is having a language operation that strips provenance, and inserting that in arbitrary places in the program.
 
-*Historical note:* The author assumes that provenance in C started out purely descriptively.
-However, the moment compilers started doing optimizations that exploit undefined behavior depending on the provenance of a pointer, provenance became prescriptive.
-A lot of the confusion around provenance arises from the fact that many people still think it is purely descriptive.
 The point of this RFC is that Rust has *prescriptive* provenance.
+
+*Historical note:* The author assumes that provenance in C was originally intended to be purely descriptive.
+However, the moment compilers started doing optimizations that exploit undefined behavior depending on the provenance of a pointer, provenance of de-facto-C became prescriptive.
+A lot of the confusion around provenance arises from the fact that many people still think it is purely descriptive.
+The standard has not (yet) been updated to clarify this, but in 2022 the committee has accepted a Technical Specification that does explicitly state that C has prescriptive provenance.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -246,9 +248,42 @@ That said, (2) would still be a valid option for surface Rust, so this RFC delib
 # Prior art
 [prior-art]: #prior-art
 
-* "[A Provenance-aware Memory Object Model for C](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3005.pdf)"
+* "[N3057: A Provenance-aware Memory Object Model for C](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3057.pdf)"
   describes how the C standard is attempting to fit provenance concepts into C.
-  This technical specification has been accepted unanimously by the C standards committee, but is not part of the official ISO standard.
+  This [technical specification](https://www.iso.org/standard/81899.html) has been accepted unanimously by the C standards committee, but is not (yet) part of the official ISO standard.
+
+<details><summary>C committee minutes</summary>
+
+[2022-01-31 Final Meeting Minutes](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n2991.pdf):
+
+Straw poll: Does WG14 wish to see TS6010 working draft (N2676 or something similar) in some future version of the standard?<br>
+21/0/1. Clear consensus.<br>
+Straw poll: Does WG14 wish to see TS6010 working draft (N2676 or something similar) in C23?<br>
+10/8/5. Clear indication people think this is important.<br>
+Straw poll: (Opinion) Is WG 14 willing to move TS 6010 to DTS ballot as it stands now?<br>
+19/1/3. The committee is OK to move forward.<br>
+(the numbers are yes/no/abstain)
+
+[2022-05-16 - 2022-05-20 Final Meeting Minutes](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3036.pdf):
+
+Straw poll: (decision) Does WG14 want to move to a DTS ballot for TS 6010?<br>
+Result: 18-0-0 (consensus)<br>
+Uecker: would like to mention that other languages, especially Rust, are adopting this, so now is a useful time to progress.<br>
+
+[2023-01-23 - 2023-01-28 Final Meeting Minutes](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3153.pdf):
+
+Keaton: any objections to a CD ballot for TS 6010?<br>
+(none, unanimous consent)<br>
+DECISION: Gustedt’s document will go to SC22 and start the two-month ballot process this week.<br>
+One month available if needed for ballot resolution.<br>
+Sewell: can we start with ISO working in parallel?<br>
+Keaton: yes, ISO has volunteered to start its review early.<br>
+ACTION: Keaton to submit TS 6010 to ISO early.<br>
+ACTION: Gustedt to make up an N-document for TS 6010.<br>
+
+(That document became [N3057](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3057.pdf).)
+
+</details>
 
 ### Prior discussion in Rust
 
