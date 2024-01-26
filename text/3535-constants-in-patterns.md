@@ -1,7 +1,7 @@
 - Feature Name: `constants_in_patterns`
 - Start Date: 2023-11-19
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3535](https://github.com/rust-lang/rfcs/pull/3535)
+- Tracking Issue: [rust-lang/rust#120362](https://github.com/rust-lang/rust/issues/120362)
 
 # Summary
 [summary]: #summary
