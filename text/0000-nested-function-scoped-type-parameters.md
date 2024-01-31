@@ -18,7 +18,7 @@ By allowing the use of type parameters bound in the outer function, it allows th
 [guide-level-explanation]: #guide-level-explanation
 
 In short, permit:
-```
+```rust
 fn foo<T>(x: T) -> T {
     fn bar(y: T) -> T {
         y
@@ -29,7 +29,7 @@ fn foo<T>(x: T) -> T {
 as the type parameter now fully spans the outer function instead of only for variables/closures/etc
 
 The main usecase is to allow cases like the following:
-```
+```rust
 fn foo<T>(x: T) -> T
     where
         T: Some + Very + Long + List + Of + Constraints
@@ -50,7 +50,7 @@ I am personally unable to deduce why this behavior exists, as there is no ration
 
 This proposal is, in essence, "syntax sugar". All occurences of a type parameter in a nested function could be replaced with their outer level counterparts, and annotations are added on call sites to aid inference, as the information is avalible. From the above, we generate
 
-```
+```rust
 fn foo<T>(x: T) -> T
     where
         T: Some + Very + Long + List + Of + Constraints
