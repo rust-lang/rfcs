@@ -1,5 +1,5 @@
-- Feature Name: Fully scoped type parameters
-- Start Date: tbd
+- Feature Name: Nested function scoped type parameters
+- Start Date: 31/1/2024
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -29,7 +29,6 @@ fn foo<T>(x: T) -> T {
 as the type parameter now fully spans the outer function instead of only for variables/closures/etc
 
 The main usecase is to allow cases like the following:
-
 ```
 fn foo<T>(x: T) -> T
     where
@@ -42,6 +41,8 @@ fn foo<T>(x: T) -> T
 }
 ```
 In this case, to utilize an inner function, one would have to duplicate all of these constraints, obviously discouraging said usage.  
+
+I am personally unable to deduce why this behavior exists, as there is no rational past "inner functions are treated as toplevel functions", which seems odd to me - they are not, so why treat them as such? They can still be hoisted to the toplevel with this change and the elaboration detailed below. 
 
 
 # Reference-level explanation
@@ -72,7 +73,7 @@ The prerequesits required to implement this are already established, as closures
 
 This proposal does slightly complicate the typechecking of functions, but hopefully not to a large extent depending on how is implemented.
 It also could add complexity to the understanding of very complex nested functions utilising similar type parameter names.
-Checking would also need to include scope due to shadowing, potentially making the design and usage more complex
+Checking would also need to include scope due to shadowing, potentially making the design and usage more complex.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
