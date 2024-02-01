@@ -56,7 +56,8 @@ Except for the cases handled below, these operations produce results that exactl
 When a floating-point value is just passed around (i.e., outside the operations above or any library-provided float operation), its representation bits do *not* change.
 
 Exceptions apply when the output of an operation is a NaN, and the operation is not a "bitwise" operation (unary `-`, `abs`, `copysign`).
-In that case, we generally follow [the same rules as LLVM](https://llvm.org/docs/LangRef.html#behavior-of-floating-point-nan-values).
+In that case, we generally follow [the same rules as LLVM](https://llvm.org/docs/LangRef.html#behavior-of-floating-point-nan-values), which differ from the IEEE specification.
+Furthermore, Rust considers floating-point status bits to not be observable, and Rust does not support executing floating-point operations with alternative rounding modes or otherwise changed floating-point control bits.
 
 To be concrete, we first establish some terminology:
 A floating-point NaN value consists of a sign bit, a quiet/signaling bit, and a payload (which makes up the rest of the significand (i.e., the mantissa) except for the quiet/signaling bit). Rust assumes that the quiet/signaling bit being set to ``1`` indicates a quiet NaN (QNaN), and a value of ``0`` indicates a signaling NaN (SNaN). In the following we will hence just call it the "quiet bit".
