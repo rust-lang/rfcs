@@ -31,7 +31,7 @@ It's time to stop leaving our users in the dark about what actually is and is no
 [guide-level-explanation]: #guide-level-explanation
 
 Primitive operations on floating-point types generally produce results that exactly match IEEE 754-2008:
-if you never use `to_bits`, `copysign`, `is_sign_negative`, or `is_sign_positive` on a NaN, and don't construct a NaN using `from_bits`, nor use any unsafe operations that are equivalent to these safe methods, then your code will behave perfectly deterministically and according to the IEEE specification.
+if you never use `to_bits`, `copysign`, `is_sign_negative`, or `is_sign_positive` on a NaN, and don't construct a NaN using `from_bits`, nor use any unsafe operations that are equivalent to these safe methods, then your code will not be able to observe any non-determinism and behave according to the IEEE specification.
 
 If you *do* use these operations on NaNs, then the exact behavior you see can depend on compiler version, compiler flags, target architecture, and it can even be non-deterministic (i.e., running the same operation on the same inputs twice can yield different results).
 The results produced in these cases do *not* always conform to the IEEE specification.
@@ -67,7 +67,7 @@ the result has a non-deterministic sign; the quiet bit and payload are non-deter
 - The quiet bit is set and the payload is all-zero. ("Preferred NaN" case)
 - The quiet bit is set and the payload is copied from any input operand that is a NaN.
   ("Quieting NaN propagation" case) <br>
-  If the inputs and outputs do not have the same size (i.e., for `as` casts), then
+  If the inputs and outputs do not have the same payload size (i.e., for `as` casts), then
   - If the output is smaller than the input, low-order bits of the payload get dropped.
   - If the output is larger than the input, the payload gets filled up with 0s in the low-order bits.
 - The quiet bit and payload are copied from any input operand that is a NaN.
@@ -120,9 +120,9 @@ When the RFC is accepted, the `const_fn_floating_point_arithmetic` feature gate 
 This RFC is primarily concerned with the guarantee Rust provides to its users.
 How exactly those guarantees are achieved is an implementation detail, and not observable when writing pure Rust code.
 However, when mixing Rust with inline assembly, those details *do* become observable.
-To ensure that Rust can provide the above guarantees to user code, it is UB for inline assembly to alter the behavior of floating-point operations in any way: when leaving the inline assembly block, the floating-point environment must be in exactly the same state as when the inline assembly block was entered.
+To ensure that Rust can provide the above guarantees to user code, it is UB for inline assembly to alter the behavior of floating-point operations in any way: when leaving the inline assembly block, the floating-point control bits must be in exactly the same state as when the inline assembly block was entered.
 This is just an instance of the general principle that it is UB for inline assembly to violate any of the invariants that the Rust compiler relies on when implementing Rust semantics on the target hardware.
-Furthermore, observing the floating-point exception state yields entirely unspecified results: Rust floating-point operations may or may not be executed at the place in the code where they were originally written, and the exception state can change even if no floating-point operation exists in the source code.
+Furthermore, observing the floating-point exception state yields entirely unspecified results: Rust floating-point operations may or may not be executed at the place in the code where they were originally written, and the floating-point status bits can change even if no floating-point operation exists in the source code.
 
 (This is very similar to C without `#pragma STD FENV_ACCESS`.)
 
