@@ -10,10 +10,10 @@
 Add a frontmatter syntax to Rust as a way for [cargo to have manifests embedded in source code][RFC 3502]:
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [dependencies]
 clap = { version = "4.2", features = ["derive"] }
-```
+---
 
 use clap::Parser;
 
@@ -29,11 +29,6 @@ fn main() {
     println!("{:?}", args);
 }
 ````
-
-Note that to share these in markdown, a priority use case, extra backticks are needed for the markdown code fence to escape the frontmatter code fence.
-We expect most users will not be familiar enough with the markdown spec to know this, especially for one of our primary target audiences: those new to Rust.
-This can also be frustrating for experienced users as three backticks is an ingrained habbit and it is common to need to go back and edit a post to properly escape the frontmatter.
-However, when weighing out the syntactic needs and the alternatives, we felt this was the least bad option.
 
 # Motivation
 [motivation]: #motivation
@@ -55,14 +50,13 @@ name: My Blog Post
 Hello world!
 ```
 
-We are carrying this concept over to Rust with a twist: using fence code blocks which
-will be familiar to Rust developers when documenting their code:
+We are carrying this concept over to Rust while merging some lessons from commonmark's fenced code blocks:
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [dependencies]
 clap = { version = "4.2", features = ["derive"] }
-```
+---
 
 use clap::Parser;
 
@@ -79,20 +73,19 @@ fn main() {
 }
 ````
 
-As we work to better understand how tool authors will want to use frontmatter, we are restricting it to just the `cargo` infostring.
-This means users will only be exposed to this within the concept of ["cargo script"][RFC 3502].
+Like with [commonmark code fences](https://spec.commonmark.org/0.30/#info-string),
+an info-string is allowed after the opening `---` for use by the command interpreting the block to identify the contents of the block.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When parsing Rust code, after stripping the shebang (`#!`), rustc will strip a fenced code block:
-- Must be immediately at the top (after shebang stripping), meaning no blank lines
-- Opens with 3+ backticks and "cargo" followed by a newline
-  - As we aren't supporting an arbitrarily nested file format (though may show up in one), we likely don't need the flexibility
-  - We are prioritizing on "one right way to do it" to make it easier to learn to write and to read a variety of files.
-- All content is ignored until the same number of backticks is found at the start of a line.
-  It is an error to have anything besides spaces and tabs between the backticks and the newline.
-  - Unlike commonmark, it is an error to not close the fenced code block seeing to detect problems earlier in the process seeing as the primary content is what comes after the fenced code block
+When parsing Rust code, after stripping the shebang (`#!`), rustc will strip the frontmatter:
+- May include 0+ blank lines (whitespace + newline)
+- Opens with 3+ dashes followed by 0+ whitespace, an optional identifier, 0+ whitespace, and a newline
+  - The variable number of dashes is an escaping mechanism in case `---` shows up in the content
+- All content is ignored by `rustc` until the same number of dashes is found at the start of a line.
+  The line must terminate by 0+ whitespace and then a newline.
+- Unlike commonmark, it is an error to not close the frontmatter seeing to detect problems earlier in the process seeing as the primary content is what comes after the frontmatter
 
 As cargo will be the first step in the process to parse this,
 the responsibility for high quality error messages will largely fall on cargo.
@@ -102,7 +95,6 @@ the responsibility for high quality error messages will largely fall on cargo.
 
 - A new concept for Rust syntax, adding to overall cognitive load
 - Ecosystem tooling updates to deal with new syntax
-- **When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)**
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -111,8 +103,6 @@ Within this solution,
 we considered starting with only allowing this in the root `mod` (e.g. `main.rs`)
 but decided to allow it in any file mostly for ease of implementation.
 Like with Python, this allows any file in a package (with the correct deps and `mod`s) to be executed, allowing easier interacting experiences in verifying behavior.
-
-As for the hard-coded infostring used by cargo, that is a decision for [RFC 3502].
 
 ## Required vs Optional Shebang
 
@@ -125,6 +115,28 @@ The main reason to require a shebang is to positively identify the associated "i
 However, statically analyzing a shebang is [complicated](https://stackoverflow.com/questions/38059830/how-does-perl-avoid-shebang-loops)
 and we are wanting to avoid it in the core workflow.
 This isn't to say that tools like rust-analyzer might choose to require it to help their workflow.
+
+## Blank lines
+
+Originally, the proposal viewed the block as being "part of" the shebang and didn't allow them to be separated by blank lines.
+However, the shebang is optional and users are likely to assume they can use blanklines
+(see https://www.youtube.com/watch?v=S8MLYZv_54w).
+
+This could cause ordering confusion (doc comments vs attributes vs frontmatter)
+
+## Infostring
+
+The main question on infostrings is whether they are tool-defined or rustc-defined.
+At one time, we proposed requiring the infostring and requiring it be `cargo` as a way to defer this decision.
+
+As the design requirements are catered to processing by external tools, as opposed to rustc,
+we are instead reserving this syntax for external tools by making the infostrings tool-defined.
+The Rust toolchain (rustc, clippy, rustdoc, etc) already have access to attributes for user-provided content.
+If they need a more ergonomic way of specifying content, we should solve that more generally for attributes.
+
+With that decision made, the infostring can be optional.
+Can it also be deferred out?
+Possibly, but we are leaving them in for unpredictable exception cases and in case users want to make the syntax explicit for their editor (especially if its not `cargo` which more trivial editor implementations will likely assume).
 
 ## Syntax
 
@@ -149,7 +161,7 @@ When choosing the syntax, our care-abouts are
 - Leave the door open in case we want to reuse the syntax for embedded lockfiles
 - Leave the door open for single-file `lib`s
 
-### Fenced Code Block Frontmatter
+### Frontmatter
 
 This proposed syntax builds off of the precedence of Rust having syntax specialized for an external tool
 (doc-comments for rustdoc).
@@ -168,10 +180,11 @@ This proposal mirrors the location of YAML frontmatter (absolutely first).
 As we learn more of its uses and problems people run into in practice,
 we can evaluate if we want to loosen any of the rules.
 
-We are intentionally supporting only a subset of commonmark code fences.
-Markdown, like HTML, is meant to always be valid which is different than Rust syntax.
-Differences include:
-- backticks but not tilde's
+Differences with YAML frontmatter include:
+- Variable number of dashes (for escaping)
+- Optional frontmatter
+
+Besides characters, differences with commonmark code fences include:
 - no indenting of the fenced code block
 - open/close must be a matching pair, rather than the close having "the same or more"
 
@@ -187,27 +200,35 @@ Benefits:
 - In the future, this can be leveraged by other build systems or tools
 
 Downsides:
-- **When sharing in markdown documents (e.g. GitHub issues), requires people escape markdown code fences with an extra backtick which they are likely not used to doing (or aware even exists)**
-  - Maintainers seeding GitHub issue templates with 4 backticks can help
 - Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 - If viewed from the lens of a comment, it isn't a variant of comment syntax like doc-comments
 
 ### Alternative 1: Vary the opening/closing character
 
-Instead of backticks, we could do another character, like
-- `-`, making it look like YAML presentation streams, following the pattern of static site generators
-  - `+` like [zola's frontmatter](https://www.getzola.org/documentation/getting-started/overview/#markdown-content)
-- `~`, using a lesser known markdown character
+Instead of dashes, we could do another character, like
+- backticks, like in commonmark code fences
+  - `~`, using a lesser known markdown code fence character
+- `+` like [zola and hugo's TOML frontmatter](https://www.getzola.org/documentation/getting-started/overview/#markdown-content)
 - `=`
 - Open with `>>>` and close with `<<<`, like with HEREDOC (or invert it)
 
-In practice:
-```rust
+In practice (with infostrings):
+````rust
 #!/usr/bin/env cargo
----cargo
+```cargo
 [package]
 edition = "2018"
----
+```
+
+fn main() {
+}
+````
+```rust
+#!/usr/bin/env cargo
+~~~cargo
+[package]
+edition = "2018"
+~~~
 
 fn main() {
 }
@@ -218,16 +239,6 @@ fn main() {
 [package]
 edition = "2018"
 +++
-
-fn main() {
-}
-```
-```rust
-#!/usr/bin/env cargo
-~~~cargo
-[package]
-edition = "2018"
-~~~
 
 fn main() {
 }
@@ -263,19 +274,10 @@ fn main() {
 }
 ```
 
-Benefits
-- With `-`, it builds on people's familiarity with static site generators
-- People can insert cargo-scripts into markdown (like chat, github issues)
-  without being familiar enough with markdown to know how to escape backticks
-  and to actually remember how to do it
-
 Downsides
-- With `-`
-  - We've extended the frontmatter syntax with an infostring, undoing some of the "familiarity" benefit
-  - Potential congantive disonance as those familiar with frontmatter are used to YAML being there
 - With `>>>` it isn't quite like HEREDOC to have less overhead
 - `>>>`, `<<<`, `|||`, `===` at the beginning of lines start to look like merge conflicts which might confuse external tools
-- Doesn't feel very rust-like
+- Backticks have a problem with users knowing how to and remembering to escape these blocks when sharing them in markdown.  Knowing the syntax (only because I've implemented a parser for it), I'm at about 50/50 on whether I properly escape.
 
 Note:
 - `"` was not considered because that can feel too familiar and users might carry over their expectations for how strings work
@@ -617,27 +619,8 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 - Support infostring attributes
   - We need to better understand use cases for how this should be extended, particularly what the syntax should be (see infostring language)
   - A safe starting point could be to say that a space or comma separates attributes and everything after it is defined as part of the "language"
-- Loosen the code-fence syntax, like allowing newlines
 - Add support for a `#[frontmatter(info = "", content = "")]` attribute that this syntax maps to.
   - Since nothing will read this, whether we do it now or in the future will have no affect
-
-## Optional or additional infostrings
-
-We could support:
-- Treat `cargo` as the default infostring
-- Support more infostring languages
-
-The question comes down to whether
-- rustc owns the definition of the infostring, allowing us to add additional types of metadata (rustfmt config, static analyzer config, etc)
-  - This would be similar to our [hard coding of "tool" attributes](https://github.com/rust-lang/rust/issues/44690)
-- the shebang tool owns the definition of the infostring
-
-By us hard coding `cargo` in the infostring in rustc,
-we are intentionally deferring the decision for which path we should go down.
-
-We can add additional infostrings on a case-by-case basis.
-In doing so, we can learn more about the use cases involved which can help us
-get a better picture for which route we should go down.
 
 ## Multiple frontmatters
 
