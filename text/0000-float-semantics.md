@@ -66,12 +66,12 @@ the result has a non-deterministic sign; the quiet bit and payload are non-deter
 
 - The quiet bit is set and the payload is all-zero. ("Preferred NaN" case)
 - The quiet bit is set and the payload is copied from any input operand that is a NaN.
-  ("Quieting NaN propagation" case)
+  ("Quieting NaN propagation" case) <br>
   If the inputs and outputs do not have the same size (i.e., for `as` casts), then
   - If the output is smaller than the input, low-order bits of the payload get dropped.
   - If the output is larger than the input, the payload gets filled up with 0s in the low-order bits.
 - The quiet bit and payload are copied from any input operand that is a NaN.
-  ("Unchanged NaN propagation" case)
+  ("Unchanged NaN propagation" case) <br>
   If the inputs and outputs do not have the same size (i.e., for `as` casts), the same rules as for "quieting NaN propagation" apply, with one caveat: if the output is smaller than the input, droppig the low-order bits may result in a payload of 0; a payload of 0 is not possible with a signaling NaN (the all-0 significand encodes an infinity) so unchanged NaN propagation cannot occur with some inputs.
 - The quiet bit is set and the payload is picked from a target-specific set of
   "extra" possible NaN payloads. The set can depend on the input operand values.
