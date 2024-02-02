@@ -859,7 +859,6 @@ and only in the sense that the user needs to know to explicitly take action to a
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Misc alternatives
-- Config was put under `build` to associate it with local development, as compared with `install` which could be supported in the future
 - Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 - The resolver doesn't support backtracking as that is extra complexity that we can always adopt later as we've reserved the right to make adjustments to what `cargo generate-lockfile` will produce over time.
 - `CARGO_RESOLVER_PRECEDENCE=rust-version` assumes maximal resolution as generally minimal resolution will pick packages with compatible rust-versions as rust-version tends to (but doesn't always) increase over time.
