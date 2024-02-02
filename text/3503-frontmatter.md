@@ -140,6 +140,7 @@ If they need a more ergonomic way of specifying content, we should solve that mo
 With that decision made, the infostring can be optional.
 Can it also be deferred out?
 Possibly, but we are leaving them in for unpredictable exception cases and in case users want to make the syntax explicit for their editor (especially if its not `cargo` which more trivial editor implementations will likely assume).
+We may at least defer stabilization of infostrings.
 
 ## Syntax
 
