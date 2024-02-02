@@ -713,7 +713,7 @@ resolved dependencies always get preference.
 This can be overridden with `--ignore-rust-version` and config's `resolver.precedence`.
 
 Implications
-- If you use do `cargo update --precise <msrv-incompatible-ver>`, it will work
+- If you use `cargo update --precise <msrv-incompatible-ver>`, it will work
 - If you use `--ignore-rust-version` once, you don't need to specify it again to keep those dependencies though you might need it again on the next edit of `Cargo.toml` or `cargo update` run
 - If a dependency doesn't specify `package.rust-version` but its transitive dependencies specify an incompatible `package.rust-version`,
   we won't backtrack to older versions of the dependency to find one with a MSRV-compatible transitive dependency.
