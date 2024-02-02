@@ -862,7 +862,7 @@ Misc alternatives
 - Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 - The resolver doesn't support backtracking as that is extra complexity that we can always adopt later as we've reserved the right to make adjustments to what `cargo generate-lockfile` will produce over time.
 - `CARGO_RESOLVER_PRECEDENCE=rust-version` implies maximal resolution among MSRV-compatible dependencies.   Generally MSRV doesn't decrease over versions, so minimal resolution will likely pick packages with compatible rust-versions.
-  - `cargo add` selecting rust-version-compatible minimum bounds helps
+  - `cargo add` helps by selecting rust-version-compatible minimum bounds
   - This bypasses a lot of complexity either from exploding the number of states we support or giving users control over the fallback by making the field an array of strategies.
 - Instead of `resolver = "3"`, we could just change the default for everyone
   - The number of maintainers verifying latest dependencies is likely
