@@ -776,7 +776,7 @@ This would benefit from knowing the oldest MSRV.
 ## `cargo update`
 
 `cargo update` will inform users when an MSRV or semver incompatible version is available.
-`cargo update -n` will also report this information so that users can check on the status of this at any time.
+`cargo update --dry-run` will also report this information so that users can check on the status of this at any time.
 
 **Note:** other operations that cause `Cargo.lock` entries to be changed (like
 editing `Cargo.toml` and running `cargo check`) may not inform the user.
