@@ -877,7 +877,7 @@ Misc alternatives
   - This expansion of scope is for consistency
   - Being a flag to turn the `deny` into an `allow` is a high friction workflow that we expect users to not be too negatively impacted by this expansion.
   - With the resolver config and the configurable lint, we also expect the flag on compilation commands to be diminished in value.  Maybe in the future we could even deprecate it and/or hide it.
-- `--update-rust-version` picks `rustc --version`-compatible dependencies so users, no matter their `rustc` version, can easily walk the treadmill of updating their dependencies / MSRV
+- `--update-rust-version` picks `rustc --version`-compatible dependencies so users can easily walk the treadmill of updating their dependencies / MSRV , no matter their `rustc` version.
   - There is little reason to select an MSRV higher than their Rust toolchain
   - We should still be warning the user that new dependencies are available if they upgrade their Rust toolchain
   - This comes at the cost of inconsistency with `--ignore-rust-version`.
