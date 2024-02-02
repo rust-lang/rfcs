@@ -662,6 +662,10 @@ identifiers such as -nightly will be ignored while checking the Rust version.
 The `rust-version` must be equal to or newer than the version that first
 introduced the configured `edition`.
 
+The Rust version can also be `"auto"`.
+This will act the same as if it was set to the version of your toolchain.
+When publishing, `"auto"` will be replaced by the version of your toolchain in your published manifest.
+
 The `rust-version` may be ignored using the `--ignore-rust-version` option.
 
 Setting the `rust-version` key in `[package]` will affect all targets/crates in
