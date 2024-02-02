@@ -797,7 +797,7 @@ In addition to the `cargo update` output to report when things are held back (bo
 We can attempt to have resolves to call out the new dependency versions that were held back from MSRV or semver.
 Whether we do this and how much will be subject to factors like noisy output, performance, etc.
 
-Implementation ideas...
+Some approaches we can take for doing this include:
 
 We then do a depth-first diff of the trees, stopping and reporting on the first different node.
 This would let us report on any command that changes the way the tree is resolved
