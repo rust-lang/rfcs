@@ -830,7 +830,7 @@ Users may pass
 
 ## `cargo publish`
 
-We will add `"auto"` for `package.rust-version`.
+`package.rust-version` will gain support for an `"auto"` value, in addition to partial versions.
 On `cargo publish` / `cargo package`, the generated `*.crate`s `Cargo.toml` will have `"auto"` replaced with `rustc --version`.
 If `rustc --version` is a pre-release, it will be left as unspecified with a warning.
 
