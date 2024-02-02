@@ -237,7 +237,7 @@ A maintainer may also want to avoid constraining their dependents, for a variety
 
 **Pain points:**
 
-We do not provide a way to help users know new versions are available, to support the users in staying up-to-date.
+The Rust toolchain does not provide a way to help users know new dependency versions are available, to support the users in staying up-to-date.
 MSRV build errors from new dependency versions is one way to do it though not ideal as this disrupts the user.
 Otherwise, they must actively run `rustup update` or follow Rust news.
 
@@ -260,7 +260,7 @@ likely pushing them to not specify their MSRV.
 
 **Pain points (in addition to the prior workflow):**
 
-In addition to their toolchain version, we do not help these users with keeping
+In addition to their toolchain version, the Rust toolchain does not help these users with keeping
 their MSRV up-to-date.
 They can use other tools like
 [RenovateBot](https://github.com/rust-lang/cargo/blob/87eb374d499100bc945dc0e50ae5194ae539b964/.github/renovate.json5#L12-L24)
