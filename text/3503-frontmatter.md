@@ -79,13 +79,16 @@ an info-string is allowed after the opening `---` for use by the command interpr
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When parsing Rust code, after stripping the shebang (`#!`), rustc will strip the frontmatter:
+When parsing Rust source, after stripping the shebang (`#!`), rustc will strip the frontmatter:
 - May include 0+ blank lines (whitespace + newline)
 - Opens with 3+ dashes followed by 0+ whitespace, an optional identifier, 0+ whitespace, and a newline
   - The variable number of dashes is an escaping mechanism in case `---` shows up in the content
 - All content is ignored by `rustc` until the same number of dashes is found at the start of a line.
   The line must terminate by 0+ whitespace and then a newline.
 - Unlike commonmark, it is an error to not close the frontmatter seeing to detect problems earlier in the process seeing as the primary content is what comes after the frontmatter
+
+This applies anywhere shebang stripping is performed.
+For example, if [`include!`](https://doc.rust-lang.org/std/macro.include.html) strips shebangs, then it will also frontmatter.
 
 As cargo will be the first step in the process to parse this,
 the responsibility for high quality error messages will largely fall on cargo.
