@@ -889,24 +889,24 @@ Ensuring we have `package.rust-version` populated more often (while maintaining
 quality of that data) is an important problem but does not have to be solved to
 get value out of this RFC and can be handled separately.
 
-We chose an opt-in for populating `package.rust-version` based on `rustc --version`.
-This will encourage a baseline of quality as are developing with that version and `cargo publish` will do a verification step, by default.
+We chose an opt-in for populating `package.rust-version` based on `rustc --version` (`"auto"`).
+This will encourage a baseline of quality as users are developing with that version and `cargo publish` will do a verification step, by default.
 This will help seed the Index with more `package.rust-version` data for the resolver to work with.
 The downside is that the `package.rust-version` will likely be higher than it absolutely needs.
 However, considering our definition of "support" and that the user isn't bothering to set an MSRV themself,
 aggressively updating is likely fine in this case, especially since we'll let dependents override the build failure for MSRV-incompatible packages.
 
-Alternatively...
+Some alternative solutions include:
 
-~~When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.~~
-However, this will err on the side of a higher MSRV than necessary and the only way to
+When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.
+**However**, this will err on the side of a higher MSRV than necessary and the only way to
 workaround it is to set `CARGO_RESOLVER_PRECEDENCE=maximum` which will then lose
 all other protections.
 As we said, this is likely fine but then there will be no way to opt-out for the subset of maintainers who want to keep their support definition vague.
 As things evolve, we could re-evaluate making `"auto"` the default.
 
 ~~We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`.~~
-However, if people aren't committed to verifying it,
+**However**, if people aren't committed to verifying that was implicitly set,
 it is likely to go stale and will claim an MSRV much older than what is used in practice.
 If we had the hard-error resolver mode and
 [clippy warning people when using API items stabilized after their MSRV](https://github.com/rust-lang/rust-clippy/issues/6324),
@@ -914,9 +914,11 @@ this will at least annoy people into either being somewhat compatible or removin
 
 ~~When missing, `cargo publish` could inject `package.rust-version` inferred from
 `package.edition` and/or other `Cargo.toml` fields.~~
-However, this will err on the side of too low of an MSRV.
-While this might help with in this situation,
-it would lock us in to inaccurate information which might limit what analysis we could do in the future.
+**However**, this will err on the side of too low of an MSRV.
+These fields have an incomplete picture.
+While this helps ensure there is more data for the MSRV-aware resolver,
+future analysis wouldn't be able to distinguish between inferred and explicit `package.rust-version`s.
+We'd also need an explicit opt-out for those who intentionally don't want one set.
 
 Alternatively, `cargo publish` / the registry could add new fields to the Index
 to represent an inferred MSRV, the published version, etc
