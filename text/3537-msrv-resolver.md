@@ -841,7 +841,8 @@ If `rustc --version` is a pre-release, it will be left as unspecified with a war
 
 Users upgrading to the next Edition (or changing to `resolver = '3"`), will have to manually update their CI to test the latest dependencies with `CARGO_RESOLVER_PRECEDENCE=maximum`.
 
-Workspaces have no `edition`, so its easy for users to not realize they need to set `resolver = "3"` or to update their `resolver = "2"` to `"3"`.
+Workspaces have no `edition`, so its easy for users to not realize they need to set `resolver = "3"` or to update their `resolver = "2"` to `"3"`
+(Cargo only warns on [virtual manifests without an explicit `workspace.resolver`](https://github.com/rust-lang/cargo/pull/10910)).
 
 While we hope this will give maintainers more freedom to upgrade their MSRV,
 this could instead further entrench rust-version stagnation in the ecosystem.
