@@ -395,7 +395,7 @@ After some time, I get back to my project and decide to add completion support:
 $ cargo add clap_complete
 Adding clap_complete 5.10.40
 warning: clap_complete 5.11.0 exists but requires Rust 1.93 while you are running 1.92.
-To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup && cargo add clap_complete@5.11.0`.
+To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup update && cargo add clap_complete@5.11.0`.
 To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo add clap_complete@5.11.0`
 ```
 Wanting to be on the latest version, I run
@@ -426,7 +426,7 @@ And away I go:
 ```console
 $ cargo check
 Warning: adding clap_complete@5.10.40 because 5.11.0 requires Rust 1.93 while you are running 1.92.
-To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup && cargo update`.
+To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup update && cargo update`.
 To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo update --ignore-rust-version`
 ```
 But I am in a hurry and don't want to disrupt my flow.
@@ -442,7 +442,7 @@ Name          Current Latest Note
 ============= ======= ====== ==================
 clap          5.10.30 5.11.0 requires Rust 1.93
 clap_complete 5.10.40 5.11.0 requires Rust 1.93
-note: To use the latest depednencies, run `rustup && cargo update`.
+note: To use the latest depednencies, run `rustup update && cargo update`.
 To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
 $ rustup update
 Downloading and install 1.94
@@ -490,7 +490,7 @@ rust-version = "auto"
 $ cargo add clap -F derive
 Adding clap 5.10.30
 warning: clap 5.11.0 exists but requires Rust 1.93 while you are running 1.92.
-To use the clap@5.11.0 with a compatible Rust version, run `rustup && cargo add clap@5.10.0`.
+To use the clap@5.11.0 with a compatible Rust version, run `rustup update && cargo add clap@5.10.0`.
 To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo add clap@5.10.0`
 ```
 At this point, I have a couple of options
@@ -566,7 +566,7 @@ Name          Current Latest Note
 ============= ======= ====== ==================
 clap          5.10.30 5.11.0 requires Rust 1.93
 clap_complete 5.10.40 5.11.0 requires Rust 1.93
-note: To use the latest depednencies, run `rustup && cargo update`.
+note: To use the latest depednencies, run `rustup update && cargo update`.
 To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
 ```
 We've EOLed the last embedded target that supported 1.92 and so we can update our `package.rust-version`,
@@ -624,7 +624,7 @@ Name          Current Latest Note
 ============= ======= ====== ==================
 clap          5.10.30 5.11.0 requires Rust 1.93
 clap_complete 5.10.40 5.11.0 requires Rust 1.93
-note: To use the latest depednencies, run `rustup && cargo update`.
+note: To use the latest depednencies, run `rustup update && cargo update`.
 To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
 ```
 At this point, 1.95 is out, so I'm fine updating my MSRV and I run:
