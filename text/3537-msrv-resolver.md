@@ -796,7 +796,7 @@ Those flags will also be added to `cargo generate-lockfile`
 ## Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command
 
 In addition to the `cargo update` output to report when things are held back (both MSRV and semver),
-We can attempt to have resolves to call out the new dependency versions that were held back from MSRV or semver.
+we will try having dependency resolves highlight newly selected dependency versions that were held back due to MSRV or semver.
 Whether we do this and how much will be subject to factors like noisy output, performance, etc.
 
 Some approaches we can take for doing this include:
