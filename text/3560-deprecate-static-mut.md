@@ -127,8 +127,7 @@ Additionally, the fully enabled and referenceless forms of `static mut` violate 
 
 In light of the previous point, the interior mutability types, in combination with ordinary `static` declarations, are a solid replacement as they offer a great deal of granularity and are a complete toolset concerning control of access to a place; they are not only a comprehensive replacement for `static mut` of all forms but easy to learn and grapple with as they represent applying the same principle with different requirements and invariants.
 
-It has to be made clear to people who try to use `static mut` through the deprecation message that unsafe interior mutability primitives are just a way to match the behaviour of `static mut` closely and that they are not the ideal solution instead, they should use the type with the most checked invariants, and that applies to their use case.
-
+It has to be made clear to people who try to use `static mut` through the deprecation message that unsafe interior mutability primitives are just a way to match the behaviour of `static mut` closely and that they are not the ideal solution. Instead, they should use the type with the most checked invariants, and that applies to their use case.
 
 Things to (please) note:
 - Interior mutability types ***are*** present in `core`. This change does not irreversibly break `no_std` code; `std` reexports the types from `core`.
@@ -137,7 +136,7 @@ Things to (please) note:
 	- `std::cell::SyncUnsafeCell<T>` ***does not*** have any more overhead than `std::cell::UnsafeCell<T>`, which is nominally zero. This also means that it has no greater overhead than `static mut` by extension.
 	- `std::cell::SyncUnsafeCell<T>` ***is*** bound on `T: Sync`, but creating a custom type can alleviate any problems with needing to put `!Sync` types in a `static`. One can make it into `std` (through `core`) at some point.
 	- `std::cell::SyncUnsafeCell<T>` (like `std::cell::UnsafeCell<T>`) ***does not*** provide any runtime safety, which one should opt for whenever possible.
-- `static mut` ***is not*** the only way to initialise globals; `std::sync::LazyLock<T,_>` (unstable) and `std::sync::OnceLock<T>` provide initialisation on first access and initialisation once, respectively.
+- `static mut` ***is not*** the only way to initialise globals without a `const` value; `std::sync::LazyLock<T,_>` (unstable) and `std::sync::OnceLock<T>` provide initialisation on first access and initialisation once, respectively.
 - Unsafe code ***should***(probably) be avoided or at least put you on guard.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
