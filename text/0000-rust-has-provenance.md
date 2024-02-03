@@ -8,7 +8,7 @@
 
 Pointers (this includes values of reference type) in Rust have **two** components.
 * The pointer's "address" says where in memory the pointer is currently pointing.
-* The pointer's "provenance" says where in memory the pointer is allowed to access when.
+* The pointer's "provenance" says where and when the pointer is allowed to access memory.
 
 (This is disregarding any "metadata" that may come with wide pointers, it only talks about thin pointers / the data part of a wide pointer.)
 
@@ -134,6 +134,12 @@ if x == y {
 
 [^determined]: Beyond the contents of this RFC, this assumes that integers cannot be uninitialized, which current codegen relies on in the form of `noundef` attributes.
 
+However, as a low-level systems language, Rust still needs some way to store and copy "memory with arbitrary content", including pointers that can have provenance.
+Popular belief says that an array of `u8` is suited for this purpose, but that is not true, because of provenance as stated above.
+In fact, "arbitrary content" may be "uninitialized memory", and `u8` must be initialized, so this is already not true even when disregarding provenance.
+However, `MaybeUninit<u8>` *is* suited for this purpose.
+It already must be able to store and copy uninitialized memory; there is no downside to also letting it store and copy pointers with provenance.
+
 ## Descriptive vs prescriptive provenance
 
 Note that "provenance" is a somewhat unfortunate term.
@@ -241,6 +247,12 @@ There has been no progress on these questions on the side of the LLVM project fo
 Almost all reasonably usable compiler backends use *some form* of provenance logic when optimizing code.
 (The one exception we are aware of is cranelift, but that is not currently suited as a backend for release builds -- and it is unlikely to ever be suited for release builds unless it starts making use of provenance.)
 There essentially is no known alternative to having provenance in some form.
+
+One often-suggested alternative is to rely on allocator non-determinism:
+unrelated code cannot "guess" the address of a memory allocation that was not "exposed", and therefore we can still optimize accesses to this allocation.
+This actually works for some cases, and can even be made to work [in combination with a finite address space](https://research.ralfj.de/twinsem/twinsem.pdf), albeit the semantics already start looking rather unusual at that point.
+However, all of the examples in the "motivation" section were chosen to *not* be resolved by allocator non-determinism.
+If we want to do these optimizations (and we are already doing some of them today), we need provenance.
 
 There is some possibility for alternative designs around what happens on pointer-to-integer transmutation: (1) they could act like pointer-to-integer casts, or (2) they could be outright UB, or (3) they could strip the provenance from the pointer to yield a valid integer, but the provenance has been irreversably lost.
 For (1), making it work like a pointer-to-integer cast is problematic since pointer-to-integer casts [are side-effecting operations when considering provenance](https://www.ralfj.de/blog/2022/04/11/provenance-exposed.html), and as such cannot be removed even if their result is unused.
