@@ -207,15 +207,21 @@ There are several ways we could mark packages for nested publishing, rather than
 # Prior art
 [prior-art]: #prior-art
 
-* Postponed [RFC 2224] is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`. This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
+*   Postponed [RFC 2224] (2017) is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`.
 
-*   Blog post [Rust 2030 Christmas list: Subcrate dependencies, by Olivier Faure](https://poignardazur.github.io/2023/01/24/subcrates/) proposes a mechanism of declaring nested dependencies similar to this RFC, but instead of embedding the files in one package, the “subcrates” are packaged separately on crates.io, but published as a single command and are not usable by other packages. Thus, it is similar to a combination of the also-desired features of “publish an entire workspace” and “namespacing on crates.io”, plus the subcrates being private on crates.io.
+    This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
+
+*   Blog post [Inline crates, by Yoshua Wuyts (2022)](https://blog.yoshuawuyts.com/inline-crates/) proposes that additional library crates can be declared using Rust syntax in the manner `crate foo;` or `crate foo {}`, like modules.
+
+    Compared to this proposal, its advantage is that it requires no new Cargo concepts and fits right in to the source-code-traversal-driven nature of existing ways to define Rust package and crate contents. However, it forces additional edges in the dependency graph (since the dependent's compilation must be started first to discover the inline crate, and there is no place to declare different dependencies for different crates). I expect it would also require significant changes to the Rust language and `rustc`, reaching beyond just “spawn another `rustc`” and including problems like computing the implied dependencies among inline crates that depend on other inline crates (unless inline crates are only allowed to depend on external dependencies and their own child inline crates, which is likely undesirable because it prohibits establishing common core vocabulary among a set of crates to be compiled in parallel).
+
+*   Blog post [Rust 2030 Christmas list: Subcrate dependencies, by Olivier Faure (2023)](https://poignardazur.github.io/2023/01/24/subcrates/) proposes a mechanism of declaring nested dependencies similar to this RFC, but instead of embedding the files in one package, the “subcrates” are packaged separately on crates.io, but published as a single command and are not usable by other packages. Thus, it is similar to a combination of the also-desired features of “publish an entire workspace” and “namespacing on crates.io”, plus the subcrates being private on crates.io.
 
     This alternative implementation has some advantages such as the potential of publishing updates to subcrates alone. It requires complex features such as the addition of package namespacing to crates.io, but that feature is desired itself for other applications. I consider that a worthy alternative to this RFC, and would be happy to see either one implemented.
 
-I am not aware of other package systems that have a relevant similar concept, but I am not broadly informed about package systems. I have designed this proposal to be a **minimal addition to Cargo**, building on the existing concept of `path` dependencies to add lots of power with little implementation cost; not necessarily to make sense from a blank slate.
+Among this space of possibilities, I see the place of this particular RFC as attempting to be a **minimal addition to Cargo**, building on the existing concept of `path` dependencies to add lots of power with little implementation cost; not necessarily to make sense from a blank slate.
 
-TODO: Discuss the various prior proposals for Cargo specifically.
+I am not aware of other package systems that have a similar concept, but I am not broadly informed about package systems.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
