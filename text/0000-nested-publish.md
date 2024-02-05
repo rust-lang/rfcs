@@ -26,7 +26,10 @@ Currently, developers must publish these packages separately. This has several d
 
 This RFC will allow developers to avoid all of these inconveniences and hazards by publishing a single package.
 
-Additionally, it may sometimes be desirable to share a small amount of code between some published packages, without making the shared code a separately published library with an appropriate public API.
+There are also some uses which are not strictly cases of one library package versus multiple library packages:
+
+* It may sometimes be desirable to share a small amount of code between some published packages, without making the shared code a separately published library with an appropriate public API subject to semver.
+* A package intended to distribute a binary or binaries may have a library target for internal purposes (such as sharing modules between multiple binaries, or testing), but not intend for that library to be usable by other packages as a dependency.
 
 # Definitions
 [definitions]: #definitions
@@ -129,6 +132,7 @@ The following changes must be made across Cargo and `crates.io`:
         * the named package declares `package.publish = "nested"`.
 
         The path must not contain any upward traversal (`../`) or other hazardous or non-portable components.
+    *   The package index does not explicitly represent nested packages; instead, nested packages' dependencies are flattened into the dependencies of the parent package. This accurately reflects what can be expected when using the parent package.
     *   No changes are needed to the `crates.io` index, because nested packages are an implementation detail of their parent package.
 * **Build process**
     * Probably some messages will need to be adjusted; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”.
@@ -139,10 +143,13 @@ The presence or absence of a `[workspace]` has no effect on the new behavior, ju
 [drawbacks]: #drawbacks
 
 * This increases the number of differences between “Cargo package (on disk)” from “Cargo package (that may be published in a registry, or downloaded as a unit)” in a way which may be confusing; it would be good if we have different words for these two entities, but we don't.
-* If Cargo were to add support for multiple library targets per package, that would be largely redundant with this feature.
 * It is not possible to publish a bug fix to a nested package without republishing the entire parent package; this is the cost we pay for the benefit of not needing to take care with versioning for nested packages.
 * Suppose `foo` has a nested package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publication may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
      * If this situation comes up, it can be recovered from by newly publishing `foo-core` separately (as would have been done if nested publishing were not used) and using the [semver trick](https://github.com/dtolnay/semver-trick) to maintain compatibility.
+* Support for duplicative nested publication (that is, nested packages that are nested within more than one parent package) has the following consequences:
+    * May increase the amount of source code duplicated between different published packages, increasing download sizes and compilation time. It's currently possible to duplicate code into multiple packages via symlinks, but this would make it an “official feature”.
+    * If packages A and B are separately published with nested package C, and A also depends on B, then A may see two copies of C's items, one direct and one transitive. This may cause a set of packages to fail to compile due to type/trait mismatches when published. [RFC 3516 public/private dependencies](https://rust-lang.github.io/rfcs/3516-public-private-dependencies.html) may be able to reduce problems of this type if we encourage, by documentation and lint, authors to think twice before allowing a multiply-used nested dependency to also be a RFC 3516 public dependency.
+* Build and packaging systems that replace or wrap Cargo (e.g. mapping Cargo packages into Linux distribution packages) may have 1 library:1 package assumptions that are broken by this change.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
