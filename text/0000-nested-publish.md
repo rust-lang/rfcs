@@ -40,6 +40,7 @@ There are also some uses which are not strictly cases of one library package ver
 * (new) A “**nested package**” is a package which is published as part of some parent package, using this mechanism to allow dependencies, rather than independently.
     * A published package may contain sub-packages that are not nested packages, as a simple file inclusion for the package's own build-time purposes.
     * Note that a nested package is not necessarily a direct dependency of the parent package, though that will be the typical case.
+* (new) A “**nested dependency**” is an entry in `[dependencies]` that refers to a nested package, and is declared as such.
 * (not for documentation but for discussion in this RFC) “**nested publishing**” means a `cargo publish` operation that includes one or more nested packages, or the act of actually making use of the fact that some packages are marked as nested packages.
 
 # Guide-level explanation
@@ -114,36 +115,59 @@ Then you can `cargo publish` from within the parent directory `foo/`, and this w
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The following changes must be made across Cargo and `crates.io`:
+## Cargo: Manifest
 
-* **Manifest schema**
-    *   The `package.publish` key allows `"nested"` as a value, in addition to existing `false` and `true`.
-    *   If `package.license` is specified in a nested package, the parent package's license expression must comply with the nested package's. This check is done solely in terms of the operators in the license expression. For example, if two nested packages contain licenses of `MIT` and `BSD-3-Clause`, then the parent package's expression must be `MIT AND BSD-3-Clause` or similar.
-        * However, if `package.license` is omitted, this is understood to mean the nested package is merely a component of the parent package with no separate claims about its licensing; it does not mean that the nested package has no license permitting its distribution.
-    *   The `dependencies.*.publish` key may be specified with a value of `"nested"`. No other valid values are currently defined. (If desired, `publish = false` could be used to explicitly document an intent not to nest.)
-        * If `dependencies.foo.publish = "nested"`, but in `foo`'s manifest `package.publish` is not `"nested"`, then that is an error.
-    *   We might want to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. (Versions are already optional as of Cargo 1.75, but this is merely equivalent to `version = "0.0.0"`.)
-* **`cargo package` &amp; `cargo publish`**
-    * Should refuse to publish a package if that package (not its sub-packages) has `publish = "nested"`.
-    * The `include`/`exclude` rules should, upon finding a sub-package, instead of excluding it automatically, check if it is declared as a nested dependency by the parent package or any other nested package. If it is, it should follow the *other* include/exclude rules normally.
-    * Nested packages' `Cargo.toml`s should be normalized in the same way the root `Cargo.toml` is. Sub-packages explicitly `include`d but which are not declared as nested should not be.
-        * This avoids modifying the publication behavior for existing packages, even if they contain project templates or invoke `cargo` to compile sub-packages to probe the behavior of the compiler.
-* **`crates.io`**
-    *   Should allow `path` dependencies that were previously prohibited, provided that
+Two new possible values are added to the manifest.
 
-        * the named package in fact exists in the `.crate` archive file and has a valid `Cargo.toml`, and
-        * the named package declares `package.publish = "nested"`.
+* The `package.publish` field allows `"nested"` as a value, in addition to existing `false` and `true`. This value affects `cargo publish` and nested dependencies as described below.
+* The `dependencies.*.publish` field is newly defined, with the only currently allowed value being `"nested"`, to declare that that dependency is a nested dependency. (If desired, `publish = false` could be also be permitted to explicitly document an intent not to nest; this would be identical to the status quo and to omitting the key.)
+    * It is an error if a nested dependency does not have a `path` field, or if it has a `version`, `git`, or any other package source field, unless future work defines a meaning for that combination.
 
-        The path must not contain any upward traversal (`../`) or other hazardous or non-portable components.
-    *   The package index does not explicitly represent nested packages; instead, nested packages' dependencies are flattened into the dependencies of the parent package. This accurately reflects what can be expected when using the parent package.
-    *   No changes are needed to the `crates.io` index, because nested packages are an implementation detail of their parent package.
-* **Build process**
-    * The `Cargo.lock` format will need to be modified to handle entries for nested packages differently, as `path` dependencies are currently not allowed to introduce multiple packages with the same name, which could happen though different packages' nested packages. This modification could consist of omitting them entirely and using the same flattened dependency graph as the `crates.io` index will use.
-    * Probably some messages will need to be adjusted; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”.
+When a nested dependency is present (making its referent be a nested package), the following additional requirements apply:
 
-* Nested crates should not be documented as public crates in `rustdoc`, since they are an implementation detail of the parent package and their names are not unique. I think `rustdoc` should use its [`doc(inline)`](https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html#inline-and-no_inline) support so that any re-exported items are documented in the parent package's crates' documentation. I believe this will require a new command-line option to `rustdoc` to tell it to treat a certain dependency crate as if it were a private module (which already triggers documentation inlining automatically).
+* The nested package must have `package.publish = "nested"`; both `false` and `true` are errors.
 
-The presence or absence of a `[workspace]` has no effect on the new behavior, just as it has no effect on existing package publication. Nested packages may use workspace inheritance.
+* If the nested package specifies `package.license`, the parent package's (not necessarily the dependent's) license expression must comply with the nested package's. This check is done solely in terms of the operators in the license expression. For example, if two nested packages contain licenses of `MIT` and `BSD-3-Clause`, then the parent package's expression must be `MIT AND BSD-3-Clause` or similar.
+
+  This check is intended only to prevent accidents (such as vendoring a third-party package without considering the implications of redistributing it). It is always valid to omit `package.license` from the nested package, thus making no machine-readable claims about its licensing independent from the parent package's.
+
+* We might want to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. (`package.version` is already optional as of Cargo 1.75, but this is currently equivalent to `version = "0.0.0"`.)
+
+## **`cargo package` &amp; `cargo publish`**
+
+If `cargo package` or `cargo package` is directed to operate on a package whose manifest specifies `package.publish = "nested"`, that is an error. (Users wishing to make crates in a nested package public should either write `package.publish = true` or should re-export their contents from another package.)
+
+When a valid parent package is packaged, each of its transitive nested dependencies must be included in the `.crate` archive file. This has two sub-cases:
+
+* The nested package may be in a subdirectory of the parent package directory. In this case, it is copied to the same location in the archive.
+* Otherwise, it is copied to `.cargo/packages/<package name>/` within the archive.
+
+`Cargo.toml` files for nested packages are rewritten in the same way as is already done for all packages, except that `path` dependencies which are nested dependencies are kept rather than stripped out or rejected as they currently are. Their path values may need to be rewritten to point to the nested paackages' new location in the archive.
+
+## **`crates.io`**
+
+`crates.io` will allow uploading of packages that contain `path` dependencies that were previously prohibited, as long as:
+
+* The dependency is a valid nested dependency as defined above. This includes that the the named package in fact exists in the `.crate` archive file, and has a valid `Cargo.toml` which declares `package.publish = "nested"`.
+* The `path`s in all contained manifests must not contain any upward traversal outside of the parent package (`../../`) or other hazardous or non-portable components as determined to be necessary.
+
+The package index, and the `crates.io` user interface, does not explicitly represent nested packages; instead, nested packages' dependencies are flattened into the dependencies of the parent package when they are added to the index. This adequately reflects what can be expected when using the parent package. (Note that required dependencies of optional nested packages should become optional in the flattened form.)
+
+## `cargo build` and friends
+
+The `Cargo.lock` format will need to be modified to handle entries for nested packages differently, as `path` dependencies are currently not allowed to introduce multiple packages with the same name, which could happen though different packages' nested packages. This modification could consist of omitting them entirely and using the same flattened dependency graph as the `crates.io` index will use (which follows the logic that they are not truly versioned separate from their parent), or giving them some namespacing scheme; I leave this choice up to the Cargo team's judgement.
+
+Some new build message formatting would ideally be added; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”, or “`Compiling foo v0.1.0 (crate macros)`”.
+
+## Documentation of nested packages' crates
+
+Nested packages' library crates should not be documented as full crates in `rustdoc` generated documentation, since they are an implementation detail of the parent package and their names are not unique among the set of all dependencies of the current build (e.g. many different packages could have nested libraries called just `macros`). I think `rustdoc` should use its [`doc(inline)`](https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html#inline-and-no_inline) support so that any re-exported items are documented in the parent package's crates' documentation. I believe this will require a new command-line option to `rustdoc` to tell it to treat a certain dependency crate as if it were a private module (which already triggers documentation inlining automatically).
+
+However, if this is not (yet) done, the documentation will still be usable; just with more implementation details visible, and a chance of name collision (which is already possible).
+
+## Workspaces
+
+The presence or absence of a `[workspace]` has no effect on nested packages, just as it has no effect on existing package publication. Nested packages may use workspace inheritance when they are workspace members. Nested packages may be in different workspaces than their parent package.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -265,3 +289,7 @@ This RFC does not propose implementing a dependency declared as `{ git = "...", 
 [artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
 [#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
 [RFC 2224]: https://github.com/rust-lang/rfcs/pull/2224
+
+## Testing
+
+A noteworthy benefit of nesting over separately-published packages is that the entire package can be verified to build outside its development repository/workspace by running `cargo publish --dry-run` or `cargo package`. It might be interesting to add a flag which does not just build the package, but also test it; while this is not at all related to nested packages *per se*, it might be a particular benefit to the kind of large project which currently uses multiple packages.
