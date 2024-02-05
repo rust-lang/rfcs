@@ -141,6 +141,8 @@ The following changes must be made across Cargo and `crates.io`:
     * The `Cargo.lock` format will need to be modified to handle entries for nested packages differently, as `path` dependencies are currently not allowed to introduce multiple packages with the same name, which could happen though different packages' nested packages. This modification could consist of omitting them entirely and using the same flattened dependency graph as the `crates.io` index will use.
     * Probably some messages will need to be adjusted; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”.
 
+* Nested crates should not be documented as public crates in `rustdoc`, since they are an implementation detail of the parent package and their names are not unique. I think `rustdoc` should use its [`doc(inline)`](https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html#inline-and-no_inline) support so that any re-exported items are documented in the parent package's crates' documentation. I believe this will require a new command-line option to `rustdoc` to tell it to treat a certain dependency crate as if it were a private module (which already triggers documentation inlining automatically).
+
 The presence or absence of a `[workspace]` has no effect on the new behavior, just as it has no effect on existing package publication. Nested packages may use workspace inheritance.
 
 # Drawbacks
@@ -206,6 +208,10 @@ There are several ways we could mark packages for nested publishing, rather than
 [prior-art]: #prior-art
 
 * Postponed [RFC 2224] is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`. This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
+
+*   Blog post [Rust 2030 Christmas list: Subcrate dependencies, by Olivier Faure](https://poignardazur.github.io/2023/01/24/subcrates/) proposes a mechanism of declaring nested dependencies similar to this RFC, but instead of embedding the files in one package, the “subcrates” are packaged separately on crates.io, but published as a single command and are not usable by other packages. Thus, it is similar to a combination of the also-desired features of “publish an entire workspace” and “namespacing on crates.io”, plus the subcrates being private on crates.io.
+
+    This alternative implementation has some advantages such as the potential of publishing updates to subcrates alone. It requires complex features such as the addition of package namespacing to crates.io, but that feature is desired itself for other applications. I consider that a worthy alternative to this RFC, and would be happy to see either one implemented.
 
 I am not aware of other package systems that have a relevant similar concept, but I am not broadly informed about package systems. I have designed this proposal to be a **minimal addition to Cargo**, building on the existing concept of `path` dependencies to add lots of power with little implementation cost; not necessarily to make sense from a blank slate.
 
