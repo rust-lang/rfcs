@@ -40,6 +40,7 @@ There are also some uses which are not strictly cases of one library package ver
 * (new) A “**nested package**” is a package which is published as part of some parent package, using this mechanism to allow dependencies, rather than independently.
     * A published package may contain sub-packages that are not nested packages, as a simple file inclusion for the package's own build-time purposes.
     * Note that a nested package is not necessarily a direct dependency of the parent package, though that will be the typical case.
+* (not for documentation but for discussion in this RFC) “**nested publishing**” means a `cargo publish` operation that includes one or more nested packages, or the act of actually making use of the fact that some packages are marked as nested packages.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -144,9 +145,9 @@ The presence or absence of a `[workspace]` has no effect on the new behavior, ju
 
 * This increases the number of differences between “Cargo package (on disk)” from “Cargo package (that may be published in a registry, or downloaded as a unit)” in a way which may be confusing; it would be good if we have different words for these two entities, but we don't.
 * It is not possible to publish a bug fix to a nested package without republishing the entire parent package; this is the cost we pay for the benefit of not needing to take care with versioning for nested packages.
-* Suppose `foo` has a nested package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publication may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
+* Suppose `foo` has a nested package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publishing may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
      * If this situation comes up, it can be recovered from by newly publishing `foo-core` separately (as would have been done if nested publishing were not used) and using the [semver trick](https://github.com/dtolnay/semver-trick) to maintain compatibility.
-* Support for duplicative nested publication (that is, nested packages that are nested within more than one parent package) has the following consequences:
+* Support for duplicative nested publishing (that is, nested packages that are nested within more than one parent package) has the following consequences:
     * May increase the amount of source code duplicated between different published packages, increasing download sizes and compilation time. It's currently possible to duplicate code into multiple packages via symlinks, but this would make it an “official feature”.
     * If packages A and B are separately published with nested package C, and A also depends on B, then A may see two copies of C's items, one direct and one transitive. This may cause a set of packages to fail to compile due to type/trait mismatches when published. [RFC 3516 public/private dependencies](https://rust-lang.github.io/rfcs/3516-public-private-dependencies.html) may be able to reduce problems of this type if we encourage, by documentation and lint, authors to think twice before allowing a multiply-used nested dependency to also be a RFC 3516 public dependency.
 * Build and packaging systems that replace or wrap Cargo (e.g. mapping Cargo packages into Linux distribution packages) may have 1 library:1 package assumptions that are broken by this change.
@@ -173,7 +174,7 @@ We could also do nothing, except for warning the authors of paired macro crates 
 
 ## Details within this proposal
 
-There are several ways we could mark packages for nested publication, rather than using the `package.publish` and `dependencies.*.publish` keys:
+There are several ways we could mark packages for nested publishing, rather than using the `package.publish` and `dependencies.*.publish` keys:
 
 * Instead of declaring each _dependency_ as being nested, we could only use `package.publish = "nested"` to make the determination. This would be problematic when a workspace has a root package, because that root package cannot avoid publishing all its `nested` workspace members except by writing `include`/`exclude` rules.
 
