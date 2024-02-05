@@ -117,10 +117,12 @@ Then you can `cargo publish` from within the parent directory `foo/`, and this w
 The following changes must be made across Cargo and `crates.io`:
 
 * **Manifest schema**
-    * The `package.publish` key allows `"nested"` as a value, in addition to existing `false` and `true`.
-    * The `dependencies.*.publish` key may be specified with a value of `"nested"`. No other valid values are currently defined. (If desired, `publish = false` could be used to explicitly document an intent not to nest.)
+    *   The `package.publish` key allows `"nested"` as a value, in addition to existing `false` and `true`.
+    *   If `package.license` is specified in a nested package, the parent package's license expression must comply with the nested package's. This check is done solely in terms of the operators in the license expression. For example, if two nested packages contain licenses of `MIT` and `BSD-3-Clause`, then the parent package's expression must be `MIT AND BSD-3-Clause` or similar.
+        * However, if `package.license` is omitted, this is understood to mean the nested package is merely a component of the parent package with no separate claims about its licensing; it does not mean that the nested package has no license permitting its distribution.
+    *   The `dependencies.*.publish` key may be specified with a value of `"nested"`. No other valid values are currently defined. (If desired, `publish = false` could be used to explicitly document an intent not to nest.)
         * If `dependencies.foo.publish = "nested"`, but in `foo`'s manifest `package.publish` is not `"nested"`, then that is an error.
-    * We might want to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. (Versions are already optional as of Cargo 1.75, but this is merely equivalent to `version = "0.0.0"`.)
+    *   We might want to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. (Versions are already optional as of Cargo 1.75, but this is merely equivalent to `version = "0.0.0"`.)
 * **`cargo package` &amp; `cargo publish`**
     * Should refuse to publish a package if that package (not its sub-packages) has `publish = "nested"`.
     * The `include`/`exclude` rules should, upon finding a sub-package, instead of excluding it automatically, check if it is declared as a nested dependency by the parent package or any other nested package. If it is, it should follow the *other* include/exclude rules normally.
@@ -136,6 +138,7 @@ The following changes must be made across Cargo and `crates.io`:
     *   The package index does not explicitly represent nested packages; instead, nested packages' dependencies are flattened into the dependencies of the parent package. This accurately reflects what can be expected when using the parent package.
     *   No changes are needed to the `crates.io` index, because nested packages are an implementation detail of their parent package.
 * **Build process**
+    * The `Cargo.lock` format will need to be modified to handle entries for nested packages differently, as `path` dependencies are currently not allowed to introduce multiple packages with the same name, which could happen though different packages' nested packages. This modification could consist of omitting them entirely and using the same flattened dependency graph as the `crates.io` index will use.
     * Probably some messages will need to be adjusted; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”.
 
 The presence or absence of a `[workspace]` has no effect on the new behavior, just as it has no effect on existing package publication. Nested packages may use workspace inheritance.
@@ -194,6 +197,8 @@ There are several ways we could mark packages for nested publishing, rather than
 
 # Prior art
 [prior-art]: #prior-art
+
+* Postponed [RFC 2224](https://github.com/rust-lang/rfcs/pull/2224) is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`. This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
 
 I am not aware of other package systems that have a relevant similar concept, but I am not broadly informed about package systems. I have designed this proposal to be a **minimal addition to Cargo**, building on the existing concept of `path` dependencies to add lots of power with little implementation cost; not necessarily to make sense from a blank slate.
 
