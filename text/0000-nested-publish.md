@@ -147,13 +147,20 @@ The presence or absence of a `[workspace]` has no effect on the new behavior, ju
 [drawbacks]: #drawbacks
 
 * This increases the number of differences between “Cargo package (on disk)” from “Cargo package (that may be published in a registry, or downloaded as a unit)” in a way which may be confusing; it would be good if we have different words for these two entities, but we don't.
+
 * It is not possible to publish a bug fix to a nested package without republishing the entire parent package; this is the cost we pay for the benefit of not needing to take care with versioning for nested packages.
+
 * Suppose `foo` has a nested package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publishing may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
      * If this situation comes up, it can be recovered from by newly publishing `foo-core` separately (as would have been done if nested publishing were not used) and using the [semver trick](https://github.com/dtolnay/semver-trick) to maintain compatibility.
+
 * Support for duplicative nested publishing (that is, nested packages that are nested within more than one parent package) has the following consequences:
     * May increase the amount of source code duplicated between different published packages, increasing download sizes and compilation time. It's currently possible to duplicate code into multiple packages via symlinks, but this would make it an “official feature”.
     * If packages A and B are separately published with nested package C, and A also depends on B, then A may see two copies of C's items, one direct and one transitive. This may cause a set of packages to fail to compile due to type/trait mismatches when published. [RFC 3516 public/private dependencies](https://rust-lang.github.io/rfcs/3516-public-private-dependencies.html) may be able to reduce problems of this type if we encourage, by documentation and lint, authors to think twice before allowing a multiply-used nested dependency to also be a RFC 3516 public dependency.
+
 * Build and packaging systems that replace or wrap Cargo (e.g. mapping Cargo packages into Linux distribution packages) may have 1 library:1 package assumptions that are broken by this change.
+
+* In the discussion of [RFC 2224], it came up that a feature like this could be used for vendoring libraries with patches not yet accepted upstream, where people sometimes currently resort to publishing forks to crates.io. Using nested packages for vendoring has the advantage of not cluttering crates.io, but also results in hidden code duplication. We may wish to decide whether to encourage or discourage this use of the feature.
+
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -198,7 +205,7 @@ There are several ways we could mark packages for nested publishing, rather than
 # Prior art
 [prior-art]: #prior-art
 
-* Postponed [RFC 2224](https://github.com/rust-lang/rfcs/pull/2224) is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`. This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
+* Postponed [RFC 2224] is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`. This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
 
 I am not aware of other package systems that have a relevant similar concept, but I am not broadly informed about package systems. I have designed this proposal to be a **minimal addition to Cargo**, building on the existing concept of `path` dependencies to add lots of power with little implementation cost; not necessarily to make sense from a blank slate.
 
@@ -245,3 +252,4 @@ This RFC does not propose implementing a dependency declared as `{ git = "...", 
 
 [artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
 [#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
+[RFC 2224]: https://github.com/rust-lang/rfcs/pull/2224
