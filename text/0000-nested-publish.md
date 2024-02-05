@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow Cargo packages to be bundled within other Cargo packages when they are published (not just in unpublished workspaces).
+Allow published Cargo packages to depend on other packages stored within themselves, as is currently possible in unpublished packages.
 
 # Motivation
 [motivation]: #motivation
@@ -19,11 +19,14 @@ There are a number of reasons why a Rust developer currently may feel the need t
 
 Currently, developers must publish these packages separately. This has several disadvantages (see the [Rationale](#rationale-and-alternatives) section for further details):
 
-* Clutters the public view of the registry with packages not intended to be usable on their own, and which may even become obsolete as internal architecture changes.
-* Requires multiple `cargo publish` operations (this could be fixed with bulk publication) and writing public metadata for each package.
 * Can result in semver violations and thus compilation failures, due to the developer not thinking about semver compatibility within the group.
+* Requires multiple `cargo publish` operations (though this could be fixed with a bulk publication feature) and writing public metadata for each package.
+* Clutters the public view of the registry with packages not intended to be usable on their own, and which may even become obsolete as internal architecture changes.
+* Requires each package to have a [full set of metadata](https://doc.rust-lang.org/cargo/reference/publishing.html#before-publishing-a-new-crate).
 
 This RFC will allow developers to avoid all of these inconveniences and hazards by publishing a single package.
+
+Additionally, it may sometimes be desirable to share a small amount of code between some published packages, without making the shared code a separately published library with an appropriate public API.
 
 # Definitions
 [definitions]: #definitions
@@ -31,36 +34,48 @@ This RFC will allow developers to avoid all of these inconveniences and hazards 
 * (existing) A “**package**” is a directory with a `Cargo.toml` file, where that `Cargo.toml` file contains `[package]` metadata. (Note that valid `Cargo.toml` files can also declare `[workspace]`s without being packages; such files are irrelevant to this RFC.)
 * (existing) A “**sub-package**” is a package (directory with `Cargo.toml`) which is located in a subdirectory of another package. (This is an existing term in Cargo documentation, though only once.)
 * (new) A “**parent package**”, in the context of this RFC, is a package which is being or has been published, and which may contain sub-packages.
-* (new) A “**nested package**” is a package which is published as part of some parent package rather than independently.
+* (new) A “**nested package**” is a package which is published as part of some parent package, using this mechanism to allow dependencies, rather than independently.
+    * A published package may contain sub-packages that are not nested packages, as a simple file inclusion for the package's own build-time purposes.
+    * Note that a nested package is not necessarily a direct dependency of the parent package, though that will be the typical case.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 By default (and always, prior to this RFC's implementation):
 
-* If your package contains any sub-packages, Cargo [excludes](https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields) them from the `.crate` archive file produced by `cargo package` and `cargo publish`.
+* If your package contains any sub-packages in its directory structure, Cargo [excludes](https://doc.rust-lang.org/cargo/reference/manifest.html#the-exclude-and-include-fields) them from the `.crate` archive file produced by `cargo package` and `cargo publish`.
 * If your package contains any non-`dev` dependencies which do not give a `version = "..."`, it cannot be published to `crates.io`.
 * If your package contains `[dev-dependencies]` which do not give a `version = "..."`, they are stripped out on publication.
 
-You can change this default by placing in the manifest (`Cargo.toml`) of a sub-package:
+You can change this default in your manifests. First, in the manifest (`Cargo.toml`) of a sub-package, add `publish = "nested"`:
 
 ```toml
 [package]
+name = "foo-macros"
 publish = "nested"
 ```
 
-If this is done, Cargo's behavior changes as follows:
+Then, in the manifest of the parent package, declare the dependency as `publish = "nested"`:
 
-* If you publish the parent package, the sub-package is included in the `.crate` file (unless overridden by explicit `exclude`/`include`) and will be available to the parent package whenever the parent package is downloaded and compiled.
-* The parent package (and other sub-packages) may have `path =` dependencies upon the sub-package. (Such dependencies must not have a `version =` or `git =`; that is, the `path` must be the _only_ source for the dependency.)
-* You cannot `cargo publish` the sub-package, just as if it had `publish = false`. (This is a safety measure against accidentally publishing the sub-package separately when this is not intended.)
+```toml
+[dependencies]
+foo-macros = { path = "macros", publish = "nested" }
+```
 
-Nested sub-packages may be freely placed within other nested sub-packages.
+If both of these steps are done, the `foo-macros` package is considered a **nested package**, and Cargo's behavior changes as follows:
 
-When a group of packages is published in this way, and depended on, this has a number of useful effects (which are not things that Cargo explicitly implements, just consequences of the system):
+* If you publish the parent package, the sub-package is included in the `.crate` archive file and will be available to the parent package whenever the parent package is downloaded and compiled. If the dependency `path` does not lead to a subdirectory, then the sub-package will be automatically copied into a location under the `.cargo` directory inside the top level of the `.crate` archive file, and the `path` value will be rewritten to match.
+* The parent package (and other sub-packages) may have `path =` dependencies upon the sub-package. (Such dependencies must not have a `version =` or `git =`; that is, the `path` must be the _only_ source for the dependency. They do not need to also declare `publish = "nested"`.)
+* You cannot `cargo publish` the sub-package, just as if it had `publish = false`. (This is a safety measure against accidentally publishing the sub-package separately _in addition_ to its nested copies; the presumption here is that nested packages are not designed to present public API themselves.)
 
-* The packages are a single unit for all versioning purposes; there is no way for a version mismatch to arise since all the code was published together. Version resolution does not apply (in the same way that it does not for any other `path =` dependency).
-* The sub-package is effectively “private” (in a sense like the Rust language's visibility system): it cannot be named as a dependency by any other package on `crates.io`, only by its parent package and sibling sub-packages. The parent package may still re-export items from it, or even the entire crate, in the same ways as it could do with a dependency on a normally published package.
+Nested packages may contain other dependencies on nested packages, and these too are included in the published package.
+
+When a group of packages is published in this way, this has a number of useful effects for its dependents (which are not things that Cargo explicitly implements, just consequences of the system):
+
+*   The packages are a single unit for all versioning purposes; there is no way for a version mismatch to arise among them since all the code was published together. Version resolution does not apply (in the same way that it does not for any other `path =` dependency).
+
+    This allows package authors to avoid needing to think about SemVer correctness for their nested packages.
+*   The sub-package is effectively “private” (in a sense like the Rust language's visibility system): it cannot be named as a dependency by any other package on `crates.io`, only by its parent package and sibling sub-packages. The parent package may still re-export items from it, or even the entire crate, in the same ways as it could do with a dependency on a normally published package.
 
 ## Example: trait and derive macro
 
@@ -74,23 +89,23 @@ edition = "2021"
 publish = true
 
 [dependencies]
-foo-macros = { path = "macros" }    # newly permitted
+foo-macros = { path = "macros", publish = "nested" } # new syntax
 ```
 
 The sub-package manifest `foo/macros/Cargo.toml`:
 
 ```toml
 [package]
-name = "macros"                     # this name need not be claimed on crates.io
-version = "0.1.0"                   # this version is not used for dependency resolution
+name = "macros"            # this name need not be claimed on crates.io
+# version = "0.0.0"        # version number is not used and may be omitted
 edition = "2021"
-publish = "nested"                  # new syntax
+publish = "nested"         # new syntax
 
 [lib]
 proc-macro = true
 ```
 
-Then you can `cargo publish` from within the parent `foo` directory, and this will create a single `foo` package on `crates.io`, with no `macros` (or `foo-macros`) package visible except when inspecting the source code or in compilation progress messages.
+Then you can `cargo publish` from within the parent directory `foo/`, and this will create a single `foo` package on `crates.io`, with no `macros` (or `foo-macros`) package visible except when inspecting the source code or in compilation progress messages.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -98,27 +113,35 @@ Then you can `cargo publish` from within the parent `foo` directory, and this wi
 The following changes must be made across Cargo and `crates.io`:
 
 * **Manifest schema**
-    * The Cargo manifest now allows `"nested"` as a value for the `package.publish` key.
+    * The `package.publish` key allows `"nested"` as a value, in addition to existing `false` and `true`.
+    * The `dependencies.*.publish` key may be specified with a value of `"nested"`. No other valid values are currently defined. (If desired, `publish = false` could be used to explicitly document an intent not to nest.)
+        * If `dependencies.foo.publish = "nested"`, but in `foo`'s manifest `package.publish` is not `"nested"`, then that is an error.
+    * We might want to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. (Versions are already optional as of Cargo 1.75, but this is merely equivalent to `version = "0.0.0"`.)
 * **`cargo package` &amp; `cargo publish`**
     * Should refuse to publish a package if that package (not its sub-packages) has `publish = "nested"`.
-    * Exclude/include rules should, upon finding a sub-package, check if it is `publish = "nested"` and not automatically exclude it. Instead, they should treat it like any other subdirectory; in particular, it should be affected by explicitly specified exclude/include rules.
-    * Nested `Cargo.toml`s should be normalized in the same way the root `Cargo.toml` is, if they declare `publish = "nested"`, and not if they do not.
+    * The `include`/`exclude` rules should, upon finding a sub-package, instead of excluding it automatically, check if it is declared as a nested dependency by the parent package or any other nested package. If it is, it should follow the *other* include/exclude rules normally.
+    * Nested packages' `Cargo.toml`s should be normalized in the same way the root `Cargo.toml` is. Sub-packages explicitly `include`d but which are not declared as nested should not be.
         * This avoids modifying the publication behavior for existing packages, even if they contain project templates or invoke `cargo` to compile sub-packages to probe the behavior of the compiler.
-        * If the nested `Cargo.toml` has a syntax error such that its `package.publish` value cannot be determined, then if it is depended upon, emit an error; if it is not, emit a warning and do not normalize it.
 * **`crates.io`**
-    * Should allow `path` dependencies that were previously prohibited, at least provided that the named package in fact exists in the `.crate` archive file. The path must not contain any upward traversal (`../`) or other hazardous or non-portable components.
+    *   Should allow `path` dependencies that were previously prohibited, provided that
+
+        * the named package in fact exists in the `.crate` archive file and has a valid `Cargo.toml`, and
+        * the named package declares `package.publish = "nested"`.
+
+        The path must not contain any upward traversal (`../`) or other hazardous or non-portable components.
+    *   No changes are needed to the `crates.io` index, because nested packages are an implementation detail of their parent package.
 * **Build process**
     * Probably some messages will need to be adjusted; currently, `path` dependencies' full paths are always printed in progress messages, but they would be long noise here (`/home/alice/.cargo/registry/src/index.crates.io-6f17d22bba15001f/...`). Perhaps progress for sub-packages could look something like “`Compiling foo/macros v0.1.0`”.
 
-The presence or absence of a `[workspace]` has no effect on the new behavior, just as it has no effect on existing package publication.
+The presence or absence of a `[workspace]` has no effect on the new behavior, just as it has no effect on existing package publication. Nested packages may use workspace inheritance.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * This increases the number of differences between “Cargo package (on disk)” from “Cargo package (that may be published in a registry, or downloaded as a unit)” in a way which may be confusing; it would be good if we have different words for these two entities, but we don't.
-* If Cargo were to add support for multiple libraries per package, that would be largely redundant with this feature.
-* It is not possible to publish a bug fix to a sub-package without republishing the entire parent package.
-* Suppose `foo` has a sub-package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publication may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
+* If Cargo were to add support for multiple library targets per package, that would be largely redundant with this feature.
+* It is not possible to publish a bug fix to a nested package without republishing the entire parent package; this is the cost we pay for the benefit of not needing to take care with versioning for nested packages.
+* Suppose `foo` has a nested package `foo-core`. Multiple major versions of `foo` cannot share the same instance of `foo-core` as they could if `foo-core` were separately published and the `foo`s depended on the same version of `foo-core`. Thus, choosing nested publication may lead to type incompatibilities (and greater compile times) that would not occur if the same libraries had been separately published.
      * If this situation comes up, it can be recovered from by newly publishing `foo-core` separately (as would have been done if nested publishing were not used) and using the [semver trick](https://github.com/dtolnay/semver-trick) to maintain compatibility.
 
 # Rationale and alternatives
@@ -143,42 +166,48 @@ We could also do nothing, except for warning the authors of paired macro crates 
 
 ## Details within this proposal
 
-There are several ways we could mark packages for nested publication, rather than using the `package.publish` key:
+There are several ways we could mark packages for nested publication, rather than using the `package.publish` and `dependencies.*.publish` keys:
 
-* Instead of introducing a new value for the `publish` key, we could simply allow sub-packages to be published when they would previously be errors. However, this would be problematic  when an existing package has a dev-dependency on a sub-package; either that sub-package would suddenly start being published as nested, or there would be no way to specify the sub-package *should* be published.
+* Instead of declaring each _dependency_ as being nested, we could only use `package.publish = "nested"` to make the determination. This would be problematic when a workspace has a root package, because that root package cannot avoid publishing all its `nested` workspace members except by writing `include`/`exclude` rules.
 
-* We could introduce an explicit `[subpackages]` table in the manifest. However, I believe `publish = "nested"` has the elegant and worthwhile property that it simultaneously enables nested publication and prohibits accidental un-nested publication of the sub-package.
+* Instead of introducing `package.publish = "nested"`, we could only require that dependencies be declared as nested. The disadvantages of this are:
+    * May unintentionally duplicate published code between a standalone published package and a nested package
+    * Does not make both ends of the relationship explicit to readers of the code.
 
-    * We could reuse `workspace.members` to also describe nested packages somehow; this might usefully avoid redundancy, but not every workspace wants to be published as a single parent package.
+* We could not permit nested packages that are not sub-packages (not in subdirectories of the parent package). This would avoid needing to define a place to copy the nested packages, but would make it impossible for two published packages to both nest the same package, which is useful for managing utility libraries too small and specific to be worth making public.
 
-* Similar to the previous, we could allow marking specific `[dependencies]` as “include this for publication”. However, this would make it impossible to publish a nested package which is not a dependency of the parent package, which blocks [the future possibility of][future-possibilities] public targets in nested packages (particularly, installable binary targets in sub-packages, which will frequently depend on the parent and not vice versa).
+* Instead of declaring anything, we could simply allow sub-packages to be published when they would previously be errors. This would be problematic when an existing package has a dev-dependency on a sub-package; either that sub-package would suddenly start being published as nested, or there would be no way to specify the sub-package *should* be published.
+
+* We could introduce an explicit `[subpackages]` table in the manifest, instead of `dependencies.*.publish`. This is just a syntactic distinction, but I think it would be more cumbersome to use; forgetting to remove an entry would result in publishing dead code, and forgetting to add one would not be detected until `cargo publish` time.
+    * However, we might want to add something like this for [the future possibility of][future-possibilities] public targets in nested packages (particularly, installable binary targets in sub-packages, which will frequently depend on the parent and not vice versa).
+
+* We could reuse `workspace.members` to also describe nested packages somehow; this constrains packages to be published to be structured similar to workspaces.
+
 
 # Prior art
 [prior-art]: #prior-art
 
 I am not aware of other package systems that have a relevant similar concept, but I am not broadly informed about package systems. I have designed this proposal to be a **minimal addition to Cargo**, building on the existing concept of `path` dependencies to add lots of power with little implementation cost; not necessarily to make sense from a blank slate.
 
+TODO: Discuss the various prior proposals for Cargo specifically.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-I see no specific unclear design choices, but we might want to incorporate one or more of the below _Future possibilities_ into the current RFC, particularly omitting version numbers.
+None currently known.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-## Omit version numbers
-
-Nested packages don't really have any use for version numbers; arguably, they should be omitted and even prohibited, since they may mislead a reader into thinking that the version numbers are used for some kind of version resolution. However, this is a further change to Cargo that is not strictly necessary to solve the original problem, and it disagrees with the precedent of how local `path` dependencies currently work (local packages must have version numbers even though they are not used).
 
 ## Nested packages with public binary targets
 
 One common reason to publish multiple packages is in order to have a library and an accompanying tool binary, without causing the library to have all of the dependencies that the binary does. Examples: `wasm-bindgen` (`wasm-bindgen-cli`), `criterion` (`cargo-criterion`), `rerun` (`rerun-cli`).
 
-This RFC currently does not address that — if nothing is done, then `cargo install` will ignore binaries in sub-packages. It would be easy to make a change which supports that; for example, `cargo install` could traverse sub-packages and install all found binaries — but that would also install binaries which are intended as testing or (once [artifact dependencies] are implemented) code-generation helpers, which is undesirable. Thus, additional design work is needed to support `cargo install`ing from subpackages:
+This RFC currently does not address that — if nothing is done, then `cargo install` will ignore binaries in nested packages, and it is unlikely that those packages would actually be in the nested package dependency graph anyway. It would be easy to make a change which supports that; for example, `cargo install` could traverse nested packages and install all found binaries — but that would also install binaries which are intended as testing or (once [artifact dependencies] are implemented) code-generation helpers, which is undesirable. Thus, additional design work is needed to support `cargo install`ing from subpackages:
 
-* Should there be an additional manifest key which declares the binary target “public”?
-* Should targets be explicitly “re-exported” from the parent package?
-* Should there be an additional option to `cargo install` which picks subpackages? (This would cancel out the user-facing benefit from having a single package name.)
+* There must be a way to, in the parent package manifest, declare nested packages to be published even though they are not dependencies of the parent package (but are likely *dependents* instead). This could also serve as the means to declare the binary target, or the nested package, “public”.
+* Should individual targets be explicitly “re-exported” from the parent package?
+* Should there be an additional option to `cargo install` which picks nested packages? (This would cancel out the benefit to the `cargo install` user from having a single package name.)
 
 ## Nested packages with public library targets
 
@@ -193,6 +222,13 @@ However, it requires additional syntax and semantics, and these use cases might 
 Since nested packages are versioned as a unit, we could relax the trait coherence rules and allow implementations that would otherwise be prohibited.
 
 This would be particularly useful when implementing traits from large optional libraries; for example, package `foo` with subpackages `foo_core` and `foo_tokio` could have `foo_tokio` write `impl tokio::io::AsyncRead for foo_core::DataSource`. This would improve the dependency graph compared to `foo_core` having a dependency on `tokio` (which is the only way to do this currently), though not have the maximum possible benefit unless we also added public library targets as above, since the package as a whole still only exports one library and thus one dependency graph node.
+
+## Git dependencies
+
+This RFC does not propose implementing a dependency declared as `{ git = "...", publish = "nested" }`. The obvious meaning is to copy the files from the target Git repository into the package, similarly to a Git submodule checkout. However, there might be things that need further consideration:
+
+* Exactly what set of files should be copied?
+* It would become possible to depend on (and thus copy during publication) a nested package someone else wrote for their own packages' use, which creates hazards for versioning and for non-compliance with source code licenses; while these are already possible, now Cargo would be doing it invisibly for you, which seems risky.
 
 [artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
 [#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
