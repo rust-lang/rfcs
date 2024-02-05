@@ -198,15 +198,24 @@ The reason for doing anything at all in this area is that publishing multiple pa
 * When packages are implementation details, it makes a permanent mark on the `crates.io` registry even if the implementation of the parent package stops needing that particular subdivision. By allowing sub-packages we can allow package authors to create whatever sub-packages they imagine might be useful, and delete them in later versions with no consequences.
 * It is possible to depend on a published package that is intended as an implementation detail. Ideally, library authors would document this clearly and library users would obey the documentation, but that doesn't always happen. By allowing nested packages, we introduce a simple “visibility” system that is useful in the same way that `pub` and `pub(crate)` are useful within Rust crates.
 
-The alternative to nested packages that I have heard of as a possibility would be to support multiple library targets per package. That would be arguably cleaner, but has these disadvantages:
+## Alternatives to nested packages
 
-* It would require new manifest syntax, not just for declaring the multiple libraries, but for referring to them, and for making per-target dependencies (e.g. only a proc-macro lib should depend on `proc-macro2`+`quote`+`syn`, not the rest of the libraries in the package).
-* It would require many new mechanisms in Cargo.
-* It might have unforeseen problems; by contrast, nested packages are compiled exactly the same way `path` dependencies currently are, and the only new element is the ability to publish them, so the risk of surprises is lower.
+*   Support multiple library targets per package. That would be arguably cleaner, but has these disadvantages:
 
-Also, nested packages enables nesting *anything* that Cargo packages can express now and in the future; it is composable with other Cargo functionality.
+    * It would require new manifest syntax, not just for declaring the multiple libraries, but for referring to them, and for making per-target dependencies (e.g. only a proc-macro lib should depend on `proc-macro2`+`quote`+`syn`, not the rest of the libraries in the package).
+    * It would require many new mechanisms in Cargo.
+    * It might have unforeseen problems; by contrast, nested packages are compiled exactly the same way `path` dependencies currently are, and the only new element is the ability to publish them, so the risk of surprises is lower.
 
-We could also do nothing, except for warning the authors of paired macro crates that they should use exact version dependencies. The consequence of this will be continued hassle for developers; it might even be that useful proc-macro features might not be written simply because the author does not want to manage a second package.
+    Also, nested packages enables nesting *anything* that Cargo packages can express now and in the future; it is composable with other Cargo functionality.
+
+*   [Extend the language and `rustc` to support “inline crates”][inline-crates]; support triggering the compilation of child crates declared within the source code of the parent. This would be extremely convenient for proc-macros or when simply wants to cause fully parallel and independently-cached compilation of subsets of their code. However:
+
+    * It does not permit specifying different dependencies for each crate (includes false dependency edges).
+    * The compilations cannot be started until the dependent crate has gotten past the macro expansion phase to discover crate declarations.
+    * Does not naturally contain a way to define binary crates.
+    * I expect it would also require significant changes to the Rust language and `rustc`, reaching beyond just “spawn another `rustc`” and including problems like computing the implied dependencies among inline crates that depend on other inline crates (unless inline crates are only allowed to depend on external dependencies and their own child inline crates, which is likely undesirable because it prohibits establishing common core vocabulary among a set of crates to be compiled in parallel).
+
+*   Do nothing, except for warning the authors of paired macro crates that they should use exact version dependencies. The consequence of this will be continued hassle for developers; it might even be that useful proc-macro features might not be written simply because the author does not want to manage a second package.
 
 ## Details within this proposal
 
@@ -232,12 +241,10 @@ There are several ways we could mark packages for nested publishing, rather than
 [prior-art]: #prior-art
 
 *   Postponed [RFC 2224] (2017) is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`.
-
     This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
 
-*   Blog post [Inline crates, by Yoshua Wuyts (2022)](https://blog.yoshuawuyts.com/inline-crates/) proposes that additional library crates can be declared using Rust syntax in the manner `crate foo;` or `crate foo {}`, like modules.
-
-    Compared to this proposal, its advantage is that it requires no new Cargo concepts and fits right in to the source-code-traversal-driven nature of existing ways to define Rust package and crate contents. However, it forces additional edges in the dependency graph (since the dependent's compilation must be started first to discover the inline crate, and there is no place to declare different dependencies for different crates). I expect it would also require significant changes to the Rust language and `rustc`, reaching beyond just “spawn another `rustc`” and including problems like computing the implied dependencies among inline crates that depend on other inline crates (unless inline crates are only allowed to depend on external dependencies and their own child inline crates, which is likely undesirable because it prohibits establishing common core vocabulary among a set of crates to be compiled in parallel).
+*   Blog post [Inline crates, by Yoshua Wuyts (2022)][inline-crates] proposes that additional library crates can be declared using Rust syntax in the manner `crate foo;` or `crate foo {}`, like modules.
+    This is discussed above in the alternatives section.
 
 *   Blog post [Rust 2030 Christmas list: Subcrate dependencies, by Olivier Faure (2023)](https://poignardazur.github.io/2023/01/24/subcrates/) proposes a mechanism of declaring nested dependencies similar to this RFC, but instead of embedding the files in one package, the “subcrates” are packaged separately on crates.io, but published as a single command and are not usable by other packages. Thus, it is similar to a combination of the also-desired features of “publish an entire workspace” and “namespacing on crates.io”, plus the subcrates being private on crates.io.
 
@@ -286,10 +293,11 @@ This RFC does not propose implementing a dependency declared as `{ git = "...", 
 * Exactly what set of files should be copied?
 * It would become possible to depend on (and thus copy during publication) a nested package someone else wrote for their own packages' use, which creates hazards for versioning and for non-compliance with source code licenses; while these are already possible, now Cargo would be doing it invisibly for you, which seems risky.
 
-[artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
-[#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
-[RFC 2224]: https://github.com/rust-lang/rfcs/pull/2224
-
 ## Testing
 
 A noteworthy benefit of nesting over separately-published packages is that the entire package can be verified to build outside its development repository/workspace by running `cargo publish --dry-run` or `cargo package`. It might be interesting to add a flag which does not just build the package, but also test it; while this is not at all related to nested packages *per se*, it might be a particular benefit to the kind of large project which currently uses multiple packages.
+
+[artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
+[#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
+[RFC 2224]: https://github.com/rust-lang/rfcs/pull/2224
+[inline-crates]: https://blog.yoshuawuyts.com/inline-crates/
