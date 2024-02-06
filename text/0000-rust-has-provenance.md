@@ -89,6 +89,7 @@ The given program has UB, but the [alternative program](https://play.rust-lang.o
 
 This optimization is performed by both [GCC](https://godbolt.org/z/G3jYEnWx6), [clang](https://godbolt.org/z/cr7h6hhqf), and [ICC](https://godbolt.org/z/14b1d16Gc):
 in all cases, the program prints `42`, showing that the initial value of `p2` is printed, not the value that was written just above the `print` call -- despite the fact that that write definitely stores to the same address that `print` is printing from.
+I wasn't able to find a website that can build and run code with MSVC, but [this assembly](https://godbolt.org/z/dzPz8WM7Y) seems to indicate that it, too, would call `print` with an argument of `42`, and thus is using provenance.
 This is not a new phenomenon either; it goes back at least to [GCC 4.6.4](https://godbolt.org/z/Yx6f389Gf) (released in 2013) and [clang 3.4.1](https://godbolt.org/z/nnhn6fdnj) (released in 2014).
 This demonstrates that both of them implement a language that has pointer provenance.[^cstandard]
 
