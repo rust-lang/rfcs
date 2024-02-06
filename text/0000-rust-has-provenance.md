@@ -87,8 +87,9 @@ The given program has UB, but the [alternative program](https://play.rust-lang.o
 
 [^miri]: If you try running the given program in Miri, you might be surprised to see that Miri does not report UB. This is because the UB can only be detected when `ptr::eq(p1_ptr, p2_ptr)` is true, and with Miri's randomized allocator, that is unlikely. [Here is another version](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=88aaf7200e962050c140709fac24042c) that tries multiple possible offsets between `p1` and `p2`, and reliably triggers UB under current versions of Miri.
 
-This optimization is performed by both [GCC](https://godbolt.org/z/zfxd17z1n) and [clang](https://godbolt.org/z/1TvhKj8r8): in both cases, the assembly sets `edi` to 42 before calling `print`, showing that the initial value of `p2` is printed, not the value that was written just above the `print` call.
-Here is a [more complicated version](https://godbolt.org/z/cr7h6hhqf) where one can actually witness clang print `42`.
+This optimization is performed by both [GCC](https://godbolt.org/z/G3jYEnWx6) and [clang](https://godbolt.org/z/cr7h6hhqf):
+in both cases, the program prints `42`, showing that the initial value of `p2` is printed, not the value that was written just above the `print` call -- despite the fact that that write definitely stores to the same address that `print` is printing from.
+This is not a new phenomenon either; it goes back at least to [GCC 4.6.4](https://godbolt.org/z/Yx6f389Gf) (released in 2013) and [clang 3.4.1](https://godbolt.org/z/nnhn6fdnj) (released in 2014).
 This demonstrates that both of them implement a language that has pointer provenance.[^cstandard]
 
 [^cstandard]: What the compilers do is justified by the C standard: `p1_ptr` is a "one past the end" pointer, and those may not be written to. However, this just demonstrates that the C standard has a notion of provenance built-in without acknowledging that fact; without provenance, there would be no way for the standard to distinguish the "one past the end" pointer `p1_ptr` from the completely valid `p2_ptr`. After all, the alternative program where the assignment writes to `p2_ptr` instead of `p1_ptr` is unambiguously well-defined -- and both pointers point to the same address.
