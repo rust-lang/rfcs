@@ -270,6 +270,8 @@ In Rust itself, questions around float semantics have been discussed for a long 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Should we be concerned that LLVM does [not actually document](https://github.com/llvm/llvm-project/issues/60942) that it uses IEEE float semantics?
+  It does assume IEEE semantics in its own optimization passes.
 - Are there any other targets with floating-point trouble?
 - What exactly is the set of "extra" NaNs for all remaining targets?
 - To what extend does this specification apply to platform intrinsics?
