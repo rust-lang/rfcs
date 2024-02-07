@@ -625,7 +625,8 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 
 - Support infostring attributes
   - We need to better understand use cases for how this should be extended, particularly what the syntax should be (see infostring language)
-  - A safe starting point could be to say that a space or comma separates attributes and everything after it is defined as part of the "language"
+  - Some tools use use comma separated attributes, some use more elaborate syntax wrapped in `{}`
+  - A safe starting point could be to say that a space or comma separates the identifier from the attributes and everything after it is defined as part of the "language"
 - Add support for a `#[frontmatter(info = "", content = "")]` attribute that this syntax maps to.
   - Since nothing will read this, whether we do it now or in the future will have no affect
 
