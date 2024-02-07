@@ -81,7 +81,7 @@ an info-string is allowed after the opening `---` for use by the command interpr
 
 When parsing Rust source, after stripping the shebang (`#!`), rustc will strip the frontmatter:
 - May include 0+ blank lines (whitespace + newline)
-- Opens with 3+ dashes followed by 0+ whitespace, an optional identifier, 0+ whitespace, and a newline
+- Opens with 3+ dashes followed by 0+ whitespace, an optional term (one or more characters excluding whitespace and commas), non-comma characters), 0+ whitespace, and a newline
   - The variable number of dashes is an escaping mechanism in case `---` shows up in the content
 - All content is ignored by `rustc` until the same number of dashes is found at the start of a line.
   The line must terminate by 0+ whitespace and then a newline.
@@ -141,6 +141,9 @@ With that decision made, the infostring can be optional.
 Can it also be deferred out?
 Possibly, but we are leaving them in for unpredictable exception cases and in case users want to make the syntax explicit for their editor (especially if its not `cargo` which more trivial editor implementations will likely assume).
 We may at least defer stabilization of infostrings.
+
+The infostring syntax was selected to allow file names (e.g. `Cargo.lock`).
+Additional attributes are left to a future possibility.
 
 ## Syntax
 
