@@ -637,18 +637,18 @@ So **if** we decide we need to embed additional metadata, we have a couple of op
 Distinct blocks, maybe with newlines
 
 ````md
-```Cargo.toml
-```
+---Cargo.toml
+---
 
-```Cargo.lock
-```
+---Cargo.lock
+---
 ````
 
 Continuous blocks
 ````md
-```Cargo.toml
-```Cargo.lock
-```
+---Cargo.toml
+---Cargo.lock
+---
 ````
 
 Distinct blocks is more like the source inspiration, markdown,
