@@ -81,7 +81,7 @@ an info-string is allowed after the opening `---` for use by the command interpr
 
 When parsing Rust source, after stripping the shebang (`#!`), rustc will strip the frontmatter:
 - May include 0+ blank lines (whitespace + newline)
-- Opens with 3+ dashes followed by 0+ whitespace, an optional term (one or more characters excluding whitespace and commas), non-comma characters), 0+ whitespace, and a newline
+- Opens with 3+ dashes followed by 0+ whitespace, an optional term (one or more characters excluding whitespace and commas), 0+ whitespace, and a newline
   - The variable number of dashes is an escaping mechanism in case `---` shows up in the content
 - All content is ignored by `rustc` until the same number of dashes is found at the start of a line.
   The line must terminate by 0+ whitespace and then a newline.
