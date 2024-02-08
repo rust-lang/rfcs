@@ -19,6 +19,8 @@ Note: `cargo install` is intentionally left out for now to decouple discussions 
 
 ## Status Quo
 
+<details><summary>Ensuring you have a `Cargo.lock` with dependencies compatible with your minimum-supported Rust version (MSRV) is an arduous task of running `cargo update <dep> --precise <ver>` until it works.</summary>
+
 Let's step through a simple scenario where a user develops with the
 latest Rust version but production uses an older version:
 ```console
@@ -142,6 +144,8 @@ $ cargo +1.64.0 check
     Finished dev [unoptimized + debuginfo] target(s) in 2.96s
 ```
 Success! Mixed with many tears and less hair.
+
+</details>
 
 How wide spread is this?  Take this with a grain of salt but based on crates.io user agents:
 
@@ -364,6 +368,8 @@ We'll step through several scenarios to highlight the changes in the user experi
 I'm learning Rust and wanting to write my first application.
 The book suggested I install using `rustup`.
 
+<details><summary>Expand for step through of this workflow</summary>
+
 I've recently updated my toolchain
 ```console
 $ rustup update
@@ -465,12 +471,16 @@ If I look on crates.io, the new 0.1.0 version shows up with a rust-version of 1.
 without me having to manual update the field and
 relying on the `cargo publish`s verify step to verify the correctness of that MSRV.
 
+</details>
+
 ### Extended "MSRV" with an application
 
 I am developing an application using a certified toolchain.
 I specify this toolchain using a `rust-toolchain.toml` file.
 
 Rust 1.94 is the latest but my certified toolchain is 1.92.
+
+<details><summary>Expand for step through of this workflow</summary>
 
 At some point, I start a project:
 ```console
@@ -502,12 +512,16 @@ At this point, I have a couple of options
 
 Assuming (1) or (2) applies, I ignore the warning and move on.
 
+</details>
+
 ### Extended MSRV with an application targeting multiple Rust versions
 
 *(this is a re-imagining of the Motivation's example)*
 
 I'm building an application that is deployed to multiple embedded Linux targets.
 Each target's image builder uses a different Rust toolchain version to avoid re-validating the image.
+
+<details><summary>Expand for step through of this workflow</summary>
 
 I've recently updated my toolchain
 ```console
@@ -579,9 +593,13 @@ Updating clap 5.10.30 to 5.11.0
 Updating foo's rust-version from 1.92 to 1.93
 ```
 
+</details>
+
 ### Extended MSRV for a Library
 
 I'm developing a new library and am willing to take on some costs for supporting people on older toolchains.
+
+<details><summary>Expand for step through of this workflow</summary>
 
 I've recently updated my toolchain
 ```console
@@ -636,6 +654,8 @@ Updating clap 5.10.30 to 5.11.0
 Updating foo's rust-version from 1.92 to 1.93
 ```
 Instead, if a newer clap version was out needing 1.94 or 1.95, I would instead edit `Cargo.toml` myself.
+
+</details>
 
 ## Example documentation updates
 
