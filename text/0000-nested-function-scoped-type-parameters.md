@@ -88,7 +88,7 @@ This proposal is inspired by `-XScopedTypeVariables` in GHC Haskell and `(type a
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-I would like to ensure that there are no edge cases where this behavior could case regressions.
+I would like to ensure that there are no edge cases where this behavior could cause regressions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
