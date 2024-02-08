@@ -371,29 +371,27 @@ selected version of the Rust compiler is older than the stated version, cargo
 will exit with an error, telling the user what version is required.
 To support this, Cargo will prefer dependencies that are compatible with your `rust-version`.
 
-The first version of Cargo that supports this field was released with Rust 1.56.0.
-In older releases, the field will be ignored, and Cargo will display a warning.
-
 ```toml
 [package]
 # ...
 rust-version = "1.56"
 ```
 
-The Rust version must be a bare version number with two or three components; it
+The Rust version can be a bare version number with two or three components; it
 cannot include semver operators or pre-release identifiers. Compiler pre-release
 identifiers such as -nightly will be ignored while checking the Rust version.
 The `rust-version` must be equal to or newer than the version that first
 introduced the configured `edition`.
 
 The Rust version can also be `"auto"`.
-This will act the same as if it was set to the version of your toolchain.
-When publishing, `"auto"` will be replaced by the version of your toolchain in your published manifest.
-
-The `rust-version` may be ignored using the `--ignore-rust-version` option.
+This will act the same as if it was set to the version of your Rust toolchain.
+Your published manifest will have `"auto"` replaced with the version of your Rust toolchain.
 
 Setting the `rust-version` key in `[package]` will affect all targets/crates in
 the package, including test suites, benchmarks, binaries, examples, etc.
+
+*Note: The first version of Cargo that supports this field was released with Rust 1.56.0.
+In older releases, the field will be ignored, and Cargo will display a warning.*
 
 ### Rust Version
 
