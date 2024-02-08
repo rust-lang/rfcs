@@ -359,6 +359,17 @@ one lockfile can be used but it can be difficult to edit the `Cargo.lock` to ens
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+We are introducing several new concepts
+- A v3 resolver (`package.resolver`) that will prefer packages compatible with your `package.rust-version` over those that aren't
+  - If `package.rust-version` is unset, then your current Rust toolchain version will be used
+  - This resolver version will be the default for the next edition
+  - A `.cargo/config.toml` field will be added to disable this, e.g. for CI
+- Cargo will ensure users are aware their dependencies are behind the latest in a unobtrusive way
+- `cargo add` will select version requirements that can be met by a dependency with a compatible version
+- A new value for `package.rust-version`, `"auto"`, which will advertise in your published package your current toolchain version as the minimum-supported Rust version
+  - `cargo new` will default to `package.rust-version = "auto"`
+- A deny-by-default lint will replace the build error from a package having an incompatible Rust version, allowing users to opt-in to overriding it
+
 ## Example documentation updates
 
 ### The `rust-version` field
