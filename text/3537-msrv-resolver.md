@@ -852,7 +852,7 @@ Users may pass
 
 `package.rust-version` will gain support for an `"auto"` value, in addition to partial versions.
 On `cargo publish` / `cargo package`, the generated `*.crate`s `Cargo.toml` will have `"auto"` replaced with `rustc --version`.
-If `rustc --version` is a pre-release, it will be left as unspecified with a warning.
+If `rustc --version` is a pre-release, publish will fail.
 
 `cargo new` will include `package.rust-version = "auto"`.
 
@@ -901,6 +901,7 @@ Misc alternatives
   - There is little reason to select an MSRV higher than their Rust toolchain
   - We should still be warning the user that new dependencies are available if they upgrade their Rust toolchain
   - This comes at the cost of inconsistency with `--ignore-rust-version`.
+- Nightly `cargo publish` with `auto` fails because there isn't a good value to use and this gives us flexibility to change it later (e.g. just leaving the `rust-version` as unset).
 
 ## Ensuring the registry Index has `rust-version` without affecting quality
 
