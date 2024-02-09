@@ -309,11 +309,14 @@ The hope would be that we could get buy-in from other languages.
 - Future evolution: Allow any `info` string with cargo checking for `content.starts_with(["cargo", "cargo,"])`
 - Future evolution: Allow `frontmatter` attribute on any module
 
-If we dropped future possibilities for additional content, we could remove the opening/closing syntax and tweak it to avoid attribute ambiguity,
-greatly reducing the minimum syntax needed in some cases.
+Syntactically, this avoids confusion with attributes by being stripped before lexing.
+We could make this less ambiguous by using a double hash.
 ````rust
 #!/usr/bin/env cargo
-## package.edition = "2018"
+## ```cargo
+## [dependencies]
+## foo = "1.2.3"
+## ```
 
 fn main() {}
 ````
@@ -326,11 +329,20 @@ Benefits
 - Maybe we can get others on board with this syntax
 
 Downsides
+- `#` prefix plus a TOML `[heading]` looks too much like a Rust `#[attribute]`.
 - More syntactically heavy than the frontmatter solution
   - Visually
-  - More work to type it out / copy-paste
+  - More work to type it out or copy-paste between cargo scripts and regular manifests
   - More to get wrong
-- Requires users to deal with leading characters when editing/copying/pasting the manifest
+
+If we dropped future possibilities for additional content, we could remove the opening/closing syntax,
+greatly reducing the minimum syntax needed in some cases.
+````rust
+#!/usr/bin/env cargo
+## package.edition = "2018"
+
+fn main() {}
+````
 
 ### Alternative 3: Doc-comment
 
