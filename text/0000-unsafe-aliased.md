@@ -399,6 +399,10 @@ However, it is not possible to write sound wrappers around `UnsafeAliased` such 
 Because of that, the RFC proposes that we suggestively put pinning into the name of the type, so that people don't confuse it with a general mechanism for aliasing mutable references.
 It is more like the core primitive behind pinning, where whenever a type is pinned that is caused by an `UnsafePinned` field somewhere inside it.
 
+For instance, it may be tempting to use an `UnsafeAliased` type to mark a single field in some struct as "separately aliased", and then a `Mutex<Struct>` would acquire ownership of the entire struct except for that field.
+However, due to `mem::swap`, that would not be sound.
+One cannot hand out an `&mut` to such aliased memory as part of a safe-to-use abstraction -- except by using pinning.
+
 # Prior art
 [prior-art]: #prior-art
 
