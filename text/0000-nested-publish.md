@@ -52,12 +52,12 @@ By default (and always, prior to this RFC's implementation):
 * If your package contains any non-`dev` dependencies which do not give a `version = "..."`, it cannot be published to `crates.io`.
 * If your package contains `[dev-dependencies]` which do not give a `version = "..."`, they are stripped out on publication.
 
-You can change this default in your manifests. First, in the manifest (`Cargo.toml`) of a sub-package, add `publish = "nested"`:
+You can change this default in your manifests. First, in the manifest (`Cargo.toml`) of a sub-package, add `publish.nested = true`:
 
 ```toml
 [package]
 name = "foo-macros"
-publish = "nested"
+publish.nested = true
 ```
 
 Then, in the manifest of the parent package, declare the dependency as `publish = "nested"`:
@@ -104,7 +104,7 @@ The sub-package manifest `foo/macros/Cargo.toml`:
 name = "macros"            # this name need not be claimed on crates.io
 # version = "0.0.0"        # version number is not used and may be omitted
 edition = "2021"
-publish = "nested"         # new syntax
+publish.nested = true      # new syntax
 
 [lib]
 proc-macro = true
@@ -119,15 +119,40 @@ Then you can `cargo publish` from within the parent directory `foo/`, and this w
 
 Two new possible values are added to the manifest.
 
-* The `package.publish` or `workspace.package.publish` field allows `"nested"` as a value, in addition to existing `false` and `true`. This value affects `cargo publish` and nested dependencies as described below.
+*   Packages may be specified as eligible for nested publishing using the `package.publish.nested` (or `workspace.package.publish.nested`) field, which takes the values `true` or `false`. `true` permits the package to be a nested package as defined in this RFC, affecting `cargo publish` and builds as discussed below, and `false` prohibits it as is the status quo.
+
+    ```toml
+    [package]
+    # This package may be nested but may not be `cargo publish`ed by itself
+    publish.nested = true
+    ```
+
+
+    To allow both regular publishing and nested publishing, the currently-allowed values for `publish` (`publish = true` or `publish = [registries...]`) may be specified under the key `package.publish.registries`. Examples:.
+
+    ```toml
+    [package]
+    publish.registries = ["crates.io"]
+    publish.nested = true
+    ```
+
+    ```toml
+    [package]
+    publish.registries = true
+    publish.nested = true
+    ```
+
+    If `publish.registries` is absent and `publish.nested` is present, then `publish.registries` defaults to `false`, regardless of the value of `publish.nested`.
+
+    Note: This dual-publishing-mode functionality is permitted mainly to keep the functionality composable/orthogonal. We hope that in most cases, packages are either published nested exactly once, or to a registry alone, to avoid duplicating code in the registry and compiling it redundantly.
+
 * The `dependencies.*.publish` field is newly defined, with the only currently allowed value being `"nested"`, to declare that that dependency is a nested dependency.
     * It is an error if a nested dependency does not have a `path` field, or if it has a `version`, `git`, or any other package source field, unless future work defines a meaning for that combination.
     * Workspace inheritance is not permitted; `workspace.dependencies.*.publish` is an error at `cargo package`/`cargo publish` time. (Builds should ignore the field, for forward compatibility.)
 
 When a nested dependency is present (making its referent be a nested package), the following additional requirements apply:
 
-* The nested package must have `package.publish = "nested"`; both `false` and `true` are errors.
-
+* The nested package must have `package.publish.nested = true`.
 * If the nested package specifies `package.license`, its value must be identical to the parent package's.
 
   This check is intended only to prevent accidents (such as vendoring a third-party package without considering the implications of redistributing it). It is always valid to omit `package.license` from the nested package, thus making no machine-readable claims about its licensing.
@@ -135,8 +160,6 @@ When a nested dependency is present (making its referent be a nested package), t
 It is an error for any two of the packages in the transitive closure of nested dependencies (including the parent package) to share a package name. This is validated by all Cargo operations that would generate or read a lockfile.
 
 ## **`cargo package` &amp; `cargo publish`**
-
-If `cargo package` or `cargo package` is directed to operate on a package whose manifest specifies `package.publish = "nested"`, that is an error. (Users wishing to make crates in a nested package public should either write `package.publish = true` or should re-export their contents from another package.)
 
 When a valid parent package is packaged, each of its transitive nested dependencies must be included in the `.crate` archive file. This has two sub-cases:
 
@@ -149,7 +172,7 @@ When a valid parent package is packaged, each of its transitive nested dependenc
 
 `crates.io` will allow uploading of packages that contain `path` dependencies that were previously prohibited, as long as:
 
-* The dependency is a valid nested dependency as defined above. This includes that the the named package in fact exists in the `.crate` archive file, and has a valid `Cargo.toml` which declares `package.publish = "nested"`.
+* The dependency is a valid nested dependency as defined above. This includes that the the named package in fact exists in the `.crate` archive file, and has a valid `Cargo.toml` which declares `package.publish.nested = true`.
 * The `path`s in all contained manifests must not contain any upward traversal outside of the parent package (`../../`) or other hazardous or non-portable components as determined to be necessary.
 
 The package index, and the `crates.io` user interface, does not explicitly represent nested packages; the package is presented as if it were a single package:
@@ -228,9 +251,13 @@ The reason for doing anything at all in this area is that publishing multiple pa
 
 There are several ways we could mark packages for nested publishing, rather than using the `package.publish` and `dependencies.*.publish` keys:
 
-* Instead of declaring each _dependency_ as being nested, we could only use `package.publish = "nested"` to make the determination. This would be problematic when a workspace has a root package, because that root package cannot avoid publishing all its `nested` workspace members except by writing `include`/`exclude` rules.
+* Instead of declaring each _dependency_ as being nested, we could only use `package.publish.nested = true` to make the determination. This could work two ways:
 
-* Instead of introducing `package.publish = "nested"`, we could only require that dependencies be declared as nested. The disadvantages of this are:
+    * Dependencies are followed, but don't need to be specially marked as nested. I consider this undesirable because it could lead to unintended code duplication, if someone adds a dependency during development without thinking about its effect on publishing.
+
+    * Dependencies are disregarded and only directory nesting affects inclusion. This would be a simpler model, keeping packaging closer to "just make an archive of this directory tree", but it means that a workspace with a root package cannot avoid publishing all its `nested` workspace members except by writing `include`/`exclude` rules, there would be no way to specify whether `dev-dependencies` should be nested or stripped, and it does not support nesting a small private dependency in several different published packages.
+
+* Instead of introducing `package.publish.nested = true`, we could only require that dependencies be declared as nested. The disadvantages of this are:
     * May unintentionally duplicate published code between a standalone published package and a nested package
     * Does not make both ends of the relationship explicit to readers of the code.
 
@@ -247,7 +274,7 @@ There are several ways we could mark packages for nested publishing, rather than
 # Prior art
 [prior-art]: #prior-art
 
-*   Postponed [RFC 2224] (2017) is broadly similar to this RFC, and proposed using `publish = false` to mean what we mean by `publish = "nested"`.
+*   Postponed [RFC 2224] (2017) is broadly similar to this RFC, and proposed using `package.publish = false` to mean what we mean by `package.publish.nested = true`.
     This RFC is more detailed and addresses the questions that were raised in discussion of 2224.
 
 *   Blog post [Inline crates, by Yoshua Wuyts (2022)][inline-crates] proposes that additional library crates can be declared using Rust syntax in the manner `crate foo;` or `crate foo {}`, like modules.
