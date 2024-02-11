@@ -151,7 +151,13 @@ When a valid parent package is packaged, each of its transitive nested dependenc
 * The dependency is a valid nested dependency as defined above. This includes that the the named package in fact exists in the `.crate` archive file, and has a valid `Cargo.toml` which declares `package.publish = "nested"`.
 * The `path`s in all contained manifests must not contain any upward traversal outside of the parent package (`../../`) or other hazardous or non-portable components as determined to be necessary.
 
-The package index, and the `crates.io` user interface, does not explicitly represent nested packages; instead, nested packages' dependencies are flattened into the dependencies of the parent package when they are added to the index. This adequately reflects what can be expected when using the parent package. (Note that required dependencies of optional nested packages should become optional in the flattened form.)
+The package index, and the `crates.io` user interface, does not explicitly represent nested packages; the package is presented as if it were a single package:
+
+* Nested packages' dependencies are flattened into the dependencies of the parent package.
+* The packages selected by nested packages' features must be rewritten in terms of the parent package's features.
+* Note that optional dependencies might become required if the parent package always enables the relevant feature, and required dependencies might become optional if the dependency on the nested package is optional.
+
+All together, this will reflect what can be expected when using the parent package, without revealing, or needing to represent, the nested package implementation details of the parent package.
 
 ## `cargo build` and friends
 
