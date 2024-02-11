@@ -120,7 +120,7 @@ Then you can `cargo publish` from within the parent directory `foo/`, and this w
 Two new possible values are added to the manifest.
 
 * The `package.publish` or `workspace.package.publish` field allows `"nested"` as a value, in addition to existing `false` and `true`. This value affects `cargo publish` and nested dependencies as described below.
-* The `dependencies.*.publish` field is newly defined, with the only currently allowed value being `"nested"`, to declare that that dependency is a nested dependency. (If desired, `publish = false` could be also be permitted to explicitly document an intent not to nest; this would be identical to the status quo and to omitting the key.)
+* The `dependencies.*.publish` field is newly defined, with the only currently allowed value being `"nested"`, to declare that that dependency is a nested dependency.
     * It is an error if a nested dependency does not have a `path` field, or if it has a `version`, `git`, or any other package source field, unless future work defines a meaning for that combination.
     * Workspace inheritance is not permitted; `workspace.dependencies.*.publish` is an error at `cargo package`/`cargo publish` time. (Builds should ignore the field, for forward compatibility.)
 
@@ -292,6 +292,14 @@ However, it requires additional syntax and semantics, and these use cases might 
 Since nested packages are versioned as a unit, we could relax the trait coherence rules and allow implementations that would otherwise be prohibited.
 
 This would be particularly useful when implementing traits from large optional libraries; for example, package `foo` with subpackages `foo_core` and `foo_tokio` could have `foo_tokio` write `impl tokio::io::AsyncRead for foo_core::DataSource`. This would improve the dependency graph compared to `foo_core` having a dependency on `tokio` (which is the only way to do this currently), though not have the maximum possible benefit unless we also added public library targets as above, since the package as a whole still only exports one library and thus one dependency graph node.
+
+## Additional dependency manipulation when publishing
+
+The `dependencies.*.publish` field could be given more possible values to give more control over the effects of publishing.
+
+* For example, currently it is an error to publish a package with a `path`-only or `git`-only dependency. `dependencies.*.publish = false` could mean to instead strip out that dependency. This might be suitable for unpublished dependencies that are only used under special testing conditions that aren't `cfg(test)` and therefore can't just be `[dev-dependencies]`, such as a feature of a library depended on by the test code, or a configuration that enables special assertions that need a support library like [`loom`](https://docs.rs/loom/)).
+
+* Or, there could be a value which explicitly selects the non-nested status quo behavior.
 
 ## Git dependencies
 
