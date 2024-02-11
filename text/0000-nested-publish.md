@@ -119,7 +119,7 @@ Then you can `cargo publish` from within the parent directory `foo/`, and this w
 
 Two new possible values are added to the manifest.
 
-*   Packages may be specified as eligible for nested publishing using the `package.publish.nested` (or `workspace.package.publish.nested`) field, which takes the values `true` or `false`. `true` permits the package to be a nested package as defined in this RFC, affecting `cargo publish` and builds as discussed below, and `false` prohibits it as is the status quo.
+*   Packages may be specified as eligible for nested publishing using the `package.publish.nested` (or `workspace.package.publish.nested`) field, which takes the values `true` or `false` and defaults to `false`. `true` permits the package to be a nested package as defined in this RFC, affecting `cargo publish` and builds as discussed below, and `false` prohibits it as is the status quo.
 
     ```toml
     [package]
@@ -142,7 +142,7 @@ Two new possible values are added to the manifest.
     publish.nested = true
     ```
 
-    If `publish.registries` is absent and `publish.nested` is present, then `publish.registries` defaults to `false`, regardless of the value of `publish.nested`.
+    If `package.publish` is a table, then `package.publish.registries` defaults to `false`, regardless of the value or presence of `package.publish.nested`.
 
     Note: This dual-publishing-mode functionality is permitted mainly to keep the functionality composable/orthogonal. We hope that in most cases, packages are either published nested exactly once, or to a registry alone, to avoid duplicating code in the registry and compiling it redundantly.
 
