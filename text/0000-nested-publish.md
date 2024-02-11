@@ -142,7 +142,7 @@ When a valid parent package is packaged, each of its transitive nested dependenc
 * The nested package may be in a subdirectory of the parent package directory. In this case, it is copied to the same location in the archive.
 * Otherwise, it is copied to `.cargo/packages/<package name>/` within the archive.
 
-`Cargo.toml` files for nested packages are rewritten in the same way as is already done for all packages, except that `path` dependencies which are nested dependencies are kept rather than stripped out or rejected as they currently are. Their path values may need to be rewritten to point to the nested paackages' new location in the archive.
+`Cargo.toml` files for nested packages are rewritten in the same way as is already done for all packages, except that `path` dependencies which are nested dependencies are kept rather than stripped out or rejected as they currently are. Their path values may need to be rewritten to point to the nested packages' new location in the archive.
 
 ## **`crates.io`**
 
