@@ -127,11 +127,9 @@ When a nested dependency is present (making its referent be a nested package), t
 
 * The nested package must have `package.publish = "nested"`; both `false` and `true` are errors.
 
-* If the nested package specifies `package.license`, the parent package's (not necessarily the dependent's) license expression must comply with the nested package's. This check is done solely in terms of the operators in the license expression. For example, if two nested packages contain licenses of `MIT` and `BSD-3-Clause`, then the parent package's expression must be `MIT AND BSD-3-Clause` or similar.
+* If the nested package specifies `package.license`, its value must be identical to the parent package's.
 
-  This check is intended only to prevent accidents (such as vendoring a third-party package without considering the implications of redistributing it). It is always valid to omit `package.license` from the nested package, thus making no machine-readable claims about its licensing independent from the parent package's.
-
-* We might want to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. (`package.version` is already optional as of Cargo 1.75, but this is currently equivalent to `version = "0.0.0"`.)
+  This check is intended only to prevent accidents (such as vendoring a third-party package without considering the implications of redistributing it). It is always valid to omit `package.license` from the nested package, thus making no machine-readable claims about its licensing.
 
 ## **`cargo package` &amp; `cargo publish`**
 
@@ -257,7 +255,7 @@ I am not aware of other package systems that have a similar concept, but I am no
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None currently known.
+* We could choose to explicitly prohibit nested packages from specifying a `package.version`, to avoid giving the misleading impression that it means anything. This would be notably stricter than the current meaning of absent `package.version` as of Cargo 1.75, which is that it is completely equivalent to `version = "0.0.0"`. It would also prohibit having a package that is both nested and published to a registry, if that is desired.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -296,6 +294,10 @@ This RFC does not propose implementing a dependency declared as `{ git = "...", 
 ## Testing
 
 A noteworthy benefit of nesting over separately-published packages is that the entire package can be verified to build outside its development repository/workspace by running `cargo publish --dry-run` or `cargo package`. It might be interesting to add a flag which does not just build the package, but also test it; while this is not at all related to nested packages *per se*, it might be a particular benefit to the kind of large project which currently uses multiple packages.
+
+## License compatibility checking
+
+The rule about nested packages' `package.license` could be made more lenient, only requiring the parent package's (not necessarily the dependent's) license expression to comply with the nested package's, in terms of the operators in the license expression. For example, if two nested packages contain licenses of `MIT` and `BSD-3-Clause`, then the parent package's expression could be `MIT AND BSD-3-Clause` or similar.
 
 [artifact dependencies]: https://github.com/rust-lang/rfcs/pull/3028
 [#3243 packages as namespaces]: https://github.com/rust-lang/rfcs/pull/3243
