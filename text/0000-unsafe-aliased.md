@@ -192,13 +192,17 @@ Similarly, the intrusive linked list from the motivation can be fixed by wrappin
 /// The type `UnsafePinned<T>` lets unsafe code violate
 /// the rule that `&mut UnsafePinned<T>` may never alias anything else.
 ///
-/// However, it is still very risky to have an `&mut UnsafePinned<T>` that aliases
+/// However, even if you define your type like `pub struct Wrapper(UnsafePinned<...>)`,
+/// it is still very risky to have an `&mut Wrapper` that aliases
 /// anything else. Many functions that work generically on `&mut T` assume that the
 /// memory that stores `T` is uniquely owned (such as `mem::swap`). In other words,
-/// while having aliasing with `&mut UnsafePinned<T>` is not immediate Undefined
+/// while having aliasing with `&mut Wrapper` is not immediate Undefined
 /// Behavior, it is still unsound to expose such a mutable reference to code you do
-/// not control!
-/// Techniques such as pinning via `Pin` are needed to ensure soundness.
+/// not control! Techniques such as pinning via `Pin` are needed to ensure soundness.
+///
+/// Similar to `UnsafeCell`, `UnsafePinned` will not usually show up in the public
+/// API of a library. It is an internal implementation detail of libraries that
+/// need to support aliasing mutable references.
 ///
 /// Further note that this does *not* lift the requirement that shared references
 /// must be read-only! Use `UnsafeCell` for that.
@@ -227,10 +231,8 @@ impl<T: ?Sized> UnsafePinned<T> {
 
     /// Get read-write access to the contents of an `UnsafePinned`.
     ///
-    /// If you need to use this function, something is likely going wrong.
-    /// Exposing an `&mut UnsafePinned` that aliases other pointers to code outside your
-    /// crate is unsound. Only `Pin<&mut UnsafePinned>` can be exposed soundly.
-    /// Use `get_mut_pinned` instead whenever possible!
+    /// You should usually be using `get_mut_pinned` instead to explicitly track
+    /// the fact that this memory is "pinned" due to there being aliases.
     pub fn get_mut_unchecked(&mut self) -> *mut T {
         ptr::addr_of_mut!(self.value)
     }
