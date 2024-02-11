@@ -119,9 +119,10 @@ Then you can `cargo publish` from within the parent directory `foo/`, and this w
 
 Two new possible values are added to the manifest.
 
-* The `package.publish` field allows `"nested"` as a value, in addition to existing `false` and `true`. This value affects `cargo publish` and nested dependencies as described below.
+* The `package.publish` or `workspace.package.publish` field allows `"nested"` as a value, in addition to existing `false` and `true`. This value affects `cargo publish` and nested dependencies as described below.
 * The `dependencies.*.publish` field is newly defined, with the only currently allowed value being `"nested"`, to declare that that dependency is a nested dependency. (If desired, `publish = false` could be also be permitted to explicitly document an intent not to nest; this would be identical to the status quo and to omitting the key.)
     * It is an error if a nested dependency does not have a `path` field, or if it has a `version`, `git`, or any other package source field, unless future work defines a meaning for that combination.
+    * Workspace inheritance is not permitted; `workspace.dependencies.*.publish` is an error at `cargo package`/`cargo publish` time. (Builds should ignore the field, for forward compatibility.)
 
 When a nested dependency is present (making its referent be a nested package), the following additional requirements apply:
 
