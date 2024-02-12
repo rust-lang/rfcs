@@ -1,0 +1,11 @@
+{
+    extends: [
+        "config:best-practices",
+        ":pinAllExceptPeerDependencies",
+        ":maintainLockFilesWeekly",
+        ":semanticCommitsDisabled",
+        ":label(not-rfc)",
+        "regexManagers:githubActionsVersions",
+        "schedule:monthly"
+    ],
+}
