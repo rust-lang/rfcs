@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC adds an option to Cargo that emits information for building a Software Bill of Materials (SBOM) alongside compiled artifacts. Similar to how Cargo "dep-info" (.d) files, this change emits SBOM data in a Cargo-specific format alongside outputs in the `target` directory. External tooling or Cargo subcommands can consume this file and transform it into other SBOM formats such as SPDX or CycloneDX.
+This RFC adds an option to Cargo that emits information for building a Software Bill of Materials (SBOM) precursor file alongside compiled artifacts. Similar to how Cargo "dep-info" (.d) files, this change emits SBOM data in a Cargo-specific format alongside outputs in the `target` directory. External tools or Cargo subcommands can consume this file and transform it into an SBOM such as SPDX or CycloneDX.
 
 # Motivation
 [motivation]: #motivation
@@ -15,7 +15,7 @@ An SBOM (software bill of materials) is a list of all components and dependencie
 
 New government initiatives aimed at improving the security of the software supply chain such as the US "Executive Order 14028: Improving the Nation's Cybersecurity" or the EU "Cyber Resilience Act" require a Software Bill of Materials. Generating accurate SBOMs with Cargo is currently difficult because, depending on target selection or activated features, the dependencies may be different.
 
-For workspaces that generate multiple compiled artifacts, each artifact may have different dependencies referenced. Existing tools (see prior art section) attempt to approximate the correct dependency set, however precise dependency information for each compiled artifact is difficult without built-in Cargo support. Generating the SBOM at the same time as the compiled artifact allows precise dependency information to be emitted for each compiled artifact.
+For workspaces that generate multiple compiled artifacts, each artifact may have different dependencies referenced. Existing tools (see prior art section) attempt to approximate the correct dependency set, however precise dependency information for each compiled artifact is difficult without built-in Cargo support. Generating the SBOM information at the same time as the compiled artifact allows precise dependency information to be emitted for each compiled artifact.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -29,7 +29,7 @@ sbom = true
 
 Or use the environment variable `CARGO_BUILD_SBOM=true`.
 
-If enabled, an SBOM file will be placed next to each compiled artifact for `bin`, `staticlib` `cdylib` crate types in the `target` directory with the name `<crate_name>.cargo-sbom.json`. The SBOM will contain information about dependencies used to build the compiled artifact.
+If enabled, an SBOM file will be placed next to each compiled artifact for `bin`, `staticlib`, `cdylib` crate types in the `target` directory with the name `<artifact>.cargo-sbom.json`. The SBOM will contain information about dependencies used to build the compiled artifact.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -65,6 +65,11 @@ If further information is needed (such as license), then the post-processing too
 - Current build profile name
 - Selected profile values
 
+## Security
+
+Cargo's SBOM file provides a report of the components and dependencies used by cargo to build a software artifact.
+
+Cargo does not defend against malicious components or dependencies changing the SBOM, or accidentally or maliciously concealing themselves from the SBOM. In particular, components or dependencies added by build scripts or external tools might not be accurately represented in the SBOM file produced by Cargo. Ideally, tools should provide their own SBOMs, and build scripts should modify the SBOM via supported cargo interfaces (see future possibilities).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -100,10 +105,13 @@ The exact specifics about what will be included in the SBOM and the specific JSO
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Additional fields can be added to the SBOM without a breaking change as new requirements are identified.
+Additional fields can be added to the SBOM without a breaking change as new requirements are identified such as:
+* Environment variables read
+* Additional profile flags
+* External tool versions (linker, C compiler, OS)
 
 ## Build scripts
-Build scripts could communicate back to Cargo to inject additional dependencies into the SBOM. For example, if a crate builds `c` code and then links with it, it could emit a message that causes Cargo to read in a file describing the `c` dependency.
+Build scripts could communicate back to Cargo to inject additional dependencies into the SBOM. For example, if a crate builds `C` code and then links with it, it would emit a build script instruction that causes Cargo to read in a file describing the `C` dependency.
 ```
 cargo::sbom=<PATH>
 ````
