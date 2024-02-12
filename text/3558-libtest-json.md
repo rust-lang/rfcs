@@ -2,7 +2,7 @@
 - Start Date: 2024-01-18
 - Pre-RFC: [Internals](https://internals.rust-lang.org/t/path-for-stabilizing-libtests-json-output/20163)
 - eRFC PR: [rust-lang/rfcs#3558](https://github.com/rust-lang/rfcs/pull/3558)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/testing-devex-team1](https://github.com/rust-lang/testing-devex-team/issues/1)
 
 # Summary
 [summary]: #summary
