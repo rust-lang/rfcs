@@ -1,7 +1,7 @@
 - Feature Name:  `prelude_2024_future`
 - Start Date:  2023-10-05
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3509](https://github.com/rust-lang/rfcs/pull/3509)
+- Rust Issue: [rust-lang/rust#121042](https://github.com/rust-lang/rust/issues/121042)
 
 # Summary
 [summary]: #summary
