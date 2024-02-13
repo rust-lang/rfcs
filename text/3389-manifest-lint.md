@@ -13,12 +13,12 @@ rustc and other tool lints.
 [motivation]: #motivation
 
 Currently, you can configure lints through
-- `#[<level>(<lint>)]` or `#![<level>(<lint>)]`, like `#[forbid(unsafe)]`
+- `#[<level>(<lint>)]` or `#![<level>(<lint>)]`, like `#[forbid(unsafe_code)]`
   - But this doesn't scale up with additional targets (benches, examples,
     tests) or workspaces
-- On the command line, like `cargo clippy -- --forbid unsafe`
+- On the command line, like `cargo clippy -- --forbid unsafe_code`
   - This puts the burden on the caller
-- Through `RUSTFLAGS`, like `RUSTFLAGS=--forbid=unsafe cargo clippy`
+- Through `RUSTFLAGS`, like `RUSTFLAGS=--forbid=unsafe_code cargo clippy`
   - This puts the burden on the caller
 - In `.cargo/config.toml`'s `target.*.rustflags`
   - This couples you to the running in specific directories and not running in
@@ -41,7 +41,7 @@ See also
 A new `lints` table would be added to configure lints:
 ```toml
 [lints.rust]
-unsafe = "forbid"
+unsafe_code = "forbid"
 ```
 and `cargo` would pass these along as flags to `rustc`, `clippy`, or other lint tools.
 
@@ -52,7 +52,7 @@ This would work with
 workspace = true
 
 [workspace.lints.rust]
-unsafe = "forbid"
+unsafe_code = "forbid"
 ```
 
 ## Documentation Updates
@@ -65,13 +65,13 @@ Override the default level of lints from different tools by assigning them to a 
 table, for example:
 ```toml
 [lints.rust]
-unsafe = "forbid"
+unsafe_code = "forbid"
 ```
 
 This is short-hand for:
 ```toml
 [lints.rust]
-unsafe = { level = "forbid", priority = 0 }
+unsafe_code = { level = "forbid", priority = 0 }
 ```
 
 `level` corresponds to the lint levels in `rustc`:
@@ -87,7 +87,7 @@ unsafe = { level = "forbid", priority = 0 }
 
 To know which table under `[lints]` a particular lint belongs under, it is the part before `::` in the lint
 name.  If there isn't a `::`, then the tool is `rust`.  For example a warning
-about `unsafe` would be `lints.rust.unsafe` but a lint about
+about `unsafe_code` would be `lints.rust.unsafe_code` but a lint about
 `clippy::enum_glob_use` would be `lints.clippy.enum_glob_use`.
 
 ## The `lints` table
@@ -106,7 +106,7 @@ Example:
 members = ["crates/*"]
 
 [workspace.lints.rust]
-unsafe = "forbid"
+unsafe_code = "forbid"
 ```
 
 ```toml
