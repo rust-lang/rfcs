@@ -248,7 +248,7 @@ Specifically, instead of using the list of candidate types assembled using the `
 
 It's particularly important to emphasize that the list of candidate receiver types _does not change_ - that's still assembled using the `Deref` trait just as now. But, a wider set of locations is searched for methods with those receiver types.
 
-For instance, `Weak<T>` implements `Receiver` but not `Deref`. Imagine you have `let t: Weak<SomeStruct> = /* obtain */; t.some_method();`. We will now search `impl SomeStruct {}` blocks for an implementation of `fn some_method(self: Weak<SomeStruct>)`, `fn some_method(self: &Weak<SomeStruct>)`, etc. The possible self types are unchanged - they're still obtained by searching the `Deref` chain for `t` - but we'll look in more places for methods with those valid `self` types.
+For instance, `Weak<T>` implements `Receiver` but not `Deref`. Imagine you have `let t: Weak<SomeStruct> = /* obtain */; t.some_method();`. We will now search `impl SomeStruct {}` blocks for an implementation of `fn some_method(self: Weak<SomeStruct>)`, `fn some_method(self: &Weak<SomeStruct>)`, etc. The possible self types in the method call expression are unchanged - they're still obtained by searching the `Deref` chain for `t` - but we'll look in more places for methods with those valid `self` types.
 
 ## Compiler changes: deshadowing
 [compiler-changes-deshadowing]: #compiler-changes-deshadowing
