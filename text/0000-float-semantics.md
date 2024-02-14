@@ -15,7 +15,7 @@ On the flip side, NaN generation is non-deterministic: running the same operatio
 And there is a caveat: while IEEE specifies that float operations can never output a signaling NaN, Rust float operations *can* produce signaling NaNs, *but only if* an input is signaling.
 That means the only way to ever see a signaling NaN in a program is to create one with `from_bits` (or equivalent unsafe operations).
 
-Floating-point operations at compile-time follow the same specification. In particular, since operations are non-deterministic, the same operation can lead to different bit-patterns when executed at compile-time (in a `const` context) vs at run-time.
+Floating-point operations at compile-time follow the same specification. In particular, since operations involving NaN bit patterns are non-deterministic, the same operation can lead to different NaN bit patterns when executed at compile-time (in a `const` context) vs at run-time.
 Of course, the compile-time interpreter is still deterministic. It is entirely possible to implement a non-deterministic language on a deterministic machine, by simply making some fixed choices. However, we will not specify a particular choice, and we will not guarantee it to remain the same in the future.
 
 # Motivation
