@@ -236,17 +236,19 @@ The existing Rust [reference section for method calls describes the algorithm fo
 
 The key part of the first page is this:
 
+> The first step is to build a list of **candidate receiver types**. Obtain these by repeatedly dereferencing the receiver expression's type, adding each type encountered to the list, then finally attempting an unsized coercion at the end, and adding the result type if that is successful. Then, for each candidate `T`, add `&T` and `&mut T` to the list immediately after `T`.
+
 > Then, for each candidate type `T`, search for a visible method with a receiver of that type in the following places:
 > - `T`'s inherent methods (methods implemented directly on `T`).
 > Any of the methods provided by a visible trait implemented by `T`.
 
-This changes.
+We'll call this second list the **candidate methods**.
 
-The list of candidate types is assembled in exactly the same way, but we now search for a visible method with a receiver of that type in _more_ places.
+With this RFC, the candidate receiver types are assembled the same way - nothing changes. But, the **candidate methods** are assembled in a different way. Specifically, instead of iterating the candidate receiver types, we assemble a new list of types by following the chain of `Receiver` implementations. As `Receiver` is implemented for all types that implement `Deref`, this may be the same list or a longer list. Aside from following a different trait, the list is assembled the same way, including the insertion of equivalent reference types.
 
-Specifically, instead of using the list of candidate types assembled using the `Deref` trait, we search a list assembled using the `Receiver` trait. As `Receiver` is implemented for all types that implement `Deref`, this is a longer list.
+We then search each type for inherent methods or trait methods in the existing fashion - the only change is that we search a potentially longer list of types.
 
-It's particularly important to emphasize that the list of candidate receiver types _does not change_ - that's still assembled using the `Deref` trait just as now. But, a wider set of locations is searched for methods with those receiver types.
+It's particularly important to emphasize also that the list of candidate receiver types _does not change_. But, a wider set of locations is searched for methods with those receiver types.
 
 For instance, `Weak<T>` implements `Receiver` but not `Deref`. Imagine you have `let t: Weak<SomeStruct> = /* obtain */; t.some_method();`. We will now search `impl SomeStruct {}` blocks for an implementation of `fn some_method(self: Weak<SomeStruct>)`, `fn some_method(self: &Weak<SomeStruct>)`, etc. The possible self types in the method call expression are unchanged - they're still obtained by searching the `Deref` chain for `t` - but we'll look in more places for methods with those valid `self` types.
 
