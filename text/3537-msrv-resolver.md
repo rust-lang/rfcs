@@ -790,8 +790,6 @@ with potential values being:
   - `<x>[.<y>[.<z>]]`: manually override the version used
 
 If a `rust-version` value is used, we'd switch to `maximum` when `--ignore-rust-version` is set.
-This will let users effectively pass `--ignore-rust-version` to all commands,
-without having to support the flag on every single command.
 
 ## `cargo build`
 
@@ -890,6 +888,9 @@ and only in the sense that the user needs to know to explicitly take action to a
 Misc alternatives
 - Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 - The resolver doesn't support backtracking as that is extra complexity that we can always adopt later as we've reserved the right to make adjustments to what `cargo generate-lockfile` will produce over time.
+- `CARGO_RESOLVER_PRECEDENCE` is used, rather than a CLI option
+  - This is unlikely to be used in one-off cases but across whole interactions which is better suited for config / env variables, rather than CLI options
+  - Minimize CLI clutter
 - `CARGO_RESOLVER_PRECEDENCE=rust-version` implies maximal resolution among MSRV-compatible dependencies.   Generally MSRV doesn't decrease over versions, so minimal resolution will likely pick packages with compatible rust-versions.
   - `cargo add` helps by selecting rust-version-compatible minimum bounds
   - This bypasses a lot of complexity either from exploding the number of states we support or giving users control over the fallback by making the field an array of strategies.
