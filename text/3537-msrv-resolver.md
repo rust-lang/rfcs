@@ -37,6 +37,7 @@ $ cargo add clap
 $ git commit -a -m "WIP" && git push
 ...
 ```
+
 After 30 minutes, CI fails.
 The first step is to reproduce this locally
 ```console
@@ -46,6 +47,7 @@ $ cargo +1.64.0 check
     Updating crates.io index
        Fetch [===============>         ]  67.08%, (28094/50225) resolving deltas
 ```
+
 After waiting several minutes, cursing being stuck on a version from before sparse registry support was added...
 ```console
 $ cargo +1.64.0 check
@@ -60,6 +62,7 @@ $ cargo +1.64.0 check
 error: package `clap_builder v4.4.8` cannot be built because it requires rustc 1.70.0 or newer, while the currently ac
 tive rustc version is 1.64.0
 ```
+
 Thankfully, crates.io now shows [supported Rust versions](https://crates.io/crates/clap_builder/versions), so I pick v4.3.24.
 ```console
 $ cargo update -p clap_builder --precise 4.3.24
@@ -71,6 +74,7 @@ required by package `clap v4.4.8`
     ... which satisfies dependency `clap = "^4.4.8"` (locked to 4.4.8) of package `msrv-resolver v0.1.0 (/home/epage/src/personal/dump/msrv-resolver)`
 perhaps a crate was updated and forgotten to be re-vendored?
 ```
+
 After browsing on some forums, I edit my `Cargo.toml` to roll back to `clap = "4.3.24"` and try again
 ```console
 $ cargo update -p clap --precise 4.3.24
@@ -100,6 +104,7 @@ $ cargo +1.64.0 check
 error: package `anstyle-parse v0.2.2` cannot be built because it requires rustc 1.70.0 or newer, while the currently a
 ctive rustc version is 1.64.0
 ```
+
 Again, consulting [crates.io](https://crates.io/crates/anstyle-parse/versions)
 ```console
 $ cargo update -p anstyle-parse --precise 0.2.1
@@ -109,6 +114,7 @@ $ cargo +1.64.0 check
 error: package `clap_lex v0.5.1` cannot be built because it requires rustc 1.70.0 or newer, while the currently active
  rustc version is 1.64.0
 ```
+
 Again, consulting [crates.io](https://crates.io/crates/clap_lex/versions)
 ```console
 $ cargo update -p clap_lex --precise 0.5.0
@@ -118,6 +124,7 @@ $ cargo +1.64.0 check
 error: package `anstyle v1.0.4` cannot be built because it requires rustc 1.70.0 or newer, while the currently active
 rustc version is 1.64.0
 ```
+
 Again, consulting [crates.io](https://crates.io/crates/anstyle/versions)
 ```console
 cargo update -p anstyle --precise 1.0.2
@@ -143,6 +150,7 @@ $ cargo +1.64.0 check
     Checking msrv-resolver v0.1.0 (/home/epage/src/personal/dump/msrv-resolver)
     Finished dev [unoptimized + debuginfo] target(s) in 2.96s
 ```
+
 Success! Mixed with many tears and less hair.
 
 </details>
@@ -450,6 +458,7 @@ At some point, I start a project:
 $ cargo new foo
 $ cat foo/Cargo.toml
 ```
+
 ```toml
 [package]
 name = "foo"
@@ -461,10 +470,12 @@ rust-version = "auto"
 
 [dependencies]
 ```
+
 ```console
 $ cargo add clap -F derive
 Adding clap 5.10.30
 ```
+
 *(note: this user would traditionally be a "Latest Rust" user but `package.rust-version` automatically them moved to "Latest Rust with MSRV" without extra validation effort or risk of their MSRV going stale)*
 
 After some time, I get back to my project and decide to add completion support:
@@ -475,6 +486,7 @@ warning: clap_complete 5.11.0 exists but requires Rust 1.93 while you are runnin
 To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup update && cargo add clap_complete@5.11.0`.
 To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo add clap_complete@5.11.0`
 ```
+
 Wanting to be on the latest version, I run
 ```console
 $ rustup update
@@ -499,6 +511,7 @@ rust-version = "auto"
 clap = { version = "5.10.30", features = ["derive"] }
 clap_complete = "5.10"  # <-- new
 ```
+
 And away I go:
 ```console
 $ cargo check
@@ -506,6 +519,7 @@ Warning: adding clap_complete@5.10.40 because 5.11.0 requires Rust 1.93 while yo
 To use the clap_complete@5.11.0 with a compatible Rust version, run `rustup update && cargo update`.
 To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo update --ignore-rust-version`
 ```
+
 But I am in a hurry and don't want to disrupt my flow.
 `clap_complete@5.10.40` is likely fine.
 I am running `clap@5.10.30` and that has been working for me.
@@ -536,6 +550,7 @@ $ $EDITOR `Cargo.toml`
 $ cargo publish
 Published foo 0.1.0
 ```
+
 If I look on crates.io, the new 0.1.0 version shows up with a rust-version of 1.94
 without me having to manual update the field and
 relying on the `cargo publish`s verify step to verify the correctness of that MSRV.
@@ -556,6 +571,7 @@ At some point, I start a project:
 $ cargo new foo
 $ cat foo/Cargo.toml
 ```
+
 ```toml
 [package]
 name = "foo"
@@ -567,6 +583,7 @@ rust-version = "auto"
 
 [dependencies]
 ```
+
 ```console
 $ cargo add clap -F derive
 Adding clap 5.10.30
@@ -574,6 +591,7 @@ warning: clap 5.11.0 exists but requires Rust 1.93 while you are running 1.92.
 To use the clap@5.11.0 with a compatible Rust version, run `rustup update && cargo add clap@5.10.0`.
 To force the use of clap_complete@5.11.0 independent of your toolchain, run `cargo add clap@5.10.0`
 ```
+
 At this point, I have a couple of options
 1. I check and clap advertises that they "support" Rust 1.92 by cherry-picking fixes into 5.10 and I feel comfortable with that
 2. I check `cargo deny` and don't see any vulnerabilities and that is good enough for me, knowing that the majority of my users are likely on newer versions
@@ -603,6 +621,7 @@ At some point, I start a project:
 $ cargo new foo
 $ cat foo/Cargo.toml
 ```
+
 ```toml
 [package]
 name = "foo"
@@ -614,13 +633,14 @@ rust-version = "auto"
 
 [dependencies]
 ```
+
 ```console
 $ cargo add clap -F derive
 Adding clap 5.11.0
 ```
 
 I send this to my image builder and I get this failure for one of my embedded targets:
-```
+```console
 $ cargo build
 error: clap 5.11.0 requires Rust 1.93.0 while you are running 1.92.0
 
@@ -629,6 +649,7 @@ note: set `package.rust-version = "1.92.0"` to ensure compatible versions are se
 note: lint `cargo::incompatible-msrv` is denied by default
 
 ```
+
 I make the prescribed changes:
 ```toml
 [package]
@@ -642,6 +663,7 @@ rust-version = "1.92"  # <-- was "auto" before I edited it
 [dependencies]
 clap = { version = "5.10.30", features = ["derive"] }  # <-- downgraded
 ```
+
 And my image build works!
 
 After some time, I run:
@@ -654,6 +676,7 @@ clap_complete 5.10.40 5.11.0 requires Rust 1.93
 note: To use the latest depednencies, run `rustup update && cargo update`.
 To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
 ```
+
 We've EOLed the last embedded target that supported 1.92 and so we can update our `package.rust-version`,
 so we can update it and our dependencies:
 ```console
@@ -680,6 +703,7 @@ At some point, I start a project:
 ```console
 $ cargo new foo --lib
 ```
+
 I've decided on an "N-2" MSRV policy:
 ```toml
 [package]
@@ -692,6 +716,7 @@ rust-version = "1.92"  # <-- was "auto" before I edited it
 
 [dependencies]
 ```
+
 ```console
 $ cargo add clap -F derive
 Adding clap 5.10.30
@@ -699,6 +724,7 @@ warning: clap 5.11.0 exists but requires Rust 1.93 while `foo` has `package.rust
 To use clap@5.11.0 with a compatible package.rust-version, run `cargo add clap@5.11.0 --update-rust-version`
 To force the use of clap@5.11.0 independent of your toolchain, run `cargo add clap@5.11.0`
 ```
+
 At this point, I have a couple of options
 1. I check and clap advertises that they "support" Rust 1.92 by cherry-picking fixes into 5.10 and I feel comfortable with that
 2. I check `cargo deny` and don't see any vulnerabilities and that is good enough for me, knowing that the majority of my users are likely on newer versions
@@ -716,12 +742,14 @@ clap_complete 5.10.40 5.11.0 requires Rust 1.93
 note: To use the latest depednencies, run `rustup update && cargo update`.
 To force the use of the latest dependencies, independent of your toolchain, run `cargo update --ignore-rust-version`
 ```
+
 At this point, 1.95 is out, so I'm fine updating my MSRV and I run:
 ```console
 $ cargo update --update-rust-version
 Updating clap 5.10.30 to 5.11.0
 Updating foo's rust-version from 1.92 to 1.93
 ```
+
 Instead, if a newer clap version was out needing 1.94 or 1.95, I would instead edit `Cargo.toml` myself.
 
 </details>
@@ -777,6 +805,7 @@ We'll add a `resolver.precedence ` field to `.cargo/config.toml` which will cont
 [build]
 resolver.precedence = "rust-version"  # Default with `v3`
 ```
+
 with potential values being:
 - `maximum`: behavior today (default for v1 and v2 resolvers)
   - Needed for [verifying latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies)
