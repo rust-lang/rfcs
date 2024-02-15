@@ -830,7 +830,7 @@ Whether we do this and how much will be subject to factors like noisy output, pe
 
 Some approaches we can take for doing this include:
 
-We then do a depth-first diff of the trees, stopping and reporting on the first different node.
+After resolving, we can do a depth-first diff of the trees, stopping and reporting on the first different node.
 This would let us report on any command that changes the way the tree is resolved
 (from explicit changes with `cargo update` to `cargo build` syncing `Cargo.toml` changes to `Cargo.lock`).
 We'd likely want to limit the output to only the sub-tree that changed.
