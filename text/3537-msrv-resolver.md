@@ -888,7 +888,7 @@ and only in the sense that the user needs to know to explicitly take action to a
 Misc alternatives
 - Dependencies with unspecified `package.rust-version`: we could mark these as always-compatible or always-incompatible; there really isn't a right answer here.
 - The resolver doesn't support backtracking as that is extra complexity that we can always adopt later as we've reserved the right to make adjustments to what `cargo generate-lockfile` will produce over time.
-- `CARGO_RESOLVER_PRECEDENCE` is used, rather than a CLI option
+- `CARGO_RESOLVER_PRECEDENCE` is used, rather than a CLI option (e.g. ensuring every command has `--ignore-rust-version` or a `--rust-version <x.y.z>`)
   - This is unlikely to be used in one-off cases but across whole interactions which is better suited for config / env variables, rather than CLI options
   - Minimize CLI clutter
 - `CARGO_RESOLVER_PRECEDENCE=rust-version` implies maximal resolution among MSRV-compatible dependencies.   Generally MSRV doesn't decrease over versions, so minimal resolution will likely pick packages with compatible rust-versions.
