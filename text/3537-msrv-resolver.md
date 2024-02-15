@@ -237,7 +237,7 @@ A user runs `cargo new` and starts development.
 A maintainer may also want to avoid constraining their dependents, for a variety of reasons, and leave MSRV support as a gray area.
 
 **Priority 1 because:**
-- No MSRV is fine as pushing people to have an MSRV would lead to either
+- ✅ No MSRV is fine as pushing people to have an MSRV would lead to either
   - an inaccurate reported MSRV from it going stale which would lower the quality of the ecosystem
   - raise the barrier to entry by requiring more process for packages and pushing the cost of old Rust versions on people who don't care
 
@@ -259,10 +259,10 @@ Due to the pain points listed below, the target audience for this workflow is li
 likely pushing them to not specify their MSRV.
 
 **Priority 2 because:**
-- Low barrier to maintaining a high quality of support for their MSRV
-- Being willing to advertising an MSRV, even if latest, improves the information available to developers, increasing the quality of the ecosystem
-- Costs for dealing with old Rust toolchains is shifted from the maintainer and the users on a supported toolchain to those on an unsupported toolchain
-- By focusing new development on latest MSRV, this provides a carrot to encourage others to actively upgrading
+- ✅ Low barrier to maintaining a high quality of support for their MSRV
+- ✅ Being willing to advertising an MSRV, even if latest, improves the information available to developers, increasing the quality of the ecosystem
+- ✅ Costs for dealing with old Rust toolchains is shifted from the maintainer and the users on a supported toolchain to those on an unsupported toolchain
+- ✅ By focusing new development on latest MSRV, this provides a carrot to encourage others to actively upgrading
 
 **Pain points (in addition to the prior workflow):**
 
@@ -306,10 +306,10 @@ The way they verify dependencies is restricted as they can't rely on always upda
 Maintainers likely only need to do a compilation check for MSRV as their regular CI runs ensure that the behavior (which is usually independent of rust version) is correct for the MSRV-compatible dependencies.
 
 **Priority 3 because:**
-- Several use cases for this workflow have little alternative
-- MSRV applies to all interactions to the project which also means that the level of "support" is consistent
-- This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
-- For library and tool maintainers, they are absorbing costs from these less common use cases
+- ✅ Several use cases for this workflow have little alternative
+- ✅ MSRV applies to all interactions to the project which also means that the level of "support" is consistent
+- ❌ This implies stagnation and there are cases where people could more easily use newer toolchains, like Debian users, but that is less so the case for other users
+- ❌ For library and tool maintainers, they are absorbing costs from these less common use cases
   - They could shift these costs to those that need old versions by switching to the "Latest MSRV" workflow by allowing their users to backport fixes to prior MSRV releases
 
 **Pain points:**
@@ -334,13 +334,13 @@ the fact that the tests are verifying (on a newer toolchain) that the build/norm
 Compared to the above workflow, this is likely targeted at just library and tool maintainers as other use cases don't have access to the latest version or they are needing the repo to be compatible with their MSRV.
 
 **Priority 4 because:**
-- The MSRV has various carve outs, providing an inconsistent experience compared to other packages using other workflows and affecting the quality of the ecosystem
+- ❌ The MSRV has various carve outs, providing an inconsistent experience compared to other packages using other workflows and affecting the quality of the ecosystem
   - For workspaces with bins, `cargo install --locked` is expected to work with the MSRV but won't
   - If they use new Cargo features, then `[patch]`ing in a git source for the dependency won't work
   - For contributors, they must be on an unspecified Rust toolchain version
-- The caveats involved in this approach (see prior item) would lead to worse documentation which lowers the quality to users
-- This still leads to stagnation despite being able to use the latest dependencies as they are limited in what they can use from them and they can't use features from the latest Rust toolchain
-- These library and tool maintainers are absorbing costs from the less common use cases of their dependents
+- ❌ The caveats involved in this approach (see prior item) would lead to worse documentation which lowers the quality to users
+- ❌ This still leads to stagnation despite being able to use the latest dependencies as they are limited in what they can use from them and they can't use features from the latest Rust toolchain
+- ❌ These library and tool maintainers are absorbing costs from the less common use cases of their dependents
   - They could shift these costs to those that need old versions by switching to the "Latest MSRV" workflow by allowing their users to backport fixes to prior MSRV releases
 
 **Pain points:**
