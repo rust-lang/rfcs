@@ -760,7 +760,7 @@ This will be less optimal for workspaces with multiple MSRVs and dependencies un
 Users can workaround this by raising the version requirement or using `cargo update --precise`.
 
 When `rust-version` is unset,
-we'll fallback to `rustc --version`.
+we'll fallback to `rustc --version` if its not a pre-release.
 This is primarily targeted at helping users with a
 [`rust-toolchain.toml` file](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file)
 (to reduce duplication)
@@ -1143,6 +1143,9 @@ Some options include:
 - `toolchain` might look weird?
 - `local` implies a `remote`
 - `current` is like `latest` but a little softer and might work
+
+Resolving with an unset `package.rust-version` falls back to `rustc --version` only if its a non-pre-release.
+Should we instead pick the previous stable release (e.g. nightly 1.77 would resolve for 1.76)?
 
 Whether we report stale dependencies only on `cargo update` or on every command.
 See "Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command".
