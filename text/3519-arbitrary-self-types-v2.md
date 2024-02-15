@@ -307,10 +307,7 @@ The existing branches in the compiler for "arbitrary self types" already emit ex
   }
   ```
   We don't know a use-case for this. There are several cases where this can result in misleading diagnostics. (For instance, if such a method is called with an incorrect type (for example `smart_ptr.a::<&Foo>()` instead of `smart_ptr.a::<Foo>()`). We could attempt to find and fix all those cases. However, we feel that generic receiver types might risk subtle interactions with method resolutions and other parts of the language. We think it is a safer choice to generate an error on any declaration of a generic `self` type.
-- As noted in [#compiler-changes-deshadowing](the section about compiler changes for deshadowing) we will downgrade an existing error to a warning if there are multiple
-  method candidates found, if one of those candidates is further along the chain of `Receiver`s than the others.
-- As also noted in [#compiler-changes-deshadowing](the section about compiler changes for deshadowing), we will produce a new warning if a method in an inner type is chosen in preference to a method in an outer type ("inner" = further along the `Receiver` chain) and the inner type is either `self: &T` or `self: &mut T` and we're choosing it in preference to `self: T` or `self: &T` in the outer type. An example warning might be:
-
+- As noted in [#compiler-changes-deshadowing](the section about compiler changes for deshadowing) we will downgrade an existing error to a warning if there are multiple method candidates found, if one of those candidates is further along the chain of `Receiver`s than the others. An example warning might be:
   ```
   warning[W0666]: ambiguous function call
    --> src/main.rs:13:4
@@ -337,6 +334,7 @@ The existing branches in the compiler for "arbitrary self types" already emit ex
     = help: call as a function not a method:
     ~       Weak::retrograde(orbit_weak)
   ```
+- As also noted in [#compiler-changes-deshadowing](the section about compiler changes for deshadowing), we will produce a new warning if a method in an inner type is chosen in preference to a method in an outer type ("inner" = further along the `Receiver` chain) and the inner type is either `self: &T` or `self: &mut T` and we're choosing it in preference to `self: T` or `self: &T` in the outer type. (The warning would be very similar to the above.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
