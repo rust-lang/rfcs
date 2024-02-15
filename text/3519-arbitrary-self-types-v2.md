@@ -568,7 +568,7 @@ impl Vexation {
 }
 
 fn main {
-    let v = Vec::new();
+    let mut v = Vec::new();
     v.push(Vexation);
     v.do_something_to_vec(); // this seems weird and I can't imagine a use-case
 
