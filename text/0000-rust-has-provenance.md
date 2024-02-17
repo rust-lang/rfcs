@@ -1,7 +1,7 @@
 - Feature Name: rust_has_provenance
 - Start Date: 2023-11-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3559](https://github.com/rust-lang/rfcs/pull/3559)
+- Rust Issue: [rust-lang/rust#121243](https://github.com/rust-lang/rust/issues/121243)
 
 # Summary
 [summary]: #summary
