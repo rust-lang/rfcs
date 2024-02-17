@@ -219,6 +219,10 @@ A mitigation for this is recommending a short prefix (in `CARGO_TARGET_DIR`) and
 
 There a few cases where a symlink instead of a real dir will break programs: at least SQLite 3 can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since templated `CARGO_TARGET_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
 
+## Transition period
+
+During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide warnings about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it. In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the warning, but it's better than silently breaking workflows.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
