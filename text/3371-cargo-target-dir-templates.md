@@ -376,7 +376,7 @@ This option has several complications I'm not sure how to resolve:
 
 1. How do we decide on good platform defaults ?
   - Subsequently, when platform defaults are decided, how do we ensure a new platform has a good default too ?
-  - `CARGO_HOME` is already criticized for being both a *cache* and a *config* home (using the XDG spec semantics), adding more local cache to it in the form of `CARGO_HOME/target-base-dir/` would not improve the situation and should probably not be done, but, if no good alternatives are found, there is precedent to use it for this.
+  - `CARGO_HOME` is already criticized for being both a *cache* and a *config* home (using the XDG spec semantics), adding more local cache to it in the form of `CARGO_HOME/target-base-dir/` would not improve the situation and should probably not be done, but, if no good alternatives are found, there is precedent to use it for this. (Note: this is discussed more in [rust-lang/cargo#1734](https://github.com/rust-lang/cargo/issues/1734))
 2. How do we communicate on said default values ?
 3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon. Note that having forward links active by default (see relevant section earlier in the RFC) will help offset a lot of the problems here.
 
