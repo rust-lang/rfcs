@@ -395,10 +395,10 @@ Well, first, advertising of the option and its behaviour, as well as the forward
 
 The first two are probably enough, the third is a bandaid.
 
-### Expose template metadata
+## Expose template metadata
 
 `cargo` will use backlinks in an implementation-defined form to keep track in the templated `CARGO_TARGET_DIR` of the relation from a target directory to its source workspace.
 
-In the future, we could envisage letting external tools and users access this data in a well-defined form through `cargo metadata`.
+In the future, we could envisage letting external tools and users access this data in a well-defined form through `cargo metadata`, but without a use case to plan for, we cannot make any decision today.
 
 [tg]: https://github.com/sunshowers/targo
