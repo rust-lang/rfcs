@@ -198,6 +198,8 @@ Backlinks are metadata in templated `CARGO_TARGET_DIR` that links target directo
 
 While details of the stored data are left to the implementation (there is no need for `cargo` to expose this data directly, though it could be exposed through `cargo metadata` in the future, see the relevant section below), one could imagine using it to clean target directories whose corresponding workspace does not exist anymore when calling something like `cargo clean --all-workspaces` (doing it automatically is not possible, else any workspace on external disks would have its target directory cleaned up each time the disk is unmounted, which is way too aggressive a default).
 
+Garbage collection of unused target directories is discussed in [rust-lang/cargo#13136](https://github.com/rust-lang/cargo/issues/13136), follow the discussions there for more details.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
