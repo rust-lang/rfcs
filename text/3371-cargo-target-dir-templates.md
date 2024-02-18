@@ -389,7 +389,7 @@ Well, first, advertising of the option and its behaviour, as well as the forward
 
 - We could use a config option to entirely deactivate it
 - `CARGO_TARGET_DIR=target` would still be available
-- We could add special behaviour like `CARGO_TARGET_BASE_DIR=""` meaning "use current" directory
+- We could add special behaviour like `CARGO_TARGET_DIR=""` meaning "use current" directory
 
 The first two are probably enough, the third is a bandaid.
 
