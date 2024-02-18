@@ -174,22 +174,6 @@ In the same vein, `cargo metadata` fills the target directory information with t
 
 Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for the templated version: if it set, `cargo clean` deletes `/path/to/<manifest-path-hash>/` and not `target/`.
 
-### Providing forward links
-
-[`targo`][tg] provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no explicit `CARGO_TARGET_DIR` set for them to find the real target directory.
-
-`cargo` does not provide them for regular (untemplated) `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
-
-When a templated `CARGO_TARGET_DIR` is used (in any form) (and not overriden, for example a templated env var overriden by a precise `--target-dir` option), it *will* use a forward link by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if the templated `CARGO_TARGET_DIR` wasn't set at all.
-
-This has a two big advantages: not breaking external tools and giving easy access to artifacts produced by `cargo build/test/doc` to users (they're in the habit of typing `./target/debug/my-bin`, this would continue working with forward links).
-
-A config option (CLI, `config.toml` and env var), `link-target-dir`, will be introduced to deactivate this behaviour, but it will `true` by default, for the reasons provided in favor of forward links just above.
-
-#### Detailed working of forward links
-
-When creating a forward link `cargo` will first attempt to create a symbolic link (regardless of the platform). If that fails, it will attempt zero or more platform-specific solutions, like junction points on NTFS. If that fails too, a warning will be emitted but this will not prevent the rest of the action to go on: regular calls like `cargo check/clippy/build/test` likely won't need this forward link and after the user has been warned they could either resolve the problem themselves or ignore it, depending on their own use case and domain-specific knowledge.
-
 ### Providing backlinks
 
 Backlinks are metadata in templated `CARGO_TARGET_DIR` that links target directories back to the workspace they came from.
@@ -216,10 +200,6 @@ This is mitigated by the forward link provided by default by `cargo` when using 
 Depending on what naming scheme is used (e.g., a very long hash), we could hit the Windows path length limits if not careful.
 
 A mitigation for this is recommending a short prefix (in `CARGO_TARGET_DIR`) and using a hash that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
-
-## Forward links
-
-There a few cases where a symlink instead of a real dir will break programs: at least SQLite 3 can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since templated `CARGO_TARGET_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
 
 ## Transition period
 
@@ -335,6 +315,37 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 
 - Do we want to add forward links for untemplated `CARGO_TARGET_DIR` too in the process of this RFC ?
 - Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for the latter ?
+
+## Providing forward links
+
+[`targo`][tg] provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no explicit `CARGO_TARGET_DIR` set for them to find the real target directory.
+
+`cargo` does not provide them for regular (untemplated) `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
+
+When a templated `CARGO_TARGET_DIR` is used (in any form) (and not overriden, for example a templated env var overriden by a precise `--target-dir` option), it *could* use a forward link by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if the templated `CARGO_TARGET_DIR` wasn't set at all.
+
+### Detailed working of forward links
+
+When creating a forward link `cargo` will first attempt to create a symbolic link (regardless of the platform). If that fails, it will attempt zero or more platform-specific solutions, like junction points on NTFS. If that fails too, a warning or note will be emitted but this will not prevent the rest of the action to go on: regular calls like `cargo check/clippy/build/test` likely won't need this forward link and after the user has been warned they could either resolve the problem themselves or ignore it, depending on their own use case and domain-specific knowledge.
+
+### Advantages of forward links
+
+This has a two big advantages: not breaking external tools and giving easy access to artifacts produced by `cargo build/test/doc` to users (they're in the habit of typing `./target/debug/my-bin`, this would continue working with forward links).
+
+A config option (CLI, `config.toml` and env var), `link-target-dir`, should be introduced to deactivate this behaviour, but it will `true` by default, for the reasons provided in favor of forward links just above.
+
+### Drawbacks of forward links
+
+There a few cases where a symlink instead of a real dir will break programs: at least SQLite 3 can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since templated `CARGO_TARGET_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
+
+Additionally, there are issue when competing `CARGO_TARGET_DIR`s are set, for example if a different one is used for rust-analyzer and for nightly/stable versions:
+
+- Do we update the symlink all the time ? Rust-Analyzer and a `cargo build` could be running in parallel, with unpredictable results
+- Do we only set it if it doesn't exist yet ? It could become outdated, a tool could run first and make it point somewhere unexpected
+
+Another drawback is about the warning/note when creating the symlink fails:
+
+- Do we warn/notify on each command ? Only on creation ? Only with `--verbose` ? All have issues with either being too verbose or users potentially missing relevant information. This can be determined during stabilization though, once more people have experience with it, and is easy to change later on.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
