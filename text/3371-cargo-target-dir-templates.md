@@ -174,16 +174,6 @@ In the same vein, `cargo metadata` fills the target directory information with t
 
 Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for the templated version: if it set, `cargo clean` deletes `/path/to/<manifest-path-hash>/` and not `target/`.
 
-## Providing backlinks
-
-Backlinks are metadata in templated `CARGO_TARGET_DIR` that links target directories back to the workspace they came from.
-
-[`targo`][tg] uses them in its own form of the feature and `cargo` uses them too for templated `CARGO_TARGET_DIR`.
-
-While details of the stored data are left to the implementation (there is no need for `cargo` to expose this data directly, though it could be exposed through `cargo metadata` in the future, see the relevant section below), one could imagine using it to clean target directories whose corresponding workspace does not exist anymore when calling something like `cargo clean --all-workspaces` (doing it automatically is not possible, else any workspace on external disks would have its target directory cleaned up each time the disk is unmounted, which is way too aggressive a default).
-
-Garbage collection of unused target directories is discussed in [rust-lang/cargo#13136](https://github.com/rust-lang/cargo/issues/13136), follow the discussions there for more details.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -398,7 +388,7 @@ The section merely provides additional information.
 -->
 
 - Introduce remapping into the concept in some way.
-- Introduce a form of garbage collection for these target directories so we don't leak them when projects are deleted, see [rust-lang/cargo#13136](https://github.com/rust-lang/cargo#13136).
+- Introduce a form of garbage collection for these target directories so we don't leak them when projects are deleted, see [rust-lang/cargo#13136](https://github.com/rust-lang/cargo#13136) (essentially, backlinks)
 
 ## Adding `{xdg-cache-home}`, `{home}`, `{cargo-home}` or `{user-base-target-directory}` as templates
 
