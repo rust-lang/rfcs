@@ -143,7 +143,7 @@ The path used for the naming of the final target directory is the one found *aft
 
 To prevent collisions by craftings paths, the `<manifest-path-hash>` directory will be computed from a hash of the workspace manifest's full path (and possibly other data, for example `bazel` uses its version and the current user too).
 
-### Symbolic links
+## Symbolic links
 
 In the following situation
 
@@ -163,6 +163,41 @@ When calling `cargo metadata` in the `symlink-to-crate` path, the result contain
 While a single dev machine is unlikely to have enough projects that the naming scheme of `<manifest-path-hash>` will produce enough directories to slow down working in `$CARGO_TARGET_DIR/`, it could still happen, and notably in private CI, which are often less compartimentalized than public ones. Simple cruft over time (i.e, never calling `cargo clean` over years) could also make it happen, if much slower.
 
 To prevent this, `cargo` splits the hash into something like `$CARGO_TARGET_DIR/hash[:2]/hash[2:4]/hash[4:]/...`. Since the naming scheme is considered an implementation detail, if this prove insufficient it could be changed in a subsequent version of `cargo`.
+
+## Providing forward links
+
+[`targo`][tg] provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no explicit `CARGO_TARGET_DIR` set for them to find the real target directory.
+
+`cargo` currently does not provide them for regular (untemplated) `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
+
+After this RFC, when the `CARGO_TARGET_DIR` will provide the option of creating a forward link, configurable via a new configuration option, `target-dir-link` (see below for details).
+
+### Detailed working of forward links
+
+When creating a forward link `cargo` will first attempt to create a symbolic link (regardless of the platform). If that fails, it will attempt zero or more platform-specific solutions, like junction points on NTFS. If that fails too, a warning or note will be emitted (or error, see the configuration option below) and after the user has been warned they could either resolve the problem themselves or ignore it, depending on their own use case and domain-specific knowledge.
+
+A config option (CLI, `config.toml` and env var), `target-dir-link`, controls this behaviour, it is `auto` by default.
+
+Its possible values would be:
+
+- `true`: create the symlink and produce an error if it fails
+- `"auto"`: create the symlink, produce a warning (or note) but do not fail the command
+- `false`: don't create the symlink at all (don't touch it if it exists already though)
+
+### Handling of concurrents builds
+
+It is possible to call `cargo build` for the same project twice with two different target directories to avoid build locks (common when building with different features or to have Rust-Analyzer work in a different target directory for example), which poses a problem for forward links: if `target-dir-link` is active, `cargo` could be replacing the `./target` symlink constantly.
+
+This can be configured through another option, `target-dir-link-replace`, with the following possible values:
+
+- `"notify"` (the default): replace and show the user a note about the replacement
+- `"warn"`: replace and show the user a warning about the replacement
+- `"silent"`: replace silently
+- `"never"`: do not replace
+
+If the forward link doesn't exist already, this option has no effect. If the forward link exist and is the same as the would-be new one, no note nor warning will be produced.
+
+With both of these options, callers of cargo will be able to use `--config KEY=VALUE` to override it, for example a Rust-Analyzer config could use `cargo.extraArgs = ["--config", "target-dir-link=false"]` to ensure R-A never touches them.
 
 ## Impact on `cargo ...` calls
 
@@ -318,47 +353,7 @@ It should be noted that `bazel` is integrated with [remote caching](https://baze
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 -->
 
-- Do we want to add forward links for untemplated `CARGO_TARGET_DIR` too in the process of this RFC ?
 - Do we want to differentiate according to users ? `bazel` is a generic build tool, whereas `cargo` is not, so maybe differentiating on users is not necessary for the latter ?
-
-## Providing forward links
-
-[`targo`][tg] provides forward link (it links from `<workspace>/target` to its own target directory) as a way for existing tools to continue working despite there being no explicit `CARGO_TARGET_DIR` set for them to find the real target directory.
-
-`cargo` does not provide them for regular (untemplated) `CARGO_TARGET_DIR`. This is not a limitation when using the environment variable set globally, since all processes can read it, but it is one when this config is only set on specific calls or via `target-dir` in the config, meaning others tools cannot easily pick it up (and most external tools don't use `cargo-metadata`, which makes them all broken by default, but fixing this situation is not this RFC's purpose).
-
-After this RFC, `cargo` will provide the option of creating forward links regardless of templating when the target directory is not the default one.
-
-When a `CARGO_TARGET_DIR` is used (in any form), it *could* use a forward link by adding a `target` symlink to the real target directory. This `target` symlink will be in the exact place the real target directory would have been if `CARGO_TARGET_DIR` wasn't set at all.
-
-### Detailed working of forward links
-
-When creating a forward link `cargo` will first attempt to create a symbolic link (regardless of the platform). If that fails, it will attempt zero or more platform-specific solutions, like junction points on NTFS. If that fails too, a warning or note will be emitted (or error, see the configuration option below) but this will not prevent the rest of the action to go on: regular calls like `cargo check/clippy/build/test` likely won't need this forward link and after the user has been warned they could either resolve the problem themselves or ignore it, depending on their own use case and domain-specific knowledge.
-
-A config option (CLI, `config.toml` and env var), `link-target-dir`, should be introduced to control this behaviour, it will `auto` by default.
-
-Its possible values would be:
-
-- `true`: create the symlink and produce an error if it fails
-- `"auto"`: create the symlink, produce a warning (or note) but do not fail the command
-- `false`: don't create the symlink at all (don't touch it if it exists already though)
-
-### Advantages of forward links
-
-This has a two big advantages: not breaking external tools and giving easy access to artifacts produced by `cargo build/test/doc` to users (they're in the habit of typing `./target/debug/my-bin`, this would continue working with forward links).
-
-### Drawbacks of forward links
-
-There a few cases where a symlink instead of a real dir will break programs: at least SQLite 3 can be configured to raise an error if the database is behind a symlink anywhere in its opening path, it's probably other programs can also be configured to check this (or do it by default). Since templated `CARGO_TARGET_DIR` won't become a default in this RFC, we are not breaking any existing use cases.
-
-Additionally, there are issue when competing `CARGO_TARGET_DIR`s are set, for example if a different one is used for rust-analyzer and for nightly/stable versions:
-
-- Do we update the symlink all the time ? Rust-Analyzer and a `cargo build` could be running in parallel, with unpredictable results
-- Do we only set it if it doesn't exist yet ? It could become outdated, a tool could run first and make it point somewhere unexpected
-
-Another drawback is about the warning/note when creating the symlink fails:
-
-- Do we warn/notify on each command ? Only on creation ? Only with `--verbose` ? All have issues with either being too verbose or users potentially missing relevant information. This can be determined during stabilization though, once more people have experience with it, and is easy to change later on.
 
 ## Rename the template from `{manifest-path-hash}` to `{project-hash}`
 
