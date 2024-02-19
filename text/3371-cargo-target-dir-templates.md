@@ -398,7 +398,7 @@ The section merely provides additional information.
 -->
 
 - Introduce remapping into the concept in some way.
-- Introduce a form of garbage collection. Expanded upon this [Zulip thread](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/last-use.20tracking).
+- Introduce a form of garbage collection for these target directories so we don't leak them when projects are deleted, see [rust-lang/cargo#13136](https://github.com/rust-lang/cargo#13136).
 
 ## Adding `{xdg-cache-home}`, `{home}`, `{cargo-home}` or `{user-base-target-directory}` as templates
 
