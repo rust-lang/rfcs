@@ -271,6 +271,15 @@ When `CARGO_TARGET_DIR` is relative, the result could be `/tmp/cargo-build/foo/$
 
 Overall, I feel remapping is much harder to implement well and can be added later without interfering with templates in `CARGO_TARGET_DIR` (and without this RFC interfering with remapping), though the design space is probably bigger than the one for this RFC.
 
+## Advantages of using a hash over regular subdirectories
+
+It's possible to achieve most of the same system proposed here by setting a value like `CARGO_TARGET_DIR="/base/dir/{manifest-path-dirs}"`, where a manifest in `/tmp/test1/test2/Cargo.toml` would resolve the build directory to `/base/dir/tmp/test1/test2/`, but most is not *all* of them:
+
+1. Predictable depth of subdirectories: even with a hash, depth can be unpredictable in some way since the untemplated part can be as long as necessary but by using a hash of predictable length, users can prepare for the limits imposed by their filesystem (for example on Windows, some forms of path are quite short): it would be surprising for a project to build when in `/` but not in `/tmp/some/what/deep/inside/folders` for example
+2. More traversals: by using a hash always cut in the same way to form subdirectories, it's easy to plan traversals for the filesystem
+3. Encourage interactions through `cargo-metadata`: by using paths computed through cargo and not easily derivable from the file tree, future tools will be incentivized to work through `cargo-metadata` to find the target directory, widening adoption and making it easier for the cargo team to ensure nothing breaks in subsequent cargo updates
+4. Avoid introducing a strong dependency on only the path: by using a hash, cargo can add element to it to help differentiate builds: for example we could use more parameters in the hash, see the relevant section in Future Possibilites
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -355,6 +364,10 @@ Another drawback is about the warning/note when creating the symlink fails:
 
 - Do we warn/notify on each command ? Only on creation ? Only with `--verbose` ? All have issues with either being too verbose or users potentially missing relevant information. This can be determined during stabilization though, once more people have experience with it, and is easy to change later on.
 
+## Rename the template from `{manifest-path-hash}` to `{project-hash}`
+
+This works in concert with the subsection `Introducing more data to the hash` later below: the currently proposed key name introduces a dependency in its name, should we prepare for possible changes by renaming it ?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -413,6 +426,13 @@ Well, first, advertising of the option and its behaviour, as well as the forward
 - We could add special behaviour like `CARGO_TARGET_DIR=""` meaning "use current" directory
 
 The first two are probably enough, the third is a bandaid.
+
+## Introducing more data to the hash
+
+This RFC uses only the manifest's full path to produce the hash but we could conceivably introduce more data into it to make it more unique for more use cases:
+
+- By considering the user, we could avoid sharing caches between `sudo cargo build` and `cargo build` for example (and more). It could be especially useful for shared artifacts storage. Bazel already does this, but Bazel was built to be a distributed build system, whereas Cargo was not.
+- By considering features, build flags and a host of other parameters we could share builds of crates that use the same set of features between various projects. This is already discussed in [rust-lang/cargo#5931](https://github.com/rust-lang/cargo/issues/5931).
 
 ## Expose template metadata
 
