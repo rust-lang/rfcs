@@ -174,7 +174,7 @@ In the same vein, `cargo metadata` fills the target directory information with t
 
 Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for the templated version: if it set, `cargo clean` deletes `/path/to/<manifest-path-hash>/` and not `target/`.
 
-### Providing backlinks
+## Providing backlinks
 
 Backlinks are metadata in templated `CARGO_TARGET_DIR` that links target directories back to the workspace they came from.
 
