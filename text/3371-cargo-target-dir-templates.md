@@ -400,13 +400,15 @@ The section merely provides additional information.
 - Introduce remapping into the concept in some way.
 - Introduce a form of garbage collection. Expanded upon this [Zulip thread](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/last-use.20tracking).
 
-## Adding `XDG_CACHE_HOME`, `HOME` or `CARGO_HOME` as templates
+## Adding `{xdg-cache-home}`, `{home}`, `{cargo-home}` or `{user-base-target-directory}` as templates
 
-Not all OSes use the XDG convention, notably Windows and macOS (though the latter can be somewhat made to) and it is very easy to define `CARGO_TARGET_DIR=${XDG_CACHE_HOME:-~/.cache}/cargo-target-directories/{manifest-path-hash}` if wanted by users.
+OS-native cache directories are discussed more in details in [rust-lang/cargo#1734](https://github.com/rust-lang/cargo/issues/1734), there are semantic and naming issues to resolve before moving forward with them in cargo (and so as template for `CARGO_TARGET_DIR`).
+
+As a workaround, it is possible to use `CARGO_TARGET_DIR="${XDG_CACHE_HOME:-~/.cache}/cargo-target-directories/{manifest-path-hash}"`.
 
 It won't work in the `config.toml` but it will work with the environment variable and the command line option, both of which override the TOML config.
 
-It is certainly possible to add at least `{home}` and `{cargo_home}` but it can be done in the future without interfering at all with `{manifest-path-hash}`, making it relatively easy to defer and add if there is demand.
+It is certainly possible to add at least `{home}` and `{cargo-home}` but it can be done in the future without interfering at all with `{manifest-path-hash}`, making it a good option for a future addition without blocking.
 
 ## Use templated `CARGO_TARGET_DIR` as the default instead of `target`
 
