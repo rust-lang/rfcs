@@ -205,6 +205,12 @@ A mitigation for this is recommending a short prefix (in `CARGO_TARGET_DIR`) and
 
 During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it. In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's better than silently breaking workflows.
 
+## Brace expansion
+
+Bash has [brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html), other shells too. By using `{manifest-path-hash}` we risk users getting bitten by that behaviour. Brace expansion is not activated when there are no `,` nor `..` inside the `{}` so cargo should be fine. Since brace expansion is done at the shell level, cargo won't be able to detect it if it happens.
+
+Escaping, using single quotes (`'`) or even double quotes (`"`) will work to disable brace expansion, making it even easier to work around it if needed.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
