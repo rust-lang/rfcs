@@ -440,10 +440,4 @@ This RFC uses only the manifest's full path to produce the hash but we could con
 - By considering the user, we could avoid sharing caches between `sudo cargo build` and `cargo build` for example (and more). It could be especially useful for shared artifacts storage. Bazel already does this, but Bazel was built to be a distributed build system, whereas Cargo was not.
 - By considering features, build flags and a host of other parameters we could share builds of crates that use the same set of features between various projects. This is already discussed in [rust-lang/cargo#5931](https://github.com/rust-lang/cargo/issues/5931).
 
-## Expose template metadata
-
-`cargo` will use backlinks in an implementation-defined form to keep track in the templated `CARGO_TARGET_DIR` of the relation from a target directory to its source workspace.
-
-In the future, we could envisage letting external tools and users access this data in a well-defined form through `cargo metadata`, but without a use case to plan for, we cannot make any decision today.
-
 [tg]: https://github.com/sunshowers/targo
