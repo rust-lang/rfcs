@@ -13,12 +13,14 @@ This RFC describes the inclusion of the `Future` and `IntoFuture` traits in the 
 
 When an `async fn` is desugared we obtain an anonymous type with a signature of `impl Future`. In order to use this type we must first be able to _name_ it, which can only be done if the  `Future` trait in scope. Currently this can be a little inconvenient since it requires `std::future::Future` to be manually imported.
 
-Most other reifications of control-flow effects have their respective types and traits included in the prelude header. To support iteration we include both the `Iterator` and `IntoIterator` traits in the prelude. To support fallibility we include both `Option` and `Result` in the prelude. This RFC proposes we include both `Future` and `IntoFuture` to match.
+`IntoFuture` comes up regularly when writing operations that accept a `Future`. Adding `IntoFuture` makes it easy to call `.into_future()` to bridge between code accepting only `Future` and code supplying an `IntoFuture` impl, as well as making it easy to write new code that accepts any `IntoFuture` impl.
+
+Both of these traits are generally useful, come up regularly, don't conflict with anything, and will not produce any surprising behavior if added to the prelude. And most other reifications of control-flow effects have their respective types and traits included in the prelude header. To support iteration we include both the `Iterator` and `IntoIterator` traits in the prelude. To support fallibility we include both `Option` and `Result` in the prelude. This RFC proposes we include both `Future` and `IntoFuture` to match.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Let's say someone wrote an async function which takes a future and operates on it. For example, it could be something like this:
+In Rust 2024, you can name and make use of the `Future` and `IntoFuture` traits without explicitly importing them, since they appear in the Rust 2024 prelude. For instance, you can write a function that accepts or returns an `impl Future`, or one that accepts any `impl IntoFuture`. Let's start with an example which takes an `impl IntoFuture`:
 
 ```rust
 use std::future::IntoFuture;
