@@ -127,5 +127,7 @@ One unresolved question is whether the arrow operator should only be capable of 
 There have been many discussions over the years.
 
 [Need for -> operator for Unsafe Code Guidelines](https://internals.rust-lang.org/t/need-for-operator-for-unsafe-code-guidelines/10022)
+
 [Add arrow operator as sugar for (*var)](https://github.com/gpuweb/gpuweb/issues/4114)
+
 [Rust's Unsafe Pointer Types Need An Overhaul](https://faultlore.com/blah/fix-rust-pointers/)
