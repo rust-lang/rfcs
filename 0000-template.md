@@ -17,13 +17,13 @@ Auto-deref does not operate on raw pointers. This is because we want a clear bou
 
 It is possible to have both a clear boundary and ergonomics for raw pointers. The problem stems from the affix kind of the asterisk operator - prefix. Because the dot operator has higher precedence, we are left with excess parentheses. Example:
 
-```
+```rust
 (*(*(*pointer.add(5)).some_field).method_returning_pointer()).other_method()
 ```
 
 What we need here is either a suffix operator, or an infix operator. With the already existing RArrow token, we could have 
 
-```
+```rust
 pointer.add(5)->some_field->method_returning_pointer()->other_method()
 ```
 
@@ -38,7 +38,7 @@ One common non-solution to this problem is "encapsulate the unsafe code". First 
 
 The arrow operator in Rust is usually used to mark the return type of functions, function pointers and closures. With this RFC, it can also be used to dereference a raw pointer to an object with a field or method. For instance, if we have the type
 
-```
+```rust
 struct S {
     next: *mut S,
     value: i32,
@@ -52,25 +52,25 @@ impl S {
 
 and a pointer variable `p` of type `*mut S`, we can write
 
-```
+```rust
 p->next->increment();
 ```
 
 and
 
-```
+```rust
 p->next->value *= 2;
 ```
 
 instead of
 
-```
+```rust
 (*(*p).next).increment()
 ```
 
 and
 
-```
+```rust
 (*(*p).next).value *= 2;
 ```
 
@@ -104,7 +104,7 @@ It also prevents preferring references over raw pointers. This prevents common m
 As discussed in the article [Rust's Unsafe Pointer Types Need An Overhaul](https://faultlore.com/blah/fix-rust-pointers/)`, the Tilde token could be used for walking field pointers of different types without changing the level of indirection. The proposed arrow operator is different.
 The arrow dereferences and yields a place expression. This is important because it is the only way to completely eliminate excess parentheses. Suppose we used the Tilde token for obtaining pointers to fields. Then the example before would be written as:
 
-```
+```rust
 (*(**pointer.add(5)~some_field).method_returning_pointer()).other_method()
 ```
 
