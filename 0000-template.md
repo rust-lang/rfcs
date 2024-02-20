@@ -101,7 +101,7 @@ The proposal makes unsafe code, that which is the most safety-critical code, eas
 
 It also prevents preferring references over raw pointers. This prevents common mistakes that create UB by simultaneous mutable references.
 
-As discussed in the article [Rust's Unsafe Pointer Types Need An Overhaul](https://faultlore.com/blah/fix-rust-pointers/)`, the Tilde token could be used for walking field pointers of different types without changing the level of indirection. The proposed arrow operator is different.
+As discussed in the article [Rust's Unsafe Pointer Types Need An Overhaul](https://faultlore.com/blah/fix-rust-pointers/), the Tilde token could be used for walking field pointers of different types without changing the level of indirection. The proposed arrow operator is different.
 The arrow dereferences and yields a place expression. This is important because it is the only way to completely eliminate excess parentheses. Suppose we used the Tilde token for obtaining pointers to fields. Then the example before would be written as:
 
 ```rust
