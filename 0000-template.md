@@ -101,7 +101,7 @@ The proposal makes unsafe code, that which is the most safety-critical code, eas
 
 It also prevents preferring references over raw pointers. This prevents common mistakes that create UB by simultaneous mutable references.
 
-As discussed in the article `https://faultlore.com/blah/fix-rust-pointers/`, the Tilde token could be used for walking field pointers of different types without changing the level of indirection. The proposed arrow operator is different.
+As discussed in the article [Rust's Unsafe Pointer Types Need An Overhaul](https://faultlore.com/blah/fix-rust-pointers/)`, the Tilde token could be used for walking field pointers of different types without changing the level of indirection. The proposed arrow operator is different.
 The arrow dereferences and yields a place expression. This is important because it is the only way to completely eliminate excess parentheses. Suppose we used the Tilde token for obtaining pointers to fields. Then the example before would be written as:
 
 ```
@@ -126,6 +126,6 @@ One unresolved question is whether the arrow operator should only be capable of 
 
 There have been many discussions over the years.
 
-https://internals.rust-lang.org/t/need-for-operator-for-unsafe-code-guidelines/10022
-https://github.com/gpuweb/gpuweb/issues/4114
-https://faultlore.com/blah/fix-rust-pointers/
+[](https://internals.rust-lang.org/t/need-for-operator-for-unsafe-code-guidelines/10022)
+[](https://github.com/gpuweb/gpuweb/issues/4114)
+[](https://faultlore.com/blah/fix-rust-pointers/)
