@@ -1,97 +1,131 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: `arrow_deref`
+- Start Date: 2024-02-20
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+This RFC improves ergonomics for pointers in unsafe Rust. It adds the RArrow token as a single-dereference member access operator. `x->field` desugars to `(*x).field`, and `x->method()` desugars to `(*x).method()`.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+In unsafe Rust, there has long been a lack of ergonomics. With advancements such as [raw_ref_op](https://github.com/rust-lang/rfcs/pull/2582) we are coming closer to a more ergonomic unsafe Rust.
+
+Auto-deref does not operate on raw pointers. This is because we want a clear boundary between unsafe and safe. We want dereferencing of raw pointers to be explicit. There is a reason that auto-deref exists for references - ergonomics.
+
+It is possible to have both a clear boundary and ergonomics for raw pointers. The problem stems from the affix kind of the asterisk operator - prefix. Because the dot operator has higher precedence, we are left with excess parentheses. Example:
+
+```
+(*(*(*pointer.add(5)).some_field).method_returning_pointer()).other_method()
+```
+
+What we need here is either a suffix operator, or an infix operator. With the already existing RArrow token, we could have 
+
+```
+pointer.add(5)->some_field->method_returning_pointer()->other_method()
+```
+
+This is identical to C and C++, which is also great for parity.
+
+One common non-solution to this problem is "encapsulate the unsafe code". First off, it does not address the ergonomics. Second, it is not possible in domains with irreducible encapsulations. Most notable prevalent domains with irreducible encapsulations are:
+1. Non-trivial intrusive data structures.
+2. Interoperability with complex systems written in C.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+The arrow operator in Rust is usually used to mark the return type of functions, function pointers and closures. With this RFC, it can also be used to dereference a raw pointer to an object with a field or method. For instance, if we have the type
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
+```
+struct S {
+    next: *mut S,
+    value: i32,
+}
+impl S {
+    fn increment(&mut self) {
+        self.value += 1;
+    }
+}
+```
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+and a pointer variable `p` of type `*mut S`, we can write
+
+```
+p->next->increment();
+```
+
+and
+
+```
+p->next->value *= 2;
+```
+
+instead of
+
+```
+(*(*p).next).increment()
+```
+
+and
+
+```
+(*(*p).next).value *= 2;
+```
+
+respectively. For an expression `X` and field `F`, `X->F` is exactly equivalent to `(*X).F`. For method `M`, `X->M()` is exactly equivalent to `(*X).M()`. It dereferences X precisely once, unlike auto-deref that can dereference multiple, or zero times.
+
+Especially for long and nested expressions `X`, working with the arrow is more ergonomic. It makes unsafe code easier to read, understand, and maintain. 
+
+If you are coming from a C or C++ background, the arrow operator for pointers in unsafe Rust behaves identically to the arrow operator for pointers in C and C++.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+The author of this RFC has implemented the feature with ~50 lines of code in `expr.rs`, `errors.rs` and `messages.ftl` in `rustc_parse`. It involves two steps:
+1. Accepting the `RArrow` token in tandem with the `Dot` token, in `parse_expr_dot_or_call_with_`. 
+2. Renaming `parse_dot_suffix` to `parse_dot_or_arrow_suffix` and passing a unary `UnOp::Deref` expression in `self_arg`.
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+There are no grammar ambiguities with respect to other instances of `RArrow`, such as `Fn() -> T`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+The RArrow token could have other future use cases.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+The proposal makes unsafe code, that which is the most safety-critical code, easier to read, understand, and maintain.
+
+It also prevents preferring references over raw pointers. This prevents common mistakes that create UB by simultaneous mutable references.
+
+As discussed in the article `https://faultlore.com/blah/fix-rust-pointers/`, the Tilde token could be used for walking field pointers of different types without changing the level of indirection. The proposed arrow operator is different.
+The arrow dereferences and yields a place expression. This is important because it is the only way to completely eliminate excess parentheses. Suppose we used the Tilde token for obtaining pointers to fields. Then the example before would be written as:
+
+```
+(*(**pointer.add(5)~some_field).method_returning_pointer()).other_method()
+```
+
+Which does not solve the problem.
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+This exists in both C and C++. If for example C had neither the arrow nor an alternative auto-deref, writing C code would be quite cumbersome. Early development of Zig also incorporated the utility of non-prefix operators for dereference and auto-deref. Like 
+[Rust itself](https://github.com/rust-lang/rfcs/pull/102). However, Rust makes a clear distinction between unsafe and safe, where we need to be cautious.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+One unresolved question is whether the arrow operator should only be capable of dereferencing raw pointers. Should it be a sugar that desugars to `(*x).y`, no matter the type of `x`, or should `x` only be allowed to be a raw pointer? Implementing this requires an extra type-checking step in addition to the `rustc_parse` implementation outlined above.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
+There have been many discussions over the years.
 
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+https://internals.rust-lang.org/t/need-for-operator-for-unsafe-code-guidelines/10022
+https://github.com/gpuweb/gpuweb/issues/4114
+https://faultlore.com/blah/fix-rust-pointers/
