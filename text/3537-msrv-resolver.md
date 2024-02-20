@@ -168,6 +168,11 @@ How wide spread is this?  Take this with a grain of salt but based on crates.io 
 
 *([source](https://rust-lang.zulipchat.com/#narrow/stream/318791-t-crates-io/topic/cargo.20version.20usage/near/401440149))*
 
+This was aided by the presence of `package.rust-version`.
+Of all packages (137,569), only 8,857 (6.4%) have that field set.
+When limiting to the 61,758 "recently" published packages (an upload since the start of 2023),
+only 8,550 (13.8%) have the field set.
+
 People have tried to reduce the pain from MSRV with its own costs:
 - Treating it as a breaking change:
   - This leads to extra churn in the ecosystem when a fraction of users are likely going to benefit
