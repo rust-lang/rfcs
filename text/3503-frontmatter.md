@@ -168,6 +168,26 @@ When choosing the syntax, our care-abouts are
 - Leave the door open in case we want to reuse the syntax for embedded lockfiles
 - Leave the door open for single-file `lib`s
 
+### Why add to Rust syntax, rather than letting Cargo handle it
+
+The most naive way for cargo to handle this is for cargo to strip the manifest, write the Rust file to a temporary file, and compile that.
+This is what has traditionally been done with various iterations of "cargo script".
+
+This provides a second-class experience which runs counter to one of the design goals
+- Error messages, `cargo metadata`, etc point to the stripped source with an "odd" path, rather than the real source
+- Every tool that plans to support it would need to be updated to do stripping (`cargo fmt`, `cargo clippy`, etc)
+
+A key part in there is "plan to support".
+We'd need to build up buy-in for tools to be supporting a Cargo-only syntax.
+This becomes more difficult when the tool in question tries to be Cargo-agnostic.
+By having Cargo-agnostic external tool syntax in Rust, this mostly becomes transparent.
+
+We could build a special relationship with rustc to support this.
+For example, rustdoc passes code to rustc on stdin and sets `UNSTABLE_RUSTDOC_TEST_PATH` and `UNSTABLE_RUSTDOC_TEST_LINE` to control how errors are rendered.
+We could then also special case the messages inside of cargo.
+This both adds a major support burden to keep this house of lies standing but still falls short when it comes to tooling support.
+Now every tool that wants to support the Cargo-only syntax has to build their own house of lies.
+
 ### Frontmatter
 
 This proposed syntax builds off of the precedence of Rust having syntax specialized for an external tool
