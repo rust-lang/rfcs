@@ -121,6 +121,8 @@ This exists in both C and C++. If for example C had neither the arrow nor an alt
 
 One unresolved question is whether the arrow operator should only be capable of dereferencing raw pointers. Should it be a sugar that desugars to `(*x).y`, no matter the type of `x`, or should `x` only be allowed to be a raw pointer? Implementing this requires an extra type-checking step in addition to the `rustc_parse` implementation outlined above.
 
+Maybe a trait called UnsafeDeref? This way it can be implemented for both raw pointers and NonNull<T>.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
