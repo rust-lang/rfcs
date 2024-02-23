@@ -1054,6 +1054,11 @@ Affects of current solution on workflows (including non-resolver behavior):
   - ❌ Maintainers will have to opt-in to latest dependencies, in a `.cargo/config.toml`
   - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
+A short term benefit (hence why this is separate) is that an MSRV-aware resolver by default is that we can use it as a polyfill for
+[`cfg(version)`](https://dev-doc.rust-lang.org/stable/unstable-book/language-features/cfg-version.html)
+(which will likely need a lot of work in cargo after we finish stabilizing it for rustc).
+A polyfill package can exist that has multiple maintained semver-compatible versions with different MSRVs with the older ones leveraging external libraries while the newer ones leverage the standard library.
+
 ### Make this opt-in rather than opt-out
 
 Instead of adding `resolver = "3"`, we could keep the default resolver the same as today but allow opt-in to MSRV-aware resolver via `CARGO_RESOLVER_PRECEDENCE=rust-version`.
