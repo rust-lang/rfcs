@@ -1282,3 +1282,13 @@ When adding packages without an MSRV,
 its not clear whether it will work with your project.
 Knowing that they haven't declared support for your toolchain version could be important,
 after we've made it easier to declare an MSRV.
+
+## Track version maintenance status on crates.io
+
+If you `cargo add` a dependency and it says that a newer version is available but it supports a dramatically different MSRV than you,
+it would be easy to assume there is a mismatch in expectations and you shouldn't use that dependency.
+However, you may still be supported via an LTS but that information can only be captured in documentation which is not within the flow of the developer.
+
+If crates.io had a mutable package and package version metadata database,
+maintainers could report the maintenance status of specific versions (or maybe encode their maintenance policy),
+allowing cargo to report not just whether you are on latest, but whether you are supported.
