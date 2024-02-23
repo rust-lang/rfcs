@@ -393,7 +393,7 @@ We are introducing several new concepts
 *(update to [manifest documentation](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field))*
 
 The `rust-version` field is an optional key that tells cargo what version of the
-Rust language and compiler your package can be compiled with. If the currently
+Rust language and compiler your support compiling your package with. If the currently
 selected version of the Rust compiler is older than the stated version, cargo
 will exit with an error, telling the user what version is required.
 To support this, Cargo will prefer dependencies that are compatible with your `rust-version`.
