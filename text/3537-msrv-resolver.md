@@ -229,8 +229,8 @@ And keeping in mind
 
 Some implications:
 - "Support" in MSRV implies the same quality and responsiveness to bug reports, regardless of Rust version
-- MSRV applies to all interactions with a project
-  (including registry dependency, git dependency, `cargo install`, contributor experience),
+- MSRV applies to all interactions with a project within the maintainers control
+  (including as a registry dependency, `cargo install --locked`, as a git dependency, contributor experience; excluding transitive dependencies, rust-analyzer, etc),
   unless documented otherwise like
   - Some projects may document that enabling a feature will affect the MSRV (e.g. [moka](https://docs.rs/moka/0.12.1/moka/#minimum-supported-rust-versions))
   - Some projects may have a higher MSRV for building the repo (e.g. `Cargo.lock` with newer dependencies, reliance on cargo features that get stripped on publish)
