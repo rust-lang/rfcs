@@ -379,8 +379,8 @@ We are introducing several new concepts
   - A `.cargo/config.toml` field will be added to disable this, e.g. for CI
 - Cargo will ensure users are aware their dependencies are behind the latest in a unobtrusive way
 - `cargo add` will select version requirements that can be met by a dependency with a compatible version
-- A new value for `package.rust-version`, `"auto"`, which will advertise in your published package your current toolchain version as the minimum-supported Rust version
-  - `cargo new` will default to `package.rust-version = "auto"`
+- A new value for `package.rust-version`, `"<tbd-name-representing-currently-running-rust-toolchain>"`, which will advertise in your published package your current toolchain version as the minimum-supported Rust version
+  - `cargo new` will default to `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"`
 - A deny-by-default lint will replace the build error from a package having an incompatible Rust version, allowing users to opt-in to overriding it
 
 ## Example documentation updates
@@ -407,9 +407,9 @@ identifiers such as -nightly will be ignored while checking the Rust version.
 The `rust-version` must be equal to or newer than the version that first
 introduced the configured `edition`.
 
-The Rust version can also be `"auto"`.
+The Rust version can also be `"<tbd-name-representing-currently-running-rust-toolchain>"`.
 This will act the same as if it was set to the version of your Rust toolchain.
-Your published manifest will have `"auto"` replaced with the version of your Rust toolchain.
+Your published manifest will have `"<tbd-name-representing-currently-running-rust-toolchain>"` replaced with the version of your Rust toolchain.
 
 Setting the `rust-version` key in `[package]` will affect all targets/crates in
 the package, including test suites, benchmarks, binaries, examples, etc.
@@ -469,7 +469,7 @@ $ cat foo/Cargo.toml
 name = "foo"
 version = "0.1.0"
 edition = "2024"
-rust-version = "auto"
+rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -508,7 +508,7 @@ Here, we can shortcut some questions about version requirements because clap ali
 name = "foo"
 version = "0.1.0"
 edition = "2024"
-rust-version = "auto"
+rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -582,7 +582,7 @@ $ cat foo/Cargo.toml
 name = "foo"
 version = "0.1.0"
 edition = "2024"
-rust-version = "auto"
+rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -632,7 +632,7 @@ $ cat foo/Cargo.toml
 name = "foo"
 version = "0.1.0"
 edition = "2024"
-rust-version = "auto"
+rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -661,7 +661,7 @@ I make the prescribed changes:
 name = "foo"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.92"  # <-- was "auto" before I edited it
+rust-version = "1.92"  # <-- was "<tbd-name-representing-currently-running-rust-toolchain>" before I edited it
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -715,7 +715,7 @@ I've decided on an "N-2" MSRV policy:
 name = "foo"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.92"  # <-- was "auto" before I edited it
+rust-version = "1.92"  # <-- was "<tbd-name-representing-currently-running-rust-toolchain>" before I edited it
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -835,7 +835,7 @@ without requiring `--ignore-rust-version` on every invocation.
 Ideally, we present all of the MSRV issues upfront to be resolved together.
 At minimum, we should present a top-down message, rather than bottom up.
 
-If `package.rust-version` is unset or `"auto"`, the diagnostic should suggest setting it
+If `package.rust-version` is unset or `"<tbd-name-representing-currently-running-rust-toolchain>"`, the diagnostic should suggest setting it
 to help raise awareness of `package.rust-version` being able to reduce future
 resolution errors.
 This would benefit from knowing the oldest MSRV.
@@ -891,11 +891,11 @@ Users may pass
 
 ## `cargo publish`
 
-`package.rust-version` will gain support for an `"auto"` value, in addition to partial versions.
-On `cargo publish` / `cargo package`, the generated `*.crate`s `Cargo.toml` will have `"auto"` replaced with `rustc --version`.
+`package.rust-version` will gain support for an `"<tbd-name-representing-currently-running-rust-toolchain>"` value, in addition to partial versions.
+On `cargo publish` / `cargo package`, the generated `*.crate`s `Cargo.toml` will have `"<tbd-name-representing-currently-running-rust-toolchain>"` replaced with `rustc --version`.
 If `rustc --version` is a pre-release, publish will fail.
 
-`cargo new` will include `package.rust-version = "auto"`.
+`cargo new` will include `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -945,7 +945,7 @@ Misc alternatives
   - There is little reason to select an MSRV higher than their Rust toolchain
   - We should still be warning the user that new dependencies are available if they upgrade their Rust toolchain
   - This comes at the cost of inconsistency with `--ignore-rust-version`.
-- Nightly `cargo publish` with `auto` fails because there isn't a good value to use and this gives us flexibility to change it later (e.g. just leaving the `rust-version` as unset).
+- Nightly `cargo publish` with `"<tbd-name-representing-currently-running-rust-toolchain>"` fails because there isn't a good value to use and this gives us flexibility to change it later (e.g. just leaving the `rust-version` as unset).
 
 ## Ensuring the registry Index has `rust-version` without affecting quality
 
@@ -954,7 +954,7 @@ Ensuring we have `package.rust-version` populated more often (while maintaining
 quality of that data) is an important problem but does not have to be solved to
 get value out of this RFC and can be handled separately.
 
-We chose an opt-in for populating `package.rust-version` based on `rustc --version` (`"auto"`).
+We chose an opt-in for populating `package.rust-version` based on `rustc --version` (`"<tbd-name-representing-currently-running-rust-toolchain>"`).
 This will encourage a baseline of quality as users are developing with that version and `cargo publish` will do a verification step, by default.
 This will help seed the Index with more `package.rust-version` data for the resolver to work with.
 The downside is that the `package.rust-version` will likely be higher than it absolutely needs.
@@ -968,7 +968,7 @@ When missing, `cargo publish` could inject `package.rust-version` using the vers
 workaround it is to set `CARGO_RESOLVER_PRECEDENCE=maximum` which will then lose
 all other protections.
 As we said, this is likely fine but then there will be no way to opt-out for the subset of maintainers who want to keep their support definition vague.
-As things evolve, we could re-evaluate making `"auto"` the default.
+As things evolve, we could re-evaluate making `"<tbd-name-representing-currently-running-rust-toolchain>"` the default.
 
 ~~We could encourage people to set their MSRV by having `cargo new` default `package.rust-version`.~~
 **However**, if people aren't committed to verifying that was implicitly set,
@@ -1038,11 +1038,11 @@ allows us to move forward without having to figure out all of these details.
 
 Affects of current solution on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
-  - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
+  - ✅ `cargo new` setting `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ✅ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
 2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
-    - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
+    - `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - `cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
 3. Extended MSRV
@@ -1060,17 +1060,17 @@ Instead of adding `resolver = "3"`, we could keep the default resolver the same 
   - `cargo generate-lockfile`
 - We'd drop from this proposal `cargo update [--ignore-rust-version|--update-rust-version]` as they don't make sense with this new default
 
-This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "auto"`, `cargo build` error to diagnostic).
+This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"`, `cargo build` error to diagnostic).
 
 Affects on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
-  - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
+  - ✅ `cargo new` setting `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - 🟰 ~~Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)~~
 2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
-    - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
+    - `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - ~~`cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV~~
-  - ❌ Without `cargo update --update-rust-version`, `"auto"` will be more of a default path, leading to more maintainers updating their MSRV more aggressively and waiting until minors
+  - ❌ Without `cargo update --update-rust-version`, `"<tbd-name-representing-currently-running-rust-toolchain>"` will be more of a default path, leading to more maintainers updating their MSRV more aggressively and waiting until minors
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
 3. Extended MSRV
   - ✅ Users will be able to opt-in to MSRV-compatible dependencies, in a `.cargo/config.toml`
@@ -1087,7 +1087,7 @@ matching the `cargo build` incompatible dependency error.
 - We would still support `CARGO_RESOLVER_PRECEDENCE=rust-version` to help "Extended MSRV" users
 - We'd drop from this proposal `cargo update [--ignore-rust-version|--update-rust-version]` as they don't make sense with this new default
 
-This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "auto"`, `cargo build` error to diagnostic).
+This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"`, `cargo build` error to diagnostic).
 
 This is an auto-adapting variant where
 - If they are on the latest toolchain, they get the current behavior
@@ -1095,13 +1095,13 @@ This is an auto-adapting variant where
 
 Affects on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
-  - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
+  - ✅ `cargo new` setting `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ✅ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
 2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
-    - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
+    - `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - ~~`cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV~~
-  - ❌ Without `cargo update --update-rust-version`, `"auto"` will be more of a default path, leading to more maintainers updating their MSRV more aggressively and waiting until minors
+  - ❌ Without `cargo update --update-rust-version`, `"<tbd-name-representing-currently-running-rust-toolchain>"` will be more of a default path, leading to more maintainers updating their MSRV more aggressively and waiting until minors
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
 3. Extended MSRV
   - ✅ Users will be able to opt-in to MSRV-compatible dependencies, in a `.cargo/config.toml`
@@ -1127,11 +1127,11 @@ We could adopt this approach in the future, if desired
 
 Affects on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
-  - ✅ `cargo new` setting `package.rust-version = "auto"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
+  - ✅ `cargo new` setting `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ❌ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
 2. Latest Rust as the MSRV
   - ✅ Packages can more easily keep their MSRV up-to-date with
-    - `package.rust-version = "auto"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
+    - `package.rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"` (no policy around when it is changed) though this is dependent on your Rust toolchain being up-to-date (see "Latest Rust with no MSRV" for more)
     - `cargo update --update-rust-version` (e.g. when updating minor version) though this is dependent on what you dependencies are using for an MSRV
   - ✅ Packages can more easily offer unofficial support for an MSRV due to shifting the building with MSRV-incompatible dependencies from an error to a `deny` diagnostic
 3. Extended MSRV
@@ -1166,13 +1166,13 @@ The config field is fairly rough
   - If we later add "resolve to toolchain" version, this might be confusing.
   - Maybe enumeration, like `resolver.rust-version = <manifest|toolchain|ignore>`?
 
-`rust-version = "auto"`'s field name is unsettled and deciding on it is not blocking for stabilization.
+`rust-version = "<tbd-name-representing-currently-running-rust-toolchain>"`'s field name is unsettled and deciding on it is not blocking for stabilization.
 Ideally, we make it clear that this this is not inferred from syntax,
 that this is the currently running toolchain,
 that we ignore pre-release toolchains,
 and the name works well for resolver config if we decide to add "resolve to toolchain version" and want these consistent.
 Some options include:
-- `auto` can imply "infer from syntactic minimum"
+- `"<tbd-name-representing-currently-running-rust-toolchain>"` can imply "infer from syntactic minimum"
 - `latest` can imply "latest globally (ie from rust-lang.org)
 - `stable` can imply "latest globally (ie from rust-lang.org)
 - `toolchain` might look weird?
