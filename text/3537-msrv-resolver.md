@@ -1127,7 +1127,7 @@ Instead of *preferring* MSRV-compatible dependencies, the resolver could hard er
 
 In addition to errors, differences from the "preference" solutions include:
 - Increase the chance of an MSRV-compatible `Cargo.lock` because the resolver can backtrack on MSRV-incompatible transitive dependencies, trying alternative versions of direct dependencies
-- When a workspace members have different MSRVs, dependencies exclusive to a higher MSRV package can use higher versions
+- When workspace members have different MSRVs, dependencies exclusive to a higher MSRV package can use higher versions
 
 To get the error reporting to be of sufficient quality will require major work in a complex, high risk area of Cargo (the resolver).
 This would block stabilization indefinitely.
