@@ -1070,7 +1070,7 @@ Instead of adding `resolver = "3"`, we could keep the default resolver the same 
 
 This has no impact on the other proposals (`cargo add` picking compatible versions, `package.rust-version = "tbd-name-representing-currently-running-rust-toolchain"`, `cargo build` error to diagnostic).
 
-Affects on workflows (including non-resolver behavior):
+Effects on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "tbd-name-representing-currently-running-rust-toolchain"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - 🟰 ~~Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)~~
