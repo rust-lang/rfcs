@@ -936,8 +936,8 @@ Misc alternatives
     relatively low and they are more likely to be "in the know",
     making them less likely to be negatively affected by this.
     Therefore, we could probably get away with treating this as a minor incompatibility
-  - Either way, the big care about is there being attention drawn to the change.
-    We couldn't want this to be like sparse registries where a setting exists and we change the default and people hardly notice (besides any improvements)
+  - Either way, the concern is to ensure that the change receives attention.
+    We wouldn't want this to be like sparse registries where a setting exists and we change the default and people hardly notice (besides any improvements)
 - `cargo build` will treat incompatible MSRVs as a workspace-level lint, rather than a package level lint, to avoid the complexity of mapping the dependency to a workspace-member to select `[lint]` tables to respect and then dealing with unifying conflicting levels in between `[lint]` tables among members.
 - `--ignore-rust-version` picks absolutely the latest dependencies to support both users on latest rustc and users wanting "unsupported" dependencies, at the cost of users not on the latest rustc but still wanting latest more up-to-date dependencies than their MSRV allows
 - Compilation commands (e.g. `cargo check`) will take on two meanings for `--ignore-rust-version`, (1) `allow` the workspace diagnostic and (2) resolve changed dependencies to latest when syncing `Cargo.toml` to `Cargo.lock`.
