@@ -14,6 +14,18 @@ Provide a happy path for developers needing to work with older versions of Rust 
 
 Note: `cargo install` is intentionally left out for now to decouple discussions on how to handle the security ramifications.
 
+**Note:** Approval of this RFC does not mean everything is set in stone, like with all RFCs.
+This RFC will be rolled out gradually as we stabilize each piece.
+In particular, we expect to make the `cargo new` change last as it is dependent on the other changes to work well.
+In evaluating stabilization, we take into account changes in the ecosystem and feedback from testing unstable features.
+Based on that evaluation, we may make changes from what this RFC says.
+Whether we make changes or not, stabilization will then require approval of the cargo team to merge
+(explicit acknowledgement from all but 2 members with no concerns from any member)
+followed by a 10 days Final Comment Period (FCP) for the remaining 2 team members and the wider community.
+Cargo FCPs are now tracked in This Week in Rust to ensure the community is aware and can participate.
+Even then, a change like `cargo new` can be reverted without an RFC,
+likely only needing to follow the FCP process.
+
 # Motivation
 [motivation]: #motivation
 
