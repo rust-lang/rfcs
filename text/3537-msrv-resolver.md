@@ -1039,7 +1039,7 @@ allows us to move forward without having to figure out all of these details.
 
 ## Resolver behavior
 
-Affects of current solution on workflows (including non-resolver behavior):
+Effects of current solution on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "tbd-name-representing-currently-running-rust-toolchain"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ✅ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
