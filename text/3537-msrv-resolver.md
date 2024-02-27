@@ -765,7 +765,7 @@ Instead, if a newer clap version was out needing 1.94 or 1.95, I would instead e
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-We expect these changes to be independent enough and beneficial on there own that they can be stabilized as each is completed.
+We expect these changes to be independent enough and beneficial on their own that they can be stabilized as each is completed.
 
 ## Cargo Resolver
 
