@@ -968,7 +968,7 @@ Some alternative solutions include:
 
 When missing, `cargo publish` could inject `package.rust-version` using the version of rustc used during publish.
 **However**, this will err on the side of a higher MSRV than necessary and the only way to
-workaround it is to set `CARGO_RESOLVER_PRECEDENCE=maximum` which will then lose
+work around it is to set `CARGO_RESOLVER_PRECEDENCE=maximum` which will then lose
 all other protections.
 As we said, this is likely fine but then there will be no way to opt-out for the subset of maintainers who want to keep their support definition vague.
 As things evolve, we could re-evaluate making `"tbd-name-representing-currently-running-rust-toolchain"` the default.
