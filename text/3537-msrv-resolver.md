@@ -1133,7 +1133,7 @@ To get the error reporting to be of sufficient quality will require major work i
 This would block stabilization indefinitely.
 We could adopt this approach in the future, if desired
 
-Affects on workflows (including non-resolver behavior):
+Effects on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
   - ✅ `cargo new` setting `package.rust-version = "tbd-name-representing-currently-running-rust-toolchain"` moves most users to "Latest Rust as the MSRV" with no extra maintenance cost
   - ❌ Dealing with incompatible dependencies will have a friendlier face because the hard build error after changing dependencies is changed to a notification during update suggesting they upgrade to get the new dependency because we fallback to `rustc --version` when `package.rust-version` is unset (as a side effect of us capturing `rust-toolchain.toml`)
