@@ -1178,7 +1178,7 @@ The config field is fairly rough
 Ideally, we make it clear that this this is not inferred from syntax,
 that this is the currently running toolchain,
 that we ignore pre-release toolchains,
-and the name works well for resolver config if we decide to add "resolve to toolchain version" and want these consistent.
+and the name works well for resolver config if we decide to add "resolve to toolchain version" and want these to be consistent.
 Some options include:
 - `"tbd-name-representing-currently-running-rust-toolchain"` can imply "infer from syntactic minimum"
 - `latest` can imply "latest globally (ie from rust-lang.org)
