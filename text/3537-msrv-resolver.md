@@ -1175,7 +1175,7 @@ The config field is fairly rough
   - Maybe enumeration, like `resolver.rust-version = <manifest|toolchain|ignore>`?
 
 `rust-version = "tbd-name-representing-currently-running-rust-toolchain"`'s field name is unsettled and deciding on it is not blocking for stabilization.
-Ideally, we make it clear that this this is not inferred from syntax,
+Ideally, we make it clear that this is not inferred from syntax,
 that this is the currently running toolchain,
 that we ignore pre-release toolchains,
 and the name works well for resolver config if we decide to add "resolve to toolchain version" and want these to be consistent.
