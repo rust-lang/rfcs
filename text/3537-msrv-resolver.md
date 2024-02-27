@@ -219,7 +219,7 @@ Some design criteria we can use for evaluating workflows:
   - This also means feedback can come more quickly, making it easier and cheaper to pivot with user needs
   - Spreading the cost of upgrades over time makes forced-upgrades (e.g. for a security vulnerability) less of an emergency
   - Our commitment to compatibility helps keep the cost of upgrade low
-- When not competing with the above, we should do the right thing for the user rather than disrupt their flow to telling them what they should instead do
+- When not competing with the above, we should do the right thing for the user rather than disrupt their flow to tell them what they should instead do
 
 And keeping in mind
 - The Rust project only supports the latest version
