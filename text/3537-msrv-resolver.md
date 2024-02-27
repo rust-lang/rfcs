@@ -916,7 +916,7 @@ this introduces another form of drift from the latest dependencies
 (in addition to [lockfiles](https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control)).
 However, we already recommend people
 [verify their latest dependencies](https://doc.rust-lang.org/nightly/cargo/guide/continuous-integration.html#verifying-latest-dependencies),
-so the only scenario this degrades it further is when lockfiles are verified by always updating to the latest, like with RenovateBot,
+so the only scenario this further degrades is when lockfiles are verified by always updating to the latest, like with RenovateBot,
 and only in the sense that the user needs to know to explicitly take action to add another verification job to CI.
 
 # Rationale and alternatives
