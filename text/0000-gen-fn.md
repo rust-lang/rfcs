@@ -140,6 +140,32 @@ need to be given arguments of type `Option`.
 `Iterator`s produced by `gen` keep returning `None` when invoked again after they have returned `None` once.
 They do not implement `FusedIterator`, as that is not a language item, but may implement it in the future.
 
+## Holding borrows across yields
+
+Since the `Iterator::next` method takes `&mut self` instead of `Pin<&mut self>`, we cannot create self-referential
+`gen` blocks. Self-referential `gen` blocks occur when you hold a borrow to a local variable across a yield point:
+
+```rust
+gen {
+    let x = vec![1, 2, 3, 4];
+    let mut y = x.iter();
+    yield y.next();
+    yield Some(42);
+    yield y.next();
+}
+```
+
+or as a more common example:
+
+```rust
+gen {
+    let x = vec![1, 2, 3, 4];
+    for z in x.iter() {
+        yield z * 2;
+    }
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 ## New keyword
@@ -730,6 +756,7 @@ There are a few options forward (though this list is probably not complete):
     * *Downside*: It's unclear whether this is possible.
 * Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block).
     * *Downside*: The thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
+    * *Downside*: Now the `next` method takes a double-indirection as an argument `&mut Pin<&mut G>`, which may not optimize well sometimes.
 
 This RFC is forward compatible with any such designs, so I will not explore it here.
 
