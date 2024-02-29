@@ -15,9 +15,6 @@ explicit `Iterator::next` method body. This is a change similar to adding `async
 {}` blocks that implement `Future` instead of having to manually write futures
 and their state machines.
 
-Furthermore, add `gen fn` to the language. `gen fn foo(arg: X) -> Y` desugars to
-`fn foo(arg: X) -> impl Iterator<Item = Y>`.
-
 # Motivation
 [motivation]: #motivation
 
@@ -83,31 +80,24 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
         }
     }
 }
-
-// `gen fn`
-gen fn odd_dup(values: impl Iterator<Item = u32>) -> u32 {
-    for value in values {
-        if value.is_odd() {
-            yield value * 2;
-        }
-    }
-}
 ```
 
 Iterators created with `gen` return `None` once they `return` (implicitly at the end of the scope or explicitly with `return`).
-See [the unresolved questions][unresolved-questions] for whether `gen` iterators are fused or may behave strangely after having returned `None` once.
-Under no circumstances will it be undefined behavior if `next` is invoked again after having gotten a `None`.
+`gen` iterators are fused, so after returning `None` once, they will keep returning `None` forever.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ## New keyword
 
-Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings. This means during the migration to the 2024 edition, all variables, functions, modules, types, etc. named `gen` must be renamed.
+Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings.
+This means during the migration to the 2024 edition, all variables, functions, modules, types, etc. named `gen` must be renamed
+or be referred to via `r#gen`.
 
 ## Returning/finishing an iterator
 
-`gen` blocks must diverge or return the unit type.  Specifically, the trailing expression must be of the unit or `!` type, and any `return` statements in the block must either be given no argument at all or given an argument of the unit or `!` type.
+`gen` blocks must diverge or return the unit type.
+Specifically, the trailing expression must be of the unit or `!` type, and any `return` statements in the block must either be given no argument at all or given an argument of the unit or `!` type.
 
 ### Diverging iterators
 
@@ -147,15 +137,14 @@ need to be given arguments of type `Option`.
 
 ## Fusing
 
-Like `Generators`, `Iterator`s produced by `gen` panic when invoked again after they have returned `None` once.
-This will probably be fixed by special casing the generator impl if `Generator::Return = ()`, as we can trivially
-produce infinite values of the unit type.
+`Iterator`s produced by `gen` keep returning `None` when invoked again after they have returned `None` once.
+They do not implement `FusedIterator`, as that is not a language item, but may implement it in the future.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 ## New keyword
 
-In the 2024 edition we reserve `gen` as a keyword. Previous editions will use `k#gen` to get the same features.
+In the 2024 edition we reserve `gen` as a keyword. Previous editions will use `r#gen` to get the same features.
 
 ## Error handling
 
@@ -176,18 +165,7 @@ on iterators over `Result`s.
 
 ## Implementation
 
-This feature is mostly implemented via existing generators.
-We'll need additional desugarings and lots of work to get good diagnostics.
-
-### `gen fn`
-
-`gen fn` desugars to the function itself with the return type replaced by `impl Iterator<Item = $ret>` and its body wrapped in a `gen` block.
-A `gen fn`'s "return type" is its iterator's `yield` type.
-
-A `gen fn` captures all lifetimes and generic parameters into the `impl Iterator` return type (just like `async fn`).
-If more control over captures is needed, type alias impl trait can be used when it is stabilized.
-
-Like other uses of `impl Trait`, auto traits are revealed without being specified.
+This feature is mostly implemented via existing generators, though there are some special cases.
 
 ### `gen` blocks
 
@@ -196,13 +174,7 @@ Like other uses of `impl Trait`, auto traits are revealed without being specifie
 * ...without arguments,
 * ...with an additional check forbidding holding borrows across `yield` points,
 * ...and with an automatic `Iterator` implementation.
-
-We'll probably be able to modularize the generator implementation and make it more robust on the implementation and diagnostics side for the `gen` block case, but I believe the initial implementation should be a HIR lowering to a generator and wrapping that generator in [`from_generator`][].
-
-## Fusing
-
-Special case the generator implementation if `Generator::Return = ()` to not panic, but
-repeatedly produce values of the unit type.
+* ...do not panic if invoked again after returning
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -211,6 +183,8 @@ It's another language feature for something that can already be written entirely
 
 In contrast to `Generator`, `gen` blocks that produce `Iterator`s cannot hold references across `yield` points.
 See [`from_generator`][] which has an `Unpin` bound on the generator it takes to produce an `Iterator`.
+
+The `gen` keyword causes some fallout in the community, mostly around the `rand` crate, which has `gen` methods on its traits.
 
 [`from_generator`]: https://doc.rust-lang.org/std/iter/fn.from_generator.html
 
@@ -254,16 +228,16 @@ value that is `yield`ed before terminating iteration.
 We could do something magical where returning `()` terminates the iteration, so this code...
 
 ```rust
-gen fn foo() -> i32 {
-    42
+fn foo() -> impl Iterator<Item = i32> {
+    gen { 42 }
 }
 ```
 
 ...could be a way to specify `std::iter::once(42)`. The issue I see with this is that this...
 
 ```rust
-gen fn foo() -> i32 {
-    42; // note the semicolon
+fn foo() -> impl Iterator<Item = i32> {
+    gen { 42; } // note the semicolon
 }
 ```
 
@@ -272,27 +246,10 @@ gen fn foo() -> i32 {
 Furthermore this would make it unclear what the behaviour of this...
 
 ```rust
-gen fn foo() {}
+fn foo() -> impl Iterator<Item = ()> { gen {} }
 ```
 
 ...is supposed to be, as it could be either `std::iter::once(())` or `std::iter::empty::<()>()`.
-
-## Different syntax for `gen fn`:
-
-This RFC selects `gen` as the keyword.  But there are other options we might
-pick.  Here are some alternatives:
-
-```rust
-fn foo(args) yield item
-fn foo(args) yields item
-fn foo(args) => item
-fn* foo(args) -> item // or any of the `fn foo` variants for the item type
-gen fn foo(args) // or any of the above variants for the item type
-gen foo(args) // or any of the above variants for the item type
-generator fn foo(args) // or any of the above variants for the item type
-```
-
-The design space here is very large, but either way, I propose to reserve the `gen` keyword.
 
 # Prior art
 [prior-art]: #prior-art
@@ -676,10 +633,6 @@ fn main() {
 }
 ```
 
-## Panicking
-
-What happens when `Iterator::next` is called again on a `gen` block that panicked? Do we need to poison the iterator?
-
 ## Contextual keyword
 
 Popular crates (like `rand`) have methods called [`gen`][Rng::gen]. If we forbid those, we are forcing those crates to make a major version bump when they update their edition, and we are requiring any users of those crates to use `r#gen` instead of `gen` when calling that method.
@@ -699,6 +652,7 @@ This should avoid any parsing issues around `gen` followed by `{` in expressions
 
 Should we try to compute a conservative `size_hint`? This will reveal information from the body of a generator,
 but at least for simple cases users will likely expect `size_hint` to not just be the default.
+It is backwards compatible to later add support for opportunistically implementing `size_hint`.
 
 ## Implement other `Iterator` traits.
 
@@ -783,3 +737,18 @@ This RFC is forward compatible with any such designs, so I will not explore it h
 
 We could allow `gen try fn foo() -> i32` to mean something akin to `gen fn foo() -> Result<i32, E>`.
 Whatever we do here, it should mirror whatever `try fn` means in the future.
+
+## `gen fn`:
+
+This does not introduce `gen fn`. The syntax design for them is fairly large
+and there are open questions around the difference between returning or yielding a type.
+
+```rust
+fn foo(args) yield item
+fn foo(args) yields item
+fn foo(args) => item
+fn* foo(args) -> item // or any of the `fn foo` variants for the item type
+gen fn foo(args) // or any of the above variants for the item type
+gen foo(args) // or any of the above variants for the item type
+generator fn foo(args) // or any of the above variants for the item type
+```
