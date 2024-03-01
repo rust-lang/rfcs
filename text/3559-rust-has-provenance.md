@@ -239,7 +239,7 @@ LLVM has been stuck in this limbo (various proposals but no consensus on how to 
 If LLVM ends up accepting either of these proposals, it will be entirely compatible with this RFC.
 If LLVM makes some different choice, that might be incompatible with Rust's choices.
 However, it's not possible to specify Rust in a way that is compatible with "whatever LLVM will do".
-There has been no progress on these questions on the side of the LLVM project for many years (as far as the author is aware), and no concrete proposal aside from the one sketched above, so there are only two options: (a) wait until LLVM does something, and then do something compatible in Rust, or (b) do something that makes sense for Rust, and if eventually there is movement on the LLVM side, work with them to ensure Rust's needs are covered.
+There has been no progress on these questions on the side of the LLVM project for many years (as far as the author is aware), and no concrete proposals aside from the ones sketched above, so there are only two options: (a) wait until LLVM does something, and then do something compatible in Rust, or (b) do something that makes sense for Rust, and if eventually there is movement on the LLVM side, work with them to ensure Rust's needs are covered.
 (a) means indefinitely blocking progress on pressing questions in the Rust semantics, so this RFC takes the position that we should do (b).
 (To the author's knowledge, GCC is not in a better position, and it suffers from [similar bugs](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82282), so we can't use their semantics for guidance either.)
 
