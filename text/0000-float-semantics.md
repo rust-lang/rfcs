@@ -97,7 +97,6 @@ However, the exact function is not specified, and it is allowed to change across
 In particular, there is no guarantee that the choice made in const evaluation is consistent with the choice made at runtime.
 That is, the following assertion is allowed to fail (and in fact, it [fails on current versions of Rust](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=a594d2975c29b1c7fa457a4ec4ae4b87)):
 ```rust
-#![allow(non_snake_case)]
 use std::hint::black_box;
 
 const C: f32 = 0.0 / 0.0;
@@ -110,6 +109,22 @@ fn main() {
 
 This means that evaluating the same `const fn` on the same arguments can produce different results at compile-time and run-time.
 However, note that these functions are already non-deterministic: even evaluating the same function with the same arguments twice at runtime can [and does](https://play.rust-lang.org/?version=stable&mode=release&edition=2021&gist=50b5a549fa1fe259cea5ad138066ccf0) produce different results!
+
+In other words, consider this code:
+```rust
+const fn div(x: f32) -> i32 {
+    unsafe { std::mem::transmute(x / x) }
+}
+
+// This is not guaranteed to always succeed. That's new, currently
+// all `const fn` you can write guarantee this.
+assert_eq!(div(0.0), div(0.0));
+// Consequently, different results can be observed at compile-time and at run-time.
+const C: i32 = div(0.0);
+assert_eq!(C, div(0.0));
+```
+The first assertion is very unlikely to fail in practice (it would require the two invocations of `div` to be optimized differently).
+The second however [actually fails](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=0b4b952929c9ebcd2bd50aee54e6cdf4) on current nightlies in debug mode.
 
 This resolves the last open question blocking floating-point operations in `const fn`.
 When the RFC is accepted, the `const_fn_floating_point_arithmetic` feature gate and the `const fn to_bits` methods can be stabilized.
