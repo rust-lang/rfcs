@@ -1,6 +1,7 @@
 - Feature Name: N/A
 - Start Date: 2022-01-19
 - RFC PR: [rust-lang/rfcs#3373](https://github.com/rust-lang/rfcs/pull/3373)
+- RFC PR #2: [rust-lang/rfcs#3581](https://github.com/rust-lang/rfcs/pull/3581)
 - Tracking Issue: [rust-lang/rust#120363](https://github.com/rust-lang/rust/issues/120363)
 
 # Summary
