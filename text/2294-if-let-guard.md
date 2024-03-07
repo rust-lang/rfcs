@@ -11,7 +11,7 @@ Allow `if let` guards in `match` expressions.
 # Motivation
 [motivation]: #motivation
 
-This feature would greatly simplify some logic where we must match a pattern iff some value computed from the `match`-bound values has a certain form, where said value may be costly or impossible (due to affine semantics) to recompute in the match arm.
+This feature would greatly simplify some logic where we must match a pattern if some value computed from the `match`-bound values has a certain form, where said value may be costly or impossible (due to affine semantics) to recompute in the match arm.
 
 For further motivation, see the example in the guide-level explanation. Absent this feature, we might rather write the following:
 ```rust
