@@ -26,13 +26,21 @@ While orphan rules regarding trait implementations are necessary to allow crates
 
 For example, while many crates support `serde::{Deserialize, Serialize}` directly, implementations of the similarly-derived `bevy_reflect::{FromReflect, Reflect}` traits are less common. Sometimes, a `Debug`, `Clone` or (maybe only contextually sensible) `Default` implementation for a field is missing to derive those traits. While crates like Serde often do provide ways to supply custom implementations for fields, this usually has to be restated on each such field. Additionally, the syntax for doing so tends to differ between crates.
 
-Wrapper types, commonly used as workaround, add clutter to call sites or field types, and introduce mental overhead for developers as they have to manage distinct types without associated state transitions to work around the issues laid out in this section. They also require a distinct implementation for each combination of traits and lack discoverability through tools like rust-analyzer.
+Wrapper types, commonly used as workaround, add clutter to call sites or field types, and introduce mental overhead for developers as they have to manage distinct types without associated state transitions in order to work around the issues laid out in this section. They also require a distinct implementation for each combination of traits and lack discoverability through tools like rust-analyzer.
 
 Another pain point are sometimes missing `Into<>`-conversions when propagating errors with `?`, even though one external residual (payload) type may (sometimes *contextually*) be cleanly convertible into another. As-is, this usually requires a custom intermediary type, or explicit conversion using `.map_err(|e| …)` (or an equivalent function/extension trait). If an appropriate `From<>`-conversion can be provided *in scope*, then just `?` can be used.
 
 This RFC aims to address these pain points by creating a new path of least resistance that is easy to use and very easy to teach, intuitive to existing Rust-developers, readable without prior specific knowledge, discoverable as needed, has opportunity for rich tooling support in e.g. rust-analyzer and helpful error messages, is quasi-perfectly composable including decent re-use of composition, improves maintainability and (slightly) robustness to major-version dependency changes compared to newtype wrappers, and does not restrict crate API evolution, compromise existing coherence rules or interfere with future developments like specialisation. Additionally, it allows the implementation of more expressive (but no less explicit) extension APIs using syntax traits like in the `PartialEq<>`-example below, without complications should these traits be later implemented in the type-defining crate.
 
 For realistic examples of the difference this makes, please check the [rationale-and-alternatives] section.
+
+# (Pending changes to this draft)
+
+It should be possible to specify differences in the implementation environment directly where it is captured, e.g. as `BTreeSet<usize: PartialOrd in reverse + Ord in reverse>`, without bringing these implementations into scope.
+
+As this requires additional grammar changes and overall more adjustments to this document, I plan to tackle that a bit later.
+
+For now, see [explicit-binding] in *Future possibilities* below for more, but less rigorous, text about one possibility.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -167,8 +175,6 @@ Since scoped implementations allow crates to reusably implement external traits 
 Filename: fruit-comparer/src/lib.rs
 
 ```rust
-#![no_std]
-
 use apples::Apple;
 use oranges::Orange;
 
@@ -267,7 +273,7 @@ The core Rust language grammar is extended as follows:
 
   [E0178]: https://doc.rust-lang.org/error_codes/E0178.html
 
-  (Allowing unbraced imports like `use some_crate::impl<A, B> Trait<A> for Type<B> where A: Debug, B: Debug;` would break the source code's visual hierarchy quite badly, so I won't suggest it here, but it is possible without ambiguity too. If that is added for convenience, then I'm strongly in favour of rustfmt bracing the *TraitCoverage* by default and rust-analyzer suggesting it only braced.)
+  > Allowing unbraced imports like `use some_crate::impl<A, B> Trait<A> for Type<B> where A: Debug, B: Debug;` would break the source code's visual hierarchy quite badly, so I won't suggest it here, but it is possible without ambiguity too. If that is added for convenience, then I'm strongly in favour of rustfmt bracing the *TraitCoverage* by default and rust-analyzer suggesting it only braced.
 
   Here, *TraitCoverage* imports the specified scoped `impl Trait for Type` for binding and conflict checks as if defined in the scope containing the `use`-declaration. The resulting visibility is taken from *UseDeclaration*, like with *SimplePath*-imported items.
 
@@ -489,16 +495,22 @@ struct Type;
 trait Trait {}
 impl Trait for Type {}
 
+#[derive(Default)]
+struct Generic<T>(T);
+
 mod nested {
-    use super::{Trait, Type};
+    use super::{Trait, Type, Generic};
     use impl Trait for Type {};
-    pub type Distinct = (Type,);
+    pub type B = Generic<Type>;
 }
-use nested::Distinct;
+
+// `A` and `B` are distinct due to different captured implementation environments.
+type A = Generic<Type>;
+use nested::B;
 
 fn no_bound<T: 'static, U: 'static>(_: (T,), _: (U,)) {
     assert_eq!(TypeId::of::<T>(), TypeId::of::<U>());
-    assert_ne!(TypeId::of::<(T,)>(), TypeId::of::<(U,)>());
+    assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>());
 
     assert_eq!(TypeId::of::<T>(), TypeId::of::<Type>());
     assert_eq!(TypeId::of::<U>(), TypeId::of::<Type>());
@@ -506,17 +518,16 @@ fn no_bound<T: 'static, U: 'static>(_: (T,), _: (U,)) {
 
 fn yes_bound<T: Trait + 'static, U: Trait + 'static>(_: (T,), _: (U,)) {
     assert_ne!(TypeId::of::<T>(), TypeId::of::<U>());
-    assert_ne!(TypeId::of::<(T,)>(), TypeId::of::<(U,)>());
+    assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>());
 
     assert_eq!(TypeId::of::<T>(), TypeId::of::<Type>());
     assert_ne!(TypeId::of::<U>(), TypeId::of::<Type>());
 }
 
 fn main() {
-    no_bound((Type,), Distinct::default());
-    yes_bound((Type,), Distinct::default());
+    no_bound(A::default(), B::default());
+    yes_bound(A::default(), B::default());
 }
-
 ```
 
 In particular:
@@ -649,79 +660,202 @@ This is intentional, as it makes the following code trivial to reason about:
 
 (The main importance here is to not allow non-obvious dependencies of imports. Implementations can still access associated items of a *specific* other implementation by bringing it into a nested scope or binding to its associated items elsewhere. See also [independent-trait-implementations-on-discrete-types-may-still-call-shadowed-implementations].)
 
-## Contextual monomorphisation of generic implementations and generic functions
-[contextual-monomorphisation-of-generic-implementations-and-generic-functions]: #contextual-monomorphisation-of-generic-implementations-and-generic-functions
+## Binding choice by implementations' bounds
+[binding-choice-by-implementations-bounds]: #binding-choice-by-implementations-bounds
 
-Traits of generic type parameters (and of their associated types, recursively) are resolved to implementations according to the binding site of the generically implemented trait or generic function, which is in the code consuming that implementation.
+Implementations bind to other implementations as follows:
 
-This means generic implementations are monomorphised in different ways for the same type(s) when there is a difference in relevant scoped implementations for these types.
+| `where`-clause on `impl`? | binding-site of used trait | monomorphised by used trait? |
+|-|-|-|
+| Yes. | Bound at each binding-site of `impl`. | Yes, like-with or as-part-of type parameter distinction.  |
+| No. | Bound once at definition-site of `impl`. | No. |
+
+A convenient way to think about this is that *`impl`-implementations are blanket implementations over `Self` in different implementation environments*.
+
+Note that `Self`-bounds on associated functions do **not** cause additional monomorphic variants to be emitted, as these continue to only filter the surrounding implementation.
+
+Consider the following code with attention to the where clauses:
 
 ```rust
 struct Type;
-struct Type2<T>(T);
 
-trait Trait1 {
-    fn trait1();
-}
-impl Trait1 for Type {
-    fn trait1() {
-        print!("global");
-    }
-}
+// ❶
 
-trait Trait2 {
-    fn trait2(&self);
-}
-impl<T: Trait1> Trait2 for T {
-    fn trait2(&self) {
-        Self::trait1();
-    }
+trait Trait { fn function(); }
+impl Trait for Type { fn function() { println!("global"); } }
+
+trait Monomorphic { fn monomorphic(); }
+impl Monomorphic for Type {
+    fn monomorphic() { Type::function() }
 }
 
-trait Trait3 {
-    fn trait3(&self);
+trait MonomorphicSubtrait: Trait {
+    fn monomorphic_subtrait() { Self::function(); }
 }
-impl<T> Trait3 for Type2<T>
-where
-    T: Trait2,
+impl MonomorphicSubtrait for Type {}
+
+trait Bounded { fn bounded(); }
+impl Bounded for Type where Type: Trait {
+    fn bounded() { Type::function(); }
+}
+
+trait BoundedSubtrait: Trait {
+    fn bounded_subtrait() { Type::function(); }
+}
+impl BoundedSubtrait for Type where Type: Trait {}
+
+trait FnBoundedMonomorphic {
+    fn where_trait() where Self: Trait { Self::function(); }
+    fn where_monomorphic_subtrait() where Self: MonomorphicSubtrait { Self::monomorphic_subtrait(); }
+}
+impl FnBoundedMonomorphic for Type {}
+
+trait NestedMonomorphic { fn nested_monomorphic(); }
+
+trait BoundedOnOther { fn bounded_on_other(); }
+impl BoundedOnOther for () where Type: Trait {
+    fn bounded_on_other() { Type::function(); }
+}
+
+Type::function(); // "global"
+Type::monomorphic(); // "global"
+Type::monomorphic_subtrait(); // "global"
+Type::bounded(); // "global"
+Type::bounded_subtrait(); // "global"
+Type::where_trait(); // "global"
+Type::where_monomorphic_subtrait(); // "global"
+Type::nested_monomorphic(); // "scoped"
+()::bounded_on_other(); // "global"
+
 {
-    fn trait3(&self) {
-        self.0.trait2();
-    }
-}
-
-Type2(Type).trait3(); // "global"
-
-{
-    use impl Trait1 for Type {
-        fn trait1(&self) {
-            print!("scoped1");
+    // ❷
+    use impl Trait for Type {
+        fn function() {
+            println!("scoped");
         }
     }
 
-    Type2(Type).trait3(); // "scoped1"
+    // use impl FnBoundedMonomorphic for Type {}
+    // error: the trait bound `Type: MonomorphicSubtrait` is not satisfied
+
+    Type::function(); // "scoped"
+    Type::monomorphic(); // "global"
+    // Type::monomorphic_subtrait(); // error; shadowed by scoped implementation
+    Type::bounded(); // "scoped"
+    Type::bounded_subtrait(); // "scoped"
+    Type::where_trait(); // "global"
+    Type::where_monomorphic_subtrait(); // "global"
+    Type::nested_monomorphic(); // "scoped"
+    ()::bounded_on_other(); // "global"
 
     {
-        use impl Trait1 for Type {
-            fn trait1(&self) {
-                print!("scoped2");
-            }
+        // ❸
+        use impl MonomorphicSubtrait for Type {}
+        use impl FnBoundedMonomorphic for Type {}
+
+        impl NestedMonomorphic for Type {
+            fn nested_monomorphic() { Type::function() }
         }
 
-        Type2(Type).trait3(); // "scoped2"
-    }
-
-    {
-        use impl Trait1 for Type {
-            fn trait1(&self) {
-                print!("scoped3");
-            }
-        }
-
-        Type2(Type).trait3(); // "scoped3"
+        Type::function(); // "scoped"
+        Type::monomorphic(); // "global"
+        Type::monomorphic_subtrait(); // "scoped"
+        Type::bounded(); // "scoped"
+        Type::bounded_subtrait(); // "scoped"
+        Type::where_trait(); // "scoped"
+        Type::where_monomorphic_subtrait(); // "scoped"
+        Type::nested_monomorphic(); // "scoped"
+        ()::bounded_on_other(); // "global"
     }
 }
 ```
+
+The numbers ❶, ❷ and ❸ mark relevant item scopes.
+
+Generic item functions outside `impl` blocks bind and behave the same way as generic `impl`s with regard to scoped `impl Trait for Type`.
+
+### `Trait` / `::function`
+
+This is a plain monomorphic implementation with no dependencies. As there is a scoped implementation at ❷, that one is used in scopes ❷ and ❸.
+
+### `Monomorphic` / `::monomorphic`
+
+Another plain monomorphic implementations.
+
+As there is no bound, an implementation of `Trait` is bound locally in ❶ to resolve the `Type::function()`-call.
+
+This means that even though a different `use impl Trait for Type …` is applied in ❷, the global implementation remains in use when this `Monomorphic` implementation is called into from there and ❸.
+
+Note that the use of `Self` vs. `Type` in the non-default function body does not matter at all!
+
+### `MonomorphicSubtrait` / `::monomorphic_subtrait`
+
+Due to the supertrait, there is an implied bound `Self: Trait` *on the trait definition, but not on the implementation*.
+
+This means that the implementation remains monomorphic, and as such depends on the specific (global) implementation of `Trait` in scope at the `impl MonomorphicSubtrait …` in ❶.
+
+As this `Trait` implementation is shadowed in ❷, the `MonomorphicSubtrait` implementation is shadowed for consistency of calls to generics bounded on both traits.
+
+In ❸ there is a scoped implementation of `MonomorphicSubtrait`. As the default implementation is monomorphised for this implementation, it binds to the scoped implementation of `Trait` that is in scope here.
+
+### `Bounded` / `::bounded`
+
+The `Type: Trait` bound (can be written as `Self: Trait` &ndash; they are equivalent.) selects the `Bounded`-binding-site's `Type: Trait` implementation to be used, rather than the `impl Bounded for …`-site's.
+
+In ❶, this resolves to the global implementation as expected.
+
+For the scopes ❷ and ❸ together, `Bounded` gains one additional monomorphisation, as here another `Type: Trait` is in scope.
+
+### `BoundedSubtrait` / `::bounded_subtrait`
+
+As with `MonomorphicSubtrait`, the monomorphisation of `impl BoundedSubtrait for Type …` that is used in ❶ is shadowed in ❷.
+
+However, due to the `where Type: Trait` bound *on the implementation*, that implementation is polymorphic over `Trait for Type` implementations. This means a second monomorphisation is available in ❷ and its nested scope ❸.
+
+### `FnBoundedMonomorphic`
+
+`FnBoundedMonomorphic`'s implementations are monomorphic from the get-go just like `Monomorphic`'s.
+
+Due to the narrower bounds on functions, their availability can vary between receivers but always matches that of the global implementation environment:
+
+#### `::where_trait`
+
+Available everywhere since `Type: Trait` is in scope for both implementations of `FnBoundedMonomorphic`.
+
+In ❶, this resolves to the global implementation.
+
+In ❷, this *still* calls the global `<Type as Trait in ::>::function()` implementation since the global `FnBoundedMonomorphic` implementation is *not* polymorphic over `Type: Trait`.
+
+In ❸, `FnBoundedMonomorphic` is monomorphically reimplemented for `Type`, which means it "picks up" the scoped `Type: Trait` implementation that's in scope there from ❷.
+
+#### `::where_monomorphic_subtrait`
+
+In ❶, this resolves to the global implementation.
+
+In ❷, this *still* calls the global `<Type as MonomorphicSubtrait in ::>::monomorphic_subtrait()` implementation since the global `FnBoundedMonomorphic` implementation is *not* polymorphic over `Type: Trait`.
+
+Note that `FnBoundedMonomorphic` *cannot* be reimplemented in ❷ since the bound `Type: MonomorphicSubtrait` on its associated function isn't available in that scope, which would cause a difference in the availability of associated functions (which would cause a mismatch when casting to `dyn FnBoundedMonomorphic`).
+
+> It may be better to allow `use impl FnBoundedMonomorphic for Type {}` without `where_monomorphic_subtrait` in ❷ and disallow incompatible unsizing instead. I'm not sure about the best approach here.
+
+In ❸, `FnBoundedMonomorphic` is monomorphically reimplemented for `Type`, which means it "picks up" the scoped `Type: Trait` implementation that's in scope there from ❷.
+
+### `NestedMonomorphic` / `::nested_monomorphic`
+
+The global implementation of `NestedMonomorphic` in ❸ the binds to the scoped implementation of `Trait` on `Type` from ❷ internally. This allows outside code to call into that function indirectly without exposing the scoped implementation itself.
+
+### `BoundedOnOther` / `::bounded_on_other`
+
+As this discrete implementation's bound isn't over the `Self` type (and does not involved generics), it continues to act only as assertion and remains monomorphic.
+
+## Binding and generics
+
+`where`-clauses without generics or `Self` type, like `where (): Debug`, **do not** affect binding of implementations within an `impl` or `fn`, as the non-type-parameter-type `()` is unable to receive an implementation environment from the discretisation site.
+
+However, `where (): From<T>` **does** take scoped implementations into account because the blanket `impl<T, U> From<T> for U where T: Into<U> {}` is sensitive to `T: Into<()>` which is part of the implementation environment captured in `T`!
+
+This sensitivity even extends to scoped `use impl From<T> for ()` at the discretisation site, as the inverse blanket implementation of `Into` creates a scoped implementation of `Into` wherever a scoped implementation of `From` exists.  
+This way, existing symmetries are fully preserved in all contexts.
 
 ## Implicit shadowing of subtrait implementations
 
@@ -1119,7 +1253,7 @@ Instead of `TypeId::of::<AStruct<U, V, W>>()`, `TypeId::of::<(U, V, W)>()` can b
 ## Resolution on generic type parameters
 [resolution-on-generic-type-parameters]: #resolution-on-generic-type-parameters
 
-Scoped `impl Trait for Type`s (including `use`-declarations) can be applied to outer generic type parameters *at least* (see [unresolved-questions]) via scoped blanket `impl<T: Bound> Trait for T`.
+Scoped `impl Trait for Type`s (including `use`-declarations) can be applied to outer generic type parameters *at least* (see [unresolved-questions]) via scoped blanket `use impl<T: Bound> Trait for T`.
 
 However, a blanket implementation can only be bound on a generic type parameter iff its bounds are fully covered by the generic type parameter's bounds and other available trait implementations on the generic type parameter, in the same way as this applies for global implementations.
 
@@ -1364,15 +1498,14 @@ As a consequence of binding outside of generic contexts, it *is* possible to sta
 ```rust
 use std::fmt::{self, Display, Formatter};
 
-fn outside_scope(d: &dyn Display, f: &mut Formatter<'_>) -> fmt::Result {
-    d.fmt(f) // Binds to global/inherent implementation.
-}
-
 {
     use impl Display for dyn Display {
         fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            // Restore binding to inherent global implementation within this function.
+            use ::{impl Display for dyn Display};
+
             write!(f, "Hello! ")?;
-            outside_scope(self, f)?;
+            d.fmt(f)?;
             write!(f, " See you!")
         }
     }
@@ -1476,11 +1609,11 @@ Complexity aside, this could cause compiler performance issues since caching wou
 
 Fortunately, at least checking whether scoped implementations exist at all for a given trait and item scope should be reasonably inexpensive, so this hopefully won't noticeably slow down compilation of existing code.
 
-That implementation binding on generic type parameters is centralised to the type discretisation site(s) may also help a little in this regard.
+That implementation environment binding on generic type parameters is centralised to the type discretisation site(s) may also help a little in this regard.
 
 ## Cost of additional monomorphised implementation instances
 
-The [contextual-monomorphisation-of-generic-implementations-and-generic-functions] and the resulting additional instantiations of these implementations could have a detrimental effect on compile times and .text size (depending on optimisations).
+The additional instantiations of implementations resulting from  [binding-choice-by-implementations-bounds] could have a detrimental effect on compile times and .text size (depending on optimisations).
 
 This isn't unusual for anything involving *GenericParams*, but use of this feature could act as a multiplier to some extent. It's likely a good idea to evaluate relatively fine-grained caching in this regard, if that isn't in place already.
 
@@ -1494,6 +1627,18 @@ There may be tricky to debug issues for their consumers if a `TypeId` doesn't ma
 A partial mitigation would be to have rustc include captured scoped implementations on generic type parameters when printing types, but that wouldn't solve the issue entirely.
 
 Note that with this RFC implemented, `TypeId` would still report the same value iff evaluated on generic type parameters with distinct but bound-irrelevant captured implementations directly, as long as only these top-level implementations differ and no nested captured *implementation environments* do.
+
+## Marking a generic as implementation-invariant is a breaking change
+
+This concerns the split of [implementation-aware-generics] and [implementation-invariant-generics].
+
+"Implementation-aware" is the logic-safe default.
+
+"Implementation-invariant" has better ergonomics in some cases.
+
+It would be great to make moving from the default here only a feature addition. To do this, a new coherence rule would likely have to be introduced to make implementations conflict if any type becoming implementation-invariant would make them conflict, and additionally to make such implementations shadow each other (to avoid all-too-unexpected silent behaviour changes).
+
+However, even that would not mitigate the behaviour change of type-erasing collections that are keyed on such generics that become type-invariant later, so making this a breaking change is simpler and overall more flexible.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -1853,7 +1998,7 @@ fn main() {
 }
 ```
 
-Note that to export *discrete* scoped `impl Into` in addition to their scoped `impl From`, the glue crates can use the following pattern, which discretises the global implementation and as such binds each scoped `impl From`:
+Note that to export *discrete* scoped `impl Into` in addition to their scoped `impl From`, the glue crates can use the following pattern, which discretises the global implementation and as such binds to each scoped `impl From` in the respective exported scoped `impl Into`:
 
 ```rust
 pub use ::{
@@ -2239,7 +2384,7 @@ Similarly, types of generics with different captured *implementation environment
 
 ## Encourage readable code
 
-This RFC aims to further decreases the mental workload required for code review, by standardising glue code APIs to some degree and by clarifying their use in other modules.
+This RFC aims to further decrease the mental workload required for code review, by standardising glue code APIs to some degree and by clarifying their use in other modules.
 
 It also aims to create an import grammar that can be understood more intuitively than external newtypes when first encountered, which should improve the accessibility of Rust code somewhat.
 
@@ -2332,7 +2477,7 @@ Since scoped implementations work much like global ones, many of the existing er
 
 The implementation of the errors and warnings in the compiler can also benefit from the existing work done for global implementations, or in some cases outright apply the same warning to both scoped and global implementations.
 
-Since available-but-not-imported scoped implementations are easily discoverable by the compiler, they can be used to improve existing errors like *error[E0277]: the trait bound `[…]` is not satisfied* and *error[E0599]: no method named `[…]` found for struct `[…]` in the current scope* with quick-fix suggestions in at least some cases.
+Since available-but-not-imported scoped implementations are easily discoverable by the compiler, they can be used to improve existing errors like *error[E0277]: the trait bound `[…]` is not satisfied* and *error[E0599]: no method named `[…]` found for struct `[…]` in the current scope* with quick-fix suggestions also for using an existing scoped implementation in at least some cases.
 
 ### Maintenance warnings for ecosystem evolution
 
@@ -2359,7 +2504,7 @@ This is a *not entirely clean* ergonomics/stability trade-off, as well as a clea
 
 The main issue is that generics in the Rust ecosystem do not declare which trait implementations on their type parameters need to be consistent during their instances' lifetime, if any, and that traits like `PartialOrd` that do provide logical consistency guarantees over time are not marked as such in a compiler-readable way.
 
-Ignoring this and not having distinction of [implementation-aware-generics]' discretised variants would badly break logical consistency of generic collections like `BTreeSet<T>`, which relies on `Ord` to function.
+Ignoring this and not having distinction of [implementation-aware-generics]' discretised variants would badly break logical consistency of generic collections like `BTreeSet<T>`, which relies on `Ord`-consistency to function.
 
 On the other hand, certain types (e.g. references and (smart) pointers) that often wrap values in transit between modules *really* don't care about implementation consistency on these types. If these were distinct depending on available implementations on their values, it would create *considerable* friction while defining public APIs in the same scope as `struct` or `enum` definitions that require scoped implementations for `derive`s.
 
@@ -2370,6 +2515,17 @@ As a concrete example, this ensures that `Box<dyn Future<Output = Result<(), Err
 Functions pointers and closure trait( object)s should probably be fairly easy to pass around, with their internally-used bindings being an implementation detail. Fortunately, the Rust ecosystem already uses more specific traits for most configuration for better logical safety, so it's likely not too messy to make these implementation-invariant.
 
 Traits and trait objects cannot be implementation invariant (including for their associated types!) because it's possible to define `OrderedExtend` and `OrderedIterator` traits with logical consistency requirement on `Ord` between them.
+
+## Efficient compilation
+[efficient-compilation]: #efficient-compilation
+
+In theory, it should be possible to unify many instances of generic functions that may be polymorphic under this proposal cheaply before code generation. (Very few previously discrete implementations become polymorphic under scoped `impl Trait for Type`.)
+
+This is mainly an effect of [layout-compatibility] and [binding-choice-by-implementations-bounds], so that, where the differences are only bounds-irrelevant, generated implementations are easily identical in almost all cases. The exception here are [implementation-aware-generics]' `TypeId`s (see also [typeid-of-generic-type-parameters-opaque-types]). Checking for this exception should be cheap if done alongside checks for e.g. function non-constness if possible, which propagates identically from callee to caller.
+
+Given equal usage, compiling code that uses scoped implementations could as such be slightly more efficient compared to use of newtypes and the resulting text size may be slightly smaller in some cases where newtype implementations are inlined differently.
+
+The compiler should treat implementations of the same empty trait on the same type as identical early on, so that no code generation is unnecessarily duplicated. However, unrelated empty-trait implementations must still result in distinct `TypeId`s when captured in a generic type parameter and observed there by a `where`-clause or through nesting in an implementation-aware generic.
 
 ## Alternatives
 
@@ -2423,11 +2579,11 @@ There are some parallels between Genus's models and the scoped `impl Trait for T
 
 Some features are largely equivalent:
 
-| Genus | Rust | notes / scoped `impl Trait for Type` |
+| Genus | Rust (*without* scoped `impl Trait for Type`) | notes / scoped `impl Trait for Type` |
 |---|---|---|
 | Implicitly created default models | Explicit global trait implementations | Duck-typed implementation of unknown external traits is unnecessary since third party crates' implementations are as conveniently usable in scope as if global. |
 | Runtime model information / Wildcard models | Trait objects | Scoped implementations can be captured in trait objects, and the `TypeId` of generic type parameters can be examined. This does not allow for invisible runtime specialisation in all cases. |
-| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available implementations on type parameters of discretised implementation-aware generics are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of a type parameter's captured *implementation environment*.</p><p>However, typical Rust code also very heavily uses generics like references and closures to represent values passed through crate boundaries. To keep friction acceptably low by default, specific utility types are exempt from capturing implementations.</p> |
+| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available implementations on type parameters of discretised implementation-aware generics are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of a type parameter's captured *implementation environment*.</p><p>However, typical Rust code also very heavily uses generics like references and closures to represent values passed through crate boundaries. To keep friction acceptably low by default, specific utility types are exempt from capturing implementation environments in their type parameters.</p> |
 
 ## A Language for Generic Programming in the Large
 
@@ -2457,7 +2613,7 @@ and key differences:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- I'm not too sure about the "global" wording. *Technically* that implementation isn't available for method calls unless the trait is in scope... though it is available when resolving generics. Maybe "unscoped" in better?
+- I'm not too sure about the "global" wording. *Technically* that implementation isn't available for method calls unless the trait is in scope... though it is available when resolving generics. Maybe "unscoped" is better?
 
 - In macros, which function-call token should provide the resolution context from where to look for scoped `impl Trait for Type`s (in all possible cases)?
 
@@ -2506,10 +2662,6 @@ and key differences:
       Returned::<T: Trait in scoped> { field: value }
   }
   ```
-
-- How important is explicit binding? If it should be included here, which syntax should it use?
-
-  See [explicit-binding] in *Future possibilities* below for one possibility.
 
 ## Which `struct`s should be implementation-invariant?
 [which-structs-should-be-implementation-invariant]: #which-structs-should-be-implementation-invariant
@@ -3012,7 +3164,7 @@ impl<T, S: BuildHasher> HashSet<T, S> {
 
 (But at that point, it may be better to use something like an unsafe marker trait or unsafe trait with default implementations.)
 
-## Scoped bounds as contextual alternative to sealed traits
+## Sealed trait bounds
 
 This is probably pretty strange, and may not be useful at all, but it likely doesn't hurt to mention this.
 
@@ -3027,9 +3179,15 @@ pub use impl Trait for Type1 {}
 pub use impl Trait for Type2 {}
 ```
 
-With this construct, `function` could privately rely on implementation details of `Trait` on `Type1` and `Type2` without defining a new sealed wrapper trait.
+With this construct, `function` could privately rely on implementation details of `Trait` on `Type1` and `Type2` without defining a new sealed wrapper trait. It also becomes possible to easily define multiple sealed sets of implementations this way, by defining modules that export them.
 
-If the caller is allowed to use this function without restating the binding, then removing the scope would be a breaking change (as it is already with bindings captured on type parameters in public signatures, so that would be consistent for this syntactical shape).
+Overall this would act as a more-flexible but also more-explicit counterpart to sealed traits.
+
+Iff the caller is allowed to use this function without restating the binding, then removing the scope would be a breaking change (as it is already with bindings captured on type parameters in public signatures, so that would be consistent for this syntactical shape).
+
+Binding an implementation in a call as `function::<T: Trait in a>()` while it is constrained as `fn function<T: Trait in b>() { … }` MUST fail for distinct modules `a` and `b` even if the implementations are identical, as otherwise this would leak the implementation identity into the set of breaking changes.
+
+> That convenience (automatically using the correct implementations even if not in scope) also really should exist only iff there already is robust, near-effortless tooling for importing existing scoped implementations where missing. Otherwise this features here *would* get (ab)used for convenience, which would almost certainly lead to painful overly sealed APIs.
 
 ## Glue crate suggestions
 [glue-crate-suggestions]: #glue-crate-suggestions
@@ -3060,3 +3218,69 @@ my-crate_bevy_reflect_glue = "0.2.1"
 (This sketch doesn't take additional registries into account.)
 
 Ideally, crates.io should only accept existing crates here (but with non-existing version numbers) and Cargo should by default validate compatibility where possible during `cargo publish`.
+
+## Reusable limited-access APIs
+
+Given a newtype of an unsized type, like
+
+```rust
+#[repr(transparent)]
+pub struct MyStr(str);
+```
+
+for example, there is currently no safe-Rust way to convert between `&str` and `&MyStr` or `Box<MyStr>` and `Box<str>`, even though *in the current module which can see the field* this is guaranteed to be a sound operation.
+
+One good reason for this is that there is no way to represent this relationship with a marker trait, since any global implementation of such a trait would give outside code to this conversion too.
+
+With scoped `impl Trait for Type`, the code above could safely imply a marker implementation like the following in the same scope:
+
+```rust
+// Visibility matches newtype or single field, whichever is more narrow.
+
+use unsafe impl Transparent<str> for MyStr {}
+use unsafe impl Transparent<MyStr> for str {}
+// Could symmetry be implied instead?
+```
+
+(`Transparent` can and should be globally reflexive.)
+
+This would allow safe APIs with unlimited visibility like
+
+```rust
+pub fn cast<T: Transparent<U>, U>(value: T) -> U {
+    unsafe {
+        // SAFETY: This operation is guaranteed-safe by `Transparent`.
+        std::mem::transmute(value)
+    }
+}
+```
+
+and
+
+```rust
+unsafe impl<T: Transparent<U>, U> Transparent<Box<U>> for Box<T> {}
+unsafe impl<'a, T: Transparent<U>, U> Transparent<&'a U> for &'a T {}
+unsafe impl<'a, T: Transparent<U>, U> Transparent<&'a mut U> for &'a mut T {}
+```
+
+which due to their bound would only be usable where the respective `T: Transparent<U>`-implementation is in scope, that is where by-value unwrapping-and-then-wrapping would be a safe operation (for `Sized` types in that position).
+
+Overall, this would make unsized newtypes useful without `unsafe`, by providing a compiler-validated alternative to common reinterpret-casts in their implementation. The same likely also applies to certain optimisations for `Sized` that can't be done automatically for unwrap-then-wrap conversions as soon as a custom `Allocator` with possible side-effects is involved.
+
+If a module wants to publish this marker globally, it can do so with a separate global implementation of the trait, which won't cause breakage. (As noted in [efficient-compilation], the compiler should treat implementations of empty traits as identical early on, so that no code generation is unnecessarily duplicated.)
+
+> *Could* sharing pointers like `Arc` inherit this marker from their contents like `Box` could? I'm unsure. They probably *shouldn't* since doing this to exposed shared pointers could easily lead to hard-to-debug problems depending on drop order.
+>
+> A global
+>
+> ```rust
+> unsafe impl<T: Transparent<U>, U> Transparent<UnsafeCell<U>> for UnsafeCell<T> {}
+> ```
+>
+> should be unproblematic, but a global
+>
+> ```rust
+> unsafe impl<T> Transparent<T> for UnsafeCell<T> {}
+> ```
+>
+> (or vice versa) **must not** exist to allow the likely more useful implementations on `&`-like types.
