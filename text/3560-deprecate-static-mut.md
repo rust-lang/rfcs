@@ -58,7 +58,7 @@ fn main() {
 }
 ```
 
-Here, since the X is not an atomic (with predictable and defined relative ordering) nor synchronised with a `Mutex` or `RwLock', a data race takes place, printing numbers between 0 and 16 in a vaguely increasing fashion, data races are undefined behaviour and mean that our code is not correct. This and the previous example show that UB is almost trivial to cause with `static mut`, making it prone to occur by accident in a large codebase.
+Here, since the X is not an atomic (with predictable and defined relative ordering) nor synchronised with a `Mutex` or `RwLock`, a data race takes place, printing numbers between 0 and 16 in a vaguely increasing fashion, data races are undefined behaviour and mean that our code is not correct. This and the previous example show that UB is almost trivial to cause with `static mut`, making it prone to occur by accident in a large codebase.
 
 Let's try to use `static mut` for FFI purposes (a typical application of it); this is usually achieved in this fashion:
 ```rust
