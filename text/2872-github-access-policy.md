@@ -23,8 +23,6 @@ This policy applies to both the [Rust-Lang GitHub Organization](https://github.c
 
 Membership in the Rust-Lang GitHub organization is managed by the organization owners.
 
-All members of the [Core Team](https://github.com/rust-lang/team/blob/master/teams/core.toml) have the right to be organization owners.
-
 Selected members of the [Infrastructure Team](https://github.com/rust-lang/team/blob/master/teams/infra.toml) can also be organization owners if their work requires it.
 
 All GitHub accounts used to interact with the Rust-Lang GitHub organization (owner or non-owner) must have 2FA enabled.
