@@ -424,7 +424,9 @@ Adding something like this to Rust has been discussed many times throughout the 
 - Should this type `derive(Copy)`? `UnsafeCell` does not, which is unfortunate because it now means some people might use `T: Copy` as indication that there is no `UnsafeCell` in `T`.
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
 - When should `UnsafePinned<T>` be `Send` or `Sync`?
-  Self-referential futures can be `Send` because once they are pinned, they cannot be moved, so certainly they cannot be sent -- in other words, `Send` only constrains the unpinned state of a type.
+  `UnsafeCell` is `Send` but not `Sync` because of its interaction with shared references.
+  The corresponding choice for `UnsafePinned` would be to make it `Sync` but not `Send`, but that seems like an odd choice.
+  Given that `SyncUnsafeCell` was eventually proposed because the `!Sync` bound on `UnsafeCell` turned out to be too safe of a default for some cases, it may make sense to do the same with `UnsafePinned` and just have it inherit both `Send` and `Sync`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
