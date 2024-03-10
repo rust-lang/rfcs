@@ -82,6 +82,12 @@ since it depends on *when* `cargo install` was run, and the update history of
 all dependencies. This makes `cargo install`ed binaries essential black boxes
 with unknown dependency versions.
 
+Also, reproducability is valuable even in the absence of issues, as
+reproducability allows, for example, maintainers to sign release binaries, and
+allow others to confirm that those release binaries were correctly built from
+source by comparing the hash of the built binary with the hash of the released
+binary.
+
 One possible alternative is to add a `--unlocked` flag, and require that one of
 `--locked` and `--unlocked` be passed to `cargo install`, avoiding the element
 of surprise. This however would be extremely disruptive, as all instances of
