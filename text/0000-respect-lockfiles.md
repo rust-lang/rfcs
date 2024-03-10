@@ -74,6 +74,14 @@ versions of dependencies may also *introduce* bugs, which are more likely to
 cause issues in dependees, since the old versions of the dependency have been
 tested in the dependee, and the new versions have not.
 
+Additionally, this makes tracking down issues in a built binary very difficult.
+If a user has installed a binary with `cargo install`, and then reports issues
+with that binary, even if the version of the binary is known, it is
+more-or-less impossible to know which versions of which dependencies were used,
+since it depends on *when* `cargo install` was run, and the update history of
+all dependencies. This makes `cargo install`ed binaries essential black boxes
+with unknown dependency versions.
+
 One possible alternative is to add a `--unlocked` flag, and require that one of
 `--locked` and `--unlocked` be passed to `cargo install`, avoiding the element
 of surprise. This however would be extremely disruptive, as all instances of
