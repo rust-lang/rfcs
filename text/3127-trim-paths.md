@@ -157,7 +157,7 @@ If `trim-paths` is `none` (`false`), no extra flag is supplied to `rustc`.
 
 If `trim-paths` is anything else, then its value is supplied directly to `rustc`'s `--remap-path-scope` option, along with two `--remap-path-prefix` arguments:
 - From the path of the local sysroot to `/rustc/[commit hash]`. 
-- For the the current package (where the current working directory is in), from the the absolute path of the package root to empty string.
+- For the current package (where the current working directory is in), from the absolute path of the package root to empty string.
   For other packages, from the absolute path of the package root to `[package name]-[package version]`.
 
 The default value of `trim-paths` is `object` for release profile. As a result, panic messages (which are always embedded) are sanitised. If debug information is embedded, then they are sanitised; if they are split then they are kept untouched, but the paths to these split files are sanitised.
