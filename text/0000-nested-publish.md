@@ -177,9 +177,12 @@ When a valid parent package is packaged, each of its transitive nested dependenc
 
 The package index, and the `crates.io` user interface, does not explicitly represent nested packages; the package is presented as if it were a single package:
 
-* Nested packages' dependencies are flattened into the dependencies of the parent package.
-* The packages selected by nested packages' features must be rewritten in terms of the parent package's features.
-* Note that optional dependencies might become required if the parent package always enables the relevant feature, and required dependencies might become optional if the dependency on the nested package is optional.
+* Nested packages’ dependencies are flattened into the listed dependencies of the parent package.
+* Each optional dependency of a nested package so flattened must accurately represent the conditions for its activation in terms of the parent package's features (or lack thereof). To illustrate, note that the following cases might occur:
+    * Optional dependencies of a nested package can become required, if the parent package always enables the relevant feature of the nested package.
+    * Required dependencies of a nested package can become optional, if the dependency on the nested package which has that dependency is optional.
+    * Optional dependencies that stay optional must be listed as activated by the relevant feature(s) of the parent package; the feature names of nested packages never appear in the index.
+
 
 All together, this will reflect what can be expected when using the parent package, without revealing, or needing to represent, the nested package implementation details of the parent package.
 
