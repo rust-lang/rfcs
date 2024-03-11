@@ -1,7 +1,7 @@
 - Feature Name: `packages_as_namespaces`
 - Start Date: (fill me in with today's date, 2022-03-09)
 - RFC PR: [rust-lang/rfcs#3243](https://github.com/rust-lang/rfcs/pull/3243)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#122349](https://github.com/rust-lang/rust/issues/122349)
 
 # Summary
 
