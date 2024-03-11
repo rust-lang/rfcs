@@ -148,7 +148,7 @@ Two new possible values are added to the manifest.
 
 * The `dependencies.*.publish` field is newly defined, with the only currently allowed value being `"nested"`, to declare that that dependency is a nested dependency.
     * It is an error if a nested dependency does not have a `path` field, or if it has a `version`, `git`, or any other package source field, unless future work defines a meaning for that combination.
-    * Workspace inheritance is not permitted; `workspace.dependencies.*.publish` is an error at `cargo package`/`cargo publish` time. (Builds should ignore the field, for forward compatibility.)
+    * Workspace inheritance is not permitted; the presence of `workspace.dependencies.*.publish` is an error.
 
 When a nested dependency is present (making its referent be a nested package), the following additional requirements apply:
 
