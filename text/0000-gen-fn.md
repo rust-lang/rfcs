@@ -637,6 +637,22 @@ main = putStrLn $ show $ take 5 $ oddDup [1..20]
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## Self-referential `gen` blocks
+
+We can allow `gen` blocks to hold borrows across `yield` points. Should this be part of the initial stabilization?
+
+There are a few options for how to do this, either before or after stabilization (though this list is probably not complete):
+
+* Add a separate trait for pinned iteration that is also usable with `gen` and `for`.
+    * *Downside*: We would have very similar traits for the same thing.
+* Backward-compatibly add a way to change the argument type of `Iterator::next`.
+    * *Downside*: It's unclear whether this is possible.
+* Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block).
+    * *Downside*: The thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
+    * *Downside*: Now the `next` method takes a double-indirection as an argument `&mut Pin<&mut G>`, which may not optimize well sometimes.
+
+This RFC is forward compatible with any such designs. However, if we were to stabilize `gen` blocks that could not hold borrows across `yield` points, this would be a serious usability limitation that users might find surprising. Consequently, whether we should choose to address this before stabilization is an open question.
+
 ## Keyword
 
 Should we use `iter` as the keyword, as we're producing `Iterator`s?
@@ -743,22 +759,6 @@ This RFC's design is forward compatible with anything we decide on.
 
 At present it is only possible to have a `gen` block yield futures, but not `await` within it, similar to how
 you cannot write iterators that `await`, but that return futures from `next`.
-
-## Self-referential `gen` blocks
-
-We can allow `gen` blocks to hold borrows across `yield` points in the future.
-
-There are a few options forward (though this list is probably not complete):
-
-* Add a separate trait for pinned iteration that is also usable with `gen` and `for`.
-    * *Downside*: We would have very similar traits for the same thing.
-* Backward-compatibly add a way to change the argument type of `Iterator::next`.
-    * *Downside*: It's unclear whether this is possible.
-* Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block).
-    * *Downside*: The thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
-    * *Downside*: Now the `next` method takes a double-indirection as an argument `&mut Pin<&mut G>`, which may not optimize well sometimes.
-
-This RFC is forward compatible with any such designs, so I will not explore it here.
 
 ## `try` interactions
 
