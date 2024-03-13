@@ -315,7 +315,12 @@ Allowing nested libraries to be named and used from outside the package would al
 
 This would allow library authors to avoid writing fragile and hard-to-test conditional compilation, and allow library users to avoid accidentally depending on a feature being enabled despite not having enabled it explicitly. It would also allow compiling the optional functionality and its dependencies with maximum parallelism, by not introducing a single `feature`-ful library crate which acts as a single node in the dependency graph.
 
-However, it requires additional syntax and semantics, and these use cases might be better served by [#3243 packages as namespaces] or some other namespacing proposal, which would allow the libraries to be published independently. (I can also imagine a world in which both of these exist, and the library implementer can transparently use whichever publication strategy best serves their current needs.)
+However, most of the same functionality will already be provided by accepted RFC [#3243 packages as namespaces]. The differences to library authors between that and this would be:
+
+* This RFC would allow the public nested library packages to depend on private nested library packages, allowing them to have internally shared items without making them public at all (not even `#[doc(hidden)]`).
+* Packages-as-namespaces allows new versions of the namespaced packages to be published independently, and is thus more suited for “official plugins” that are loosely coupled and build on public API.
+
+Adding nested public libraries would have largely the same design considerations as nested public binaries, discussed in the previous section, and also need some way for a package to specify a dependency on some nested library.
 
 ## Additional privileges between crates
 
