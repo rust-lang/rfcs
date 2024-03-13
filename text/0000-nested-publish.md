@@ -163,10 +163,10 @@ It is an error for a nested package to have the same package name as the parent 
 
 When a valid parent package is packaged, each of its transitive nested dependencies must be included in the `.crate` archive file. This has two sub-cases:
 
-* The nested package may be in a subdirectory of the parent package directory. In this case, it is copied to the same location in the archive.
+* The nested package may be in a subdirectory of the parent package directory. In this case, it is copied to the same location in the archive, just like other packaged files.
 * Otherwise, it is copied to `.cargo/packages/<package name>/` within the archive.
 
-`Cargo.toml` files for nested packages are rewritten in the same way as is already done for all packages, except that `path` dependencies which are nested dependencies are kept rather than stripped out or rejected as they currently are. Their path values may need to be rewritten to point to the nested packages' new location in the archive.
+`Cargo.toml` files for nested packages are rewritten in the same way as is already done for all packages, except that `path` dependencies which are nested dependencies are kept, rather than stripped out or rejected, as they currently are. Their `path` values may need to be rewritten to point to the nested packages' new location in the archive.
 
 ## **`crates.io`**
 
@@ -175,7 +175,7 @@ When a valid parent package is packaged, each of its transitive nested dependenc
 * The dependency is a valid nested dependency as defined above. This includes that the the named package in fact exists in the `.crate` archive file, and has a valid `Cargo.toml` which declares `package.publish.nested = true`.
 * The `path`s in all contained manifests must not contain any upward traversal outside of the parent package (`../../`) or other hazardous or non-portable components as determined to be necessary.
 
-The package index, and the `crates.io` user interface, does not explicitly represent nested packages; the package is presented as if it were a single package:
+The package index, and the `crates.io` user interface, do not explicitly represent nested packages; the package is presented as if it were a single package:
 
 * Nested packages’ dependencies are flattened into the listed dependencies of the parent package.
 * Each optional dependency of a nested package so flattened must accurately represent the conditions for its activation in terms of the parent package's features (or lack thereof). To illustrate, note that the following cases might occur:
