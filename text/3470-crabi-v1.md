@@ -207,7 +207,7 @@ which is not equivalent to a string (unless using a UCS-4 encoding).
 ## Zero-sized types (e.g. `()` and `PhantomData`)
 
 crABI supports zero-sized types, such as `()` and `PhantomData`, as long as
-they have an alignment of 1. Thse types have only one value, and require zero
+they have an alignment of 1. These types have only one value, and require zero
 bits to convey, so they are not passed through the ABI at all, and do not
 appear in the translated C types or functions.
 
