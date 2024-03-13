@@ -159,6 +159,8 @@ When a nested dependency is present (making its referent be a nested package), t
 
 It is an error for a nested package to have the same package name as the parent package or any other nested package with the same parent package. This is validated by all Cargo operations that would generate or read a lockfile. Rationale: This should ensure that whenever a nested package must be named, such as in an `.crate` archive, potentially in lock files, and potentially in Cargo user interface, the pair of (parent package name, nested package name) is sufficient to uniquely identify the package.
 
+However, it is allowed for a nested package to have the same name as a package that is _not_ a nested package with the same parent package (either because the latter has a different parent package or because it is not a nested package). This is appropriate because nested package names are an implementation detail of the package, and necessary to avoid different library packages from accidentally conflicting with each other by using the same nested package name.
+
 ## **`cargo package` &amp; `cargo publish`**
 
 When a valid parent package is packaged, each of its transitive nested dependencies must be included in the `.crate` archive file. This has two sub-cases:
