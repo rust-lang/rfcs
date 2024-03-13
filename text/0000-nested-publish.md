@@ -157,7 +157,7 @@ When a nested dependency is present (making its referent be a nested package), t
 
   This check is intended only to prevent accidents (such as vendoring a third-party package without considering the implications of redistributing it). It is always valid to omit `package.license` from the nested package, thus making no machine-readable claims about its licensing.
 
-It is an error for a nested package to have the same package name as the parent package or any other nested package with the same parent package. This is validated by all Cargo operations that would generate or read a lockfile.
+It is an error for a nested package to have the same package name as the parent package or any other nested package with the same parent package. This is validated by all Cargo operations that would generate or read a lockfile. Rationale: This should ensure that whenever a nested package must be named, such as in an `.crate` archive, potentially in lock files, and potentially in Cargo user interface, the pair of (parent package name, nested package name) is sufficient to uniquely identify the package.
 
 ## **`cargo package` &amp; `cargo publish`**
 
