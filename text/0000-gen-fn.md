@@ -6,14 +6,7 @@
 # Summary
 [summary]: #summary
 
-Reserve the `gen` keyword in the 2024 edition.
-
-Add `gen {}` blocks to the language. These implement `Iterator` by `yield`ing
-elements. This is simpler and more intuitive than creating a custom type and
-manually implementing `Iterator` for that type, which requires writing an
-explicit `Iterator::next` method body. This is a change similar to adding `async
-{}` blocks that implement `Future` instead of having to manually write futures
-and their state machines.
+This RFC reserves the `gen` keyword in the Rust 2024 edition for generators and adds `gen { .. }` blocks to the language.  Similar to how `async` blocks produce values that can be awaited with `.await`, `gen` blocks produce values that can be iterated over using `for` loops.
 
 # Motivation
 [motivation]: #motivation
@@ -78,7 +71,7 @@ fn odd_dup(values: impl Iterator<Item = u32>) -> impl Iterator<Item = u32> {
                 yield value * 2;
             }
         }
-    }
+    }.into()
 }
 ```
 
@@ -137,13 +130,13 @@ need to be given arguments of type `Option`.
 
 ## Fusing
 
-`Iterator`s produced by `gen` keep returning `None` when invoked again after they have returned `None` once.
+Iterators produced by `gen` keep returning `None` when invoked again after they have returned `None` once.
 They do not implement `FusedIterator`, as that is not a language item, but may implement it in the future.
 
 ## Holding borrows across yields
 
 Since the `Iterator::next` method takes `&mut self` instead of `Pin<&mut self>`, we cannot create self-referential
-`gen` blocks. Self-referential `gen` blocks occur when you hold a borrow to a local variable across a yield point:
+`gen` blocks (but see the open questions). Self-referential `gen` blocks occur when you hold a borrow to a local variable across a yield point:
 
 ```rust
 gen {
@@ -199,7 +192,7 @@ This feature is mostly implemented via existing coroutines, though there are som
 
 * ...without arguments,
 * ...with an additional check forbidding holding borrows across `yield` points,
-* ...and with an automatic `Iterator` implementation.
+* ...and with an automatic implementation of a trait allowing the type to be used in `for` loops (see the open questions).
 * ...do not panic if invoked again after returning
 
 # Drawbacks
@@ -636,6 +629,10 @@ main = putStrLn $ show $ take 5 $ oddDup [1..20]
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+## Whether to implement `Iterator`
+
+There may be benefits to having the type returned by `gen` blocks *not* implement `Iterator` directly.  Instead, these blocks would return a type that implements either `IntoIterator` or a new `IntoGenerator` trait.  Such a design could leave us more appealing options for supporting self-referential `gen` blocks.  We leave this as an open question.
 
 ## Self-referential `gen` blocks
 
