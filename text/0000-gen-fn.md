@@ -191,11 +191,11 @@ on iterators over `Result`s.
 
 ## Implementation
 
-This feature is mostly implemented via existing generators, though there are some special cases.
+This feature is mostly implemented via existing coroutines, though there are some special cases.
 
 ### `gen` blocks
 
-`gen` blocks are the same as an unstable generator...
+`gen` blocks are the same as an unstable coroutine...
 
 * ...without arguments,
 * ...with an additional check forbidding holding borrows across `yield` points,
@@ -207,7 +207,7 @@ This feature is mostly implemented via existing generators, though there are som
 
 It's another language feature for something that can already be written entirely in user code.
 
-In contrast to `Generator`, `gen` blocks that produce `Iterator`s cannot hold references across `yield` points.
+In contrast to `Coroutine`s (currently unstable), `gen` blocks that produce iterators cannot hold references across `yield` points.
 See [`from_generator`][] which has an `Unpin` bound on the generator it takes to produce an `Iterator`.
 
 The `gen` keyword causes some fallout in the community, mostly around the `rand` crate, which has `gen` methods on its traits.
@@ -220,7 +220,7 @@ The `gen` keyword causes some fallout in the community, mostly around the `rand`
 
 We could use `iter` as the keyword.
 I prefer `iter` because I connect generators with a more powerful scheme than plain `Iterator`s.
-The `Generator` trait can do everything that `iter` blocks and `async` blocks can do and more.
+The unstable `Coroutine` trait (which was previously called `Generator`) can do everything that `iter` blocks and `async` blocks can do and more.
 I believe connecting the `Iterator` trait with `iter` blocks is the right choice,
 but that would require us to carve out many exceptions for this keyword as `iter` is used for module names and method names everywhere (including libstd/libcore).
 It may not be much worse than `gen` (see also [the unresolved questions][unresolved-questions]).
@@ -234,7 +234,7 @@ Some of these new methods would need to be very generic.
 While it's not an `Iterator` example, [`array::try_map`][] is something that has very complex diagnostics that are hard to improve, even if it's nice once it works.
 
 Users can use crates like [`genawaiter`](https://crates.io/crates/genawaiter) or [`propane`](https://crates.io/crates/propane) instead.
-`genawaiter` works on stable and provides `gen!` macro blocks that behave like `gen` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator. The `propane` crate uses the `Generator` trait from nightly and works mostly
+`genawaiter` works on stable and provides `gen!` macro blocks that behave like `gen` blocks, but don't have compiler support for nice diagnostics or language support for the `?` operator. The `propane` crate uses the `Coroutine` trait from nightly and works mostly
 like `gen` would.
 
 The standard library includes [`std::iter::from_fn`][], which can be used in
@@ -736,18 +736,18 @@ The macro would expand to a `for` loop + `yield`.
 yield_all!(iter)
 ```
 
-## Complete `Generator` support
+## Complete `Coroutine` support
 
-We already have a `Generator` trait on nightly that is more powerful than the `Iterator`
+We already have a `Coroutine` trait on nightly (previously called `Generator`) that is more powerful than the `Iterator`
 API could possibly be:
 
-1. It uses `Pin<&mut Self>`, allowing self-references in the generator across yield points.
+1. It uses `Pin<&mut Self>`, allowing self-references across yield points.
 2. It has arguments (`yield` returns the arguments passed to it in the subsequent invocations).
 
 Similar to the ideas around `async` closures,
-I think we could argue for `Generators` to be `gen` closures while `gen` blocks are a simpler concept that has no arguments and only captures variables.
+I think we could argue for coroutines to be `gen` closures while `gen` blocks are a simpler concept that has no arguments and only captures variables.
 
-Either way, support for full `Generator`s should be discussed and implemented separately,
+Either way, support for full coroutines should be discussed and implemented separately,
 as there are many more open questions around them beyond a simpler way to write `Iterator`s.
 
 ## `async` interactions
