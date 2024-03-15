@@ -85,7 +85,7 @@ Iterators created with `gen` return `None` once they `return` (implicitly at the
 
 Starting in the 2024 edition, `gen` is a keyword that cannot be used for naming any items or bindings.
 This means during the migration to the 2024 edition, all variables, functions, modules, types, etc. named `gen` must be renamed
-or be referred to via `k#gen`.
+or be referred to via `r#gen`.
 
 ## Returning/finishing an iterator
 
@@ -163,7 +163,7 @@ gen {
 [reference-level-explanation]: #reference-level-explanation
 ## New keyword
 
-In the 2024 edition we reserve `gen` as a keyword. Previous editions will use `r#gen` to get the same features.
+In the 2024 edition we reserve `gen` as a keyword. Previous editions will use `k#gen` to get the same features.
 
 ## Error handling
 
