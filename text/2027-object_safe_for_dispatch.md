@@ -83,7 +83,7 @@ dispatch.
 [how-we-teach-this]: #how-we-teach-this
 
 This is just a slight tweak to how object safety is implemented. We will need
-to make sure the the official documentation is accurate to the rules,
+to make sure that the official documentation is accurate to the rules,
 especially the reference.
 
 However, this does not need to be **highlighted** to users per se in the

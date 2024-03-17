@@ -216,7 +216,7 @@ command-line.
 * Features listed in the `--features` flag no longer pay attention to the
   package in the current directory. Instead, it only enables the given
   features for the selected packages. Additionally, the features are enabled
-  only if the the package defines the given features.
+  only if the package defines the given features.
 
   For example:
 

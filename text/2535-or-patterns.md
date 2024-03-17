@@ -764,7 +764,7 @@ following operations (where `a`, `b`, and `c` are arbitrary regexes):
 + Grouping: used to define the scope of what operators apply to.
   Commonly written as `(a)`.
 
-Formally, the the minimal formalism we need is:
+Formally, the minimal formalism we need is:
 
 ```rust
 pat : terminal | pat pat | pat "|" pat | "(" pat ")" ;

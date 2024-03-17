@@ -21,7 +21,7 @@ This RFC is not authored by a lawyer, so its reasoning may be wrong.
 Currently, the Rust RFCs repo is in a state where no clear open source license
 is specified.
 
-The current legal base of the the RFCs repo is the "License Grant to Other
+The current legal base of the RFCs repo is the "License Grant to Other
 Users" from the [Github ToS]`*`:
 
 ```

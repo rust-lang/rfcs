@@ -193,7 +193,7 @@ the MSVC target with `/MD`, indicating dynamic linkage. Otherwise if the value
 is `static` it will compile code with `/MT`, indicating static linkage. Because
 today the MSVC targets use dynamic linkage and gcc-rs compiles C code with `/MD`,
 gcc-rs will remain forward and backwards compatible with existing and future
-Rust MSVC toolchains until such time as the the decision is made to change the
+Rust MSVC toolchains until such time as the decision is made to change the
 MSVC toolchain to `+crt-static` by default.
 
 ### Lazy link attributes

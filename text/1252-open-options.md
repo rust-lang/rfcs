@@ -56,7 +56,7 @@ time. No guarantees are made about the order writes end up in the file though.
 Note: sadly append-mode is not atomic on NFS filesystems.
 
 One maybe obvious note when using append-mode: make sure that all data that
-belongs together, is written the the file in one operation. This can be done
+belongs together, is written to the file in one operation. This can be done
 by concatenating strings before passing them to `write()`, or using a buffered
 writer (with a more than adequately sized buffer) and calling `flush()` when the
 message is complete.
