@@ -8,6 +8,9 @@
 
 Make `cargo install` respect lockfiles by default.
 
+Allow opting-in to installing with latest semver-compatible dependencies with
+`cargo install --unlocked`.
+
 # Motivation
 [motivation]: #motivation
 
@@ -34,7 +37,13 @@ existing documentation for `cargo build` and lockfiles.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When running `cargo install`, lockfiles are respected.
+When running `cargo install`, both with a path, i.e., `cargo install --path
+PATH`, and with a crate name to be installed from
+[crates.io](https://crates.io), i.e., `cargo install CRATE`, lockfiles are
+respected.
+
+To install a crate with the latest semver-compatible version, pass `--unlocked`
+to `cargo install`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -92,6 +101,9 @@ One possible alternative is to add a `--unlocked` flag, and require that one of
 `--locked` and `--unlocked` be passed to `cargo install`, avoiding the element
 of surprise. This however would be extremely disruptive, as all instances of
 `cargo install` invocations not using `--locked` would need to be changed.
+
+Another alternative is to add a field to `Cargo.toml`, `locked`, which if
+`true`, make `cargo install` respect the lockfile.
 
 The impact of not doing this is continued issues and breakages stemming from
 the surprising behavior of `cargo install`.
