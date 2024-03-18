@@ -877,7 +877,7 @@ pub fn references<'a>(a: &'a mut str) -> &'static MyType {}
       "type": {
         "kind": "resolved_path",
         "inner": {
-          "name": "String",
+          "name": "MyType",
           "id": "5:4936",
           "args": {
             "angle_bracketed": {
