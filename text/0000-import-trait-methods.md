@@ -80,7 +80,24 @@ mod b {
 }
 ```
 
-You cannot import a parent trait method from a sub-trait.
+Trait methods can also be renamed when they are imported using the usual `as` syntax:
+```rust
+use Default::default as gimme
+
+struct S {
+    a: HashMap<i32, i32>,
+}
+
+impl S {
+    fn new() -> S {
+        S {
+            a: gimme()
+        }
+    }
+}
+```
+
+You cannot import a parent trait method from a sub-trait:
 
 ```rust
 use num_traits::float::Float::zero; // Error: try `use num_traits::identities::Zero::zero` instead.
@@ -142,11 +159,11 @@ Trait::method(x, y, z);
 
 Additionally, the syntax
 ```rust
-use Trait::self;
+use some_module::Trait::self;
 ```
 is sugar for
 ```rust
-use Trait;
+use some_module::Trait;
 ```
 
 The restriction on importing parent trait methods is a consequence of this desugaring, see https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=51bef9ba69ce1fc20248e987bf106bd4 for examples of the errors you get when you try to call parent trait methods through a child trait. We will likely want better error messages than this if a user tries to import a parent method.
