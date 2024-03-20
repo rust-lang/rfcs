@@ -53,7 +53,7 @@ Importing a method from a trait does not import the trait. If you want to call `
 
 ```rust
 mod a {
-    trait A {
+    pub trait A {
         fn new() -> Self;
         fn do_something(&self);
     }
@@ -97,10 +97,10 @@ impl S {
 }
 ```
 
-You cannot import a parent trait method from a sub-trait:
+You can also import a parent trait method from a sub-trait:
 
 ```rust
-use num_traits::float::Float::zero; // Error: try `use num_traits::identities::Zero::zero` instead.
+use num_traits::float::Float::zero;
 
 fn main() {
     let x : f64 = zero();
@@ -116,7 +116,8 @@ When
 ```rust
 use Trait::method as m;
 ```
-occurs, a new item `m` is made available in the function namespace of the current module. Any attempts to call this item are treated calling the trait method explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the method in the trait. In other words, the example:
+occurs, we first find the supertrait in which `method` occurs.
+A new item `m` is made available in the function namespace of the current module. Any attempts to call this item are treated calling the (super-)trait method explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the method in the trait. In other words, the example:
 
 ```rust
 use Default::default;
@@ -166,7 +167,26 @@ is sugar for
 use some_module::Trait;
 ```
 
-The restriction on importing parent trait methods is a consequence of this desugaring, see https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=51bef9ba69ce1fc20248e987bf106bd4 for examples of the errors you get when you try to call parent trait methods through a child trait. We will likely want better error messages than this if a user tries to import a parent method.
+Finally, given traits 
+```rust
+trait Super {
+    fn f();
+}
+
+trait Sub : Super {
+}
+```
+the usage
+```rust
+use module::Sub::f;
+f();
+```
+desugars to
+```rust
+use module::Sub::f;
+Super::f();
+```
+**not** `Sub::f();` as that desugaring will cause compiler errors, see https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=51bef9ba69ce1fc20248e987bf106bd4.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -189,6 +209,8 @@ In [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Wr
 3. It does, but only for method, that's something new for the language (need new more fine-grained tracking of traits in scope)
 
 Option 1 is what is proposed here. It has the simplest semantics, and I believe it best matches the user intent when they import a trait method; the desire is to make that method available as-if it were a regular function. Furthermore, it is more minimalist than the other two options in the sense that you can get to option 2 simply by importing the trait also. Option 3 seems like extra complexity for almost no added value.
+
+An earlier version of this RFC proposed not allowing `use Trait::super_trait_method`. This was changed because comments indicated this usecase would be common.
 
 ## What is the impact of not doing this?
 
