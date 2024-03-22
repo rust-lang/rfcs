@@ -232,7 +232,7 @@ During the transition period, any `CARGO_TARGET_DIR` that was defined as contain
 
 ## Brace expansion
 
-Bash has [brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html), other shells too. By using `{manifest-path-hash}` we risk users getting bitten by that behaviour. Brace expansion is not activated when there are no `,` nor `..` inside the `{}` so cargo should be fine. Since brace expansion is done at the shell level, cargo won't be able to detect it if it happens.
+Bash has [brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html), other shells too. By using `{manifest-path-hash}` we risk users getting bitten by that behaviour. Brace expansion is only activated when there are `,` or `..` inside the `{}` so cargo should be fine. Since brace expansion is done at the shell level, cargo won't be able to detect it if it happens.
 
 Escaping, using single quotes (`'`) or even double quotes (`"`) will work to disable brace expansion, making it even easier to work around it if needed.
 
