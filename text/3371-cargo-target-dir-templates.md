@@ -385,7 +385,7 @@ The section merely provides additional information.
 - Introduce remapping into the concept in some way.
 - Introduce a form of garbage collection for these target directories so we don't leak them when projects are deleted, see [rust-lang/cargo#13136](https://github.com/rust-lang/cargo#13136) (essentially, backlinks)
 
-## Adding `{xdg-cache-home}`, `{home}`, `{cargo-home}` or `{user-base-target-directory}` as templates
+## Adding more template variables
 
 OS-native cache directories are discussed more in details in [rust-lang/cargo#1734](https://github.com/rust-lang/cargo/issues/1734), there are semantic and naming issues to resolve before moving forward with them in cargo (and so as template for `CARGO_TARGET_DIR`).
 
