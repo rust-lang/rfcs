@@ -8,7 +8,7 @@
 
 <!-- One paragraph explanation of the feature. -->
 
-Introduce templating to `CARGO_TARGET_DIR` to have `cargo` adapts its target directory dynamically depending on (at least) the manifest's path.
+Introduce templating to `CARGO_TARGET_DIR`, allowing `cargo` to adapt its target directory dynamically depending on (at least) the manifest's path with the `{manifest-path-hash}` key.
 
 # Motivation
 [motivation]: #motivation
