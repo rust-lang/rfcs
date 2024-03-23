@@ -127,7 +127,7 @@ Templating does not interfere with the resolution order of `CARGO_TARGET_DIR`. F
 
   ```toml
   [build]
-  target-base-dir = "/absolute/path/to/cache/{manifest-path-hash}"
+  target-dir = "/absolute/path/to/cache/{manifest-path-hash}"
   ```
 
 - Through the environment variable: `CARGO_TARGET_DIR="/absolute/path/to/cache/{manifest-path-hash}" cargo build`
