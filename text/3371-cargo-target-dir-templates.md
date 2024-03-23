@@ -394,9 +394,8 @@ It is certainly possible to add at least `{home}` and `{cargo-home}` but it can 
 
 ## Use templated `CARGO_TARGET_DIR` as the default instead of `target`
 
-1. This has several unresolved issues, notably: what default value do we use ? This discussion is already happening in [rust-lang/cargo#1734](https://github.com/rust-lang/cargo/issues/1734)) and does not block this RFC
-2. How do we communicate on said default values ?
-3. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon. Note that having forward links active by default (see relevant section earlier in the RFC) will help offset a lot of the problems here.
+1. What default value do we use ? This discussion is already happening in [rust-lang/cargo#1734](https://github.com/rust-lang/cargo/issues/1734)) and does not block this RFC (and also came up with `cargo script` and as been discussed at length there, we would use the same default as chosen for it)
+2. This would probably break backward compatibility and lots of tools ? We could heavily advertise the option in the Rust book and Cargo's documentation but making it the default is probably not something we will be able (or even willing) to do any time soon. Note that having forward links active by default (see relevant section earlier in the RFC) will help offset a lot of the problems here.
 
 ## Introducing more data to the hash
 
