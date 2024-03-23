@@ -188,16 +188,13 @@ Its possible values would be:
 
 It is possible to call `cargo build` for the same project twice with two different target directories to avoid build locks (common when building with different features or to have Rust-Analyzer work in a different target directory for example), which poses a problem for forward links: if `target-dir-link` is active, `cargo` could be replacing the `./target` symlink constantly.
 
-This can be configured through another option, `target-dir-link-replace`, with the following possible values:
+Cargo, when trying to create the forward link (so for `true` and `"auto"`), will handle the situation predictably in the following way:
 
-- `"notify"` (the default): replace and show the user a note about the replacement
-- `"warn"`: replace and show the user a warning about the replacement
-- `"silent"`: replace silently
-- `"never"`: do not replace
+- If no `target` *link or directory* is present: create it as expected by `target-dir-link`
+- If a `target` *link* is present: update the link
+- If a `target` *directory* is present: consider it a failure, respond accordingly to `true` or `"auto"`
 
-If the forward link doesn't exist already, this option has no effect. If the forward link exist and is the same as the would-be new one, no note nor warning will be produced.
-
-With both of these options, callers of cargo will be able to use `--config KEY=VALUE` to override it, for example a Rust-Analyzer config could use `cargo.extraArgs = ["--config", "target-dir-link=false"]` to ensure R-A never touches them.
+Callers of cargo will be able to use `--config KEY=VALUE` to override it, for example a Rust-Analyzer config could use `cargo.extraArgs = ["--config", "target-dir-link=false"]` to ensure R-A never touches forward links.
 
 ## Impact on `cargo ...` calls
 
