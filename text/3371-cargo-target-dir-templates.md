@@ -304,9 +304,8 @@ Overall, I feel remapping is much harder to implement well and can be added late
 It's possible to achieve most of the same system proposed here by setting a value like `CARGO_TARGET_DIR="/base/dir/{manifest-path-dirs}"`, where a manifest in `/tmp/test1/test2/Cargo.toml` would resolve the build directory to `/base/dir/tmp/test1/test2/`, but most is not *all* of them:
 
 1. Hashes have a fixed length while `manifest-path-dirs` is dependent on the context, making it a hazard for cross-platform compatibility. Say on Windows the target-dir is rooted in a user tmp dir and the manifest path is inside of the user documents. Especially combined with corporate policies on names, those base paths alone can take up a good amount of the character budget without getting into project names, etc.
-2. More traversals: by using a hash always cut in the same way to form subdirectories, it's easy to plan traversals for the filesystem
-3. Encourage interactions through `cargo-metadata`: by using paths computed through cargo and not easily derivable from the file tree, future tools will be incentivized to work through `cargo-metadata` to find the target directory, widening adoption and making it easier for the cargo team to ensure nothing breaks in subsequent cargo updates
-4. Avoid introducing a strong dependency on only the path: by using a hash, cargo can add element to it to help differentiate builds: for example we could use more parameters in the hash, see the relevant section in Future Possibilites
+2. Encourage interactions through `cargo-metadata`: by using paths computed through cargo and not easily derivable from the file tree, future tools will be incentivized to work through `cargo-metadata` to find the target directory, widening adoption and making it easier for the cargo team to ensure nothing breaks in subsequent cargo updates
+3. Avoid introducing a strong dependency on only the path: by using a hash, cargo can add element to it to help differentiate builds: for example we could use more parameters in the hash, see the relevant section in Future Possibilites
 
 # Prior art
 [prior-art]: #prior-art
