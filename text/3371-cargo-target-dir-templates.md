@@ -211,6 +211,10 @@ Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, 
 
 <!-- Why should we *not* do this? -->
 
+## Transition period
+
+During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it. In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's better than silently breaking workflows.
+
 ## One more option to find the target directory
 
 This introduces one more option to look at to find the target directory, which may complicate the life of external tools.
@@ -222,10 +226,6 @@ This is mitigated by the forward link provided by default by `cargo` when using 
 Depending on what naming scheme is used (e.g., a very long hash), we could hit the Windows path length limits if not careful.
 
 A mitigation for this is recommending a short prefix (in `CARGO_TARGET_DIR`) and using a hash that doesn't include that many characters but those are only mitigations and do not fully fix the underlying problem.
-
-## Transition period
-
-During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it. In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's better than silently breaking workflows.
 
 ## Brace expansion
 
