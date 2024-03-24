@@ -213,7 +213,11 @@ Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, 
 
 ## Transition period
 
-During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it. In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's better than silently breaking workflows.
+During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it.
+
+"How to fix it" will have two solutions: change the configured target directory to not use the new key or use a newer version of cargo (which will not be available at the beginning since it won't exist).
+
+ In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's probably better than silently breaking workflows.
 
 ## One more option to find the target directory
 
@@ -306,6 +310,19 @@ It's possible to achieve most of the same system proposed here by setting a valu
 1. Hashes have a fixed length while `manifest-path-dirs` is dependent on the context, making it a hazard for cross-platform compatibility. Say on Windows the target-dir is rooted in a user tmp dir and the manifest path is inside of the user documents. Especially combined with corporate policies on names, those base paths alone can take up a good amount of the character budget without getting into project names, etc.
 2. Encourage interactions through `cargo-metadata`: by using paths computed through cargo and not easily derivable from the file tree, future tools will be incentivized to work through `cargo-metadata` to find the target directory, widening adoption and making it easier for the cargo team to ensure nothing breaks in subsequent cargo updates
 3. Avoid introducing a strong dependency on only the path: by using a hash, cargo can add element to it to help differentiate builds: for example we could use more parameters in the hash, see the relevant section in Future Possibilites
+
+## Alternatives to the transition period
+
+While unlikely, the transition period may break workflows by introducing errors for previously valid target directories.
+Several alternatives exist for this:
+
+1. Do the transition immediately and silently: any `CARGO_TARGET_DIR` previously using the exact new key will change meaning, though as noted before, it is unlikely to have been set to that in practice.
+  - Rust and Cargo both tend to shy away from making silent changes when they can affect observable behaviour.
+2. Introduce a config to deactivate it fully, something like `CARGO_TARGET_DIR_USE_TEMPLATING=false`.
+  - We want to avoid config proliferation, especially a config that is intended to disappear once the transition period is over.
+3. Ignore the templating if a directory exists at `/path/to/{manifest-path-hash}` (without interpreting the key) and do the transition immediately.
+  - The newer `cargo` could print a note or warning noting the change occured.
+  - This could work well, though any existing workflow relying on the target dir path would break if not using `cargo metadata` (again, it is very unlikely for this exact key to be present in a target directory).
 
 # Prior art
 [prior-art]: #prior-art
