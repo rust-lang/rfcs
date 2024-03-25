@@ -206,18 +206,20 @@ In the same vein, `cargo metadata` fills the target directory information with t
 
 Currently, if `CARGO_TARGET_DIR` is set to anything but `target` for a project, `cargo clean` does not delete the `target/` directory if it exists, instead deleting the directory pointed by `CARGO_TARGET_DIR`. The same behavior is used for the templated version: if it set, `cargo clean` deletes `/path/to/<manifest-path-hash>/` and not `target/`.
 
+## Transition period
+
+During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, will provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it.
+
+"How to fix it" will have two solutions: change the configured target directory to not use the new key or use a newer version of cargo (which will not be available at the beginning since it won't exist).
+
+ In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's better than silently breaking workflows.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
 <!-- Why should we *not* do this? -->
 
-## Transition period
-
-During the transition period, any `CARGO_TARGET_DIR` that was defined as containing `{manifest-path-hash}` will change meaning. `cargo`, for at least one stable version of Rust, should provide errors about this and point to either this RFC or its documentation to explain why the incompatiblity arised and how to fix it.
-
-"How to fix it" will have two solutions: change the configured target directory to not use the new key or use a newer version of cargo (which will not be available at the beginning since it won't exist).
-
- In practice, paths with `{` or `}` in it are unlikely, even more with the exact key used by cargo here, so maybe no one will ever see the error, but it's probably better than silently breaking workflows.
+- Breaking change for `CARGO_TARGET_DIR` since previously valid settings could become invalid (see "Transition period" section).
 
 ## One more option to find the target directory
 
