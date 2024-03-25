@@ -23,19 +23,22 @@ The up-side to this change is that in the new style it will be possible to decla
 Rust can utilize functions and statics from foreign code that are provided during linking, though it is `unsafe` to do so.
 
 An `extern` block can be placed anywhere a function declaration could appear (generally at the top level of a module).
-* You can always write `unsafe extern { ... }`.
-* If the `unsafe_code` lint is denied or forbidden at a particular scope it will cause the `unsafe extern` block to be a compilation error within that scope.
-* On editions >= 2024, you must write all `extern` blocks as `unsafe extern`.
-* On editions < 2024, it is allowed to write an `extern` block *without* the `unsafe` keyword, but this generates a compatibility warning that you should use the `unsafe` keyword.
+
+* On editions >= 2024, you *must* write all `extern` blocks as `unsafe extern`.
+* On editions < 2024, you *may* write `unsafe extern`, or you can write an `extern` block without the `unsafe` keyword. Writing an `extern` block without the `unsafe` keyword is provided for compatibility only, and will generate a warning.
+* `unsafe extern` interacts with the `unsafe_code` lint, and a `deny` or `forbid` with that lint will deny or forbid the unsafe external block.
 
 Within an `extern` block is zero or more declarations of external functions and/or external static values.
 An extern function is declared with a `;` instead of a function body (similar to a method of a trait).
 An extern static value is also declared with a `;` instead of an expression (similar to an associated const of a trait).
 In both cases, the actual function body or value is provided by whatever external source (which is probably not even written in Rust).
 
-When an `extern` block is used (with or without `unsafe` in front of it), all declarations within that `extern` block should have the `unsafe` or `safe` keywords as part of their signature.
-If one of the two keywords is not explicitly provided, the declaration is assumed to be `unsafe`.
-The `safe` keyword is a contextual keyword, only used within `extern` blocks.
+When an `unsafe extern` block is used, all declarations within that `extern` block *should* have the `unsafe` or `safe` keywords as part of their signature.
+If one of the two keywords is not explicitly provided, the declaration is assumed to be `unsafe`, and also a warning is generated.
+The `safe` keyword is a contextual keyword, it is currently only used within `extern` blocks.
+
+If an `extern` block is used in an older edition without the `unsafe` keyword, declarations *cannot* specify `safe` or `unsafe`.
+Code must update to `unsafe extern` style blocks if it wants to make `safe` declarations.
 
 ```rust
 unsafe extern {
