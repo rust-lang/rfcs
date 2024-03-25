@@ -60,7 +60,7 @@ unsafe extern {
 Once they are unsafely declared, a `safe` item can be used outside the `extern` block as if it were any other safe function or static value declared within rust.
 The unsafe obligation of ensuring that the correct items are being linked to is performed by the crate making the declaration, not the crate using of that declaration.
 
-Items declared as `unsafe` *must* still have a correctly matching signature at compile time, but they *also* some sort of additional obligation for correct usage at runtime.
+Items declared as `unsafe` *must* still have a correctly matching signature at compile time, but they *also* have some sort of additional obligation for correct usage at runtime.
 They can only be used within an `unsafe` block.
 
 # Reference-level explanation
