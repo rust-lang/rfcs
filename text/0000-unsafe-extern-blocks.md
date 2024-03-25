@@ -61,7 +61,7 @@ unsafe extern {
 `extern` blocks are `unsafe` because if the declaration doesn't match the actual external function, or the actual external data, then it causes compile time Undefined Behavior (UB).
 
 Once they are unsafely declared, a `safe` item can be used outside the `extern` block as if it were any other safe function or static value declared within rust.
-The unsafe obligation of ensuring that the correct items are being linked to is performed by the crate making the declaration, not the crate using of that declaration.
+The unsafe obligation of ensuring that the correct items are being linked to is performed by the crate making the declaration, not the crate using that declaration.
 
 Items declared as `unsafe` *must* still have a correctly matching signature at compile time, but they *also* have some sort of additional obligation for correct usage at runtime.
 They can only be used within an `unsafe` block.
