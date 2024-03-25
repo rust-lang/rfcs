@@ -406,7 +406,7 @@ As a workaround, it is possible to use `CARGO_TARGET_DIR="${XDG_CACHE_HOME:-~/.c
 
 It won't work in the `config.toml` but it will work with the environment variable and the command line option, both of which override the TOML config.
 
-It is certainly possible to add at least `{home}` and `{cargo-home}` but it can be done in the future without interfering at all with `{manifest-path-hash}`, making it a good option for a future addition without blocking.
+It is certainly possible to add at least `{home}`, `{cargo-home}` and something like `{cargo-default-target-dir}` but it can be done in the future without interfering at all with `{manifest-path-hash}`, making it a good option for a future addition without blocking.
 
 ## Use templated `CARGO_TARGET_DIR` as the default instead of `target`
 
