@@ -31,21 +31,25 @@ pub extern "C" fn callback_function() -> i32 {
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-In the LLVM IR that rustc generates, It would also need to account to that attribute, and add the corresponding needed IR that is needed if present.
+The stack_realign attribute is specified as follows:
+```
+#[stack_realign]
+```
+When the stack_realign attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly.
 
 # Drawbacks
 [drawbacks]: #drawbacks
-At this moment I do not see or know any drawback.
+Introducing a new attribute adds complexity to the language.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
-An alternative could be a macro workaround instead of adding the attribiute.
+An alternative could be a macro workaround instead of adding the attribute.
 However it would be more like band-aid than an actual solution.
-Another alternative could be adding the any extern "C" function the `stackrealign` attribiute implicitly which would solve the main use-case.
+Another alternative could be adding the any extern "C" function the `stackrealign` attribute implicitly which would solve the main use-case.
 
 # Prior art
 [prior-art]: #prior-art
-This feature is present in GCC via the `force_align_arg_pointer` attribiute.
+This feature is present in GCC via the `force_align_arg_pointer` attribute.
 Also present in LLVM in general.
 
 # Unresolved questions
@@ -53,4 +57,5 @@ Also present in LLVM in general.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
+Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
+Maybe have it look something like this `#[stack_realign(align)]` instead.
