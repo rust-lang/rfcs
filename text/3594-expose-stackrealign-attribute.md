@@ -41,7 +41,6 @@ or
 ```
 
 Where align is an optional parameter representing the desired alignment boundary in bytes. If align is not provided, the compiler uses its default alignment behavior.
-Semantics
 
 When the stack_realign attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
 
