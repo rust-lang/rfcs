@@ -44,7 +44,7 @@ Another alternative could be adding the any extern "C" function the `stackrealig
 # Prior art
 [prior-art]: #prior-art
 This feature is present in GCC via the `force_align_arg_pointer` attribiute.
-Also present in LLVM in general 
+Also present in LLVM in general.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
