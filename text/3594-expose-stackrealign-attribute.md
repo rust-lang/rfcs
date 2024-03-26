@@ -16,7 +16,7 @@ Legacy x86 code uses 4-byte stack alignment. Newer aligned SSE instructions (lik
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
-The `["realign_stack"]` attribute can be added to a function to force the compiler to add alignment to that function.
+The `[realign_stack]` attribute can be added to a function to force the compiler to add alignment to that function.
 Usefull in cases where your code is called from a thread or a binary compiled with another compiler, that uses different aligmnet and thus lead to a corruption.
 
 ```
