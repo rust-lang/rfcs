@@ -29,6 +29,16 @@ pub extern "C" fn callback_function() -> i32 {
 }
 ```
 
+Also could be used like this if you need to specifiy the alignment boundary in bytes.
+
+```
+#[stack_realign(16)]
+fn my_function() {
+    // Function body
+}
+```
+
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 The stack_realign attribute is specified as follows:
