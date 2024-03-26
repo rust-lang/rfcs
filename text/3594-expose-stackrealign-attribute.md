@@ -35,7 +35,19 @@ The stack_realign attribute is specified as follows:
 ```
 #[stack_realign]
 ```
-When the stack_realign attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly.
+or
+```
+#[stack_realign(align)]
+```
+
+Where align is an optional parameter representing the desired alignment boundary in bytes. If align is not provided, the compiler uses its default alignment behavior.
+Semantics
+
+When the stack_realign attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
+
+If the align parameter is provided, the compiler adjusts the stack alignment to the nearest multiple of align bytes.
+
+align must be a power of 2.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -57,5 +69,4 @@ Also present in LLVM in general.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
-Maybe have it look something like this `#[stack_realign(align)]` instead.
+- Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
