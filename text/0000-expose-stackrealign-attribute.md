@@ -24,6 +24,8 @@ Usefull in cases where your code is called from a thread or a binary compiled wi
 #[no_mangle]
 pub extern "C" fn callback_function() -> i32 {
     println!("Called from callback!!");
+
+    0
 }
 ```
 
