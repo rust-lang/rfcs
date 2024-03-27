@@ -687,3 +687,7 @@ gen fn foo(args) // or any of the above variants for the item type
 gen foo(args) // or any of the above variants for the item type
 generator fn foo(args) // or any of the above variants for the item type
 ```
+
+## Implement `FusedIterator`
+
+The iterators produced by `gen` blocks are fused but do not implement `FusedIterator` because it is not a language item.  We may in the future want for these iterators to implement `FusedIterator`.
