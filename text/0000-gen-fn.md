@@ -1,7 +1,7 @@
 - Feature Name: `gen-fn`
 - Start Date: 2023-10-10
 - RFC PR: [rust-lang/rfcs#3513](https://github.com/rust-lang/rfcs/pull/3513)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#117078](https://github.com/rust-lang/rust/issues/117078)
 
 # Summary
 [summary]: #summary
