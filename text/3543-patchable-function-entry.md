@@ -1,7 +1,7 @@
 - Feature Name: `patchable_function_entry`
 - Start Date: 2023-12-12
 - RFC PR: [rust-lang/rfcs#3543](https://github.com/rust-lang/rfcs/pull/3543)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#123115](https://github.com/rust-lang/rust/issues/123115)
 
 # Summary
 [summary]: #summary
