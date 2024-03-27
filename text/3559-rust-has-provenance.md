@@ -233,13 +233,13 @@ LLVM suffers from various long-standing provenance-related bugs ([[1]](https://g
 The opinion of the RFC author is that LLVM needs to stop using pointer comparisons in GVN, and it needs to stop folding ptr2int2ptr cast roundtrips.
 Those optimization cannot be justified with any form of provenance, and LLVM's alias analysis cannot be justified without some form of provenance.
 Furthermore, LLVM needs to decide whether the `iN` type carries provenance or not.
-To keep all the integer-related optimizations, it is likely necessary to decide that it does *not* carry provenance.
-This would then necessitate the introduction of a "byte" type that *does* carry provenance, as without such a type it would be impossible to load and store individual bytes (or in general, anything but a ptr-sized chunk of memory) in a provenance-preserving manner.
-(A byte type for LLVM has already been [proposed](https://lists.llvm.org/pipermail/llvm-dev/2021-June/151521.html) since it also solves other issues, but so far the LLVM community has not been supportive of that proposal.)
-If that is what LLVM ends up deciding, it will be entirely compatible with this RFC.
+[This proposal](https://discourse.llvm.org/t/a-memory-model-for-llvm-ir-supporting-limited-type-punning/61948) describes how an `iN` type with provenance could work.
+If `iN` does not carry provenance, then a ["byte" type](https://lists.llvm.org/pipermail/llvm-dev/2021-June/151521.html) that *does* carry provenance is required, as without such a type it would be impossible to load and store individual bytes (or in general, anything but a ptr-sized chunk of memory) in a provenance-preserving manner.
+LLVM has been stuck in this limbo (various proposals but no consensus on how to proceed) for a while, without visible recent progress.
+If LLVM ends up accepting either of these proposals, it will be entirely compatible with this RFC.
 If LLVM makes some different choice, that might be incompatible with Rust's choices.
 However, it's not possible to specify Rust in a way that is compatible with "whatever LLVM will do".
-There has been no progress on these questions on the side of the LLVM project for many years (as far as the author is aware), and no concrete proposal aside from the one sketched above, so there are only two options: (a) wait until LLVM does something, and then do something compatible in Rust, or (b) do something that makes sense for Rust, and if eventually there is movement on the LLVM side, work with them to ensure Rust's needs are covered.
+There has been no progress on these questions on the side of the LLVM project for many years (as far as the author is aware), and no concrete proposals aside from the ones sketched above, so there are only two options: (a) wait until LLVM does something, and then do something compatible in Rust, or (b) do something that makes sense for Rust, and if eventually there is movement on the LLVM side, work with them to ensure Rust's needs are covered.
 (a) means indefinitely blocking progress on pressing questions in the Rust semantics, so this RFC takes the position that we should do (b).
 (To the author's knowledge, GCC is not in a better position, and it suffers from [similar bugs](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82282), so we can't use their semantics for guidance either.)
 
