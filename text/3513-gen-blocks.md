@@ -571,7 +571,6 @@ There are a few options for how to do this, either before or after stabilization
 * Backward-compatibly add a way to change the argument type of `Iterator::next`.
     * *Downside*: It's unclear whether this is possible.
 * Implement `Iterator` for `Pin<&mut G>` instead of for `G` directly (whatever `G` is here, but it could be a `gen` block).
-    * *Downside*: The thing being iterated over must now be pinned for the entire iteration, instead of for each invocation of `next`.
     * *Downside*: Now the `next` method takes a double-indirection as an argument `&mut Pin<&mut G>`, which may not optimize well sometimes.
 
 This RFC is forward compatible with any such designs.  However, if we were to stabilize `gen` blocks that could not hold borrows across `yield` points, this would be a serious usability limitation that users might find surprising.  Consequently, whether we should choose to address this before stabilization is an open question.
