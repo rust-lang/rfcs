@@ -556,6 +556,32 @@ main = putStrLn $ show $ take 5 $ oddDup [1..20]
 [clean-lang]: https://wiki.clean.cs.ru.nl/Clean
 [idris-lang]: https://www.idris-lang.org/
 
+## Koka
+
+The [Koka][] language, by contrast, does not lean on laziness.  Instead, like Scheme, Koka provides powerful general control flow constructs from which generators, async, coroutines, and other such things fall out naturally.  Unlike Scheme, these powerful control flow constructs are *typed* and are called effect handlers.  E.g.:
+
+```koka
+effect yield<a>
+  fun yield(x : a) : ()
+
+fun odd_dup(xs : list<int>) : yield<int> ()
+  match xs
+    Cons(x,xx) ->
+      if x % 2 == 1 then
+        yield(x * 2)
+      odd_dup(xx)
+    Nil -> ()
+
+fun main() : console ()
+  with fun yield(i : int)
+    println(i.show)
+  list(1,20).odd_dup
+```
+
+Note that there is no library being used here and that `yield` is not a keyword or feature of the language.  In Koka, the code above is all that is needed to express generators.
+
+[koka]: https://koka-lang.github.io/
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
