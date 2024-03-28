@@ -134,7 +134,7 @@ gen {
 
 ## New keyword
 
-In the 2024 edition we reserve `gen` as a keyword.  Previous editions will use `k#gen` to get the same features.
+In the 2024 edition we reserve `gen` as a keyword.  Rust 2021 will use `k#gen` to access the same feature.  What to do about earlier editions is left as an open question.
 
 ## Error handling
 
@@ -618,6 +618,15 @@ Should we try to compute a conservative `size_hint`? This will reveal informatio
 ## Implement other `Iterator` traits.
 
 Is there a possibility for implementing traits like `DoubleEndedIterator`, `ExactSizeIterator` at all?
+
+## What to do about Rust 2015 and Rust 2018
+
+In [RFC 3101][] we reserved prefixed identifiers such as `prefix#ident`.  For this reason, we can make `gen` blocks available in Rust 2021 using `k#gen` as was anticipated in the (currently pending) [RFC 3098][].
+
+Whether and how to make this feature available in Rust 2015 and Rust 2018, however, we leave as an open question.
+
+[RFC 3098]: https://github.com/rust-lang/rfcs/pull/3098
+[RFC 3101]: https://github.com/rust-lang/rfcs/pull/3101
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
