@@ -118,7 +118,7 @@ let x: &'static T = &<constexpr foo>;
 The necessary changes in the compiler did already get implemented as
 part of codegen optimizations (emitting references-to or memcopies-from values in static memory instead of embedding them in the code).
 
-All that is left do do is "throw the switch" for the new lifetime semantic
+All that is left to do is "throw the switch" for the new lifetime semantic
 by removing these lines:
 https://github.com/rust-lang/rust/blob/29ea4eef9fa6e36f40bc1f31eb1e56bf5941ee72/src/librustc/middle/mem_categorization.rs#L801-L807
 

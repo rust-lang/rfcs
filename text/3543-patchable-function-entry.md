@@ -203,7 +203,7 @@ Possible actions we could take include:
 
 Since we don't have a way to "reset" inlining to default, any plan involving suppression of inlining also needs to come with additional configuration to suppress the suppression.
 
-### Inline suppresssion
+### Inline suppression
 If the function has nonzero `entry` padding, prevent inlining.
 
 Add `-C allow-patchable-function-inlining` to disable this behavior.
@@ -214,7 +214,7 @@ The advantage of this approach is that any instrumentation will always trigger w
 
 Disadvantages:
 
-- When the flag is passed, we will disable inlining *nearly everywhere*. This would be disasterous for performance, given the number of functions Rust depends on inlining to optimize.
+- When the flag is passed, we will disable inlining *nearly everywhere*. This would be disastrous for performance, given the number of functions Rust depends on inlining to optimize.
 - This does not match C/C++ behavior, which means most existing use cases will be surprised.
 - We need to add flag complexity to match existing use cases.
 

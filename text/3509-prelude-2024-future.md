@@ -55,7 +55,7 @@ mod rust_2024 {
 # Tradeoffs
 [tradeoffs]: #tradeoffs
 
-Both the `Future` and `IntoFuture` definitions in the standard library are considered _canonical_: there exist no widespread alternative definitions in the Rust ecosystem. Simply having both traits in scope is unlikely to lead to any issues, and the only likely noticable outcome is that authoring async code will require slightly less effort.
+Both the `Future` and `IntoFuture` definitions in the standard library are considered _canonical_: there exist no widespread alternative definitions in the Rust ecosystem. Simply having both traits in scope is unlikely to lead to any issues, and the only likely noticeable outcome is that authoring async code will require slightly less effort.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -68,7 +68,7 @@ However, it's possible to use different criteria for what should be included in 
 
 Both of these perspectives can be applied to other scenarios too. Let's say we're finally able to stabilize the `Try` trait; should this be included in the following prelude? From a systems-based perspective, the answer would be "yes", since it's a fundamental operation which enables types to be named. From the merit-based perspective the answer would likely be "no", since it will be a new trait with limited usage. But it might be re-considered once it sees enough usage.
 
-We believe that taking a merit-based perspective makes sense if the upsides of a choice also carry noteable downsides. But as covered in the "tradeoffs" section of this RFC, there don't appear to be any meaningful downsides. So instead it seems better to base our evalutation on how the traits relate to the language, rather than on how much usage they see.
+We believe that taking a merit-based perspective makes sense if the upsides of a choice also carry notable downsides. But as covered in the "tradeoffs" section of this RFC, there don't appear to be any meaningful downsides. So instead it seems better to base our evaluation on how the traits relate to the language, rather than on how much usage they see.
 
 # Prior art
 [prior-art]: #prior-art
@@ -81,7 +81,7 @@ The Rust 2021 edition includes three new traits:
 - `TryFrom` - fallible conversion
 - `TryInto` - fallible conversion (inverted)
 
-All three of these traits represent fundamental operations present in Rust. This is a natural supplement to other fundamental operations present in earlier editions such as `Try`, `Into`, and `IntoIterator`. I'd argue that `Future` and `IntoFuture` have an an equal, if not more fundamental relationship to the Rust language than `TryFrom` or `FromIterator` do.
+All three of these traits represent fundamental operations present in Rust. This is a natural supplement to other fundamental operations present in earlier editions such as `Try`, `Into`, and `IntoIterator`. I'd argue that `Future` and `IntoFuture` have an equal, if not more fundamental relationship to the Rust language than `TryFrom` or `FromIterator` do.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
