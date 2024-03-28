@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Expose the `stackrealign` of LLVM IR to rustc via a attribute.
+Expose the `alignstack` function attribute to rustc.
 
 # Motivation
 [motivation]: #motivation
@@ -32,7 +32,7 @@ pub extern "C" fn callback_function() -> i32 {
 Also could be used like this if you need to specifiy the alignment boundary in bytes.
 
 ```
-#[stack_realign(16)]
+#[realign_stack(16)]
 fn my_function() {
     // Function body
 }
@@ -41,18 +41,18 @@ fn my_function() {
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-The stack_realign attribute is specified as follows:
+The realign_stack attribute is specified as follows:
 ```
-#[stack_realign]
+#[realign_stack]
 ```
 or
 ```
-#[stack_realign(align)]
+#[realign_stack(align)]
 ```
 
 Where align is an optional parameter representing the desired alignment boundary in bytes. If align is not provided, the compiler uses its default alignment behavior.
 
-When the stack_realign attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
+When the `realign_stack` attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
 
 If the align parameter is provided, the compiler adjusts the stack alignment to the nearest multiple of align bytes.
 
