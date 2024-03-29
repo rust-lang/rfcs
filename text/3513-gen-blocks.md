@@ -229,6 +229,8 @@ fn foo() -> impl Iterator<Item = ()> { gen {} }
 
 ...should be, as it could reasonably be either `std::iter::once(())` or `std::iter::empty::<()>()`.
 
+Note that, under this RFC, because `return` within `gen` blocks accepts an argument of type `()` and `yield` within `gen` blocks returns the `()` type, it is possible to yield one last element concisely with `return yield EXPR`.
+
 # Prior art
 [prior-art]: #prior-art
 
