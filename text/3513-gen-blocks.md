@@ -13,53 +13,108 @@ This RFC reserves the `gen` keyword in the Rust 2024 edition for generators and 
 
 Writing iterators manually can be painful.  Many iterators can be written by chaining together iterator combinators, but some need to be written with a manual implementation of `Iterator`.  This can push people to avoid iterators and do worse things such as writing loops that eagerly store values to mutable state.  With `gen` blocks, we can now write a simple `for` loop and still get a lazy iterator of values.
 
-By way of example, consider these ways of expressing the same function:
+By way of example, consider these alternate ways of expressing [run-length encoding][]:
+
+[run-length encoding]: https://en.wikipedia.org/wiki/Run-length_encoding
 
 ```rust
-// This example uses iterator combinators.
-fn odd_dup(xs: impl IntoIterator<Item = u32>) -> impl Iterator<Item = u32> {
-    xs.into_iter().filter(|x| x.is_odd()).map(|x| x * 2)
-}
-
-// This example uses `iter::from_fn`.
-fn odd_dup(xs: impl IntoIterator<Item = u32>) -> impl Iterator<Item = u32> {
-    let mut xs = xs.into_iter();
-    std::iter::from_fn(move || {
-        while let Some(x) = xs.next() {
-            if x.is_odd() {
-                return Some(x * 2);
+// This example uses `gen` blocks, introduced in this RFC.
+fn rl_encode<I: IntoIterator<Item = u8>>(
+    xs: I,
+) -> impl Iterator<Item = u8> {
+    gen {
+        let mut xs = xs.into_iter();
+        let (Some(mut cur), mut n) = (xs.next(), 0) else { return };
+        for x in xs {
+            if x == cur && n < u8::MAX {
+                n += 1;
+            } else {
+                yield n; yield cur;
+                (cur, n) = (x, 0);
             }
         }
-        None
-    })
+        yield n; yield cur;
+    }.into_iter()
 }
 
 // This example uses a manual implementation of `Iterator`.
-fn odd_dup(xs: impl IntoIterator<Item = u32>) -> impl Iterator<Item = u32> {
-    struct OddDup<T>(T);
-    impl<T: Iterator<Item = u32>> Iterator for OddDup<T> {
-        type Item = u32;
-        fn next(&mut self) -> Option<u32> {
-            while let Some(x) = self.0.next() {
-                if x.is_odd() {
-                    return Some(x * 2)
+fn rl_encode<I: IntoIterator<Item = u8>>(
+    xs: I,
+) -> impl Iterator<Item = u8> {
+    struct RlEncode<I: IntoIterator<Item = u8>> {
+        into_xs: Option<I>,
+        xs: Option<<I as IntoIterator>::IntoIter>,
+        cur: Option<<I as IntoIterator>::Item>,
+        n: u8,
+        yield_x: Option<<I as IntoIterator>::Item>,
+    }
+    impl<I: IntoIterator<Item = u8>> Iterator for RlEncode<I> {
+        type Item = u8;
+        fn next(&mut self) -> Option<Self::Item> {
+            let xs = self.xs.get_or_insert_with(|| unsafe {
+                self.into_xs.take().unwrap_unchecked().into_iter()
+            });
+            if let Some(x) = self.yield_x.take() {
+                return Some(x);
+            }
+            loop {
+                match (xs.next(), self.cur) {
+                    (Some(x), Some(cx))
+                        if x == cx && self.n < u8::MAX => self.n += 1,
+                    (Some(x), Some(cx)) => {
+                        let n_ = self.n;
+                        (self.cur, self.n) = (Some(x), 0);
+                        self.yield_x = Some(cx);
+                        return Some(n_);
+                    }
+                    (Some(x), None) => {
+                        (self.cur, self.n) = (Some(x), 0);
+                    }
+                    (None, Some(cx)) => {
+                        self.cur = None;
+                        self.yield_x = Some(cx);
+                        return Some(self.n);
+                    }
+                    (None, None) => return None,
                 }
             }
-            None
         }
     }
-    OddDup(xs.into_iter())
+    RlEncode {
+        into_xs: Some(xs), xs: None, cur: None, n: 0, yield_x: None,
+    }
 }
 
-// This example uses `gen` blocks, introduced in this RFC.
-fn odd_dup(xs: impl IntoIterator<Item = u32>) -> impl Iterator<Item = u32> {
-    gen {
-        for x in xs {
-            if x.is_odd() {
-                yield x * 2;
-            }
+// This example uses `iter::from_fn`.
+fn rl_encode<I: IntoIterator<Item = u8>>(
+    xs: I,
+) -> impl Iterator<Item = u8> {
+    let (mut cur, mut n, mut yield_x) = (None, 0, None);
+    let (mut into_xs, mut xs) = (Some(xs), None);
+    core::iter::from_fn(move || loop {
+        let xs = xs.get_or_insert_with(|| unsafe {
+            into_xs.take().unwrap_unchecked().into_iter()
+        });
+        if let Some(x) = yield_x.take() {
+            return Some(x);
         }
-    }.into_iter()
+        match (xs.next(), cur) {
+            (Some(x), Some(cx)) if x == cx && n < u8::MAX => n += 1,
+            (Some(x), Some(cx)) => {
+                let n_ = n;
+                (cur, n) = (Some(x), 0);
+                yield_x = Some(cx);
+                return Some(n_);
+            }
+            (Some(x), None) => (cur, n) = (Some(x), 0),
+            (None, Some(cx)) => {
+                cur = None;
+                yield_x = Some(cx);
+                return Some(n);
+            }
+            (None, None) => return None,
+        }
+    })
 }
 ```
 
