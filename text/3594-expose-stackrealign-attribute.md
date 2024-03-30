@@ -14,6 +14,10 @@ This is usefull when you have no guarantees about the alignment of the stack in 
 Also verbatim from the attribute reference:
 Legacy x86 code uses 4-byte stack alignment. Newer aligned SSE instructions (like ‘movaps’) that work with the stack require operands to be 16-byte aligned. This attribute realigns the stack in the function prologue to make sure the stack can be used with SSE instructions.
 
+Interrupt service routines (ISRs) often require special treatment regarding stack alignment. When an interrupt occurs, the processor saves the current execution context onto the stack before transferring control to the ISR. However, the stack might not be aligned to the required boundary, especially in embedded systems where memory constraints are tight.
+
+By exposing a stack realignment feature to Rust, developers working on embedded systems or performance-critical applications gain the ability to guarantee stack alignment within ISRs and other critical code paths directly from Rust code. This not only simplifies development but also enhances the reliability and performance of systems that rely on interrupt handling.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 The `[realign_stack]` attribute can be added to a function to force the compiler to add alignment to that function.
