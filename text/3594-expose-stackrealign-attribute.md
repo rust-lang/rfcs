@@ -11,12 +11,13 @@ Expose the `alignstack` function attribute to rustc.
 # Motivation
 [motivation]: #motivation
 This is usefull when you have no guarantees about the alignment of the stack in an extern "C" function.
-Also verbatim from the attribute reference:
-Legacy x86 code uses 4-byte stack alignment. Newer aligned SSE instructions (like ‘movaps’) that work with the stack require operands to be 16-byte aligned. This attribute realigns the stack in the function prologue to make sure the stack can be used with SSE instructions.
+Mainly happens when there is an ABI incompatibility and the "contract" between the caller and the callee is broken.
 
 Interrupt service routines (ISRs) often require special treatment regarding stack alignment. When an interrupt occurs, the processor saves the current execution context onto the stack before transferring control to the ISR. However, the stack might not be aligned to the required boundary, especially in embedded systems where memory constraints are tight.
 
 By exposing a stack realignment feature to Rust, developers working on embedded systems or performance-critical applications gain the ability to guarantee stack alignment within ISRs and other critical code paths directly from Rust code. This not only simplifies development but also enhances the reliability and performance of systems that rely on interrupt handling.
+
+In the example above the "contract" is defined by hardware and very hard\impossible to work around. 
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -83,3 +84,4 @@ Also present in LLVM in general.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 - Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
+- We could perhaps add a new ABI called something like `"C-unaligned"` which could inform LLVM of the problems specified above.
