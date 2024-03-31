@@ -184,6 +184,8 @@ This recommendation makes the most sense when there is a possibility of ambiguit
 
 Because of this context sensitivity, we should allow developers to choose when removing the extra context makes sense for their codebase.
 
+Another drawback mentioned during review for this RFC was that this adds more complication to the name resolution rules. On an implementation side, I am assured that this feature is straightforward to implement. From a user perspective, the name lookup rules for the function name are exactly the same as those used to look up any other function name. The lookup rules used to resolve the `impl` are also exactly the same ones used for non-fully qualified trait function calls. There is no fundamentally new kind of lookup happening here, just a remixing of existing lookup rules.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
