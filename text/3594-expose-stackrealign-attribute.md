@@ -34,38 +34,21 @@ pub extern "C" fn callback_function() -> i32 {
 }
 ```
 
-Also could be used like this if you need to specifiy the alignment boundary in bytes.
-
-```
-#[realign_stack(16)]
-fn my_function() {
-    // Function body
-}
-```
-
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 The realign_stack attribute is specified as follows:
 ```
 #[realign_stack]
 ```
-or
-```
-#[realign_stack(align)]
-```
 
-Where align is an optional parameter representing the desired alignment boundary in bytes. If align is not provided, the compiler uses its default alignment behavior.
+When the `realign_stack` attribute is applied to a function, the compiler ensures that the stack is aligned to the "natural alligmnet" specified in the Data Layout that LLVM uses before executing the function's body. 
+This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
 
-When the `realign_stack` attribute is applied to a function, the compiler ensures that the stack is aligned to the specified boundary before executing the function's body. This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
-
-If the align parameter is provided, the compiler adjusts the stack alignment to the nearest multiple of align bytes.
-
-align must be a power of 2.
 
 # Drawbacks
 [drawbacks]: #drawbacks
-Introducing a new attribute adds complexity to the language.
+- Introducing a new attribute adds complexity to the language.
+- Limited use cases: Stack realignment may not be necessary in most Rust codebases, potentially making this feature less relevant for many developers.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
