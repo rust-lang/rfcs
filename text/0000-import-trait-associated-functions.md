@@ -116,7 +116,7 @@ When
 ```rust
 use Trait::func as m;
 ```
-occurs, a new item `m` is made available in the function namespace of the current module. Any attempts to call this item are treated calling the associated function explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the associated function in the trait. In other words, the example:
+occurs, a new item `m` is made available in the value namespace of the current module. Any attempts to call this item are treated calling the associated function explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the associated function in the trait. In other words, the example:
 
 ```rust
 use Default::default;
@@ -164,6 +164,10 @@ use some_module::Trait::self;
 is sugar for
 ```rust
 use some_module::Trait;
+```
+to allow importing a trait and its methods at the same time, e.g:
+```rust
+use Default::{self, default};
 ```
 
 The restriction on importing parent trait associated functions is a consequence of this desugaring, see https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=51bef9ba69ce1fc20248e987bf106bd4 for examples of the errors you get when you try to call parent trait associated functions through a child trait. We will likely want better error messages than this if a user tries to import a parent function.
