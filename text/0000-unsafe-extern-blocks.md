@@ -91,7 +91,7 @@ where `'l1`, ... `'lm` are its lifetime parameters, `A1`, ..., `An` are the decl
 ### Statics
 Statics within external blocks are declared in the same way as statics outside of external blocks, except that they do not have an expression initializing their value. If the static is unsafe to access, then the static should use the `unsafe` qualifier. If the static is safe to access (and immutable), then the static should use the `safe` qualifier (a contextual keyword). Statics that are not qualified as `unsafe` or `safe` are assumed to be `unsafe`.
 
-Extern statics can be either immutable or mutable just like statics outside of external blocks. An immutable static must be initialized before any Rust code is executed. It is not enough for the static to be initialized before Rust code reads from it. A mutable extern static is always `unsafe` to access, the same as a Rust mutable static.
+Extern statics can be either immutable or mutable just like statics outside of external blocks. An immutable static must be initialized before any Rust code is executed. It is not enough for the static to be initialized before Rust code reads from it. A mutable extern static is always `unsafe` to access, the same as a Rust mutable static, and as such can not be marked with a `safe` qualifier.
 
 # Drawbacks
 [drawbacks]: #drawbacks
