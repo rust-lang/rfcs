@@ -56,8 +56,9 @@ example:
 - The values assigned to `static` items or non-anonymous `const` items.
 - The discriminant values assigned to `enum` variants
 
-As a special exception, anonymous `const` items are excluded from this
-definition for the purpose of this RFC (see [unresolved-questions]).
+As an exception, anonymous `const` items are excluded from this
+definition for the purposes of this RFC (see [unresolved-questions]),
+as they're currently commonly used to define items within macros.
 
 Rust will emit a warn-by-default lint when encountering an `impl` nested inside
 an expression-containing item (through any level of nesting), unless any of the
