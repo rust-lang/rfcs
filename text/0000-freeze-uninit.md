@@ -76,6 +76,13 @@ pub fn gen_random() -> i32{
 
 Note that the value `4` was chosen for expository purposes only, and the same optimization could be validly replace by any other constant, or not at all.
 
+## Relationship to `read_volatile`
+
+`read_volatile` and `read_freeze` are unrelated operations (except insofar as they both `read` from a memory location). 
+`read_volatile` performs an observable side effect (that compilers aren't allowed to remove), but will otherwise act (mostly) the same as `read`. `read_volatile` does not freeze bytes read. 
+In contrast, `read_freeze` is not a side effect (thus can be freely optimized by the compiler to anything equivalent).
+
+It is possible in the future that `read_volatile` may carry a guarantee of freezing (non-padding) bytes, but this RFC does not provide that guarantee.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
