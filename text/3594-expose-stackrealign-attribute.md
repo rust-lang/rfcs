@@ -58,6 +58,7 @@ This alignment is achieved by adjusting the stack pointer accordingly. The align
 An alternative could be a macro workaround instead of adding the attribute.
 However it would be more like band-aid than an actual solution.
 Another alternative could be adding the any extern "C" function the `stackrealign` attribute implicitly which would solve the main use-case.
+An extra option could be not verifying data-layout for custom targets provided via `--target=`, which would allow users to patch the "natural stack alignment" in their custom target which should LLVM stack alignment assumptions that are present in the system.
 
 # Prior art
 [prior-art]: #prior-art
