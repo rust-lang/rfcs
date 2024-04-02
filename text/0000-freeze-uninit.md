@@ -17,9 +17,11 @@ While in most cases, this is not a problem, as a temporarily held (or externally
 Freeze allows these limited Rust Programs to convert uninitialized data into useless-but-initialized bytes.
 
 Examples of uses:
-1. The major use for freeze is to read padding bytes of structs. This can be used for [zero-copy serialization](https://docs.rs/abomonation/latest/abomonation/) or a [generic wrapper around standard atomic types](https://docs.rs/atomic/latest/atomic/struct.Atomic.html). 
+1. The major use for freeze is to read padding bytes of structs. This can be used for a [generic wrapper around standard atomic types](https://docs.rs/atomic/latest/atomic/struct.Atomic.html). 
 2. SIMD Code using masks can load a large value by freezing the bytes, doing lanewise arithmetic operations, then doing a masked store of the initialized elements. With additional primitives not specified here, this can allow for efficient partial load operations which prevent logical operations from going out of bounds (such a primitive could be defined to yield uninit for the lane, which could then be frozen).
 3. Low level libraries, such as software floating-point implementations, used to provide operations for compilers where uninit is considered a valid value for the provided operations.
+    * Along the same lines, a possible fast floating-point operation set that yields uninit on invalid (such as NaN or Infinite) results, stored as `MaybeUninit`, then frozen upon return as `f32`/`f64`.
+    * Note that such operations require compiler support, and these operations are *not* defined by this RFC.
 
 
 # Guide-level explanation
