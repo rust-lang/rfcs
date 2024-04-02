@@ -47,8 +47,10 @@ subsequent Rust edtion, tools will be able to rely on this as well.
 # Explanation
 [explanation]: #explanation
 
-An "expression-containing item" is defined as any [expression] where an [item]
-may be defined, for example:
+An "expression-containing item" is defined as any
+[expression](https://doc.rust-lang.org/reference/expressions.html) where an
+[item](https://doc.rust-lang.org/reference/items.html) may be defined. For
+example:
 - Functions
 - Closures
 - The values assigned to `static` items or non-anonymous `const` items.
@@ -109,7 +111,8 @@ the signature without reflecting those properties in the signature.
 [unresolved-questions]: #unresolved-questions
 
 Should we flag these definitions in anonymous `const` items as well? This is
-used in some macro expansions for [compatibility reasons][1].
+used in some macro expansions for
+[compatibility reasons](https://github.com/rust-lang/rfcs/pull/3373#issuecomment-1885307786).
 
 Is the last rule regarding parameterized trait `impl` items viable to implement?
 
@@ -119,7 +122,3 @@ Is the last rule regarding parameterized trait `impl` items viable to implement?
 If in the future Rust provides a "standalone `derive`" mechanism (e.g. `derive
 Trait for Type` as a standalone definition separate from `Type`), the `impl`
 produced by that mechanism would be subject to the same requirements.
-
-[expression]: https://doc.rust-lang.org/reference/expressions.html
-[item]: https://doc.rust-lang.org/reference/items.html
-[1]: https://github.com/rust-lang/rfcs/pull/3373#issuecomment-1885307786
