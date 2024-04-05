@@ -47,7 +47,7 @@ The realign_stack attribute is specified as follows:
 
 When the `realign_stack` attribute is applied to a function, the compiler no longer assumes the stack is properly aligned when the function is called, so will insert code to align the stack as needed for calling other functions, variables requiring alignment, etc.
 This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
-
+Adding this attribute unnecessarily might "waste" space on the stack which could be crucial in real-time systems.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -73,3 +73,4 @@ Also present in LLVM in general.
 [future-possibilities]: #future-possibilities
 - Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
 - We could perhaps add a new ABI called something like `"C-unaligned"` which could inform LLVM of the problems specified above.
+- Add a rustc complication flag that adds this attribute to every `pub extern` function (similiar to `-mstackrealign` which does this globally in GCC).
