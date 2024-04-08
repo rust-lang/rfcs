@@ -24,7 +24,7 @@ The proposed attribute will tell the compiler that the precondition that the sta
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 The `[realign_stack]` attribute can be added to a function to force the compiler to add alignment to that function.
-Usefull in cases where your code is called from a thread or a binary compiled with another compiler, that uses different aligmnet and thus lead to a corruption.
+Useful in cases where your code is called from a thread or a binary compiled with another compiler, that uses different alignment and thus lead to a corruption.
 An example of one such setting could be `-mpreferred-stack-boundary=2` in GCC which would set the stack alignment to 4 instead of the default value for the ABI which is 16.
 Other such settings could be present at GCC's "Machine-Dependent Options", which there are many of, and many of them can break ABI compatibility.
 
