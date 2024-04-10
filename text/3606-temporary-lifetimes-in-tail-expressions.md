@@ -168,8 +168,9 @@ If it turns out to be necessary, that might be a reason to not continue with thi
 
 # Unresolved questions
 
-- How advanced should the edition migration be?
-  How uncommon is the situation where this change could existing code?
+- How uncommon are the situations where this change could affect existing code?
+- How advanced should the edition lint and migration be?
+- Can we make sure a lint catches the cases with unsafe code that could result in undefined behaviour?
 
 # Future possibilities
 
