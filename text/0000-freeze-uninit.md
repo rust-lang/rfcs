@@ -158,12 +158,11 @@ The remaining behaviour of the function is equivalent to the `read_freeze` intri
 
 If an implementation decides to define `MaybeUninit::freeze` (or equivalent) as the compiler intrinsic, it is possible to implement `core::ptr::read_freeze` as follows:
 ```rust 
-pub unsafe fn read_freeze(ptr: *const T) -> T{
-    struct AlignedBytes([u8; core::mem::size_of::<T>()], [T;0]);
-    
-    let val = ptr.cast::<MaybeUninit<AlignedBytes>>().read();
-    
-    core::mem::transmute(val.freeze())
+pub unsafe fn read_freeze(ptr: *const T) -> T {
+    ptr.cast::<MaybeUninit<T>>()
+        .read()
+        .freeze()
+        .assume_init()
 }
 ```
 
