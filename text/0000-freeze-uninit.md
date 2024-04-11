@@ -174,6 +174,7 @@ The main drawbacks that have been identified so far:
 * It is potentially [considered desireable](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/Arguments.20for.20freeze/near/377333420) to maintain the property that sound (e.g. correct) code cannot meaningfully read uninitialized memory
     * It is generally noted that safe/unsafe is not a security or privilege boundary, and it's fully possible to write unsound code (either deliberately or inadvertanly) that performs the read. If the use of uninitialized memory is within the threat model of a library that, for example, handles cryptographic secrets, that library should take additional steps to santize memory that contains those secrets.
     * Undefined behaviour does not prevent malicious code from accessing any memory it physically can.
+    * That said, making such code UB could still be useful as it makes it unambiguously a bug to expose the contents of uninitialized memory to safe code, which can avoid accidental information leaks. If this RFC gets accepted, we should find ways to make it clear that even if doing so would be technically *sound*, this is still not something that Rust libraries are "supposed" to do and it must always be explicitly called out in the documentation.
 
 
 # Rationale and alternatives
