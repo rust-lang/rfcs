@@ -149,7 +149,7 @@ existential type Foo: Trait<Assoc = _0>;
 existential type _0: Bound;
 ```
 
-[RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-type-alias.md
+[RFC 2071]: ./2071-impl-trait-existential-types.md
 
 This syntax is specified in [RFC 2071]. As in that RFC, this documentation
 uses the non-final syntax for existential type aliases.
@@ -175,7 +175,7 @@ The introduced form in this RFC is comparatively both shorter and clearer.
 
 ### An alternative desugaring of bounds on associated types
 
-[RFC 2089]: https://github.com/rust-lang/rfcs/blob/master/text/2089-implied-bounds.md
+[RFC 2089]: ./2089-implied-bounds.md
 
 An alternative desugaring of the following definition:
 
