@@ -6,7 +6,9 @@
 # Summary
 [summary]: #summary
 
-Expose the `alignstack` function attribute to rustc.
+
+Provide a way to generate functions that are "robust" to being called on a misaligned stack.
+
 
 # Motivation
 [motivation]: #motivation
