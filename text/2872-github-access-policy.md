@@ -11,7 +11,7 @@ This RFC was written in consultation with the Governance Working Group and the I
 # Motivation
 [motivation]: #motivation
 
-Access control for the [Rust-Lang GitHub Organization](https://www.github.com/rust-lang) and repositories within that organization is currently managed either through the [rust-lang team database][db], or ad-hoc via the GitHub UI by the org administrators. We need a policy that defines how these accesses are granted and managed. This will allow us to have greater security in permissions to our GitHub org, and provide transparency and clarity on how access is managed.
+Access control for the [Rust-Lang GitHub Organization](https://www.github.com/rust-lang) and repositories within that organization is currently managed either through the [rust-lang team database][db], or ad-hoc via the GitHub UI by the org owners. We need a policy that defines how these accesses are granted and managed. This will allow us to have greater security in permissions to our GitHub org, and provide transparency and clarity on how access is managed.
 
 [db]: https://github.com/rust-lang/team/
 
@@ -42,7 +42,7 @@ GitHub provides several permission levels for access to a repository. Please ref
 
 Repositories in the Rust-Lang organization should follow these permission guidelines:
 
-* **Admin** --- No users or teams except for org admins should have this permission level.
+* **Admin** --- No users or teams except for org owners should have this permission level.
 * **Maintain** --- Teams may have this permission level at their discretion for repositories the team is responsible for.
   Repositories using the [bors] bot may want to consider using the *write* permission level instead in order to deactivate the "Merge" button on PRs to enforce that merges go through bors.
 * **Write** --- Teams that are responsible for a repository should have at least this permission level.
