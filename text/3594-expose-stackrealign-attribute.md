@@ -12,16 +12,18 @@ Provide a way to generate functions that are "robust" to being called on a misal
 
 # Motivation
 [motivation]: #motivation
-This is usefull when you have no guarantees about the alignment of the stack in an extern "C" function.
-Mainly happens when there is an ABI incompatibility and the "contract" between the caller and the callee is broken.
 
-Interrupt service routines (ISRs) often require special treatment regarding stack alignment. When an interrupt occurs, the processor saves the current execution context onto the stack before transferring control to the ISR. However, the stack might not be aligned to the required boundary, especially in embedded systems where memory constraints are tight.
+There are situations where functions will be called with a lower stack alignment than what is typically expected on the current target:
+
+- Interrupt service routines (ISRs) being called by the CPU. When an interrupt occurs, the processor saves the current execution context onto the stack before transferring control to the ISR. However, the stack might not be aligned to the required boundary, especially in embedded systems where memory constraints are tight.
+- Interacting with legacy code that was built using a compiler flag that reduces the stack alignment, such as `-mpreferred-stack-boundary` on GCC. This flag says in the documentation "It is recommended that libraries that use callbacks always use the default setting", but not all libraries heed this advice. To make it possible to link those libraries with Rust code, the Rust functions they call must be "robust" to being called on a stack that was not properly aligned.
 
 By exposing a stack realignment feature to Rust, developers working on embedded systems or performance-critical applications gain the ability to guarantee stack alignment within ISRs and other critical code paths directly from Rust code. This not only simplifies development but also enhances the reliability and performance of systems that rely on interrupt handling.
 
 In the example above the "contract" is defined by hardware and very hard\impossible to work around. 
 
 The proposed attribute will tell the compiler that the precondition that the stack is aligned might not be true, and that it might need to fix it up in order to execute the function correctly.
+
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
