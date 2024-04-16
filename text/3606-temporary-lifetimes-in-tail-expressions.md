@@ -3,7 +3,7 @@
 - Feature Name: `tail_temporaries_shorter_lifetime`
 - Start Date: 2023-05-04
 - RFC PR: [rust-lang/rfcs#3606](https://github.com/rust-lang/rfcs/pull/3606)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#123739](https://github.com/rust-lang/rust/issues/123739)
 
 # Summary
 
