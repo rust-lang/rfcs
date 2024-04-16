@@ -242,7 +242,7 @@ where
 }
 ```
 
-(See [alternatives](#no-blanket-implementation) for discussion of the tradeoffs here.)
+(See [alternatives](#no-blanket-implementation-for-deref) for discussion of the tradeoffs here.)
 
 It is also implemented for `&T` and `&mut T`.
 
