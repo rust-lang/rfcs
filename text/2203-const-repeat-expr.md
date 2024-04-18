@@ -175,7 +175,7 @@ argues that the change is quite intuitive.
 
 The alternative, in addition to simply not doing this, is to modify a host of
 other constructs such as [`mem::uninitialized()`], for loops over iterators,
-[`ptr::write`] to be `const`, which is is a larger change. The design offered by
+[`ptr::write`] to be `const`, which is a larger change. The design offered by
 this RFC is therefore the simplest and most non-intrusive design. It is also
 the most consistent.
 

@@ -202,7 +202,7 @@ types:
     In this case, `$field` must share a name or tuple index with a field which:
     - Exists on `$Container`.
     - Is visible at the location where `offset_of!` is invoked (but there is no
-      requirement that fields other than than `$field` be visible there)
+      requirement that fields other than `$field` be visible there)
 
 2. An anonymous tuple type.
 
