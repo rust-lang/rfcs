@@ -161,7 +161,6 @@ trait Receiver {
 The `Receiver` trait is already implemented for many standard library types:
 - smart pointers in the standard library: `Rc<Self>`, `Arc<Self>`, `Box<Self>`, and `Pin<SomeSmartPtr<Self>>` (and in fact, any type which implements `Deref`)
 - references: `&Self` and `&mut Self`
-- pointers: `*const Self` and `*mut Self`
 
 Shorthand exists for references, so that `self` with no ascription is of type `Self`, `&self` is of type `&Self` and `&mut self` is of type `&mut Self`.
 
@@ -172,8 +171,6 @@ impl Foo {
     fn by_value(self /* self: Self */);
     fn by_ref(&self /* self: &Self */);
     fn by_ref_mut(&mut self /* self: &mut Self */);
-    fn by_ptr(self: *const Self);
-    fn by_mut_ptr(self: *mut Self);
     fn by_box(self: Box<Self>);
     fn by_rc(self: Rc<Self>);
     fn by_custom_ptr(self: CustomPtr<Self>);
