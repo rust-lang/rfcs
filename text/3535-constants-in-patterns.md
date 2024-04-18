@@ -245,7 +245,7 @@ Some possible alternatives include:
 - **Reject pointers completely.**
   This was considered, but matching against sentinel values of raw pointers is a pretty common pattern, so we should have a really good reason to break that code---and we do not.
 - **Involve `Eq`.**
-  This RFC is is completely defined in terms of `PartialEq`; the `Eq` trait plays no role.
+  This RFC is completely defined in terms of `PartialEq`; the `Eq` trait plays no role.
   This is primarily because we allow floating-point values in patterns, which means that we cannot require the constant to implement `Eq` in the first place.
 - **Do not require `PartialEq`.**
   Currently we check both that the constant value has recursive structural equality, and that its type implements `PartialEq`.

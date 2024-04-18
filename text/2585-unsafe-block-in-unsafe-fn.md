@@ -164,7 +164,7 @@ fn` for functions that are "unsafe to call" but do not implicitly have an
 trait` for traits, though the behavior would be the same as `unsafe trait`.
 
 We could introduce named proof obligations (proposed by @Centril) such that the
-compiler can be be told (to some extend) if the assumptions made by the `unsafe
+compiler can be told (to some extend) if the assumptions made by the `unsafe
 fn` are sufficient to discharge the requirements of the unsafe operations.
 
 We could restrict this requirement to use `unsafe` blocks in `unsafe fn` to
