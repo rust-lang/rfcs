@@ -408,7 +408,7 @@ fn main() {
 If Rust added `SmartPointerWhichImplementsReceiver::wardrobe(&self)` we would start to produce an error here. If `SmartPointerWhichImplementsReceiver` added `SmartPointerWhichImplementsReceiver::wardrobe(self)` then it would be
 even worse - code would start to call `SmartPointerWhichImplementsReceiver::wardrobe` where it had previously called `SmartPointerWhichImplementsReceiver::wardrobe`.
 
-The [#compiler-changes-deshadowing](deshadowing section of the compiler changes, above), describes how we avoid this. The compiler will take pains to identify any such ambiguities and it will show an error.
+The [deshadowing section of the compiler changes](#compiler-changes-deshadowing), describes how we avoid this. The compiler will take pains to identify any such ambiguities and it will show an error.
 
 We have (extensively) considered algorithms to pick the intended method instead - see [picking the shadowed method](#picking-the-shadowed-method), below.
 
