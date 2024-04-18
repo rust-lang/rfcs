@@ -116,7 +116,7 @@ The owner plans to author up a proposed process but rough plans are as follows:
 * Final slate will be approved by each team involved:
     * Likely mechanism is a "check box" from the leads of all teams that represents the team consensus
 
-It is not yet clear how much work it will be to drive this process. If needed, the owner will assemble a "goals committee" to assist in assist in reading over goals, proposing improvements, and generally making progress towards a coherent final slate. This committee is not intended to be a decision making body.
+It is not yet clear how much work it will be to drive this process. If needed, the owner will assemble a "goals committee" to assist in reading over goals, proposing improvements, and generally making progress towards a coherent final slate. This committee is not intended to be a decision making body.
 
 # Drawbacks
 [drawbacks]: #drawbacks
