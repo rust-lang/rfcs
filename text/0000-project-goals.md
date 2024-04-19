@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes to run an experimental goal program during the second half of 2024 with nikomatsakis as owner/organizer. This program is a first step towards an ongoing Rust roadmap. The proposed outcomes for 2024 are (1) select an initial slate of goals using an experimental process; (2) track progress over the year; (3) drawing on the lessons from that, propose a durable process in the form of an RFC to be accepted by the leadership council.
+This RFC proposes to run an experimental goal program during the second half of 2024 with nikomatsakis as owner/organizer. This program is a first step towards an ongoing Rust roadmap. The proposed outcomes for 2024 are (1) select an initial slate of goals using an experimental process; (2) track progress over the year; (3) drawing on the lessons from that, prepare a second slate of goals for 2025 H1. This second slate is expected to include a goal for authoring an RFC proposing a permanent process.
 
 # Motivation
 [motivation]: #motivation
@@ -43,7 +43,7 @@ The plan is to do a "dry run" of the process in the remainder of 2024. The 2024 
 * **ASAP (April):** Have a ~2 month period for selecting the initial slate of goals. Goals will be sourced from Rust teams and the broader community. They will cover the highest priority work to be completed in the second half of 2024.
 * **June:** Teams will approve the final slate of goals, making them 'official', and we will author an RFC proposing a refined process.
 * **Remainder of the year:** Regular updates on goal progress will be posted
-* **October:** Presuming all goes well, the process for 2025 H1 begins.
+* **October:** Presuming all goes well, the process for 2025 H1 begins. Note that the planning for 2025 H1 and finishing up of goals from 2024 H2 overlap.
 
 ## The "shiny future" we are working towards
 
@@ -84,25 +84,31 @@ The long-term vision is to create a sustainable goals process for the project. P
 
 There are three specific outputs from this process:
 
-* A **goal slate** for the second half of 2024, which will include
+* A **goal slate for the second half (H2) of 2024**, which will include
     * a set of goals, each with an owner and with approval from their associated teams
     * a high-level write-up of why this particular set of goals was chosen and what impact we expect for Rust
 * **Regular reporting** on the progress towards these goals over the course of the year
-* An **RFC with a finalized process** that we can use going forward
+* A **goal slate for the first half (H1) of 2025**, which will include
+    * a set of goals, each with an owner and with approval from their associated teams
+    * a high-level write-up of why this particular set of goals was chosen and what impact we expect for Rust
+    * (probably) a goal to **author an RFC with a finalized process** that we can use going forward
 
 ### Milestones
 
 Key milestones along the way (with the most impactful highlighted in bold):
 
-| Date | Milestone |
-| --- | --- |
-| **Apr 26** | **Kick off the goal collection process** |
-| May 24 | Publish draft goal slate, take feedback from teams |
-| June 14 | Approval process for goal slate begins |
-| **June 28** | Publish final goal slate |
-| July 15 | Open RFC with future goals process |
-| **Sep** | **RFC for Future Goals Process approved by leadership council** |
-| Oct | begin next round of goal process, expected to cover first half of 2025 |
+| Date         | 2024 H2 Milestone                                               | 2025 H1 Milestones                                                         |
+| ------------ | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Apr 26**   | **Kick off the goal collection process**                        |                                                                            |
+| May 24       | Publish draft goal slate, take feedback from teams              |                                                                            |
+| June 14      | Approval process for goal slate begins                          |                                                                            |
+| **June 28**  | **Publish final goal slate**                                    |                                                                            |
+| July         | Publish monthly update on Inside Rust                           |                                                                            |
+| August       | Publish monthly update on Inside Rust                           |                                                                            |
+| September    | Publish monthly update on Inside Rust                           |                                                                            |
+| **Oct**      | **Publish intermediate goal progress update on main Rust blog** | **Begin next round of goal process, expected to cover first half of 2025** |
+| November     | Publish monthly update on Inside Rust                           | Approval process for 2025 H1 goal slate begins                             |
+| **December** | **Publish retrospective on 2024 H2**                            | **Announce 2025 H1 goal slate**                                            |
 
 ### Process to be followed
 
