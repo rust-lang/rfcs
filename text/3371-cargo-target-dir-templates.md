@@ -133,13 +133,12 @@ Templating does not interfere with the resolution order of `CARGO_TARGET_DIR`. F
 - Through the environment variable: `CARGO_TARGET_DIR="/absolute/path/to/cache/{manifest-path-hash}" cargo build`
 - Through the command line flag: `cargo build --target-dir "/absolute/path/to/cache/{manifest-path-hash}"`
 
-## Naming
+## Definition of `{manifest-path-hash}`
 
-In the example in the previous section, using a templated `CARGO_TARGET_DIR` with `cargo build` produces named subdirectories. The name of those is computed from the full and canonicalized path to the manifest for the workspace, so building `work-project/crate-1` will still use the directory for the whole workspace during a `cargo build` call.
+In the example in the previous section, `{manifest-path-hash}` was replaced with a relative path. This relative path is computed from the full and canonicalized path to the manifest for the workspace `Cargo.toml` (or the `script.rs` file directly for cargo-scripts).
+By being canonicalized, including resolving of symlinks, symlinked projects will share the same target directory.  This is following the prior art from `bazel` and I have not found any complaints about this.
 
-This naming scheme is **not considered stable**: the method will probably not change often but `cargo` offers no guarantee and may change it in any release. Tools that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value each time they are invoked.
-
-The path used for the naming of the final target directory is the one found *after* symlink resolution: `bazel` does it too and I have not found any complaints about this and it has the distinct advantage of allowing to make a symlink to a project somewhere else on the machine (for example to organise work projects) and avoid duplicating the build directory and all its data (which can be quite heavy).
+The hashing and turning the hash into nested directories is **not considered stable**: the method will probably not change often but `cargo` offers no guarantee and may change it in any release. Tools that needs to interact with `cargo`'s target directory should not rely on its value for more than a single invocation of them: they should instead query `cargo metadata` for the actual value each time they are invoked.
 
 To prevent collisions by craftings paths, the `<manifest-path-hash>` directory will be computed from a hash of the workspace manifest's full path (and possibly other data, for example `bazel` uses its version and the current user too).
 
