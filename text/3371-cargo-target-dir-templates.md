@@ -49,7 +49,8 @@ Templating introduces one new templating key for `CARGO_TARGET_DIR`, in the same
 
 It can be used like this: `CARGO_TARGET_DIR="$HOME/.cache/cargo-target-dirs/{manifest-path-hash}"`.
 
-When compiling `/home/ferris/src/cargo/` with user `ferris`, `manifest-path-hash` would be something like `ab/cd/<rest of hash>` and the artifacts would be found in `/home/ferris/.cache/cargo-target-dirs/ab/cd/<rest of hash>/...`. Note the hash used and the path derived from that for `{manifest-path-hash}` are implementation details and the values here are just example.
+When compiling `/home/ferris/src/cargo/` with user `ferris`, `manifest-path-hash` would be something like `ab/cd/<rest of hash>` and the artifacts would be found in `/home/ferris/.cache/cargo-target-dirs/ab/cd/<rest of hash>/...`.
+Note the hash used and the path derived from that for `{manifest-path-hash}` are implementation details and the values here are just an example.
 
 Below is an example of the behavior with untemplated versus templated forms:
 
