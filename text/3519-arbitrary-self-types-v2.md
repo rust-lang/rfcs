@@ -608,27 +608,9 @@ A previous PR based on the `Deref` alternative has been proposed before https://
 
 As [discussed above](#pick-shadowed-methods-instead-of-erroring) we anticipate a future version which will relax some errors into warnings, and thus allow us to add support for raw pointers, `Weak` and `NonNull` as self types.
 
-Thereafter, we could consider implementing `Receiver` for other types, e.g. [`std::cell`](https://doc.rust-lang.org/std/cell/index.html) types, [`std::sync`](https://doc.rust-lang.org/std/sync/index.html) types, [`std::cmp::Reverse`](https://doc.rust-lang.org/std/cmp/struct.Reverse.html), [`std::num::Wrapping`](https://doc.rust-lang.org/nightly/std/num/struct.Wrapping.html), [`std::mem::MaybeUninit`](https://doc.rust-lang.org/std/mem/union.MaybeUninit.html), [`std::task::Poll`](https://doc.rust-lang.org/nightly/std/task/enum.Poll.html), and so on - possibly even for arrays, `Vec`, `BTreeSet` etc.
+Thereafter, we could consider implementing `Receiver` for other types, e.g. [`std::cell`](https://doc.rust-lang.org/std/cell/index.html) types, [`std::sync`](https://doc.rust-lang.org/std/sync/index.html) types, [`std::cmp::Reverse`](https://doc.rust-lang.org/std/cmp/struct.Reverse.html), [`std::num::Wrapping`](https://doc.rust-lang.org/nightly/std/num/struct.Wrapping.html), [`std::mem::MaybeUninit`](https://doc.rust-lang.org/std/mem/union.MaybeUninit.html), [`std::task::Poll`](https://doc.rust-lang.org/nightly/std/task/enum.Poll.html), and so on - possibly even for arrays, etc.
 
-There seems to be no disadvantage to doing this - taking `Vec` as an example, it would only have any effect on the behavior of code if somebody implemented a method taking `Vec<T>` as a receiver. On the other hand, it's hard to imagine use-cases for some of these. It seems best to consider these future possibilities based on whether the end-result seems natural or strange.
-
-```rust
-impl Vexation {
-    fn do_something_to_vec(self: Vec<Self>) { }
-    fn do_something_to_maybeuninit(self: MaybeUninit<Self>) {}
-}
-
-fn main {
-    let mut v = Vec::new();
-    v.push(Vexation);
-    v.do_something_to_vec(); // this seems weird and I can't imagine a use-case
-
-    let mut m = MaybeUninit::<Vexation>::uninit();
-    m.do_something_to_maybeuninit(); // this seems fine and useful and so maybe we should in future implement Receiver for MaybeUninit
-}
-```
-
-For now, though, we should clearly restrict `Receiver` to those types for which there's a demonstrated need.
+There seems to be no disadvantage to doing this - taking `Cell` as an example, it would only have any effect on the behavior of code if somebody implemented a method taking `Cell<T>` as a receiver. On the other hand, it's hard to imagine use-cases for some of these. For now, though, we should clearly restrict `Receiver` to those types for which there's a demonstrated need.
 
 # Feature gates
 
