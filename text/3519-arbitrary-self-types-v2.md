@@ -447,7 +447,7 @@ In any case, we think a blanket implementation is desirable:
 * It prevents `Deref` and `Receiver` having different `Target`s. That could possible lead to confusion if it prompted the compiler to explore different chains for these two different purposes.
 * If smart pointer type `P<T>` is in a crate, users of `P` to create `P<MyConcreteType>` will be able to use it as a `self` type for `MyConcreteType` without waiting for a new release of the `P` crate.
 
-We found that [some crates use `Deref` to express an is-a not a has-a relationship](ttps://gist.github.com/davidhewitt/d0ed031fb05f6db98ee249ae089b268e) and so, ideally, might have preferred the option of setting up `Deref` and `self` candidacy separately. But, on discussion, we concluded that traits would be a better way to model those relationships.
+We found that [some crates use `Deref` to express an is-a not a has-a relationship](https://gist.github.com/davidhewitt/d0ed031fb05f6db98ee249ae089b268e) and so, ideally, might have preferred the option of setting up `Deref` and `self` candidacy separately. But, on discussion, we concluded that traits would be a better way to model those relationships.
 
 ## Explore both `Receiver` and `Deref` chains while identifying method candidates
 
