@@ -115,7 +115,7 @@ Here is the Ember RFC section, with appropriate substitutions and modifications:
 > # How We Teach This
 > What names and terminology work best for these concepts and why? How is this idea best presented? As a continuation of existing Rust patterns, or as a wholly new one?
 >
-> Would the acceptance of this proposal change how Rust is taught to new users at any level?  What additions or changes to the Rust Reference, _The Rust Programing Language_, and/or _Rust by Example_ does it entail?
+> Would the acceptance of this proposal change how Rust is taught to new users at any level?  What additions or changes to the Rust Reference, _The Rust Programming Language_, and/or _Rust by Example_ does it entail?
 >
 > How should this feature be introduced and taught to existing Rust users?
 
