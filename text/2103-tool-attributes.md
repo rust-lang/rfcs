@@ -132,7 +132,7 @@ There will be some opt-in mechanism for crates to declare that they want to
 allow use of a tool's attributes. This might be in the source text (an attribute
 as in #1755 or new syntax, e.g., `extern attribute foo;`) or passed to rustc as
 a command line flag (e.g., `--extern-attr foo`). The exact mechanism is
-deliberately unspecifed.
+deliberately unspecified.
 
 After opting-in to `foo`, a crate can use `foo` as the base of a path in any
 attribute in the crate. E.g., allowing `#[foo::bar]` to be used (but not
