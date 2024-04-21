@@ -410,6 +410,16 @@ It won't work in the `config.toml` but it will work with the environment variabl
 
 It is certainly possible to add at least `{home}`, `{cargo-home}` and something like `{cargo-default-target-dir}` but it can be done in the future without interfering at all with `{manifest-path-hash}`, making it a good option for a future addition without blocking.
 
+## Adding template variables to more config
+
+Other configuration items in `cargo` could eventually benefit from templating, like `[build.rustflags]` or `[env]`.
+
+While not the goal of this RFC, the design is such that is should easily extend: `{...}` is not a valid format anywhere currently except in places with paths or where `cargo` directly forwards to either a shell or `rustc`:
+
+- `rustc` can be made to work with cargo and is also very unlikely to introduce `{...}` in flags because of the large number of sh-like shells that use this format to resolve globs already: calling `rustc` with `{...}` as an argument would become very error prone.
+- paths, as already discussed earlier, are also highly unlikely to contain `{...}`, even less the exact keys that `cargo` will expect.
+- runners could expect such arguments, but that would only become a problem if cargo introduced a conflicting key and it would need a runner using that pattern, which is again unlikely.
+
 ## Use templated `CARGO_TARGET_DIR` as the default instead of `target`
 
 1. What default value do we use ? This discussion is already happening in [rust-lang/cargo#1734](https://github.com/rust-lang/cargo/issues/1734)) and does not block this RFC (and also came up with `cargo script` and as been discussed at length there, we would use the same default as chosen for it)
