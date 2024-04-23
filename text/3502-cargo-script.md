@@ -370,9 +370,12 @@ fn main() {
     println!("Hello world");
 }
 ```
-- Like with `cargo install`, `.cargo/config.toml` will be read based on the
-  scripts location rather than the current-dir.
-  - And like [`cargo install`](https://github.com/rust-lang/cargo/issues/7312), the current-dir `rust-toolchain.toml` is respected
+- In contrast to `cargo run --manifest-path <file>.rs`, `.cargo/config.toml` will not be loaded from the current-dir will instead be loaded from `CARGO_HOME`.
+  - This is inspired by `cargo install` though its logic is different:
+    - `cargo install --path <path>` will load config from `<path>`
+    - All other `cargo install`s will load config from `CARGO_HOME`
+  - Unlike `cargo install`, we expect people to run single-file packages in unsafe locations, like temp directories or download directories, and don't want to pick up less trustworthy configs
+- Like all cargo commands, including `cargo install`, the current-dir `rust-toolchain.toml` is respected ([cargo#7312](https://github.com/rust-lang/cargo/issues/7312))
 - `--release` is not passed in because the primary use case is for exploratory
   programming, so the emphasis will be on build-time performance and debugging,
   rather than runtime performance
@@ -1063,6 +1066,16 @@ When a workspace is specified
 This could serve as an alternative to
 [`cargo xtask`](https://github.com/matklad/cargo-xtask) with scripts sharing
 the lockfile and `target/` directory.
+
+## Script-relative config
+
+As `.cargo/config.toml` is loaded from `CARGO_HOME`, there isn't a way to ensure that we load the config for a script in a repo (e.g. an xtask).
+This could become more of prevalent of an issue when workspaces are supported.
+
+Options
+- A way to opt-in saying that the parent directories are assumed to be safe directories (see also [RFC #3279](https://github.com/rust-lang/rfcs/pull/3279)).
+- Key off of workspace membership (as then it won't likely be a temp file)
+  - This has a chicken-and-egg problem as we need to load config before we load manifests
 
 ## Scaling up
 
