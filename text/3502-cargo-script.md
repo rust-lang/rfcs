@@ -409,11 +409,6 @@ ideal.
 A user can workaround this with `cargo metadata --manifest-path <file>.rs`
 or `cargo read-manifest --manifest-path <file>.rs`
 
-Users may be using this feature for heavier duty scripting and want optimized builds.
-- This can be worked around by changing `profile.dev` in the embedded manifest
-- We could make `profile.run` official and make cargo script use that
-  - The custom profiles don't reuse artifacts with the inherited profile but get a separate `target/<profile>`
-
 Like with all cargo packages, the `target/` directory grows unbounded.
 This is made worse by them being out of the way and the scripts are likely to be short-lived,
 removed without a `cargo clean --manifest-path foo`.
