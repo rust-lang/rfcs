@@ -435,7 +435,9 @@ users might not be aware that they are using old dependencies.
 The precedence schema for `cargo foo` has limitations
 - If your script has the same name as a built-in subcommand, then you have to prefix it with `./`
 - If you browse a random repo and try to run one of your aliases or third-party commands, you could unintentionally get a local script instead.
+- Similarly, new cargo commands could shadow user scripts
 - If `PATH` is unset or set to an empty string, then running `build` will run `cargo build` and run the built-in `build` command rather than your script
+  - The likelihood of a script named the same as a cargo subcommand that is in the PATH or called in a strange way seems unlikely
 - Calls to `execve` (and similar functions) don't rely on resolving via `PATH` so a call with `build` will run `cargo build` and run the built-in `build` command rather than your script
 
 This increases the maintenance and support burden for the cargo team, a team
@@ -948,7 +950,7 @@ See also [Single-file scripts that download their dependencies](https://dbohdan.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Whether `version` should may be unset or defaulted to `0.0.0`
+- Considering taking [AT_EXECFN](https://www.man7.org/linux/man-pages/man3/getauxval.3.html) into account when determining precedence
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
