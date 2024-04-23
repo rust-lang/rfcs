@@ -420,6 +420,9 @@ A GC for cargo is being tracked in [rust-lang/cargo#12633](https://github.com/ru
 With lockfile "hidden away" in the `target/`,
 users might not be aware that they are using old dependencies.
 
+With `target/` including a hash of the script, moving the script throwsaway the build cache.
+[cargo#5931](https://github.com/rust-lang/cargo/issues/5931) could help reduce this.
+
 Syntax is not reserved for `build.rs`, proc-maros, embedding
 additional packages, or other functionality to be added later with the
 assumption that if these features are needed, a user should be using a
