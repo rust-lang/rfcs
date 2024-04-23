@@ -417,15 +417,15 @@ stored in other locations
 (our temp files are inside the `target/` dir and should be rarer).
 A GC for cargo is being tracked in [rust-lang/cargo#12633](https://github.com/rust-lang/cargo/issues/12633)
 
+With lockfile "hidden away" in the `target/`,
+users might not be aware that they are using old dependencies.
+
 Syntax is not reserved for `build.rs`, proc-maros, embedding
 additional packages, or other functionality to be added later with the
 assumption that if these features are needed, a user should be using a
 multi-file package.
 As stated in the Motivation, this doesn't have to perfectly cover every use
 case that a `Cargo.toml` would.
-
-With lockfile "hidden away" in the `target/`,
-users might not be aware that they are using old dependencies.
 
 The precedence schema for `cargo foo` has limitations
 - If your script has the same name as a built-in subcommand, then you have to prefix it with `./`
