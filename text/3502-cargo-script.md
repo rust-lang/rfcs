@@ -22,10 +22,10 @@ deferred out.
 Example:
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [dependencies]
 clap = { version = "4.2", features = ["derive"] }
-```
+---
 
 use clap::Parser;
 
@@ -147,10 +147,10 @@ requested packages.
 To depend on a library hosted on [crates.io], you modify `hello_world.rs`:
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [dependencies]
 time = "0.1.12"
-```
+---
 
 fn main() {
     println!("Hello, world!");
@@ -174,11 +174,11 @@ crates:
 
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [dependencies]
 time = "0.1.12"
 regex = "0.1.41"
-```
+---
 
 fn main() {
     let re = Regex::new(r"^\d{4}-\d{2}-\d{2}$").unwrap();
@@ -697,10 +697,10 @@ It is invalid for an embedded manifest to be missing `edition`, erroring when it
 The minimal single-package file would end up being:
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [package]
 edition = "2018"
-```
+---
 
 fn main() {
 }
@@ -763,10 +763,10 @@ We could set it the edition the feature is stablized in (2021?) but that is just
 People are likely to get this by running `cargo new` and could easily forget it
 otherwise.
 ````rust
-```cargo
+---
 [package]
 edition = "2018"
-```
+---
 
 fn main() {
 }
@@ -790,10 +790,10 @@ fn main() {
 is automatically converted to
 ````rust
 #!/usr/bin/env cargo
-```cargo
+---
 [package]
 edition = "2018"
-```
+---
 
 fn main() {
 }
