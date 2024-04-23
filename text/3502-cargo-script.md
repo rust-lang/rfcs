@@ -1077,6 +1077,23 @@ Options
 - Key off of workspace membership (as then it won't likely be a temp file)
   - This has a chicken-and-egg problem as we need to load config before we load manifests
 
+## Access to `--release` in shebang
+
+While the primary target of this feature is one-off use that is not performance sensitive,
+users may want to have long-lived scripts that do intensive operations.
+
+This is generally viewed as a script-author decision, rather than a user decision, as they are most likely to know the performance characteristics of their script.
+
+In the short term, users can configure `[profile.dev]` to match `[profile.release]`, see [Cargo's Profiles chapter](https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles).
+
+Potential options for addressing this include
+- Add `cargo --release <script>` or `cargo --profile=name> <script>`
+  - This would only work on systems that support `env -S` which might be fine as this is a more specialized case already
+  - This doesn't scale too well for other customization
+- Add a "default profile" of some kind to the manifest format
+  - See also [zulip: cargo build default profile](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/cargo.20build.20default.20profile)
+- Allow built-in profiles to inherit from other built-in profiles (so `dev` could inherit from `release`)
+
 ## Scaling up
 
 We provide a workflow for turning a single-file package into a multi-file
