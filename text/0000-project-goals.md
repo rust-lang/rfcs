@@ -29,7 +29,7 @@ The Rust project last published an annual roadmap in 2021. Even before that, mai
 For more details, see
 
 * [Blog post on nikomatsakis's blog about project goals](https://smallcultfollowing.com/babysteps/blog/2023/11/28/project-goals/)
-* [Blog post on nikomatsakis's goal about goal ownership](https://smallcultfollowing.com/babysteps/blog/2024/04/05/ownership-in-rust/)
+* [Blog post on nikomatsakis's blog about goal ownership](https://smallcultfollowing.com/babysteps/blog/2024/04/05/ownership-in-rust/)
 * [nikomatsakis's slides from the Rust leadership summit](https://github.com/nikomatsakis/team-goals-2024)
 * [Zulip topic in #council stream](https://rust-lang.zulipchat.com/#narrow/stream/392734-council/topic/Project.2Fteam.20goals). This proposal was also discussed at the leadership council meeting on 2024-04-12, during which meeting the council recommended opening an RFC.
 
