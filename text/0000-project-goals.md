@@ -41,7 +41,7 @@ For more details, see
 The plan is to do a "dry run" of the process in the remainder of 2024. The 2024 process will be driven by nikomatsakis; one of the outputs will be an RFC that proposes a more permanent process for use going forward. The short version of the plan is that we will
 
 * **ASAP (April):** Have a ~2 month period for selecting the initial slate of goals. Goals will be sourced from Rust teams and the broader community. They will cover the highest priority work to be completed in the second half of 2024.
-* **June:** Teams will approve the final slate of goals, making them 'official', and we will author an RFC proposing a refined process.
+* **June:** Teams will approve the final slate of goals, making them 'official'.
 * **Remainder of the year:** Regular updates on goal progress will be posted
 * **October:** Presuming all goes well, the process for 2025 H1 begins. Note that the planning for 2025 H1 and finishing up of goals from 2024 H2 overlap.
 
