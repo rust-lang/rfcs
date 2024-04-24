@@ -397,7 +397,7 @@ Note that since generic type parameters must have names to be captured with `use
 
 ```rust
 //@ edition: 2021
-fn foo<'t>(_: &'t (), x: impl Sized) -> impl use<T> Sized { x }
+fn foo<'t>(_: &'t (), x: impl Sized) -> impl Sized { x }
 ```
 
 ...into this:
