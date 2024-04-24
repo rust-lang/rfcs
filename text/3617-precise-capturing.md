@@ -64,6 +64,8 @@ We need some way to migrate this kind of code.
 
 In all editions, RPIT-like `impl Trait` opaque types may include `use<..>` in the bound to specify which in-scope generic parameters are captured or that no in-scope generic parameters are captured (with `use<>`).  If `use<..>` is provided, it entirely overrides the implicit rules for which generic parameters are captured.
 
+One way to think about `use<..>` is that, in Rust `use` brings things *into scope*, and here we are bringing certain generic parameters into scope for the hidden type.
+
 For example, we can solve the overcapturing in the original motivating example by writing:
 
 ```rust
@@ -504,7 +506,7 @@ This is the syntax chosen in this RFC.
 
 Using a separate keyword makes this syntax more scalable in the sense that we can apply `use<..>` in other places.
 
-Conveniently, the word "use" is quite appropriate here, since we are *using* the generic parameters in the type of the opaque type and allowing the generic parameters to be *used* in the hidden type.
+Conveniently, the word "use" is quite appropriate here, since we are *using* the generic parameters in the type of the opaque type and allowing the generic parameters to be *used* in the hidden type.  That is, with `use`, we are bringing the generic parameters *into scope* for the hidden type, and `use` is the keyword in Rust for bringing things into scope.
 
 Picking an existing keyword allows for this syntax, including extensions to other positions, to be allowed in older editions.  Because `use` is a full keyword, we're not limited in where it can be placed.
 
