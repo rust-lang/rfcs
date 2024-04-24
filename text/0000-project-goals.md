@@ -47,7 +47,15 @@ The plan is to do a "dry run" of the process in the remainder of 2024. The 2024 
 
 ## The "shiny future" we are working towards
 
-Assuming this goal program is successful, we would like to begin another goal sourcing round in late 2024 (likely Oct 15 - Dec 15). We see this as fitting into a running process where the project evaluates its program and re-establishes goals every six months.
+We wish to get to a point where
+
+* it is clear to onlookers and Rust maintainers alike what the top priorities are for the project and whether progress is being made on those priorities
+* for each priority, there is a clear owner who
+    * feels empowered to make decisions regarding the final design (subject to approval from the relevant teams)
+* teams cooperate with one another to prioritize work that is blocking a project goal
+* external groups who would like to sponsor or drive priorities within the Rust project know how to bring proposals and get feedback
+
+More concretely, assuming this goal program is successful, we would like to begin another goal sourcing round in late 2024 (likely Oct 15 - Dec 15). We see this as fitting into a running process where the project evaluates its program and re-establishes goals every six months.
 
 ## Design axioms
 
