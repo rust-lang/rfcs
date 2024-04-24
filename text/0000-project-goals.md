@@ -117,8 +117,8 @@ Key milestones along the way (with the most impactful highlighted in bold):
 | July         | Publish monthly update on Inside Rust                           |                                                                            |
 | August       | Publish monthly update on Inside Rust                           |                                                                            |
 | September    | Publish monthly update on Inside Rust                           |                                                                            |
-| **Oct**      | **Publish intermediate goal progress update on main Rust blog** | **Begin next round of goal process, expected to cover first half of 2025** |
-| November     | Publish monthly update on Inside Rust                           | Approval process for 2025 H1 goal slate begins                             |
+| **Oct 1**    | **Publish intermediate goal progress update on main Rust blog** | **Begin next round of goal process, expected to cover first half of 2025** |
+| November | Publish monthly update on Inside Rust                           | Nov 15: Approval process for 2025 H1 goal slate begins                             |
 | **December** | **Publish retrospective on 2024 H2**                            | **Announce 2025 H1 goal slate**                                            |
 
 ### Process to be followed
