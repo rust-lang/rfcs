@@ -526,7 +526,7 @@ By not putting the generic parameters on `impl<..>`, we reduce the risk of confu
 
 We put `impl` before `use<..>` because `use<..>` is a property of the opaque type and we're *applying* the generic *parameters* as generic *arguments* to this opaque type.  In `impl Trait` syntax, the `impl` keyword is the stand-in for the opaque type itself.  Viewed this way, `impl use<..> Trait` maintains the following order, which is seen throughout Rust: *type*, *generic arguments*, *bounds*.
 
-Using angle brackets, rather than parenthesis or square brackets, is consistent with other places in the language where type parameters are applied to a type.
+Using angle brackets, rather than parentheses or square brackets, is consistent with other places in the language where type parameters are applied to a type.
 
 At three letters, the `use` keyword is short enough that it doesn't feel too noisy or too much like a burden to use this, and it's parsimonious with other short keywords in Rust.
 
@@ -602,7 +602,7 @@ We could use the existing `move` keyword, however the word "move" is semanticall
 
 We could use a new short keyword such as `via`.  This has the number 1 and 2 drawbacks of `k#captures` mentioned above.  As with `move`, it also seems a semantically worse word.  With `use<..>`, we can explain that it means the opaque type *uses* the listed generic parameters.  In contrast, it's not clear how we could explain the word "via" in this context.
 
-### Using parenthesis or square brackets
+### Using parentheses or square brackets
 
 We could say `use('t, T)` or `use['t, T]`.  However, in Rust today, generic parameters always fall within angle brackets, even when being applied to a type.  Doing something different here could feel inconsistent and doesn't seem warranted.
 
