@@ -171,18 +171,30 @@ The [syntax for `impl Trait`][] is revised and extended as follows:
 
 [syntax for `impl Trait`]: https://doc.rust-lang.org/nightly/reference/types/impl-trait.html
 
-> _UseCaptures_ :\
-> &nbsp;&nbsp; `use` [_GenericParams_][]
->
 > _ImplTraitType_ :
 > &nbsp;&nbsp; `impl` _UseCaptures_<sup>?</sup> [_TypeParamBounds_][]
 >
 > _ImplTraitTypeOneBound_ :
 > &nbsp;&nbsp; `impl` _UseCaptures_<sup>?</sup> [_TraitBound_][]
+>
+> _UseCaptures_ :\
+> &nbsp;&nbsp; `use` _UseCapturesGenericArgs_
+>
+> _UseCapturesGenericArgs_ :\
+> &nbsp;&nbsp; &nbsp;&nbsp; `<` `>` \
+> &nbsp;&nbsp; | `<` \
+> &nbsp;&nbsp; &nbsp;&nbsp; ( _UseCapturesGenericArg_ `,`)<sup>\*</sup> \
+> &nbsp;&nbsp; &nbsp;&nbsp; _UseCapturesGenericArg_ `,`<sup>?</sup> \
+> &nbsp;&nbsp; &nbsp;&nbsp; `>`
+>
+> _UseCapturesGenericArg_ :\
+> &nbsp;&nbsp; &nbsp;&nbsp; [LIFETIME_OR_LABEL][] \
+> &nbsp;&nbsp; | [IDENTIFIER][]
 
-[_GenericParams_]: https://doc.rust-lang.org/nightly/reference/items/generics.html
-[_TypeParamBounds_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
+[IDENTIFIER]: https://doc.rust-lang.org/nightly/reference/identifiers.html
+[LIFETIME_OR_LABEL]: https://doc.rust-lang.org/nightly/reference/tokens.html#lifetimes-and-loop-labels
 [_TraitBound_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
+[_TypeParamBounds_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
 
 ## Reference desugaring
 
