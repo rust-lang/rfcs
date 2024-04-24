@@ -524,6 +524,8 @@ Picking an existing keyword allows for this syntax, including extensions to othe
 
 By not putting the generic parameters on `impl<..>`, we reduce the risk of confusion that we are somehow introducing generic parameters here rather than using them.
 
+We put `impl` before `use<..>` because `use<..>` is a property of the opaque type and we're *applying* the generic *parameters* as generic *arguments* to this opaque type.  In `impl Trait` syntax, the `impl` keyword is the stand-in for the opaque type itself.  Viewed this way, `impl use<..> Trait` maintains the following order, which is seen throughout Rust: *type*, *generic arguments*, *bounds*.
+
 Using angle brackets, rather than parenthesis or square brackets, is consistent with other places in the language where type parameters are applied to a type.
 
 At three letters, the `use` keyword is short enough that it doesn't feel too noisy or too much like a burden to use this, and it's parsimonious with other short keywords in Rust.
@@ -535,6 +537,36 @@ Overall, naming is hard, but on average, people seemed to dislike this choice th
 The original syntax proposal was `impl<..> Trait`.  This has the benefit of being somewhat more concise than `impl use<..> Trait` but has the drawback of perhaps suggesting that it's introducing generic parameters as other uses of `impl<..>` do.  Many preferred to use a different keyword for this reason.
 
 Decisive to some was that we may want this syntax to *scale* to other uses, most particularly to controlling the set of generic parameters and values that are captured by closure-like blocks.  As we discuss in the future possibilities, it's easy to see how `use<..>` can scale to address this in a way that `impl<..> Trait` cannot.
+
+### `use<..> impl Trait`
+
+Putting the `use<..>` specifier *before* the `impl` keyword is potentially appealing as `use<..>` applies to the entire `impl Trait` opaque type rather than to just one of the bounds, and this ordering might better suggest that.
+
+However, this visual association might also *prove too much*.  That is, it could make the `use<..>` look more like a *binder* (like `for<..>`) rather than like a *property* of the opaque type.
+
+The `use<..>` syntax *applies* the listed generic *parameters* as generic *arguments* to the opaque type.  It's analogous, e.g., with the generic arguments here:
+
+```rust
+impl Trait for () {
+    type Opaque<'t, T> = Concrete<'t, T>
+    //                   ^^^^^^^^|^^^^^
+    //                     Type  | Generic Arguments
+    where Self: 'static;
+    //    ^^^^^^^^^^^^^
+    //       Bounds
+}
+```
+
+Just as the above *applies* `<'t, T>` to `Concrete`, `use<..>` applies its arguments to the opaque type.
+
+In the above example and throughout Rust, we observe the following order: *type*, *generic arguments* (applied to the type), *bounds*.  In `impl Trait` syntax, the `impl` keyword is the stand-in for the opaque type itself.  The `use<..>` specifier lists the generic arguments to be applied to that type.  Then the bounds follow.  Putting `use<..>` after `impl` is consistent with this rule, but the other way would be inconsistent.
+
+This observation, that we're applying generic *arguments* to the opaque type and that the `impl` keyword is the stand-in for that type, is also a strong argument in favor of `impl<..> Trait` syntax.  It's conceivable that we'll later, with more experience and consistently with [Stroustrup's Rule][], decide that we want to be more concise and adopt the `impl<..> Trait` syntax after all.  One of the advantages of placing `use<..>` after `impl` is that there would be less visual and conceptual churn in later making that change.
+
+Finally, there's one other practical advantage to placing `impl` before `use<..>`.  If we were to do it the other way and place `use<..>` before `impl`, we would need to make a backward incompatible change to the `ty` macro matcher fragment specifier.  This would require us to migrate this specifier according to our policy in [RFC 3531][].  This is something we could do, but it is a cost on us and on our users, and combined with the other good reasons that argue for `impl use<..> Trait` (or even `impl<..> Trait`), it doesn't seem a cost that's worth paying.
+
+[RFC 3531]: https://github.com/rust-lang/rfcs/blob/master/text/3531-macro-fragment-policy.md
+[Stroustrup's Rule]: https://www.thefeedbackloop.xyz/stroustrups-rule-and-layering-over-time/
 
 ### `impl Trait & ..`
 
