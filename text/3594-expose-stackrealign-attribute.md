@@ -49,8 +49,8 @@ The realign_stack attribute is specified as follows:
 #[realign_stack]
 ```
 
-When the `realign_stack` attribute is applied to a function, the compiler no longer assumes the stack is properly aligned when the function is called, so will insert code to align the stack as needed for calling other functions, variables requiring alignment, etc.
-This alignment is achieved by adjusting the stack pointer accordingly. The alignment is maintained for the duration of the function's execution.
+When the `realign_stack` attribute is applied to a function, the compiler no longer assumes the stack is properly aligned when the function is called, and so will insert code to forcefully realign the stack as needed for calling other functions, variables requiring alignment, etc.
+This alignment is achieved by adjusting the stack pointer accordingly to the stack alignment specified in the target ABI's data layout.
 Adding this attribute unnecessarily might "waste" space on the stack which could be crucial in real-time systems.
 
 # Drawbacks
