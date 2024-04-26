@@ -53,6 +53,23 @@ When the `realign_stack` attribute is applied to a function, the compiler no lon
 This alignment is achieved by adjusting the stack pointer accordingly to the stack alignment specified in the target ABI's data layout.
 Adding this attribute unnecessarily might "waste" space on the stack which could be crucial in real-time systems.
 
+In LLVM the `alignstack` gets an argument that specifies the alignment in bytes(also must be a power of 2). 
+Below is an example of how it would work for an example data-layout:
+`e-m:e-i64:64-f80:128-n8:16:32:64-S128`.
+The `S128` is the part that describes the natural stack alignment in bits.
+So practically, we just need to divide that value by 8, and place it as the argument of `alignstack`.
+So in the `S128` case it would look like this: `alignstack=16`.
+
+```
+define i32 @callback_function() #0 {
+start:
+  ret i32 0
+}
+
+attributes #0 = { alignstack=16 }
+```
+
+
 # Drawbacks
 [drawbacks]: #drawbacks
 - Introducing a new attribute adds complexity to the language.
