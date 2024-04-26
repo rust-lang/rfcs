@@ -79,12 +79,12 @@ attributes #0 = { alignstack=16 }
 [rationale-and-alternatives]: #rationale-and-alternatives
 An alternative could be a macro workaround instead of adding the attribute.
 However it would be more like band-aid than an actual solution.
-Another alternative could be adding the any extern "C" function the `stackrealign` attribute implicitly which would solve the main use-case.
+Another alternative could be adding the any extern "C" function the `stackrealign` attribute implicitly which would solve the main use-case. However, this is at the cost of added overhead where callers abide by the target's stack alignment, as in the majority of cases.
 An extra option could be not verifying data-layout for custom targets provided via `--target=`, which would allow users to patch the "natural stack alignment" in their custom target which should relax LLVM stack alignment assumptions that are present in the system.
 Another alternative could be adding a new ABI that captures "function which can be called with any stack alignment".
 I chose to propose this RFC and not any of the alternatives because it seems to me that this proposition provides the simplest solution, a solution that is very close to `force_align_arg_pointer` function attribute in GCC and a solution that is easy to implement for rustc.
 While creating a different ABIs to handle stack realignment could be a viable alternative, introducing a new function attribute like realign_stack in Rust offers several advantages. Firstly, leveraging function attributes aligns with Rust's philosophy of providing clear and concise language features, ensuring that developers can easily understand and apply stack realignment where necessary. Also, if the realign_stack was a part of the ABI we would need to practically duplicate every ABI and create a copy where one has that attribute and the other does not. This would lead to a higher level of complexity and would require higher maintenance over time. 
-Using a function attribute offers finer granularity and control, enabling developers to selectively apply stack realignment to specific functions without affecting the entire ABI
+Using a function attribute offers finer granularity and control, enabling developers to selectively apply stack realignment to specific functions without affecting the entire ABI.
 
 # Prior art
 [prior-art]: #prior-art
