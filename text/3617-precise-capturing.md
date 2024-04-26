@@ -162,6 +162,15 @@ The `use<..>` specifier applies to the entire `impl Trait` opaque type.  In cont
 fn foo<T>(_: T) -> impl use<T> for<'a> FnOnce(&'a ()) { |&()| () }
 ```
 
+## Optional trailing comma
+
+As with other lists of generic arguments in Rust, a trailing comma is optional in `use<..>` specifiers:
+
+```rust
+fn foo1<T>(_: T) -> impl use<T> Sized {} //~ OK.
+fn foo2<T>(_: T) -> impl use<T,> Sized {} //~ Also OK.
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
