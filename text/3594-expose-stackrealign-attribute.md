@@ -51,7 +51,6 @@ The realign_stack attribute is specified as follows:
 
 When the `realign_stack` attribute is applied to a function, the compiler no longer assumes the stack is properly aligned when the function is called, and so will insert code to forcefully realign the stack as needed for calling other functions, variables requiring alignment, etc.
 This alignment is achieved by adjusting the stack pointer accordingly to the stack alignment specified in the target ABI's data layout.
-Adding this attribute unnecessarily might "waste" space on the stack which could be crucial in real-time systems.
 
 In LLVM the `alignstack` gets an argument that specifies the alignment in bytes(also must be a power of 2). 
 Below is an example of how it would work for an example data-layout:
@@ -85,6 +84,8 @@ Another alternative could be adding a new ABI that captures "function which can 
 I chose to propose this RFC and not any of the alternatives because it seems to me that this proposition provides the simplest solution, a solution that is very close to `force_align_arg_pointer` function attribute in GCC and a solution that is easy to implement for rustc.
 While creating a different ABIs to handle stack realignment could be a viable alternative, introducing a new function attribute like realign_stack in Rust offers several advantages. Firstly, leveraging function attributes aligns with Rust's philosophy of providing clear and concise language features, ensuring that developers can easily understand and apply stack realignment where necessary. Also, if the realign_stack was a part of the ABI we would need to practically duplicate every ABI and create a copy where one has that attribute and the other does not. This would lead to a higher level of complexity and would require higher maintenance over time. 
 Using a function attribute offers finer granularity and control, enabling developers to selectively apply stack realignment to specific functions without affecting the entire ABI.
+In the future if it is seems import enough, we should reconsider the added ABI option which also has benifits of its own: stack alignment is really part of the ABI so it could be perhaps easier to new comers of the language to find this "realign_stack" feature there. New ABIs can be standardized later for other languages as well which would improve interoperability overall. 
+The main thing we get with `realign_stack` function attribute as opposed to a new ABI is the simplicity of implementation and "closeness" of implementation to c with `force_align_arg_pointer`.
 
 # Prior art
 [prior-art]: #prior-art
@@ -98,4 +99,4 @@ Also present in LLVM in general.
 [future-possibilities]: #future-possibilities
 - Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
 - We could perhaps add a new ABI called something like `"C-unaligned"` which could inform LLVM of the problems specified above.
-- Add a rustc complication flag that adds this attribute to every `pub extern` function (similiar to `-mstackrealign` which does this globally in GCC).
+- Add a rustc compilation flag that adds this attribute to every `pub extern` function (similiar to `-mstackrealign` which does this globally in GCC).
