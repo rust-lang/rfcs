@@ -551,18 +551,76 @@ Decisive to some was that we may want this syntax to *scale* to other uses, most
 
 Putting the `use<..>` specifier *before* the `impl` keyword is potentially appealing as `use<..>` applies to the entire `impl Trait` opaque type rather than to just one of the bounds, and this ordering might better suggest that.
 
-However, this visual association might also *prove too much*.  That is, it could make the `use<..>` look more like a *binder* (like `for<..>`) rather than like a *property* of the opaque type.
+Let's discuss some arguments for this, some arguments against it, and then discuss the fundamental tension here.
 
-The `use<..>` syntax *applies* the listed generic *parameters* as generic *arguments* to the opaque type.  It's analogous, e.g., with the generic arguments here:
+#### The case for `use<..>` before `impl`
+
+We've been referring to the syntax for RPIT-like opaque types as `impl Trait`, as is commonly done.  But this is a bit imprecise.  The syntax is really `impl $bounds`.  We might say, e.g.:
+
+```rust
+fn foo() -> impl 'static + Unpin + for<'a> FnMut(&'a ()) {
+    |_| ()
+}
+```
+
+Each *bound*, separated by `+`, may be a *lifetime* or a *trait bound*.  Each trait bound may include a higher ranked `for<..>` *binder*.  The lifetimes introduced in such a binder are in scope only for the bound in which that binder appears.
+
+This could create confusion with `use<..>` after `impl`.  If we say, e.g.:
+
+```rust
+fn foo<'a>(
+    _: &'a (),
+) -> impl use<'a> for<'b> FnMut(&'b ()) + for<'c> Trait<'c> {
+    //    ^^^^^^^ ^^^^^^^                 ^^^^^^^
+    //    |       |                       ^ Applies to one bound.
+    //    |       ^ Applies to one bound.
+    //    ^ Applies to the whole type.
+    |_| ()
+}
+```
+
+...then it may feel like `use<..>` should apply to only the first bound, just as the `for<..>` binder right next to it does.  Putting `use<..>` *before* `impl` might avoid this issue.  E.g.:
+
+```rust
+fn foo<'a>(
+    _: &'a (),
+) -> use<'a> impl for<'b> FnMut(&'b ()) + for<'c> Trait<'c> {
+    |_| ()
+}
+```
+
+This would make it clear that `use<..>` applies to the entire type.  This seems the strongest argument for putting `use<..>` before `impl`, and it's a *good* one.
+
+#### The case for and against `use<..>` before `impl`
+
+There are some other known arguments for this ordering that may or may not resonate with the reader; we'll present these, along with the standard arguments that might be made in response, as an imagined conversation between Alice and Bob:
+
+> **Bob**: We call the base feature here "`impl Trait`".  Anything that we put between the `impl` and the `Trait` could make this less recognizable to people.
+>
+> **Alice**: Maybe, but users don't literally write the words `impl Trait`; they write `impl` and then a set of bounds.  They could even write `impl 'static + Fn()`, e.g.  The fact that there can be multiple traits and that a lifetime or a `for<..>` binder could come between the `impl` and the first trait doesn't seem to be a problem here, so maybe adding `use<..>` won't be either.
+>
+> **Bob**: But what about the orthography?  In English, we might say "using 'x, we implement the trait".  We'd probably try to avoid saying "we implement, using 'x, the trait".  Putting `use<..>` first better lines up with this.
+>
+> **Alice**: Is that true?  Would we always prefer the first version?  To my ears, "using 'x, we implement the trait" sounds a bit like something Yoda would say.  I'd probably say the second version, if I had to choose.  Really, of course, I'd mostly try to say instead that "we implement the trait using 'x", but there are probably good reasons to not use that ordering here in Rust.
+>
+> **Bob**: The RFC talks about maybe later extending the `use<..>` syntax to closure-like blocks, e.g. `use<> |x| x`.  If it makes sense to put the `use<..>` first here, shouldn't we put it first in `use<..> impl Trait`?
+>
+> **Alice**: That's interesting to think about.  In the case of closure-like blocks, we'd probably want to put the `use<..>` in the same position as `move` as it could be extended to serve a similar purpose.  For closures, that would mean putting it before the arguments, e.g. `use<> |x| x`, just as we do with `move`.  But this would also imply that `use<..>` should appear *after* certain keywords, e.g. for `async` blocks we currently write `async move {}`, so maybe here we would write `async use<> {}`.
+>
+> **Alice**: There is a key difference to keep in mind here.  Closure-like blocks are *expressions* but `impl Trait` is syntax for a *type*.  We often have different conventions between type position and expression position in Rust.  Maybe (or maybe not) this is a place where that distinction could matter.
+
+#### The case against `use<..>` before `impl`
+
+The `use<..>` specifier syntax *applies* the listed generic *parameters* as generic *arguments* to the opaque type.  It's analogous, e.g., with the generic arguments here:
 
 ```rust
 impl Trait for () {
     type Opaque<'t, T> = Concrete<'t, T>
-    //                   ^^^^^^^^|^^^^^
-    //                     Type  | Generic Arguments
+    //                   ^^^^^^^^ ^^^^^
+    //                   ^ Type   ^ Generic arguments
     where Self: 'static;
     //    ^^^^^^^^^^^^^
-    //       Bounds
+    //    ^ Bounds
 }
 ```
 
@@ -572,10 +630,50 @@ In the above example and throughout Rust, we observe the following order: *type*
 
 This observation, that we're applying generic *arguments* to the opaque type and that the `impl` keyword is the stand-in for that type, is also a strong argument in favor of `impl<..> Trait` syntax.  It's conceivable that we'll later, with more experience and consistently with [Stroustrup's Rule][], decide that we want to be more concise and adopt the `impl<..> Trait` syntax after all.  One of the advantages of placing `use<..>` after `impl` is that there would be less visual and conceptual churn in later making that change.
 
-Finally, there's one other practical advantage to placing `impl` before `use<..>`.  If we were to do it the other way and place `use<..>` before `impl`, we would need to make a backward incompatible change to the `ty` macro matcher fragment specifier.  This would require us to migrate this specifier according to our policy in [RFC 3531][].  This is something we could do, but it is a cost on us and on our users, and combined with the other good reasons that argue for `impl use<..> Trait` (or even `impl<..> Trait`), it doesn't seem a cost that's worth paying.
+Finally, there's one other practical advantage to placing `impl` before `use<..>`.  If we were to do it the other way and place `use<..>` before `impl`, we would need to make a backward incompatible change to the `ty` macro matcher fragment specifier.  This would require us to migrate this specifier according to our policy in [RFC 3531][].  This is something we could do, but it is a cost on us and on our users, even if only a modest one, and combined with the other good reasons that argue for `impl use<..> Trait` (or even `impl<..> Trait`), it doesn't seem a cost that's worth paying.
 
 [RFC 3531]: https://github.com/rust-lang/rfcs/blob/master/text/3531-macro-fragment-policy.md
 [Stroustrup's Rule]: https://www.thefeedbackloop.xyz/stroustrups-rule-and-layering-over-time/
+
+#### The fundamental tension on `impl use<..>` vs. `use<..> impl`
+
+Throughout this RFC, we've given two intuitions for the semantics of `use<..>`:
+
+- **Intuition #1**: `use<..>` *applies* generic arguments to the opaque type.
+- **Intuition #2**: `use<..>` brings generic parameters *into scope* for the hidden type.
+
+These are *both* true and are both valid *intuitions*, but there's some tension between these for making this syntax choice.
+
+It's often helpful to think of `impl Trait` in terms of generic associated types (GATs), and let's make that analogy here.  Consider:
+
+```rust
+impl Trait for () {
+    type Opaque<'t, T> = Concrete<'t, T>;
+    //   ^^^^^^ ^^^^^    ^^^^^^^^ ^^^^^
+    //   |      |        |        ^ Generic arguments applied
+    //   |      |        ^ Concrete type
+    //   |      ^ Generic parameters introduced into scope
+    //   ^ Alias type (similar to an opaque type)
+    fn foo<T>(&self) -> Self::Opaque<'_, T> { todo!() }
+    //                  ^^^^^^^^^^^^ ^^^^^
+    //                  ^ Alias type ^ Generic arguments applied
+}
+```
+
+The question is, are the generics in `use<..>` more like the generic *parameters* or more like the generic *arguments* above?
+
+If these generics are more like the generic *arguments* above (*Intuition #1*), then `impl<..> Trait` and `impl use<..> Trait` make a lot of sense as we're *applying* these arguments to the type.  In Rust, when we're applying generic arguments to a type, the generic arguments appear *after* the type, and `impl` is the stand-in for the type here.
+
+However, if these generics are more like the generic *parameters* above (*Intuition #2*), then `use<..> impl Trait` makes more sense.  In Rust, when we're putting generic parameters into scope, they appear before the type.
+
+Since both intuitions are valid, but each argues for a different syntax choice, picking one is tough.  The authors are sympathetic to both choices.  The key historical and tiebreaker factors leading to our choice of the `impl use<..> Trait` syntax in this RFC are:
+
+- The original longstanding and motivating semantic intuition for this feature was *Intuition #1*, and it argues for this syntax.  The second intuition, *Intuition #2*, was only developed in the process of writing this RFC and after most of this RFC had been written.
+- The `use<..> impl Trait` syntax was never proposed before this RFC was written (it may have been inspired by the presentation in this RFC of the second intuition), and in discussion, no clear consensus has yet emerged in its favor.
+- There are some practical costs that exist for `use<..> impl Trait` that don't for `impl use<..> Trait`.
+- The "obvious" syntax for this feature is `impl<..> Trait`.  We may yet someday want to switch to this, and migrating from `impl use<..> Trait` seems like a smaller step.
+
+We are *not* leaving this as an open question, because given that there have already been substantial and productive discussions on this topic, and given that it's a bit of a coin flip where we're likely to be happy at the end of the day with either choice, it seems better to just pick one.  But all questions are in some sense open until stabilization, if feelings shift far enough and an alternate consensus emerges, and the authors hope that people will take the opportunity to experiment with and experience the syntax on nightly.
 
 ### `impl Trait & ..`
 
