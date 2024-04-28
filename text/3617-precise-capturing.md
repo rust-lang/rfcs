@@ -257,13 +257,14 @@ mod _0 {
 
 ## Avoiding capture of higher ranked lifetimes in nested opaques
 
-For implementation reasons, Rust does not yet support higher ranked lifetime bounds on nested opaque types (see [#104288][]).  However, according to the Lifetime Capture Rules 2024, a nested `impl Trait` opaque type *must* capture all generic parameters in scope, including higher ranked ones.  Therefore, in Rust 2024, this code fails to compile:
+According to the Lifetime Capture Rules 2024, a nested `impl Trait` opaque type *must* capture all generic parameters in scope, including higher ranked ones.  However, for implementation reasons, Rust does not yet support higher ranked lifetime bounds on nested opaque types (see [#104288][]).  Therefore, in Rust 2024, this code, which is valid in Rust 2021, fails to compile:
 
 ```rust
-trait Trait { type Ty; }
-impl<F> Trait for F { type Ty = (); }
+//@ edition: 2024
+trait Trait<'a> { type Ty; }
+impl<F> Trait<'_> for F { type Ty = (); }
 
-fn foo() -> impl for<'a> Trait<Ty = impl Sized> {
+fn foo() -> impl for<'a> Trait<'a, Ty = impl Sized> {
     //~^ ERROR `impl Trait` cannot capture higher-ranked lifetime
     //~|        from outer `impl Trait`
     fn f(_: &()) -> &'static () { &() }
@@ -274,9 +275,9 @@ fn foo() -> impl for<'a> Trait<Ty = impl Sized> {
 With `use<..>`, we can avoid capturing this higher ranked lifetime, allowing compilation:
 
 ```rust
-fn foo() -> impl for<'a> Trait<Ty = impl use<> Sized> {
-    //                              ^^^^^^^^^^^^^^^^
-    //                              ^ Captures nothing.
+fn foo() -> impl for<'a> Trait<'a, Ty = impl use<> Sized> {
+    //                                  ^^^^^^^^^^^^^^^^
+    //                                  ^ Captures nothing.
     fn f(_: &()) -> &'static () { &() }
     f
 }
