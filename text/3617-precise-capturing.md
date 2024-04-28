@@ -205,51 +205,191 @@ The [syntax for `impl Trait`][] is revised and extended as follows:
 [_TraitBound_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
 [_TypeParamBounds_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
 
-## Reference desugaring
+## Reference desugarings
 
-Associated type position `impl Trait` (ATPIT) can also be used, more verbosely, to control capturing of generic parameters in opaque types.  We can use this to describe the semantics of `use<..>`.  If we consider the following code:
+The desugarings that follow can be used to answer questions about how `use<..>` is expected to work with respect to the capturing of generic parameters in opaque types.
+
+### Reference desugaring for `use<..>` in RPIT
+
+Associated type position `impl Trait` (ATPIT) can be used, more verbosely, to control capturing of generic parameters in opaque types.  We can use this to describe the semantics of `use<..>`.  If we consider the following code:
 
 ```rust
-struct Ty<'u, U, const CU: u8>(&'u (), U);
+use core::marker::PhantomData;
 
-impl<'u, U, const CU: u8> Ty<'u, U, CU> {
+struct C<'s, 't, S, T, const CS: u8, const CT: u8> {
+    _p: PhantomData<(&'s (), &'t (), S, T)>,
+}
+
+struct Ty<'s, S, const CS: u8>(&'s (), S);
+impl<'s, S, const CS: u8> Ty<'s, S, CS> {
     pub fn f<'t, T, const CT: u8>(
-        self, x: &'t (), y: T,
-    ) -> impl use<'u, 't, U, T, CU, CT> Sized {
-        (self, x, y, CU, CT)
+    ) -> impl use<'s, 't, S, T, CS, CT> Sized {
+        //    ^^^^^^^^^^^^^^^^^^^^^^^^^
+        // This is the `use<..>` specifier to desugar.
+        C::<'s, 't, S, T, CS, CT> { _p: PhantomData }
     }
 }
 ```
 
-Then, using ATPIT, we could desugar this as follows while preserving equivalent semantics:
+Then we can desugar this as follows, without the use of a `use<..>` specifier, while preserving equivalent semantics with respect to the capturing of generic parameters:
 
 ```rust
-struct Ty<'u, U, const CU: u8>(&'u (), U);
+use core::marker::PhantomData;
 
-impl<'u, U, const CU: u8> Ty<'u, U, CU> {
+struct C<'s, 't, S, T, const CS: u8, const CT: u8> {
+    _p: PhantomData<(&'s (), &'t (), S, T)>,
+}
+
+struct Ty<'s, S, const CS: u8>(&'s (), S);
+impl<'s, S, const CS: u8> Ty<'s, S, CS> {
     pub fn f<'t, T, const CT: u8>(
-        self, x: &'t (), y: T,
-    ) -> <() as _0::H>::Opaque<'u, 't, U, T, CU, CT> {
-        <() as _0::H>::f(self, x, y)
+    ) -> <() as _0::H>::Opaque<'s, 't, S, T, CS, CT> {
+        //                     ^^^^^^^^^^^^^^^^^^^^
+        // These are the arguments given to the `use<..>` specifier.
+        //
+        // Reducing what is captured by removing arguments from
+        // `use<..>` is equivalent to removing arguments from this
+        // list and as needed below.
+        <() as _0::H>::f::<'s, 't, S, T, CS, CT>()
     }
 }
 
 mod _0 {
     use super::*;
     pub trait H {
-        type Opaque<'u, 't, U, T, const CU: u8, const CT: u8>;
-        fn f<'u, 't, U, T, const CU: u8, const CT: u8>(
-            s: Ty<'u, U, CU>, x: &'t (), y: T,
-        ) -> Self::Opaque<'u, 't, U, T, CU, CT>;
+        type Opaque<'s, 't, S, T, const CS: u8, const CT: u8>;
+        fn f<'s, 't, S, T, const CS: u8, const CT: u8>(
+        ) -> Self::Opaque<'s, 't, S, T, CS, CT>;
     }
     impl H for () {
-        type Opaque<'u, 't, U, T, const CU: u8, const CT: u8>
+        type Opaque<'s, 't, S, T, const CS: u8, const CT: u8>
             = impl Sized;
         #[inline(always)]
-        fn f<'u, 't, U, T, const CU: u8, const CT: u8>(
-            s: Ty<'u, U, CU>, x: &'t (), y: T,
-        ) -> Self::Opaque<'u, 't, U, T, CU, CT> {
-            (s, x, y, CU, CT)
+        fn f<'s, 't, S, T, const CS: u8, const CT: u8>(
+        ) -> Self::Opaque<'s, 't, S, T, CS, CT> {
+            C::<'s, 't, S, T, CS, CT> { _p: PhantomData }
+        }
+    }
+}
+```
+
+### Reference desugaring for `use<..>` in RPITIT
+
+Similarly, we can describe the semantics of `use<..>` in return position `impl Trait` in trait (RPITIT) using anonymous associated types and ATPIT.  If we consider the following code:
+
+```rust
+use core::marker::PhantomData;
+
+struct C<
+    'r, 's, 't, R, S, T, const CR: u8, const CS: u8, const CT: u8,
+> {
+    _p: PhantomData<(&'r (), &'s (), &'t (), R, S, T)>,
+}
+
+trait Trait<'r, R, const CR: u8> {
+    fn f<'t, T, const CT: u8>(
+    ) -> impl use<'r, 't, R, T, CR, CT, Self> Sized;
+    //        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    // This is the `use<..>` specifier in the trait definition.
+}
+
+struct Ty<'s, S, const CS: u8>(&'s (), S);
+impl<'r, 's, R, S, const CR: u8, const CS: u8> Trait<'r, R, CR>
+    for Ty<'s, S, CS>
+{
+    fn f<'t, T, const CT: u8>(
+    ) -> impl use<'r, 's, 't, R, S, T, CR, CS, CT> Sized {
+        //    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        // This is the `use<..>` specifier in the
+        // trait implementation.
+        C::<'r, 's, 't, R, S, T, CR, CS, CT> { _p: PhantomData }
+    }
+}
+```
+
+Then we can desugar this as follows, without the use of `use<..>` specifiers, while preserving equivalent semantics with respect to the capturing of generic parameters:
+
+```rust
+use core::marker::PhantomData;
+
+struct C<
+    'r, 's, 't, R, S, T, const CR: u8, const CS: u8, const CT: u8,
+> {
+    _p: PhantomData<(&'r (), &'s (), &'t (), R, S, T)>,
+}
+
+trait Trait<'r, R, const CR: u8>: Sized {
+    fn f<'t, T, const CT: u8>(
+    ) -> <Self as _0::G<'r, R, CR>>::Opaque<'t, T, CT>
+    //    ^^^^          ^^^^^^^^^           ^^^^^^^^^
+    // These are the arguments given to the `use<..>` specifier in the
+    // trait definition.
+    //
+    // Reducing what is captured by removing arguments from that
+    // `use<..>` is equivalent to removing arguments from here
+    // and as needed below.
+    //
+    // If `Self` is removed from the `use<..>` specifier, that's
+    // equivalent to replacing `Self` with `()` here and in the impl
+    // below.  I.e., removing `Self` means that we can't capture any
+    // generic parameters in the impl that are not used as input
+    // arguments to the trait.
+    //
+    // Similarly, if trait input parameters are removed from the
+    // `use<..>` specifier, they must be removed from the input
+    // parameters to the trait `G` below.
+    where Self: _0::G<'r, R, CR>;
+}
+
+struct Ty<'s, S, const CS: u8>(&'s (), S);
+impl<'r, 's, R, S, const CR: u8, const CS: u8> Trait<'r, R, CR>
+    for Ty<'s, S, CS>
+{
+    fn f<'t, T, const CT: u8>(
+    ) -> <Self as _0::G<'r, R, CR>>::Opaque<'t, T, CT> {
+        <() as _0::H>::f::<'r, 's, 't, R, S, T, CR, CS, CT>()
+    }
+}
+
+mod _0 {
+    use super::*;
+    pub trait G<'r, R, const CR: u8> {
+        type Opaque<'t, T, const CT: u8>;
+    }
+    impl<'r, 's, R, S, const CR: u8, const CS: u8> G<'r, R, CR>
+        for Ty<'s, S, CS>
+    {
+        type Opaque<'t, T, const CT: u8>
+            = <() as H>::Opaque<'r, 's, 't, R, S, T, CR, CS, CT>;
+        //                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        // These are the arguments given to the `use<..>` specifier in
+        // the trait implementation.
+        //
+        // Reducing what is captured by removing arguments from that
+        // `use<..>` is equivalent to removing arguments from this
+        // list and as needed elsewhere.
+    }
+    pub trait H {
+        type Opaque<
+            'r, 's, 't, R, S, T,
+            const CR: u8, const CS: u8, const CT: u8,
+        >;
+        fn f<
+            'r, 's, 't, R, S, T,
+             const CR: u8, const CS: u8, const CT: u8,
+        >() -> Self::Opaque<'r, 's, 't, R, S, T, CR, CS, CT>;
+    }
+    impl H for () {
+        type Opaque<
+            'r, 's, 't, R, S, T,
+            const CR: u8, const CS: u8, const CT: u8,
+        > = impl Sized;
+        #[inline(always)]
+        fn f<
+            'r, 's, 't, R, S, T,
+            const CR: u8, const CS: u8, const CT: u8,
+        >() -> Self::Opaque<'r, 's, 't, R, S, T, CR, CS, CT> {
+            C::<'r, 's, 't, R, S, T, CR, CS, CT> { _p: PhantomData }
         }
     }
 }
