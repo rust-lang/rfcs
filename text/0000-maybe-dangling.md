@@ -183,7 +183,7 @@ Miri is adjusted as follows:
 ### Comparison with some other types that affect aliasing
 
 - `UnsafeCell`: disables aliasing (and affects but does not fully disable dereferenceable) behind shared refs, i.e. `&UnsafeCell<T>` is special. `UnsafeCell<&T>` (by-val, fully owned) is not special at all and basically like `&T`; `&mut UnsafeCell<T>` is also not special.
-- [`UnsafeAliased`](https://github.com/rust-lang/rfcs/pull/3467): disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafeAliased<T>` is special. `UnsafeAliased<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafeAliased<T>` is also not special.
+- [`UnsafePinned`](https://github.com/rust-lang/rfcs/pull/3467): disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafePinned<T>` is special. `UnsafePinned<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafePinned<T>` is also not special.
 - `MaybeDangling`: disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
 
 
