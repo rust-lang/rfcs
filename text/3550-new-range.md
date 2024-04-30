@@ -531,6 +531,21 @@ The [copy-range](https://docs.rs/copy-range) crate provides types similar to tho
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+### Ecosystem Disruption
+
+We must take into account the ecosystem impact of this change before stabilization.
+
+- How do we properly document and execute the ecosystem transition?
+- How much time will it take to propagate this change throughout the ecosystem?
+- What degree of ecosystem saturation would we be satisfied with?
+- How much time do we need with stable library types before making the lang change?
+- What about libraries that wish to maintain a certain MSRV?
+- Taking into account all of the mitigations (diagnostics, migrations, and lints but NOT language-level changes), is the level of ecosystem disruption acceptable?
+- What is expected of new libraries? Should they continue to support both sets of ranges or only the new ones?
+- Will new Rust users need to learn about older editions because of downstream users of their code?
+
+### API
+
 We leave the following items to be decided by the **libs-api** team after this proposal is accepted and before stabilization:
 
 - The set of inherent methods copied from `Iterator` present on the new range types
