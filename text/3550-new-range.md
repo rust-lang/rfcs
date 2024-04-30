@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Change the range operators `a..b`, `a..`, and `a..=b` to resolve to new types `ops::range::Range`, `ops::range::RangeFrom`, and `ops::range::RangeInclusive` in Edition 2024. These new types will not implement `Iterator`, instead implementing `Copy` and `IntoIterator`.
+Change the range operators `a..b`, `a..`, and `a..=b` to resolve to new types `std::range::Range`, `std::range::RangeFrom`, and `std::range::RangeInclusive` in Edition 2024. These new types will not implement `Iterator`, instead implementing `Copy` and `IntoIterator`.
 
 # Motivation
 [motivation]: #motivation
@@ -38,13 +38,13 @@ Another primary motivation is the extra size of `RangeInclusive`. It uses an ext
 
 Rust has several different types of "range" syntax, including the following:
 
-- `a..b` denotes a range from `a` (inclusive) to `b` (exclusive). It resolves to the type `std::ops::range::Range`.  
+- `a..b` denotes a range from `a` (inclusive) to `b` (exclusive). It resolves to the type `std::range::Range`.  
   The iterator for `Range` will yield values from `a` (inclusive) to `b` (exclusive) in steps of one.
 
-- `a..=b` denotes a range from `a` (inclusive) to `b` (inclusive). It resolve to the type `std::ops::range::RangeInclusive`.
+- `a..=b` denotes a range from `a` (inclusive) to `b` (inclusive). It resolve to the type `std::range::RangeInclusive`.
   The iterator for `RangeInclusive` will yield values from `a` (inclusive) to `b` (inclusive) in steps of one.
 
-- `a..` denotes a range from `a` (inclusive) with no upper bound. It resolves to the type `std::ops::range::RangeFrom`.  
+- `a..` denotes a range from `a` (inclusive) with no upper bound. It resolves to the type `std::range::RangeFrom`.  
   The iterator for `RangeFrom` will yield values starting with `a` and increasing in steps of one.
 
 These types implement the `IntoIterator` trait, enabling their use directly in a `for` loop:
@@ -78,7 +78,7 @@ for n in (0..5).rev() {
 
 ## Legacy Range Types
 
-In Rust editions prior to 2024, `a..b`, `a..=b`, and `a..` resolved to a different set of types (now found in `std::ops::range::legacy`). These legacy range types did not implement `Copy`, and implemented `Iterator` directly (rather than `IntoIterator`).
+In Rust editions prior to 2024, `a..b`, `a..=b`, and `a..` resolved to a different set of types (now found in `std::range::legacy`). These legacy range types did not implement `Copy`, and implemented `Iterator` directly (rather than `IntoIterator`).
 
 This meant that any `Iterator` method could be called on those range types:
 ```rust
@@ -128,7 +128,7 @@ Or fall back to converting to the legacy types:
 pub fn takes_range(range: std::ops::Range<usize>) { ... }
 takes_range(0..5);
 // After
-pub fn takes_range(range: std::ops::range::legacy::Range<usize>) { ... }
+pub fn takes_range(range: std::range::legacy::Range<usize>) { ... }
 takes_range((0..5).to_legacy());
 ```
 
@@ -144,7 +144,7 @@ To reduce the need for the above conversions, we recommend making the following 
 pub fn takes_range(range: std::ops::Range<usize>) { ... }
 
 // After
-pub fn takes_range(range: impl Into<std::ops::range::legacy::Range<usize>>) { ... }
+pub fn takes_range(range: impl Into<std::range::legacy::Range<usize>>) { ... }
 // Or
 pub fn takes_range(range: impl std::ops::RangeBounds<usize>) { ... }
 ```
@@ -207,9 +207,9 @@ use std::ops::{Index, Range};
 impl Index<Range<usize>> for Bar { ... }
 
 // After
-use std::ops::{Index, range::Range, range::legacy};
-impl Index<legacy::Range<usize>> for Bar { ... }
+use std::ops::{Index, Range};
 impl Index<Range<usize>> for Bar { ... }
+impl Index<std::range::Range<usize>> for Bar { ... }
 ```
 
 ## Diagnostics
@@ -240,34 +240,34 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 
 > ## Edition 2024 and later
 >
-> The `..` and `..=` operators will construct an object of one of the `std::ops::range::Range` (or `core::ops::range::Range`) variants, according to the following table:
+> The `..` and `..=` operators will construct an object of one of the `std::range::Range` (or `core::range::Range`) variants, according to the following table:
 > 
 > | Production             | Syntax        | Type                         | Range                 |
 > |------------------------|---------------|------------------------------|-----------------------|
-> | _RangeExpr_            | start`..`end  | std::ops::range::Range            | start &le; x &lt; end |
-> | _RangeFromExpr_        | start`..`     | std::ops::range::RangeFrom        | start &le; x          |
-> | _RangeToExpr_          | `..`end       | std::ops::range::RangeTo          |            x &lt; end |
-> | _RangeFullExpr_        | `..`          | std::ops::range::RangeFull        |            -          |
-> | _RangeInclusiveExpr_   | start`..=`end | std::ops::range::RangeInclusive   | start &le; x &le; end |
-> | _RangeToInclusiveExpr_ | `..=`end      | std::ops::range::RangeToInclusive |            x &le; end |
+> | _RangeExpr_            | start`..`end  | std::range::Range            | start &le; x &lt; end |
+> | _RangeFromExpr_        | start`..`     | std::range::RangeFrom        | start &le; x          |
+> | _RangeToExpr_          | `..`end       | std::range::RangeTo          |            x &lt; end |
+> | _RangeFullExpr_        | `..`          | std::range::RangeFull        |            -          |
+> | _RangeInclusiveExpr_   | start`..=`end | std::range::RangeInclusive   | start &le; x &le; end |
+> | _RangeToInclusiveExpr_ | `..=`end      | std::range::RangeToInclusive |            x &le; end |
 > 
-> **Note:** While `std::ops::RangeTo`, `std::ops::RangeFull`, and `std::ops::RangeToInclusive` are re-exports of `std::ops::range::RangeTo`, `std::ops::range::RangeFull`, and `std::ops::Range::RangeToInclusive` respectively, `std::ops::Range`, `std::ops::RangeFrom`, and `std::ops::RangeInclusive` are re-exports of the types under `std::ops::range::legacy::` (NOT those directly under `std::ops::range::`) for backwards-compatibility reasons.
+> **Note:** While `std::ops::RangeTo`, `std::ops::RangeFull`, and `std::ops::RangeToInclusive` are re-exports of `std::range::RangeTo`, `std::range::RangeFull`, and `std::ops::Range::RangeToInclusive` respectively, `std::ops::Range`, `std::ops::RangeFrom`, and `std::ops::RangeInclusive` are re-exports of the types under `std::range::legacy::` (NOT those directly under `std::range::`) for backwards-compatibility reasons.
 > 
 > Examples:
 > 
 > ```rust
-> 1..2;   // std::ops::range::Range
-> 3..;    // std::ops::range::RangeFrom
-> ..4;    // std::ops::range::RangeTo
-> ..;     // std::ops::range::RangeFull
-> 5..=6;  // std::ops::range::RangeInclusive
-> ..=7;   // std::ops::range::RangeToInclusive
+> 1..2;   // std::range::Range
+> 3..;    // std::range::RangeFrom
+> ..4;    // std::range::RangeTo
+> ..;     // std::range::RangeFull
+> 5..=6;  // std::range::RangeInclusive
+> ..=7;   // std::range::RangeToInclusive
 > ```
 >
 > The following expressions are equivalent.
 > 
 > ```rust
-> let x = std::ops::range::Range {start: 0, end: 10};
+> let x = std::range::Range {start: 0, end: 10};
 > let y = 0..10;
 > 
 > assert_eq!(x, y);
@@ -275,73 +275,74 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 >
 > ## Prior to Edition 2024
 >
-> The `..` and `..=` operators will construct an object of one of the `std::ops::range::legacy::Range` (or `core::ops::range::legacy::Range`) variants, according to the following table:
+> The `..` and `..=` operators will construct an object of one of the `std::range::legacy::Range` (or `core::range::legacy::Range`) variants, according to the following table:
 > 
 > | Production             | Syntax        | Type                         | Range                 |
 > |------------------------|---------------|------------------------------|-----------------------|
-> | _RangeExpr_            | start`..`end  | std::ops::range::legacy::Range            | start &le; x &lt; end |
-> | _RangeFromExpr_        | start`..`     | std::ops::range::legacy::RangeFrom        | start &le; x          |
-> | _RangeToExpr_          | `..`end       | std::ops::range::RangeTo          |            x &lt; end |
-> | _RangeFullExpr_        | `..`          | std::ops::range::RangeFull        |            -          |
-> | _RangeInclusiveExpr_   | start`..=`end | std::ops::range::legacy::RangeInclusive   | start &le; x &le; end |
-> | _RangeToInclusiveExpr_ | `..=`end      | std::ops::range::RangeToInclusive |            x &le; end |
+> | _RangeExpr_            | start`..`end  | std::range::legacy::Range            | start &le; x &lt; end |
+> | _RangeFromExpr_        | start`..`     | std::range::legacy::RangeFrom        | start &le; x          |
+> | _RangeToExpr_          | `..`end       | std::range::RangeTo          |            x &lt; end |
+> | _RangeFullExpr_        | `..`          | std::range::RangeFull        |            -          |
+> | _RangeInclusiveExpr_   | start`..=`end | std::range::legacy::RangeInclusive   | start &le; x &le; end |
+> | _RangeToInclusiveExpr_ | `..=`end      | std::range::RangeToInclusive |            x &le; end |
 >
-> **Note:** `std::ops::Range`, `std::ops::RangeFrom`, and `std::ops::RangeInclusive` are re-exports of the respective types under `std::ops::range::legacy::`. `std::ops::RangeTo`, `std::ops::RangeFull`, and `std::ops::RangeToInclusive` are re-exports of the respective types under `std::ops::range::`.
+> **Note:** `std::ops::Range`, `std::ops::RangeFrom`, and `std::ops::RangeInclusive` are re-exports of the respective types under `std::range::legacy::`. `std::ops::RangeTo`, `std::ops::RangeFull`, and `std::ops::RangeToInclusive` are re-exports of the respective types under `std::range::`.
 >
 > Examples:
 > 
 > ```rust
-> 1..2;   // std::ops::range::legacy::Range
-> 3..;    // std::ops::range::legacy::RangeFrom
-> ..4;    // std::ops::range::RangeTo
-> ..;     // std::ops::range::RangeFull
-> 5..=6;  // std::ops::range::legacy::RangeInclusive
-> ..=7;   // std::ops::range::RangeToInclusive
+> 1..2;   // std::range::legacy::Range
+> 3..;    // std::range::legacy::RangeFrom
+> ..4;    // std::range::RangeTo
+> ..;     // std::range::RangeFull
+> 5..=6;  // std::range::legacy::RangeInclusive
+> ..=7;   // std::range::RangeToInclusive
 > ```
 > 
 > The following expressions are equivalent.
 > 
 > ```rust
-> let x = std::ops::range::legacy::Range {start: 0, end: 10};
-> // Or: let x = std::ops::Range {start: 0, end: 10};
-> let y = 0..10;
+> let x = std::range::legacy::Range {start: 0, end: 10};
+> let y = std::ops::Range {start: 0, end: 10};
+> let z = 0..10;
 > 
 > assert_eq!(x, y);
+> assert_eq!(x, z);
 > ```
 
 ## New paths
 
-There is no language support for edition-dependent path resolution, so these types must continue to be accessible under their current paths. However, their canonical paths will change to live under `ops::range::legacy`:
+There is no language support for edition-dependent path resolution, so these types must continue to be accessible under their current paths. However, their canonical paths will change to live under `std::range::legacy`:
 
-- `ops::Range` will be a re-export of `ops::range::legacy::Range`
-- `ops::RangeFrom` will be a re-export of `ops::range::legacy::RangeFrom`
-- `ops::RangeInclusive` will be a re-export of `ops::range::legacy::RangeFrom`
+- `std::ops::Range` will be a re-export of `std::range::legacy::Range`
+- `std::ops::RangeFrom` will be a re-export of `std::range::legacy::RangeFrom`
+- `std::ops::RangeInclusive` will be a re-export of `std::range::legacy::RangeFrom`
 
 In order to not break existing links to the documentation for these types, the re-exports must remain `doc(inline)`.
 
-The replacement types will live under `ops::range`:
+The replacement types will live under `range`:
 
-- `ops::range::Range` will be the Edition 2024 replacement for `ops::range::legacy::Range`
-- `ops::range::RangeFrom` will be the Edition 2024 replacement for `ops::range::legacy::RangeFrom`
-- `ops::range::RangeInclusive` will be the Edition 2024 replacement for `ops::range::legacy::RangeFrom`
+- `std::range::Range` will be the Edition 2024 replacement for `std::range::legacy::Range`
+- `std::range::RangeFrom` will be the Edition 2024 replacement for `std::range::legacy::RangeFrom`
+- `std::range::RangeInclusive` will be the Edition 2024 replacement for `std::range::legacy::RangeFrom`
 
-The `RangeFull`, `RangeTo`, and `RangeToInclusive` types will remain unchanged. But for consistency, their canonical paths will be changed to live under `ops::range`:
+The `RangeFull`, `RangeTo`, and `RangeToInclusive` types will remain unchanged. But for consistency, their canonical paths will be changed to live under `range`:
 
-- `ops::RangeFull` will be a re-export of `ops::range::RangeFull`
-- `ops::RangeTo` will be a re-export of `ops::range::RangeTo`
-- `ops::RangeToInclusive` will be a re-export of `ops::range::RangeToInclusive`
+- `std::ops::RangeFull` will be a re-export of `std::range::RangeFull`
+- `std::ops::RangeTo` will be a re-export of `std::range::RangeTo`
+- `std::ops::RangeToInclusive` will be a re-export of `std::range::RangeToInclusive`
 
 ## Iterator types
 
 Because the three new types will implement `IntoIterator` directly, they need three new respective `IntoIter` types:
 
-- `ops::range::IterRange` will be `<ops::range::Range<_> as IntoIterator>::IntoIter`
-- `ops::range::IterRangeFrom` will be `<ops::range::RangeFrom<_> as IntoIterator>::IntoIter`
-- `ops::range::IterRangeInclusive` will be `<ops::range::RangeInclusive<_> as IntoIterator>::IntoIter`
+- `std::range::IterRange` will be `<range::Range<_> as IntoIterator>::IntoIter`
+- `std::range::IterRangeFrom` will be `<range::RangeFrom<_> as IntoIterator>::IntoIter`
+- `std::range::IterRangeInclusive` will be `<range::RangeInclusive<_> as IntoIterator>::IntoIter`
 
 These iterator types will implement the same iterator traits (`DoubleEndedIterator`, `FusedIterator`, etc) as the legacy range types, with the following exceptions:
-- `ops::range::IterRange` will not implement `ExactSizeIterator` for `u32` or `i32`
-- `ops::range::IterRangeInclusive` will not implement `ExactSizeIterator` for `u16` or `i16`
+- `std::range::IterRange` will not implement `ExactSizeIterator` for `u32` or `i32`
+- `std::range::IterRangeInclusive` will not implement `ExactSizeIterator` for `u16` or `i16`
 
 Those `ExactSizeIterator` impls on the legacy range types are [known to be incorrect](https://github.com/rust-lang/rust/blob/495203bf61efabecc2c460be38e1eb0f9952601b/library/core/src/iter/range.rs#L903-L936).
 
@@ -362,7 +363,7 @@ impl<Idx> IterRangeInclusive<Idx> {
 
 ## Changed structure and API
 
-`ops::range::Range` and `ops::range::RangeFrom` will have identical structure to the existing types, with public fields for the bounds. However, `ops::range::RangeInclusive` will be changed:
+`std::range::Range` and `std::range::RangeFrom` will have identical structure to the existing types, with public fields for the bounds. However, `std::range::RangeInclusive` will be changed:
 - `start` and `end` will be changed to public fields
 - `exhausted` field will be removed entirely
 
@@ -543,7 +544,7 @@ We leave the following items to be decided by the **libs-api** team after this p
 
 - The set of inherent methods copied from `Iterator` present on the new range types
 - The exact module paths and type names
-  + `std::ops::range::` is long and heavily nested, perhaps `std::range::` would be better?
+  + Should the new types live at `std::ops::range::` instead?
   + `IterRange`, `IterRangeInclusive` or just `Iter`, `IterInclusive`?
 - Should other range-related items (like `RangeBounds`) also be moved under the `range` module?
 - Should `RangeFrom` even implement `IntoIterator`, or should it require an explicit `.iter()` call? Using it as an iterator [can be a footgun](https://github.com/rust-lang/libs-team/issues/304), usually people want `start..=MAX` instead. Also, it is inconsistent with `RangeTo`, which doesn't implement `IntoIterator` either.
