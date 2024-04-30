@@ -103,5 +103,5 @@ Also present in LLVM in general.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 - Explore additional LLVM features that could be exposed to Rust for performance optimization purposes.
-- We could perhaps add a new ABI called something like `"C-unaligned"` which could inform LLVM of the problems specified above.
-- Add a rustc compilation flag that adds this attribute to every `pub extern` function (similiar to `-mstackrealign` which does this globally in GCC).
+- Add a rustc compilation flag that adds this attribute to every `pub extern "C"` function (similiar to `-mstackrealign` which does this globally in GCC).
+- Similar to `extern "C-unwind"` and `#[unwind(allowed)]` we could add new ABIs (something like `extern "C-realign-stack"`) which would do the same as `#[realign_stack]`.
