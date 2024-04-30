@@ -129,7 +129,7 @@ pub fn takes_range(range: std::ops::Range<usize>) { ... }
 takes_range(0..5);
 // After
 pub fn takes_range(range: std::range::legacy::Range<usize>) { ... }
-takes_range((0..5).to_legacy());
+takes_range((0..5).into());
 ```
 
 #### Libraries
@@ -406,16 +406,6 @@ impl<Idx> Range<Idx> {
         <Self as IntoIterator>::IntoIter: DoubleEndedIterator,
     {
         self.into_iter().rev()
-    }
-}
-```
-
-Finally, the new types should have an inherent method for converting new types to the legacy types. This can avoid the type inference issues associated with `.into()`, helping to keep auto-migrations concise.
-```rust
-impl<Idx> Range<Idx> {
-    /// Shorthand for `legacy::Range::from(self)`
-    pub fn to_legacy(self) -> legacy::Range<Idx> {
-        legacy::Range::from(self)
     }
 }
 ```
