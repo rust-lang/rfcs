@@ -109,7 +109,7 @@ for n in (0..5).rev() { ... } // No changes necessary
 for n in (0..5).map(|x| x * 2) { ... } // No changes necessary
 ```
 
-In other cases, `cargo fix --edition 2024` will insert `.into_iter()` as necessary:
+In other cases, `cargo fix --edition` will insert `.into_iter()` as necessary:
 
 ```rust
 pub fn takes_iter(range: impl Iterator<usize>) { ... }
@@ -119,6 +119,19 @@ takes_iter((0..5).into_iter()); // Add `.into_iter()`
 (0..5).for_each(...);
 // After
 (0..5).into_iter().for_each(...); // Add `.into_iter()`
+
+// Before
+let mut range = 0..5;
+assert_eq!(range.next(), Some(0));
+range.for_each(|n| {
+    // n = 1, 2, 3, 4
+});
+// After
+let mut range = (0..5).into_iter();
+assert_eq!(range.next(), Some(0));
+range.for_each(|n| {
+    // n = 1, 2, 3, 4
+});
 ```
 
 Or fall back to converting to the legacy types:
@@ -132,9 +145,11 @@ pub fn takes_range(range: std::range::legacy::Range<usize>) { ... }
 takes_range((0..5).into());
 ```
 
-#### Libraries
+## Migrating Libraries
 
-To reduce the need for the above conversions, we recommend making the following changes to libraries:
+Some libraries have range types in their public interface. To use the new range types with such a library, users will need to add explicit conversions.
+
+To reduce the burden of explicit conversions, libraries should make the following backwards-compatible changes:
 
 - Change any function parameters from legacy `Range*` types to `impl Into<Range*>`  
   Or if applicable, `impl RangeBounds<_>`
@@ -181,25 +196,7 @@ where Range<T>: IntoIterator
 }
 ```
 
-- When the range is treated as mutable iterator, call `.into_iter()` before using it
-
-```rust
-// Before
-let mut range = 0..5;
-assert_eq!(range.next(), Some(0));
-range.for_each(|n| {
-    // n = 1, 2, 3, 4
-});
-
-// After
-let mut range = (0..5).into_iter();
-assert_eq!(range.next(), Some(0));
-range.for_each(|n| {
-    // n = 1, 2, 3, 4
-});
-```
-
-- When ranges are used with `std::ops::Index`, add impls for the new range types
+- When your library implements a trait involving ranges, such as `std::ops::Index`, add impls for the new range types
 
 ```rust
 // Before
@@ -211,6 +208,10 @@ use std::ops::{Index, Range};
 impl Index<Range<usize>> for Bar { ... }
 impl Index<std::range::Range<usize>> for Bar { ... }
 ```
+
+**Note**
+- These changes to libraries should happen when _users_ of a given library transition to the new edition
+- These changes do not require the library itself to transition to the new edition
 
 ## Diagnostics
 
@@ -415,7 +416,7 @@ impl<Idx> Range<Idx> {
 
 This change has the potential to cause a significant amount of churn in the ecosystem. There are two main sources of churn:
 - where ranges are assumed to be `Iterator`
-- when `Index<legacy::Range<_>>` is implemented directly
+- trait impls involving ranges, such as `Index<legacy::Range<_>>`
 
 Changes will be required to support the new range types, even on older editions. See the [migrating section](#migrating) for specifics.
 
@@ -535,7 +536,7 @@ We leave the following items to be decided by the **libs-api** team after this p
 - The set of inherent methods copied from `Iterator` present on the new range types
 - The exact module paths and type names
   + Should the new types live at `std::ops::range::` instead?
-  + `IterRange`, `IterRangeInclusive` or just `Iter`, `IterInclusive`?
+  + `IterRange`, `IterRangeInclusive` or just `Iter`, `IterInclusive`? Or `RangeIter`, `RangeInclusiveIter`, ...?
 - Should other range-related items (like `RangeBounds`) also be moved under the `range` module?
 - Should `RangeFrom` even implement `IntoIterator`, or should it require an explicit `.iter()` call? Using it as an iterator [can be a footgun](https://github.com/rust-lang/libs-team/issues/304), usually people want `start..=MAX` instead. Also, it is inconsistent with `RangeTo`, which doesn't implement `IntoIterator` either.
 - Should there be a way to get an iterator that modifies the range in place, rather than taking the range by value? That would allow things like `range.by_ref().next()`.
@@ -549,7 +550,7 @@ impl<Idx> From<legacy::RangeInclusive<Idx>> for RangeInclusive<Idx> {
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Hide or deprecate range-related items directly under `ops`, without breaking existing links or triggering deprecation warnings on previous editions.
+- Hide or deprecate range-related items directly under `ops` (without breaking existing links or triggering deprecation warnings on previous editions).
 - `RangeTo(Inclusive)::rev()` that returns an iterator?
 - `IterRangeInclusive` can be optimized to take advantage of the case where the bounds don't occupy the full domain of the index type:
 
