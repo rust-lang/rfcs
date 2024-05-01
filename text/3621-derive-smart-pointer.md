@@ -1,0 +1,676 @@
+- Feature Name: `derive_smart_pointer`
+- Start Date: 2024-05-01
+- RFC PR: [rust-lang/rfcs#3621](https://github.com/rust-lang/rfcs/pull/3621)
+- Rust Issue: [rust-lang/rust#123430](https://github.com/rust-lang/rust/issues/123430)
+
+# Summary
+[summary]: #summary
+
+Make it possible to define custom smart pointers that work with trait objects.
+For now, it will only be possible to do this using a derive macro, as we do not
+stabilize the underlying traits.
+
+This RFC builds on top of the [arbitrary self types v2 RFC][ast]. All
+references to the `Receiver` trait are references to the version defined by
+that RFC, which is different from the `Receiver` trait in nightly at the time
+of writing.
+
+# Motivation
+[motivation]: #motivation
+
+Currently, the standard library types `Rc` and `Arc` are special. It's not
+possible for third-party libraries to define custom smart pointers that work
+with trait objects.
+
+It is generally desireable to make std less special, but this particular RFC is
+motived by use-cases in the Linux Kernel. In the Linux Kernel, we need
+reference counted objects often, but we are not able to use the standard
+library `Arc`. There are several reasons for this:
+
+1. The standard Rust `Arc` will call `abort` on overflow. This is not
+   acceptable in the kernel; instead we want to saturate the count when it hits
+   `isize::MAX`. This effectively leaks the `Arc`.
+2. Using Rust atomics raises various issues with the memory model. We are using
+   the LKMM (Linux Kernel Memory Model) rather than the usual C++ model. This
+   means that all atomic operations should be implemented with an `asm!` block
+   or similar that matches what kernel C does, rather than an LLVM intrinsic
+   like we do today.
+
+The Linux Kernel also needs another custom smart pointer called `ListArc`,
+which is needed to provide a safe API for the linked list that the kernel uses.
+The kernel needs these linked lists to avoid allocating memory during critical
+regions on spinlocks.
+
+For more detailed explanations of these use-cases, please refer to:
+
+* [Arc in the Linux Kernel](https://rust-for-linux.com/arc-in-the-linux-kernel).
+  * This document was discussed during [the 2024-03-06 meeting with t-lang](https://hackmd.io/OCz8EfzrRXeogXEDcOrL2w).
+* The kernel's custom linked list: [Mailing list](https://lore.kernel.org/all/20240402-linked-list-v1-0-b1c59ba7ae3b@google.com/), [GitHub](https://github.com/Darksonn/linux/commits/b4/linked-list/).
+* [Discussion on the memory model issue with t-opsem](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/.E2.9C.94.20Rust.20and.20the.20Linux.20Kernel.20Memory.20Model/near/422047516)
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+The derive macro `SmartPointer` allows you to use custom smart pointers with
+trait objects. This means that you will be able to coerce from
+`SmartPointer<MyStruct>` to `SmartPointer<dyn MyTrait>` when `MyStruct`
+implements `MyTrait`. Additionally, the derive macro allows you to use `self:
+SmartPointer<Self>` in traits without making them non-object-safe.
+
+It is not possible to use this feature without the derive macro, as we are not
+stabilizing its expansion.
+
+## Coercions to trait objects
+
+By using the macro, the following example will compile:
+```rust
+#[derive(SmartPointer)]
+struct MySmartPointer<T: ?Sized>(Box<T>);
+
+impl<T: ?Sized> Deref for MySmartPointer<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+trait MyTrait {}
+
+impl MyTrait for i32 {}
+
+fn main() {
+    let ptr: MySmartPointer<i32> = MySmartPointer(Box::new(4));
+
+    // This coercion would be an error without the derive.
+    let ptr: MySmartPointer<dyn MyTrait> = ptr;
+}
+```
+Without the `#[derive(SmartPointer)]` macro, this example would fail with the
+following error:
+```
+error[E0308]: mismatched types
+  --> src/main.rs:11:44
+   |
+11 |     let ptr: MySmartPointer<dyn MyTrait> = ptr;
+   |              ---------------------------   ^^^ expected `MySmartPointer<dyn MyTrait>`, found `MySmartPointer<i32>`
+   |              |
+   |              expected due to this
+   |
+   = note: expected struct `MySmartPointer<dyn MyTrait>`
+              found struct `MySmartPointer<i32>`
+   = help: `i32` implements `MyTrait` so you could box the found value and coerce it to the trait object `Box<dyn MyTrait>`, you will have to change the expected type as well
+```
+
+## Object safety
+
+Consider the following trait:
+```rust
+trait MyTrait {
+    // Arbitrary self types is enough for this.
+    fn func(self: MySmartPointer<Self>);
+}
+
+// But this requires #[derive(SmartPointer)].
+fn call_func(value: MySmartPointer<dyn MyTrait>) {
+    value.func();
+}
+```
+You do not need `#[derive(SmartPointer)]` to declare this trait ([arbitrary
+self types][ast] is enough), but the trait will not be object safe unless you
+annotate `MySmartPointer` with `#[derive(SmartPointer)]`. If you don't, then
+the use of `dyn MyTrait` triggers the following error:
+```
+error[E0038]: the trait `MyTrait` cannot be made into an object
+  --> src/lib.rs:11:36
+   |
+8  |     fn func(self: MySmartPointer<Self>);
+   |                   -------------------- help: consider changing method `func`'s `self` parameter to be `&self`: `&Self`
+...
+11 | fn call_func(value: MySmartPointer<dyn MyTrait>) {
+   |                                    ^^^^^^^^^^^ `MyTrait` cannot be made into an object
+   |
+note: for a trait to be "object safe" it needs to allow building a vtable to allow the call to be resolvable dynamically; for more information visit <https://doc.rust-lang.org/reference/items/traits.html#object-safety>
+  --> src/lib.rs:8:19
+   |
+7  | trait MyTrait {
+   |       ------- this trait cannot be made into an object...
+8  |     fn func(self: MySmartPointer<Self>);
+   |                   ^^^^^^^^^^^^^^^^^^^^ ...because method `func`'s `self` parameter cannot be dispatched on
+```
+Note that using the `self: MySmartPointer<Self>` syntax requires that you
+implement `Receiver` (or `Deref`), as the derive macro does not emit an
+implementation of `Receiver`.
+
+## Requirements for using the macro
+
+Whenever a `self: MySmartPointer<Self>` method is called on a trait object, the
+compiler will convert from `MySmartPointer<dyn MyTrait>` to
+`MySmartPointer<MyStruct>` using something similar to a transmute. Because of
+this, there are strict requirements on the layout of `MySmartPointer`. It is
+required that `MySmartPointer` is a struct, and that (other than one-aligned,
+zero-sized fields) it must have exactly one field. The type must either be a
+standard library pointer type (reference, raw pointer, NonNull, Box, Arc, etc.)
+or another user-defined type also using this derive macro.
+```rust
+#[derive(SmartPointer)]
+struct MySmartPointer<T: ?Sized> {
+    ptr: Box<T>,
+    _phantom: PhantomData<T>,
+}
+```
+
+### Multiple type parameters
+
+If the type has multiple type parameters, then you must explicitly specify
+which one should be used for dynamic dispatch. For example:
+```rust
+#[derive(SmartPointer)]
+struct MySmartPointer<#[pointee] T: ?Sized, U> {
+    ptr: Box<T>,
+    _phantom: PhantomData<U>,
+}
+```
+Specifying `#[pointee]` when the struct has only one type parameter is allowed,
+but not required.
+
+## Example of a custom Rc
+[custom-rc]: #example-of-a-custom-rc
+
+The macro makes it possible to implement custom smart pointers. For example,
+you could implement your own `Rc` type like this:
+
+```rust
+#[derive(SmartPointer)]
+pub struct Rc<T: ?Sized> {
+    inner: NonNull<RcInner<T>>,
+}
+
+struct RcInner<T: ?Sized> {
+    refcount: usize,
+    value: T,
+}
+
+impl<T: ?Sized> Deref for Rc<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        let ptr = self.inner.as_ptr();
+        unsafe { &*ptr.value }
+    }
+}
+
+impl<T> Rc<T> {
+    pub fn new(value: T) -> Self {
+        let inner = Box::new(ArcInner {
+            refcount: 1,
+            value,
+        });
+        Self {
+            inner: NonNull::from(Box::leak(inner)),
+        }
+    }
+}
+
+impl<T: ?Sized> Clone for Rc<T> {
+    fn clone(&self) -> Self {
+        unsafe { (*self.inner.as_ptr()).refcount += 1 };
+        Self { inner: self.inner }
+    }
+}
+
+impl<T: ?Sized> Drop for Rc<T> {
+    fn drop(&mut self) {
+        let ptr = self.inner.as_ptr();
+        unsafe { (*ptr).refcount -= 1 };
+        if unsafe { (*ptr).refcount } == 0 {
+            drop(unsafe { Box::from_raw(ptr) });
+        }
+    }
+}
+```
+In this example, `#[derive(SmartPointer)]` makes it possible to use `Rc<dyn
+MyTrait>`.
+
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+The derive macro will expand into two trait implementations,
+[`core::ops::CoerceUnsized`] to enable unsizing coercions and
+[`core::ops::DispatchFromDyn`] for dynamic dispatch. This expansion will be
+adapted in the future if the underlying mechanisms for unsizing coercions and
+dynamically dispatched receivers changes.
+
+As mentioned in the [rationale][why-only-macro] section, this RFC only proposes
+to stabilize the derive macro. The underlying traits used by its expansion will
+remain unstable for now.
+
+## Input Requirements
+[input-requirements]: #input-requirements
+
+The macro sets the following requirements on its input:
+
+1. The definition must be a struct.
+2. The struct must have at least one type parameter. If multiple type
+   parameters are present, exactly one of them has to be annotated with the
+   `#[pointee]` derive helper attribute.
+3. The struct must not be `#[repr(packed)]` or `#[repr(C)]`.
+4. Other than one-aligned, zero-sized fields, the struct must have exactly one
+   field and that field’s type must be must implement `DispatchFromDyn<F>`
+   where `F` is the type of `T`’s field type.
+
+(Adapted from the docs for [`DispatchFromDyn`].)
+
+Point 1 and 2 are verified syntactically by the derive macro, whereas 3 and 4
+are verified semantically by the compiler when checking the generated
+[`DispatchFromDyn`] implementation as it does today.
+
+## Expansion
+
+The macro will expand to two implementations, one for
+[`core::ops::CoerceUnsized`] and one for [`core::ops::DispatchFromDyn`]. This
+is enough for a type to participe in unsizing coercions and dynamic dispatch.
+
+The derive macro will implement the traits for the type according to the
+following procedure:
+
+- Copy all generic parameters and their bounds from the struct definition into
+  the impl.
+- Add an additional type parameter `U` and give it a `?Sized` bound.
+- Add an additional `Unsize<U>` bound to the `#[pointee]` type parameter.
+- The generic parameter of the traits being implemented will be `Self`, except
+  that the `#[pointee]` type parameter is replaced with `U`.
+
+Given the following example code:
+```rust
+#[derive(SmartPointer)]
+struct MySmartPointer<'a, #[pointee] T: ?Sized, A>{
+    ptr: &'a T
+    phantom: PhantomData<A>
+}
+```
+
+we'll get the following expansion:
+
+```rust
+#[automatically_derived]
+impl<'a, T, A, U> ::core::ops::CoerceUnsized<MySmartPointer<'a, U, A>> for MySmartPointer<'a, T, A>
+where
+    T: ?Sized + ::core::marker::Unsize<U>,
+    U: ?::core::marker::Sized
+
+#[automatically_derived]
+impl<'a, T, A, U> ::core::ops::DispatchFromDyn<MySmartPointer<'a, U, A>> for MySmartPointer<'a, T, A>
+where
+    T: ?Sized + ::core::marker::Unsize<U>,
+    U: ?::core::marker::Sized
+{}
+```
+
+## `Receiver` and `Deref` implementations
+
+The macro does not emit a [`Receiver`][ast] implementation. Types that do not
+implement `Receiver` can still use `#[derive(SmartPointer)]`, but they can't be
+used with dynamic dispatch directly.
+
+The raw pointer type would be an example of a type that (behaves like it) is
+annotated with `#[derive(SmartPointer)]` without an implementation of
+`Receiver`. In the case of raw pointers, you can coerce from `*const MyStruct`
+to `*const dyn MyTrait`, but you must first convert them to a reference before
+you can use them for dynamic dispatch.
+
+## Vtable requirements
+
+As seen in the `Rc` example, the macro needs to be usable even if the pointer
+is `NonNull<ArcInner<T>>` (as opposed to `NonNull<T>`).
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+- Stabilizing this macro limits how the underlying traits can be changed in the
+  future, since we cannot change them in ways that make it impossible to
+  implement the macro as-is.
+
+- Stabilizing this macro reduces the incentive to stabilize the underlying
+  traits, meaning that it may take significantly longer before we do so. This
+  RFC does not include support for coercing transparent containers like
+  [`Cell`], so hopefully that will be enough incentive to continue work on the
+  underlying traits.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+## Why only stabilize a macro?
+[why-only-macro]: #why-only-stabilize-a-macro
+
+This RFC proposes to stabilize the `#[derive(SmartPointer)]` macro without
+stabilizing what it expands to. This effectively means that the macro is the
+only way to use these features for custom types. The rationale for this is that
+we currently don't know how to stabilize the traits, and that this is a serious
+blocker for making progress on this issue. Stabilizing the macro will unblock
+projects that wish to define custom smart pointers, and does not prevent
+evolution of the underlying traits.
+
+See also [the section on prior art][prior-art], which discusses a previous
+attempt to stabilize the underlying traits.
+
+## Receiver and Deref traits
+
+The vast majority of custom smart pointers will implement `Receiver` (often via
+`Deref`, which results in a `Receiver` impl due to the blanket impl). So why
+not also emit a `Receiver`/`Deref` impl in the output of the macro. One
+advantage of doing so is that this may sufficiently limit the macro so that we
+do not need to solve the pin soundness issue discussed in [the unresolved
+questions section][unresolved-questions].
+
+However, it turns out that there are quite a few different ways we might
+implement `Deref`. For example, consider [the custom `Rc` example][custom-rc]:
+```rust
+#[derive(SmartPointer)]
+pub struct Rc<T: ?Sized> {
+    inner: NonNull<RcInner<T>>,
+}
+
+struct RcInner<T: ?Sized> {
+    refcount: usize,
+    value: T,
+}
+
+impl<T: ?Sized> Deref for Rc<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        let ptr = self.inner.as_ptr();
+        unsafe { &*ptr.value }
+    }
+}
+```
+Making the macro general enough to generate `Deref` impls that are _that_
+complex would not be feasible. And it doesn't make sense to stabilize the macro
+without support for the custom `Rc` case, as implementing a custom `Arc` in the
+Linux Kernel is the primary motivation for this RFC.
+
+Note that having the macro generate a `Receiver` impl instead doesn't work
+either, because that prevents the user from implementing `Deref` at all. (There
+is a blanket impl of `Receiver` for all `Deref` types.)
+
+## Why not two derive macros?
+
+The derive macro generates two different trait implementations:
+
+- [`CoerceUnsized`] that allows conversions from `SmartPtr<MyStruct>` to
+  `SmartPtr<dyn MyTrait>`.
+- [`DispatchFromDyn`] that allows conversions from `SmartPtr<dyn MyTrait>` to
+  `SmartPtr<MyStruct>`.
+
+It could be argued that these should be split into two separate derive macros.
+We are not proposing this for a few reasons:
+
+- If there are two derive macros, then we have to support the case where you
+  only use one of them. There are use-cases for implementing [`CoerceUnsized`]
+  without [`DispatchFromDyn`], but you do this for cases where your type is not
+  a smart pointer, but rather a transparent container like [`Cell`]. It makes
+  coercions like `Cell<Box<MyStruct>>` to `Cell<Box<dyn MyTrait>>` possible.
+  Supporting that is a significantly increased scope of the RFC, and the
+  authors believe that supporting transparent containers should be a separate
+  follow-up RFC.
+
+- Right now there are use cases for `CoerceUnsized` (transparent containers)
+  and `CoerceUnsized+DispatchFromDyn` (smart pointers), but there aren't any
+  real use-cases for having `DispatchFromDyn` alone. Because of that, one
+  possible future design of the underlying traits could be to have one trait
+  for smart pointers, and another one for transparent containers. Adding two
+  derive macros prevents us from changing the underlying traits to that design
+  in the future.
+
+- The authors believe that a convenience `#[derive(SmartPointer)]` macro will
+  continue to make sense, even once the underlying traits are stabilized. It is
+  significantly easier to use than the expansion.
+
+- If we want the macro to correspond one-to-one to the underlying traits, then
+  we would want to use the same names as the underlying traits. However, we
+  don't know what the traits will be called when we finally figure out how to
+  stabilize them. (One of the traits have already been renamed once!)
+
+Even raw-pointer-like types that do not implement `Receiver` still want to
+implement `DispatchFromDyn`, since this allows you to use them as the field
+type in other structs that use `#[derive(SmartPointer)]`. For example, the
+custom `Rc` has a field of type `NonNull`, and this works since `NonNull` is
+`DispatchFromDyn`.
+
+[`Cell`]: https://doc.rust-lang.org/stable/core/cell/struct.Cell.html
+
+## What about `#[pointee]`?
+
+This RFC currently proposes to mark the generic parameter used for dynamic
+dispatch with `#[pointee]`. For convenience, the RFC proposes that this is only
+needed when there are multiple generic parameters.
+
+There are potential use-cases for smart pointers with additional generic
+parameters. Specifically, the `ListArc` type used by the linked lists currently
+has an additional const generic parameter to allow you to use the same
+refcounted value with multiple lists. People have argued that it would be
+better to change this to a generic type instead of a const generic, so it would
+be useful to keep the option of having multiple generic types on the struct.
+
+# Prior art
+[prior-art]: #prior-art
+
+## Stabilizing subsets of features
+
+There are several prior examples of unstable features that have been blocked
+from stabilization for various reasons, where we have been able to make
+progress by reducing the scope and stabilizing a subset.
+
+- The most recent example of this is [the arbitrary self types RFC][ast], where
+  [it was proposed to reduce the scope][ast-scope] so that we do not block
+  progress on the feature.
+- Another example of this is [the async fn in traits feature][rpit]. This was
+  stabilized even though it is not yet advisable to use it for traits in the
+  public API of crates, due to missing parts of the feature.
+
+There have already been [previous attempts to stabilize the underlying
+traits][pre-rfc], and they did not make much progress. Therefore, this RFC
+proposes to reduce ths scope and instead stabilize a derive macro.
+
+[ast-scope]: https://github.com/rust-lang/rfcs/pull/3519#discussion_r1492385549
+[rpit]: https://blog.rust-lang.org/2023/12/21/async-fn-rpit-in-traits.html
+
+## Macros whose output is unstable
+
+The Rust testing framework is considered unstable, and the only stable way to
+interact with it is via the `#[test]` attribute macro. The macro's output uses
+the unstable internals of the testing framework. This allows the testing
+framework to be changed in the future.
+
+Note also that the `pin!` macro expands to something that uses an unstable
+feature, though it does so for a different reason than
+`#[derive(SmartPointer)]` and `#[test]`.
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+Unfortunately, the API proposed by this RFC is unsound. :(
+
+Basically, the issue is that if `MyStruct` is `Unpin`, then you can create a
+`Pin<SmartPointer<MyStruct>>` safely, even though you can coerce that to
+`Pin<SmartPointer<dyn MyTrait>>` (and `dyn MyTrait` may be `!Unpin`). If
+`SmartPointer` has a malicious implementation of `Deref`, then this can lead to
+unsoundness. Since `Deref` is a safe trait, we cannot outlaw malicious
+implementations of `Deref`.
+
+Intuitively, the way that `Deref` can be malicious is by not always derefing to
+the same value.
+
+Some solution idea is outlined below, but the authors need your input on what
+to do about this problem.
+
+## Unsafe macro
+
+The easiest solution is probably to just make the macro unsafe. We could do this
+in a similar vein to [the unsafe attributes RFC][unsafe-attribute].
+```rust
+// SAFETY: The Deref impl always returns the same value.
+#[unsafe(derive(SmartPointer))]
+pub struct Rc<T: ?Sized> {
+    inner: NonNull<RcInner<T>>,
+}
+```
+This way, if you coerce an `Pin<Rc<MyStruct>>` to `Pin<Rc<dyn MyTrait>>` and
+this is unsound due to a weird `Deref` impl, then it's your fault because you
+unsafely asserted that you have a reasonable `Deref` implementation.
+
+That said, there are some possible forwards compatibility hazards with this
+solution. We might start out with an unsafe derive macro, and then in the future
+we might decide to instead use the `StableDeref` solution mentioned below. Then,
+`#[unsafe(derive(SmartPointer))]` would have to generate an implementation of
+the `StableDeref` trait too, because otherwise `Pin<Rc<MyStruct>>` would lose
+the ability to be unsize coerced, which would be a breaking change. This means
+that `#[unsafe(derive(SmartPointer))]` and `#[derive(SmartPointer)]` could end
+up expanding to _different_ things.
+
+[unsafe-attribute]: https://github.com/rust-lang/rfcs/pull/3325
+
+## StableDeref
+
+We are quite limited in how we can work around this issue due to backwards
+compatibility concerns with `Pin`. We cannot prevent you from using `Pin::new`
+with structs that have malicious `Deref` implementations. However, one possible
+place we can intervene is the coercion from `Pin<SmartPointer<MyStruct>>` to
+`Pin<SmartPointer<dyn MyTrait>>`. If you need to use unsafe before those
+coerceions are possible, then the problem is solved. For example, we might
+introduce a `StableDeref` trait:
+```rs
+/// # Safety
+///
+/// Any two calls to `deref` must return the same value at the same address unless
+/// `self` has been modified in the meantime. Moves and unsizing coercions of `self`
+/// are not considered modifications.
+///
+/// Here, "same value" means that if `deref` returns a trait object, then the actual
+/// type behind that trait object must not change. Additionally, when you unsize
+/// coerce from `Self` to `Unsized`, then if you call `deref` on `Unsized` and get a
+/// trait object, then the underlying type of that trait object must be `<Self as
+/// Deref>::Target`.
+///
+/// Analogous requirements apply to other unsized types. E.g., if `deref` returns
+/// `[T]`, then the length must not change. (The underlying type must not change
+/// from `[T; N]` to `[T; M]`.)
+///
+/// If this type implements `DerefMut`, then the same restrictions apply to calls
+/// to `deref_mut`.
+unsafe trait StableDeref: Deref { }
+```
+Then we make it so that you can only coerce pinned pointers when they implement
+`StableDeref`. We can do that by modifying its implementation of
+[`CoerceUnsized`] to this:
+```rs
+impl<T, U> CoerceUnsized<Pin<U>> for Pin<T>
+where
+    T: CoerceUnsized<U>,
+    T: StableDeref,
+    U: StableDeref,
+{}
+```
+This way, the user must implement the unsafe trait before they can coerce
+pinned versions of the pointer. Since the trait is unsafe, it is not our fault
+if that leads to unsoundness.
+
+This should not be a breaking change as long as we implement `StableDeref` for
+all standard library types that can be coerced when wrapped in `Pin`.
+
+The proposed trait is called `StableDeref` because the way that `Deref`
+implementations can be malicious is essentially by having
+`SmartPointer<MyStruct>` and `SmartPointer<dyn MyTrait>` deref to two different
+values. There may be some opportunity to reuse the `DerefPure` trait from [the
+deref patterns feature][deref-patterns], and there is also some prior art with
+the [`stable_deref_trait`](https://docs.rs/stable_deref_trait) crate, 
+
+[deref-patterns]: https://github.com/rust-lang/rust/issues/87121/
+
+## Don't allow Pin coercions with custom smart pointers
+
+This solution is essentially the `StableDeref` solution except that we don't
+stabilize `StableDeref`. This way, there's no stable way to use
+`#[derive(SmartPointer)]` types with `Pin` coercions.
+
+This solutions isn't a problem for the Linux Kernel right now because our custom
+`Arc` happens to be implicitly pinned for convenience reasons, but if it wasn't,
+then we would need coercions of `Pin`-wrapped values.
+
+## Negative trait bounds?
+
+There are also various solutions that involve negative trait bounds. For
+example, you might instead modify `CoerceUnsized` like this:
+```rust
+// Permit going from `Pin<impl Unpin>` to` Pin<impl Unpin>`
+impl<P, U> CoerceUnsized<Pin<U>> for Pin<P>
+where
+    P: CoerceUnsized<U>,
+    P: Deref<Target: Unpin>,
+    U: Deref<Target: Unpin>,
+{ }
+
+// Permit going from `Pin<impl !Unpin>` to `Pin<impl !Unpin>`
+impl<P, U> CoerceUnsized<Pin<U>> for Pin<P>
+where
+    P: CoerceUnsized<U>,
+    P: core::ops::Deref<Target: !Unpin>,
+    U: core::ops::Deref<Target: !Unpin>,
+{ }
+```
+This way, you can only coerce pinned pointers when this doesn't change whether
+the target type is `Unpin`.
+
+It would solve the unsoundness, but it does have the disadvantage of having no
+path to making these pinned coercions possible for smart pointers that don't
+have malicious `Deref` implementations. Another downside of this solution is
+that it's a breaking change, because it disallows these pinned coercions even
+with the standard library pointers, which allows them today.
+
+There are also other variations on the negative trait bounds, which become
+different implementations of the "Don't allow Pin coercions with custom smart
+pointers" solution.
+
+This solution is discussed in more details in [the pre-RFC for stabilizing the
+underlying traits][pre-rfc].
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+One of the design goals of this RFC is that it should make this feature
+available to crates without significantly limiting how the underlying traits
+can evolve. The authors hope that we will find a way to stabilize the
+underlying traits in the future.
+
+One of the things that is left out of scope of this RFC is coercions involving
+custom transparent containers similar to [`Cell`]. They require an
+implementation of [`CoerceUnsized`] without [`DispatchFromDyn`].
+
+There is a reasonable change that we may be able to lift some of [the
+restrictions][input-requirements] on the shape of the struct as well. The
+current restrictions are just whatever [`DispatchFromDyn`] requires today, and
+proposals for relaxing them have been seen before (e.g., in the
+[pre-RFC][pre-rfc].)
+
+One example of a restriction that we could lift is the restrction that there is
+only one non-zero-sized field. This could allow implementations of `Rc` and
+`Arc` that store the value and refcount in two different allocations, like how
+the C++ `shared_ptr` works.
+```rust
+#[derive(SmartPointer)]
+pub struct Rc<T: ?Sized> {
+    refcount: NonNull<Refcount>,
+    value: NonNull<T>,
+}
+```
+Implementing this probably requires the `#[derive(SmartPointer)]` macro to know
+syntactically which field holds the vtable. One simple way to do that could be
+to say that it must be the last field, analogous to the unsized field in structs
+that must also be the last field. Another option is to add another attribute
+like `#[pointee]` that must be annotated on the field in question.
+
+[ast]: https://github.com/rust-lang/rfcs/pull/3519
+[pre-rfc]: https://internals.rust-lang.org/t/pre-rfc-flexible-unsize-and-coerceunsize-traits/18789
+[`CoerceUnsized`]: https://doc.rust-lang.org/stable/core/ops/trait.CoerceUnsized.html
+[`core::ops::CoerceUnsized`]: https://doc.rust-lang.org/stable/core/ops/trait.CoerceUnsized.html
+[`DispatchFromDyn`]: https://doc.rust-lang.org/stable/core/ops/trait.DispatchFromDyn.html
+[`core::ops::DispatchFromDyn`]: https://doc.rust-lang.org/stable/core/ops/trait.DispatchFromDyn.html
