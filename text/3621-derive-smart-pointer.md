@@ -200,7 +200,7 @@ impl<T: ?Sized> Deref for Rc<T> {
 
 impl<T> Rc<T> {
     pub fn new(value: T) -> Self {
-        let inner = Box::new(ArcInner {
+        let inner = Box::new(RcInner {
             refcount: 1,
             value,
         });
@@ -284,8 +284,8 @@ Given the following example code:
 ```rust
 #[derive(SmartPointer)]
 struct MySmartPointer<'a, #[pointee] T: ?Sized, A>{
-    ptr: &'a T
-    phantom: PhantomData<A>
+    ptr: &'a T,
+    phantom: PhantomData<A>,
 }
 ```
 
@@ -296,13 +296,14 @@ we'll get the following expansion:
 impl<'a, T, A, U> ::core::ops::CoerceUnsized<MySmartPointer<'a, U, A>> for MySmartPointer<'a, T, A>
 where
     T: ?Sized + ::core::marker::Unsize<U>,
-    U: ?::core::marker::Sized
+    U: ?::core::marker::Sized,
+{}
 
 #[automatically_derived]
 impl<'a, T, A, U> ::core::ops::DispatchFromDyn<MySmartPointer<'a, U, A>> for MySmartPointer<'a, T, A>
 where
     T: ?Sized + ::core::marker::Unsize<U>,
-    U: ?::core::marker::Sized
+    U: ?::core::marker::Sized,
 {}
 ```
 
@@ -321,7 +322,7 @@ you can use them for dynamic dispatch.
 ## Vtable requirements
 
 As seen in the `Rc` example, the macro needs to be usable even if the pointer
-is `NonNull<ArcInner<T>>` (as opposed to `NonNull<T>`).
+is `NonNull<RcInner<T>>` (as opposed to `NonNull<T>`).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -469,7 +470,7 @@ progress by reducing the scope and stabilizing a subset.
 
 There have already been [previous attempts to stabilize the underlying
 traits][pre-rfc], and they did not make much progress. Therefore, this RFC
-proposes to reduce ths scope and instead stabilize a derive macro.
+proposes to reduce the scope and instead stabilize a derive macro.
 
 [ast-scope]: https://github.com/rust-lang/rfcs/pull/3519#discussion_r1492385549
 [rpit]: https://blog.rust-lang.org/2023/12/21/async-fn-rpit-in-traits.html
