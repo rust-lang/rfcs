@@ -393,6 +393,38 @@ Note that having the macro generate a `Receiver` impl instead doesn't work
 either, because that prevents the user from implementing `Deref` at all. (There
 is a blanket impl of `Receiver` for all `Deref` types.)
 
+## Transparent containers
+
+Smart pointers are not the only use case for implementing the [`CoerceUnsized`]
+and [`DispatchFromDyn`] traits. They are also used for "transparent containers"
+such as [`Cell`]. That use-case allows coercions such as `Cell<Box<MyStruct>>`
+to `Cell<Box<dyn MyTrait>>`. (Coercions where the `Cell` is inside the `Box` are
+already supported on stable Rust.)
+
+It is not possible to use the derive macro proposed by this RFC for transparent
+containers because they require a different set of where bounds when
+implementing the traits. To compare:
+```rust
+// smart pointer example
+impl<T, U> DispatchFromDyn<Box<U>> for Box<T>
+where
+    T: Unsize<U> + ?Sized,
+    U: ?Sized,
+{}
+
+// transparent container example
+impl<T, U> DispatchFromDyn<Cell<U>> for Cell<T>
+where
+    T: DispatchFromDyn<U>,
+{}
+```
+Attempting to annotate `#[derive(SmartPointer)]` onto a transparent container
+will fail to compile because [it violates the rules for implementing
+`DispatchFromDyn`][tc-pg]. Supporting custom transparent containers is out of
+scope for this RFC.
+
+[tc-pg]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=c3fe2a11822e4c5e2dae5bfec9d77b9e
+
 ## Why not two derive macros?
 
 The derive macro generates two different trait implementations:
@@ -406,21 +438,16 @@ It could be argued that these should be split into two separate derive macros.
 We are not proposing this for a few reasons:
 
 - If there are two derive macros, then we have to support the case where you
-  only use one of them. There are use-cases for implementing [`CoerceUnsized`]
-  without [`DispatchFromDyn`], but you do this for cases where your type is not
-  a smart pointer, but rather a transparent container like [`Cell`]. It makes
-  coercions like `Cell<Box<MyStruct>>` to `Cell<Box<dyn MyTrait>>` possible.
-  Supporting that is a significantly increased scope of the RFC, and the
-  authors believe that supporting transparent containers should be a separate
-  follow-up RFC.
+  only use one of them. There isn't much reason to do that, and the authors are
+  not aware of any examples where you would prefer to implement one of the
+  traits without implementing both.
 
-- Right now there are use cases for `CoerceUnsized` (transparent containers)
-  and `CoerceUnsized+DispatchFromDyn` (smart pointers), but there aren't any
-  real use-cases for having `DispatchFromDyn` alone. Because of that, one
-  possible future design of the underlying traits could be to have one trait
-  for smart pointers, and another one for transparent containers. Adding two
-  derive macros prevents us from changing the underlying traits to that design
-  in the future.
+- Having two different macros means that we lock ourselves into solutions that
+  involve two traits that split the feature in the way that we split it today.
+  However, it is easy to imagine situations where we would want to split the
+  traits in a different way. For example, we might instead want one trait for
+  smart pointers, and another trait for transparent containers. Or maybe we just
+  want one trait that does both things.
 
 - The authors believe that a convenience `#[derive(SmartPointer)]` macro will
   continue to make sense, even once the underlying traits are stabilized. It is
@@ -643,8 +670,9 @@ can evolve. The authors hope that we will find a way to stabilize the
 underlying traits in the future.
 
 One of the things that is left out of scope of this RFC is coercions involving
-custom transparent containers similar to [`Cell`]. They require an
-implementation of [`CoerceUnsized`] without [`DispatchFromDyn`].
+custom transparent containers similar to [`Cell`]. They require you to implement
+the traits with different where bounds. Adding support for custom transparent
+containers makes sense as a future expansion of the feature.
 
 There is a reasonable change that we may be able to lift some of [the
 restrictions][input-requirements] on the shape of the struct as well. The
