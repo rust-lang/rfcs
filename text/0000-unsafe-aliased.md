@@ -218,6 +218,20 @@ struct UnsafePinned<T: ?Sized> {
 /// to avoid the aliases from becoming invalidated. Therefore let's mark this as `!Unpin`.
 impl<T> !Unpin for UnsafePinned<T> {}
 
+/// The type is `Copy` when `T` is to avoid people assuming that `Copy` implies there
+/// is no `UnsafePinned` anywhere. (This is an issue with `UnsafeCell`: people use `Copy` bounds
+/// to mean `Freeze`.) Given that there is no `unsafe impl Copy for ...`, this is also
+/// the option that leaves the user more choices (as they can always wrap this in a `!Copy` type).
+impl<T: Copy> Copy for UnsafePinned<T> {}
+impl<T: Copy> Clone for UnsafePinned<T> {
+    fn clone(&self) -> Self { *self }
+}
+
+// `Send` and `Sync` are inherited from `T`. This is similar to `SyncUnsafeCell`, since
+// we eventually concluded that `UnsafeCell` implicitly making things `!Sync` is sometimes
+// unergonomic. A type that needs to be `!Send`/`!Sync` should really have an explicit
+// opt-out itself, e.g. via an `PhantomData<*mut T>` or (one day) via `impl !Send`/`impl !Sync`.
+
 impl<T: ?Sized> UnsafePinned<T> {
     /// Constructs a new instance of `UnsafePinned` which will wrap the specified
     /// value.
@@ -421,12 +435,7 @@ Adding something like this to Rust has been discussed many times throughout the 
   Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafePinned` instead.
   Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `UnsafeUnpin` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
 - Relatedly, in which module should this type live?
-- Should this type `derive(Copy)`? `UnsafeCell` does not, which is unfortunate because it now means some people might use `T: Copy` as indication that there is no `UnsafeCell` in `T`.
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
-- When should `UnsafePinned<T>` be `Send` or `Sync`?
-  `UnsafeCell` is `Send` but not `Sync` because of its interaction with shared references.
-  The corresponding choice for `UnsafePinned` would be to make it `Sync` but not `Send`, but that seems like an odd choice.
-  Given that `SyncUnsafeCell` was eventually proposed because the `!Sync` bound on `UnsafeCell` turned out to be too safe of a default for some cases, it may make sense to do the same with `UnsafePinned` and just have it inherit both `Send` and `Sync`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
