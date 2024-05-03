@@ -105,7 +105,7 @@ impl !Unpin for S {}
 
 impl S {
     pub fn new() -> Self {
-        S { state: 0, data: 42, ptr_to_data: ptr::null_mut() }
+        S { state: 0, data: 0, ptr_to_data: ptr::null_mut() }
     }
 
     fn poll(self: Pin<&mut Self>) -> Poll<()> {
