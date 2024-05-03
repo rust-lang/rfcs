@@ -268,7 +268,7 @@ are verified semantically by the compiler when checking the generated
 
 The macro will expand to two implementations, one for
 [`core::ops::CoerceUnsized`] and one for [`core::ops::DispatchFromDyn`]. This
-is enough for a type to participe in unsizing coercions and dynamic dispatch.
+is enough for a type to participate in unsizing coercions and dynamic dispatch.
 
 The derive macro will implement the traits for the type according to the
 following procedure:
@@ -564,7 +564,7 @@ compatibility concerns with `Pin`. We cannot prevent you from using `Pin::new`
 with structs that have malicious `Deref` implementations. However, one possible
 place we can intervene is the coercion from `Pin<SmartPointer<MyStruct>>` to
 `Pin<SmartPointer<dyn MyTrait>>`. If you need to use unsafe before those
-coerceions are possible, then the problem is solved. For example, we might
+coercions are possible, then the problem is solved. For example, we might
 introduce a `StableDeref` trait:
 ```rs
 /// # Safety
@@ -680,7 +680,7 @@ current restrictions are just whatever [`DispatchFromDyn`] requires today, and
 proposals for relaxing them have been seen before (e.g., in the
 [pre-RFC][pre-rfc].)
 
-One example of a restriction that we could lift is the restrction that there is
+One example of a restriction that we could lift is the restriction that there is
 only one non-zero-sized field. This could allow implementations of `Rc` and
 `Arc` that store the value and refcount in two different allocations, like how
 the C++ `shared_ptr` works.
