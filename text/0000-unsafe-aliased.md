@@ -434,6 +434,9 @@ Adding something like this to Rust has been discussed many times throughout the 
 - How do we transition code that relies on `Unpin` opting-out of aliasing guarantees to the new type? Here's a plan: define the `PhantomPinned` type as `UnsafePinned<()>`.
   Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafePinned` instead.
   Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `UnsafeUnpin` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
+  However, if we ever make `UnsafePinned` location-relevant (i.e., only data inside the `UnsafePinned` is allowed to have aliases), then unsafe code in the ecosystem needs to be adjusted.
+  The justification for this is that currently this code relies on undocumented unstable behavior (using `!Unpin` to opt-out of aliasing guarantees), so we are in our right to declare it unsound.
+  Of course we should give the ecosystem time to migrate to the new approach before we actually start doing optimizations that exploit this UB.
 - Relatedly, in which module should this type live?
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
 
