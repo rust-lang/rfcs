@@ -377,7 +377,7 @@ impl Trait for B {
 }
 ```
 
-If we only know that the value is of some type that implements the trait, then we must assume that the type returned by `foo` *might* have used the lifetime:
+If we only know that the value is of some type that implements the trait, then we must assume that the type returned by `foo` *might* use the lifetime:
 
 ```rust
 fn test_trait<T: Trait + 'static>(x: T) -> impl Sized + 'static {
@@ -386,7 +386,7 @@ fn test_trait<T: Trait + 'static>(x: T) -> impl Sized + 'static {
 }
 ```
 
-However, if we know we have a value of type `B`, we can *rely* on the fact that the lifetime was not used:
+However, if we know we have a value of type `B`, we can *rely* on the fact that the lifetime is not used:
 
 ```rust
 fn test_b(x: B) -> impl Sized + 'static {
@@ -415,11 +415,15 @@ impl Trait for () {
 }
 ```
 
-Similarly, for consistency, we'll lint against RPITIT cases where less is captured by RPIT in the impl as compared with the trait definition when using `use<..>`.  E.g.:
+Similarly, for consistency, we'll lint against RPITIT cases where less is captured by RPIT in the impl as compared with the trait definition when using `use<..>`.
+
+### Examples of refinement
+
+In keeping with the rule above, we consider it refining if we don't capture in the impl all of the generic parameters from the function signature that are captured in the trait definition:
 
 ```rust
 trait Trait {
-    fn foo(&self) -> impl Sized;
+    fn foo(&self) -> impl Sized; // Or: `impl use<'_, Self> Sized`
 }
 
 impl Trait for () {
@@ -431,6 +435,183 @@ impl Trait for () {
 //~| NOTE we are soliciting feedback, see issue #121718
 //~|      <https://github.com/rust-lang/rust/issues/121718>
 //~|      for more information
+}
+```
+
+Similarly, if we don't capture, in the impl, any generic parameter applied as an argument to the trait in the impl header when the corresponding generic parameter is captured in the trait definition, that is refining.  E.g.:
+
+```rust
+trait Trait<'x> {
+    fn f() -> impl Sized; // Or: `impl use<'x, Self> Sized`
+}
+
+impl<'a> Trait<'a> for () {
+    fn f() -> impl use<> Sized {}
+//~^ WARN impl trait in impl method signature does not match
+//~|      trait method signature
+//~| NOTE add `#[allow(refining_impl_trait)]` if it is intended
+//~|      for this to be part of the public API of this crate
+//~| NOTE we are soliciting feedback, see issue #121718
+//~|      <https://github.com/rust-lang/rust/issues/121718>
+//~|      for more information
+}
+```
+
+This remains true even if the trait impl is *reparameterized*.  In that case, it is refining unless *all* generic parameters applied in the impl header as generic arguments for the corresponding trait parameter are captured in the impl when that parameter is captured in the trait definition, e.g.:
+
+```rust
+trait Trait<T> {
+    fn f() -> impl Sized; // Or: `impl use<T, Self> Sized`
+}
+
+impl<'a, 'b> Trait<(&'a (), &'b ())> for () {
+    fn f() -> impl use<'b> Sized {}
+//~^ WARN impl trait in impl method signature does not match
+//~|      trait method signature
+//~| NOTE add `#[allow(refining_impl_trait)]` if it is intended
+//~|      for this to be part of the public API of this crate
+//~| NOTE we are soliciting feedback, see issue #121718
+//~|      <https://github.com/rust-lang/rust/issues/121718>
+//~|      for more information
+}
+```
+
+Similarly, it's refining if `Self` is captured in the trait definition and, in the impl, we don't capture all of the generic parameters that are applied in the impl header as generic arguments to the `Self` type, e.g.:
+
+```rust
+trait Trait {
+    fn f() -> impl Sized; // Or: `impl use<Self> Sized`
+}
+
+struct S<T>(T);
+impl<'a, 'b> Trait for S<(&'a (), &'b ())> {
+    fn f() -> impl use<'b> Sized {}
+//~^ WARN impl trait in impl method signature does not match
+//~|      trait method signature
+//~| NOTE add `#[allow(refining_impl_trait)]` if it is intended
+//~|      for this to be part of the public API of this crate
+//~| NOTE we are soliciting feedback, see issue #121718
+//~|      <https://github.com/rust-lang/rust/issues/121718>
+//~|      for more information
+}
+```
+
+## Lifetime equality
+
+While the capturing of generic parameters is generally syntactic, this is currently allowed in Rust 2021:
+
+```rust
+//@ edition: 2021
+fn foo<'a: 'b, 'b: 'a>() -> impl Sized + 'b {
+    core::marker::PhantomData::<&'a ()>
+}
+```
+
+Rust 2021 does not adhere to the Lifetime Capture Rules 2024 for bare RPITs such as this.  Correspondingly, lifetimes are only captured when they appear in the bounds.  Here, `'b` but not `'a` appears in the bounds, yet we're still able to capture `'a` due to the fact that it must be equal to `'b`.
+
+To preserve consistency with this, the following is also valid:
+
+
+```rust
+fn foo<'a: 'b, 'b: 'a>() -> impl use<'b> Sized {
+    core::marker::PhantomData::<&'a ()>
+}
+```
+
+A more difficult case is where, in the trait definition, only a subset of the generic parameters on the trait are captured, and in the impl we capture a lifetime *not* applied syntactically as an argument for one of those captured parameters but which is equal to a lifetime that is applied as an argument for one of the captured parameters, e.g.:
+
+```rust
+trait Trait<'x, 'y> {
+    fn f() -> impl use<'y, Self> Sized;
+}
+
+impl<'a: 'b, 'b: 'a> Trait<'a, 'b> for () {
+    fn f() -> impl use<'b> Sized {
+        core::marker::PhantomData::<&'a ()>
+    }
+}
+```
+
+For the purposes of this RFC, in the interest of consistency with the above cases, we're going to say that this is valid.  However, as mentioned elsewhere, partial capturing of generics that are input parameters to the trait (including `Self`) is unlikely to be part of initial rounds of stabilization, and it's possible that implementation experience may lead us to a different answer for this case.
+
+## Reparameterization
+
+In Rust, trait impls may be parameterized over a different set of generics than the trait itself.  E.g.:
+
+```rust
+trait Trait<X, Y> {
+    fn f() -> impl use<X, Y, Self> Sized;
+}
+
+impl<'a, B, const C: usize> Trait<(), (&'a (), B, [(); C])> for () {
+    fn f() -> impl use<'a, B, C> Sized {
+        core::marker::PhantomData::<(&'a (), B, [(); C])>
+    }
+}
+```
+
+In these cases, what we look at is how these generics are applied as arguments to the trait in the impl header.  In this example, all of `'a`, `B`, and `C` are applied in place of the `Y` input parameter to the trait.  Since `Y` is captured in the trait definition, we're correspondingly allowed to capture `'a`, `B`, and `C` in the impl.
+
+## The `Self` type
+
+In trait definitions (but not elsewhere), `use<..>` may capture `Self`.  Doing so means that in the impl, the opaque type may capture any generic parameters that are applied as generic arguments to the `Self` type.  E.g.:
+
+```rust
+trait Trait {
+    fn f() -> impl use<Self> Sized;
+}
+
+struct S<T>(T);
+impl<'a, B, const C: usize> Trait for S<(&'a (), B, [(); C])> {
+    fn f() -> impl use<'a, B, C> Sized {
+        core::marker::PhantomData::<(&'a (), B, [(); C])>
+    }
+}
+```
+
+## Handling of projection types
+
+If we apply, in a trait impl header, a projection type to a trait in place of a parameter that is captured in the trait definition, that does not allow us to capture in the impl the generic parameter from which the type is projected.  E.g.:
+
+```rust
+trait Trait<X, Y> {
+    fn f() -> impl use<Y, Self> Sized;
+}
+
+impl<A: Iterator> Trait<A, A::Item> for () {
+    fn f() -> impl use<A> Sized {}
+    //~^ ERROR cannot capture `A`
+}
+```
+
+The reason this is an error is related to the fact that, in Rust, a generic parameter used as an associated type does not constrain that generic parameter in the impl.  E.g.:
+
+```rust
+trait Trait {
+    type Ty;
+}
+
+impl<A> Trait for () {
+//~^ ERROR the type parameter `A` is not constrained
+    type Ty = A;
+}
+```
+
+## Meaning of capturing a const generic parameter
+
+As with other generic parameters, a const generic parameter must be captured in the opaque type for it to be used in the hidden *type*.  E.g., we must capture `C` here:
+
+```rust
+fn f<const C: usize>() -> impl use<C> Sized {
+    [(); C]
+}
+```
+
+However, note that we do not need to capture `C` just to use it as a *value*, e.g.:
+
+```rust
+fn f<const C: usize>() -> impl use<> Sized {
+    C + 1
 }
 ```
 
