@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This proposal adds scoped `impl Trait for Type` items into the core language, as coherent but orphan-rule-free alternative to implementing traits globally. It also extends the syntax of `use`-declarations to allow importing these scoped implementations into other scopes (including other crates), and differentiates type identity of most generics by which scoped trait implementations are available to each specified generic type parameter.
+This proposal adds scoped `impl Trait for Type` items into the core language, as coherent but orphan-rule-free alternative to implementing traits globally. It also extends the syntax of `use`-declarations to allow importing these scoped implementations into other item scopes (including other crates), and differentiates type identity of most generics by which scoped trait implementations are available to each discretised generic type parameter (also adding syntax to specify differences to these captured *implementation environments* directly on generic type arguments).
 
 This (along with some details specified below) enables any crate to
 
@@ -24,7 +24,7 @@ This document uses "scoped implementation" and "scoped `impl Trait for Type`" in
 
 While orphan rules regarding trait implementations are necessary to allow crates to add features freely without fear of breaking dependent crates, they limit the composability of third party types and traits, especially in the context of derive macros.
 
-For example, while many crates support `serde::{Deserialize, Serialize}` directly, implementations of the similarly-derived `bevy_reflect::{FromReflect, Reflect}` traits are less common. Sometimes, a `Debug`, `Clone` or (maybe only contextually sensible) `Default` implementation for a field is missing to derive those traits. While crates like Serde often do provide ways to supply custom implementations for fields, this usually has to be restated on each such field. Additionally, the syntax for doing so tends to differ between crates.
+For example, while many crates support `serde::{Deserialize, Serialize}` directly, implementations of the similarly-derived `bevy_reflect::{FromReflect, Reflect}` traits are less common. Sometimes, a `Debug`, `Clone` or (maybe only contextually sensible) `Default` implementation for a field is missing to derive those traits. While crates like Serde often do provide ways to supply custom implementations for fields, this usually has to be restated on each such field. Additionally, the syntax for doing so tends to differ between derive macro crates.
 
 Wrapper types, commonly used as workaround, add clutter to call sites or field types, and introduce mental overhead for developers as they have to manage distinct types without associated state transitions in order to work around the issues laid out in this section. They also require a distinct implementation for each combination of traits and lack discoverability through tools like rust-analyzer.
 
@@ -33,14 +33,6 @@ Another pain point are sometimes missing `Into<>`-conversions when propagating e
 This RFC aims to address these pain points by creating a new path of least resistance that is easy to use and very easy to teach, intuitive to existing Rust-developers, readable without prior specific knowledge, discoverable as needed, has opportunity for rich tooling support in e.g. rust-analyzer and helpful error messages, is quasi-perfectly composable including decent re-use of composition, improves maintainability and (slightly) robustness to major-version dependency changes compared to newtype wrappers, and does not restrict crate API evolution, compromise existing coherence rules or interfere with future developments like specialisation. Additionally, it allows the implementation of more expressive (but no less explicit) extension APIs using syntax traits like in the `PartialEq<>`-example below, without complications should these traits be later implemented in the type-defining crate.
 
 For realistic examples of the difference this makes, please check the [rationale-and-alternatives] section.
-
-# (Pending changes to this draft)
-
-It should be possible to specify differences in the implementation environment directly where it is captured, e.g. as `BTreeSet<usize: PartialOrd in reverse + Ord in reverse>`, without bringing these implementations into scope.
-
-As this requires additional grammar changes and overall more adjustments to this document, I plan to tackle that a bit later.
-
-For now, see [explicit-binding] in *Future possibilities* below for more, but less rigorous, text about one possibility.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -123,6 +115,7 @@ use ::{impl Trait for Type};
 Scoped implementations are resolved on most generics' type parameters where those are specified, and become part of the (now less generic) host type's identity:
 
 ```rust
+#[derive(Default)]
 struct Type<T>(T);
 
 trait Trait {
@@ -136,6 +129,8 @@ impl<T: Trait> Type<T> {
 }
 
 mod nested {
+    use super::{Trait, Type};
+
     use impl Trait for () {
         fn trait_fn() {
             println!("nested");
@@ -146,13 +141,17 @@ mod nested {
 }
 use nested::Alias;
 
-Alias::type_fn(); // "nested"
+fn main() {
+    Alias::type_fn(); // "nested"
 
-// Type::<()>::type_fn();
-//             ^^^^^^^ error[E0599]: the function or associated item `type_fn` exists for struct `Type<()>`, but its trait bounds were not satisfied
+    // Type::<()>::type_fn();
+    //             ^^^^^^^ error[E0599]: the function or associated item `type_fn` exists for struct `Type<()>`, but its trait bounds were not satisfied
 
-// let t: Type<()> = Alias(());
-//                   ^^^^^^^^^ error[E0308]: mismatched types
+    // let t: Type<()> = Alias::default();
+    //                   ^^^^^^^^^ error[E0308]: mismatched types
+
+    let t: Type<() as Trait in nested> = Alias::default();
+}
 ```
 
 This works equally not just for type aliases but also fields, `let`-bindings and also where generic type parameters are inferred automatically from expressions (for example to call a constructor).
@@ -235,18 +234,18 @@ The core Rust language grammar is extended as follows:
 
 - [*TraitImpl*]'s definition is prepended with (*Visibility*<sup>?</sup> `use`)<sup>?</sup> and refactored for partial reuse to arrive at
 
-  > *TraitImpl*:  
+  > *TraitImpl*&nbsp;:  
   > &emsp; **(*Visibility*<sup>?</sup> `use`)<sup>?</sup>** `unsafe`<sup>?</sup> ***TraitCoverage***  
   > &emsp; `{`  
   > &emsp;&emsp; *InnerAttribute*<sup>\*</sup>  
   > &emsp;&emsp; *AssociatedItem*<sup>\*</sup>  
   > &emsp; `}`  
   >
-  > **TraitCoverage**:  
+  > ***TraitCoverage***&nbsp;:  
   > &emsp; ***TraitCoverageNoWhereClause***  
   > &emsp; *WhereClause*<sup>?</sup>  
   >
-  > **TraitCoverageNoWhereClause**:  
+  > ***TraitCoverageNoWhereClause***&nbsp;:  
   > &emsp; `impl` *GenericParams*<sup>?</sup> `!`<sup>?</sup> *TypePath* `for` *Type*  
 
   where a trait implementation with that `use`-prefix provides the implementation *only* as item in the containing item scope.
@@ -259,15 +258,15 @@ The core Rust language grammar is extended as follows:
 
 - [*UseTree*]'s definition is extended for importing scoped implementations by inserting the extracted *TraitCoverage* and *TraitCoverageNoWhereClause* rules as follows:
 
-  > *UseTree*:  
+  > *UseTree*&nbsp;:  
   > &emsp; (*SimplePath*<sup>?</sup> `::`)<sup>?</sup> `*`  
-  > &ensp;| (*SimplePath*<sup>?</sup> `::`)<sup>?</sup> `{`  
+  > &ensp; | (*SimplePath*<sup>?</sup> `::`)<sup>?</sup> `{`  
   > &emsp; (  
   > &emsp;&emsp; (**(**&zwj;*UseTree* **| *TraitCoverageNoWhereClause*)** (`,` **(**&zwj;*UseTree* **| *TraitCoverageNoWhereClause*)**)\* **(**`,` ***TraitCoverage*<sup>?</sup>)**<sup>?</sup>)<sup>?</sup>  
-  > &emsp;&ensp;**| *TraitCoverage***  
+  > &emsp;&ensp; **| *TraitCoverage***  
   > &emsp; )  
   > &emsp; `}`  
-  > &ensp;| *SimplePath* (`as` (IDENTIFIER | `_`))<sup>?</sup>  
+  > &ensp; | *SimplePath* (`as` (IDENTIFIER | `_`))<sup>?</sup>  
 
   Allowing a trailing *TraitCoverage* with *WhereClause* in a braced list is intended for ergonomics, but rustfmt should brace it individually by default, then append a trailing comma where applicable as usual. A '`,`' in the *WhereClause* here is not truly ambiguous because *WhereClauseItem*s contain '`:`', but allowing that ahead of others would likely be visually confusing and tricky to implement (requiring an arbitrarily long look-ahead). Alternatively to allowing a trailing *TraitCoverage* in mixed lists, an error similar to [E0178] could be emitted.
 
@@ -286,6 +285,71 @@ The core Rust language grammar is extended as follows:
   Other elements of the coverage must match the source module's implementation exactly, unless specified otherwise.
 
   [*UseTree*]: https://doc.rust-lang.org/reference/items/use-declarations.html?highlight=UseTree#use-declarations
+
+- [*TypeParam*], [*GenericArg*] and [*GenericArgsBinding*] are extended to accept *implementation environments* inline:
+
+  > *TypeParam*&nbsp;:  
+  > &emsp; IDENTIFIER ( `:` *TypeParamBounds*<sup>?</sup> )<sup>?</sup> ( `=` *Type* ***ImplEnvironment*<sup>?</sup>** )<sup>?</sup>  
+  >
+  > *GenericArg*&nbsp;:  
+  > &emsp; *Lifetime* | *Type* ***ImplEnvironment*<sup>?</sup>** | *GenericArgsConst* | *GenericArgsBinding*  
+  >
+  > *GenericArgsBinding*&nbsp;:  
+  > &emsp; IDENTIFIER `=` *Type* ***ImplEnvironment*<sup>?</sup>**
+  >
+  > ***ImplEnvironment*&nbsp;:**  
+  > **&emsp; `as` ( *ImplEnvironmentEntry* ( `+` *ImplEnvironmentEntry* )\* `+`<sup>?</sup> )<sup>?</sup>**  
+  >
+  > ***ImplEnvironmentEntry*&nbsp;:**  
+  > **&emsp; (**  
+  > **&emsp;&emsp; *ForLifetimes*<sup>?</sup> *TypePath***  
+  > **&emsp;&ensp; | ( *ForLifetimes*<sup>?</sup> *TypePath* )**  
+  > **&emsp; )**  
+  > **&emsp; `in` ( `::` | *SimplePath* )**
+
+  When detecting conflicting implementations, the *ImplEnvironment* is treated as creating a distinct scope nested in its surrounding scope. Each resulting *implementation environment* must be conflict-free, but between them they *can* contain conflicting implementations.
+
+  Even when an *ImplEnvironment* is added as above, the resulting *implementation environment* still captures scoped implementations from the surrounding scope for all traits that were not specified inline! A global implementation can be used explicitly by sourcing it from `::` instead of a module.
+
+  For stability reasons (against relaxation of bounds) and because they matter for type identity, explicit inline *implementation environments* should be allowed where no matching bound is present, but should produce an [unused-scoped-implementation] warning iff neither published nor used in the same crate (including for type identity distinction).
+
+  > Whether inline *implementation environments* would inherit from each other is intentionally left unspecified, as identical types can't be nested without indirection, which ensures such a situation isn't relevant.
+  
+  [*TypeParam*]: https://doc.rust-lang.org/reference/items/generics.html?highlight=TypeParam#generic-parameters
+  [*GenericArg*]: https://doc.rust-lang.org/reference/paths.html?highlight=GenericArg#paths-in-expressions
+  [*GenericArgsBinding*]: https://doc.rust-lang.org/reference/paths.html?highlight=GenericArgsBinding#paths-in-expressions
+
+- Further type specification syntax is extended as follows:
+
+  > *ParenthesizedType*&nbsp;:  
+  > &emsp; `(` *Type* ***ImplEnvironment*<sup>?</sup>** `)`
+  >
+  > *TupleType*&nbsp;:  
+  > &emsp; `(` `)`  
+  > &ensp; | `(` ( *Type* ***ImplEnvironment*<sup>?</sup>** `,` )<sup>+</sup> **(** *Type* ***ImplEnvironment*<sup>?</sup> )**<sup>?</sup> `)`
+  >
+  > *ArrayType*&nbsp;:  
+  > &emsp; `[` *Type* ***ImplEnvironment*<sup>?</sup>** `;` *Expression* `]`
+  >
+  > *SliceType*&nbsp;:  
+  > &emsp; `[` *Type* ***ImplEnvironment*<sup>?</sup>** `]`
+
+  > Closure types are not extended with *ImplEnvironment* because *implementation environments* annotated on their parameters would never be effective.
+  >
+  > Extending *ParenthesizedType* this way is necessary to specify *implementation environments* for pointer types' generic type parameters, e.g. `&(Type as Trait in module)`.
+
+- [*QualifiedPathType*] is also extended for this purpose, but can additionally act as *implementation environment* scope that also affects the *implementation environment* of nested types, using a clause starting with `where`:
+
+  > *QualifiedPathType*&nbsp;:  
+  > &emsp; `<` *Type* ( `as` *TypePath* **(`in` (`::` | *SimplePath* ) )<sup>?</sup>** )<sup>?</sup> **( `where` ( *Type* *ImplEnvironment* `,` )\* ( *Type* *ImplEnvironment* )<sup>?</sup> )<sup>?</sup>** `>`
+
+  The form `<Type as Trait in module>` is syntactic sugar for `<(Type as Trait in module) as Trait>`, to avoid repetition of potentially long traits.
+
+  Implementations imported after `where` must be valid, but don't necessarily have to be relevant.
+
+  > I am **not** confident that `where` is the right keyword here, but it seems like this best option among the already-existing ones. `use`-syntax feels far too verbose here. Maybe the above but with `using` or `with` in place of `where`?
+  
+  [*QualifiedPathType*]: https://doc.rust-lang.org/reference/paths.html?highlight=QualifiedPathType#qualified-paths
 
 ## No scoped `impl Trait for Type` of auto traits, `Copy` and `Drop`
 
@@ -352,6 +416,8 @@ When implementations are resolved on the host type, bounds on the type parameter
 When a generic type parameter is used to discretise another generic, the captured environment is the one captured in the former but overlaid with modifications applicable to that generic type parameter's opaque type.
 
 Note that type parameter defaults too capture their *implementation environment* where they are specified, so at the initial definition site of the generic. This environment is used whenever the type parameter default is used.
+
+In order to avoid too much friction, [implementation-invariant-generics] are exempt from acting as host for *implementation environments* on their own.
 
 ## Type identity of discrete types
 [type-identity-of-discrete-types]: #type-identity-of-discrete-types
@@ -439,11 +505,11 @@ fn main() {
     // as from its perspective, the binding is stripped due to being top-level.
     Alias1::nested_convertible(Alias2::default());
 
-    // The reflexive `impl<T> Into<T> for T` does not to the generic here,
+    // The reflexive `impl<T> Into<T> for T` does not apply between the aliases here,
     // as the distinct capture in the type parameter affects its inherent identity.
     // (It's unfortunately not possible to generically implement this conversion without specialisation.)
     // Alias1::default().conv::<Alias2>();
-    //                   ^^^^ error[E0277]: the trait bound `[…]¹` is not satisfied
+    //                   ^^^^ error[E0277]: the trait bound `Generic<Type as Trait in mod2>: From<Generic<Type as Trait in mod1>>>` is not satisfied
 
     // Identical types are interchangeable.
     Alias2::identical(Alias3::default());
@@ -453,16 +519,14 @@ fn main() {
 
 As mentioned in [type-identity-of-discrete-types], implementations on the generic type *itself* do *not* affect its type identity, as can be seen with `Alias4` above.
 
-The `TypeId` of these generics varies alongside their identity. Note that due to the transmutation permission defined in [layout-compatibility], consumer code is effectively allowed to change the `TypeId` of instances of generics between calls to generic implementations in most cases. Due to this, implementations of generics that manage types at runtime should usually rely on the [typeid-of-generic-type-parameters-opaque-types] or `(…,)`-tuple-types combining them instead.
-
-¹ With the current implementation, this would likely say `Generic<_>: From<Generic<_>>>`, which isn't helpful. With [explicit-binding], it could say `Generic<Type: Trait in mod2>: From<Generic<Type: Trait in mod1>>>`.
+The `TypeId` of these generics varies alongside their identity. Note that due to the transmutation permission defined in [layout-compatibility], consumer code is effectively allowed to change the `TypeId` of instances of generics between calls to generic implementations in most cases. Due to this, implementations of generics that manage types at runtime should usually rely on the [typeid-of-generic-type-parameters-opaque-types] or `(…,)`-tuple-types combining them instead of on `TypeId::of::<Self>()`. (see also [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters])
 
 (For a practical example, see [logical-consistency] [of-generic-collections].)
 
 ### Implementation-invariant generics
 [implementation-invariant-generics]: #implementation-invariant-generics
 
-The following generics that never rely in the consistency of implementation of their type parameters are implementation-invariant:
+The following generics that never rely on the consistency of trait implementations on their type parameters are implementation-invariant:
 
 - `&T`, `&mut T` (references),
 - `*const T`, `*mut T` (pointers),
@@ -474,13 +538,87 @@ The following generics that never rely in the consistency of implementation of t
 
 Implementation-invariant generics never capture *implementation environments* on their own. Instead, their effective *implementation environments* follow that of their host, acting as if they were captured in the same scope.
 
-The type identity of implementation-invariant generics seen on their own does not depend on the implementation environment.
+The type identity of implementation-invariant generics seen on their own does not depend on the *implementation environment*. This also means that the `TypeId` of `Option<T>` does not take into account differences of implementations *on* `T`. However, differences of implementations *in* `T` can still distinguish the types, in cases where the type identity (and possibly `TypeId`) of `T` *itself* are different. An example for this are generic type parameters' effective types that can have bounds-relevant implementations observably baked into them.
+
+Hosts are:
+
+- Type aliases (see [type-aliases-are-opaque-to-scoped-implementations]),
+- [implementation-aware-generics],
+- types written as *QualifiedPathType* (see [grammar-changes] to *QualifiedPathType*) and
+- the *function operand* of [call expressions] (see [call-expressions-function-operand-captures-its-implementation-environment]).
 
 \* superficially: The underlying instance may well use a captured implementation internally, but this isn't surfaced in signatures. For example, a closure defined where `usize: PartialOrd in reverse + Ord in reverse` is just `FnOnce(usize)` but will use `usize: PartialOrd in reverse + Ord in reverse` privately when called.
 
 \*\* but see [which-structs-should-be-implementation-invariant].
 
 See also [why-specific-implementation-invariant-generics].
+
+[call expressions]: https://doc.rust-lang.org/reference/expressions/call-expr.html#call-expressions
+
+## Call expressions' *function operand* captures its *implementation environment*
+[call-expressions-function-operand-captures-its-implementation-environment]: #call-expressions-function-operand-captures-its-implementation-environment
+
+Call expressions capture the *implementation environment* in their *function operand*, acting as host for [implementation-invariant-generics]. This enables call expressions such as
+
+```rust
+Option::<Type as Debug in module>::fmt(…)
+```
+
+where `fmt` receives the specified scoped implementation by observing it through the `T: Debug` bound on its implementing `impl` block.
+
+If no observing bound exists, code of this form should produce a warning spanning the `Trait in module` tokens. (see [unused-scoped-implementation])
+
+## Type aliases are opaque to scoped implementations
+[type-aliases-are-opaque-to-scoped-implementations]: #type-aliases-are-opaque-to-scoped-implementations
+
+As scoped `impl Trait for Type` is a fully lexically-scoped feature, the *implementation environment* present in a scope does not affect types hidden behind a type alias, except for the top-level type directly:
+
+```rust
+trait Trait {
+    fn method(&self) -> &str;
+}
+
+impl Trait for Type {
+    fn method(&self) -> &str {
+        "global"
+    }
+}
+
+mod m1 {
+    use super::Type;
+
+    pub type Alias = [Type; 1];
+}
+
+mod m2 {
+    use super::{Type, Trait};
+
+    pub use impl Trait for Type {
+        fn method(&self) -> &str {
+            "scoped"
+        }
+    }
+
+    pub use impl<T: Trait> Trait for [T; 1] {
+        fn method(&self) -> &str {
+            self[0].method()
+        }
+    }
+}
+
+fn main() {
+    use m1::Alias;
+    use m2::{
+        impl Trait for Type,
+        impl Trait for [Type; 1],
+    };
+
+    assert_eq!([Type].method(), "scoped");
+    assert_eq!(Alias::default().method(), "global");
+}
+```
+
+Scoped implementations may still be observed through bounded generic type parameters on the type alias itself. (see [binding-choice-by-implementations-bounds])
 
 ## `TypeId` of generic type parameters' opaque types
 [typeid-of-generic-type-parameters-opaque-types]: #typeid-of-generic-type-parameters-opaque-types
@@ -499,16 +637,14 @@ impl Trait for Type {}
 struct Generic<T>(T);
 
 mod nested {
-    use super::{Trait, Type, Generic};
-    use impl Trait for Type {};
-    pub type B = Generic<Type>;
+    pub(super) use impl super::Trait for super::Type {}
 }
 
 // `A` and `B` are distinct due to different captured implementation environments.
 type A = Generic<Type>;
-use nested::B;
+type B = Generic<Type as Trait in nested>;
 
-fn no_bound<T: 'static, U: 'static>(_: (T,), _: (U,)) {
+fn no_bound<T: 'static, U: 'static>(_: Generic<T>, _: Generic<U>) {
     assert_eq!(TypeId::of::<T>(), TypeId::of::<U>());
     assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>());
 
@@ -516,7 +652,7 @@ fn no_bound<T: 'static, U: 'static>(_: (T,), _: (U,)) {
     assert_eq!(TypeId::of::<U>(), TypeId::of::<Type>());
 }
 
-fn yes_bound<T: Trait + 'static, U: Trait + 'static>(_: (T,), _: (U,)) {
+fn yes_bound<T: Trait + 'static, U: Trait + 'static>(_: Generic<T>, _: Generic<U>) {
     assert_ne!(TypeId::of::<T>(), TypeId::of::<U>());
     assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>());
 
@@ -534,7 +670,7 @@ In particular:
 
 - If no bound-relevant scoped implementations are captured in a type parameter, then the `TypeId` of the opaque type of that type parameter is identical to that of the discrete type specified for that type parameter.
 - Distinct sets of bound-relevant captured scoped implementations lead to distinct `TypeId`s of the opaque type of a type parameter.
-- If the set of bound-relevant captured scoped implementations in two generic type parameters is the same, and the captured discrete type is identical, then the `TypeId` of the opaque types of these generic type parameters is identical.
+- If the set of bound-relevant captured scoped implementations in two generic type parameters is the same, and the wrapped discrete type is identical, then the `TypeId` of the opaque types of these generic type parameters is identical.
 - If a generic type parameter is distinguishable this way, it remains distinguishable in called implementations even if those have fewer bounds - the relevant distinction is 'baked' into the generic type parameter's opaque type.
 
 These rules (and the transmutation permission in [layout-compatibility]) allow the following collection to remain sound with minimal perhaps unexpected behaviour:
@@ -635,7 +771,7 @@ impl Type<usize> {
 
 then in another crate
 
-- if `Debug` is used on an instance of `Type<T>`, then this instance may *not* be transmuted to one where `T: Debug` uses a different implementation and have `Debug` used on it again then and
+- if `Debug` is used on an instance of `Type<T>`, then this instance may *not* be transmuted to one where `T: Debug` uses a different implementation and have `Debug` used on it again afterwards, and
 - if `Type<usize>::method()` is used on an instance of `Type<usize>`, then that instance may not be transmuted (and used) to or from any other variant, including ones that only differ by captured *implementation environment*, because `method` has observed the *exact* type parameter through its constraints.
 
 (In short: Don't use external-to-your-code implementations with the instance in any combination that wouldn't have been possible without transmuting the instance, pretending implementations can only observe the type identity according to their bounds.)
@@ -665,12 +801,14 @@ This is intentional, as it makes the following code trivial to reason about:
 
 Implementations bind to other implementations as follows:
 
-| `where`-clause on `impl`? | binding-site of used trait | monomorphised by used trait? |
+| `where`-clause¹ on `impl`? | binding-site of used trait | monomorphised by used trait? |
 |-|-|-|
 | Yes. | Bound at each binding-site of `impl`. | Yes, like-with or as-part-of type parameter distinction.  |
 | No. | Bound once at definition-site of `impl`. | No. |
 
-A convenient way to think about this is that *`impl`-implementations are blanket implementations over `Self` in different implementation environments*.
+¹ Or equivalent generic type parameter bound, where applicable. For all purposes, this RFC treats them as semantically interchangeable.
+
+A convenient way to think about this is that *`impl`-implementations with bounds are blanket implementations over `Self` in different implementation environments*.
 
 Note that `Self`-bounds on associated functions do **not** cause additional monomorphic variants to be emitted, as these continue to only filter the surrounding implementation.
 
@@ -816,7 +954,7 @@ However, due to the `where Type: Trait` bound *on the implementation*, that impl
 
 `FnBoundedMonomorphic`'s implementations are monomorphic from the get-go just like `Monomorphic`'s.
 
-Due to the narrower bounds on functions, their availability can vary between receivers but always matches that of the global implementation environment:
+Due to the narrower bounds on functions, their availability can vary between receivers but always matches that of the global *implementation environment*:
 
 #### `::where_trait`
 
@@ -850,9 +988,9 @@ As this discrete implementation's bound isn't over the `Self` type (and does not
 
 ## Binding and generics
 
-`where`-clauses without generics or `Self` type, like `where (): Debug`, **do not** affect binding of implementations within an `impl` or `fn`, as the non-type-parameter-type `()` is unable to receive an implementation environment from the discretisation site.
+`where`-clauses without generics or `Self` type, like `where (): Debug`, **do not** affect binding of implementations within an `impl` or `fn`, as the non-type-parameter-type `()` is unable to receive an *implementation environment* from the discretisation site.
 
-However, `where (): From<T>` **does** take scoped implementations into account because the blanket `impl<T, U> From<T> for U where T: Into<U> {}` is sensitive to `T: Into<()>` which is part of the implementation environment captured in `T`!
+However, `where (): From<T>` **does** take scoped implementations into account because the blanket `impl<T, U> From<T> for U where T: Into<U> {}` is sensitive to `T: Into<()>` which is part of the *implementation environment* captured in `T`!
 
 This sensitivity even extends to scoped `use impl From<T> for ()` at the discretisation site, as the inverse blanket implementation of `Into` creates a scoped implementation of `Into` wherever a scoped implementation of `From` exists.  
 This way, existing symmetries are fully preserved in all contexts.
@@ -895,14 +1033,14 @@ fn function2(x: impl DerefMut) {
         }
     }
 
-    function1(Type1(Type2)); // <-- Clearly impossible.
-    function2(Type1(Type2)); // <-- Unexpected behaviour if allowed.
+    // function1(Type1(Type2)); // <-- Clearly impossible.
+    // function2(Type1(Type2)); // <-- Unexpected behaviour if allowed.
 }
 ```
 
 Clearly, `function1` cannot be used here, as its generic bounds would have to bind to incompatible implementations.
 
-But what about `function2`? Here, the bound is implicit but `Deref::deref` can still be accessed. For type compatibility, this would have to be the shadowed global implementation, which is most likely unintended decoherence.
+But what about `function2`? Here, the bound is implicit but `Deref::deref` could still be accessed if the function could be called. For type compatibility, this would have to be the shadowed global implementation, which is most likely unintended decoherence.
 
 As such, **shadowing a trait implementation also shadows all respective subtrait implementations**. Note that the subtrait *may* still be immediately available (again), if it is implemented with a generic target and all bounds can be satisfied in the relevant scope:
 
@@ -973,16 +1111,16 @@ impl Trait1 for Type {
 }
 ```
 
-In this case, the implementation of `Trait2` is *not* shadowed at all. Additionally, since `self.trait1();` here binds `Trait` on `Type` directly, rather than on a generic type parameter, it uses whichever `impl Trait1 for Type` is in scope *where it is written*.
+In this case, the implementation of `Trait2` is *not* shadowed at all. Additionally, since `self.trait1();` here binds `Trait` on `Type` directly, rather than on a bounded generic type parameter, it uses whichever `impl Trait1 for Type` is in scope *where it is written*.
 
 ## Warnings
 
 ### Unused scoped implementation
 [unused-scoped-implementation]: #unused-scoped-implementation
 
-Scoped implementations and `use`-declarations of such receive a warning if unused. This can also happen if a `use`-declaration only reapplies a scoped implementation that is inherited from a surrounding item scope.
+Scoped implementations and `use`-declarations of such (including those written as *ImplEnvironmentEntry*) receive a warning if unused. This can also happen if a `use`-declaration only reapplies a scoped implementation that is inherited from a surrounding item scope.
 
-(rust-analyzer should suggest removing an unused `use`-declaration as fix in either case.)
+(rust-analyzer should suggest removing any unused `use`-declarations as fix in either case.)
 
 An important counter-example:
 
@@ -1014,7 +1152,7 @@ Since `Alias` is exported, the compiler cannot determine within the library alon
 ### Global trait implementation available
 [global-trait-implementation-available]: #global-trait-implementation-available
 
-Scoped implementations and `use`-declarations of such receive a specific warning if only shadowing a global implementation that would fully cover them. This warning also informs about the origin of the global implementation, with a "defined here" marker if in the same workspace. This warning is not applied to scoped implementations that at least partially (in either sense) shadow another scoped implementation.
+Scoped implementations and `use`-declarations of such receive a specific warning if only shadowing a global implementation that would fully cover them. This warning also informs about the origin of the global implementation, with a "defined here" marker if in the same workspace. This warning is not applied to scoped implementations that *at all* shadow another scoped implementation.
 
 (Partial overlap with a shadowed scoped implementation should be enough to suppress this because setting the import up to be a precise subset could get complex fairly quickly. In theory just copying `where`-clauses is enough, but in practice the amount required could overall scale with the square of scoped implementation shadowing depth and some imports may even have to be duplicated.)
 
@@ -1029,7 +1167,7 @@ use impl<T> Foo for T where T: Foo { }
             ---------       ^^^^^^
 ```
 
-A Rust developer may write the above to mean 'this scoped implementation can only be used on types that already implement this trait' or 'this scoped implementation uses functionality of the shadowed implementation'. However, since scoped `impl Trait for Type` uses item scope rules, any shadowed implementation is functionally absent in the entire scope. As such, this implementation, like the equivalent global implementation, cannot apply to any types at all.
+A Rust developer may want to write the above to mean 'this scoped implementation can only be used on types that already implement this trait' or 'this scoped implementation uses functionality of the shadowed implementation'. However, since scoped `impl Trait for Type` uses item scope rules, any shadowed implementation is functionally absent in the entire scope. As such, this implementation, like the equivalent global implementation, cannot apply to any types at all.
 
 The warning should explain that and why the bound is impossible to satisfy.
 
@@ -1097,7 +1235,7 @@ pub struct Struct {
 
 should produce eight warnings (or four/three warnings with multiple primary spans each, if possible). The warning should explain that the type can't be referred to by fully specified name outside the crate/module and that the implementation may be callable from code outside the crate/module.
 
-(If [explicit-binding] is added to the RFC and used in such a way, then the warning should show up on the `Trait in module` span instead.)
+If the binding is specified via inline *implementation environment*, then the warning should show up on the `Trait in module` span instead.
 
 Note that as with other private-in-public warnings, replacing
 
@@ -1116,6 +1254,10 @@ use nested::{impl Trait for Type};
 ```
 
 in the code sample above should silence the warning.
+
+In some cases, adding `as Trait in ::` to the generic type argument could be suggested as quick-fix, though generally it's better to fix this warning by moving the scoped implementation into a nested scope or moving it into a module and importing it into nested scopes as needed.
+
+> This warning can't be suppressed for private traits because the presence of their scoped implementation on a generic type parameter still affects the `TypeId` of the capturing generic, which here is visible outside of the discretising module.
 
 ### Imported implementation is less visible than item/field it is captured in
 [imported-implementation-is-less-visible-than-itemfield-it-is-captured-in]: #imported-implementation-is-less-visible-than-itemfield-it-is-captured-in
@@ -1183,7 +1325,7 @@ impl Trait for Type {}
 ### Incompatible or missing supertrait implementation
 [incompatible-or-missing-supertrait-implementation]: #incompatible-or-missing-supertrait-implementation
 
-Implementations of traits on discrete types require a specific implementation of each of their supertraits, as they bind to them at their definition, so they cannot be used without those.
+Implementations of traits on discrete types require a specific implementation of each of their supertraits, as they bind to them at their definition, so they cannot be used without those being in scope too (to avoid perceived and hard to reason-about inconsistencies).
 
 ```rust
 struct Type;
@@ -1246,7 +1388,7 @@ Notably, this affects `TypeId::of::<Self>()` in implementations with most generi
 
 This would have to become a future incompatibility lint ahead of time, and should also remain a warning after the feature is implemented since the behaviour of `TypeId::of::<Self>()` in generics is likely to be unexpected.
 
-In most cases, implementations should change this to `TypeId::of::<T>()`, where `T` is the type parameter used for discretisation, since that should show the expected `TypeId` distinction.
+In most cases, implementations should change this to `TypeId::of::<T>()`, where `T` is the type parameter used for discretisation, since that should show only the expected `TypeId` distinction.
 
 Instead of `TypeId::of::<AStruct<U, V, W>>()`, `TypeId::of::<(U, V, W)>()` can be used, as tuples are [implementation-invariant-generics].
 
@@ -1416,7 +1558,7 @@ fn function2() -> impl Trait {
 
 In this case, the returned opaque types use the respective inner scoped implementation, as it binds on the `()` expression.
 
-These functions do not compile, as the implicitly returned `()` is not stated *inside* the scope where the implementation is available:
+The following functions do not compile, as the implicitly returned `()` is not stated *inside* the scope where the implementation is available:
 
 ```rust
 trait Trait {}
@@ -1609,7 +1751,7 @@ Complexity aside, this could cause compiler performance issues since caching wou
 
 Fortunately, at least checking whether scoped implementations exist at all for a given trait and item scope should be reasonably inexpensive, so this hopefully won't noticeably slow down compilation of existing code.
 
-That implementation environment binding on generic type parameters is centralised to the type discretisation site(s) may also help a little in this regard.
+That *implementation environment* binding on generic type parameters is centralised to the type discretisation site(s) may also help a little in this regard.
 
 ## Cost of additional monomorphised implementation instances
 
@@ -1838,7 +1980,9 @@ pub struct DataBundle {
 
 Even in cases where the glue API cannot be removed, it's still possible to switch to this simplified, easier to consume implementation and deprecate the original indirect API.
 
-Note that the imported scoped implementations are *not* visible in the public API here, since they do not appear on generic type parameters in public items. There may still be situations in which defining a type alias is necessary to keep some scoped implementations away from generic type parameters. For a possible future way to eliminate that remaining friction, see [explicit-binding] in the [future-possibilities] section below.
+Note that the imported scoped implementations are *not* visible in the public API here, since they do not appear on generic type parameters in public items. There may still be situations in which defining a type alias is necessary to keep some scoped implementations away from generic type parameters. In some cases, it could be enough to add `as Trait in ::` to generic type arguments to restore their *implementation environment* to contain global implementations only.
+
+> In some cases, where a field type is quoted in a derive macro directly, writing `(Type as Trait in module)` only there could *in theory* also work, but this would heavily depend on the macro's implementation details. See also [should-it-be-an-error-to-specify-an-implementation-environment-in-places-where-its-guaranteed-to-be-unused].
 
 Unlike with external newtypes, there are no potential conflicts beyond overlapping imports and definitions in the same scope. These conflicts can *always* be resolved both without editing code elsewhere and without adding an additional implementation:
 
@@ -2308,19 +2452,19 @@ pub mod d {
 
 `// ⚠` and non-digit circles have the same meanings as above.
 
-The following table describes how the types are observed at runtime in the lines marked with ❶ and ❷. It borrows some syntax from [explicit-binding] to express this clearly, but **denotes types as if seen from the global *implementation environment***.
+The following table describes how the types are observed at runtime in the lines marked with ❶ and ❷. Types are denoted as if seen from the global *implementation environment* with differences written inline, which should resemble how they are formatted in compiler messages and tooling.
 
 | within function<br>(called by `call_functions`) | ❶ (collection) | ❷ (item) |
 |-|-|-|
 | `a::discrete` | `HashSet<A>` | `A` |
-| `a::generic` | `HashSet<A: Hash in d + Trait in d>` | `A` |
-| `a::bounded` | `HashSet<A: Hash in d + Trait in d>` | `A` ∘ `Hash in d` |
-| `b::discrete` | `HashSet<B: Hash in `***`b`***` + Trait in`***` b`***`>` | `B` |
-| `b::generic` | `HashSet<B: Hash in d + Trait in d>` | `B` |
-| `b::bounded` | `HashSet<B: Hash in d + Trait in d>` | `B` ∘ `Hash in d` |
+| `a::generic` | `HashSet<A as Hash in d + Trait in d>` | `A` |
+| `a::bounded` | `HashSet<A as Hash in d + Trait in d>` | `A` ∘ `Hash in d` |
+| `b::discrete` | `HashSet<B as Hash in `***`b`***` + Trait in`***` b`***`>` | `B` |
+| `b::generic` | `HashSet<B as Hash in d + Trait in d>` | `B` |
+| `b::bounded` | `HashSet<B as Hash in d + Trait in d>` | `B` ∘ `Hash in d` |
 | `c::discrete` | `HashSet<C>` | `C` |
-| `c::generic` | `HashSet<C: Hash in d + Trait in d>` | `C` |
-| `c::bounded` | `HashSet<C: Hash in d + Trait in d>` | `C` ∘ `Hash in d` |
+| `c::generic` | `HashSet<C as Hash in d + Trait in d>` | `C` |
+| `c::bounded` | `HashSet<C as Hash in d + Trait in d>` | `C` ∘ `Hash in d` |
 
 The combination ∘ is not directly expressible in `TypeId::of::<>` calls (as even a direct top-level annotation would be ignored without bounds). Rather, it represents an observation like this:
 
@@ -2360,14 +2504,14 @@ TypeId::of::<(T)>(); // ❷
 | within function<br>(called by `call_functions`) | ❶ (collection) | ❷ (item) |
 |-|-|-|
 | `a::discrete` | `HashSet<(A,)>` | `(A,)` |
-| `a::generic` | `HashSet<(A: Hash in d + Trait in d,)>` | `(A,)` |
-| `a::bounded` | `HashSet<(A: Hash in d + Trait in d,)>` | `(A` ∘ `Hash in d,)` |
-| `b::discrete` | `HashSet<(B: Hash in `***`b`***` + Trait in`***` b`***`,)>` | `(B,)` |
-| `b::generic` | `HashSet<(B: Hash in d + Trait in d,)>` | `(B,)` |
-| `b::bounded` | `HashSet<(B: Hash in d + Trait in d,)>` | `(B` ∘ `Hash in d,)` |
+| `a::generic` | `HashSet<(A as Hash in d + Trait in d,)>` | `(A,)` |
+| `a::bounded` | `HashSet<(A as Hash in d + Trait in d,)>` | `(A` ∘ `Hash in d,)` |
+| `b::discrete` | `HashSet<(B as Hash in `***`b`***` + Trait in`***` b`***`,)>` | `(B,)` |
+| `b::generic` | `HashSet<(B as Hash in d + Trait in d,)>` | `(B,)` |
+| `b::bounded` | `HashSet<(B as Hash in d + Trait in d,)>` | `(B` ∘ `Hash in d,)` |
 | `c::discrete` | `HashSet<(C,)>` | `(C,)` |
-| `c::generic` | `HashSet<(C: Hash in d + Trait in d,)>` | `(C,)` |
-| `c::bounded` | `HashSet<(C: Hash in d + Trait in d,)>` | `(C` ∘ `Hash in d,)` |
+| `c::generic` | `HashSet<(C as Hash in d + Trait in d,)>` | `(C,)` |
+| `c::bounded` | `HashSet<(C as Hash in d + Trait in d,)>` | `(C` ∘ `Hash in d,)` |
 
 As you can see, the type identity of the tuples appears distinct when contributing to an implementation-aware generic's type identity but (along with the `TypeId`) remains appropriately fuzzy when used alone.
 
@@ -2432,7 +2576,7 @@ In each case, the meaning of identical grammar elements lines up exactly - only 
 
 When looking for the scoped implementation affecting a certain type, strict shadowing ensures that it is always the closest matching one that is effective.
 
-As such, readers can stop scanning once they encounter a match, instead of checking the entire file's length for another implementation that may be present in the outermost scope.
+As such, readers can stop scanning once they encounter a match (or module boundary, whether surrounding or nested), instead of checking the entire file's length for another implementation that may be present in the outermost scope.
 
 Aside from *implementation environments* captured *inside* generics, scoped implementations cannot influence the behaviour of another file without being mentioned explicitly.
 
@@ -2491,7 +2635,7 @@ In the long run, this can lead to less near-duplicated functionality in the depe
 
 Scoped implementations can be documented and appear as separate item category in rustdoc-generated pages.
 
-Rustdoc should be able to detect and annotate captured scoped implementations in public signatures automatically. This, in addition to warnings, should be another tool to help avoid accidental exposure of scoped implementations.
+Rustdoc should be able to detect and annotate captured scoped implementations in public signatures automatically. This, in addition to warnings, could be another tool to help avoid accidental exposure of scoped implementations.
 
 Implementation origin and documentation could be surfaced by rust-analyzer in relevant places.
 
@@ -2510,11 +2654,11 @@ On the other hand, certain types (e.g. references and (smart) pointers) that oft
 
 Drawing a line manually here is an attempt to un-break this *by default* for the most common cases while maintaining full compatibility with existing code and keeping awareness of scoped `impl Trait for Type` entirely optional for writing correct and user-friendly APIs.
 
-As a concrete example, this ensures that `Box<dyn Future<Output = Result<(), Error>>>` is automatically interchangeable even if spelled out in the presence of scoped [error-handling-and-conversions] affecting `Error`, but that `BinaryHeap<Box<u8>>` and `BinaryHeap<Box<u8: PartialEq in reverse + Ord in reverse>>` don't mix.
+As a concrete example, this ensures that `Box<dyn Future<Output = Result<(), Error>>>` is automatically interchangeable even if spelled out in the presence of scoped [error-handling-and-conversions] affecting `Error`, but that `BinaryHeap<Box<u8>>` and `BinaryHeap<Box<u8 as PartialOrd in reverse + Ord in reverse>>` don't mix.
 
 Functions pointers and closure trait( object)s should probably be fairly easy to pass around, with their internally-used bindings being an implementation detail. Fortunately, the Rust ecosystem already uses more specific traits for most configuration for better logical safety, so it's likely not too messy to make these implementation-invariant.
 
-Traits and trait objects cannot be implementation invariant (including for their associated types!) because it's possible to define `OrderedExtend` and `OrderedIterator` traits with logical consistency requirement on `Ord` between them.
+Traits and trait objects cannot be implementation invariant by default (including for their associated types!) because it's already possible to define `OrderedExtend` and `OrderedIterator` traits with logical consistency requirement on `Ord` between them.
 
 ## Efficient compilation
 [efficient-compilation]: #efficient-compilation
@@ -2531,13 +2675,11 @@ The compiler should treat implementations of the same empty trait on the same ty
 
 ### Named implementations
 
-Named implementations/models could be used to more-easily use potentially conflicting implementations in the same scope, but in exchange they would have to always be bound explicitly, which would likely hinder use outside of `derive`s and generics to an inconvenient level.
+Use of named implementations is not as obvious as stating the origin-trait-type triple in close proximity, so code that uses named implementations tends to be harder to read.
 
-Additionally, the use of named implementations is not as obvious as stating the origin-trait-type triple in close proximity.
+Like named implementations, the scope-identified implementations proposed here can be written concisely in generic parameter lists (as `Type as Trait in module`), limiting the code-writing convenience advantage of named implementations. Where needed, the module name can be chosen to describe specific function, e.g. exporting reverse-ordering `Ord` and `PartialOrd` implementations from a module called `reverse`.
 
-Scoped `impl Trait for Type` would not require proper-named models for later [explicit-binding], as the module already uniquely identifies an implementation for each type-trait combination.
-
-(See also [prior-art]: [lightweight-flexible-object-oriented-generics].)
+If named implementations can't be brought into scope (see Genus in [lightweight-flexible-object-oriented-generics]), that limits their practical application to where they can be captured in [implementation-aware-generics]. Bringing named implementations into scope would be more verbose than for module-trait-type-identified as subsetting would still be required to preserve useful room for library crate evolution.
 
 ### Weakening coherence rules
 
@@ -2574,7 +2716,7 @@ There are some parallels between Genus's models and the scoped `impl Trait for T
 | Genus | scoped `impl Trait for Type` | reasoning |
 |---|---|---|
 | Proper-named models | Anonymous scoped implementations | Use of existing coherence constraints for validation. Forced subsetting in `use`-declarations improves stability. The `impl Trait for Type` syntax stands out in `use`-declarations and is intuitively readable. |
-| Explicit bindings of non-default models | Only implicit bindings | Focus on simplicity. Mixed bindings for definitions with the same scope/type/trait triple are rare and can be emulated with newtypes where needed. More natural use with future specialisation. |
+| Explicit bindings of non-default models | Mainly implicit bindings, but explicit bindings of scoped *and global* implementations are possible in some places. | Focus on simplicity and ergonomics of the most common use-case. More natural use with future specialisation. |
 | Comparing containers inherently constrain type parameters in their type definition. | Available scoped implementations for discretised type parameters become part of the type identity. | <p>This is a tradeoff towards integration with Rust's ecosystem, as generics are generally not inherently bounded on collection types in Rust.</p><p>There is likely some friction here with APIs that make use of runtime type identity. See [split-type-identity-may-be-unexpected].</p> |
 
 Some features are largely equivalent:
@@ -2583,7 +2725,7 @@ Some features are largely equivalent:
 |---|---|---|
 | Implicitly created default models | Explicit global trait implementations | Duck-typed implementation of unknown external traits is unnecessary since third party crates' implementations are as conveniently usable in scope as if global. |
 | Runtime model information / Wildcard models | Trait objects | Scoped implementations can be captured in trait objects, and the `TypeId` of generic type parameters can be examined. This does not allow for invisible runtime specialisation in all cases. |
-| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available implementations on type parameters of discretised implementation-aware generics are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of a type parameter's captured *implementation environment*.</p><p>However, typical Rust code also very heavily uses generics like references and closures to represent values passed through crate boundaries. To keep friction acceptably low by default, specific utility types are exempt from capturing implementation environments in their type parameters.</p> |
+| Bindings [only for inherent constraints on generic type parameters?] are part of type identity | not applicable | <p>Available implementations on type parameters of discretised implementation-aware generics are part of the type identity. Top-level bindings are not.</p><p>Genus's approach provides better remote-access ergonomics than 𝒢's and great robustness when moving instances through complex code, so it should be available. Fortunately, the existing style of generic implementations in Rust can simply be monomorphised accordingly, and existing reflexive blanket conversions and comparisons can bind regardless of unrelated parts of the top-level *implementation environment* of their type parameters.</p><p>However, typical Rust code also very heavily uses generics like references and closures to represent values passed through crate boundaries. To keep friction acceptably low by default, specific utility types are exempt from capturing *implementation environments* in their type parameters.</p> |
 
 ## A Language for Generic Programming in the Large
 
@@ -2606,62 +2748,24 @@ and key differences:
 |---|---|---|
 | Only discrete model imports | Includes generic imports and re-exports | This is pointed out as '[left] for future work' in the paper. Here, it follows directly from the syntax combination of Rust's `use` and `impl Trait for Type` items. |
 | - | (Rust) Global implementations | The automatic availability of global implementations between separately imported traits and types offers more convenience especially when working with common traits, like those backing operators in Rust. |
-| Model overloading, mixed into nested scopes | Strict shadowing | Strict shadowing is easier to reason about for developers (especially when writing macros!), as the search stops at the nearest matching implementation.<br>See Rust's trait method resolution behaviour and [interaction-with-specialisation] for how this is still practically compatible with a form of overload resolution.<br>See [scoped-fallback-implementations] for a possible future way to better enable adaptive behaviour in macro output. |
+| Model overloading, mixed into nested scopes | Strict shadowing | Strict shadowing is easier to reason about for developers (especially when writing macros!), as the search stops at the nearest matching implementation or module boundary.<br>See Rust's trait method resolution behaviour and [interaction-with-specialisation] for how this is still practically compatible with a form of overload resolution.<br>See [scoped-fallback-implementations] for a possible future way to better enable adaptive behaviour in macro output. |
 | - | (Rust) Trait objects | 𝒢 does not appear to support runtime polymorphism beyond function pointers. Scoped `impl Trait for Type` is seamlessly compatible with `dyn Trait` coercions (iff `Trait` is object-safe). |
-| (unclear?) | Available implementations on discretised type parameters become part of the type identity of implementation-aware generics. | <p>This allows code elsewhere to access scoped implementations that are already available at the definition site, and leads to overall more semantically consistent behaviour.</p><p>The tradeoff is that it may be difficult to explicitly annotate types in cases of mixed bindings with this RFC. As newtypes and named configuration token types are still preferred for changed behaviour, such cases will hopefully be limited. Otherwise, see [explicit-binding] for bikeshedded syntax.</p> |
+| (unclear?) | Available implementations on discretised type parameters become part of the type identity of implementation-aware generics. | This allows code elsewhere to access scoped implementations that are already available at the definition site, and leads to overall more semantically consistent behaviour. |
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- I'm not too sure about the "global" wording. *Technically* that implementation isn't available for method calls unless the trait is in scope... though it is available when resolving generics. Maybe "unscoped" is better?
+## "global" implementations
 
-- In macros, which function-call token should provide the resolution context from where to look for scoped `impl Trait for Type`s (in all possible cases)?
+I'm not too sure about the "global" wording. *Technically* that implementation isn't available for method calls unless the trait is in scope... though it is available when resolving generics. Maybe "unscoped" is better?
 
-  This doesn't matter for `Span::call_site()` vs. `Span::mixed_site()` since scoped implementations would resolve transparently through both, but it does matter for `Span::def_site()` which should exclude them.
+## Precise resolution location of *implementation environments* in function calls
 
-  It very much does matter if one of the opt-in mitigations for [first-party-implementation-assumptions-in-macros] is implemented.
+In macros, which function-call token should provide the resolution context from where to look for scoped `impl Trait for Type`s (in all possible cases)?
 
-- Should outer generic type parameters be visible on/in scoped `impl Trait for Type`, including `use`-declarations?
+This doesn't matter for `Span::call_site()` vs. `Span::mixed_site()` since scoped implementations would resolve transparently through both, but it does matter for `Span::def_site()` which should exclude them.
 
-  That would enable the following pattern:
-
-  ```rust
-  use some_crate::Trait;
-
-  fn function<T>(value: T) -> impl Trait {
-      use impl Trait for T {
-          // ...
-      }
-
-      #[derive(Trait)] // Based on fields' `: Trait`.
-      struct Returned<T> {
-          field: T,
-      }
-
-      Returned { field: value }
-  }
-  ```
-
-  However, if [explicit-binding] is added then that is unnecessary, as the following would work:
-
-  ```rust
-  use some_crate::Trait;
-
-  fn function<T>(value: T) -> impl Trait {
-      mod scoped {
-        use impl<T> some_crate::Trait for T {
-            // ...
-        }
-      }
-
-      #[derive(Trait)] // Based on fields' `: Trait`.
-      struct Returned<T> {
-          field: T,
-      }
-
-      Returned::<T: Trait in scoped> { field: value }
-  }
-  ```
+It very much does matter if one of the opt-in mitigations for [first-party-implementation-assumptions-in-macros] is implemented.
 
 ## Which `struct`s should be implementation-invariant?
 [which-structs-should-be-implementation-invariant]: #which-structs-should-be-implementation-invariant
@@ -2697,6 +2801,13 @@ Other candidates for consideration:
 
 - Other `DispatchFromDyn` types in the standard library like `Cell`, `SyncUnsafeCell`, `UnsafeCell`
 
+## Should it be an error to specify an *implementation environment* in places where it's guaranteed to be unused?
+[should-it-be-an-error-to-specify-an-implementation-environment-in-places-where-its-guaranteed-to-be-unused]: #should-it-be-an-error-to-specify-an-implementation-environment-in-places-where-its-guaranteed-to-be-unused
+
+With the given [grammar-changes], it's possible to write `fn((Type as Trait in module))`, but, at least without a surrounding host, here the *implementation environment* written inline is completely ineffective because function pointer types are discretised [implementation-invariant-generics].
+
+On the other hand, making it an error rather than a [unused-scoped-implementation] warning could easily cause problems for macros.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -2724,7 +2835,7 @@ To use a global implementation not available through one of its dependencies, a 
 extern impl Trait for Type;
 ```
 
-This would result in a compile error if the declaration is not fully covered by a global trait implementation.
+This would result in a compile error or link-time error if the declaration is not fully covered by a global trait implementation.
 
 If the trait implementation is later made available plainly (that is: without `use`, subject to orphan rules) by a dependency, a warning should appear on the `extern impl` declaration, along with the suggestion to remove the `extern impl` item.
 
@@ -2995,92 +3106,15 @@ This is likely a rather niche use-case.
 
 It could also be useful in the context of [scoped-fallback-implementations].
 
-## Explicit binding
-[explicit-binding]: #explicit-binding
-
-It could be possible to explicitly state bindings. Here is an example:
-
-```rust
-use std::collections::BinaryHeap;
-
-// Contains discrete implementations of `PartialOrd` and `Ord` that invert the comparison.
-mod reverse;
-
-// Uses whichever implementation is in scope.
-let max_heap: BinaryHeap<u32> = [1, 3, 2, 4].into();
-
-// Explicit binding. Requirements are like for a discrete import.
-let min_heap: BinaryHeap<u32: PartialOrd in _ + Ord in reverse> = [1, 3, 2, 4].into();
-
-while let Some(max) in max_heap.pop() {
-  println!("{max}"); // 4, 3, 2, 1
-}
-
-while let Some(min) in min_heap.pop() {
-  println!("{min}"); // 1, 2, 3, 4
-}
-
-// Uses whichever implementation is in scope.
-dbg!(<u32 as Ord>::cmp(&1, &2)); // […] = Less
-
-// Explicit binding. Requirements are like for a discrete import.
-dbg!(<u32 as PartialOrd in reverse>::cmp(&1, &2)); // […] = Greater
-
-// The previous example is syntactic sugar for general top-level binding:
-dbg!(<(u32: PartialOrd in reverse) as PartialOrd>::cmp(&1, &2)); // […] = Greater
-
-// The forms can be mixed to bind supertraits:
-dbg!(<(u32: PartialOrd in _) as Ord in reverse>::cmp(&1, &2)); // […] = Greater
-
-{
-    let mut a = max_heap;
-    let mut b = min_heap;
-
-    // a.append(&mut b);
-    //          ^^^^^^ error[E0308]: mismatched types
-}
-```
-
-```rust
-mod custom_defaults {
-    use impl Default for &'static str {
-        // ...
-    }
-}
-
-#[derive(Default)]
-pub struct Struct<'a> {
-    pub a: (&'a str: Default in custom_defaults),
-
-    // The custom `Default` is not captured here,
-    // since it's not actually in scope.
-    pub b: Vec<&'a str>,
-}
-```
-
-This is of course syntax bikeshedding.
-
-Specifying implementations on fields manually is a way to provide them only to `derive` and other attribute macros, as these top-level implementations do *not* bind to the type and as such are *not* used by code that doesn't restate the type explicitly. (The built-in macros should be defined as doing so from the get-go. Unfortunately, for other macros this is likely an optional implementation detail.)
-
-Since the specified top-level implementation doesn't bind persistently inside `Struct`, the exported signature is just `struct Struct<'a> {pub a: &'a str, pub b: Vec<&'a str>}`.
-
-Binding only `PartialEq` would still shadow the discrete global `Ord` implementation, so binding both is required.
-
-As the scoped implementation of `Ord` in `reverse` is on a discrete type, it requires the specific supertrait implementation that is in scope for its definition. This should make it possible to infer the module here. (See also [implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types] below.)
-
-Top-level bindings require parentheses. To explicitly bind a global implementation, `::` can be used in place of the module path.
-
-For stability reasons (against relaxation of bounds) and because they matter for type identity, explicit bindings should be allowed where no matching bound is present, but should produce an 'unused' warning iff neither published nor used in the same crate (including for type identity distinction).
-
 ## Implicit import of supertrait implementations of scoped implementations defined on discrete types
 [implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types]: #implicit-import-of-supertrait-implementations-of-scoped-implementations-defined-on-discrete-types
 
 As subtype implementations defined on discrete types always require specific supertrait implementations, the import of these supertrait implementations could be made implicit.
 
-This would also affect [explicit-binding], changing
+This would also affect *implementation environments* modified in generic arguments, changing
 
 ```rust
-let min_heap: BinaryHeap<u32: PartialOrd in _ + Ord in reverse> = [1, 3, 2, 4].into();
+let min_heap: BinaryHeap<u32 as PartialOrd in reverse + Ord in reverse> = [1, 3, 2, 4].into();
 ```
 
 to
@@ -3092,8 +3126,7 @@ let min_heap: BinaryHeap<u32: Ord in reverse> = [1, 3, 2, 4].into();
 and
 
 ```rust
-// (How to specify a scoped implementation with supertraits?)
-dbg!(<u32 as PartialOrd in reverse>::cmp(&1, &2)); // […] = Greater
+dbg!(<u32 as Ord in reverse where u32 as PartialOrd in reverse>::cmp(&1, &2)); // […] = Greater
 ```
 
 to
@@ -3102,9 +3135,25 @@ to
 dbg!(<u32 as Ord in reverse>::cmp(&1, &2)); // […] = Greater
 ```
 
-The downside is that `use`-declarations would become less obvious. Implied supertrait implementation imports could be enabled only for [explicit-binding] to avoid this.
+The downside is that `use`-declarations would become less obvious. Implied supertrait implementation imports could be enabled only for *implementation environments* specified inline on generic type parameters as e.g. `Type as Ord in module` to avoid this.
 
 If this is added later than scoped `impl Trait for Type`, then private scoped implementations **must not** be implicitly exported through this mechanism. (It's likely a good idea to not allow that anyway, as it would be surprising.) Making previously crate-private implementations available that way could lead to unsoundness.
+
+### Alternatively
+
+It could be enough to allow inferring the module explicitly by writing `_` instead of its *SimplePath*, so that the snippets above become
+
+```rust
+let min_heap: BinaryHeap<u32 as PartialOrd in _ + Ord in reverse> = [1, 3, 2, 4].into();
+```
+
+and
+
+```rust
+dbg!(<(u32 as PartialOrd in _) as Ord in reverse>::cmp(&1, &2)); // […] = Greater
+```
+
+Here, too, the inference should only be of required supertrait implementations based on explicitly chosen implementations of their subtraits.
 
 ## Conversions where a generic only cares about specific bounds' consistency
 
@@ -3168,12 +3217,12 @@ impl<T, S: BuildHasher> HashSet<T, S> {
 
 This is probably pretty strange, and may not be useful at all, but it likely doesn't hurt to mention this.
 
-Consider [explicit-binding] in bounds like here:
+Consider *ImplEnvironment* clauses in bounds like here:
 
 ```rust
 use another_crate::{Trait, Type1, Type2};
 
-pub fn function<T: Trait in self>() {}
+pub fn function<T as Trait in self>() {}
 
 pub use impl Trait for Type1 {}
 pub use impl Trait for Type2 {}
@@ -3185,14 +3234,14 @@ Overall this would act as a more-flexible but also more-explicit counterpart to 
 
 Iff the caller is allowed to use this function without restating the binding, then removing the scope would be a breaking change (as it is already with bindings captured on type parameters in public signatures, so that would be consistent for this syntactical shape).
 
-Binding an implementation in a call as `function::<T: Trait in a>()` while it is constrained as `fn function<T: Trait in b>() { … }` MUST fail for distinct modules `a` and `b` even if the implementations are identical, as otherwise this would leak the implementation identity into the set of breaking changes.
+> That convenience (automatically using the correct implementations even if not in scope) also really should exist only iff there already is robust, near-effortless tooling for importing existing scoped implementations where missing. Otherwise this feature here *would* get (ab)used for convenience, which would almost certainly lead to painful overly sealed APIs.
 
-> That convenience (automatically using the correct implementations even if not in scope) also really should exist only iff there already is robust, near-effortless tooling for importing existing scoped implementations where missing. Otherwise this features here *would* get (ab)used for convenience, which would almost certainly lead to painful overly sealed APIs.
+Binding an implementation in a call as `function::<T as Trait in a>()` while it is constrained as `fn function<T as Trait in b>() { … }` MUST fail for distinct modules `a` and `b` even if the implementations are identical, as otherwise this would leak the implementation identity into the set of breaking changes.
 
 ## Glue crate suggestions
 [glue-crate-suggestions]: #glue-crate-suggestions
 
-If crates move some of their overlay features into glue crates, as explained in [unblock-ecosystem-evolution], it would be nice if they could suggest them if both they and e.g. Serde were `cargo add`ed to the project dependencies.
+If crates move some of their overlay features into glue crates, as explained in [unblock-ecosystem-evolution], it would be nice if they could suggest them if both they and e.g. Serde were `cargo add`ed as direct dependencies of a crate currently being worked on.
 
 An example of what this could look like:
 
@@ -3263,7 +3312,7 @@ unsafe impl<'a, T: Transparent<U>, U> Transparent<&'a U> for &'a T {}
 unsafe impl<'a, T: Transparent<U>, U> Transparent<&'a mut U> for &'a mut T {}
 ```
 
-which due to their bound would only be usable where the respective `T: Transparent<U>`-implementation is in scope, that is where by-value unwrapping-and-then-wrapping would be a safe operation (for `Sized` types in that position).
+which due to their bound would only be usable where the respective `T: Transparent<U>`-implementation is in scope, that is: where by-value unwrapping-and-then-wrapping would be a safe operation (for `Sized` types in that position).
 
 Overall, this would make unsized newtypes useful without `unsafe`, by providing a compiler-validated alternative to common reinterpret-casts in their implementation. The same likely also applies to certain optimisations for `Sized` that can't be done automatically for unwrap-then-wrap conversions as soon as a custom `Allocator` with possible side-effects is involved.
 
