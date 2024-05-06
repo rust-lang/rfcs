@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-When name resolution encounters an ambiguity between 2 trait methods, if one trait is a sub-trait of the other then select that method instead of reporting an ambiguity error.
+When name resolution encounters an ambiguity between 2 trait methods when both traits are in scope, if one trait is a sub-trait of the other then select that method instead of reporting an ambiguity error.
 
 # Motivation
 [motivation]: #motivation
@@ -46,6 +46,8 @@ This RFC proposes to change name resolution to resolve the ambiguity in the foll
 - One trait is transitively a sub-trait of all other traits in the candidate list.
 
 When this happens, the sub-trait method is selected instead of reporting an ambiguity error.
+
+Note that this only happens when *both* traits are in scope since this is required for the ambiguity to occur in the first place.
 
 # Drawbacks
 [drawbacks]: #drawbacks
