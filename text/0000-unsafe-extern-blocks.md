@@ -33,7 +33,7 @@ An extern static value is also declared with a `;` instead of an expression (sim
 In both cases, the actual function body or value is provided by whatever external source (which is probably not even written in Rust).
 
 When an `unsafe extern` block is used, all declarations within that `extern` block *must* have the `unsafe` or `safe` keywords as part of their signature.
-The `safe` keyword is a contextual keyword, it is currently only used within `extern` blocks.
+The `safe` keyword is a contextual keyword; it is currently allowed only within `extern` blocks.
 
 If an `extern` block is used in an older edition without the `unsafe` keyword, declarations *cannot* specify `safe` or `unsafe`.
 Code must update to `unsafe extern` style blocks if it wants to make `safe` declarations.
