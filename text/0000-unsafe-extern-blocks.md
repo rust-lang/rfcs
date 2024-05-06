@@ -11,7 +11,7 @@ In Edition 2024 it is `unsafe` to declare an `extern` function or static, but ex
 # Motivation
 [motivation]: #motivation
 
-Simply declaring extern items, even without ever using them, can cause Undefined Behavior (see, e.g., issue [#46188][]).  When performing cross-language compilation, attributes on one function declaration can flow to the foreign declaration elsewhere within LLVM and cause a miscompilation.  In Rust we consider all sources of Undefined Behavior to be `unsafe`, and so we must make declaring extern blocks be `unsafe`.  The up-side to this change is that in the new style it will be possible to declare an extern fn that's safe to call after the initial unsafe declaration.
+Simply declaring extern items, even without ever using them, can cause undefined behavior (see, e.g., issue [#46188][]).  When performing cross-language compilation, attributes on one function declaration can flow to the foreign declaration elsewhere within LLVM and cause a miscompilation.  In Rust we consider all sources of undefined behavior to be `unsafe`, and so we must make declaring extern blocks be `unsafe`.  The up-side to this change is that in the new style it will be possible to declare an extern fn that's safe to call after the initial unsafe declaration.
 
 [#46188]: https://github.com/rust-lang/rust/issues/46188
 
