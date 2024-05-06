@@ -1,7 +1,7 @@
 - Feature Name: `unsafe_attributes`
 - Start Date: 2022-10-11
 - RFC PR: [rust-lang/rfcs#3325](https://github.com/rust-lang/rfcs/pull/3325)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#123757](https://github.com/rust-lang/rust/issues/123757)
 
 # Summary
 [summary]: #summary
