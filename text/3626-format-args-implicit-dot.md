@@ -46,7 +46,7 @@ would become a valid macro invocation, and would be equivalent to a shorthand
 for the already valid:
 
 ```rust
-format_args!("hello {name}", name=person.name)
+format_args!("hello {unique_ident}", unique_ident=person.name)
 ```
 
 The identifier at the beginning of the chain (`person` in this case) must be an
