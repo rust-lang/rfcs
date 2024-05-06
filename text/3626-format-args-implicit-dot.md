@@ -1,6 +1,6 @@
 - Feature Name: `format_args_implicit_dot`
 - Start Date: 2023-10-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3626](https://github.com/rust-lang/rfcs/pull/3626)
 - Rust Issue: [rust-lang/rust#00000](https://github.com/rust-lang/rust/issues/00000)
 
 # Summary
