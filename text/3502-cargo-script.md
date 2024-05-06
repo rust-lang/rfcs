@@ -738,7 +738,7 @@ Over the next 40 years, we'll have dozen editions which will bloat the
 directory, both in terms of the number of files (which can slow things down)
 and in terms of file size on Windows.
 
-This might also make shell completion of `cargo` noiser than what we have today with third-part plugins.
+This might also make shell completion of `cargo` noisier than what we have today with third-part plugins.
 
 > Disposition: Deferred and we'll re-evaluate based on feedback
 
@@ -1116,10 +1116,10 @@ to do interactive whitebox testing of private code within a larger project.
 ## Make it easier to run cargo commands on scripts
 
 Running
-```consple
+```console
 $ cargo update --manifest-path foo.rs
 ```
-is a bit of a mouthful for a feature that is generally meant for low everhead when people are used to just running `cargo update`.
+is a bit of a mouthful for a feature that is generally meant for low overhead when people are used to just running `cargo update`.
 
 It would be good to explore ways of reducing the overhead here, for example
 - A short flag for `--manifest-path`
