@@ -1239,7 +1239,7 @@ comfortable making.  This means we would allow limited access to the
 
 - Requires manifest design work that is likely specialized to just this feature
 
-**Configuration 4: Exitence Check**
+**Configuration 4: Existence Check**
 
 `cargo` can check if the lockfile exists in the agreed-to location and use
 it / update it and otherwise we fallback to a no-visible-lockfile solution.  To
