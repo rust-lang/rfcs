@@ -718,10 +718,10 @@ Note: this is a reversible decision on an edition boundary
 > future if we find that the "latest as default" doesn't work as well as we
 > expected.0
 
-**Alternative 2: `cargo-<edition>-edition` variants**
+**Alternative 2: `cargo-<edition>` variants**
 
 ```rust
-#!/usr/bin/env cargo-2018-edition
+#!/usr/bin/env cargo-2018
 
 fn main() {
 }
