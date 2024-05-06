@@ -212,7 +212,7 @@ let [&a] = &[&0u8]; // `a` is `u8` on edition ≤ 2021, but `&u8` on edition ≥
 let [mut a] = &[0u8]; // `a` is `u8` on edition ≤ 2021, but `&u8` on edition ≥ 2024
 ```
 
-Instances of such incompatibilities appear to be common, but far from unknown
+Instances of such incompatibilities appear to be uncommon, but far from unknown
 (20 cases in `rustc`, for example). The migration lint for the feature entirely
 desugars the match ergonomics of the affected pattern. This is necessary to
 produce code that works on all editions, but it means that adopting the new
