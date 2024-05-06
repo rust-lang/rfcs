@@ -228,20 +228,20 @@ allows strictly more code to compile.)
 ```rust
 //! All editions (new)
 
-let &[[a]]; = &[&mut [42]];
+let &[[a]] = &[&mut [42]];
 let _: &u8 = a;
 
-let &[[a]]; = &mut [&mut [42]];
+let &[[a]] = &mut [&mut [42]];
 let _: &u8 = a;
 ```
 
 ```rust
 //! Edition ≥ 2024
 
-let &[[&a]]; = &[&mut [42]];
+let &[[&a]] = &[&mut [42]];
 let _: u8 = a;
 
-//let &[[&mut a]]; = &[&mut [42]]; // ERROR
+//let &[[&mut a]] = &[&mut [42]]; // ERROR
 ```
 
 # Migration
