@@ -78,7 +78,9 @@ provide ergonomic benefit to many macros across the ecosystem, including:
 As a result of this RFC, formatting parameters can also use implicit named
 argument capture:
 
-    println!("{self.value:self.width$.self.precision$}");
+```rust
+println!("{self.value:self.width$.self.precision$}");
+```
 
 This is slightly complex to read, but unambiguous thanks to the `$`s.
 
