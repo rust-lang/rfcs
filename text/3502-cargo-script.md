@@ -1113,6 +1113,31 @@ Ideally, this repl would also allow the equivalent of `python -i <file>`, not
 to run existing code but to make a specific file's API items available for use
 to do interactive whitebox testing of private code within a larger project.
 
+## Make it easier to run cargo commands on scripts
+
+Running
+```consple
+$ cargo update --manifest-path foo.rs
+```
+is a bit of a mouthful for a feature that is generally meant for low everhead when people are used to just running `cargo update`.
+
+It would be good to explore ways of reducing the overhead here, for example
+- A short flag for `--manifest-path`
+
+We could allow scripts as a positional arguments but most commands already accept a positional argument and distinguishing it from a script could get messy.
+
+## Make it easier to specify package fields
+
+Specifying
+```toml
+package.edition = "2021"
+```
+Is a bit much for a low overhead syntax.  Are there ways we could do better?
+
+We could allow `package` fields at the top level but
+- It could make workspace root package detection messier
+- It limits us in our table / field selections
+
 ## Embedded or adjacent Lockfile
 
 [Lockfiles](https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html)
