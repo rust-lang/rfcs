@@ -72,7 +72,11 @@ The grammar of the language is updated so that:
 * Editions >= 2024 *must* prefix all `extern` blocks with `unsafe`.
 * Editions < 2024 *should* prefix `extern` blocks with `unsafe`, this is a warn-by-default compatibility lint when `unsafe` is missing.
 
-Replace the *Functions* and *Statics* sections with the following:
+This RFC replaces the *["functions"][]* and *["statics"][]* sections in the [external blocks][] chapter of the Rust Reference with the following:
+
+["functions"]: https://doc.rust-lang.org/nightly/reference/items/external-blocks.html#functions
+["statics"]: https://doc.rust-lang.org/nightly/reference/items/external-blocks.html#statics
+[external blocks]: https://doc.rust-lang.org/nightly/reference/items/external-blocks.html
 
 ### Functions
 Functions within external blocks are declared in the same way as other Rust functions, with the exception that they must not have a body and are instead terminated by a semicolon. Patterns are not allowed in parameters, only IDENTIFIER or _ may be used. The function qualifiers `const`, `async`, and `extern` are not allowed. If the function is unsafe to call, then the function should use the `unsafe` qualifier. If the function is safe to call, then the function should use the `safe` qualifier (a contextual keyword). Functions that are not qualified as `unsafe` or `safe` are assumed to be `unsafe`.
