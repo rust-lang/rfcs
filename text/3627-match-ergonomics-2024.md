@@ -59,7 +59,7 @@ In edition 2024 and above, an `&` or `&mut` pattern can match against this
 inherited reference, consuming it. A pattern that does this has no other effect.
 
 ```rust
-// New in edition 2023:
+// New in edition 2024:
 // `&` pattern consumes inherited `&` reference.
 let [&x] = &[42];
 let _: u8 = x;
