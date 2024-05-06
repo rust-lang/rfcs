@@ -26,7 +26,7 @@ Rust can utilize functions and statics from foreign code that are provided durin
 An `extern` block can be placed anywhere a function declaration could appear (generally at the top level of a module).
 
 * On editions >= 2024, you *must* write all `extern` blocks as `unsafe extern`.
-* On editions < 2024, you *may* write `unsafe extern`, or you can write an `extern` block without the `unsafe` keyword. Writing an `extern` block without the `unsafe` keyword is provided for compatibility only, and will generate a warning.
+* On editions < 2024, you *may* write `unsafe extern`, or you can write an `extern` block without the `unsafe` keyword. Writing an `extern` block without the `unsafe` keyword is provided for compatibility only, and will eventually generate a warning.
 * `unsafe extern` interacts with the `unsafe_code` lint, and a `deny` or `forbid` with that lint will deny or forbid the unsafe external block.
 
 Within an `extern` block is zero or more declarations of external functions and/or external static values.
@@ -72,7 +72,7 @@ They can only be used within an `unsafe` block.
 The grammar of the language is updated so that:
 
 * Editions >= 2024 *must* prefix all `extern` blocks with `unsafe`.
-* Editions < 2024 *should* prefix `extern` blocks with `unsafe`, this is a warn-by-default compatibility lint when `unsafe` is missing.
+* Editions < 2024 *should* prefix `extern` blocks with `unsafe`, this will eventually be a warn-by-default compatibility lint when `unsafe` is missing.
 
 This RFC replaces the *["functions"][]* and *["statics"][]* sections in the [external blocks][] chapter of the Rust Reference with the following:
 
