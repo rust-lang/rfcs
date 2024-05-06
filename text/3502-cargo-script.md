@@ -1012,7 +1012,7 @@ See
 [t-cargo zulip thread](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/Re-thinking.20cargo's.20output)
 and [rust-lang/cargo#8889](https://github.com/rust-lang/cargo/issues/8889).
 
-Note: `--quiet` is inferred when piping to a file ([rust-lang/cargo#12305](https://github.com/rust-lang/cargo/pull/12305))
+Note: `--quiet` is inferred when redirecting/piping output ([rust-lang/cargo#12305](https://github.com/rust-lang/cargo/pull/12305))
 
 ## Executing `<stdin>`
 
