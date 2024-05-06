@@ -56,7 +56,7 @@ unsafe extern {
 }
 ```
 
-`extern` blocks are `unsafe` because if the declaration doesn't match the actual external function, or the actual external data, then it causes compile time Undefined Behavior (UB).
+`extern` blocks are `unsafe` because if the declaration doesn't match the actual external function, or the actual external data, then the behavior of the resulting program may be undefined.
 
 Once they are unsafely declared, a `safe` item can be used outside the `extern` block as if it were any other safe function or static value declared within rust.
 The unsafe obligation of ensuring that the correct items are being linked to is performed by the crate making the declaration, not the crate using that declaration.
@@ -77,7 +77,7 @@ Replace the *Functions* and *Statics* sections with the following:
 ### Functions
 Functions within external blocks are declared in the same way as other Rust functions, with the exception that they must not have a body and are instead terminated by a semicolon. Patterns are not allowed in parameters, only IDENTIFIER or _ may be used. The function qualifiers `const`, `async`, and `extern` are not allowed. If the function is unsafe to call, then the function should use the `unsafe` qualifier. If the function is safe to call, then the function should use the `safe` qualifier (a contextual keyword). Functions that are not qualified as `unsafe` or `safe` are assumed to be `unsafe`.
 
-If the function signature declared in Rust is incompatible with the function signature as declared in the foreign code it is Undefined Behavior to compile and link the code.
+If the function signature declared in Rust is incompatible with the function signature as declared in the foreign code, the behavior of the resulting program may be undefined.
 
 Functions within external blocks may be called by Rust code, just like functions defined in Rust. The Rust compiler will automatically use the correct foreign ABI when making the call.
 
