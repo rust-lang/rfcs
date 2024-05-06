@@ -1,4 +1,3 @@
-
 - Feature Name: `unsafe_extern`
 - Start Date: 2023-05-23
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
@@ -43,16 +42,16 @@ Code must update to `unsafe extern` style blocks if it wants to make `safe` decl
 unsafe extern {
     // sqrt (from libm) can be called with any `f64`
     pub safe fn sqrt(x: f64) -> f64;
-    
+
     // strlen (from libc) requires a valid pointer,
     // so we mark it as being an unsafe fn
     pub unsafe fn strlen(p: *const c_char) -> usize;
 
     // this function doesn't say safe or unsafe, so it defaults to unsafe
     pub fn free(p: *mut core::ffi::c_void);
-    
+
     pub safe static IMPORTANT_BYTES: [u8; 256];
-    
+
     pub safe static LINES: SyncUnsafeCell<i32>;
 }
 ```
