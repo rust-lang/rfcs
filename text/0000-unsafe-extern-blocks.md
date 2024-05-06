@@ -67,7 +67,7 @@ They can only be used within an `unsafe` block.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The grammar of the langauge is updated so that:
+The grammar of the language is updated so that:
 
 * Editions >= 2024 *must* prefix all `extern` blocks with `unsafe`.
 * Editions < 2024 *should* prefix `extern` blocks with `unsafe`, this is a warn-by-default compatibility lint when `unsafe` is missing.
