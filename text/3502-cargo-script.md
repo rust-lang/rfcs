@@ -397,7 +397,7 @@ To allow the xor, we enforce that
   - So `./build` can be used to run a script name `build` rather than the `cargo build` command
 - no built-in command may look like an accepted manifest
 
-When piping `cargo <file>.rs`, `--quiet` will be assumed.
+When the stdout or stderr of `cargo <file>.rs` is not going to a terminal, cargo will assume `--quiet`.
 Further work may be done to refine the output in interactive mode.
 
 # Drawbacks
