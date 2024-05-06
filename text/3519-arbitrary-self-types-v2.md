@@ -1,7 +1,7 @@
-- Feature Name: Arbitrary Self Types 2.0
+- Feature Name: `arbitrary_self_types`
 - Start Date: 2023-05-04
 - RFC PR: [rust-lang/rfcs#3519](https://github.com/rust-lang/rfcs/pull/3519)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#44874](https://github.com/rust-lang/rust/issues/44874)
 
 # Summary
 [summary]: #summary
