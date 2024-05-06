@@ -311,8 +311,8 @@ There are several motivations for allowing this:
 let a: &u8 = &mut 42;
 ```
 
-[^nrmba]: This is even more true in light of the new rule that prevents the
-default binding mode from being set to `ref mut` behind `&`.
+[^nrmba]: This is especially true in light of the [new rule](#all-editions-the-default-binding-mode-is-never-set-to-ref-mut-behind-an--pattern-or-reference)
+that prevents the default binding mode from being set to `ref mut` behind `&`.
 
 [^sub]: Making `&mut` a subtype of `&` in actual implementation would require
 adding significant complexity to the variance rules, but I do believe it to be
