@@ -1283,3 +1283,6 @@ If we want this to be near-lossless, it seems like we'd need
 See also
 [Cargo time machine (generate lock files based on old registry state) ](https://github.com/rust-lang/cargo/issues/5221)
 
+**Format 4: Minimal lockfile format**
+
+We could simplify the lockfile format to store less information, making it more appealing to embed in the binary. We could store enough information to easily recreate the lockfile, without requiring timestamp-based recreation of the index state. This would primarily include the exact versions of every dependency.
