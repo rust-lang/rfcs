@@ -1,7 +1,7 @@
 - Feature Name: `unprefixed_guarded_strings`
 - Start Date: 2024-03-24
 - RFC PR: [rust-lang/rfcs#3593](https://github.com/rust-lang/rfcs/pull/3593)
-- Rust Issue: [rust-lang/rust#3593](https://github.com/rust-lang/rust/issues/3593)
+- Tracking Issue: [rust-lang/rust#123735](https://github.com/rust-lang/rust/issues/123735)
 
 # Summary
 [summary]: #summary
