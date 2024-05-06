@@ -22,25 +22,62 @@ Various changes to the match ergonomics rules:
 Match ergonomics have been a great success overall, but there are some surprising
 interactions that regularly confuse users.
 
-- `mut` resets the binding mode to by-value, which users do not expect; the
-  mutability of the binding seems like a separate concern from its type
-  (<https://github.com/rust-lang/rust/issues/105647>,
-  <https://github.com/rust-lang/rust/issues/112545>)
-- `&` and `&mut` patterns must correspond with a reference in the same position
-  in the scrutinee, even if there is an inherited reference present. Therefore,
-  users have no general mechanism to "cancel out" an inherited reference
-  (<https://users.rust-lang.org/t/reference-of-tuple-and-tuple-of-reference/91713/6>,
-  <https://users.rust-lang.org/t/cannot-deconstruct-reference-inside-match-on-reference-why/92147>,
-  <https://github.com/rust-lang/rust/issues/50008>,
-  <https://github.com/rust-lang/rust/issues/64586>)
-- When an `&` or `&mut` pattern is used in a location where there is also an
-  inherited reference present, both are stripped; adding a single `&` to the
-  pattern can remove two `&`s from the type of the binding.
+## `mut` resets the binding mode
+
+`mut` resets the binding mode to by-value, which users do not expect; the
+mutability of the binding would seem to be separate concern from its type
+(<https://github.com/rust-lang/rust/issues/105647>,
+<https://github.com/rust-lang/rust/issues/112545>).
+
+```rust
+let (x, mut y) = &(true, false);
+let _: (&bool, bool) = (x, y);
+```
+
+## Can't cancel out an inherited reference
+
+`&` and `&mut` patterns must correspond with a reference in the same position in
+the scrutinee, even if there is an inherited reference present. Therefore, users
+have no general mechanism to "cancel out" an inherited reference
+(<https://users.rust-lang.org/t/reference-of-tuple-and-tuple-of-reference/91713/6>,
+<https://users.rust-lang.org/t/cannot-deconstruct-reference-inside-match-on-reference-why/92147>,
+<https://github.com/rust-lang/rust/issues/50008>,
+<https://github.com/rust-lang/rust/issues/64586>).
+
+
+```rust
+fn foo(arg: &(String, Vec<i32>, u8)) {
+    // We want to extract `&String`, `&Vec`, and `u8` from the tuple.
+    let (s, v, u) = arg; // u is &u8, not what we wanted
+    let &(ref s, ref v, u) = arg; // we have to abandon match ergonomics entirely
+}
+```
+
+## A single `&` can strip two references
+
+When an `&` or `&mut` pattern is used in a location where there is also an
+inherited reference present, both are stripped; adding a single `&` to the
+pattern can remove two `&`s from the type of the binding.
+
+```rust
+let [a] = &[&42]; // a = &&42
+let [&a] = &[&42]; // a = 42
+```
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Match ergonomics works a little differently in edition 2024 and above.
+
+## `mut` no longer strips the inherited reference
+
+`mut` on a binding does not reset the binding mode on edition ≥ 2024.
+
+```rust
+//! Edition ≥ 2024
+let (x, mut y) = &(true, false);
+let _: (&bool, &bool) = (x, y); // instead of `(&bool, bool)`
+```
 
 ## Matching against inherited references
 
@@ -49,7 +86,7 @@ of its referent, you get an "inherited reference": the binding mode of
 "downstream" bindings is set to `ref` or `ref mut`.
 
 ```rust
-// Unchanged from old editions:
+//! All editions
 // `x` "inherits" the `&` from the scrutinee type.
 let [x] = &[42];
 let _: &u8 = x;
@@ -59,10 +96,21 @@ In edition 2024 and above, an `&` or `&mut` pattern can match against this
 inherited reference, consuming it. A pattern that does this has no other effect.
 
 ```rust
-// New in edition 2024:
+//! Edition ≥ 2024
+
 // `&` pattern consumes inherited `&` reference.
 let [&x] = &[42];
 let _: u8 = x;
+
+// Examples from motivation section
+
+fn foo(arg: &(String, Vec<i32>, u8)) {
+    let (s, v, &u) = arg;
+    let _: (&String, &Vec<i32>, u8) = (s, v, u);
+}
+
+let [&x] = &[&42];
+let _: &u8 = x;
 ```
 
 ## `&` matches against `&mut`
@@ -71,27 +119,9 @@ In edition 2024 and above, `&` patterns can match against `&mut` references
 (including "inherited" references).
 
 ```rust
+//! Edition ≥ 2024
 let &foo = &mut 42;
 let _: u8 = foo;
-```
-
-## `mut` no longer strips the inherited reference
-
-In older editions, `mut` on a binding "stripped" the inherited reference:
-
-```rust
-// Old editions
-let (x, mut y) = &(true, false);
-let _: (&bool, bool) = (x, y);
-```
-
-This no longer happens on edition ≥ 2024.
-
-
-```rust
-// Edition ≥ 2024
-let (x, mut y) = &(true, false);
-let _: (&bool, &bool) = (x, y);
 ```
 
 # Reference-level explanation
@@ -100,11 +130,24 @@ let _: (&bool, &bool) = (x, y);
 This explanation assumes familiarity with the current match ergonomics rules,
 including the "default binding mode" terminology. Refer to [RFC 2005](./2005-match-ergonomics.md#detailed-design).
 
+## Edition 2024: `mut` does not reset binding mode to by-value
+
+In the new edition, `mut` no longer resets the binding mode to by-value.
+Therefore, it is possible to have a mutable by-reference binding. (An explicit
+syntax for this is left to a future RFC.)
+
+```rust
+//! Edition ≥ 2024
+let &[mut a] = &[42];
+a = &47;
+```
+
 ## Edition 2024: `&` patterns can match against `&mut` references
 
 `&` patterns can match against `&mut` references.
 
 ```rust
+//! Edition ≥ 2024
 let &foo = &mut 42;
 let _: u8 = foo;
 ```
@@ -112,8 +155,9 @@ let _: u8 = foo;
 However, the `ref mut` binding mode cannot be used behind such patterns.
 
 ```rust
+//! All editions
 let &ref mut foo = &mut 42;
-//  ^~ERROR: replace `&` with `&mut`
+//  ^~ERROR: replace `&` with `&mut `
 let _: &mut u8 = foo;
 ```
 
@@ -125,6 +169,8 @@ by-value, while `&mut` can only reset `ref mut`. An `&` or `&mut` pattern that
 resets the binding mode in this way has no other effect.
 
 ```rust
+//! Edition ≥ 2024
+
 let [&x] = &[3u8];
 let _: u8 = x;
 
@@ -133,13 +179,18 @@ let _: u8 = x;
 
 let [&x] = &mut [3u8];
 let _: u8 = x;
+```
 
+```rust
+//! All editions
 //let [&mut x] = &[3u8]; // ERROR
 ```
 
 `&` patterns are otherwise unchanged from older editions.
 
 ```rust
+//! All editions
+
 let &a = &3;
 let _: u8 = a;
 
@@ -150,9 +201,12 @@ If the default binding mode is `ref`, then `&mut` patterns are forbidden. If it
 is by-value, then they have the same effect as on older editions.
 
 ```rust
+//! Edition ≥ 2024
 //let [&mut x] = &[&mut 42]; // ERROR
+```
 
-// Unchanged from old editions
+```rust
+//! All editions
 
 let &mut x = &mut 3;
 let _: u8 = x;
@@ -166,24 +220,13 @@ let _: &&mut u8 = x;
 //let &mut x = &&mut 3; // ERROR
 ```
 
-## Edition 2024: `mut` does not reset binding mode to by-value
-
-In the new edition, `mut` no longer resets the binding mode to by-value.
-Therefore, it is possible to have a mutable by-reference binding. (An explicit
-syntax for this is left to a future RFC.)
-
-```rust
-let &[mut a] = &[42];
-a = &47;
-```
-
 ## All editions: the default binding mode is never set to `ref mut` behind an `&` pattern or reference
 
 The binding mode is set to `ref` instead in such cases. (On older editions, this
 allows strictly more code to compile.)
 
 ```rust
-// All editions
+//! All editions (new)
 
 let &[[a]]; = &[&mut [42]];
 let _: &u8 = a;
@@ -193,7 +236,7 @@ let _: &u8 = a;
 ```
 
 ```rust
-// Edition ≥ 2024
+//! Edition ≥ 2024
 
 let &[[&a]]; = &[&mut [42]];
 let _: u8 = a;
@@ -319,7 +362,7 @@ explicit `ref` is required. Notably, this can occur where `&mut` is nested
 behind `&`:
 
 ```rust
-// No way to avoid the `ref` here currently
+// No way to avoid the `ref`, even with this RFC
 let &[&mut ref x] = &[&mut 42];
 ```
 
