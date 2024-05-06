@@ -1,19 +1,13 @@
-# Temporary lifetimes in tail expressions
+# Shorter temporary lifetimes in tail expressions
 
-- Feature Name: `tail_temporaries_shorter_lifetime`
+- Feature Name: `shorter_tail_lifetimes`
 - Start Date: 2023-05-04
 - RFC PR: [rust-lang/rfcs#3606](https://github.com/rust-lang/rfcs/pull/3606)
-- Rust Issue: [rust-lang/rust#123739](https://github.com/rust-lang/rust/issues/123739)
+- Tracking Issue: [rust-lang/rust#123739](https://github.com/rust-lang/rust/issues/123739)
 
 # Summary
 
 In the next edition, drop temporaries in tail expressions *before* dropping locals, rather than after.
-
-![A diagram showing a function with one let statement "let x = g();" and a tail expression "temp().h()"
-and a visualisation of how long x and temp live before and after this change.
-Before: x is created first, then temp is created, then x is dropped, then temp is dropped.
-After: x is created first, then temp is created, then temp is dropped, then x is dropped.
-](https://hackmd.io/_uploads/HyVB0FtkA.svg)
 
 # Motivation
 
