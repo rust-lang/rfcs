@@ -95,8 +95,7 @@ Extern statics can be either immutable or mutable just like statics outside of e
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* It is very unfortunate to have to essentially reverse the status quo.
-  * Hopefully, allowing people to safely call some foreign functions will make up for the churn caused by this change.
+This change will induce some churn. Hopefully, allowing people to safely call some foreign functions will make up for that.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
