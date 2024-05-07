@@ -133,7 +133,9 @@ format_args!("{unique_identifier}", unique_identifier=name.field1.field2)
 Any `Deref` operations or `.await` operations associated with the `.` in each
 format argument are evaluated exactly once, from left-to-right as they appear
 in the format string, at the point where the format string argument is
-evaluated, before the positional or named arguments are evaluated.
+evaluated, before the positional or named arguments are evaluated. No
+deduplication occurs: if `name.field` or `name.await` is mentioned multiple
+times, it will be evaluated multiple times.
 
 If the identifier at the start of the chain does not exist in the scope, the
 usual error E0425 would be emitted by the compiler, with the span of that
