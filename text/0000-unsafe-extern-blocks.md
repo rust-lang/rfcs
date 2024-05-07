@@ -275,7 +275,9 @@ If we later decide, e.g., to replace all uses of `unsafe { .. }` with `trusted {
 
 This RFC specifies that the `unsafe_code` lint will fire for `unsafe extern` but not for `extern` blocks.  One could ask, why not fire this for `extern` blocks also?
 
-The problem with doing this is that it may be very noisy.  We're careful when expanding the meaning of existing lints to not create too much noise, and doing this, at least immediately, may run afoul of this.
+The problem with doing this is that it may be very noisy on existing editions.  We're careful when expanding the meaning of existing lints to not create too much noise for existing code on existing editions, and doing this, at least immediately, may run afoul of this.
+
+Of course, when migrating code to the *new* edition, people will be changing from `extern` to `unsafe extern`, and so if these people have both specifically turned up the severity of the `unsafe_code` lint (which, by default, is set to `allow`) and have `extern` blocks that now must be marked as `unsafe`, they will see this lint.  That is the intention of this change, as we're making clear that the person writing an `unsafe extern` block is responsible for proving that it is correct to ensure soundness, which makes this code *unsafe*.
 
 # Questions and answers
 [q-and-a]: #q-and-a
