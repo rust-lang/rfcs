@@ -191,7 +191,8 @@ However, this would introduce an inconsistency that people have to remember;
 people would *expect* this to work.
 
 We could omit support for `.await`. However, to users this may seem like an
-arbitrary restriction.
+arbitrary restriction. The rationale for this RFC is purely *syntactic*, on the
+basis that we can allow expressions using `.` without requiring delimiters.
 
 # Prior art
 [prior-art]: #prior-art
