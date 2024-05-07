@@ -169,6 +169,10 @@ This adds incremental additional complexity to format strings.
 Having `x.y` available may make people assume other types of expressions work
 as well.
 
+This introduces an additional mechanism to allow side-effects while evaluating
+a format string. However, format strings could already cause side effects while
+evaluating, if a `Display` or `Debug` implementation has side effects.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
