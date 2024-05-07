@@ -229,7 +229,7 @@ allows strictly more code to compile.)
 //! All editions (new)
 
 let &[[a]] = &[&mut [42]];
-let _: &u8 = a;
+let _: &u8 = a; // previously `a` would be `&mut u8`, resulting in a move check error
 
 let &[[a]] = &mut [&mut [42]];
 let _: &u8 = a;
@@ -289,6 +289,34 @@ The proposed rules for new editions uphold the following property:
 
 In other words, the new match ergonomics rules are compositional.
 
+## `mut` not resetting the binding mode
+
+Admittedly, there is not much use for mutable by-reference bindings. This is
+true even outside of pattern matching; `let mut ident: &T = ...` is not commonly
+seen (though not entirely unknown either). The motivation for making this change
+anyway is that the current behavior is unintuitive and surprising for users.
+
+## Never setting default binding mode to `ref mut` behind `&`
+
+On all editions, when a structure pattern peels off a shared reference and the
+default binding mode is already `ref mut`, the binding mode gets set to `ref`.
+But when the binding mode is set to `ref`, and a mutable reference is peeled
+off, the binding mode remains `ref`. In other words, immutability usually takes
+precedence over mutability. This change, in addition to being generally useful,
+makes the match ergonomics rules more consistent by ensuring that immutability
+*always* takes precedence over mutability.
+
+Note that while this is not a breaking change for edition 2021 and below, it
+*would be breaking* to adopt the rest of this RFC without this change, and then
+later adopt this change alone. Specifically, pattern matches like the following
+would break:
+
+```rust
+let &[[&mut a]] = &[&mut [42]];
+```
+
+Therefore, we *cannot* delay a decision on this matter.
+
 ## `&` patterns matching against `&mut`
 
 There are several motivations for allowing this:
@@ -317,13 +345,6 @@ that prevents the default binding mode from being set to `ref mut` behind `&`.
 [^sub]: Making `&mut` a subtype of `&` in actual implementation would require
 adding significant complexity to the variance rules, but I do believe it to be
 possible.
-
-## `mut` not resetting the binding mode
-
-Admittedly, there is not much use for mutable by-reference bindings. This is
-true even outside of pattern matching; `let mut ident: &T = ...` is not commonly
-seen (though not entirely unknown either). The motivation for making this change
-anyway is that the current behavior is unintuitive and surprising for users.
 
 ## Versus "eat-two-layers"
 
