@@ -295,11 +295,6 @@ The key motivation for this RFC is to make clear that the person writing an `ext
 
 [#46188]: https://github.com/rust-lang/rust/issues/46188
 
-# Prior art
-[prior-art]: #prior-art
-
-None we are aware of.
-
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
