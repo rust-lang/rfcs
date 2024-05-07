@@ -156,7 +156,7 @@ Three, if we were to say that the proof obligation of ensuring the signature of 
 
 ## Prefix only `extern` with `safe` or `unsafe`
 
-One could ask, who not prefix *only* `extern` with `safe` or `unsafe`?  E.g.:
+One could ask, why not prefix *only* `extern` with `safe` or `unsafe`?  E.g.:
 
 ```rust
 safe extern {
