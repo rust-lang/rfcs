@@ -345,7 +345,8 @@ Disallowed manifest fields:
 - `package.workspace`, `package.build`, `package.links`, `package.publish`, `package.autobins`, `package.autoexamples`, `package.autotests`, `package.autobenches`
 
 Single-file packages maintain an out-of-line target directory by default.
-This is `$CARGO_HOME/target/<hash-of-path>`.
+This is implementation-defined.
+Currently, it is `$CARGO_HOME/target/<hash-of-path>`.
 
 A single-file package is accepted by cargo commands as a `--manifest-path`
 - Files are considered to have embedded manifest if they end with `.rs` or they lack an extension and are of type file
