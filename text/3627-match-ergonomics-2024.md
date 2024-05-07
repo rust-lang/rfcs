@@ -138,7 +138,7 @@ syntax for this is left to a future RFC.)
 
 ```rust
 //! Edition ≥ 2024
-let &[mut a] = &[42];
+let [mut a] = &[42];
 a = &47;
 ```
 
