@@ -142,6 +142,18 @@ Two, we have to think about *who* is responsible for discharging the obligation 
 
 Three, not allowing items to be marked as `safe` would remove one of the key tangible *benefits* that the changes in this RFC provide to users.  This would reduce the motivation to make this change at all.
 
+## Fix LLVM and don't prefix `extern` with `unsafe`
+
+One could ask, why not fix LLVM such that incorrect signatures in an `extern` block would not result in undefined behavior in the resulting program unless those items were used in Rust code, and then not add `unsafe extern`?
+
+There are three problems with this.
+
+One, it's not entirely clear that it's feasible to fix LLVM in this way.  Moreover, it's still a bit unclear to us whether or not this behavior is allowed by the C standard.  If it is allowed, then LLVM does not, arguably, need to be fixed at all.
+
+Two, even if the C standard does not permit what LLVM is doing and it proves feasible to fix LLVM, we still, as described above, believe that it's unreasonable to expect that *callers* to a function declared in an `extern` block should have to prove that the signature is correct.  We want the obligation of proving this to sit with the person writing the `extern` block, not the person calling a function declared within.
+
+Three, if we were to say that the proof obligation of ensuring the signature of an item declared within an `extern` block rests with the person *using* that item, then we could never declare some items within an `extern` to be OK to use directly from safe code.  This is something we want to allow, and the only way to do this is if the proof obligation rests with the person writing the `extern` block.  Marking these blocks with `unsafe` more clearly signals who holds this proof obligation.
+
 ## Prefix only `extern` with `safe` or `unsafe`
 
 One could ask, who not prefix *only* `extern` with `safe` or `unsafe`?  E.g.:
