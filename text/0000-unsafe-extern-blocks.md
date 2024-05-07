@@ -11,9 +11,11 @@ In Edition 2024 it is `unsafe` to declare an `extern` function or static, but ex
 # Motivation
 [motivation]: #motivation
 
-Simply declaring extern items, even without ever using them, can cause undefined behavior (see, e.g., issue [#46188][]).  When performing cross-language compilation, attributes on one function declaration can flow to the foreign declaration elsewhere within LLVM and cause a miscompilation.  In Rust we consider all sources of undefined behavior to be `unsafe`, and so we must make declaring extern blocks be `unsafe`.  The up-side to this change is that in the new style it will be possible to declare an extern fn that's safe to call after the initial unsafe declaration.
+When we declare the signature of items within `extern` blocks, we are asserting to the compiler that these declarations are correct.  The compiler cannot itself verify these assertions.  If the signatures we declare are in fact not correct, then using these items may result in undefined behavior.  It's *unreasonable* to expect the *caller* (in the case of function items) to have to prove that the signature is valid.  Instead, it's the responsibility of the person writing the `extern` block to ensure the correctness of all signatures within.
 
-[#46188]: https://github.com/rust-lang/rust/issues/46188
+Since this proof obligation must be discharged at the site of the `extern` block, and since this proof cannot be checked by the compiler, this implies that `extern` blocks are *unsafe*.  Correspondingly, we want to mark these blocks with the `unsafe` keyword and fire the `unsafe_code` lint for them.
+
+By making clear where this proof obligation sits, we can now allow for items that can be soundly used directly from *safe* code to be declared within `unsafe extern` blocks.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -96,11 +98,6 @@ Extern statics can be either immutable or mutable just like statics outside of e
 
 This change will induce some churn.  Hopefully, allowing people to safely call some foreign functions will make up for that.
 
-# Rationale
-[rationale]: #rationale
-
-Incorrect extern declarations can cause UB in current Rust, but we have no way to automatically check that all declarations are correct, nor is such a thing likely to be developed.  Making the declarations `unsafe` so that programmers are aware of the dangers and can give extern blocks the attention they deserve is the minimum step.
-
 # Alternatives
 [alternatives]: #alternatives
 
@@ -115,7 +112,7 @@ extern {
 }
 ```
 
-Here's the problem with this.  The programmer is asserting that these signatures are correct, but this assertion cannot be checked by the compiler.  The human must simply get these correct, and if that person doesn't, then calling either of these functions, even the one marked `safe`, may result in undefined behavior.  In fact, as explained in the motivation, due to current LLVM behavior, simply *writing* this `extern` block with incorrect signatures can lead to undefined behavior in the resulting program, even if these functions are never called by Rust code.
+Here's the problem with this.  The programmer is asserting that these signatures are correct, but this assertion cannot be checked by the compiler.  The human must simply get these correct, and if that person doesn't, then calling either of these functions, even the one marked `safe`, may result in undefined behavior.
 
 In Rust, we use `unsafe { .. }` (and, as of [RFC 3325][], `unsafe(..)`) to indicate that what is enclosed must be proven correct by the programmer to avoid undefined behavior.  This RFC extends this pattern to `extern` blocks.
 
@@ -134,25 +131,11 @@ extern {
 
 One could argue that, since an `unsafe { .. }` block must be used to call either of these functions, that this is OK.
 
-There are three problems with this.
+There are two problems with this.
 
-One, as mentioned above, simply *writing* this `extern` block, if the signatures are incorrect, can cause undefined behavior in the resulting program, even if these functions are never called by Rust code.  Saying `unsafe` in the signature of each item only indicates that the caller must uphold certain unchecked invariants; it does not correctly capture the semantics of this kind of unsafety.
+One, we have to think about *who* is responsible for discharging the obligation of ensuring that these signatures are correct.  Is it the responsibility of a *caller* to these functions to ensure the signatures are correct?  That would seem unreasonable.  So even though the caller has to write `unsafe { .. }` to call these functions, this suggests that the `extern` *itself* should be somehow marked with or wrapped in `unsafe`.
 
-Two, we have to think about *who* is responsible for discharging the obligation of ensuring that these signatures are correct.  Is it the responsibility of a *caller* to these functions to ensure the signatures are correct?  That would seem unreasonable.  So even though the caller has to write `unsafe { .. }` to call these functions, and even setting aside the issue that calling the functions from Rust is not required to produce undefined behavior, this suggests that the `extern` *itself* should be somehow marked with or wrapped in `unsafe`.
-
-Three, not allowing items to be marked as `safe` would remove one of the key tangible *benefits* that the changes in this RFC provide to users.  This would reduce the motivation to make this change at all.
-
-## Fix LLVM and don't prefix `extern` with `unsafe`
-
-One could ask, why not fix LLVM such that incorrect signatures in an `extern` block would not result in undefined behavior in the resulting program unless those items were used in Rust code, and then not add `unsafe extern`?
-
-There are three problems with this.
-
-One, it's not entirely clear that it's feasible to fix LLVM in this way.  Moreover, it's still a bit unclear to us whether or not this behavior is allowed by the C standard.  If it is allowed, that may make it more challenging to build a consensus in favor of changing it in LLVM.
-
-Two, even if the C standard does not permit what LLVM is doing (or we were otherwise able to build a consensus for change) and it proves feasible to fix LLVM, we still, as described above, believe that it's unreasonable to expect that *callers* to a function declared in an `extern` block should have to prove that the signature is correct.  We want the obligation of proving this to sit with the person writing the `extern` block, not the person calling a function declared within.
-
-Three, if we were to say that the proof obligation of ensuring the signature of an item declared within an `extern` block rests with the person *using* that item, then we could never declare some items within an `extern` to be OK to use directly from safe code.  This is something we want to allow, and the only way to do this is if the proof obligation rests with the person writing the `extern` block.  Marking these blocks with `unsafe` more clearly signals who holds this proof obligation.
+Two, not allowing items to be marked as `safe` would remove one of the key tangible *benefits* that the changes in this RFC provide to users.  This would reduce the motivation to make this change at all.
 
 ## Prefix only `extern` with `safe` or `unsafe`
 
@@ -302,15 +285,20 @@ No.  This RFC specifies that `unsafe extern` blocks will fire this lint.  There 
 
 No.  This RFC allows for items within an `unsafe extern` block to not be marked with either of `safe` or `unsafe`.  Items that are not marked in either way are assumed to be `unsafe`.
 
+## What's the #46188 situation?
+
+Currently, an `extern` block with incorrect signatures can result in a program exhibiting undefined behavior even if none of the items within that block are used by Rust code.  See, e.g., [#46188][].
+
+Originally, the possibility of this undefined behavior was one of the motivations for this RFC.  However, it's possible that we may be able to resolve this in other ways, so we have redrafted this RFC to exclude this as a motivation.
+
+The key motivation for this RFC is to make clear that the person writing an `extern` block is responsible for proving the correctness of the signatures within and that the compiler cannot check this proof.
+
+[#46188]: https://github.com/rust-lang/rust/issues/46188
+
 # Prior art
 [prior-art]: #prior-art
 
 None we are aware of.
-
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
-
-* Extern declarations are actually *always* unsafe and able to cause UB regardless of edition.  This RFC doesn't have a specific answer on how to improve pre-2024 code.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
