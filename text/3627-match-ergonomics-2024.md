@@ -313,6 +313,10 @@ would break:
 
 ```rust
 let &[[&mut a]] = &[&mut [42]];
+// `&mut` in pattern needs to match against either:
+// - `&mut` in value at same position (there is none, so not possible)
+// - inherited `&mut` (which the "never set default binding mode to `ref mut` behind `&`" rule
+//   downgrades to `&`)
 ```
 
 Therefore, we *cannot* delay a decision on this matter.
