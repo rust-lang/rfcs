@@ -298,13 +298,7 @@ anyway is that the current behavior is unintuitive and surprising for users.
 
 ## Never setting default binding mode to `ref mut` behind `&`
 
-On all editions, when a structure pattern peels off a shared reference and the
-default binding mode is already `ref mut`, the binding mode gets set to `ref`.
-But when the binding mode is set to `ref`, and a mutable reference is peeled
-off, the binding mode remains `ref`. In other words, immutability usually takes
-precedence over mutability. This change, in addition to being generally useful,
-makes the match ergonomics rules more consistent by ensuring that immutability
-*always* takes precedence over mutability.
+### We can't delay this choice
 
 Note that while this is not a breaking change for edition 2021 and below, it
 *would be breaking* to adopt the rest of this RFC without this change, and then
@@ -320,6 +314,45 @@ let &[[&mut a]] = &[&mut [42]];
 ```
 
 Therefore, we *cannot* delay a decision on this matter.
+
+### Makes behavior more consistent
+
+On all editions, when a structure pattern peels off a shared reference and the
+default binding mode is already `ref mut`, the binding mode gets set to `ref`.
+But when the binding mode is set to `ref`, and a mutable reference is peeled
+off, the binding mode remains `ref`. In other words, immutability usually takes
+precedence over mutability. This change, in addition to being generally useful,
+makes the match ergonomics rules more consistent by ensuring that immutability
+*always* takes precedence over mutability.
+
+### Ensures that a desirable property is preserved
+
+The current match ergonomics rules uphold the following desirable property:
+
+> An `&mut` pattern is accepted if and only if removing the pattern would allow
+> obtaining an `&mut` value.
+
+For example:
+
+```rust
+//! All editions
+let &mut a = &mut 42; // `a: i32`
+let a = &mut 42; // `a: &mut i32`
+
+let &[&mut a] = &[&mut 42]; // `a: i32`
+//let &[a] = &[&mut 42]; // ERROR, but…
+let &[ref a] = &[&mut 42]; // `a = &&mut i32` (so we did manage to obtain an `&mut i32` in some form)
+```
+
+Adopting the "no `ref mut` behind `&`" rule ensures that this property continues
+to hold for edition 2024:
+
+```rust
+//! Edition ≥ 2024
+let &[[&mut x]] = &[&mut [42]]; // If we were allow this, with `x: i32` …
+//let &[[x]] = &[&mut [42]]; // remove the `&mut` → ERROR, if the default binding mode is to be `ref mut`
+// nothing we do will get us `&mut i32` in any form
+```
 
 ## `&` patterns matching against `&mut`
 
