@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from being privately maintained to being officially maintained by the rustdoc team.
+The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from being individually maintained to being officially maintained by the rustdoc team.
 
 # Motivation
 [motivation]: #motivation
@@ -31,7 +31,10 @@ The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from b
 
 Currently I ([`@aDotInTheVoid`](https://github.com/aDotInTheVoid/)) maintain the `rustdoc-types` crate on [my personal github](https://github.com/aDotInTheVoid/rustdoc-types/). No-one else has either github or crates.io permissions. This means if I become unable (or more likely disinterested), the crate will not see updates.
 
-Additionally, if an update to `rustdoc-json-types` happens while i'm away from a computer for an extended period of time, their will be a delay in this update being published on crates.io. [This almost happened](https://github.com/aDotInTheVoid/rustdoc-types/issues/25), but was avoided due to the bors queue being quiet at the time.
+Additionally, if an update to `rustdoc-json-types` happens while I'm away from a computer for an extended period of time, their will be a delay in this update being published on crates.io. This happened with format_version 29, which was merged on [April 8th](https://github.com/rust-lang/rust/commit/537aab7a2e7fe9cdf50b5ff18485e0793cd8db62),
+but was only published to crates.io on
+[April 19th](https://github.com/aDotInTheVoid/rustdoc-types/commit/ad92b911488dd42681e3dc7e496f777f556a94f6), due to personal reasons.
+[This almost happened previously](https://github.com/aDotInTheVoid/rustdoc-types/issues/25), but was avoided due to the bors queue being quiet at the time.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
