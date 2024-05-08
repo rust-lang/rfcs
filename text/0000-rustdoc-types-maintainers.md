@@ -82,7 +82,7 @@ crates.io ownership is managed [via the command line](https://doc.rust-lang.org/
 I will run the following commands to move ownership.
 
 ```
-cargo owner --add github:rust-lang:owners
+cargo owner --add github:rust-lang:rustdoc
 cargo owner --add rust-lang-owner
 cargo owner --remove aDotInTheVoid
 ```
