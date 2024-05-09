@@ -393,7 +393,8 @@ for users. Notably, the [property from earlier](#desirable-property) would
 continue to not be satisfied.
 
 In addition, this approach would lead to tricky questions around when
-mutabilities should be considered compatible.
+mutabilities should be considered compatible. And there would be compatibility
+concerns with certain proposals for "deref patterns".
 
 (This alternative is currently implemented under a separate feature gate.)
 
@@ -409,9 +410,16 @@ mutabilities should be considered compatible.
 
 - An explicit syntax for mutable by-reference bindings should be chosen at some
   point.
-- Deref patterns may interact with `&` and `&mut` patterns.
 - Future changes to reference types (partial borrows, language sugar for `Pin`,
   etc) may interact with match ergonomics.
+
+## Deref patterns
+
+Because it is compositional, the "eat-one-layer" model proposed by this RFC is
+fully compatible with proposals for "deref patterns", including allowing
+`&`/`&mut` patterns to match against types implementing `Deref`/`DerefMut`. One
+question that would need to be resolved is whether and how deref patterns
+(explicit or implicit) affect the default binding mode.
 
 ## Matching `&mut` behind `&`
 
