@@ -129,9 +129,11 @@ has been proposed before, which basically does this for *types*. Doing this for 
 
 # Future possibilities
 
-- Doing this for `static` items too.
+- Doing this for `static` items too. (Perhaps all items that can appear in an `extern "Rust" { … }` block.)
 - Using this mechanism in the standard library to make more parts overridable. For example:
   - Allowing custom implementations of `panic_out_of_bounds` and `panic_overflowing_add`, etc.
     (The Rust for Linux project would make use of this.)
   - Allowing overriding `write_to_stdout` and `write_to_stderr`.
     (This enables custom testing frameworks to capture output. It is also extremely useful on targets like wasm.)
+- This could possibly be extended to groups of functions in the form of a `trait` that can be globally implemented.
+  (E.g. `extern impl AsyncRuntime`, to say that there must be a global implementation of that trait.)
