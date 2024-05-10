@@ -130,6 +130,7 @@ has been proposed before, which basically does this for *types*. Doing this for 
 # Future possibilities
 
 - Doing this for `static` items too. (Perhaps all items that can appear in an `extern "Rust" { … }` block.)
+- Using this for existing overridable global behavior in the standard library, like the panic handler, global allocator, etc.
 - Using this mechanism in the standard library to make more parts overridable. For example:
   - Allowing custom implementations of `panic_out_of_bounds` and `panic_overflowing_add`, etc.
     (The Rust for Linux project would make use of this.)
