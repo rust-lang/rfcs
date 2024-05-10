@@ -101,7 +101,7 @@ The implementation will be based on the same mechanisms as used today for the `p
 
 The compiler of the root crate will find the implementation of all externally implementable functions and give an error
 if more than one implementation is found for any of them.
-If none are found, and there are any calls to the `extern impl fn` that have not been dead-code eliminated, the result is either an error, or, if the `extern impl fn` has a default body, an implementation
+If none are found, the result is either an error, or—if the `extern impl fn` has a default body—an implementation
 is generated that calls that default body.
 
 # Drawbacks
@@ -130,6 +130,7 @@ has been proposed before, which basically does this for *types*. Doing this for 
 - Should we allow some form of subtyping, similarly to how traits allow trait impls to do subtyping?
 - What should the syntax be once we stabilize this?
 - How should this work in dynamic libraries?
+- Should not having an implementation be an error when the function is never called (after dead code elimination)?
 - If we do end up designing and providing an `extern impl Trait` feature in addition to `extern impl fn`, should we *only* provide `extern impl Trait`, or is there value in still providing `extern impl fn` as well? This RFC proposes that we should still have `extern impl fn`, for the simpler case, rather than forcing such functions to be wrapped in traits.
 
 # Future possibilities
