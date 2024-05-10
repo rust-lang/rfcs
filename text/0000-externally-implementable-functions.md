@@ -96,6 +96,7 @@ It is an error to have multiple `impl fn` items (across all crates) for the same
 `extern impl fn` items can have a visibility specifier (like `pub`), which determines who can *call* the function (or create pointers to it, etc.).
 
 *Implementing* the function can be done by any crate that can name the item.
+(The `impl fn` item will need to name the item to implement, which could be directly or through an alias/re-export.)
 
 # Implementation
 
