@@ -109,6 +109,7 @@ is generated that calls that default body.
 - It encourages globally defined behaviour.
   - Counterargument: We are already doing this anyway, both inside the standard library (e.g. panic_handler, allocator)
     and outside (e.g. global logger). This just makes it much easier (and safer) to get right.
+- This will invite the addition of many hooks to the standard library to modify existing behavior. While we should consider such possibilities, this RFC does not propose that every piece of standard library behavior should be replaceable; std is not purely a dispatch layer for a set of hooks.
 
 # Rationale and alternatives
 
