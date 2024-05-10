@@ -130,6 +130,7 @@ has been proposed before, which basically does this for *types*. Doing this for 
 - Should we allow some form of subtyping, similarly to how traits allow trait impls to do subtyping?
 - What should the syntax be once we stabilize this?
 - How should this work in dynamic libraries?
+- If we do end up designing and providing an `extern impl Trait` feature in addition to `extern impl fn`, should we *only* provide `extern impl Trait`, or is there value in still providing `extern impl fn` as well? This RFC proposes that we should still have `extern impl fn`, for the simpler case, rather than forcing such functions to be wrapped in traits.
 
 # Future possibilities
 
