@@ -101,7 +101,7 @@ The implementation will be based on the same mechanisms as used today for the `p
 
 The compiler of the root crate will find the implementation of all externally implementable functions and give an error
 if more than one implementation is found for any of them.
-If none are found, the result is either an error, or, if the `extern impl fn` has a default body, an implementation
+If none are found, and there are any calls to the `extern impl fn` that have not been dead-code eliminated, the result is either an error, or, if the `extern impl fn` has a default body, an implementation
 is generated that calls that default body.
 
 # Drawbacks
