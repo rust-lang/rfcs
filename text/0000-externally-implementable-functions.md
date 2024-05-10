@@ -124,6 +124,8 @@ has been proposed before, which basically does this for *types*. Doing this for 
 
 # Unresolved questions
 
+- Should we provide a mechanism to set an `extern impl fn` using `=` from an existing `fn` value, rather than writing a body? For instance, `impl fn x::y = a::b;`
+- Should we allow some form of subtyping, similarly to how traits allow trait impls to do subtyping?
 - What should the syntax be once we stabilize this?
 - How should this work in dynamic libraries?
 
