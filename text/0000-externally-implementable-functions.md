@@ -79,7 +79,9 @@ impl fn x::b() {
 
 ## Signature
 
-It is an error to have a different signature for the `impl fn` item
+It is an error to have a different signature for the `impl fn` item.
+
+(Whether `#[track_caller]` is used or not is considered part of the signature here.)
 
 ## No impl
 
