@@ -131,6 +131,7 @@ has been proposed before, which basically does this for *types*. Doing this for 
 
 - Doing this for `static` items too. (Perhaps all items that can appear in an `extern "Rust" { … }` block.)
 - Using this for existing overridable global behavior in the standard library, like the panic handler, global allocator, etc.
+- We could add a mechanism for arbitrating between multiple provided implementations. For instance, if a crate A depended on B and C, and both B and C provide implementations of an `extern impl fn`, rather than an error, A could provide its own implementation overriding both.
 - Using this mechanism in the standard library to make more parts overridable. For example:
   - Allowing custom implementations of `panic_out_of_bounds` and `panic_overflowing_add`, etc.
     (The Rust for Linux project would make use of this.)
