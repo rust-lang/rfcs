@@ -144,3 +144,4 @@ has been proposed before, which basically does this for *types*. Doing this for 
     (This enables custom testing frameworks to capture output. It is also extremely useful on targets like wasm.)
 - This could possibly be extended to groups of functions in the form of a `trait` that can be globally implemented.
   (E.g. `extern impl AsyncRuntime`, to say that there must be a global implementation of that trait.)
+  - Given an `extern impl Trait` feature, could we provide a compatibility mechanism so that a crate providing an `extern impl fn` can migrate to an `extern impl Trait` in a compatible way, such that crates doing `impl fn` will still be compatible with the new `extern impl Trait`?
