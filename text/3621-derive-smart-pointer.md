@@ -646,10 +646,16 @@ introduce a `StableDeref` trait:
 unsafe trait StableDeref: Deref { }
 ```
 Then we make it so that you can only coerce pinned pointers when they implement
-`StableDeref`. We can do that by modifying its implementation of
-[`CoerceUnsized`] to this:
+`StableDeref`. We can do that by modifying its trait implementations to this:
 ```rs
 impl<T, U> CoerceUnsized<Pin<U>> for Pin<T>
+where
+    T: CoerceUnsized<U>,
+    T: StableDeref,
+    U: StableDeref,
+{}
+
+impl<T, U> DispatchFromDyn<Pin<U>> for Pin<T>
 where
     T: CoerceUnsized<U>,
     T: StableDeref,
