@@ -278,7 +278,7 @@ over an edition.
 The proposed rules for new editions uphold the following property:
 
 > For any two nested patterns `$pat0` and `$pat1`, such that `$pat1` uses match
-> ergonomics only (no explicit `ref`/`ref mut`), and valid pattern match
+> ergonomics only (no explicit `ref`/`ref mut`), and pattern match
 > `let $pat0($pat1(binding)) = scrut`, either:
 >
 > - `let $pat0(temp) = scrut; let $pat1(binding) = temp;` compiles, with the
