@@ -255,12 +255,16 @@ The macro sets the following requirements on its input:
    `#[pointee]` derive helper attribute.
 3. The struct must not be `#[repr(packed)]` or `#[repr(C)]`.
 4. Other than one-aligned, zero-sized fields, the struct must have exactly one
-   field and that field’s type must be must implement `DispatchFromDyn<F>`
-   where `F` is the type of `T`’s field type.
+   field.
+5. Assume that `T` is a type that can be unsized to `U`, and let `FT` and `FU`
+   be the type of the struct's field when the pointee is equal to `T` and `U`
+   respectively. If the struct's trait bounds are satisfied for both `T` and
+   `U`, then it must be possible to convert `FT` to `FU` using an unsizing
+   coercion.
 
 (Adapted from the docs for [`DispatchFromDyn`].)
 
-Point 1 and 2 are verified syntactically by the derive macro, whereas 3 and 4
+Point 1 and 2 are verified syntactically by the derive macro, whereas 3, 4 and 5
 are verified semantically by the compiler when checking the generated
 [`DispatchFromDyn`] implementation as it does today.
 
