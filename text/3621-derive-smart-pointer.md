@@ -521,6 +521,22 @@ This RFC does not propose that solution because:
 
 The authors are not aware of any macros using a `#[pointee]` attribute today.
 
+## Derive macro or not?
+
+Stabilizing this as a derive macro more or less locks us in with the decision
+that the compiler will use traits to specify which types are compatible with
+trait objects. However, one could imagine other mechanisms. For example, stable
+Rust currently has logic saying that any struct where the last field is `?Sized`
+will work with unsizing operations. (E.g., if `Wrapper` is such a struct, then
+you can convert from `Box<Wrapper<[u8; 10]>>` to `Box<Wrapper<[u8]>>`.) That
+mechanism is not specified using a trait.
+
+However, using traits for this functionality seems to be the most flexible. To
+solve the unresolved questions, we most likely need to constrain the
+implementations of these traits for `Pin` with stricter trait bounds than what
+is specified on the struct. That will get much more complicated if we use a
+mechanism other than traits to specify this logic.
+
 # Prior art
 [prior-art]: #prior-art
 
