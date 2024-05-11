@@ -346,6 +346,11 @@ is `NonNull<RcInner<T>>` (as opposed to `NonNull<T>`).
   [`Cell`], so hopefully that will be enough incentive to continue work on the
   underlying traits.
 
+- This would be the first example in the standard library of a derive macro that
+  does not implement a trait of the same name as the macro. (However, there are
+  examples of macros that implement multiple traits: `#[derive(PartialEq)]`
+  also implements `StructuralPartialEq`.)
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
