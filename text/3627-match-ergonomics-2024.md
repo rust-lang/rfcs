@@ -313,7 +313,7 @@ let &[[&mut a]] = &[&mut [42]];
 //   downgrades to `&`)
 ```
 
-Therefore, we *cannot* delay a decision on this matter.
+Therefore, we cannot delay a decision on this matter.
 
 ### Makes behavior more consistent
 
