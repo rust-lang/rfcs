@@ -270,20 +270,25 @@ The macro will expand to two implementations, one for
 [`core::ops::CoerceUnsized`] and one for [`core::ops::DispatchFromDyn`]. This
 is enough for a type to participate in unsizing coercions and dynamic dispatch.
 
-The derive macro will implement the traits for the type according to the
+The derive macro will implement both traits for the type according to the
 following procedure:
 
-- Copy all generic parameters and their bounds from the struct definition into
-  the impl.
-- Add an additional type parameter `U` and give it a `?Sized` bound.
+- Copy all generic parameters from the struct definition into the impl.
+- Add an additional type parameter `U`.
+- For every trait bound declared on the trait, add it twice to the trait
+  implementation. Once exactly as written, and once with every instance of the
+  `#[pointee]` parameter replaced with `U`.
 - Add an additional `Unsize<U>` bound to the `#[pointee]` type parameter.
-- The generic parameter of the traits being implemented will be `Self`, except
+- The generic parameter of the trait being implemented will be `Self`, except
   that the `#[pointee]` type parameter is replaced with `U`.
 
 Given the following example code:
 ```rust
 #[derive(SmartPointer)]
-struct MySmartPointer<'a, #[pointee] T: ?Sized, A>{
+struct MySmartPointer<'a, #[pointee] T, A>
+where
+    T: ?Sized + SomeTrait<T>,
+{
     ptr: &'a T,
     phantom: PhantomData<A>,
 }
@@ -295,15 +300,17 @@ we'll get the following expansion:
 #[automatically_derived]
 impl<'a, T, A, U> ::core::ops::CoerceUnsized<MySmartPointer<'a, U, A>> for MySmartPointer<'a, T, A>
 where
-    T: ?Sized + ::core::marker::Unsize<U>,
-    U: ?::core::marker::Sized,
+    T: ?Sized + SomeTrait<T>,
+    U: ?Sized + SomeTrait<U>,
+    T: ::core::marker::Unsize<U>,
 {}
 
 #[automatically_derived]
 impl<'a, T, A, U> ::core::ops::DispatchFromDyn<MySmartPointer<'a, U, A>> for MySmartPointer<'a, T, A>
 where
-    T: ?Sized + ::core::marker::Unsize<U>,
-    U: ?::core::marker::Sized,
+    T: ?Sized + SomeTrait<T>,
+    U: ?Sized + SomeTrait<U>,
+    T: ::core::marker::Unsize<U>,
 {}
 ```
 
