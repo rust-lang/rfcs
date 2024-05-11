@@ -264,6 +264,8 @@ Point 1 and 2 are verified syntactically by the derive macro, whereas 3 and 4
 are verified semantically by the compiler when checking the generated
 [`DispatchFromDyn`] implementation as it does today.
 
+The `#[pointee]` attribute may also be written as `#[smart_pointer::pointee]`.
+
 ## Expansion
 
 The macro will expand to two implementations, one for
@@ -485,6 +487,30 @@ has an additional const generic parameter to allow you to use the same
 refcounted value with multiple lists. People have argued that it would be
 better to change this to a generic type instead of a const generic, so it would
 be useful to keep the option of having multiple generic types on the struct.
+
+### Conflicts with third-party derive macros
+
+The `#[pointee]` attribute could in principle conflict with other derive macros
+that also wish to annotate one of the parameters with an attribute called
+`#[pointee]`. To disambiguate such cases, we also allow the attribute to be
+spelled `#[smart_pointer::pointee]`.
+
+It is an error to specify both `#[pointee]` and `#[smart_pointer::pointee]`, so
+both macros must support this kind of disambiguation.
+
+Another way to avoid conflicts between `#[derive(SmartPointer)]` and third-party
+macros is to always assume that the first generic parameter is the pointee.
+This RFC does not propose that solution because:
+
+* It prevents the pointee from having a default unless it is the only parameter,
+  because parameters with a default must come last.
+* If logic such as "the first parameter" becomes commonplace in macro design,
+  then it does not really solve the issue with conflicts: you could have two
+  macros that both assume that the first parameter is special. And this kind of
+  conflict will be more common than attribute conflicts, because the attribute
+  will only conflict if both macros use an attribute of the same name.
+
+The authors are not aware of any macros using a `#[pointee]` attribute today.
 
 # Prior art
 [prior-art]: #prior-art
