@@ -723,9 +723,12 @@ proposals for relaxing them have been seen before (e.g., in the
 [pre-RFC][pre-rfc].)
 
 One example of a restriction that we could lift is the restriction that there is
-only one non-zero-sized field. This could allow implementations of `Rc` and
-`Arc` that store the value and refcount in two different allocations, like how
-the C++ `shared_ptr` works.
+only one non-zero-sized field. This would allow smart pointers to use custom
+allocators. (Today, types like `Box` and `Rc` only work with trait objects when
+using the default zero-sized allocator.)
+
+This could also allow implementations of `Rc` and `Arc` that store the value and
+refcount in two different allocations, like how the C++ `shared_ptr` works.
 ```rust
 #[derive(SmartPointer)]
 pub struct Rc<T: ?Sized> {
