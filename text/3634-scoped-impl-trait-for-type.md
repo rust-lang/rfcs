@@ -1,5 +1,5 @@
 - Feature Name: `scoped_impl_trait_for_type`
-- Start Date: (fill me in with today's date, 2024-05-12)
+- Start Date: 2024-05-12
 - RFC PR: [rust-lang/rfcs#3634](https://github.com/rust-lang/rfcs/pull/3634)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
