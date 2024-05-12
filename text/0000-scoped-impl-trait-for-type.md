@@ -112,7 +112,7 @@ use ::{impl Trait for Type};
 ### Scoped implementations and generics
 [scoped-implementations-and-generics]: #scoped-implementations-and-generics
 
-Scoped implementations are resolved on most generics' type parameters where those are specified, and become part of the (now less generic) host type's identity:
+Scoped implementations are resolved on most generics' type arguments where those are specified, and become part of the (now less generic) host type's identity:
 
 ```rust
 #[derive(Default)]
@@ -216,6 +216,7 @@ If the type whose API was extended this way later gains the same trait inherentl
 Be careful about literal coercion when using generic traits this way! For example, if a scoped implementation of `Index<isize>` is used and a global `Index<usize>` implementation is added later on the same type, the compiler will *not* automatically decide which to use for integer literal indices between these two.
 
 ## Rustdoc documentation changes
+[rustdoc-documentation-changes]: #rustdoc-documentation-changes
 
 ### `use` and `impl` keywords
 
@@ -223,6 +224,82 @@ The documentation pages [for the `use` keyword] and [for the `impl` keyword] are
 
 [for the `use` keyword]: https://doc.rust-lang.org/stable/std/keyword.use.html
 [for the `impl` keyword]: https://doc.rust-lang.org/stable/std/keyword.impl.html
+
+### `TypeId`
+
+The page for [`TypeId`] gains two sections with the following information:
+
+```markdown
+# `TypeId` and scoped implementations
+
+To make sure that that are no mix-ups between, for example, `HashSet<T>` and `HashSet<T as Hash in module>`, any such difference implies distinct `TypeId`s between such discretised generics (and that the types are not mutually assignable).
+
+This also affects trait-bounded generic type parameters: If `T` is bounded on `Hash`, then `TypeId::of::<T>()` results in distinct `TypeId`s in that context depending on the captured implementation.
+
+However, note that `TypeId::of::<T>()` and `TypeId::of::<T as Hash in module>()` are always equivalent for one definition of `T`, as `TypeId::of`'s implementation does **not** have a `T: Hash` bound!
+
+For convenience (so that their values are easily interchangeable across crates), the following types ignore scoped implementations *on* their generic arguments in terms of *their own* type identity: […]
+
+Despite this, differences in *type arguments'* discrete identities (for example from scoped implementations captured *in* them) distinguish the type identity of *all* discretised generics they appear in.
+
+# `TypeId::of::<Self>()` may change for values of generics
+
+To make type-erased collections sound and unsurprising by default, it's sound to transmute between instances of an external generic type that differ only in their captured scoped implementations, **iff and only iff** no inconsistency is ever observed by bounds (including across separate function calls).
+
+However, this poses a problem: `TypeId::of::<Self>()` (just like the written-out form of any type that doesn't ignore scoped implementations) takes *all* differences in captured implementation environments into account, not just those relevant to trait bounds.
+
+As such, prefer `TypeId::of::<T>()` whenever possible in order to make only the distinctions you require. You can use tuples to combine multiple type parameters without over-distinguishing: `TypeId::of::<(S, T)>()`
+```
+
+> These rules and the reasons for them are explained in detail in the [reference-level-explanation] below, as well as in [logical-consistency] as part of [rationale-and-alternatives]. It may be a good idea to link to similar longer explanations from the standard library docs above, even if just as "See also:"-style references for further reading.
+
+> The `[…]`-placeholder stands for a list of links to each implementation-invariant generic's documentation.
+
+See also [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters] for a way to narrowly alert users of this when relevant, and to scan for the potential impact of these changes ahead of time.
+
+[`TypeId`]: https://doc.rust-lang.org/stable/std/any/struct.TypeId.html
+
+### Implementation-invariant generics
+
+The pages for [implementation-invariant-generics] gain a section similar to the following:
+
+```markdown
+# Implementation-invariant generic
+
+This type does not by itself capture scoped implementation environments when discretised. See [`TypeId` and scoped implementations] for more information.
+```
+
+where ``[`TypeId` and scoped implementations]`` is a link to the section added to the `TypeId` page above.
+
+### `mem::transmute`
+
+The page for [`transmute`] gains a section with the following information:
+
+```markdown
+# `transmute` and scoped implementations
+
+It is sound to transmute between discretised generic types that differ only in their captured scoped implementation environments, **but only iff** such differences are **never** observed by bounds on their implementation, including functions that imply such by being implemented for discrete instances of the generic.
+```
+
+> As far as I can tell, this is only practically relevant for certain kinds of type-erasing collections, like type-erasing hash maps and B-trees, of which I couldn't find any examples on crates.io.
+>
+> Any straightforward implementations of such collections should also at worst exhibit only unexpected behaviour when consumed in the presence of scoped implementations, rather than unsoundness.
+
+[`transmute`]: https://doc.rust-lang.org/stable/std/mem/fn.transmute.html
+
+## Changes to The Rustonomicon
+
+The page on [Transmutes] gains the following warning in addition to the existing ones:
+
+```markdown
+- It is unsound to change [captured scoped implementations] via transmute for any external type if this change ever causes a contradiction observable by the transmuted value's implementation.
+
+  This can happen due to bounds on called functions and/or because a called function is implemented for a specific type discretised from the generic.
+```
+
+`[captured scoped implementations]` should link to documentation introducing scoped `impl Trait for Type`.
+
+[Transmutes]: https://doc.rust-lang.org/stable/nomicon/transmutes.html
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -387,18 +464,18 @@ use private::Sealing;
 
 pub trait Sealed: Sealing {
     fn assumed {
-        // (2)
+        // ❷
     }
 }
 
 impl<T: Sealed> Generic {
     fn assuming {
-        // (1)
+        // ❶
     }
 }
 ```
 
-In this crate, any code at (1) is currently allowed to make safety-critical assumptions about code at (2) and other implementations of `assumed`.
+In this crate, any code at ❶ is currently allowed to make safety-critical assumptions about code at ❷ and other implementations of `assumed`.
 
 To ensure this stays sound, scoped `impl Trait for Type` where `Trait` is external requires that all supertraits of `Trait` are visible to the crate defining the scoped implementation or are defined not in `Trait`'s definition crate (meaning they must still be exported from a crate somewhere in the dependency tree).
 
@@ -1113,6 +1190,274 @@ impl Trait1 for Type {
 
 In this case, the implementation of `Trait2` is *not* shadowed at all. Additionally, since `self.trait1();` here binds `Trait` on `Type` directly, rather than on a bounded generic type parameter, it uses whichever `impl Trait1 for Type` is in scope *where it is written*.
 
+## Resolution on generic type parameters
+[resolution-on-generic-type-parameters]: #resolution-on-generic-type-parameters
+
+Scoped `impl Trait for Type`s (including `use`-declarations) can be applied to outer generic type parameters *at least* (see [unresolved-questions]) via scoped blanket `use impl<T: Bound> Trait for T`.
+
+However, a blanket implementation can only be bound on a generic type parameter iff its bounds are fully covered by the generic type parameter's bounds and other available trait implementations on the generic type parameter, in the same way as this applies for global implementations.
+
+## Method resolution to scoped implementation without trait in scope
+
+[Method calls] can bind to scoped implementations even when the declaring trait is not separately imported. For example:
+
+```rust
+struct Type;
+struct Type2;
+
+mod nested {
+    trait Trait {
+        fn method(&self) {}
+    }
+}
+
+use impl nested::Trait for Type {}
+impl nested::Trait for Type2 {}
+
+Type.method(); // Compiles.
+Type2.method(); // error[E0599]: no method named `method` found for struct `Type2` in the current scope
+```
+
+This also equally (importantly) applies to scoped implementations imported from elsewhere.
+
+[Method calls]: https://doc.rust-lang.org/book/ch05-03-method-syntax.html#method-syntax
+
+## Scoped implementations do not implicitly bring the trait into scope
+
+This so that no method calls on other types become ambiguous:
+
+```rust
+struct Type;
+struct Type2;
+
+mod nested {
+    trait Trait {
+        fn method(&self) {}
+    }
+
+    trait Trait2 {
+        fn method(&self) {}
+    }
+}
+
+use nested::Trait2;
+impl Trait2 for Type {}
+impl Trait2 for Type2 {}
+
+use impl nested::Trait for Type {}
+impl nested::Trait for Type2 {}
+
+Type.method(); // Compiles, binds to scoped implementation of `Trait`.
+Type2.method(); // Compiles, binds to global implementation of `Trait2`.
+```
+
+(If `Trait` was not yet globally implemented for `Type2`, and `Trait` and `Type2` were defined in other crates, then bringing `Trait` into scope here could introduce instability towards that implementation later being added in one of those crates.)
+
+## Shadowing with different bounds
+
+Scoped implementations may have different bounds compared to an implementation they (partially) shadow. The compiler will attempt to satisfy those bounds, but if they are not satisfied, then the other implementation is not shadowed for that set of generic type parameters and no additional warning or error is raised.
+
+(Warnings for e.g. unused scoped implementations and scoped implementations that only shadow a covering global implementation are still applied as normal. It's just that partial shadowing with different bounds is likely a common use-case in macros.)
+
+```rust
+struct Type1;
+struct Type2;
+
+trait Trait1 {
+    fn trait1() {
+        println!("1");
+    }
+}
+impl<T> Trait1 for T {} // <--
+
+trait Trait2 {
+    fn trait2() {
+        println!("2");
+    }
+}
+impl Trait2 for Type2 {} // <--
+
+trait Say {
+    fn say();
+}
+impl<T: Trait1> Say for T
+where
+    T: Trait1, // <--
+{
+    fn say() {
+        T::trait1();
+    }
+}
+
+{
+    use impl<T> Say for T
+    where
+        T: Trait2 // <--
+    {
+        fn say() {
+            T::trait2();
+        }
+    }
+
+    Type1::say(); // 1
+    Type2::say(); // 2
+}
+```
+
+## No priority over type-associated methods
+
+Scoped `impl Trait for Type` has *the same* method resolution priority as an equivalent global implementation would have if it was visible for method-binding in that scope. This means that directly type-associated functions still bind with higher priority than those available through scoped implementations.
+
+## Coercion to trait objects
+
+Due to the coercion into a trait object in the following code, the scoped implementation becomes attached to the value through the pointer meta data. This means it can then be called from other scopes:
+
+```rust
+use std::fmt::{self, Display, Formatter};
+
+fn function() -> &'static dyn Display {
+    use impl Display for () {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            write!(f, "scoped")
+        }
+    }
+
+    &()
+}
+
+println!("{}", function()); // "scoped"
+```
+
+This behaves exactly as a global implementation would.
+
+Note that the [`DynMetadata<dyn Display>`]s of the reference returned above and one that uses the global implementation would compare as distinct even if both are "`&()`".
+
+[`DynMetadata<dyn Display>`]: https://doc.rust-lang.org/stable/core/ptr/struct.DynMetadata.html
+
+## Interaction with return-position `impl Trait`
+
+Consider the following functions:
+
+```rust
+trait Trait {}
+
+fn function() -> impl Trait {
+    use impl Trait for () {}
+
+    () // Binds on trailing `()`-expression.
+}
+
+fn function2() -> impl Trait {
+    use impl Trait for () {}
+
+    {} // Binds on trailing `{}`-block used as expression.
+}
+```
+
+In this case, the returned opaque types use the respective inner scoped implementation, as it binds on the `()` expression.
+
+The following functions do not compile, as the implicitly returned `()` is not stated *inside* the scope where the implementation is available:
+
+```rust
+trait Trait {}
+
+fn function() -> impl Trait {
+                 ^^^^^^^^^^
+    use impl Trait for () {}
+    ---------------------
+
+    // Cannot bind on implicit `()` returned by function body without trailing *Expression*.
+}
+
+fn function2() -> impl Trait {
+                  ^^^^^^^^^^
+    use impl Trait for () {}
+    ---------------------
+
+    return; // Cannot bind on `return` without expression.
+    -------
+}
+```
+
+(The errors should ideally also point at the scoped implementations here with a secondary highlight, and suggest stating the return value explicitly.)
+
+The binding must be consistent:
+
+```rust
+trait Trait {}
+
+fn function() -> impl Trait {
+    // error: Inconsistent implementation of opaque return type.
+    if true {
+        use impl Trait for () {}
+        return ();
+        ----------
+    } else {
+        use impl Trait for () {}
+        return ();
+        ^^^^^^^^^^
+    }
+}
+```
+
+This function *does* compile, as the outer scoped `impl Trait for ()` is bound on the `if`-`else`-expression as a whole.
+
+```rust
+trait Trait {}
+
+fn function() -> impl Trait {
+    use impl Trait for () {}
+
+    if true {
+        use impl Trait for () {} // warning: unused scoped implementation
+        ()
+    } else {
+        use impl Trait for () {} // warning: unused scoped implementation
+        ()
+    }
+}
+```
+
+This compiles because the end of the function is not reachable:
+
+```rust
+trait Trait {}
+
+fn function() -> impl Trait {
+    {
+        use impl Trait for () {}
+        return (); // Explicit `return` is required to bind in the inner scope.
+    }
+}
+```
+
+## Static interception of dynamic calls
+
+As a consequence of binding outside of generic contexts, it *is* possible to statically wrap *specific* trait implementations on *concrete* types. This includes the inherent implementations on trait objects:
+
+```rust
+use std::fmt::{self, Display, Formatter};
+
+{
+    use impl Display for dyn Display {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            // Restore binding to inherent global implementation within this function.
+            use ::{impl Display for dyn Display};
+
+            write!(f, "Hello! ")?;
+            d.fmt(f)?;
+            write!(f, " See you!")
+        }
+    }
+
+    let question = "What's up?"; // &str
+    println!("{question}"); // "What's up?"
+
+    let question: &dyn Display = &question;
+    println!("{question}"); // Binds to the scoped implementation; "Hello! What's up? See you!"
+}
+```
+
 ## Warnings
 
 ### Unused scoped implementation
@@ -1392,274 +1737,6 @@ In most cases, implementations should change this to `TypeId::of::<T>()`, where 
 
 Instead of `TypeId::of::<AStruct<U, V, W>>()`, `TypeId::of::<(U, V, W)>()` can be used, as tuples are [implementation-invariant-generics].
 
-## Resolution on generic type parameters
-[resolution-on-generic-type-parameters]: #resolution-on-generic-type-parameters
-
-Scoped `impl Trait for Type`s (including `use`-declarations) can be applied to outer generic type parameters *at least* (see [unresolved-questions]) via scoped blanket `use impl<T: Bound> Trait for T`.
-
-However, a blanket implementation can only be bound on a generic type parameter iff its bounds are fully covered by the generic type parameter's bounds and other available trait implementations on the generic type parameter, in the same way as this applies for global implementations.
-
-## Method resolution to scoped implementation without trait in scope
-
-[Method calls] can bind to scoped implementations even when the declaring trait is not separately imported. For example:
-
-```rust
-struct Type;
-struct Type2;
-
-mod nested {
-    trait Trait {
-        fn method(&self) {}
-    }
-}
-
-use impl nested::Trait for Type {}
-impl nested::Trait for Type2 {}
-
-Type.method(); // Compiles.
-Type2.method(); // error[E0599]: no method named `method` found for struct `Type2` in the current scope
-```
-
-This also equally (importantly) applies to scoped implementations imported from elsewhere.
-
-[Method calls]: https://doc.rust-lang.org/book/ch05-03-method-syntax.html#method-syntax
-
-## Scoped implementations do not implicitly bring the trait into scope
-
-This so that no method calls on other types become ambiguous:
-
-```rust
-struct Type;
-struct Type2;
-
-mod nested {
-    trait Trait {
-        fn method(&self) {}
-    }
-
-    trait Trait2 {
-        fn method(&self) {}
-    }
-}
-
-use nested::Trait2;
-impl Trait2 for Type {}
-impl Trait2 for Type2 {}
-
-use impl nested::Trait for Type {}
-impl nested::Trait for Type2 {}
-
-Type.method(); // Compiles, binds to scoped implementation of `Trait`.
-Type2.method(); // Compiles, binds to global implementation of `Trait2`.
-```
-
-(If `Trait` was not yet globally implemented for `Type2`, and `Trait` and `Type2` were defined in other crates, then bringing `Trait` into scope here could introduce instability towards that implementation later being added in one of those crates.)
-
-## Shadowing with different bounds
-
-Scoped implementations may have different bounds compared to an implementation they (partially) shadow. The compiler will attempt to satisfy those bounds, but if they are not satisfied, then the other implementation is not shadowed for that set of generic type parameters and no additional warning or error is raised.
-
-(Warnings for e.g. unused scoped implementations and scoped implementations that only shadow a covering global implementation are still applied as normal. It's just that partial shadowing with different bounds is likely a common use-case in macros.)
-
-```rust
-struct Type1;
-struct Type2;
-
-trait Trait1 {
-    fn trait1() {
-        println!("1");
-    }
-}
-impl<T> Trait1 for T {} // <--
-
-trait Trait2 {
-    fn trait2() {
-        println!("2");
-    }
-}
-impl Trait2 for Type2 {} // <--
-
-trait Say {
-    fn say();
-}
-impl<T: Trait1> Say for T
-where
-    T: Trait1, // <--
-{
-    fn say() {
-        T::trait1();
-    }
-}
-
-{
-    use impl<T> Say for T
-    where
-        T: Trait2 // <--
-    {
-        fn say() {
-            T::trait2();
-        }
-    }
-
-    Type1::say(); // 1
-    Type2::say(); // 2
-}
-```
-
-## No priority over type-associated methods
-
-Scoped `impl Trait for Type` has *the same* method resolution priority as an equivalent global implementation would have if it was visible for method-binding in that scope. This means that directly type-associated functions still bind with higher priority than those available through scoped implementations.
-
-## Coercion to trait objects
-
-Due to the coercion into a trait object in the following code, the scoped implementation becomes attached to the value through the pointer meta data. This means it can then be called from other scopes:
-
-```rust
-use std::fmt::{self, Display, Formatter};
-
-fn function() -> &'static dyn Display {
-    use impl Display for () {
-        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-            write!(f, "scoped")
-        }
-    }
-
-    &()
-}
-
-println!("{}", function()); // "scoped"
-```
-
-This behaves exactly as a global implementation would.
-
-Note that the [`DynMetadata<dyn Display>`]s of the reference returned above and one that uses the global implementation would compare as distinct even if both are "`&()`".
-
-[`DynMetadata<dyn Display>`]: https://doc.rust-lang.org/stable/core/ptr/struct.DynMetadata.html
-
-## Interaction with return-position `impl Trait`
-
-Consider the following functions:
-
-```rust
-trait Trait {}
-
-fn function() -> impl Trait {
-    use impl Trait for () {}
-
-    () // Binds on trailing `()`-expression.
-}
-
-fn function2() -> impl Trait {
-    use impl Trait for () {}
-
-    {} // Binds on trailing `{}`-block used as expression.
-}
-```
-
-In this case, the returned opaque types use the respective inner scoped implementation, as it binds on the `()` expression.
-
-The following functions do not compile, as the implicitly returned `()` is not stated *inside* the scope where the implementation is available:
-
-```rust
-trait Trait {}
-
-fn function() -> impl Trait {
-                 ^^^^^^^^^^
-    use impl Trait for () {}
-    ---------------------
-
-    // Cannot bind on implicit `()` returned by function body without trailing *Expression*.
-}
-
-fn function2() -> impl Trait {
-                  ^^^^^^^^^^
-    use impl Trait for () {}
-    ---------------------
-
-    return; // Cannot bind on `return` without expression.
-    -------
-}
-```
-
-(The errors should ideally also point at the scoped implementations here with a secondary highlight, and suggest stating the return value explicitly.)
-
-The binding must be consistent:
-
-```rust
-trait Trait {}
-
-fn function() -> impl Trait {
-    // error: Inconsistent implementation of opaque return type.
-    if true {
-        use impl Trait for () {}
-        return ();
-        ----------
-    } else {
-        use impl Trait for () {}
-        return ();
-        ^^^^^^^^^^
-    }
-}
-```
-
-This function *does* compile, as the outer scoped `impl Trait for ()` is bound on the `if`-`else`-expression as a whole.
-
-```rust
-trait Trait {}
-
-fn function() -> impl Trait {
-    use impl Trait for () {}
-
-    if true {
-        use impl Trait for () {} // warning: unused scoped implementation
-        ()
-    } else {
-        use impl Trait for () {} // warning: unused scoped implementation
-        ()
-    }
-}
-```
-
-This compiles because the end of the function is not reachable:
-
-```rust
-trait Trait {}
-
-fn function() -> impl Trait {
-    {
-        use impl Trait for () {}
-        return (); // Explicit `return` is required to bind in the inner scope.
-    }
-}
-```
-
-## Static interception of dynamic calls
-
-As a consequence of binding outside of generic contexts, it *is* possible to statically wrap *specific* trait implementations on *concrete* types. This includes the inherent implementations on trait objects:
-
-```rust
-use std::fmt::{self, Display, Formatter};
-
-{
-    use impl Display for dyn Display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-            // Restore binding to inherent global implementation within this function.
-            use ::{impl Display for dyn Display};
-
-            write!(f, "Hello! ")?;
-            d.fmt(f)?;
-            write!(f, " See you!")
-        }
-    }
-
-    let question = "What's up?"; // &str
-    println!("{question}"); // "What's up?"
-
-    let question: &dyn Display = &question;
-    println!("{question}"); // Binds to the scoped implementation; "Hello! What's up? See you!"
-}
-```
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -1704,7 +1781,7 @@ There are a few ways to mitigate this, but they all have significant drawbacks:
 
 ## Unexpected behaviour of `TypeId::of::<Self>()` in implementations on generics in the consumer-side presence of scoped implementations and `transmute`
 
-As explained in [layout-compatibility] and [type-identity-of-generic-types], an observed `TypeId` can change for an instance under specific circumstances that are previously-legal `transmute`s as e.g. for the `HashSet`s inside the type-erased value-keyed collection like the `ErasedHashSet` example in the [typeid-of-generic-type-parameters-opaque-types] section.
+As explained in [rustdoc-documentation-changes], [layout-compatibility] and [type-identity-of-generic-types], an observed `TypeId` can change for an instance under specific circumstances that are previously-legal `transmute`s as e.g. for the `HashSet`s inside the type-erased value-keyed collection like the `ErasedHashSet` example in the [typeid-of-generic-type-parameters-opaque-types] section.
 
 This use case appears to be niche enough in Rust to not have an obvious example on crates.io, but see [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters] for a lint that aims to mitigate issues in this regard and could be used to survey potential issues.
 
