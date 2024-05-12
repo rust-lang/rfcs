@@ -2,6 +2,7 @@
 title = "The Rust RFC Book"
 
 [output.html]
+curly-quotes = true
 no-section-label = true
 git-repository-url = "https://github.com/rust-lang/rfcs"
 site-url = "/rfcs/"

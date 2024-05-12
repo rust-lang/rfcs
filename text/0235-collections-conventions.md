@@ -1108,7 +1108,7 @@ These traits will be implemented for: `[T]`, `Vec`, `RingBuf`, `HashMap`, `TreeM
 
 As a general convention, implementation of the `Index` traits will *fail the
 task* if the index is invalid (out of bounds or key not found); they will
-therefor return direct references to values. Any collection implementing `Index`
+therefore return direct references to values. Any collection implementing `Index`
 (resp. `IndexMut`) should also provide a `get` method (resp. `get_mut`) as a
 non-failing variant that returns an `Option` value.
 

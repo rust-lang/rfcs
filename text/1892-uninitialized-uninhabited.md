@@ -207,7 +207,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn into_inner(self) -> T {
         std::ptr::read(&*self.value)
@@ -217,7 +217,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_ref(&self) -> &T {
         &*self.value
@@ -227,7 +227,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_mut(&mut self) -> &mut T {
         &mut *self.value

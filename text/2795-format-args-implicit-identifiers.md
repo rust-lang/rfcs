@@ -218,7 +218,7 @@ There are two types of arguments `format_args!` can accept:
 
        format_args!("The {}'s name is {}.", species, name)
 
-2. Named arguments, which require more typing but (in the RFC author's experience) have the upside that the the format string itself is easier to read:
+2. Named arguments, which require more typing but (in the RFC author's experience) have the upside that the format string itself is easier to read:
 
        format_args!(
            "The {species}'s name is {name}",

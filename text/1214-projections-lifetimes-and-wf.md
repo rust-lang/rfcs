@@ -259,7 +259,7 @@ Here, the WF criteria for `DeltaMap<K,V>` are as follows:
 - `V: Sized`, because of the implicit `Sized` bound
 
 Let's look at those `K:'a` bounds a bit more closely. If you leave
-them out, you will find that the the structure definition above does
+them out, you will find that the structure definition above does
 not type-check. This is due to the requirement that the types of all
 fields in a structure definition must be well-formed.  In this case,
 the field `base_map` has the type `&'a mut HashMap<K,V>`, and this
@@ -794,7 +794,7 @@ The object type rule is similar, though it includes an extra clause:
       R ⊢ O0..On+r WF
 
 The first two clauses here state that the explicit lifetime bound `r`
-must be an approximation for the the implicit bounds `rᵢ` derived from
+must be an approximation for the implicit bounds `rᵢ` derived from
 the trait definitions. That is, if you have a trait definition like
 
 ```rust

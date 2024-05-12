@@ -21,7 +21,7 @@ This RFC is not authored by a lawyer, so its reasoning may be wrong.
 Currently, the Rust RFCs repo is in a state where no clear open source license
 is specified.
 
-The current legal base of the the RFCs repo is the "License Grant to Other
+The current legal base of the RFCs repo is the "License Grant to Other
 Users" from the [Github ToS]`*`:
 
 ```
@@ -85,7 +85,7 @@ Also, after this RFC got merged, all RFCs in the queue will get a comment in
 their Github PR and be asked to include the copyright section at the top of
 their RFC file.
 
-The note in README.md should should inform new PR authors of the terms
+The note in README.md should inform new PR authors of the terms
 they put their contribution under.
 
 # Drawbacks

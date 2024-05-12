@@ -215,7 +215,7 @@ have `with` `panic!` instead.
 ## Owning TLS
 
 Although scoped TLS can store any value, it is also limited in the fact that it
-cannot own a value. This means that TLS values cannot escape the stack from from
+cannot own a value. This means that TLS values cannot escape the stack from
 which they originated from. This is itself another common usage pattern of TLS,
 and to solve this problem the `std::tls` module will provided support for
 placing owned values into TLS.

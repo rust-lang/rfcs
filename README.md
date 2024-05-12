@@ -115,7 +115,8 @@ merged into the RFC repository as a markdown file. At that point the RFC is
     feedback from the larger community, and the author should be prepared to
     revise it in response.
   - Now that your RFC has an open pull request, use the issue number of the PR
-    to update your `0000-` prefix to that number.
+    to rename the file: update your `0000-` prefix to that number. Also
+    update the "RFC PR" link at the top of the file.
   - Each pull request will be labeled with the most relevant [sub-team], which
     will lead to its being triaged by that team in a future meeting and assigned
     to a member of the subteam.

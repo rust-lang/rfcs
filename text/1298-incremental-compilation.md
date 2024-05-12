@@ -149,7 +149,7 @@ saved. The effect of saving fewer things (such as only saving object
 code) will simply be to make incremental compilation somewhat less
 effective, since we will be forced to re-type-check and re-trans
 functions where we might have gotten away with only generating new
-object code. However, this is expected to be be a second order effect
+object code. However, this is expected to be a second order effect
 overall, particularly since LLVM optimization time can be a very large
 portion of compilation.
 

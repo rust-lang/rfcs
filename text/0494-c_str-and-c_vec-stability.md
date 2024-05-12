@@ -179,7 +179,7 @@ and `with_c_str` methods are no longer in the prelude by default, and
   directly calling `CString::from_vec`, but it may be more frequently called via
   `CString::from_slice`, resulting in an unnecessary allocation. Note, however,
   that one would have to remember to call `into_c_str` on the `ToCStr` trait, so
-  it doesn't necessarily help too too much.
+  it doesn't necessarily help too much.
 
 * The ergonomics of operating C strings have been somewhat reduced as part of
   this design. The `CString::from_slice` method is somewhat long to call

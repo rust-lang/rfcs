@@ -294,7 +294,7 @@ models or nonblocking IO, nor is it a goal for the blocking APIs to eventually
 be used in a nonblocking "mode" or style.
 
 Rather, the hope is that the basic abstractions of files, paths, sockets, and so
-on will eventually be usable directly within an async IO programing model and/or
+on will eventually be usable directly within an async IO programming model and/or
 with nonblocking APIs. This is the case for most existing languages, which offer
 multiple interoperating IO models.
 

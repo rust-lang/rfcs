@@ -917,7 +917,7 @@ comes, it may come with a new trait (call it `GcAwareAllocator`).
    option we choose can be incorporated into the meta-data for a
    crate.)
 
-Allocators that are are GC-compatible have to explicitly declare
+Allocators that are GC-compatible have to explicitly declare
 themselves as such, by implementing `GcAwareAllocator`, which will
 then impose new conditions on the methods of `Allocator`, for example
 ensuring e.g. that allocated blocks of memory can be scanned

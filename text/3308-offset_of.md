@@ -202,7 +202,7 @@ types:
     In this case, `$field` must share a name or tuple index with a field which:
     - Exists on `$Container`.
     - Is visible at the location where `offset_of!` is invoked (but there is no
-      requirement that fields other than than `$field` be visible there)
+      requirement that fields other than `$field` be visible there)
 
 2. An anonymous tuple type.
 
@@ -539,7 +539,7 @@ such as in the case of the last field in `(Foo, dyn SomeTrait)`, where the
 offset depends on what the concrete type is. Notably, the compiler must read the
 alignment out of the vtable when you access such a field.
 
-This is equivalent to not being able to determine the the size and/or alignment
+This is equivalent to not being able to determine the size and/or alignment
 of `?Sized` types, where we solve it by making the user provide the instance
 they're interested in, as in `core::mem::{size_of_val, align_of_val}`, so we
 could provide an analogous `core::mem::offset_of_val!($val, $Type, $field)` to

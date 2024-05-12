@@ -330,7 +330,7 @@ information in such a strange way. There are two restrictions that force us to a
     solution for systems languages like Rust because optimization often collapses multiple levels
     of function calls.  In some embedded systems, the backtrace may even be unavailable!
 
-2. Solutions that use default function arguments alongside normal arguments are are often used in
+2. Solutions that use default function arguments alongside normal arguments are often used in
     languages that do not perform inference higher than statement level, e.g. Swift and C#. Rust
     does not (yet) support default function arguments or function overloading because they interfere
     with type inference, so such solutions are ruled out.
