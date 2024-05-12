@@ -232,23 +232,40 @@ The page for [`TypeId`] gains two sections with the following information:
 ```markdown
 # `TypeId` and scoped implementations
 
-To make sure that that are no mix-ups between, for example, `HashSet<T>` and `HashSet<T as Hash in module>`, any such difference implies distinct `TypeId`s between such discretised generics (and that the types are not mutually assignable).
+To make sure that that are no mix-ups between, for example, `HashSet<T>` and
+`HashSet<T as Hash in module>`, any such difference implies distinct `TypeId`s between
+such discretised generics (and that the types are not mutually assignable).
 
-This also affects trait-bounded generic type parameters: If `T` is bounded on `Hash`, then `TypeId::of::<T>()` results in distinct `TypeId`s in that context depending on the captured implementation.
+This also affects trait-bounded generic type parameters: If `T` is bounded on `Hash`, then
+`TypeId::of::<T>()` results in distinct `TypeId`s in that context depending on the
+captured implementation.
 
-However, note that `TypeId::of::<T>()` and `TypeId::of::<T as Hash in module>()` are always equivalent for one definition of `T`, as `TypeId::of`'s implementation does **not** have a `T: Hash` bound!
+However, note that `TypeId::of::<T>()` and `TypeId::of::<T as Hash in module>()` are
+always equivalent for one definition of `T`, as `TypeId::of`'s implementation does **not**
+have a `T: Hash` bound!
 
-For convenience (so that their values are easily interchangeable across crates), the following types ignore scoped implementations *on* their generic arguments in terms of *their own* type identity: […]
+For convenience (so that their values are easily interchangeable across crates), the
+following types ignore scoped implementations *on* their generic arguments in terms of
+*their own* type identity: […]
 
-Despite this, differences in *type arguments'* discrete identities (for example from scoped implementations captured *in* them) distinguish the type identity of *all* discretised generics they appear in.
+Despite this, differences in *type arguments'* discrete identities (for example from
+scoped implementations captured *in* them) distinguish the type identity of *all*
+discretised generics they appear in.
 
 # `TypeId::of::<Self>()` may change for values of generics
 
-To make type-erased collections sound and unsurprising by default, it's sound to transmute between instances of an external generic type that differ only in their captured scoped implementations, **iff and only iff** no inconsistency is ever observed by bounds (including across separate function calls).
+To make type-erased collections sound and unsurprising by default, it's sound to transmute
+between instances of an external generic type that differ only in their captured scoped
+implementations, **iff and only iff** no inconsistency is ever observed by bounds
+(including across separate function calls).
 
-However, this poses a problem: `TypeId::of::<Self>()` (just like the written-out form of any type that doesn't ignore scoped implementations) takes *all* differences in captured implementation environments into account, not just those relevant to trait bounds.
+However, this poses a problem: `TypeId::of::<Self>()` (just like the written-out form of
+any type that doesn't ignore scoped implementations) takes *all* differences in captured
+implementation environments into account, not just those relevant to trait bounds.
 
-As such, prefer `TypeId::of::<T>()` whenever possible in order to make only the distinctions you require. You can use tuples to combine multiple type parameters without over-distinguishing: `TypeId::of::<(S, T)>()`
+As such, prefer `TypeId::of::<T>()` whenever possible in order to make only the
+distinctions you require. You can use tuples to combine multiple type parameters without
+over-distinguishing: `TypeId::of::<(S, T)>()`
 ```
 
 > These rules and the reasons for them are explained in detail in the [reference-level-explanation] below, as well as in [logical-consistency] as part of [rationale-and-alternatives]. It may be a good idea to link to similar longer explanations from the standard library docs above, even if just as "See also:"-style references for further reading.
@@ -266,7 +283,8 @@ The pages for [implementation-invariant-generics] gain a section similar to the 
 ```markdown
 # Implementation-invariant generic
 
-This type does not by itself capture scoped implementation environments when discretised. See [`TypeId` and scoped implementations] for more information.
+This type does not by itself capture scoped implementation environments when discretised.
+See [`TypeId` and scoped implementations] for more information.
 ```
 
 where ``[`TypeId` and scoped implementations]`` is a link to the section added to the `TypeId` page above.
@@ -278,7 +296,10 @@ The page for [`transmute`] gains a section with the following information:
 ```markdown
 # `transmute` and scoped implementations
 
-It is sound to transmute between discretised generic types that differ only in their captured scoped implementation environments, **but only iff** such differences are **never** observed by bounds on their implementation, including functions that imply such by being implemented for discrete instances of the generic.
+It is sound to transmute between discretised generic types that differ only in their
+captured scoped implementation environments, **but only iff** such differences are
+**never** observed by bounds on their implementation, including functions that imply such
+by being implemented for discrete instances of the generic.
 ```
 
 > As far as I can tell, this is only practically relevant for certain kinds of type-erasing collections, like type-erasing hash maps and B-trees, of which I couldn't find any examples on crates.io.
@@ -292,9 +313,12 @@ It is sound to transmute between discretised generic types that differ only in t
 The page on [Transmutes] gains the following warning in addition to the existing ones:
 
 ```markdown
-- It is unsound to change [captured scoped implementations] via transmute for any external type if this change ever causes a contradiction observable by the transmuted value's implementation.
+- It is unsound to change [captured scoped implementations] via transmute for any external
+  type if this change ever causes a contradiction observable by the transmuted value's
+  implementation.
 
-  This can happen due to bounds on called functions and/or because a called function is implemented for a specific type discretised from the generic.
+  This can happen due to bounds on called functions and/or because a called function is
+  implemented for a specific type discretised from the generic.
 ```
 
 `[captured scoped implementations]` should link to documentation introducing scoped `impl Trait for Type`.
