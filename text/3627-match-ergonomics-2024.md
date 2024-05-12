@@ -263,6 +263,38 @@ rules could require editing the affected patterns twice: once to desugar the
 match ergonomics before adopting the new edition, and a second time to restore
 match ergonomics after adoption of the new edition.
 
+## Macro subpatterns
+
+Unfortunately, when a subpattern derives from a macro expansion, fully
+desugaring the match ergonomics may not be possible. For example:
+
+```rust
+//! crate foo (edition 2021)
+#[macro_export]
+macro_rules! foo {
+    ($foo:ident) => {
+        [$foo]
+    };
+}
+```
+
+```rust
+//! crate bar (edition 2021, want to migrate to 2024)
+extern crate foo;
+use foo::*;
+
+fn main() {
+    let [[&x], foo!(y)] =  &[[&0], [0]];
+    //~^ WARN: the semantics of this pattern will change in edition 2024
+    let _: i32 = x;
+    let _: &i32 = y;
+}
+```
+
+In such cases, there is no possible machine-applicable suggstion we could emit
+to produce code compatible with all editions (short of expanding the macro).
+However, such code should be extremely rare in practice.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
