@@ -29,21 +29,21 @@ The end goal being to provide this information automatically so that the documen
 
 This RFC proposes to add the following attributes:
 
+  * `#![doc(auto_cfg(enable))]`/`#[doc(auto_cfg(disable))]`
+
+    When this is turned on, `#[cfg]` attributes are shown in documentation just like `#[doc(cfg)]` attributes are. By default, `auto_cfg` will be enabled.
+
   * `#[doc(cfg(...))]`
 
     This attribute is used to document the operating systems, feature flags, and build profiles where an item is available. For example, `#[doc(cfg(unix))` will add a tag that says "this is supported on **unix** only" to the item.
 
     The syntax of this attribute is the same as the syntax of the [`#[cfg(unix)]` attribute][cfg attribute] used for conditional compilation.
 
-  * `#[doc(auto_cfg)]`/`#[doc(no_auto_cfg)]`
-
-    When this is turned on, `#[cfg]` attributes are shown in documentation just like `#[doc(cfg)]` attributes are.
-
-  * `#[doc(cfg_hide(...))]` / `#[doc(cfg_show(...))]`
+  * `#![doc(cfg_hide(...))]` / `#[doc(cfg_show(...))]`
 
     These attributes suppress or un-suppress the `auto_cfg` behavior for a particular configuration predicate.
 
-    For example, `#[doc(cfg_hide(windows))]` shall be used in newer versions of the [`windows` crate] to prevent the "this is supported on **windows** only" tag from being shown on every single item.
+    For example, `#[doc(cfg_hide(windows))]` could be used in newer versions of the [`windows` crate] to prevent the "this is supported on **windows** only" tag from being shown on every single item.
 
 [cfg attribute]: https://doc.rust-lang.org/reference/conditional-compilation.html
 [`windows` crate]: https://docs.rs/windows/latest/windows/
@@ -56,9 +56,24 @@ All of these attributes can be added to a module or to the crate root, and they 
 
 ## The attributes
 
+### `#[doc(auto_cfg(enable))]`/`#[doc(auto_cfg(disable))]`
+
+This is a crate-level attribute. By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
+
+So if we take back the previous example:
+
+```rust
+#[cfg(feature = "futures-io")]
+pub mod futures {}
+```
+
+There's no need to "duplicate" the `cfg` into a `doc(cfg())` to make Rustdoc display it.
+
+In some situations, the detailed conditional compilation rules used to implement the feature might not serve as good documentation (for example, the list of supported platforms might be very long, and it might be better to document them in one place). To turn it off, add the `#[doc(auto_cfg(disable))]` attribute at the crate-level.
+
 ### `#[doc(cfg(...))]`
 
-This attribute provides a standardized format to document conditionally available items. Example:
+This attribute provides a standardized format to override `#[cfg()]` attributes to document conditionally available items. Example:
 
 ```rust
 // the "real" cfg condition
@@ -72,100 +87,75 @@ It will display in the documentation for this module:
 
 ![This is supported on feature="futures-io" only.](https://user-images.githubusercontent.com/81079/89731116-d7b7ce00-da44-11ea-87c6-022d192d6eca.png)
 
-This attribute has the same syntax as conditional compilation, but it only causes documentation to be added. This means `#[doc(cfg(false))` will not cause your docs to be hidden, even though `#[cfg(false)]` does do that.
+This attribute has the same syntax as conditional compilation, but it only causes documentation to be added. This means `#[doc(cfg(not(windows)))]` will not cause your docs to be hidden on non-windows targets, even though `#[cfg(not(windows))]` does do that.
 
 This attribute works on modules and on items but cannot be used at the crate root level.
 
-### `#[doc(auto_cfg)]`/`#[doc(no_auto_cfg)]`
-
-By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
-
-So if we take back the previous example:
-
-```rust
-#[cfg(feature = "futures-io")]
-pub mod futures {}
-```
-
-There's no need to "duplicate" the `cfg` into a `doc(cfg())` to make Rustdoc display it.
-
-In some situations, the detailed conditional compilation rules used to implement the feature might not serve as good documentation (for example, the list of supported platforms might be very long, and it might be better to document them in one place). To turn it off, add the `#[doc(no_auto_cfg)]` attribute.
-
-Both `#[doc(auto_cfg)]` and `#[doc(no_auto_cfg)]` attributes impact all there descendants. You can then enable/disable them by using the opposite attribute on a given item. They can be used as follows:
-
-```rust
-// As an inner attribute, all this module's descendants will have this feature
-// enabled.
-#![doc(auto_cfg)]
-
-// As an outer attribute. So in this case, `foo` and all its
-// descendants won't have the `auto_cfg` feature enabled.
-#[doc(no_auto_cfg)] 
-pub mod foo {
-    // We re-enable the feature on `Bar` and on all its descendants.
-    #[doc(auto_cfg)]
-    pub struct Bar {
-        pub f: u32,
-    }
-}
-```
-
-As mentioned, both attributes can be used on modules, items and crate root level.
-
 ### `#[doc(cfg_hide(...))]`
 
-This attribute is used to prevent some `cfg` to be generated in the visual markers. So in the previous example:
+This attribute is used to prevent some `cfg` to be generated in the visual markers. It only applies to `#[doc(auto_cfg(enable))]`, not to `#[doc(cfg(...))]`. So in the previous example:
 
 ```rust
-#[cfg(any(doc, feature = "futures-io"))]
+#[cfg(any(unix, feature = "futures-io"))]
 pub mod futures {}
 ```
 
-It currently displays both `doc` and `feature = "futures-io"` into the documentation, which is not great. To prevent the `doc` cfg to ever be displayed, you can use this attribute at the crate root level:
+It currently displays both `unix` and `feature = "futures-io"` into the documentation, which is not great. To prevent the `unix` cfg to ever be displayed, you can use this attribute at the crate root level:
 
 ```rust
-#![doc(cfg_hide(doc))]
+#![doc(cfg_hide(unix))]
 ```
 
 Or directly on a given item/module as it covers any of the item's descendants:
 
 ```rust
-#[doc(cfg_hide(doc))]
-#[cfg(any(doc, feature = "futures-io"))]
+#[doc(cfg_hide(unix))]
+#[cfg(any(unix, feature = "futures-io"))]
 pub mod futures {
-    // `futures` and all its descendants won't display "doc" in their cfgs.
+    // `futures` and all its descendants won't display "unix" in their cfgs.
 }
 ```
 
-Then, the `doc` cfg will never be displayed into the documentation.
+Then, the `unix` cfg will never be displayed into the documentation.
 
 Rustdoc currently hides `doc` and `doctest` attributes by default and reserves the right to change the list of "hidden by default" attributes.
 
 The attribute accepts only a list of identifiers or key/value items. So you can write:
 
 ```rust
-#[doc(cfg_hide(doc, doctest, feature = "something"))]
+#[doc(cfg_hide(unix, doctest, feature = "something"))]
 #[doc(cfg_hide())]
 ```
 
 But you cannot write:
 
 ```rust
-#[doc(cfg_hide(not(doc)))]
+#[doc(cfg_hide(not(unix)))]
+```
+
+If `cfg_show` and `cfg_hide` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
+
+```rust
+#[doc(cfg_hide(unix))]
+#[doc(cfg_show(unix))] // Error!
+pub fn foo() {}
 ```
 
 ### `#[doc(cfg_show(...))]`
 
-This attribute does the opposite of `#[doc(cfg_hide(...))]`: if you used `#[doc(cfg_hide(...))]` and want to revert its effect on an item and its descendants, you can use `#[doc(cfg_show(...))]`:
+This attribute does the opposite of `#[doc(cfg_hide(...))]`: if you used `#[doc(cfg_hide(...))]` and want to revert its effect on an item and its descendants, you can use `#[doc(cfg_show(...))]`.
+It only applies to `#[doc(auto_cfg(enable))]`, not to `#[doc(cfg(...))]`.
+
+For example:
 
 ```rust
-#[doc(cfg_hide(doc))]
-#[cfg(any(doc, feature = "futures-io"))]
+#[doc(cfg_hide(unix))]
+#[cfg(any(unix, feature = "futures-io"))]
 pub mod futures {
-    // `futures` and all its descendants won't display "doc" in their cfgs.
-    #[doc(cfg_show(doc))]
+    // `futures` and all its descendants won't display "unix" in their cfgs.
+    #[doc(cfg_show(unix))]
     pub mod child {
-        // `child` and all its descendants will display "doc" in their cfgs.
+        // `child` and all its descendants will display "unix" in their cfgs.
     }
 }
 ```
@@ -173,14 +163,22 @@ pub mod futures {
 The attribute accepts only a list of identifiers or key/value items. So you can write:
 
 ```rust
-#[doc(cfg_show(doc, doctest, feature = "something"))]
+#[doc(cfg_show(unix, doctest, feature = "something"))]
 #[doc(cfg_show())]
 ```
 
 But you cannot write:
 
 ```rust
-#[doc(cfg_show(not(doc)))]
+#[doc(cfg_show(not(unix)))]
+```
+
+If `cfg_show` and `cfg_hide` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
+
+```rust
+#[doc(cfg_hide(unix))]
+#[doc(cfg_show(unix))] // Error!
+pub fn foo() {}
 ```
 
 ## Inheritance
@@ -203,7 +201,11 @@ pub mod desktop {
 
 ### Re-exports and inlining
 
-`cfg` attributes of a re-export are never merged the re-exported item(s). If `#[doc(inline)]` attribute is used on a re-export, the `cfg` of the re-exported item will be merged with the re-export's.
+`cfg` attributes of a re-export are never merged with the re-exported item(s) attributes except if the re-export has the `#[doc(inline)]` attribute. In this case, the `cfg` of the re-exported item will be merged with the re-export's.
+
+When talking about "attributes merge", we mean that if the re-export has `#[cfg(unix)]` and the re-exported item has `#[cfg(feature = "foo")]`, you will only see `cfg(unix)` on the re-export and only `cfg(feature = "foo")` on the re-exported item, unless the re-export has `#[doc(inline)]`, then you will only see the re-exported item with both `cfg(unix)` and `cfg(feature = "foo")`.
+
+Example:
 
 ```rust
 #[doc(cfg(any(windows, unix)))]
@@ -274,10 +276,6 @@ When re-exporting items with different cfgs there are two things that can happen
 
 Of course, the above example is equivalent to "available on **Windows** only."
 
-Making this actually work all the time is equivalent to a [boolean satisfiability] check, coliquially called a "SAT problem," and can take exponential time.
-
-[boolean satisfiability]: https://en.wikipedia.org/wiki/Boolean_satisfiability_problem
-
-We probably don't want to make promises one way or the other about whether rustdoc does this, but for compatibility's sake, Rustdoc does promise that `#[doc(cfg(false))` will not hide the documentation. This means simplification can be added, and it won't cause docs to mysteriously vanish.
+We probably don't want to make promises one way or the other about whether rustdoc does this, but for compatibility's sake, Rustdoc does promise that `#[doc(cfg(false))]` will not hide the documentation. This means simplification can be added, and it won't cause docs to mysteriously vanish.
 
 This is tracked in issue [rust-lang/rust#104991](https://github.com/rust-lang/rust/issues/104991).
