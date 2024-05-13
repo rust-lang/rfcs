@@ -724,8 +724,7 @@ Scoped implementations may still be observed through bounded generic type parame
 ## `TypeId` of generic type parameters' opaque types
 [typeid-of-generic-type-parameters-opaque-types]: #typeid-of-generic-type-parameters-opaque-types
 
-In addition to the type identity of the specified type, the `TypeId` of opaque generic type parameter types varies according to the captured *implementation environment*, but *only according to implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
-
+In addition to the type identity of the specified type, the `TypeId` of generic type parameter types varies according to the *implementation environment* that has been captured into them, but *only according to implementations that are relevant to their bounds (including implicit bounds)*, so that the following program runs without panic:
 ```rust
 use std::any::TypeId;
 
