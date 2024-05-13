@@ -353,7 +353,7 @@ The core Rust language grammar is extended as follows:
 
   (This can be distinguished from `use`-declarations with a lookahead up to and including `impl` or `unsafe`, meaning at most four shallowly tested token trees with I believe no groups. No other lookaheads are introduced into the grammar by this RFC.)
 
-  **The scoped implementation defined by this item is implicitly always in scope for its own definition.** This means that it's not possible to refer to any shadowed implementation inside of it (including generic parameters and where clauses), except by re-importing specific scoped implementations inside nested associated functions. Calls to generic functions cannot be used as backdoor either (see [type-parameters-capture-their-implementation-environment]).
+  **The scoped implementation defined by this item is implicitly always in scope for its own definition.** This means that it's not possible to refer to any shadowed implementation inside of it (including generic parameters and where clauses), except by re-importing specific scoped implementations inside nested associated functions. Calls to generic functions cannot be used as backdoor either (see [type-arguments-capture-their-implementation-environment]).
 
   [*TraitImpl*]: https://doc.rust-lang.org/reference/items/implementations.html?highlight=TraitImpl#implementations
 
@@ -505,16 +505,16 @@ To ensure this stays sound, scoped `impl Trait for Type` where `Trait` is extern
 
 See also [scoped-implementation-of-external-sealed-trait].
 
-## Type parameters capture their *implementation environment*
-[type-parameters-capture-their-implementation-environment]: #type-parameters-capture-their-implementation-environment
+## Type arguments capture their *implementation environment*
+[type-arguments-capture-their-implementation-environment]: #type-arguments-capture-their-implementation-environment
 
-When a type parameter is specified, either explicitly or inferred from an expression, it captures a view of *all* implementations that are applicable to its type there. This is called the type parameter's *implementation environment*.
+When a type argument is specified, either explicitly or inferred from an expression, it captures a view of *all* implementations that are applicable to its type there. This is called the type argument's *implementation environment*.
 
-(For trait objects, associated types are treated as type parameters for the purposes of this proposal.)
+(For trait objects, associated types are treated as type arguments for the purposes of this proposal.)
 
-When implementations are resolved on the host type, bounds on the type parameter can only be satisfied according to this captured view. This means that implementations on generic type parameters are 'baked' into discretised generics and can be used even in other modules or crates where this discretised type is accessible (possibly because a value of this type is accessible). Conversely, additional or changed implementations on a generic type parameter in an already-discretised type *cannot* be provided anywhere other than where the type parameter is specified.
+When implementations are resolved on the host type, bounds on the type parameter can only be satisfied according to this captured view. This means that implementations on generic type arguments are 'baked' into discretised generics and can be used even in other modules or crates where this discretised type parameter is accessible (possibly because a value of this type is accessible). Conversely, additional or changed implementations on a generic type parameter in an already-discretised type *cannot* be provided anywhere other than where the type argument is specified.
 
-When a generic type parameter is used to discretise another generic, the captured environment is the one captured in the former but overlaid with modifications applicable to that generic type parameter's opaque type.
+When a generic type parameter is used as type argument to discretise another generic, the captured environment is the one captured in the former but overlaid with modifications applicable to that generic type parameter's opaque type where it is used as type argument.
 
 Note that type parameter defaults too capture their *implementation environment* where they are specified, so at the initial definition site of the generic. This environment is used whenever the type parameter default is used.
 
@@ -2293,7 +2293,7 @@ Generics are trickier, as their instances often do expect trait implementations 
 
 This problem is solved by making the `impl`s available to each type parameter part of the the type identity of the discretised host generic, including a difference in `TypeId` there as with existing monomorphisation.
 
-(See [type-parameters-capture-their-implementation-environment] and [type-identity-of-generic-types] in the [reference-level-explanation] above for more detailed information.)
+(See [type-arguments-capture-their-implementation-environment] and [type-identity-of-generic-types] in the [reference-level-explanation] above for more detailed information.)
 
 Here is an example of how captured *implementation environments* safely flow across module boundaries, often seamlessly due to type inference:
 
@@ -2770,7 +2770,7 @@ This is mainly an effect of [layout-compatibility] and [binding-choice-by-implem
 
 Given equal usage, compiling code that uses scoped implementations could as such be slightly more efficient compared to use of newtypes and the resulting text size may be slightly smaller in some cases where newtype implementations are inlined differently.
 
-The compiler should treat implementations of the same empty trait on the same type as identical early on, so that no code generation is unnecessarily duplicated. However, unrelated empty-trait implementations must still result in distinct `TypeId`s when captured in a generic type parameter and observed there by a `where`-clause or through nesting in an implementation-aware generic.
+The compiler should treat implementations of the same empty trait on the same type as identical early on, so that no code generation is unnecessarily duplicated. However, unrelated empty-trait implementations must still result in distinct `TypeId`s when captured into a generic type parameter and observed there by a `where`-clause or through nesting in an implementation-aware generic.
 
 ## Alternatives
 
