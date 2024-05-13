@@ -1329,9 +1329,13 @@ where
 }
 ```
 
-## No priority over type-associated methods
+## Resolution priority
 
-Scoped `impl Trait for Type` has *the same* method resolution priority as an equivalent global implementation would have if it was visible for method-binding in that scope. This means that directly type-associated functions still bind with higher priority than those available through scoped implementations.
+Scoped `impl Trait for Type` has *the same* resolution priority as an equivalent global trait implementation would have if it was visible in that scope. This means that there may be ambiguity between scoped implementations introduced at different nesting levels, just as between equivalent global trait implementations.
+
+> Flagging a potentially unintended behaviour change with this error seems like the safer choice, and it's easy to resolve using a qualified path where needed.
+
+Inherent implementations still always shadow all trait implementations, including scoped ones.
 
 ## Coercion to trait objects
 
