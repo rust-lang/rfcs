@@ -269,6 +269,8 @@ When re-exporting items with different cfgs there are two things that can happen
 # Future possibilities
 [future possibilities]: #future-possibilities
 
+The `#[cfg(cfg_auto(enable))]`/`#[cfg(cfg_auto(disable))]` attribute is crate-level only for now as it doesn't really seem useful to be used on a specific item at the moment. However, if needed, this restriction could be lifted in the future if new needs come to appear.
+
 ## Boolean simplification
 [boolean simplification]: #boolean-simplification
 
