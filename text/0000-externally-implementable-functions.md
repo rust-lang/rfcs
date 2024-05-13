@@ -16,7 +16,8 @@ extern impl fn panic_handler(_: &PanicInfo) -> !;
 
 // user:
 
-impl fn core::panic::panic_handler(_: &PanicInfo) -> ! {
+impl fn core::panic::panic_handler(panic_info: &PanicInfo) -> ! {
+    eprintln!("panic: {panic_info:?}");
     loop {}
 }
 ```
@@ -83,13 +84,13 @@ It is an error to have a different signature for the `impl fn` item.
 
 (Whether `#[track_caller]` is used or not is considered part of the signature here.)
 
-## No impl
+## One impl
 
 It is an error to have no `impl fn` item (in any crate) for an `extern impl fn` item without a body.
 
-## Duplicates
-
 It is an error to have multiple `impl fn` items (across all crates) for the same `extern impl fn` item.
+
+Note: This means that adding or removing an `impl fn` item is a semver incompatible change.
 
 ## Visibility
 
@@ -117,10 +118,35 @@ is generated that calls that default body.
 
 # Rationale and alternatives
 
-- The syntax re-uses existing keywords. Alternatively, we could:
+## Syntax
+
+The syntax re-uses existing keywords. Alternatively, we could:
   - Use the `override` reserved keyword.
   - Add a new (contextual) keyword (e.g. `existential fn`).
   - Use an attribute (e.g. `#[extern_impl]`) instead.
+
+## Functions or statics
+
+This RFC only proposes externally implementable *functions*.
+
+An alternative is to only provide externally definable *statics* instead.
+
+That would be equivalent in power: one can store a function pointer in a static, and one can return a reference to a static from a function ([RFC 3635](https://github.com/rust-lang/rfcs/pull/3635)).
+
+(Another alternative, of course is to provide both. See future possibilities.)
+
+## Visibility
+
+There are two kinds of visibilities to be considered for externally implementable functions:
+who can *implement* the function, and who can *call* the function.
+
+Not allowing the function to be implemented by other crates nullifies the functionality, as the entire point of externally implementable functions is that they can be implemented in another crate. This visibility is therefore always (implicitly) "pub".
+
+Allowing a more restricted (that is, not `pub`) visibility for *calling* the function can be useful. For example, today's `#[panic_handler]` can be defined by any crate, but can not be called directly. (Only indirectly through `panic!()` and friends.)
+
+A downside is that it is not possible to allow this "only implementable but not publicly callable" visibility through an alias.
+
+An alternative could be to use the same visibility for both implementing an calling, which would simply mean that the function (or an alias to it) will always have to be `pub`.
 
 # Prior art
 
@@ -133,11 +159,13 @@ has been proposed before, which basically does this for *types*. Doing this for 
 - Should we allow some form of subtyping, similarly to how traits allow trait impls to do subtyping?
 - What should the syntax be once we stabilize this?
 - How should this work in dynamic libraries?
+- Should there be a way to specify that implementing the function is unsafe, separately from whether the function itself is unsafe?
 - Should not having an implementation be an error when the function is never called (after dead code elimination)?
 - If we do end up designing and providing an `extern impl Trait` feature in addition to `extern impl fn`, should we *only* provide `extern impl Trait`, or is there value in still providing `extern impl fn` as well? This RFC proposes that we should still have `extern impl fn`, for the simpler case, rather than forcing such functions to be wrapped in traits.
 
 # Future possibilities
 
+- Adding a syntax to specify an existing function as the impl. E.g. `impl core::panic_handler = my_panic_handler;`
 - Doing this for `static` items too. (Perhaps all items that can appear in an `extern "Rust" { … }` block.)
 - Using this for existing overridable global behavior in the standard library, like the panic handler, global allocator, etc.
 - We could add a mechanism for arbitrating between multiple provided implementations. For instance, if a crate A depended on B and C, and both B and C provide implementations of an `extern impl fn`, rather than an error, A could provide its own implementation overriding both.
