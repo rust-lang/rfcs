@@ -746,7 +746,7 @@ type B = Generic<Type as Trait in nested>;
 
 fn no_bound<T: 'static, U: 'static>(_: Generic<T>, _: Generic<U>) {
     assert_eq!(TypeId::of::<T>(), TypeId::of::<U>());
-    assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>());
+    assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>()); // ⚠⚠
 
     assert_eq!(TypeId::of::<T>(), TypeId::of::<Type>());
     assert_eq!(TypeId::of::<U>(), TypeId::of::<Type>());
@@ -754,7 +754,7 @@ fn no_bound<T: 'static, U: 'static>(_: Generic<T>, _: Generic<U>) {
 
 fn yes_bound<T: Trait + 'static, U: Trait + 'static>(_: Generic<T>, _: Generic<U>) {
     assert_ne!(TypeId::of::<T>(), TypeId::of::<U>());
-    assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>());
+    assert_ne!(TypeId::of::<Generic<T>>(), TypeId::of::<Generic<U>>()); // ⚠⚠
 
     assert_eq!(TypeId::of::<T>(), TypeId::of::<Type>());
     assert_ne!(TypeId::of::<U>(), TypeId::of::<Type>());
@@ -765,6 +765,8 @@ fn main() {
     yes_bound(A::default(), B::default());
 }
 ```
+
+(The lines marked with ` // ⚠⚠` produce two warnings each: [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters])
 
 In particular:
 
