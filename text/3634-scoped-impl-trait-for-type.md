@@ -131,7 +131,7 @@ impl<T: Trait> Type<T> {
 mod nested {
     use super::{Trait, Type};
 
-    use impl Trait for () {
+    pub use impl Trait for () {
         fn trait_fn() {
             println!("nested");
         }
