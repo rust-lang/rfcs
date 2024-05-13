@@ -59,7 +59,7 @@ This trait is a core part of the language, it is just expressed as a trait in li
 convenience. Do *not* implement it for other types.
 ```
 
-The current _Safety_ section may be removed once manual implementation of this trait is forbidden.
+The current _Safety_ section may be removed, as manual implementation of this trait is forbidden.
 
 From a cursary review, the following documentation improvements may be considered:
 
@@ -70,11 +70,17 @@ This means that their byte representation cannot change as long as a reference t
 Note that `T: Freeze` is a shallow property: `T` is still allowed to contain interior mutability,
 provided that it is behind an indirection (such as `Box<UnsafeCell<U>>`).
 
-Notable interior mutability sources are [`UnsafeCell`](core::cell::UnsafeCell) (and any of its safe wrappers such the types in the [`cell` module](core::cell) or [`Mutex`](std::sync::Mutex)) and [atomics](core::sync::atomic). 
+Notable interior mutability sources are [`UnsafeCell`](core::cell::UnsafeCell) (and any of its safe wrappers
+such the types in the [`cell` module](core::cell) or [`Mutex`](std::sync::Mutex)) and [atomics](core::sync::atomic). 
 
-`T: Freeze` is notably a requirement for static promotion (`const REF: &'a T;`) to be legal. Note that static promotion doesn't guarantee a single address: if `REF` is assigned to multiple variables, they may still refer to distinct addresses.
+`T: Freeze` is notably a requirement for static promotion (`const REF: &'a T;`) to be legal.
 
-Whether or not `T: Freeze` may also affect whether `static STATIC: T` is placed in read-only static memory or writeable static memory, or the optimizations that may be performed in code that holds an immutable reference to `T`.
+Note that static promotion doesn't guarantee a single address: if `REF` is assigned to multiple variables,
+they may still refer to distinct addresses.
+
+Whether or not `T: Freeze` may also affect whether `static STATIC: T` is placed
+in read-only static memory or writeable static memory, or the optimizations that may be performed
+in code that holds an immutable reference to `T`.
 ```
 
 Mention could be added to `UnsafeCell` and atomics that adding one to a previously `Freeze` type without an indirection (such as a `Box`) is a SemVer hazard, as it will revoque its implementation of `Freeze`.
