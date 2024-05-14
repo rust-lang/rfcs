@@ -93,27 +93,27 @@ Mention could be added to `UnsafeCell` and atomics that adding one to a previous
 - `Freeze` being an auto-trait, it is, like `Send` and `Sync` a sneaky SemVer hazard.
 	- Note that this SemVer hazard already exists through the existence of static-promotion, as exemplified by the following example:
 	```rust
-	// old version of the crate.
-	mod v1 {
-		pub struct S(i32);
-		impl S {
-			pub const fn new() -> Self { S(42) }
-		}
-	}
+    // old version of the crate.
+    mod v1 {
+        pub struct S(i32);
+        impl S {
+            pub const fn new() -> Self { S(42) }
+        }
+    }
 
-	// new version of the crate, adding interior mutability.
-	mod v2 {
-		use std::cell::Cell;
-		pub struct S(Cell<i32>);
-		impl S {
-			pub const fn new() -> Self { S(Cell::new(42)) }
-		}
-	}
+    // new version of the crate, adding interior mutability.
+    mod v2 {
+        use std::cell::Cell;
+        pub struct S(Cell<i32>);
+        impl S {
+            pub const fn new() -> Self { S(Cell::new(42)) }
+        }
+    }
 
-	// Old version: builds
-	const C1: &v1::S = &v1::S::new();
-	// New version: does not build
-	const C2: &v2::S = &v2::S::new();
+    // Old version: builds
+    const C1: &v1::S = &v1::S::new();
+    // New version: does not build
+    const C2: &v2::S = &v2::S::new();
 	```
 
 # Rationale and alternatives
