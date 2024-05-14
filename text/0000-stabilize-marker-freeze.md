@@ -61,7 +61,7 @@ convenience. Do *not* implement it for other types.
 
 The current _Safety_ section may be removed, as manual implementation of this trait is forbidden.
 
-From a cursary review, the following documentation improvements may be considered:
+From a cursory review, the following documentation improvements may be considered:
 
 ```markdown
 [`Freeze`](core::marker::Freeze) marks all types that do not contain any un-indirected interior mutability.
