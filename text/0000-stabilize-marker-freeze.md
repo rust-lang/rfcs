@@ -31,7 +31,7 @@ impl<Tail: VTable<'a>, Head: VTable<'a>> VTable<'a> for VtAccumulator<Tail, Head
 
 Making `VTable` a subtrait of `core::marker::Freeze` in this example is sufficient to allow this example to compile again, as static-promotion becomes legal again. This is however impossible as of today due to `core::marker::Freeze` being restricted to `nightly`.
 
-Orthogonally to static-promotion, `core::marker::Freeze` can also be used to ensure that transmuting `&T` to a reference to an interior-immutable type (such as `[u8; core::mem::size_of::<T>()]`) is sound (as interior-mutation of a `&T` may lead to UB in code using the transmuted reference, as it expects that reference's pointee to never change). This is notably a safety requirement for `zerocopy` and `bytemuck` which currently use their own equivalents of `core::marker::Freeze` to ensure that requirement, which imposes great maintenance pressure on these crates to ensure they support as many types as possible. They would notably benefit from `core::marker::Freeze`'s status as an auto-trait.
+Orthogonally to static-promotion, `core::marker::Freeze` can also be used to ensure that transmuting `&T` to a reference to an interior-immutable type (such as `[u8; core::mem::size_of::<T>()]`) is sound (as interior-mutation of a `&T` may lead to UB in code using the transmuted reference, as it expects that reference's pointee to never change). This is notably a safety requirement for `zerocopy` and `bytemuck` which are currently evaluating the use of `core::marker::Freeze` to ensure that requirement; or rolling out their own equivalents (such as zerocopy's `Immutable`) which imposes great maintenance pressure on these crates to ensure they support as many types as possible. They could stand to benefit from `core::marker::Freeze`'s status as an auto-trait, but this isn't a requirement for them, and explicit derivation is considered suitable (at least to zerocopy).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -130,6 +130,7 @@ Mention could be added to `UnsafeCell` and atomics that adding one to a previous
 
 - This feature has been available in `nightly` for 7 years, and is used internally by the compiler.
 - The work necessary for this RFC has already been done and merged in [this PR](https://github.com/rust-lang/rust/issues/121675), and a [tracking issue](https://github.com/rust-lang/rust/issues/121675) was opened.
+- zerocopy's [`Immutable`](https://docs.rs/zerocopy/0.8.0-alpha.11/zerocopy/trait.Immutable.html) seeks to provide the same guarantees as `core::marker::Freeze`.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
