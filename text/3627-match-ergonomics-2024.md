@@ -284,7 +284,7 @@ extern crate foo;
 use foo::*;
 
 fn main() {
-    let [[&x], foo!(y)] =  &[[&0], [0]];
+    let ([&x], foo!(y)) =  &([&0], [0]);
     //~^ WARN: the semantics of this pattern will change in edition 2024
     let _: i32 = x;
     let _: &i32 = y;
