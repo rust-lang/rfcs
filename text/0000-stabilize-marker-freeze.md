@@ -91,7 +91,7 @@ Mention could be added to `UnsafeCell` and atomics that adding one to a previous
 - Some people have previously argued that this would be akin to exposing compiler internals.
 	- The RFC author disagrees, viewing `Freeze` in a similar light as `Send` and `Sync`: a trait that allows soundness requirements to be proven at compile time.
 - `Freeze` being an auto-trait, it is, like `Send` and `Sync` a sneaky SemVer hazard.
-	- Note that this SemVer hazard already exists through the existence of static-promotion, as examplified by the following example:
+	- Note that this SemVer hazard already exists through the existence of static-promotion, as exemplified by the following example:
 	```rust
 	// old version of the crate.
 	mod v1 {
