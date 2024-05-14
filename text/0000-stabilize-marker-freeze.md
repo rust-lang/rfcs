@@ -83,7 +83,7 @@ in read-only static memory or writeable static memory, or the optimizations that
 in code that holds an immutable reference to `T`.
 ```
 
-Mention could be added to `UnsafeCell` and atomics that adding one to a previously `Freeze` type without an indirection (such as a `Box`) is a SemVer hazard, as it will revoque its implementation of `Freeze`.
+Mention could be added to `UnsafeCell` and atomics that adding one to a previously `Freeze` type without an indirection (such as a `Box`) is a SemVer hazard, as it will revoke its implementation of `Freeze`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
