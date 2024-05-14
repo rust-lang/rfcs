@@ -21,8 +21,8 @@ pub trait VTable<'a>: Copy {
     const VT: &'a Self;
 }
 pub struct VtAccumulator<Tail, Head> {
-	tail: Tail,
-	head: Head,
+    tail: Tail,
+    head: Head,
 }
 impl<Tail: VTable<'a>, Head: VTable<'a>> VTable<'a> for VtAccumulator<Tail, Head> {
 	const VT: &'a Self = &Self {tail: *Tail::VT, head: *Head::VT}; // Doesn't compile since 1.78
