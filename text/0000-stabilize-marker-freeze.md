@@ -18,7 +18,7 @@ The purpose of this change was to ensure that interior mutability cannot affect 
 However, this new requirement also prevents using static-promotion to allow generics to provide a generic equivalent to `static` (with the distinction that static-promotion doesn't guarantee a unique address for the promoted content). An example of this pattern can be found in `stabby` and `equator`'s shared way of constructing v-tables:
 ```rust
 pub trait VTable<'a>: Copy {
-	const VT: &'a Self;
+    const VT: &'a Self;
 }
 pub struct VtAccumulator<Tail, Head> {
 	tail: Tail,
