@@ -13,7 +13,7 @@ In the next edition, drop temporaries in tail expressions *before* dropping loca
 and a visualisation of how long x and temp live before and after this change.
 Before: x is created first, then temp is created, then x is dropped, then temp is dropped.
 After: x is created first, then temp is created, then temp is dropped, then x is dropped.
-](https://github.com/rust-lang/rfcs/assets/783247/07adb0c3-af0a-4761-a696-9bddd0b75c62)
+](3606-temporary-lifetimes-in-tail-expressions/diagram.svg)
 
 # Motivation
 
