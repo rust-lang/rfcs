@@ -179,8 +179,10 @@ For example, consider a function that iterates over a list of customer orders an
 ```rust
 match order {
     Order {
+        // These patterns match based on method calls, necessitating the use of a guard pattern:
         customer: customer if customer.subscription_plan() == Plan::Premium,
         payment: Payment::Cash(amount) if amount.in_usd() > 100,
+
         item_type: ItemType::A,
         // a bunch of other conditions...
     } => { /* ... */ }
@@ -188,7 +190,7 @@ match order {
 }
 ```
 
-Here, the pattern `customer if customer.subscription_plan() == Plan::Premium` has a clear meaning: it matches customers with premium subscriptions. All of the behavior of the pattern pertaining to the customer is in one place. However, if we move the guard outwards to wrap the entire order, the behavior is spread out and much harder to understand -- particularly if it is merged with conditions for other parts of the order struct:
+Here, the pattern `customer if customer.subscription_plan() == Plan::Premium` has a clear meaning: it matches customers with premium subscriptions. Similarly, `Payment::Cash(amount) if amount.in_usd() > 100` matches cash payments of amounts greater than 100USD. All of the behavior of the pattern pertaining to the customer is in one place, and all behavior pertaining to the payment is in another. However, if we move the guard outwards to wrap the entire order struct, the behavior is spread out and much harder to understand -- particularly if the two conditions are merged into one:
 
 ```rust
 // The same match statement using or-of-guards.
