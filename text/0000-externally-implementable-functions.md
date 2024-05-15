@@ -162,6 +162,7 @@ has been proposed before, which basically does this for *types*. Doing this for 
 - Should there be a way to specify that implementing the function is unsafe, separately from whether the function itself is unsafe?
 - Should not having an implementation be an error when the function is never called (after dead code elimination)?
 - If we do end up designing and providing an `extern impl Trait` feature in addition to `extern impl fn`, should we *only* provide `extern impl Trait`, or is there value in still providing `extern impl fn` as well? This RFC proposes that we should still have `extern impl fn`, for the simpler case, rather than forcing such functions to be wrapped in traits.
+- An `extern impl fn` that's marked as `pub(crate)` but is nonetheless pub to *implement* could surprise people. Is there some way we can make this less surprising? Should we require that all `extern impl fn` have `pub` visibility?
 
 # Future possibilities
 
