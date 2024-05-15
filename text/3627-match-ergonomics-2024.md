@@ -72,11 +72,11 @@ Match ergonomics works a little differently in edition 2024 and above.
 ## `mut` no longer strips the inherited reference
 
 `mut` on a binding does not reset the binding mode on edition ≥ 2024.
+Instead, `mut` on a binding with non-default binding mode is an error.
 
 ```rust
 //! Edition ≥ 2024
-let (x, mut y) = &(true, false);
-let _: (&bool, &bool) = (x, y); // instead of `(&bool, bool)`
+//let (x, mut y) = &(true, false); // ERROR
 ```
 
 ## Matching against inherited references
@@ -132,14 +132,12 @@ including the "default binding mode" terminology. Refer to [RFC 2005](./2005-mat
 
 ## Edition 2024: `mut` does not reset binding mode to by-value
 
-In the new edition, `mut` no longer resets the binding mode to by-value.
-Therefore, it is possible to have a mutable by-reference binding. (An explicit
-syntax for this is left to a future RFC.)
+In the new edition, `mut` no longer resets the binding mode to by-value;
+instead, `mut` on a binding with a by-reference binding mode is an error.
 
 ```rust
 //! Edition ≥ 2024
-let [mut a] = &[42];
-a = &47;
+// let [mut a] = &[42]; //ERROR
 ```
 
 ## Edition 2024: `&` patterns can match against `&mut` references
@@ -441,7 +439,8 @@ concerns with certain proposals for "deref patterns".
 [future-possibilities]: #future-possibilities
 
 - An explicit syntax for mutable by-reference bindings should be chosen at some
-  point.
+  point, along with removing the prohibition on implicitly by-reference
+  mutable bindings.
 - Future changes to reference types (partial borrows, language sugar for `Pin`,
   etc) may interact with match ergonomics.
 
@@ -461,7 +460,7 @@ behind `&`:
 
 ```rust
 // No way to avoid the `ref`, even with this RFC
-let &[&mut ref x] = &[&mut 42];
+let &[&mut ref x] = &[&mut 42]; // x: &i32
 ```
 
 There are two strategies we could take to support this:
