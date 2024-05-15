@@ -330,30 +330,59 @@ anyway is that the current behavior is unintuitive and surprising for users.
 
 ### We can't delay this choice
 
-Note that while this is not a breaking change for edition 2021 and below, it
-*would be breaking* to adopt the rest of this RFC without this change, and then
-later adopt this change alone. Specifically, pattern matches like the following
-would break:
+#### Patterns that work only with this rule
 
 ```rust
-let &[[&mut a]] = &[&mut [42]];
-// `&mut` in pattern needs to match against either:
-// - `&mut` in value at same position (there is none, so not possible)
-// - inherited `&mut` (which the "never set default binding mode to `ref mut` behind `&`" rule
-//   downgrades to `&`)
+//! All editions: works only with this rule
+let &[[a]] = &[&mut [42]]; // x: &i32
 ```
 
-Therefore, we cannot delay a decision on this matter.
+```rust
+//! All editions: works with or without this rule (alternative to above)
+// Note the explicit `ref`, we must abandon match ergonomics
+let &[[ref a]] = &[&mut [42]]; // x: &i32
+let &[&mut [ref a]] = &[&mut [42]]; // x: &i32
+```
+
+#### Patterns that work only without this rule
+
+```rust
+//! Edition ≥ 2024: works only without this rule
+let &[[&mut a]] = &[&mut [42]]; // x: i32
+// `&mut` in pattern needs to match against either:
+// - `&mut` in value at same position (there is none, so not possible)
+// - inherited `&mut` (which the rule downgrades to `&`)
+```
+
+```rust
+//! Edition ≥ 2024: works with or without this rule (alternatives to above)
+// No need to abandon match ergonomics
+let &[[&a]] = &[&mut [42]]; // x: i32
+let &[&mut [&a]] = &[&mut [42]]; // x: i32
+```
 
 ### Makes behavior more consistent
 
 On all editions, when a structure pattern peels off a shared reference and the
-default binding mode is already `ref mut`, the binding mode gets set to `ref`.
+default binding mode is already `ref mut`, the binding mode gets set to `ref`:
+
+```rust
+//! All editions
+let [a] = &mut &[42]; // x: &i32
+```
+
 But when the binding mode is set to `ref`, and a mutable reference is peeled
-off, the binding mode remains `ref`. In other words, immutability usually takes
-precedence over mutability. This change, in addition to being generally useful,
-makes the match ergonomics rules more consistent by ensuring that immutability
-*always* takes precedence over mutability.
+off, the binding mode remains `ref`:
+
+```rust
+//! All editions
+let [a] = &&mut [42]; // x: &i32
+```
+
+In other words, immutability usually takes precedence over mutability. This
+change, in addition to being generally useful, makes the match ergonomics rules
+more consistent by ensuring that immutability *always* takes precedence over
+mutability.
 
 ### Ensures that a desirable property is preserved
 
