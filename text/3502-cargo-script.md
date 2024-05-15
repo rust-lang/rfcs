@@ -1088,7 +1088,7 @@ This is generally viewed as a script-author decision, rather than a user decisio
 In the short term, users can configure `[profile.dev]` to match `[profile.release]`, see [Cargo's Profiles chapter](https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles).
 
 Potential options for addressing this include
-- Add `cargo --release <script>` or `cargo --profile=name> <script>`
+- Add `cargo --release <script>` or `cargo --profile=<name> <script>`
   - This would only work on systems that support `env -S` which might be fine as this is a more specialized case already
   - This doesn't scale too well for other customization
 - Add a "default profile" of some kind to the manifest format
