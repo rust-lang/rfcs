@@ -1,0 +1,248 @@
+- Feature Name: `guard_patterns`
+- Start Date: 2024-05-13
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+This RFC proposes to add a new kind of pattern, the **guard pattern.** Like match arm guards, guard patterns restrict another pattern to match only if an expression evaluates to `true`. The syntax for guard patterns, `pat if condition`, is compatible with match arm guard syntax, so existing guards can be superceded by guard patterns without breakage.
+
+# Motivation
+[motivation]: #motivation
+
+Guard patterns, unlike match arm guards, can be nested within other patterns. In particular, guard patterns nested within or-patterns can depend on the branch of the or-pattern being matched. This has the potential to simplify certain match expressions, and also enables the use of guards in other places where refutable patterns are acceptable. Furthermore, by moving the guard condition closer to the bindings upon which it depends, pattern behavior can be made more local.
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+Guard patterns allow you to write guard expressions to decide whether or not something should match anywhere you can use a pattern, not just at the top level of `match` arms.
+
+For example, imagine that you're writing a function that decides whether a user has enough credit to buy an item. Regular users have to pay 100 credits, but premium subscribers get a 20% discount. You could implement this with a match expression as follows:
+
+```rust
+match user.subscription_plan() {
+    Plan::Regular if user.credit() >= 100 => {
+        // complete the transaction
+    }
+    Plan::Premium if user.credit() >= 80 => {
+        // complete the transaction
+    }
+    _ => {
+        // the user doesn't have enough credit, return an error message
+    }
+}
+```
+
+But this isn't great, because two of the match arms have exactly the same body. Instead, we can write
+
+```rust
+match user.subscription_plan() {
+    (Plan::Regular if user.credit() >= 100) | (Plan::Premium if user.credit() >= 80) => {
+        // complete the transaction
+    }
+    _ => {
+        // the user doesn't have enough credit, return an error message
+    }
+}
+```
+
+Now we have just one arm for a successful transaction, with an or-pattern combining the two arms we used to have. The patterns two nested patterns are of the form
+
+```rust
+pattern if expr
+```
+
+This is a **guard pattern**. It matches a value if `pattern` (the pattern it wraps) matches that value, _and_ `expr` evaluates to `true`. Like in match arm guards, `expr` can use values bound in `pattern`.
+
+## For New Users
+
+For new users, guard patterns are better explained without reference to match arm guards. Instead, they can be explained by similar examples to the ones currently used for match arm guards, followed by an example showing that they can be nested within other patterns and used outside of match arms.
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+## Supersession of Match Arm Guards
+
+Rather than being parsed as part of the match expression, guards in match arms will instead be parsed as a guard pattern. For this reason, the `if` pattern operator must have lower precedence than all other pattern operators.
+
+That is,
+
+```rs
+// Let <=> denote equivalence of patterns.
+
+x @ A(..) if pred       <=> (x @ A(..)) if pred
+&A(..) if pred          <=> (&A(..)) if pred
+A(..) | B(..) if pred   <=> (A(..) | B(..)) if pred
+```
+
+## Interaction with Expression Operators
+
+The or-pattern operator and the bitwise OR operator both use the `|` token. This creates a parsing ambiguity:
+
+```rust
+// How is this parsed?
+false if foo | true 
+// As a guard pattern nested in an or-pattern?
+(false if foo) | true
+// Or as a pattern guarded by a bitwise OR operation?
+false if (foo | true)
+```
+
+For that reason, guard patterns nested within or-patterns must be explicitly parenthesized.
+
+There's a similar ambiguity between `=` used as the assignment operator within the guard
+and used outside to indicate assignment to the pattern (e.g. in `if`-`let`, `while let`, etc.).
+Therefore guard patterns appearing at the top level in those places must also be parenthesized:
+
+```rust
+while let x if guard(x) = foo() {}   // not allowed
+while let (x if guard(x)) = foo() {} // allowed
+```
+
+Therefore the syntax for patterns becomes
+
+> **<sup>Syntax</sup>**\
+> _Pattern_ :\
+> &nbsp;&nbsp; &nbsp;&nbsp; _PatternNoTopGuard_\
+> &nbsp;&nbsp; | _GuardPattern_
+> 
+> _PatternNoTopGuard_ :\
+> &nbsp;&nbsp; &nbsp;&nbsp; `|`<sup>?</sup> _PatternNoTopAlt_  ( `|` _PatternNoTopAlt_ )<sup>\*</sup>
+
+With `if let`, `while let`, and `for` expressions now using `PatternNoTopGuard`. `let` statements can continue to use `PatternNoTopAlt`.
+
+## Bindings Available to Guards
+
+The only bindings available to guard conditions are
+- bindings from the scope containing the pattern match, if any; and
+- bindings introduced by identifier patterns _within_ the guard pattern.
+
+This disallows, for example, the following uses:
+
+```rust
+// ERROR: `x` bound outside the guard pattern
+let (x, y if x == y) = (0, 0) else { /* ... */ }
+let [x, y if x == y] = [0, 0] else { /* ... */ }
+let TupleStruct(x, y if x == y) = TupleStruct(0, 0) else { /* ... */ }
+let Struct { x, y: y if x == y } = Struct { x: 0, y: 0 } else { /* ... */ }
+
+// ERROR: `x` cannot be used by other parameters' patterns
+fn function(x: usize, ((y if x == y, _) | (_, y)): (usize, usize)) { /* ... */ }
+```
+
+Note that in each of these cases besides the function, the condition is still possible by moving the condition outside of the destructuring pattern:
+
+```rust
+let ((x, y) if x == y) = (0, 0) else { /* ... */ }
+let ([x, y] if x == y) = [0, 0] else { /* ... */ }
+let (TupleStruct(x, y) if x == y) = TupleStruct(0, 0) else { /* ... */ }
+let (Struct { x, y } if x == y) = Struct { x: 0, y: 0 } else { /* ... */ }
+```
+
+In general, guards can, without changing meaning, "move outwards" until they reach an or-pattern where the condition can be different in other branches, and "move inwards" until they reach a level where the identifiers they reference are not bound.
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+Rather than matching only by structural properties of ADTs, equality, and ranges of certain primitives, guards give patterns the power to express arbitrary restrictions on types. This necessarily makes patterns more complex both in implementation and in concept.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+## "Or-of-guards" Patterns
+
+Earlier it was mentioned that guards can "move outwards" up to an or-pattern without changing meaning:
+
+```rust
+    (Ok(Ok(x if x > 0))) | (Err(Err(x if x < 0)))
+<=> (Ok(Ok(x) if x > 0)) | (Err(Err(x) if x < 0))
+<=> (Ok(Ok(x)) if x > 0) | (Err(Err(x)) if x < 0)
+// cannot move outwards any further, because the conditions are different
+```
+
+In most situations, it is preferable to have the guard as far outwards as possible; that is, at the top-level of the whole pattern or immediately within one alternative of an or-pattern.
+Therefore, we could choose to restrict guard patterns so that they appear only in these places.
+This RFC refers to this as "or-of-guards" patterns, because it changes or-patterns from or-ing together a list of patterns to or-ing together a list of optionally guarded patterns.
+
+Note that, currently, most patterns are actually parsed as an or-pattern with only one choice.
+Therefore, to achieve the effect of forcing patterns as far out as possible guards would only be allowed  in or-patterns with more than one choice.
+
+There are, however, a couple reasons where it could be desirable to allow guards further inwards than strictly necessary.
+
+### Localization of Behavior
+
+Sometimes guards are only related to information from a small part of a large structure being matched.
+
+For example, consider a function that iterates over a list of customer orders and performs different actions depending on the customer's subscription plan, the item type, the payment info, and various other factors:
+
+```rust
+match order {
+    Order {
+        customer: customer if customer.subscription_plan() == Plan::Premium,
+        payment: Payment::Cash(amount) if amount.in_usd() > 100,
+        item_type: ItemType::A,
+        // a bunch of other conditions...
+    } => { /* ... */ }
+    // other similar branches...
+}
+```
+
+Here, the pattern `customer if customer.subscription_plan() == Plan::Premium` has a clear meaning: it matches customers with premium subscriptions. All of the behavior of the pattern pertaining to the customer is in one place. However, if we move the guard outwards to wrap the entire order, the behavior is spread out and much harder to understand -- particularly if other its merged with conditions for other parts of the order:
+
+```rust
+// The same match statement using or-of-guards.
+match order {
+    Order {
+        customer,
+        payment: Payment::Cash(amount),
+        item_type: ItemType::A,
+        // a bunch of other conditions...
+    } if customer.subscription_plan() == Plan::Premium && amount.in_usd() > 100 => { /* ... */ }
+    // other similar branches...
+}
+```
+
+### Pattern Macros
+
+If guards can only appear immediately within or-patterns, then either
+- pattern macros can emit guards at the top-level, in which case they can only be called immediately within or-patterns without risking breakage if the macro definition changes (even to another valid pattern!); or
+- pattern macros cannot emit guards at the top-level, forcing macro authors to use terrible workarounds like `(Some(x) if guard(x)) | (Some(x) if false)` if they want to use the feature.
+
+This can also be seen as a special case of the previous argument, as pattern macros fundamentally assume that patterns can be built out of composable, local pieces.
+
+# Prior art
+[prior-art]: #prior-art
+
+As far as I am aware, this feature has not been implemented in any other programming languages.
+
+Guard patterns are, however, very similar to Haskell's [view patterns](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/view_patterns.html), which are more powerful and closer to a hypothetical "`if let` pattern" than a guard pattern as this RFC proposes it.
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+- How should we refer to this feature?
+  - "Guard pattern" will likely be most intuitive to users already familiar with match arm guards. Most likely, this includes anyone reading this, which is why this RFC uses that term.
+  - "`if`-pattern" agrees with the naming of or-patterns, and obviously matches the syntax well. This is probably the most intuitive name for new users learning the feature.
+  - Some other possibilities: "condition/conditioned pattern," "refinement/refined pattern," "restriction/restricted pattern," or "predicate/predicated pattern."
+- What anti-patterns should we lint against?
+    - Using guard patterns to test equality or range membership when a literal or range pattern could be used instead?
+    - Using guard patterns at the top-level of `if let` or `while let` instead of let chains?
+    - Guard patterns within guard patterns instead of using one guard with `&&` in the condition?
+    - `foo @ (x if guard(x))` rather than `(foo @ x) if guard(x)`? Or maybe this is valid in some cases for localizing match behavior?
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+## Allowing `if let`
+
+Users expect to be able to write `if let` where they can write `if`. Allowing this in guard patterns would make them significantly more powerful, but also more complex.
+
+One way to think about this is that patterns serve two functions:
+
+1. Refinement: refutable patterns only match some subset of a type's values.
+2. Destructuring: patterns use the structure common to values of that subset to extract data.
+
+Guard patterns as described here provide _arbitrary refinement_. That is, guard patterns can match based on whether any arbitrary expression evaluates to true.
+
+Allowing `if let` allows not just arbitrary refinement, but also _arbitrary destructuring_. The value(s) bound by an `if let` pattern can depend on the value of an arbitrary expression.
