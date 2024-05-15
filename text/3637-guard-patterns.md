@@ -47,7 +47,7 @@ match user.subscription_plan() {
 }
 ```
 
-Now we have just one arm for a successful transaction, with an or-pattern combining the two arms we used to have. The patterns two nested patterns are of the form
+Now we have just one arm for a successful transaction, with an or-pattern combining the two arms we used to have. The two nested patterns are of the form
 
 ```rust
 pattern if expr
@@ -188,7 +188,7 @@ match order {
 }
 ```
 
-Here, the pattern `customer if customer.subscription_plan() == Plan::Premium` has a clear meaning: it matches customers with premium subscriptions. All of the behavior of the pattern pertaining to the customer is in one place. However, if we move the guard outwards to wrap the entire order, the behavior is spread out and much harder to understand -- particularly if other its merged with conditions for other parts of the order:
+Here, the pattern `customer if customer.subscription_plan() == Plan::Premium` has a clear meaning: it matches customers with premium subscriptions. All of the behavior of the pattern pertaining to the customer is in one place. However, if we move the guard outwards to wrap the entire order, the behavior is spread out and much harder to understand -- particularly if it is merged with conditions for other parts of the order struct:
 
 ```rust
 // The same match statement using or-of-guards.
