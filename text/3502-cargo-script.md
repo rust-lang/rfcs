@@ -512,7 +512,7 @@ Considerations:
 - The command that is run in a `#!` line should not require arguments (e.g. not
   `#!/usr/bin/env cargo <something>`) because it will fail.  `env` treats the
   rest of the line as the bin name, spaces included.  You need to use `env -S`
-  but that wasn't supported on macOS at least, last I tested.
+  but that isn't portable across all `env` implementations (e.g. busybox).
 - Either don't have a name that looks like a cargo-plugin (e.g. not
   `cargo-<something>`) to avoid confusion or make it work (by default, `cargo
   something` translates to `cargo-something something` which would be ambiguous
