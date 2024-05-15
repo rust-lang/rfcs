@@ -90,11 +90,11 @@ Multiple `name=IDENT` words may not appear in a single code block's info
 string.
 
 `name=IDENT` may be combined with existing annotations like `rust` or
-`should_panic` by separating the annotations with spaces:
+`should_panic` by separating the annotations with commas:
 
 ````
 
-```rust name=foo
+```rust,name=foo
 assert!(true)
 ```
 
