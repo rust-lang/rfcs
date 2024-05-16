@@ -289,7 +289,7 @@ fn main() {
 }
 ```
 
-In such cases, there is no possible machine-applicable suggstion we could emit
+In such cases, there is no possible machine-applicable suggestion we could emit
 to produce code compatible with all editions (short of expanding the macro).
 However, such code should be extremely rare in practice.
 
