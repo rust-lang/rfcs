@@ -90,6 +90,7 @@ false if (foo | true)
 ```
 
 For that reason, guard patterns nested within or-patterns must be explicitly parenthesized.
+Otherwise, the `|` will be parsed as a bitwise OR to maintain backwards compatability with match arm guards.
 
 There's a similar ambiguity between `=` used as the assignment operator within the guard
 and used outside to indicate assignment to the pattern (e.g. in `if`-`let`, `while let`, etc.).
