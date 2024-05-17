@@ -76,29 +76,43 @@ x @ A(..) if pred       <=> (x @ A(..)) if pred
 A(..) | B(..) if pred   <=> (A(..) | B(..)) if pred
 ```
 
-## Interaction with Expression Operators
+## Precedence Relative to `|` 
 
-The or-pattern operator and the bitwise OR operator both use the `|` token. This creates a parsing ambiguity:
+Consider the following match expression:
 
 ```rust
-// How is this parsed?
-false if foo | true 
-// As a guard pattern nested in an or-pattern?
-(false if foo) | true
-// Or as a pattern guarded by a bitwise OR operation?
-false if (foo | true)
+match foo {
+    A | B if c | d => {},
+}
 ```
 
-For that reason, guard patterns nested within or-patterns must be explicitly parenthesized.
-Otherwise, the `|` will be parsed as a bitwise OR to maintain backwards compatability with match arm guards.
+This match arm is currently parsed as `(A | B) if (c | d)`, with the first `|` being the or-operator on patterns and the second being the bitwise OR operator on expressions. Therefore, to maintain backwards compatability, `if` must have lower precedence than `|` on both sides (or equivalently, for both meanings of `|`). For that reason, guard patterns nested within or-patterns must be explicitly parenthesized:
 
-There's a similar ambiguity between `=` used as the assignment operator within the guard
-and used outside to indicate assignment to the pattern (e.g. in `if`-`let`, `while let`, etc.).
+```rust
+// This is not an or-pattern of guards:
+    a if b | c if d
+<=> (a if (b | c)) if d
+
+// Instead, write
+(a if b) | (c if d)
+```
+
+## In Assignment-Like Contexts
+
+There's an ambiguity between `=` used as the assignment operator within the guard
+and used outside to indicate assignment to the pattern (e.g. in `if let`)
 Therefore guard patterns appearing at the top level in those places must also be parenthesized:
 
 ```rust
-while let x if guard(x) = foo() {}   // not allowed
-while let (x if guard(x)) = foo() {} // allowed
+// Not allowed:
+let x if guard(x) = foo() {}
+if let x if guard(x) = foo() {}
+while let x if guard(x) = foo() {}   
+
+// allowed
+let (x if guard(x)) = foo() {} // Note that this would still error after parsing, since guard patterns are always refutable.
+if let (x if guard(x)) = foo() {}
+while let (x if guard(x)) = foo() {} 
 ```
 
 Therefore the syntax for patterns becomes
@@ -111,7 +125,7 @@ Therefore the syntax for patterns becomes
 > _PatternNoTopGuard_ :\
 > &nbsp;&nbsp; &nbsp;&nbsp; `|`<sup>?</sup> _PatternNoTopAlt_  ( `|` _PatternNoTopAlt_ )<sup>\*</sup>
 
-With `if let`, `while let`, and `for` expressions now using `PatternNoTopGuard`. `let` statements can continue to use `PatternNoTopAlt`.
+With `if let` and `while let` expressions now using `PatternNoTopGuard`. `let` statements and function parameters can continue to use `PatternNoTopAlt`.
 
 ## Bindings Available to Guards
 
