@@ -358,7 +358,7 @@ let &[[&mut a]] = &[&mut [42]]; // x: i32
 //! Edition ≥ 2024: works with or without this rule (alternatives to above)
 // No need to abandon match ergonomics
 let &[[&a]] = &[&mut [42]]; // x: i32
-let &[&mut [&a]] = &[&mut [42]]; // x: i32
+let &[&mut [a]] = &[&mut [42]]; // x: i32
 ```
 
 ### Makes behavior more consistent
