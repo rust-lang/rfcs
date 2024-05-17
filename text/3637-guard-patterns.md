@@ -157,6 +157,14 @@ let (Struct { x, y } if x == y) = Struct { x: 0, y: 0 } else { /* ... */ }
 
 In general, guards can, without changing meaning, "move outwards" until they reach an or-pattern where the condition can be different in other branches, and "move inwards" until they reach a level where the identifiers they reference are not bound.
 
+## As Macro Arguments
+
+Currently, `if` is in the follow set of `pat` and `pat_param` fragments, so top-level guards cannot be used as arguments for the current edition. This is identical to the situation with top-level or-patterns as macro arguments, and guard patterns will take the same approach:
+
+1. Update `pat` fragments to accept `PatternNoTopGuard` rather than `Pattern`.
+2. Introduce a new fragment specifier, `pat_no_top_guard`, which works in all editions and accepts `PatternNoTopGuard`.
+3. In the next edition, update `pat` fragments to accept `Pattern` once again.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -247,6 +255,7 @@ Guard patterns are, however, very similar to Haskell's [view patterns](https://g
     - Using guard patterns at the top-level of `if let` or `while let` instead of let chains?
     - Guard patterns within guard patterns instead of using one guard with `&&` in the condition?
     - `foo @ (x if guard(x))` rather than `(foo @ x) if guard(x)`? Or maybe this is valid in some cases for localizing match behavior?
+- Is `pat_no_top_guard` a good name, or should we use something shorter like `pat_unguarded`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
