@@ -338,8 +338,12 @@ let &(i, j, [s]) = &(63, 42, &mut [String::from("🦀")]); // i: i32, j: i32, s:
 ```
 
 ```rust
-//! All editions: works with or without this rule (alternative to above)
+//! Edition ≥ 2024: works with or without this rule (alternative to above)
 let (&i, &j, [s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
+```
+
+```rust
+//! All editions: works with or without this rule (alternatives to above)
 let &(i, j, [ref s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
 let &(i, j, &mut [ref s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
 ```
