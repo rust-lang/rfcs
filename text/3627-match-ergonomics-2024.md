@@ -334,14 +334,14 @@ anyway is that the current behavior is unintuitive and surprising for users.
 
 ```rust
 //! All editions: works only with this rule
-let &[[a]] = &[&mut [42]]; // x: &i32
+let &(i, j, [s]) = &(63, 42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
 ```
 
 ```rust
 //! All editions: works with or without this rule (alternative to above)
-// Note the explicit `ref`, we must abandon match ergonomics
-let &[[ref a]] = &[&mut [42]]; // x: &i32
-let &[&mut [ref a]] = &[&mut [42]]; // x: &i32
+let (&i, &j, [s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
+let &(i, j, [ref s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
+let &(i, j, &mut [ref s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
 ```
 
 #### Patterns that work only without this rule
@@ -356,7 +356,6 @@ let &[[&mut a]] = &[&mut [42]]; // x: i32
 
 ```rust
 //! Edition ≥ 2024: works with or without this rule (alternatives to above)
-// No need to abandon match ergonomics
 let &[[&a]] = &[&mut [42]]; // x: i32
 let &[&mut [a]] = &[&mut [42]]; // x: i32
 ```
@@ -468,8 +467,8 @@ concerns with certain proposals for "deref patterns".
 [future-possibilities]: #future-possibilities
 
 - An explicit syntax for mutable by-reference bindings should be chosen at some
-  point, along with removing the prohibition on implicitly by-reference
-  mutable bindings.
+  point, along with removing the prohibition on implicitly by-reference mutable
+  bindings.
 - Future changes to reference types (partial borrows, language sugar for `Pin`,
   etc) may interact with match ergonomics.
 
@@ -484,8 +483,7 @@ question that would need to be resolved is whether and how deref patterns
 ## Matching `&mut` behind `&`
 
 There is one notable situation where match ergonomics cannot be used, and
-explicit `ref` is required. Notably, this can occur where `&mut` is nested
-behind `&`:
+explicit `ref` is required. This happens where `&mut` is nested behind `&`:
 
 ```rust
 // No way to avoid the `ref`, even with this RFC
