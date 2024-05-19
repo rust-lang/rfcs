@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-In Edition 2024 it is `unsafe` to declare an `extern` function or static, but external functions and statics *can* be safe to use after the initial declaration.
+It is unsafe to declare an `extern` block.  Starting in Rust 2024, all `extern` blocks must be marked as `unsafe`.  In all editions, items within `unsafe extern` blocks may be marked as safe to use.
 
 # Motivation
 [motivation]: #motivation
@@ -20,23 +20,23 @@ By making clear where this proof obligation sits, we can now allow for items tha
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Rust can utilize functions and statics from foreign code that are provided during linking, though it is `unsafe` to do so.
+Rust code can use functions and statics from foreign code.  The type signatures of these foreign items must be provided by the programmer in `extern` blocks.  These blocks must contain correct signatures to avoid undefined behavior.  The Rust compiler cannot check the correctness of the signatures in these blocks, so writing these blocks is *unsafe*.
 
-An `extern` block can be placed anywhere a function declaration could appear (generally at the top level of a module).
+An `extern` block may be placed anywhere a function declaration may appear.
 
 - On editions >= 2024, you *must* write all `extern` blocks as `unsafe extern`.
-- On editions < 2024, you *may* write `unsafe extern`, or you can write an `extern` block without the `unsafe` keyword.  Writing an `extern` block without the `unsafe` keyword is provided for compatibility only, and will eventually generate a warning.
-- `unsafe extern` interacts with the `unsafe_code` lint, and a `deny` or `forbid` with that lint will deny or forbid the unsafe external block.
+- On editions < 2024, you *may* write `unsafe extern`, or you may write an `extern` block without the `unsafe` keyword.  Writing an `extern` block without the `unsafe` keyword is provided for compatibility only, and will eventually generate a warning.
+- Use of `unsafe extern`, in all editions, fires the `unsafe_code` lint.
 
-Within an `extern` block is zero or more declarations of external functions and/or external static values.  An extern function is declared with a `;` instead of a function body (similar to a method of a trait).  An extern static value is also declared with a `;` instead of an expression (similar to an associated const of a trait).  In both cases, the actual function body or value is provided by whatever external source (which is probably not even written in Rust).
+Within an `extern` block are zero or more declarations of external functions and/or external statics.  An extern function is declared with a `;` (semicolon) instead of a function body (similar to a method of a trait).  An extern static value is also declared with a `;` (semicolon) instead of an expression (similar to an associated const of a trait).  In both cases, the actual function body or value is provided by some external source.
 
 Declarations within an `unsafe extern` block *may* annotate their signatures with either `safe` or `unsafe`.  If a signature within the block is not annotated, it is assumed to be `unsafe`.  The `safe` keyword is contextual and is currently allowed only within `extern` blocks.
 
-If an `extern` block is used in an older edition without the `unsafe` keyword, declarations *cannot* specify `safe` or `unsafe`.  Code must update to `unsafe extern` style blocks if it wants to make `safe` declarations.
+If an `extern` block is used in an older edition without the `unsafe` keyword, item declarations *may not* specify `safe` or `unsafe`.  Code must update to `unsafe extern` to make `safe` item declarations.
 
 ```rust
 unsafe extern {
-    // sqrt (from libm) can be called with any `f64`
+    // sqrt (from libm) may be called with any `f64`
     pub safe fn sqrt(x: f64) -> f64;
 
     // strlen (from libc) requires a valid pointer,
@@ -52,11 +52,9 @@ unsafe extern {
 }
 ```
 
-`extern` blocks are `unsafe` because if the declaration doesn't match the actual external function, or the actual external data, then the behavior of the resulting program may be undefined.
+Once unsafely declared, a `safe` item within an `unsafe extern` block may be used directly from safe Rust code.  The unsafe obligation of ensuring that the signature is correct is discharged by the block that declares the signature for the item.
 
-Once they are unsafely declared, a `safe` item can be used outside the `extern` block as if it were any other safe function or static value declared within rust.  The unsafe obligation of ensuring that the correct items are being linked to is performed by the crate making the declaration, not the crate using that declaration.
-
-Items declared as `unsafe` *must* still have a correctly matching signature at compile time, but they *also* have some sort of additional obligation for correct usage at runtime.  They can only be used within an `unsafe` block.
+When an item is declared as `unsafe`, as is usual in Rust, that means that the caller (or, in general, the user) may need to uphold certain unchecked obligations so as to prevent undefined behavior, and consequently that the item may only be used within an `unsafe` block.  However, the `extern` block (not the caller or other user) is still responsible for ensuring that the signature of that item is correct.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -64,7 +62,7 @@ Items declared as `unsafe` *must* still have a correctly matching signature at c
 The grammar of the language is updated so that:
 
 - Editions >= 2024 *must* prefix all `extern` blocks with `unsafe`.
-- Editions < 2024 *should* prefix `extern` blocks with `unsafe`, this will eventually be a warn-by-default compatibility lint when `unsafe` is missing.
+- Editions < 2024 *should* prefix `extern` blocks with `unsafe`; this will eventually be a warn-by-default compatibility lint when `unsafe` is missing.
 
 This RFC replaces the *["functions"][]* and *["statics"][]* sections in the [external blocks][] chapter of the Rust Reference with the following:
 
@@ -74,7 +72,7 @@ This RFC replaces the *["functions"][]* and *["statics"][]* sections in the [ext
 
 ### Functions
 
-Functions within external blocks are declared in the same way as other Rust functions, with the exception that they must not have a body and are instead terminated by a semicolon.  Patterns are not allowed in parameters, only IDENTIFIER or _ may be used.  The function qualifiers `const`, `async`, and `extern` are not allowed.  If the function is unsafe to call, then the function should use the `unsafe` qualifier.  If the function is safe to call, then the function should use the `safe` qualifier (a contextual keyword).  Functions that are not qualified as `unsafe` or `safe` are assumed to be `unsafe`.
+Functions within external blocks are declared in the same way as other Rust functions, with the exception that they must not have a body and are instead terminated by a semicolon.  Patterns are not allowed in parameters, only `IDENTIFIER` or `_` (underscore) may be used.  The function qualifiers `const`, `async`, and `extern` are not allowed.  If the function is unsafe to call, then the function should use the `unsafe` qualifier.  If the function is safe to call, then the function should use the `safe` qualifier (a contextual keyword).  Functions that are not qualified as `unsafe` or `safe` are assumed to be `unsafe`.
 
 If the function signature declared in Rust is incompatible with the function signature as declared in the foreign code, the behavior of the resulting program may be undefined.
 
@@ -91,7 +89,7 @@ where `'l1`, ..., `'lm` are its lifetime parameters, `A1`, ..., `An` are the dec
 
 Statics within external blocks are declared in the same way as statics outside of external blocks, except that they do not have an expression initializing their value.  If the static is unsafe to access, then the static should use the `unsafe` qualifier.  If the static is safe to access (and immutable), then the static should use the `safe` qualifier (a contextual keyword).  Statics that are not qualified as `unsafe` or `safe` are assumed to be `unsafe`.
 
-Extern statics can be either immutable or mutable just like statics outside of external blocks.  An immutable static must be initialized before any Rust code is executed.  It is not enough for the static to be initialized before Rust code reads from it.  A mutable extern static is always `unsafe` to access, the same as a Rust mutable static, and as such can not be marked with a `safe` qualifier.
+Extern statics may be either immutable or mutable just like statics outside of external blocks.  An immutable static must be initialized before any Rust code is executed.  It is not enough for the static to be initialized before Rust code reads from it.  A mutable extern static is always `unsafe` to access, the same as a Rust mutable static, and as such may not be marked with a `safe` qualifier.
 
 # Drawbacks
 [drawbacks]: #drawbacks
