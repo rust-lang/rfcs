@@ -1,7 +1,7 @@
 - Feature Name: `unsafe_extern`
 - Start Date: 2023-05-23
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3484](https://github.com/rust-lang/rfcs/pull/3484)
+- Tracking Issue: [rust-lang/rust#123743](https://github.com/rust-lang/rust/issues/123743)
 
 # Summary
 [summary]: #summary
