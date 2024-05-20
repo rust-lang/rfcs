@@ -38,13 +38,13 @@ Another primary motivation is the extra size of `RangeInclusive`. It uses an ext
 
 Rust has several different types of "range" syntax, including the following:
 
-- `a..b` denotes a range from `a` (inclusive) to `b` (exclusive). It resolves to the type `std::range::Range`.  
+- `a..b` denotes a range from `a` (inclusive) to `b` (exclusive). It resolves to the type `std::range::Range`.
   The iterator for `Range` will yield values from `a` (inclusive) to `b` (exclusive) in steps of one.
 
 - `a..=b` denotes a range from `a` (inclusive) to `b` (inclusive). It resolve to the type `std::range::RangeInclusive`.
   The iterator for `RangeInclusive` will yield values from `a` (inclusive) to `b` (inclusive) in steps of one.
 
-- `a..` denotes a range from `a` (inclusive) with no upper bound. It resolves to the type `std::range::RangeFrom`.  
+- `a..` denotes a range from `a` (inclusive) with no upper bound. It resolves to the type `std::range::RangeFrom`.
   The iterator for `RangeFrom` will yield values starting with `a` and increasing in steps of one.
 
 These types implement the `IntoIterator` trait, enabling their use directly in a `for` loop:
@@ -151,7 +151,7 @@ Some libraries have range types in their public interface. To use the new range 
 
 To reduce the burden of explicit conversions, libraries should make the following backwards-compatible changes:
 
-- Change any function parameters from legacy `Range*` types to `impl Into<Range*>`  
+- Change any function parameters from legacy `Range*` types to `impl Into<Range*>`
   Or if applicable, `impl RangeBounds<_>`
 
 ```rust
@@ -164,7 +164,7 @@ pub fn takes_range(range: impl Into<std::range::legacy::Range<usize>>) { ... }
 pub fn takes_range(range: impl std::ops::RangeBounds<usize>) { ... }
 ```
 
-- Change any trait bounds that assume `Range*: Iterator` to use `IntoIterator` instead  
+- Change any trait bounds that assume `Range*: Iterator` to use `IntoIterator` instead
   This is fully backwards-compatible, thanks to the [blanket `impl<I: Iterator> IntoIterator for I`](https://doc.rust-lang.org/stable/std/iter/trait.IntoIterator.html#impl-IntoIterator-for-I)
 
 ```rust
@@ -242,7 +242,7 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > ## Edition 2024 and later
 >
 > The `..` and `..=` operators will construct an object of one of the `std::range::Range` (or `core::range::Range`) variants, according to the following table:
-> 
+>
 > | Production             | Syntax        | Type                         | Range                 |
 > |------------------------|---------------|------------------------------|-----------------------|
 > | _RangeExpr_            | start`..`end  | std::range::Range            | start &le; x &lt; end |
@@ -251,11 +251,11 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > | _RangeFullExpr_        | `..`          | std::range::RangeFull        |            -          |
 > | _RangeInclusiveExpr_   | start`..=`end | std::range::RangeInclusive   | start &le; x &le; end |
 > | _RangeToInclusiveExpr_ | `..=`end      | std::range::RangeToInclusive |            x &le; end |
-> 
+>
 > **Note:** While `std::ops::RangeTo`, `std::ops::RangeFull`, and `std::ops::RangeToInclusive` are re-exports of `std::range::RangeTo`, `std::range::RangeFull`, and `std::ops::Range::RangeToInclusive` respectively, `std::ops::Range`, `std::ops::RangeFrom`, and `std::ops::RangeInclusive` are re-exports of the types under `std::range::legacy::` (NOT those directly under `std::range::`) for backwards-compatibility reasons.
-> 
+>
 > Examples:
-> 
+>
 > ```rust
 > 1..2;   // std::range::Range
 > 3..;    // std::range::RangeFrom
@@ -266,18 +266,18 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > ```
 >
 > The following expressions are equivalent.
-> 
+>
 > ```rust
 > let x = std::range::Range {start: 0, end: 10};
 > let y = 0..10;
-> 
+>
 > assert_eq!(x, y);
 > ```
 >
 > ## Prior to Edition 2024
 >
 > The `..` and `..=` operators will construct an object of one of the `std::range::legacy::Range` (or `core::range::legacy::Range`) variants, according to the following table:
-> 
+>
 > | Production             | Syntax        | Type                         | Range                 |
 > |------------------------|---------------|------------------------------|-----------------------|
 > | _RangeExpr_            | start`..`end  | std::range::legacy::Range            | start &le; x &lt; end |
@@ -290,7 +290,7 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > **Note:** `std::ops::Range`, `std::ops::RangeFrom`, and `std::ops::RangeInclusive` are re-exports of the respective types under `std::range::legacy::`. `std::ops::RangeTo`, `std::ops::RangeFull`, and `std::ops::RangeToInclusive` are re-exports of the respective types under `std::range::`.
 >
 > Examples:
-> 
+>
 > ```rust
 > 1..2;   // std::range::legacy::Range
 > 3..;    // std::range::legacy::RangeFrom
@@ -299,14 +299,14 @@ The [**Range Expressions** page in the Reference](https://doc.rust-lang.org/refe
 > 5..=6;  // std::range::legacy::RangeInclusive
 > ..=7;   // std::range::RangeToInclusive
 > ```
-> 
+>
 > The following expressions are equivalent.
-> 
+>
 > ```rust
 > let x = std::range::legacy::Range {start: 0, end: 10};
 > let y = std::ops::Range {start: 0, end: 10};
 > let z = 0..10;
-> 
+>
 > assert_eq!(x, y);
 > assert_eq!(x, z);
 > ```
