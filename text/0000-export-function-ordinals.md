@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Adding an attribute, `#[export_ordinal(n)]`, that marks the ordinal position of an exported function in a cdylib without creating a `lib.def` file.
+Adding an attribute, `#[export_ordinal(n)]`, that marks the ordinal position of an exported function in a cdylib on windows targets without creating a `lib.def` file.
 
 # Motivation
 [motivation]: #motivation
@@ -76,6 +76,8 @@ If `export_ordinal` isn't provided, an unused ordinal will be assigned during co
 1. A positive integer >= 1
 2. Unique across the entire program.
    - An error should be thrown if the same ordinal is provided in multiple places.
+
+The attribute must only work on windows targets, as ordinals are not a feature of shared libraries on other targets.
 
 The attribute must be placed above an exported function like so:
 
