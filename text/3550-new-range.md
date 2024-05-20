@@ -1,7 +1,7 @@
 - Feature Name: `new_range`
 - Start Date: 2023-12-18
 - RFC PR: [rust-lang/rfcs#3550](https://github.com/rust-lang/rfcs/pull/3550)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#123741](https://github.com/rust-lang/rust/issues/123741)
 
 # Summary
 [summary]: #summary
