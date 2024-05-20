@@ -106,8 +106,8 @@ the dangling `Box` was passed inside a `ManuallyDrop`, so there is no UB.
 
 The 2nd example can be fixed by passing the closure in a `MaybeDangling`:
 ```rust
-// Argument is passed as `MaybeDangling` since we might actually keep 
-// it around after its lifetime ends (at which point the caller can 
+// Argument is passed as `MaybeDangling` since we might actually keep
+// it around after its lifetime ends (at which point the caller can
 // start dropping memory it points to).
 fn thread(control: ..., closure: MaybeDangling<impl FnOnce() + 'lifetime>) {
     closure.into_inner()();
