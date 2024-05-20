@@ -77,7 +77,7 @@ If `export_ordinal` isn't provided, an unused ordinal will be assigned during co
 2. Unique across the entire program.
    - An error should be thrown if the same ordinal is provided in multiple places.
 
-The attribute must only work on windows targets, as ordinals are not a feature of shared libraries on other targets.
+The attribute should only affect windows targets, as ordinals are not a feature of shared libraries on other targets.
 
 The attribute must be placed above an exported function like so:
 
