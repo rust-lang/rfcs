@@ -1,6 +1,6 @@
 - Feature Name: `freeze_bytes`
 - Start Date: 2024-02-13
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3605](https://github.com/rust-lang/rfcs/pull/3605)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 - Feature Name: `freeze_uninit`
 
@@ -166,6 +166,7 @@ pub unsafe fn read_freeze(ptr: *const T) -> T {
 }
 ```
 
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -186,6 +187,7 @@ The main drawbacks that have been identified so far:
 * An in-place, mutable `freeze` could be offered, e.g. `MaybeUninit::freeze(&mut self)`
     * While this function would seem to be a simple body that llvm could replace with a runtime no-op, in reality it is possible for [virtual memory](https://man7.org/linux/man-pages/man2/madvise.2.html#MADV_FREE) that has been freshly allocated and has not been written to exhibit properties of uninitialized memory (rather than simply being an abstract phenomenon the compiler tracks that disappears at runtime). Thus, such an operation would require a potentially expensive in-place copy. Until such time as an optimized version is available, we should avoid defining the in-place version, and require users to spell it explicitly as `*self = core::mem::replace(&mut self, uninit()).freeze()`.
     * If intermediate representations are cooperative, it may be beneficial to provide the operation in the future, as it could perform only the writes required to ensure the backing memory is in a stable state (such as 1 write every 4096 bytes)
+    * Note that while `MaybeUninit::freeze(&mut self)` is possible to write, there is no `MaybeUninit::freeze(&self)`. This is because freezing uninit bytes requires performing writes in the abstract machine, overwriting initialized bytes with uninitialized ones, which are incompatible with the immutable `&Self` reciever.
 * `MaybeUninit<Int>` (and maybe `MaybeUninit<Float>`) could have arithmetic that is defined as `uninit (op) x` or `x (op) uninit` is `uninit`.
     * While this can partially solve the second use case (by following it through `Simd`) and the third use case, this does not help the first use case
     * This RFC does not preclude these operations from being defined in the future, and may even make them more useful.
