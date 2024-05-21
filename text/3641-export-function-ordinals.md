@@ -1,6 +1,6 @@
 - Feature Name: `export_function_ordinals`
 - Start Date: 2024-05-19
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3641](https://github.com/rust-lang/rfcs/pull/3641)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
