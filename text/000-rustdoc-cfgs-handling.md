@@ -29,9 +29,9 @@ The end goal being to provide this information automatically so that the documen
 
 This RFC proposes to add the following attributes:
 
-  * `#![doc(auto_cfg(enable))]`/`#[doc(auto_cfg(disable))]`
+  * `#![doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
 
-    When this is turned on, `#[cfg]` attributes are shown in documentation just like `#[doc(cfg)]` attributes are. By default, `auto_cfg` will be enabled.
+    When this is turned on (with `doc(auto_cfg = true)`, `#[cfg]` attributes are shown in documentation just like `#[doc(cfg)]` attributes are. By default, `auto_cfg` will be enabled.
 
   * `#[doc(cfg(...))]`
 
@@ -48,15 +48,14 @@ This RFC proposes to add the following attributes:
 [cfg attribute]: https://doc.rust-lang.org/reference/conditional-compilation.html
 [`windows` crate]: https://docs.rs/windows/latest/windows/
 
-All of these attributes can be added to a module or to the crate root, and they will be inherited by the child items unless another attribute overrides it (except that `doc(cfg)` cannot be added to the crate root). This is why "opposite" attributes like `cfg_hide` and `cfg_show` are provided: they allow a child item to override its parent.
-
+All of these attributes can be added to a module or to the crate root, and they will be inherited by the child items unless another attribute overrides it. This is why "opposite" attributes like `cfg_hide` and `cfg_show` are provided: they allow a child item to override its parent.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## The attributes
 
-### `#[doc(auto_cfg(enable))]`/`#[doc(auto_cfg(disable))]`
+### `#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
 
 This is a crate-level attribute. By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
 
@@ -89,11 +88,11 @@ It will display in the documentation for this module:
 
 This attribute has the same syntax as conditional compilation, but it only causes documentation to be added. This means `#[doc(cfg(not(windows)))]` will not cause your docs to be hidden on non-windows targets, even though `#[cfg(not(windows))]` does do that.
 
-This attribute works on modules and on items but cannot be used at the crate root level.
+This attribute works on modules and on items.
 
 ### `#[doc(cfg_hide(...))]`
 
-This attribute is used to prevent some `cfg` to be generated in the visual markers. It only applies to `#[doc(auto_cfg(enable))]`, not to `#[doc(cfg(...))]`. So in the previous example:
+This attribute is used to prevent some `cfg` to be generated in the visual markers. It only applies to `#[doc(auto_cfg = true)]`, not to `#[doc(cfg(...))]`. So in the previous example:
 
 ```rust
 #[cfg(any(unix, feature = "futures-io"))]
@@ -144,7 +143,7 @@ pub fn foo() {}
 ### `#[doc(cfg_show(...))]`
 
 This attribute does the opposite of `#[doc(cfg_hide(...))]`: if you used `#[doc(cfg_hide(...))]` and want to revert its effect on an item and its descendants, you can use `#[doc(cfg_show(...))]`.
-It only applies to `#[doc(auto_cfg(enable))]`, not to `#[doc(cfg(...))]`.
+It only applies to `#[doc(auto_cfg = true)]`, not to `#[doc(cfg(...))]`.
 
 For example:
 
@@ -269,7 +268,7 @@ When re-exporting items with different cfgs there are two things that can happen
 # Future possibilities
 [future possibilities]: #future-possibilities
 
-The `#[cfg(cfg_auto(enable))]`/`#[cfg(cfg_auto(disable))]` attribute is crate-level only for now as it doesn't really seem useful to be used on a specific item at the moment. However, if needed, this restriction could be lifted in the future if new needs come to appear.
+The `#[cfg(cfg_auto = true)]`/`#[cfg(cfg_auto = false)]` attribute is crate-level only for now as it doesn't really seem useful to be used on a specific item at the moment. However, if needed, this restriction could be lifted in the future if new needs come to appear.
 
 ## Boolean simplification
 [boolean simplification]: #boolean-simplification
