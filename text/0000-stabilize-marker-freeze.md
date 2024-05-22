@@ -142,7 +142,9 @@ Mention could be added to `UnsafeCell` and atomics that adding one to a previous
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-[Should the trait be exposed under a different name?](https://github.com/rust-lang/rust/pull/121501#issuecomment-1962900148)
+- [Should the trait be exposed under a different name?](https://github.com/rust-lang/rust/pull/121501#issuecomment-1962900148)
+	- An appealing proposition is `ShallowImmutable` to avoid collision with `llvm`'s `freeze`, while highlighting that the property is "shallow".
+- Should an explicit `PhantomNotFreeze` (`PhantomNotShallowImmut`?) be provided in the same stride as a more explicit way for maintainers to opt out of `Freeze` without resorting to `UnsafeCell<()>` which can currently provide that function, but whose design is still [under question](https://github.com/rust-lang/unsafe-code-guidelines/issues/236)
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
