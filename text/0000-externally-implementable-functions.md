@@ -148,6 +148,10 @@ A downside is that it is not possible to allow this "only implementable but not 
 
 An alternative could be to use the same visibility for both implementing an calling, which would simply mean that the function (or an alias to it) will always have to be `pub`.
 
+## Configuration
+
+An `extern impl fn` may have `#[cfg(...)]` attributes applied to it as usual. For instance, a crate may only provide an `extern impl fn` with a given feature flag enabled, and might then use the same feature flag to conditionally provide make other functions depending on that `extern impl fn`. This is a useful pattern for crates that don't want to provide a default implementation but want to avoid producing a compilation error unless the function is needed.
+
 # Prior art
 
 [RFC 2494 "Existential types with external definition"](https://github.com/rust-lang/rfcs/pull/2492)
