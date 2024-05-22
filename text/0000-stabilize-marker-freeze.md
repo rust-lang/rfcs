@@ -125,7 +125,7 @@ Notable types that are currently `!Freeze` but might not remain so in the future
 - `UnsafeCell<T>` where `core::mem::size_of::<T>() == 0` 
 - `[T; 0]` where `T: !Freeze`.
 
-Note that `core::marker::PhantomData<T>` if `Freeze` regardless of `T`'s `Freeze`ness.
+Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze`ness.
 ```
 
 # Drawbacks
