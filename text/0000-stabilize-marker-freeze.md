@@ -6,7 +6,9 @@
 # Summary
 [summary]: #summary
 
-Stabilize `core::marker::Freeze` in trait bounds.
+- Stabilize `core::marker::Freeze` in trait bounds.
+	- Rename `core::marker::Freeze` to `core::marker::ShallowImmutable`. This proposition is tentative, the RFC will keep on using the historical `core::marker::Freeze` name.
+	- Provide a marker type to opt out of `core::marker::Freeze` for the most semver-conscious maintainers. Tentatively named `core::marker::PhantomNotFreeze` (or `core::marker::PhantomNotShallowImmutable` to go with the proposed rename)
 
 # Motivation
 [motivation]: #motivation
@@ -45,8 +47,12 @@ It is automatically implemented by the compiler for any type that doesn't contai
 
 Notably, a `const` can only store a reference to a value of type `T` if `T: core::marker::Freeze`, in a pattern named "static-promotion".
 
+As `core::marker::Freeze` is an auto-trait, it poses an inherent semver-hazard (which is already exposed through static-promotion): this RFC proposes the simultaneous addition and stabilization of a `core::marker::PhantomNotFreeze` type to provide a stable mean for maintainers to reliably opt out of `Freeze` without forbidding zero-sized types that are currently `!Freeze` due to the conservativeness of `Freeze`'s implementation being locked into remaining `!Freeze`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## `core::marker::Freeze`
 
 The following documentation is lifted from the current nightly documentation.
 ```markdown
@@ -65,7 +71,7 @@ convenience. Do *not* implement it for other types.
 From a cursory review, the following documentation improvements may be considered:
 
 ```markdown
-[`Freeze`](core::marker::Freeze) marks all types that do not contain any un-indirected interior mutability.
+[`Freeze`] marks all types that do not contain any un-indirected interior mutability.
 This means that their byte representation cannot change as long as a reference to them exists.
 
 Note that `T: Freeze` is a shallow property: `T` is still allowed to contain interior mutability,
@@ -83,12 +89,44 @@ Whether or not `T: Freeze` may also affect whether `static STATIC: T` is placed
 in read-only static memory or writeable static memory, or the optimizations that may be performed
 in code that holds an immutable reference to `T`.
 
+# Semver hazard
+`Freeze` being an auto-trait, it may leak private properties of your types to semver.
+Specifically, adding an `UnsafeCell` to a type's layout is a _major_ breaking change,
+as it removes a trait implementation from it.
+
+## The ZST caveat
+While `UnsafeCell<T>` is currently `!Freeze` regardless of `T`, allowing `UnsafeCell<T>: Freeze` iff `T` is
+a Zero-Sized-Type is currently under consideration.
+
+Therefore, the advised way to make your types `!Freeze` regardless of their actual contents is to add a 
+[`PhantomNotFreeze`](core::marker::PhantomNotFreeze) field to it.
+
 # Safety
 This trait is a core part of the language, it is just expressed as a trait in libcore for
 convenience. Do *not* implement it for other types.
 ```
 
 Mention could be added to `UnsafeCell` and atomics that adding one to a previously `Freeze` type without an indirection (such as a `Box`) is a SemVer hazard, as it will revoke its implementation of `Freeze`.
+
+## `core::marker::PhantomNotFreeze`
+
+This ZST is proposed as a means for maintainers to reliably opt out of `Freeze` without constraining currently `!Freeze` ZSTs to remain so. While the RFC author doesn't have the expertise to produce its code,
+here's its propsed documentation:
+
+```markdown
+[`PhantomNotFreeze`] is type with the following guarantees:
+- It is guaranteed not to affect the layout of a type containing it as a field.
+- Any type including it in its fields (including nested fields) without indirection is guaranteed to be `!Freeze`.
+
+This latter property is [`PhantomNotFreeze`]'s raison-d'être: while other Zero-Sized-Types may currently be `!Freeze`,
+[`PhantomNotFreeze`] is the only ZST that's guaranteed to keep that bound.
+
+Notable types that are currently `!Freeze` but might not remain so in the future are:
+- `UnsafeCell<T>` where `core::mem::size_of::<T>() == 0` 
+- `[T; 0]` where `T: !Freeze`.
+
+Note that `core::marker::PhantomData<T>` if `Freeze` regardless of `T`'s `Freeze`ness.
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -144,7 +182,6 @@ Mention could be added to `UnsafeCell` and atomics that adding one to a previous
 
 - [Should the trait be exposed under a different name?](https://github.com/rust-lang/rust/pull/121501#issuecomment-1962900148)
 	- An appealing proposition is `ShallowImmutable` to avoid collision with `llvm`'s `freeze`, while highlighting that the property is "shallow".
-- Should an explicit `PhantomNotFreeze` (`PhantomNotShallowImmut`?) be provided in the same stride as a more explicit way for maintainers to opt out of `Freeze` without resorting to `UnsafeCell<()>` which can currently provide that function, but whose design is still [under question](https://github.com/rust-lang/unsafe-code-guidelines/issues/236)
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
