@@ -11,10 +11,11 @@ Stabilize `core::marker::Freeze` in trait bounds.
 # Motivation
 [motivation]: #motivation
 
-With 1.78, Rust [stabilized](https://github.com/rust-lang/rust/issues/121250) the requirement that `T: core::marker::Freeze` for `const REF: &'a T = T::const_new();` (a pattern referred to as "static-promotion" regardless of whether `'a = 'static`) to be legal. `T: core::marker::Freeze` indicates that `T` doesn't contain any un-indirected `UnsafeCell`, meaning that `T`'s memory cannot be modified through a shared reference.
+With 1.78, Rust [changed behavior](https://github.com/rust-lang/rust/issues/121250): previously, `const REF: &T = &expr;` was (accidentally) accepted even when `expr` may contain interior mutability.
+Now this requires that the type of `expr` satisfies `T: core::marker::Freeze`, which indicates that `T` doesn't contain any un-indirected `UnsafeCell`, meaning that `T`'s memory cannot be modified through a shared reference.
 
 The purpose of this change was to ensure that interior mutability cannot affect content that may have been static-promoted in read-only memory, which would be a soundness issue.
-
+However, this new requirement also prevents using static-promotion to create constant references to data of generic type. This pattern can be used to approximate "generic `static`s" (with the distinction that static-promotion doesn't guarantee a unique address for the promoted content). An example of this pattern can be found in `stabby` and `equator`'s shared way of constructing v-tables:
 However, this new requirement also prevents using static-promotion to allow generics to provide a generic equivalent to `static` (with the distinction that static-promotion doesn't guarantee a unique address for the promoted content). An example of this pattern can be found in `stabby` and `equator`'s shared way of constructing v-tables:
 ```rust
 pub trait VTable<'a>: Copy {
@@ -31,14 +32,16 @@ impl<Tail: VTable<'a>, Head: VTable<'a>> VTable<'a> for VtAccumulator<Tail, Head
 
 Making `VTable` a subtrait of `core::marker::Freeze` in this example is sufficient to allow this example to compile again, as static-promotion becomes legal again. This is however impossible as of today due to `core::marker::Freeze` being restricted to `nightly`.
 
-Orthogonally to static-promotion, `core::marker::Freeze` can also be used to ensure that transmuting `&T` to a reference to an interior-immutable type (such as `[u8; core::mem::size_of::<T>()]`) is sound (as interior-mutation of a `&T` may lead to UB in code using the transmuted reference, as it expects that reference's pointee to never change). This is notably a safety requirement for `zerocopy` and `bytemuck` which are currently evaluating the use of `core::marker::Freeze` to ensure that requirement; or rolling out their own equivalents (such as zerocopy's `Immutable`) which imposes great maintenance pressure on these crates to ensure they support as many types as possible. They could stand to benefit from `core::marker::Freeze`'s status as an auto-trait, but this isn't a requirement for them, and explicit derivation is considered suitable (at least to zerocopy).
+Orthogonally to static-promotion, `core::marker::Freeze` can also be used to ensure that transmuting `&T` to a reference to an interior-immutable type (such as `[u8; core::mem::size_of::<T>()]`) is sound (as interior-mutation of a `&T` may lead to UB in code using the transmuted reference, as it expects that reference's pointee to never change). This is notably a safety requirement for `zerocopy` and `bytemuck` which are currently evaluating the use of `core::marker::Freeze` to ensure that requirement; or rolling out their own equivalents (such as zerocopy's `Immutable`) which imposes great maintenance pressure on these crates to ensure they support as many types as possible. They could stand to benefit from `core::marker::Freeze`'s status as an auto-trait, and `zerocopy` intends to replace its bespoke trait with a re-export of `core::marker::Freeze`.
+
+Note that for this latter use-case, `core::marker::Freeze` isn't entirely sufficient, as an additional proof that `T` doesn't contain padding bytes is necessary to allow this transmutation to be safe, as reading one of `T`'s padding bytes as a `u8` would be UB.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`core::marker::Freeze` is a trait that indicates the shallow lack of interior mutability in a type: it indicates that the memory referenced by `&T` is guaranteed not to change under defined behaviour.
+`core::marker::Freeze` is a trait that is implemented for any type whose memory layout doesn't contain any `UnsafeCell`: it indicates that the memory referenced by `&T` is guaranteed not to change while the reference is live.
 
-It is automatically implemented by the compiler for any type that doesn't shallowly contain a `core::cell::UnsafeCell`.
+It is automatically implemented by the compiler for any type that doesn't contain an un-indirected `core::cell::UnsafeCell`.
 
 Notably, a `const` can only store a reference to a value of type `T` if `T: core::marker::Freeze`, in a pattern named "static-promotion".
 
@@ -59,8 +62,6 @@ This trait is a core part of the language, it is just expressed as a trait in li
 convenience. Do *not* implement it for other types.
 ```
 
-The current _Safety_ section may be removed, as manual implementation of this trait is forbidden.
-
 From a cursory review, the following documentation improvements may be considered:
 
 ```markdown
@@ -69,9 +70,9 @@ This means that their byte representation cannot change as long as a reference t
 
 Note that `T: Freeze` is a shallow property: `T` is still allowed to contain interior mutability,
 provided that it is behind an indirection (such as `Box<UnsafeCell<U>>`).
-
-Notable interior mutability sources are [`UnsafeCell`](core::cell::UnsafeCell) (and any of its safe wrappers
-such the types in the [`cell` module](core::cell) or [`Mutex`](std::sync::Mutex)) and [atomics](core::sync::atomic). 
+Notable `!Freeze` types are [`UnsafeCell`](core::cell::UnsafeCell) and its safe wrappers
+such as the types in the [`cell` module](core::cell), [`Mutex`](std::sync::Mutex), and [atomics](core::sync::atomic).
+Any type which contains any one of these without indirection is also `!Freeze`.
 
 `T: Freeze` is notably a requirement for static promotion (`const REF: &'a T;`) to be legal.
 
@@ -81,6 +82,10 @@ they may still refer to distinct addresses.
 Whether or not `T: Freeze` may also affect whether `static STATIC: T` is placed
 in read-only static memory or writeable static memory, or the optimizations that may be performed
 in code that holds an immutable reference to `T`.
+
+# Safety
+This trait is a core part of the language, it is just expressed as a trait in libcore for
+convenience. Do *not* implement it for other types.
 ```
 
 Mention could be added to `UnsafeCell` and atomics that adding one to a previously `Freeze` type without an indirection (such as a `Box`) is a SemVer hazard, as it will revoke its implementation of `Freeze`.
@@ -125,7 +130,9 @@ Mention could be added to `UnsafeCell` and atomics that adding one to a previous
 	- While this reduces the SemVer hazard by making its breakage more obvious, this does lose part of the usefulness that `core::mem::Freeze` would provide to projects such as `zerocopy`.
 	- A "perfect" derive macro should then be introduced to ease the implementation of this trait. A lint may be introduced in `clippy` to inform users of the existence and applicability of this new trait.
 
-# Prior art
+- This trait has a long history: it existed in ancient times but got [removed](https://github.com/rust-lang/rust/pull/13076) before Rust 1.0.
+  In 2017 it got [added back](https://github.com/rust-lang/rust/pull/41349) as a way to simplify the implementation of the `interior_unsafe` query, but it was kept private to the standard library.
+  In 2019, a [request](https://github.com/rust-lang/rust/issues/60715) was filed to publicly expose the trait, but not a lot happened until recently when the issue around static promotion led to it being [exposed unstably](https://github.com/rust-lang/rust/pull/121840).
 [prior-art]: #prior-art
 
 - This feature has been available in `nightly` for 7 years, and is used internally by the compiler.
