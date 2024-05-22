@@ -11,7 +11,7 @@ Add `[diagnostic::on_unimplemented_trait_use]` in `#[diagnostic]` on structs tha
 # Motivation
 [motivation]: #motivation
 
-The idea came out when I was trying to print out a PathBuf, there's a custom message said: 
+The idea came about when I was trying to print out a PathBuf, there's a custom message that said: 
 >in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead  
 call `.display()` or `.to_string_lossy()` to safely print paths, as they may contain non-Unicode data
 
@@ -30,7 +30,7 @@ And found out its hardcoded in trait `Display`
 )]
 pub trait Display {...}
 ```
-It would be nice if such messages are implemented on the struct itself, so crate mantainer can add a detail explanation when there're some special structs which don't impl some "usually expected" traits, like `Display`, `Eq`, `PartialEq` or `Hash`.
+It would be nice if this functionality is exposed to libraries as well, so that when the user tries to use an unimplemented trait (e.g. maybe Display isn't implemented because it's insufficient to clearly express intentions) the author can explain why via this diagnostic and offer a recommendation/alternative.
 
 For example:
 ```rust
@@ -43,10 +43,4 @@ For example:
 )]
 struct PathBuf;
 ````
-
-# Reference-level explanation
-[reference-level-explanation]: #reference-level-explanation
-
-if the struct impl both this attribute and the trait, it should gives an error like the one when you're trying to impl the same trait multiple times. E.g.
-> conflicting implementations of trait `Debug` for type `MyStruct`
 
