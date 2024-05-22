@@ -168,12 +168,11 @@ Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze
 	- While this reduces the SemVer hazard by making its breakage more obvious, this does lose part of the usefulness that `core::mem::Freeze` would provide to projects such as `zerocopy`.
 	- A "perfect" derive macro should then be introduced to ease the implementation of this trait. A lint may be introduced in `clippy` to inform users of the existence and applicability of this new trait.
 
+# Prior Art
+[prior-art]: #prior-art
 - This trait has a long history: it existed in ancient times but got [removed](https://github.com/rust-lang/rust/pull/13076) before Rust 1.0.
   In 2017 it got [added back](https://github.com/rust-lang/rust/pull/41349) as a way to simplify the implementation of the `interior_unsafe` query, but it was kept private to the standard library.
   In 2019, a [request](https://github.com/rust-lang/rust/issues/60715) was filed to publicly expose the trait, but not a lot happened until recently when the issue around static promotion led to it being [exposed unstably](https://github.com/rust-lang/rust/pull/121840).
-[prior-art]: #prior-art
-
-- This feature has been available in `nightly` for 7 years, and is used internally by the compiler.
 - The work necessary for this RFC has already been done and merged in [this PR](https://github.com/rust-lang/rust/issues/121675), and a [tracking issue](https://github.com/rust-lang/rust/issues/121675) was opened.
 - zerocopy's [`Immutable`](https://docs.rs/zerocopy/0.8.0-alpha.11/zerocopy/trait.Immutable.html) seeks to provide the same guarantees as `core::marker::Freeze`.
 
