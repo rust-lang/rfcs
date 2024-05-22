@@ -221,6 +221,24 @@ However, this mostly has downsides: it requires the user to write `Box::new` in
 a few places, and it prevents us from ever implementing some optimization tricks
 to, for example, use a single allocation for multiple hook results.
 
+## A regular function vs some lang feature
+
+Just like `std::panic::set_hook`, `std::thread::add_spawn_hook` is just regular function.
+
+An alternative would be to have some special attribute, like `#[thread_spawn_hook]`,
+similar to `#[panic_handler]` in `no_std` programs, or to make use of
+a potential future [global registration feature](https://github.com/rust-lang/rust/issues/125119).
+
+While such things might make sense in a `no_std` world, spawning threads (like
+panic hooks) is an `std` only feature, where we can use global state and allocations.
+
+The only potential advantage of such an approach might be a small reduction in overhead,
+but this potential overhead is insignificant compared to the overall cost of spwaning a thread.
+
+The downsides are plenty, including limitations on what your hook can do and return,
+needing a macro or special syntax to register a hook, potential issues with dynamic linking,
+additional implementation complexity, and possibly having to block on a language feature.
+
 # Unresolved questions
 
 - Should the return value of the hook be an `Option`, for when the hook does not
