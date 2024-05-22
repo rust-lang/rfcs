@@ -236,3 +236,10 @@ to, for example, use a single allocation for multiple hook results.
 
 - Using this in libtest for output capturing (instead of today's
   implementation that has special hardcoded support in libstd).
+
+# Relevant history
+
+- The original reason I wrote [RFC 3184 "Thread local Cell methods"](https://github.com/rust-lang/rfcs/pull/3184)
+  was to simplify thread spawn hooks (which I was experimenting with at the time).
+  Without that RFC, thread spawn hooks would look something like `let v = X.with(|x| x.get()); || X.with(|x| x.set(v))`, instead of just `let v = X.get(); || X.set(v)`,
+  which is far less ergonomic (and behaves subtly differently). This is the reason I waited with this RFC until that RFC was merged and stabilized.
