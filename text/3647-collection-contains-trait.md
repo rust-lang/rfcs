@@ -147,19 +147,26 @@ Of course implementations of this trait could be done in such a way that they ke
 [drawbacks]: #drawbacks
 
  - I'm not entirely certain of how much of a breaking change it would be to move existing methods to a new trait, but that **might** cause issues.
+ - Doing so requires a new special-purpose trait.
  
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-One alternative i considered was to call the new trait method `has` instead of `contains`, to avoid having to remove the native method.  
-I believe that this is only worth it, though, if moving the `contains` method would be too much of a breaking change to have any chance of getting accepted.
+## Alternatives
 
-Could this be done in a library?  
+ - Naming the function of the `Contains` trait `has` would allow keeping the native method without any issues.  
+   I believe that this is only worth it, though, if moving the `contains` method would be too much of a breaking change to have any chance of getting accepted.
+ - Sets could instead implement `Index<T>`, returning the key if it is present and None if not.
+
+
+## Could this be done in a library?
+
 Kind of. It could be implemented, but there would be limitations.  
 It could either be implemented with a method called `contains`, but this would mean that this function cannot just call the native `contains` method leading to code duplication.  
 Alternatively it could be done if the trait method is called something else, for example `has`, but this would make it less intuitive to use.
 
+## Readability and Maintainability
 I do not believe that this change will have any significant impact on the readability of code, but it might make it slightly easier to maintain.  
 This is because it would make it easier to switch parts of a project to a different type of collection in the future.
 
