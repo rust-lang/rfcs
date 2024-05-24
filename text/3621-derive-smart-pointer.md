@@ -173,6 +173,19 @@ struct MySmartPointer<#[pointee] T: ?Sized, U> {
 Specifying `#[pointee]` when the struct has only one type parameter is allowed,
 but not required.
 
+## Pinned pointers
+
+The `#[derive(SmartPointer)]` macro is not sufficient to coerce the smart
+pointer when it is wrapped in `Pin`. That is, even if `MySmartPointer<MyStruct>`
+coerces to `MySmartPointer<dyn MyTrait>`, you will not be able to coerce
+`Pin<MySmartPointer<MyStruct>>` to `Pin<MySmartPointer<dyn MyTrait>>`.
+Similarly, traits with self types of `Pin<MySmartPointer<Self>>` are not object
+safe.
+
+If you implement the unstable unsafe trait called `PinCoerceUnsized` for
+`MySmartPointer`, then the smart pointer will gain the ability to be coerced
+when wrapped in `Pin`. The trait is not being stabilized by this RFC.
+
 ## Example of a custom Rc
 [custom-rc]: #example-of-a-custom-rc
 
@@ -229,7 +242,6 @@ impl<T: ?Sized> Drop for Rc<T> {
 ```
 In this example, `#[derive(SmartPointer)]` makes it possible to use `Rc<dyn
 MyTrait>`.
-
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -336,6 +348,47 @@ you can use them for dynamic dispatch.
 
 As seen in the `Rc` example, the macro needs to be usable even if the pointer
 is `NonNull<RcInner<T>>` (as opposed to `NonNull<T>`).
+
+## `PinCoerceUnsized`
+
+The standard library defines the following unstable trait:
+```rust
+/// Trait that indicates that this is a pointer or a wrapper for one, where
+/// unsizing can be performed on the pointee when it is pinned.
+///
+/// # Safety
+///
+/// If this type implements `Deref`, then the concrete type returned by `deref`
+/// and `deref_mut` must not change without a modification. The following
+/// operations are not considered modifications:
+///
+/// * Moving the pointer.
+/// * Performing unsizing coercions on the pointer.
+/// * Performing dynamic dispatch with the pointer.
+/// * Calling `deref` or `deref_mut` on the pointer.
+///
+/// The concrete type of a trait object is the type that the vtable corresponds
+/// to. The concrete type of a slice is an array of the same element type and
+/// the length specified in the metadata. The concrete type of a sized type
+/// is the type itself.
+pub unsafe trait PinCoerceUnsized<U>: CoerceUnsized<U> {}
+
+impl<T, U> CoerceUnsized<Pin<U>> for Pin<T>
+where
+    T: PinCoerceUnsized<U>,
+{}
+
+impl<T, U> DispatchFromDyn<Pin<U>> for Pin<T>
+where
+    T: PinCoerceUnsized<U> + DispatchFromDyn<U>,
+{}
+```
+The trait is implemented for all standard library types that implement
+`CoerceUnsized`.
+
+Although this RFC proposes to add the `PinCoerceUnsized` trait to ensure that
+unsizing coercions of pinned pointers cannot be used to cause unsoundness, the
+RFC does not propose to stabilize the trait.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -537,6 +590,131 @@ implementations of these traits for `Pin` with stricter trait bounds than what
 is specified on the struct. That will get much more complicated if we use a
 mechanism other than traits to specify this logic.
 
+## `PinCoerceUnsized`
+
+Beyond the addition of the `#[derive(SmartPointer)]` macro, this RFC also
+proposes to add a new unstable trait called `PinCoerceUnsized`. This trait is
+necessary because the API proposed by this RFC would otherwise by unsound:
+
+> You could use `Pin::new` to create a `Pin<SmartPtr<MyUnpinFuture>>` and coerce
+> that to `Pin<SmartPtr<dyn Future>>`. Then, if `SmartPtr` has a malicious
+> implementation of the `Deref` trait, then `deref` could return a `&mut dyn
+> Future` whose concrete type is not `MyUnpinFuture`, but instead some other
+> future type that *does* need to be pinned. Since no unsafe code is involved in
+> any of these steps, this means that we are able to safely create a pinned
+> pointer to a value that has not been pinned.
+
+Adding the unsafe `PinCoerceUnsized` trait ensures that the user cannot coerce
+`Pin<SmartPtr<MyUnpinFuture>>` to `Pin<SmartPtr<dyn Future>>` without using
+unsafe to promise that the concrete type returned when calling `deref` on the
+resulting `Pin<SmartPtr<dyn Future>>` is `MyUnpinFuture`.
+
+This RFC does not propose to stabilize `PinCoerceUnsized` because of naming
+issues. If we do not know whether `CoerceUnsized` will still use that name when
+we stabilize it, then we can't stabilize a trait called `PinCoerceUnsized`.
+Furthermore, the Linux kernel (which forms the motivation for this RFC) does not
+currently need it to be stabilized.
+
+There are some alternatives to `PinCoerceUnsized`. The primary contender for an
+alternative solution is `DerefPure`. However, that solution involves a minor
+breaking change, and we can always decide to switch to `DerefPure` later even if
+we adopt `PinCoerceUnsized` now.
+
+### `StableDeref`
+
+A previous version of this RFC proposed to instead add a trait called
+`StableDeref` that pretty much had the same requirements as `PinCoerceUnsized`,
+except that it also required the address returned by `deref` to be stable.
+
+The motivation behind adding a `StableDeref` trait instead of `PinCoerceUnsized`
+is that `StableDeref` would also be useful for other things, and that both
+traits essentially just say that the `Deref` implementation doesn't do anything
+unreasonable. The requirement that the address is stable is not strictly
+required to keep the API sound, but semantically it is incoherent to have a
+pinned pointer whose address can change, so it is not overly burdensome to
+require it.
+
+However, this suggestion was abandoned due to an inconsistency with the
+`StableDeref` trait defined by the ecosystem. That trait requires that raw
+pointers to the contents of the pointer stay valid even if the smart pointer is
+moved, but this is not satisfied by `Box` or `&mut T` because moving these
+pointers asserts that they are unique. This is a problem because whichever trait
+we use for pinned unsizing coercions, it *must* be implemented by `Box` and
+`&mut T`.
+
+### `DerefPure`
+
+In a similar manner to the `StableDeref` option, we can use the existing
+`DerefPure` trait. This option is a reasonable way forward, but this RFC does
+not propose it because it would be a breaking change. (Note that `StableDeref`
+is also a breaking change for the same reason.)
+
+Basically, the problem is that `Deref` is a supertrait of `DerefPure`, but there
+are a few types that can be coerced when pinned that do not implement `Deref`.
+For example, this code compiles today:
+```rust
+trait MyTrait {}
+impl MyTrait for String {}
+
+fn pin_cell_map(p: Pin<Cell<Box<String>>>) -> Pin<Cell<Box<dyn MyTrait>>> {
+    p
+}
+```
+The `Cell` type does not implement `Deref`, but the above code still compiles.
+Note that since all methods on `Pin` _do_ require `Deref`, such pinned pointers
+are useless and impossible to construct. But it is a breaking change
+nonetheless.
+
+If this breakage is considered acceptable, then using `DerefPure` instead of a
+new `PinCoerceUnsized` would be a reasonable way forward.
+
+### Make the derive macro unsafe
+
+We could just make the macro unsafe in a similar vein to [the unsafe attributes
+RFC][unsafe-attribute].
+```rust
+// SAFETY: The Deref impl is not malicious.
+#[unsafe(derive(SmartPointer))]
+pub struct Rc<T: ?Sized> {
+    inner: NonNull<RcInner<T>>,
+}
+```
+This would solve the unsoundness, but this RFC does not propose it because it
+raises forwards compatibility hazards. We might start out with an unsafe derive
+macro, and then in the future we might decide to instead use the
+`PinCoerceUnsized` solution. Then, `#[unsafe(derive(SmartPointer))]` would have
+to generate an implementation of `PinCoerceUnsized` trait too, because otherwise
+`#[unsafe(derive(SmartPointer))] Pin<Rc<MyStruct>>` would lose the ability to be
+unsize coerced, which would be a breaking change. This means that
+`#[unsafe(derive(SmartPointer))]` and `#[derive(SmartPointer)]` could end up
+expanding to _different_ things.
+
+### Negative trait bounds
+
+There are also various solutions that involve negative trait bounds. For
+example, you might instead modify `CoerceUnsized` like this:
+```rust
+// Permit going from `Pin<impl Unpin>` to` Pin<impl Unpin>`
+impl<P, U> CoerceUnsized<Pin<U>> for Pin<P>
+where
+    P: CoerceUnsized<U>,
+    P: Deref<Target: Unpin>,
+    U: Deref<Target: Unpin>,
+{ }
+
+// Permit going from `Pin<impl !Unpin>` to `Pin<impl !Unpin>`
+impl<P, U> CoerceUnsized<Pin<U>> for Pin<P>
+where
+    P: CoerceUnsized<U>,
+    P: core::ops::Deref<Target: !Unpin>,
+    U: core::ops::Deref<Target: !Unpin>,
+{ }
+```
+This RFC does not propose it because it is a breaking change and the
+`PinCoerceUnsized` or `DerefPure` solutions are simpler. This solution is
+discussed in more details in [the pre-RFC for stabilizing the underlying
+traits][pre-rfc].
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -574,156 +752,7 @@ feature, though it does so for a different reason than
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Unfortunately, the API proposed by this RFC is unsound. :(
-
-Basically, the issue is that if `MyStruct` is `Unpin`, then you can create a
-`Pin<SmartPointer<MyStruct>>` safely, even though you can coerce that to
-`Pin<SmartPointer<dyn MyTrait>>` (and `dyn MyTrait` may be `!Unpin`). If
-`SmartPointer` has a malicious implementation of `Deref`, then this can lead to
-unsoundness. Since `Deref` is a safe trait, we cannot outlaw malicious
-implementations of `Deref`.
-
-Intuitively, the way that `Deref` can be malicious is by not always derefing to
-the same value.
-
-Some solution idea is outlined below, but the authors need your input on what
-to do about this problem.
-
-## Unsafe macro
-
-The easiest solution is probably to just make the macro unsafe. We could do this
-in a similar vein to [the unsafe attributes RFC][unsafe-attribute].
-```rust
-// SAFETY: The Deref impl always returns the same value.
-#[unsafe(derive(SmartPointer))]
-pub struct Rc<T: ?Sized> {
-    inner: NonNull<RcInner<T>>,
-}
-```
-This way, if you coerce an `Pin<Rc<MyStruct>>` to `Pin<Rc<dyn MyTrait>>` and
-this is unsound due to a weird `Deref` impl, then it's your fault because you
-unsafely asserted that you have a reasonable `Deref` implementation.
-
-That said, there are some possible forwards compatibility hazards with this
-solution. We might start out with an unsafe derive macro, and then in the future
-we might decide to instead use the `StableDeref` solution mentioned below. Then,
-`#[unsafe(derive(SmartPointer))]` would have to generate an implementation of
-the `StableDeref` trait too, because otherwise `Pin<Rc<MyStruct>>` would lose
-the ability to be unsize coerced, which would be a breaking change. This means
-that `#[unsafe(derive(SmartPointer))]` and `#[derive(SmartPointer)]` could end
-up expanding to _different_ things.
-
-[unsafe-attribute]: https://github.com/rust-lang/rfcs/pull/3325
-
-## StableDeref
-
-We are quite limited in how we can work around this issue due to backwards
-compatibility concerns with `Pin`. We cannot prevent you from using `Pin::new`
-with structs that have malicious `Deref` implementations. However, one possible
-place we can intervene is the coercion from `Pin<SmartPointer<MyStruct>>` to
-`Pin<SmartPointer<dyn MyTrait>>`. If you need to use unsafe before those
-coercions are possible, then the problem is solved. For example, we might
-introduce a `StableDeref` trait:
-```rs
-/// # Safety
-///
-/// Any two calls to `deref` must return the same value at the same address unless
-/// `self` has been modified in the meantime. Moves and unsizing coercions of `self`
-/// are not considered modifications.
-///
-/// Here, "same value" means that if `deref` returns a trait object, then the actual
-/// type behind that trait object must not change. Additionally, when you unsize
-/// coerce from `Self` to `Unsized`, then if you call `deref` on `Unsized` and get a
-/// trait object, then the underlying type of that trait object must be `<Self as
-/// Deref>::Target`.
-///
-/// Analogous requirements apply to other unsized types. E.g., if `deref` returns
-/// `[T]`, then the length must not change. (The underlying type must not change
-/// from `[T; N]` to `[T; M]`.)
-///
-/// If this type implements `DerefMut`, then the same restrictions apply to calls
-/// to `deref_mut`.
-unsafe trait StableDeref: Deref { }
-```
-Then we make it so that you can only coerce pinned pointers when they implement
-`StableDeref`. We can do that by modifying its trait implementations to this:
-```rs
-impl<T, U> CoerceUnsized<Pin<U>> for Pin<T>
-where
-    T: CoerceUnsized<U>,
-    T: StableDeref,
-    U: StableDeref,
-{}
-
-impl<T, U> DispatchFromDyn<Pin<U>> for Pin<T>
-where
-    T: CoerceUnsized<U>,
-    T: StableDeref,
-    U: StableDeref,
-{}
-```
-This way, the user must implement the unsafe trait before they can coerce
-pinned versions of the pointer. Since the trait is unsafe, it is not our fault
-if that leads to unsoundness.
-
-This should not be a breaking change as long as we implement `StableDeref` for
-all standard library types that can be coerced when wrapped in `Pin`.
-
-The proposed trait is called `StableDeref` because the way that `Deref`
-implementations can be malicious is essentially by having
-`SmartPointer<MyStruct>` and `SmartPointer<dyn MyTrait>` deref to two different
-values. There may be some opportunity to reuse the `DerefPure` trait from [the
-deref patterns feature][deref-patterns], and there is also some prior art with
-the [`stable_deref_trait`](https://docs.rs/stable_deref_trait) crate, 
-
-[deref-patterns]: https://github.com/rust-lang/rust/issues/87121/
-
-## Don't allow Pin coercions with custom smart pointers
-
-This solution is essentially the `StableDeref` solution except that we don't
-stabilize `StableDeref`. This way, there's no stable way to use
-`#[derive(SmartPointer)]` types with `Pin` coercions.
-
-This solutions isn't a problem for the Linux Kernel right now because our custom
-`Arc` happens to be implicitly pinned for convenience reasons, but if it wasn't,
-then we would need coercions of `Pin`-wrapped values.
-
-## Negative trait bounds?
-
-There are also various solutions that involve negative trait bounds. For
-example, you might instead modify `CoerceUnsized` like this:
-```rust
-// Permit going from `Pin<impl Unpin>` to` Pin<impl Unpin>`
-impl<P, U> CoerceUnsized<Pin<U>> for Pin<P>
-where
-    P: CoerceUnsized<U>,
-    P: Deref<Target: Unpin>,
-    U: Deref<Target: Unpin>,
-{ }
-
-// Permit going from `Pin<impl !Unpin>` to `Pin<impl !Unpin>`
-impl<P, U> CoerceUnsized<Pin<U>> for Pin<P>
-where
-    P: CoerceUnsized<U>,
-    P: core::ops::Deref<Target: !Unpin>,
-    U: core::ops::Deref<Target: !Unpin>,
-{ }
-```
-This way, you can only coerce pinned pointers when this doesn't change whether
-the target type is `Unpin`.
-
-It would solve the unsoundness, but it does have the disadvantage of having no
-path to making these pinned coercions possible for smart pointers that don't
-have malicious `Deref` implementations. Another downside of this solution is
-that it's a breaking change, because it disallows these pinned coercions even
-with the standard library pointers, which allows them today.
-
-There are also other variations on the negative trait bounds, which become
-different implementations of the "Don't allow Pin coercions with custom smart
-pointers" solution.
-
-This solution is discussed in more details in [the pre-RFC for stabilizing the
-underlying traits][pre-rfc].
+No unresolved questions.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
