@@ -752,7 +752,15 @@ feature, though it does so for a different reason than
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-No unresolved questions.
+Bikeshedding over the name remains.
+
+The name `#[derive(SmartPointer)]` leaves some things to be desired, as smart
+pointers would generally want to implement some traits that this macro does
+*not* expand to. Most prominently, any smart pointer should implement `Deref` or
+`Receiver`. Really, the macro just says that this pointer works with unsizing
+and dynamic dispatch.
+
+We will settle on the final name prior to stabilization.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
