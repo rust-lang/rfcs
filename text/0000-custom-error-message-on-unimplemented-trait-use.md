@@ -44,3 +44,7 @@ For example:
 struct PathBuf;
 ````
 
+# Unresolved questions
+
+- [ ]  [syntax for generic traits](https://github.com/rust-lang/rfcs/pull/3643#pullrequestreview-2075066492)
+
