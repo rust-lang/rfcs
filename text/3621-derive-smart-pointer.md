@@ -807,3 +807,4 @@ like `#[pointee]` that must be annotated on the field in question.
 [`core::ops::CoerceUnsized`]: https://doc.rust-lang.org/stable/core/ops/trait.CoerceUnsized.html
 [`DispatchFromDyn`]: https://doc.rust-lang.org/stable/core/ops/trait.DispatchFromDyn.html
 [`core::ops::DispatchFromDyn`]: https://doc.rust-lang.org/stable/core/ops/trait.DispatchFromDyn.html
+[unsafe-attribute]: https://github.com/rust-lang/rfcs/pull/3325
