@@ -14,7 +14,7 @@ Implement a new `Contains` trait for all collections, slices, and maybe more.
 Currently giving a whitelist, a blacklist, or anything that can be described as one(such as a list of enabled/available features) to a function is only possible using `Iterator`s or by requiring a specific type of collection.
 
 The disadvantage of using `Iterator`(or `IntoIterator`) is that you need to iterator over it to check whether an item is included.  
-If it is not included you need to iterator over the entire collection.
+If it is not included you need to iterate over the entire collection.
 
 The disadvantage of using a specific type of collection is that it doesn't allow the caller to decide which type of collection to choose for the code.  
 This may be relevant in other places then just this one function though.  
@@ -61,7 +61,7 @@ pub fn fn_with_optional_features<F: Contains<Features>>(feat: &F) -> Vec<u16> {
 
 Of course this basic example can easily be done in any number of ways without `Contains`.
 
-One example that is too large to implement here, but where not having this can be a pain is optional parser features.
+One example like this, which is too large to implement here, but where not having this can be a pain, are optional parser features.
 
 
 ## Example 2: Specifying all basic collection operations
@@ -104,7 +104,7 @@ Another possibility would be to have a blacklist of values a function is not per
 ```rust
 pub fn algorithm_with_blacklist<BL: Contains<u64>>(blacklist: &BL) -> Option<u64> {
     let mut value = None;
-    while !value.is_some_and(|val| !blacklist.has(&val)) {
+    while !value.is_some_and(|val| !blacklist.contains(&val)) {
         if value.is_none() {
             value = Some(1);
         }
@@ -116,7 +116,7 @@ pub fn algorithm_with_blacklist<BL: Contains<u64>>(blacklist: &BL) -> Option<u64
 ```
 
 This may make code slightly harder to read, by encouraging developers to create even more complex generic bounds,  
-but it might make code slighly easier to maintain since it would make it easier to change the collection type used by a project, or a part of one.
+but it might make code slightly easier to maintain since it would make it easier to change the collection type used by a project, or a part of one.
 
 
 # Reference-level explanation
@@ -129,7 +129,7 @@ For example 1 the improvement is relatively small, as the features could easily 
  b) if they are as simple as those in the example they could easily be implemented as callbacks and directly called from an `Iterator`.
 
 
-For example 2: from the basic set operations(add, remove, contains, iterate) contains and remove are not currently usable using a trait.  
+For example 2: from the basic set operations(add, remove, contains, iterate) contains and remove are currently not usable using a trait.  
 For remove i'm uncertain about the best way to handle it, and also believe if you need to remove elements it might be more reasonable to either  
  a) move the elements to a collection with a precisely known type, or  
  b) require a specific type of collection as a parameter.  
@@ -180,7 +180,7 @@ But even that is only loosely related to this, though it did give me some motiva
  - Should non-collection types with a contains function(str, range) implement `Contains<T>`?
  - Should `Vec<T>` implement `Contains<T>` directly, or only using `Deref<Target = [T]>`?
 
-Should the contains method of those types
+Should the contains method of those types  
  a) be moved to the trait and instantly stabilized, or  
  b) be kept in place until this is stabilized, requiring users to use its fully qualified name, or  
  c) should the trait method be declared unstable and the the native methods be disabled using inverted feature flags, if inverted feature flags even exist?
