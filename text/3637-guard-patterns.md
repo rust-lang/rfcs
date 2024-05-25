@@ -23,13 +23,13 @@ For example, imagine that you're writing a function that decides whether a user 
 ```rust
 match user.subscription_plan() {
     Plan::Regular if user.credit() >= 100 => {
-        // complete the transaction
+        // Complete the transaction.
     }
     Plan::Premium if user.credit() >= 80 => {
-        // complete the transaction
+        // Complete the transaction.
     }
     _ => {
-        // the user doesn't have enough credit, return an error message
+        // The user doesn't have enough credit, return an error message.
     }
 }
 ```
@@ -39,10 +39,10 @@ But this isn't great, because two of the match arms have exactly the same body. 
 ```rust
 match user.subscription_plan() {
     (Plan::Regular if user.credit() >= 100) | (Plan::Premium if user.credit() >= 80) => {
-        // complete the transaction
+        // Complete the transaction.
     }
     _ => {
-        // the user doesn't have enough credit, return an error message
+        // The user doesn't have enough credit, return an error message.
     }
 }
 ```
@@ -109,7 +109,7 @@ let x if guard(x) = foo() {}
 if let x if guard(x) = foo() {}
 while let x if guard(x) = foo() {}   
 
-// allowed
+// Allowed:
 let (x if guard(x)) = foo() {} // Note that this would still error after parsing, since guard patterns are always refutable.
 if let (x if guard(x)) = foo() {}
 while let (x if guard(x)) = foo() {} 
@@ -181,7 +181,7 @@ Earlier it was mentioned that guards can "move outwards" up to an or-pattern wit
     (Ok(Ok(x if x > 0))) | (Err(Err(x if x < 0)))
 <=> (Ok(Ok(x) if x > 0)) | (Err(Err(x) if x < 0))
 <=> (Ok(Ok(x)) if x > 0) | (Err(Err(x)) if x < 0)
-// cannot move outwards any further, because the conditions are different
+// Cannot move outwards any further, because the conditions are different.
 ```
 
 In most situations, it is preferable to have the guard as far outwards as possible; that is, at the top-level of the whole pattern or immediately within one alternative of an or-pattern.
@@ -207,9 +207,9 @@ match order {
         payment: Payment::Cash(amount) if amount.in_usd() > 100,
 
         item_type: ItemType::A,
-        // a bunch of other conditions...
+        // A bunch of other conditions...
     } => { /* ... */ }
-    // other similar branches...
+    // Other similar branches...
 }
 ```
 
@@ -222,9 +222,9 @@ match order {
         customer,
         payment: Payment::Cash(amount),
         item_type: ItemType::A,
-        // a bunch of other conditions...
+        // A bunch of other conditions...
     } if customer.subscription_plan() == Plan::Premium && amount.in_usd() > 100 => { /* ... */ }
-    // other similar branches...
+    // Other similar branches...
 }
 ```
 
