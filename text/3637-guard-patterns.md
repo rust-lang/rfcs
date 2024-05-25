@@ -239,9 +239,9 @@ This can also be seen as a special case of the previous argument, as pattern mac
 # Prior art
 [prior-art]: #prior-art
 
-As far as I am aware, this feature has not been implemented in any other programming languages.
+This feature has been implemented in the [E programming language](https://en.wikipedia.org/wiki/E_(programming_language)) under the name ["such-that patterns"](http://erights.org/elang/grammar/patterns.html#suchThat).
 
-Guard patterns are, however, very similar to Haskell's [view patterns](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/view_patterns.html), which are more powerful and closer to a hypothetical "`if let` pattern" than a guard pattern as this RFC proposes it.
+Guard patterns are also very similar to Haskell's [view patterns](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/view_patterns.html), which are more powerful and closer to a hypothetical "`if let` pattern" than a guard pattern as this RFC proposes it.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
