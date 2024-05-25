@@ -38,6 +38,8 @@ Orthogonally to static-promotion, `core::marker::Freeze` can also be used to ens
 
 Note that for this latter use-case, `core::marker::Freeze` isn't entirely sufficient, as an additional proof that `T` doesn't contain padding bytes is necessary to allow this transmutation to be safe, as reading one of `T`'s padding bytes as a `u8` would be UB.
 
+Renaming the trait to `core::marker::ShallowImmutable` is desirable because `freeze` is already a term used in `llvm` to refer to an intrinsic which allows to safely read from uninitialized memory. [Another RFC](https://github.com/rust-lang/rfcs/pull/3605) is currently open to expose this intrinsic in Rust.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
