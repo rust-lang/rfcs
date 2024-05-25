@@ -1460,32 +1460,30 @@ fn function() -> impl Trait {
 }
 ```
 
-## Static interception of dynamic calls
+## Limitations on trait object types
 
-As a consequence of binding outside of generic contexts, it *is* possible to statically wrap *specific* trait implementations on *concrete* types. This includes the inherent implementations on trait objects:
+Trait object types automatically implement their stated trait (and all its supertraits) and are already exempt from blanket implementations of these traits.
+
+To avoid confusion, these automatic implementations can't be shadowed by scoped implementations either, whether through blanket or direct implementations. The following code does not compile:
 
 ```rust
-use std::fmt::{self, Display, Formatter};
+trait Super {}
+trait Trait: Super {}
 
-{
-    use impl Display for dyn Display {
-        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-            // Restore binding to inherent global implementation within this function.
-            use ::{impl Display for dyn Display};
+use impl Trait for dyn Trait {}
+ // ^^^^^^^^^^^^^^^^^^^^^^^^
+ // error[E0371]: the object type `…` automatically implements implements the trait `Trait`
 
-            write!(f, "Hello! ")?;
-            d.fmt(f)?;
-            write!(f, " See you!")
-        }
-    }
-
-    let question = "What's up?"; // &str
-    println!("{question}"); // "What's up?"
-
-    let question: &dyn Display = &question;
-    println!("{question}"); // Binds to the scoped implementation; "Hello! What's up? See you!"
-}
+use impl Super for dyn Trait {}
+ // ^^^^^^^^^^^^^^^^^^^^^^^^
+ // error[E0371]: the object type `…` automatically implements implements the trait `Super`
 ```
+
+### Interaction with [RFC 2515 `type_alias_impl_trait`]
+
+The same limitations apply to `Alias` of `type Alias = impl Trait;` with regard to `Trait` and all of its supertraits.
+
+[RFC 2515 `type_alias_impl_trait`]: https://rust-lang.github.io/rfcs/2515-type_alias_impl_trait.html
 
 ## Warnings
 
