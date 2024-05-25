@@ -1479,9 +1479,13 @@ use impl Super for dyn Trait {}
  // error[E0371]: the object type `…` automatically implements implements the trait `Super`
 ```
 
+### Limitations on bounded opaque types and type variables
+
+Just like with trait object types, scoped implementations can't shadow the implementations of traits visible automatically on bounded opaque types (e.g. from return-position `impl Trait`) or bounded type variables like bounded type parameters and their bounded trait-associated types. Trying to do so directly is an error just as above.
+
 ### Interaction with [RFC 2515 `type_alias_impl_trait`]
 
-The same limitations apply to `Alias` of `type Alias = impl Trait;` with regard to `Trait` and all of its supertraits.
+The same limitations as for trait object types apply to `Alias` of `type Alias = impl Trait;` with regard to `Trait` and all of its supertraits. This includes the error when trying to write `use impl Trait for Alias { … }`;
 
 [RFC 2515 `type_alias_impl_trait`]: https://rust-lang.github.io/rfcs/2515-type_alias_impl_trait.html
 
