@@ -1489,6 +1489,34 @@ The same limitations as for trait object types apply to `Alias` of `type Alias =
 
 [RFC 2515 `type_alias_impl_trait`]: https://rust-lang.github.io/rfcs/2515-type_alias_impl_trait.html
 
+## Forbidden implementation combinations
+[forbidden-implementation-combinations]: #forbidden-implementation-combinations
+
+Due to uniqueness of global implementations for trait/type pairs, it has been possible for `unsafe` implementations to generically make safety-relevant assertions also about only loosely-related implementations.
+
+In order for existing code to remain sound in all cases, at least the following implementation combinations must be forbidden by default when fulfilling bounds:
+
+- `<T: UnsafeGlobal + Scoped>`
+- `<T: UnsafeGlobal<U>, U: Scoped>`
+- `<T: UnsafeGlobal<Type = U>, U: Scoped>`
+- combinations of these patterns, regardless of how the connecting bounds are fulfilled
+
+where
+
+- `UnsafeGlobal` is fulfilled by a global implementation of an `unsafe` trait (including through imports (direct or indirect)),
+- `Scoped` is fulfilled by a scoped implementation and
+- the type parameter definitions and bounds may be split between an `impl` and e.g. `fn` or `type` (as what matters is only that the relation is visible generically in some way).
+
+Running afoul of this restriction produces the error [potentially-unsound-combination-of-implementations].
+
+Unsafe traits are opted-out of imposing these limits if their definition has the new attribute `#[asserts_non_supertrait_impls(false)]`. In particular, all auto-traits like `Send`, `Sync` and `Unpin` and to my knowledge all other `unsafe` traits defined in the standard library can do this without issue.
+
+> Depending on how much friction this rule causes, changing the default may eventually be a candidate for inclusion in an edition change, but personally I wouldn't do this before scoped implementations have become a well-established part of the language.
+>
+> The migration for that would add `#[asserts_non_supertrait_impls(true)]` to all `unsafe` trait definitions without the attribute.
+
+These limits don't apply to `unsafe` implementations that are originally implemented as scoped. Instead, it is unsound to expose (to external safe code) an originally-scoped `unsafe` implementation that asserts non-supertrait implementations.
+
 ## Warnings
 
 ### Unused scoped implementation
@@ -1754,6 +1782,42 @@ use impl Sealed for () {} // Error.
 Crate `b` cannot define scoped implementations of the external sealed trait `Sealed`, but can still import them.
 
 See [no-external-scoped-implementations-of-sealed-traits] for why this is necessary.
+
+### Potentially unsound combination of implementations
+[potentially-unsound-combination-of-implementations]: #potentially-unsound-combination-of-implementations
+
+See [forbidden-implementation-combinations].
+
+```rust
+struct Type;
+
+/// # Safety
+///
+/// Has requirements regarding the implementation of [`Scoped`] on `Self`.
+unsafe trait Global {}
+unsafe impl Global for Type {}
+
+trait Scoped {}
+use impl Scoped for Type {}
+
+fn two_bounds<T: Global + Scoped>() {}
+
+fn main() {
+    two_bounds::<Type>();
+    //           ^^^^ error: potentially unsound combination of implementations
+    //
+    // The global implementation of the unsafe trait `Global` by `Type` may assume
+    // the global implementation of `Scoped` by `Type` when `Type` implements `Scoped`.
+    //
+    // Hint: Add a scoped implementation of `Global` by `Type` to avoid this restriction.
+    // Hint: Add `#[asserts_non_supertrait_impls(false)]` to `Global`'s definition to allow this combination.
+}
+```
+
+> Should the hints be conditional on whether doing so would be legal in the current scope/workspace?
+>
+> rust-analyzer and similar tooling could in theory offer to perform these actions as quick-fix.  
+> If a scoped implementation is generated that way, it should forward all items to the global one.
 
 ## Behaviour change/Warning: `TypeId` of implementation-aware generic discretised using generic type parameters
 [behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters]: #behaviour-changewarning-typeid-of-implementation-aware-generic-discretised-using-generic-type-parameters
