@@ -189,7 +189,8 @@ Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze
 
 - One might later consider whether `core::mem::Freeze` should be allowed to be `unsafe impl`'d like `Send` and `Sync` are, possibly allowing wrappers around interiorly mutable data to hide this interior mutability from constructs that require `Freeze` if the logic surrounding it guarantees that the interior mutability will never be used.
 	- The current status-quo is that it cannot be implemented manually (experimentally verified with 2024-05-12's nightly).
-	- The RFC author is unable to tell whether allowing manual implementation may cause the compiler to generate unsound code (even if the wrapper correctly prevents interior mutation), but judges that the gains of allowing these implementations are too small to justify allowing the risk.
+	- An `unsafe impl Freeze for T` would have very subtle soundness constraints: with such a declaration, performing mutation through any `&T` *or any pointer derived from it* would be UB. So this completely disables any interior mutability on fields of `T` with absolutely no way of ever recovering mutability.
+	- Given these tight constraints, it is unclear what a concrete use-case for `unsafe impl Freeze` would be. So far, none has been found.
 	- This consideration is purposedly left out of scope for this RFC to allow the stabilization of its core interest to go more smoothly; these two debates being completely orthogonal.
 - Adding a `trait Pure: Freeze` which extends the interior immutability guarantee to indirected data could be valuable:
 	- This is however likely to be a fool's errand, as indirections could (for example) be hidden behind keys to global collections. 
