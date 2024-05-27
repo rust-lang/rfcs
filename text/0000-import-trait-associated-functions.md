@@ -159,15 +159,12 @@ Trait::func(x, y, z);
 
 Additionally, the syntax
 ```rust
-use some_module::Trait::self;
+use Trait::{self, func};
 ```
 is sugar for
 ```rust
 use some_module::Trait;
-```
-to allow importing a trait and its methods at the same time, e.g:
-```rust
-use Default::{self, default};
+use some_module::Trait::func;
 ```
 
 The restriction on importing parent trait associated functions is a consequence of this desugaring, see https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=51bef9ba69ce1fc20248e987bf106bd4 for examples of the errors you get when you try to call parent trait associated functions through a child trait. We will likely want better error messages than this if a user tries to import a parent function.
@@ -184,7 +181,7 @@ This recommendation makes the most sense when there is a possibility of ambiguit
 
 Because of this context sensitivity, we should allow developers to choose when removing the extra context makes sense for their codebase.
 
-Another drawback mentioned during review for this RFC was that this adds more complication to the name resolution rules. On an implementation side, I am assured that this feature is straightforward to implement. From a user perspective, the name lookup rules for the function name are exactly the same as those used to look up any other function name. The lookup rules used to resolve the `impl` are also exactly the same ones used for non-fully qualified trait function calls. There is no fundamentally new kind of lookup happening here, just a remixing of existing lookup rules.
+Another drawback mentioned during review for this RFC was that this adds more complication to the name resolution rules. On an implementation side, I am assured that this feature is straightforward to implement in rustc. From a user perspective, the name lookup rules for the function name are exactly the same as those used to look up any other function name. The lookup rules used to resolve the `impl` are also exactly the same ones used for non-fully qualified trait function calls. There is no fundamentally new kind of lookup happening here, just a remixing of existing lookup rules.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
