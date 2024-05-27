@@ -116,7 +116,7 @@ When
 ```rust
 use Trait::func as m;
 ```
-occurs, a new item `m` is made available in the value namespace of the current module. Any attempts to call this item are treated calling the associated function explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the associated function in the trait. In other words, the example:
+occurs, a new item `m` is made available in the value namespace of the current module. Any attempts to call this item are treated as calling the associated function explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the associated function in the trait. In other words, the example:
 
 ```rust
 use Default::default;
