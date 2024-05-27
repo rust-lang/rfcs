@@ -203,6 +203,8 @@ In [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Wr
 
 Option 1 is what is proposed here. It has the simplest semantics, and I believe it best matches the user intent when they import an associated function; the desire is to make that function available as-if it were a regular function. Furthermore, it is more minimalist than the other two options in the sense that you can get to option 2 simply by importing the trait also. Option 3 seems like extra complexity for almost no added value.
 
+We considered allowing `use Trait::parent_method`, but decided against it, as you can always explicitly import from the parent instead.
+
 ## What is the impact of not doing this?
 
 Users of the language continue to create helper functions to access associated with regular function syntax. More specifically, each such instance requires a minimum of three lines when using normal rust formatting, corresponding to the following example:
@@ -233,3 +235,5 @@ As mentioned in [motivation], there was a rejected [RFC](https://github.com/rust
 [future-possibilities]: #future-possibilities
 
 This RFC does not propose the ability to import `Type::method` where `method` is contained in an `impl` block. Such a feature would be a natural extension of this work, and would enable numeric features like that discussed in [motivation] without the need for the [num_traits](https://docs.rs/num-traits/latest/num_traits/) crate. This feature is not proposed in this RFC since initial investigations revealed that it would be [difficult](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Writing.20an.20RFC.20for.20.60use.20Default.3A.3Adefault.60/near/427804375) to implement in today's rustc.
+
+If we add a compatibility mechanism to implement a supertrait method when implementing its subtrait, without having to separately implement the supertrait (such that a new supertrait can be extracted from a trait without breaking compatibility), we would also need to lift the limitation on using a supertrait method via a subtrait.
