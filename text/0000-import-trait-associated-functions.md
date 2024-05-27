@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow importing associated functions from traits and then using them like regular functions. 
+Allow importing associated functions and constants from traits and then using them like regular items. 
 
 # Motivation
 [motivation]: #motivation
@@ -14,6 +14,8 @@ Allow importing associated functions from traits and then using them like regula
 There has for a long time been a desire to shorten the duplication needed to access certain associated functions, such as `Default::default`. Codebases like [Bevy](https://github.com/bevyengine/bevy/blob/7c7d1e8a6442a4258896b6c605beb1bf50399396/crates/bevy_utils/src/default.rs#L27) provide wrapper functions to shorten this call, and a previous, now-rejected, [RFC](https://github.com/rust-lang/rust/pull/73001) aimed to provide this function as part of the standard library. This RFC was rejected with a note that there is a desire for a more general capability to import any trait associated functions.
 
 Additionally, if you pull in a crate like [num_traits](https://docs.rs/num-traits/latest/num_traits/), then this feature will allow access to numeric functions such as `sin` using the `sin(x)` syntax that is more common in mathematics. More generally, it will make calls to trait associated functions shorter without having to write a wrapper function.
+
+Similarly, associated constants, which act much like constant functions, can be imported to give easier access to them.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -108,15 +110,33 @@ fn main() {
 }
 ```
 
+Importing an associated constant is allowed too:
+```rust
+mod m {
+    trait MyNumTrait {
+        const ZERO: Self;
+        const ONE: Self;
+    }
+
+    // Impl for every numeric type...
+}
+
+use m::MyNumTrait::ZERO;
+
+fn f() -> u32 {
+    ZERO
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When 
 
 ```rust
-use Trait::func as m;
+use Trait::item as m;
 ```
-occurs, a new item `m` is made available in the value namespace of the current module. Any attempts to call this item are treated as calling the associated function explicitly qualified. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the associated function in the trait. In other words, the example:
+occurs, a new item `m` is made available in the value namespace of the current module. Any attempts to use this item are treated as using the associated item explicitly qualified. `item` must be either an associated function or an associated constant. As always, the `as` qualifier is optional, in which case the name of the new item is identical with the name of the associated item in the trait. In other words, the example:
 
 ```rust
 use Default::default;
