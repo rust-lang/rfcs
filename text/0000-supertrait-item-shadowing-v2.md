@@ -59,6 +59,58 @@ This behavior can be surprising: adding a method to a sub-trait can change which
 
 If we choose not to accept this RFC then there doesn't seem to be a reasonable path for adding new methods to the `Iterator` trait if such methods are already provided by `itertools` without a lot of ecosystem churn.
 
+## Only doing this for specific traits
+
+One possible alternative to a general change to the name resolution rules would be to only do so on a case-by-case basis for specific methods in standard library traits. This could be done by using a perma-unstable `#[shadowable]` attribute specifically on methods like `Iterator::intersperse`.
+
+There are both advantages and inconvenients to this approach. While it allows most Rust users to avoid having to think about this issue for most traits, it does make the `Iterator` trait more "magical" in that it doesn't follow the same rules as the rest of the language. Having a consistent rule for how name resolution works is easier to teach people.
+
+## Preferring the supertrait method instead
+
+In cases of ambiguity between a subtrait method and a supertrait method, there are 2 ways of resolving the ambiguity. This RFC proposes to resolve in favor of the subtrait since this is most likely to avoid breaking changes in practice.
+
+Consider this situation:
+
+- library A has trait `Foo`
+- crate B, depending on A, has trait `FooExt` with `Foo` as a supertrait
+- A adds a new method to `Foo`, but it has a default implementation so it's not breaking. B has a pre-existing method with the same name.
+
+In this general case, the reason this cannot be resolved in favor of the supertrait is that the method signatures are not necessarily compatible.
+
+[In code](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=b3919f7a8480c445d40b18a240936a07):
+
+```rust
+#![allow(unused)]
+
+mod a {
+    pub trait Int {
+        // fn call(&self) -> u32 {
+        //     0
+        // }
+    }
+    impl Int for () {}
+}
+
+mod b {
+    pub trait Int: super::a::Int {
+        fn call(&self) -> u8 {
+            0
+        }
+    }
+    impl Int for () {}
+}
+
+use a::Int as _;
+use b::Int as _;
+
+fn main() {
+    let val = ().call();
+    println!("{}", std::any::type_name_of_val(&val));
+}
+```
+
+Resolving in favor of `a` is a breaking change; in favor of `b` is not. The only other option is the status quo: not compiling. `a` simply cannot happen lest we violate backwards compatibility and the status quo is not ideal.
+
 # Prior art
 [prior-art]: #prior-art
 
