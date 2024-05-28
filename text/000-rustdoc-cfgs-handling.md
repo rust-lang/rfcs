@@ -37,7 +37,7 @@ This RFC proposes to add the following attributes:
 
     This attribute is used to document the operating systems, feature flags, and build profiles where an item is available. For example, `#[doc(cfg(unix))` will add a tag that says "this is supported on **unix** only" to the item.
 
-    The syntax of this attribute is the same as the syntax of the [`#[cfg(unix)]` attribute][cfg attribute] used for conditional compilation.
+    The syntax of this attribute is the same as the syntax of the [`#[cfg()]` attribute][cfg attribute] used for conditional compilation.
 
   * `#![doc(cfg_hide(...))]` / `#[doc(cfg_show(...))]`
 
@@ -57,7 +57,9 @@ All of these attributes can be added to a module or to the crate root, and they 
 
 ### `#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
 
-This is a crate-level attribute. By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
+By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
+
+This attribute impacts the item on which it is used and its descendants.
 
 So if we take back the previous example:
 
@@ -68,7 +70,7 @@ pub mod futures {}
 
 There's no need to "duplicate" the `cfg` into a `doc(cfg())` to make Rustdoc display it.
 
-In some situations, the detailed conditional compilation rules used to implement the feature might not serve as good documentation (for example, the list of supported platforms might be very long, and it might be better to document them in one place). To turn it off, add the `#[doc(auto_cfg(disable))]` attribute at the crate-level.
+In some situations, the detailed conditional compilation rules used to implement the feature might not serve as good documentation (for example, the list of supported platforms might be very long, and it might be better to document them in one place). To turn it off, add the `#[doc(auto_cfg = false)]` attribute on the item.
 
 ### `#[doc(cfg(...))]`
 
@@ -85,6 +87,15 @@ pub mod futures {}
 It will display in the documentation for this module:
 
 ![This is supported on feature="futures-io" only.](https://user-images.githubusercontent.com/81079/89731116-d7b7ce00-da44-11ea-87c6-022d192d6eca.png)
+
+You can use it to display information in generated documentation, whether or not there is a `#[cfg()]` attribute:
+
+```rust
+#[doc(cfg(feature = "futures-io"))]
+pub mod futures {}
+```
+
+It will be displayed exactly the same as the previous code.
 
 This attribute has the same syntax as conditional compilation, but it only causes documentation to be added. This means `#[doc(cfg(not(windows)))]` will not cause your docs to be hidden on non-windows targets, even though `#[cfg(not(windows))]` does do that.
 
@@ -268,7 +279,6 @@ When re-exporting items with different cfgs there are two things that can happen
 # Future possibilities
 [future possibilities]: #future-possibilities
 
-The `#[cfg(cfg_auto = true)]`/`#[cfg(cfg_auto = false)]` attribute is crate-level only for now as it doesn't really seem useful to be used on a specific item at the moment. However, if needed, this restriction could be lifted in the future if new needs come to appear.
 
 ## Boolean simplification
 [boolean simplification]: #boolean-simplification
