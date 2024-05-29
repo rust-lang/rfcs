@@ -311,7 +311,7 @@ Why should we *not* do this?
   with existing fragment specifiers.
 - There is room for macros to become smarter in their expansions without adding
   named capture groups. As mentioned elsewhere in this RFC, it seems like
-  adding named groups is a cleaner solution with less cognifitive
+  adding named groups is a cleaner solution with less cognitive overhead.
 
 # Prior art
 [prior-art]: #prior-art
