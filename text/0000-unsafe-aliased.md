@@ -168,6 +168,32 @@ pub struct S {
     data: UnsafePinned<i32>, // <!---- here
     ptr_to_data: *mut i32,
 }
+
+impl S {
+    pub fn new() -> Self {
+        S { data: UnsafePinned::new(42), ptr_to_data: ptr::null_mut() }
+    }
+
+    pub fn get_data(self: Pin<&mut Self>) -> i32 {
+        // SAFETY: We're not moving anything.
+        let this = unsafe { Pin::get_unchecked_mut(self) };
+        if this.ptr_to_data.is_null() {
+            this.ptr_to_data = UnsafePinned::raw_get_mut(ptr::addr_of_mut!(this.data));
+        }
+        // SAFETY: if the pointer is non-null, then we are pinned and it points to the `data` field.
+        unsafe { this.ptr_to_data.read() }
+    }
+
+    pub fn set_data(self: Pin<&mut Self>, data: i32) {
+        // SAFETY: We're not moving anything.
+        let this = unsafe { Pin::get_unchecked_mut(self) };
+        if this.ptr_to_data.is_null() {
+            this.ptr_to_data = UnsafePinned::raw_get_mut(ptr::addr_of_mut!(this.data));
+        }
+        // SAFETY: if the pointer is non-null, then we are pinned and it points to the `data` field.
+        unsafe { this.ptr_to_data.write(data) }
+    }
+}
 ```
 
 This lets the compiler know that mutable references to `data` might still have aliases, and so optimizations cannot assume that no aliases exist.
