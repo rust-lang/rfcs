@@ -1,6 +1,6 @@
 - Feature Name: `macros-named-capture-groups`
 - Start Date: 2024-05-28
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3649](https://github.com/rust-lang/rfcs/pull/3649)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -14,24 +14,26 @@ metavariable expressions.
 [motivation]: #motivation
 
 Rust has no way to refer to capture groups directly, so it uses the variables
-they capture to refer to capture groups indirectly. This leads to confusing or
-limited behavior in a few places:
+they capture to refer to them indirectly. This leads to confusing or limited
+behavior in a few places:
 
-- Expansion with multiple capture groups is extremely limited; it is not
-  possible to nest groups in a different order than they are matched since the
-  groups are ambiguous. This pattern is extremely useful with optional fields.
-- Metavariable expressions use an unintuitive index: syntax like 
+- Expansion with multiple capture groups is extremely limited. In many cases,
+  the ordering and nesting of different groups is restricted based on what can
+  be inferred by the contained variables, since the groups themselves are
+  ambiguous.
+- Metavariable expressions use an unintuitive format: syntax like 
   `${count($var, n)}` is used to refer to the `n`th parent group of the
-  smallest group that captures `$var`. Referring to groups directly rather than
-  using a proxy would be more straightforward.
+  smallest group that captures `$var`. Referring to groups directly would be
+  more straightforward than using a proxy.
 - Repetition-related diagnostics are limited because the compiler has limited
   ability to guess what a capture group _should_ refer to when a captured
   groups and variables do not align correctly.
-- Repetition mismatch diagnostics like "meta-variable `foo` repeats 2 times,
-  but `bar` repeats 1 time" can only be emitted after the macro is
-  instantiated, rather than when the macro is written.
-- As a result of the above, using repetition seems fragile; small adjustments
-  can break working patterns with little indication of what exactly is wrong.
+- Repetition mismatch diagnostics like can only be emitted after the macro is
+  instantiated, rather than when the macro is written. (E.g. "meta-variable
+  `foo` repeats 2 times, but `bar` repeats 1 time")
+- As a result of the above, using repetition is somewhat fragile; small
+  adjustments can break working patterns with little indication of what exactly
+  is wrong. Reading code with multiple capture groups can also be confusing.
 
 It is expected that named capture groups will provide a way to remove ambiguity
 in expansion and metavariable expressions, as well as unblock diagnostics that
@@ -58,7 +60,6 @@ This would be approximately equal to the following procedural code:
 let mut ret = TokenStream::new();
 
 // Append an expansion for each time group1 is matched
-
 for Group1Captures { a } in group1 {
     ret += quote!{ println!("{}", #a); };
 }
@@ -78,7 +79,7 @@ macro_rules! make_functions {
             // Create a function with the specified name
             fn $name() {
                 println!("function {} called", stringify!($name));
-                // If a greeting 
+                // If a greeting is provided, print it in every function
                 $greetings( println!("{}", $greeting) )?
             }
         )+
@@ -104,7 +105,7 @@ fn main() {
 ```
 
 This expansion is not easily possible without named capture groups because
-of ambiguity with which groups are referred to.
+of ambiguity regarding which groups are referred to.
 
 Expansion will approximately follow this procedural model:
 
@@ -137,10 +138,8 @@ This will be expanded to the following:
 
 > `$` ( (IDENTIFIER_OR_KEYWORD except crate | RAW_IDENTIFIER | _ ) `:` )<sup>?</sup> ( _MacroMatch<sup>+</sup>_ ) _MacroRepSep_<sup>?</sup> _MacroRepOp_
 
-As a result, `$identifier:( /* ... */ ) /* sep and kleene */` will be usable
-as a way to optionally give a name to a captured group. Names will remain
-optional; however, if a capture group is given a name, it _must_ also use
-its name during expansion (i.e. contextual scope in expansion is not allowed):
+As a result, `$identifier:( /* ... */ ) /* sep and kleene */` will allow naming
+a capture group. It can then be used in expansion:
 
 ```rust
 $identifier(
@@ -148,7 +147,11 @@ $identifier(
 ) /* sep and kleene */
 ```
 
-This will have implications in a few places:
+Names will remain optional; however, if a capture group is given a name, it
+_must_ also be referred to by name during expansion. That is, an unnamed
+group in expansion will never be matched to a named group in the pattern.
+
+This addition will have implications in a few places:
 
 ## Nesting repetition expansions
 
@@ -174,17 +177,18 @@ macro_rules! make_functions {
 }
 ```
 
+Adding named capture groups makes this work, since ambiguity is removed.
+
 It is likely possible to adjust the rules for expansion such that the above
-would work with no additional syntax. However, this RFC posits that compared to
-changing these rules, being able to refer to groups by name will lead to an
-overall better user experience through more clear code, better diagnostics, and
-a model that is easier to follow.
+would work with no additional syntax. However, this RFC posits that referring
+to groups by name provides an overall better user experience than changing
+the rules (more clear code, better diagnostics, and an easier model to follow).
 
 ## Zero-length capture groups
 
-As a side effect of more precise repetition, capture groups that do not capture
-anything will become more straightforward. For example, this simple count
-expression is not possible as written:
+As a side effect of more precise repetition, groups in expansion that do not
+contain any metavariables will become more straightforward. For example, this
+simple counter is not possible as written:
 
 ```rust
 macro_rules! count {
@@ -210,18 +214,19 @@ macro_rules! count {
 ```
 
 Metavariable expressions provide an `${ignore($var)}` operation that enables
-the same behavior; this will just be an alternate way.
+the same behavior; `ignore(...)` will simply not be needed with named groups.
 
 There is also no way to act on capture groups that bind only exact tokens but
 no variables. An example is extracting the `mut` from a function or binding
 signature:
+
 
 ```rust
 /// Sample macro that captures exact syntax and tweaks it
 macro_rules! match_fn {
     //               ↓ We need to be aware of mutability
     (fn $name:ident ($(mut)? $a:ident: u32)) => {
-
+        //       ↓ we want to reproduce the `mut` here
         fn $name($(mut)? $a: u32) {
         //       ^^^^^^^
         // error: attempted to repeat an expression containing no syntax variables
@@ -241,7 +246,7 @@ Adding named capture groups to the above would allow it to work.
 ## Metavariable expressions
 
 Metavariable expressions currently use a combination of location within the
-expansion (i.e. which capture groups contain it?), variables captured, and
+expansion (i.e. which capture groups contain it), variables captured, and
 an index to change the indicated group. For example, `index()` returns the
 number of the current expansion.
 
@@ -280,11 +285,11 @@ code (e.g. moving to be within `$outer_rep`, but not `$inner_rep`).
 
 This RFC proposes that `count`, `index`, and `len` will accept group names
 in place of a variable and an index, since these three expressions relate more
-to how capture groups are expanded than how the variables are expanded.
+to how entire _groups_ are expanded than the variables they take as arguments.
 
 Further reading:
 
-- [`macro_metavar_expr`] RFC and
+- [`macro_metavar_expr` RFC][`macro_metavar_expr`] and
   [tracking issue](https://github.com/rust-lang/rust/issues/83527)
 - [Proposal for possible specific behavior](https://github.com/rust-lang/rust/pull/122808#issuecomment-2124471027)
 
