@@ -1,0 +1,329 @@
+- Feature Name: `macros-named-capture-groups`
+- Start Date: 2024-05-28
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+It will now be possible to give names to capture (repetition) groups in macro
+patterns, which can then be referred to directly in the macro body and macro
+metavariable expressions.
+
+# Motivation
+[motivation]: #motivation
+
+Rust has no way to refer to capture groups directly, so it uses the variables
+they capture to refer to capture groups indirectly. This leads to confusing or
+limited behavior in a few places:
+
+- Expansion with multiple capture groups is extremely limited; it is not
+  possible to nest groups in a different order than they are matched since the
+  groups are ambiguous. This pattern is extremely useful with optional fields.
+- Metavariable expressions use an unintuitive index: syntax like 
+  `${count($var, n)}` is used to refer to the `n`th parent group of the
+  smallest group that captures `$var`. Referring to groups directly rather than
+  using a proxy would be more straightforward.
+- Repetition-related diagnostics are limited because the compiler has limited
+  ability to guess what a capture group _should_ refer to when a captured
+  groups and variables do not align correctly.
+- Repetition mismatch diagnostics like "meta-variable `foo` repeats 2 times,
+  but `bar` repeats 1 time" can only be emitted after the macro is
+  instantiated, rather than when the macro is written.
+- As a result of the above, using repetition seems fragile; small adjustments
+  can break working patterns with little indication of what exactly is wrong.
+
+It is expected that named capture groups will provide a way to remove ambiguity
+in expansion and metavariable expressions, as well as unblock diagnostics that
+do a better job of guiding the macro mental model.
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+Capture groups can now take a name by providing an identifier and `:` between
+the `$` and opening `(`. This group can then be referred to by name in the
+expansion:
+
+```rust
+macro_rules! foo {
+    ( $group1:( $a:ident ),+ ) => {
+        $group1( println!("{}", $a); )+
+    }
+}
+```
+
+This would be approximately equal to the following procedural code:
+
+```rust
+let mut ret = TokenStream::new();
+
+// Append an expansion for each time group1 is matched
+
+for Group1Captures { a } in group1 {
+    ret += quote!{ println!("{}", #a); };
+}
+```
+
+Named groups can be used to create code that depends on nested repetitions:
+
+```rust
+macro_rules! make_functions {
+    ( 
+        // Create a function for each name
+        names: [ $names:($name:ident),+ ],
+        // Optionally specify a greeting
+        $greetings:( greeting: $greeting:literal, )?
+    ) => {
+        $names(
+            // Create a function with the specified name
+            fn $name() {
+                println!("function {} called", stringify!($name));
+                // If a greeting 
+                $greetings( println!("{}", $greeting) )?
+            }
+        )+
+    }
+}
+
+fn main() {
+    make_functions! {
+        names: [foo, bar],
+        greeting: "hello!",
+    }
+
+    foo();
+    bar();
+
+    // output:
+    // function foo called
+    // hello!
+    // function bar called
+    // hello!
+}
+
+```
+
+This expansion is not easily possible without named capture groups because
+of ambiguity with which groups are referred to.
+
+Expansion will approximately follow this procedural model:
+
+```rust
+let mut ret = TokenStream::new();
+
+// Append an expansion for each time group1 is matched
+for NamesCaptures { name } in greetings {
+    let mut fn_body = quote! { println!("function {} called", stringify!($name)); };
+
+    // Append the greeting for each 
+    for GreetingCaptures { greeting } in greetings {
+        fn_body += quote! { println!("{}", #greeting) };
+    }
+
+    // Construct the function item and append to returned tokens
+    ret += quote! { fn #name() { #fn_body  } };
+}
+```
+
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+Macro captures currently include the following grammar node:
+
+> `$` ( _MacroMatch<sup>+</sup>_ ) _MacroRepSep_<sup>?</sup> _MacroRepOp_
+
+This will be expanded to the following:
+
+> `$` ( (IDENTIFIER_OR_KEYWORD except crate | RAW_IDENTIFIER | _ ) `:` )<sup>?</sup> ( _MacroMatch<sup>+</sup>_ ) _MacroRepSep_<sup>?</sup> _MacroRepOp_
+
+As a result, `$identifier:( /* ... */ ) /* sep and kleene */` will be usable
+as a way to optionally give a name to a captured group. Names will remain
+optional; however, if a capture group is given a name, it _must_ also use
+its name during expansion (i.e. contextual scope in expansion is not allowed):
+
+```rust
+$identifier(
+  /* expansion within group */
+) /* sep and kleene */
+```
+
+This will have implications in a few places:
+
+## Nesting repetition expansions
+
+Nesting or intermixing repetition groups is currently not possible, mostly due
+to ambiguity of capture group expansions. Using an example from above:
+
+```rust
+macro_rules! make_functions {
+    (
+    //           ↓ group 1
+        names: [ $($name:ident),+ ],
+    //  ↓ group 2
+        $( greeting: $greeting:literal, )?
+    ) => {
+        $(  // <- this expansion contains both `$name` and `$greeting`. So is this
+            //    an expansion of capture group 1 or 2?
+            fn $name() {
+                println!("function {} called", stringify!($name));
+                $( println!("{}", $greeting) )?
+            }
+        )+
+    }
+}
+```
+
+It is likely possible to adjust the rules for expansion such that the above
+would work with no additional syntax. However, this RFC posits that compared to
+changing these rules, being able to refer to groups by name will lead to an
+overall better user experience through more clear code, better diagnostics, and
+a model that is easier to follow.
+
+## Zero-length capture groups
+
+As a side effect of more precise repetition, capture groups that do not capture
+anything will become more straightforward. For example, this simple count
+expression is not possible as written:
+
+```rust
+macro_rules! count {
+    ( $( $i:ident ),* ) => {{
+        // error: attempted to repeat an expression containing no syntax variables
+        //↓  the compiler does not know which group this refers to (here there
+        //   is only one choice, but that is not always the case).
+        0 $( + 1 )* 
+    }};
+}
+```
+
+Using named groups removes ambiguity so should work:
+
+```rust
+// Note: this is just a simple example. Metavariable expressions will provide a
+// better way to get the same result with `${count(...)}`.
+macro_rules! count {
+    ( $idents:( $i:ident ),* ) => {{
+        0 $idents( + 1 )*
+    }};
+}
+```
+
+Metavariable expressions provide an `${ignore($var)}` operation that enables
+the same behavior; this will just be an alternate way.
+
+There is also no way to act on capture groups that bind only exact tokens but
+no variables. An example is extracting the `mut` from a function or binding
+signature:
+
+```rust
+/// Sample macro that captures exact syntax and tweaks it
+macro_rules! match_fn {
+    //               ↓ We need to be aware of mutability
+    (fn $name:ident ($(mut)? $a:ident: u32)) => {
+
+        fn $name($(mut)? $a: u32) {
+        //       ^^^^^^^
+        // error: attempted to repeat an expression containing no syntax variables
+            println!("hello {}!", $a);
+        }
+    }
+}
+fn main() {
+    match_fn!(fn foo(a: u32));
+    foo(10);
+}
+```
+
+Adding named capture groups to the above would allow it to work.
+`${ignore(...)}` does not directly help here.
+
+## Metavariable expressions
+
+Metavariable expressions currently use a combination of location within the
+expansion (i.e. which capture groups contain it?), variables captured, and
+an index to change the indicated group. For example, `index()` returns the
+number of the current expansion.
+
+```rust
+macro_rules! innermost1 {
+    ( $( $a:ident: $( $b:literal ),* );+ ) => {
+        [$( $( ${ignore($b)} ${index(1)}, )* )+]
+    };
+}
+```
+
+In order to understand what `index(1)` is referring to here, one must do the
+following:
+
+- Note how many repetition groups exist in the match expression (2).
+- Count how many repetition groups the `index(1)`` call is nested in (2).
+- Backtrack by one to figure out what exactly is getting indexed (1).
+
+After doing the above, it can be noted that `${index(1)}` in this position
+will indicate the current expansion of the outer cature group (the group
+containing only `$a`).
+
+Rewritten to use named groups instead:
+
+```rust
+macro_rules! innermost1 {
+    ( $outer_rep:( $a:ident: $inner_rep:( $b:literal ),* );+ ) => {
+        [$outer_rep( $inner_rep( ${index($outer_rep)}, )* )+]
+    };
+}
+```
+
+It is significantly easier to see what the call to `index` is referring to. As
+an added benefit, its meaning will not change if its position is moved in the
+code (e.g. moving to be within `$outer_rep`, but not `$inner_rep`).
+
+This RFC proposes that `count`, `index`, and `len` will accept group names
+in place of a variable and an index, since these three expressions relate more
+to how capture groups are expanded than how the variables are expanded.
+
+Further reading:
+
+- [`macro_metavar_expr`] RFC and
+  [tracking issue](https://github.com/rust-lang/rust/issues/83527)
+- [Proposal for possible specific behavior](https://github.com/rust-lang/rust/pull/122808#issuecomment-2124471027)
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+Why should we *not* do this?
+
+- If [`macro_metavar_expr`] stabilizes before this merges, this will add a
+  duplicate way of using those expressions. If this RFC is accepted,
+  stabilizing only a subset of metavariable expressions that does not conflict
+  should be considered.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+- Variable definition syntax could be `$ident(/* ... */)` rather than
+  `$ident:(/* ... */)`. Including the `:` is proposed to be more consistent
+  with existing fragment specifiers.
+- There is room for macros to become smarter in their expansions without adding
+  named capture groups. As mentioned elsewhere in this RFC, it seems like
+  adding named groups is a cleaner solution with less cognifitive
+
+# Prior art
+[prior-art]: #prior-art
+
+- Regex allows the naming of reepeating capture groups for expansion, including
+  those that do not capture anything else.
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+None at this time.
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+- Exact interaction with metavariable expressions is out of this RFC's scope. 
+  There is a proposal around
+  <https://github.com/rust-lang/rust/pull/122808#issuecomment-2124471027>.
+
+[`macro_metavar_expr`]: https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html
