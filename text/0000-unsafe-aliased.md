@@ -457,6 +457,7 @@ Adding something like this to Rust has been discussed many times throughout the 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- Is there a better name than `UnsafePinned` for the type? What about the trait -- `UnsafeUnpin` is awkward. Maybe `Unique` is better?
 - How do we transition code that relies on `Unpin` opting-out of aliasing guarantees to the new type? Here's a plan: define the `PhantomPinned` type as `UnsafePinned<()>`.
   Places in the standard library that use `impl !Unpin for` and the generator lowering are adjusted to use `UnsafePinned` instead.
   Then as long as nobody outside the standard library used the unstable `impl !Unpin for`, switching the `noalias`-opt-out to the `UnsafeUnpin` trait is actually backwards compatible with the (never explicitly supported) `Unpin` hack!
