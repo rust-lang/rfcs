@@ -18,7 +18,6 @@ Now this requires that the type of `expr` satisfies `T: core::marker::Freeze`, w
 
 The purpose of this change was to ensure that interior mutability cannot affect content that may have been static-promoted in read-only memory, which would be a soundness issue.
 However, this new requirement also prevents using static-promotion to create constant references to data of generic type. This pattern can be used to approximate "generic `static`s" (with the distinction that static-promotion doesn't guarantee a unique address for the promoted content). An example of this pattern can be found in `stabby` and `equator`'s shared way of constructing v-tables:
-However, this new requirement also prevents using static-promotion to allow generics to provide a generic equivalent to `static` (with the distinction that static-promotion doesn't guarantee a unique address for the promoted content). An example of this pattern can be found in `stabby` and `equator`'s shared way of constructing v-tables:
 ```rust
 pub trait VTable<'a>: Copy {
     const VT: &'a Self;
