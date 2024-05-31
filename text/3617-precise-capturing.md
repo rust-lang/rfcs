@@ -750,7 +750,7 @@ We considered a number of different possible syntaxes before landing on `impl us
 
 ### `impl use<..> Trait`
 
-This is the syntax chosen in this RFC.
+This is the syntax used throughout this RFC (but see the [unresolved questions][]).
 
 Using a separate keyword makes this syntax more scalable in the sense that we can apply `use<..>` in other places.
 
@@ -893,14 +893,14 @@ If these generics are more like the generic *arguments* above (*Intuition #1*), 
 
 However, if these generics are more like the generic *parameters* above (*Intuition #2*), then `use<..> impl Trait` makes more sense.  In Rust, when we're putting generic parameters into scope, they appear before the type.
 
-Since both intuitions are valid, but each argues for a different syntax choice, picking one is tough.  The authors are sympathetic to both choices.  The key historical and tiebreaker factors leading to our choice of the `impl use<..> Trait` syntax in this RFC are:
+Since both intuitions are valid, but each argues for a different syntax choice, picking one is tough.  The authors are sympathetic to both choices.  The key historical and tiebreaker factors leading to our use of the `impl use<..> Trait` syntax in this RFC are:
 
 - The original longstanding and motivating semantic intuition for this feature was *Intuition #1*, and it argues for this syntax.  The second intuition, *Intuition #2*, was only developed in the process of writing this RFC and after most of this RFC had been written.
 - The `use<..> impl Trait` syntax was never proposed before this RFC was written (it may have been inspired by the presentation in this RFC of the second intuition), and in discussion, no clear consensus has yet emerged in its favor.
 - There are some practical costs that exist for `use<..> impl Trait` that don't for `impl use<..> Trait`.
 - The "obvious" syntax for this feature is `impl<..> Trait`.  We may yet someday want to switch to this, and migrating from `impl use<..> Trait` seems like a smaller step.
 
-We are *not* leaving this as an open question, because given that there have already been substantial and productive discussions on this topic, and given that it's a bit of a coin flip where we're likely to be happy at the end of the day with either choice, it seems better to just pick one.  But all questions are in some sense open until stabilization, if feelings shift far enough and an alternate consensus emerges, and the authors hope that people will take the opportunity to experiment with and experience the syntax on nightly.
+Nonetheless, we leave this as an [unresolved question][].
 
 ### `impl Trait & ..`
 
@@ -939,6 +939,21 @@ We could use a new short keyword such as `via`.  This has the number 1 and 2 dra
 ### Using parentheses or square brackets
 
 We could say `use('t, T)` or `use['t, T]`.  However, in Rust today, generic parameters always fall within angle brackets, even when being applied to a type.  Doing something different here could feel inconsistent and doesn't seem warranted.
+
+# Unresolved questions
+[unresolved question]: #unresolved-questions
+[unresolved questions]: #unresolved-questions
+
+## Syntax question
+
+We leave as an open question which of these two syntaxes we should choose:
+
+1. `impl use<..> Trait`
+   - This syntax is used throughout this RFC.
+2. `use<..> impl Trait`
+   - This syntax is the worthy challenger.
+
+See the [alternatives][] section above for a detailed comparative analysis of these options.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
