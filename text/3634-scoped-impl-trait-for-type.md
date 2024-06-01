@@ -1498,10 +1498,14 @@ In order for existing code to remain sound in all cases, at least the following 
 
 - `<T: UnsafeGlobal + Scoped>`
 - `<T: UnsafeGlobal<U>, U: Scoped>`
-- `<T: UnsafeGlobal<Type = U>, U: Scoped>`
+- `<T: UnsafeGlobal<Associated = U>, U: Scoped>`
 - `<T: Sealed + ExternalScoped>`
 - `<T: Sealed<U>, U: ExternalScoped>`
-- `<T: Sealed<Type = U>, U: ExternalScoped>`
+- `<T: Sealed<Associated = U>, U: ExternalScoped>`
+- `<T: ExternalScoped>` with `where Type: Trait<T>`
+- `<T: ExternalScoped>` with `where Type: Trait<Associated = T>`
+- `<T: Trait>` with `where Type: ExternalScoped<T>`
+- `<T: Trait>` with `where Type: ExternalScoped<Associated = T>`
 - for patterns with `U`: also cases where `T` is replaced with a concrete type
 - combinations of these patterns, regardless of how the connecting bounds are fulfilled
 
@@ -1510,18 +1514,20 @@ where
 - `UnsafeGlobal` is fulfilled by a global implementation of an `unsafe` trait (including through imports (direct or indirect)),
 - `Scoped` is fulfilled by a scoped implementation,
 - `Sealed` is fulfilled by an implementation of a sealed trait,
-- `ExternalScoped` is fulfilled by a scoped implementation defined in a different crate from where the bounded item is defined and
+- `ExternalScoped` is fulfilled by a scoped implementation defined in a different crate from where the bounded item is defined,
+- `Type` is **any** type (including generics) where global implementations in downstream crates can't fulfill the bound on it,
+- `Trait` is fulfilled by **any** implementation and
 - the type parameter definitions and bounds may be split between an `impl` and e.g. `fn` or `type` (as what matters is only that the relation is visible generically in some way).
 
 Running afoul of this restriction produces the error [potentially-unsound-combination-of-implementations].
 
 Unsafe and sealed traits are opted-out of imposing these limits in place of `UnsafeGlobal` if their definition has the new attribute `#[asserts_non_supertrait_impls(false)]`. In particular, all auto-traits like `Send`, `Sync` and `Unpin` and to my knowledge all other `unsafe` traits defined in the standard library can do this without issue.
 
-Bounded items are opted out of imposing the limits containing `Sealed` on their uses if their definition has the new attribute `#[assumes_unique_impls(false)]`. Applying this attribute in turn triggers [potentially-unsound-combination-of-implementations] on nested uses of bounds combinations where the nested `ExternalScoped` bound is fulfilled through any outer bound (including indirectly through blanket implementations enabled by any outer bound).
+Bounded items are opted out of imposing the limits containing `ExternalScoped` on their uses if their definition has the new attribute `#[assumes_unique_impls(false)]`. Applying this attribute in turn triggers [potentially-unsound-combination-of-implementations] on nested uses of bounds combinations where the nested `ExternalScoped` bound is fulfilled through any outer bound (including indirectly through blanket implementations enabled by any outer bound).
 
 > Depending on how much friction these rules cause, changing the default(s) may eventually be a candidate for inclusion in an edition change, but personally I wouldn't do this before scoped implementations have become a well-established part of the language.
 >
-> The migrations for that would add `#[asserts_non_supertrait_impls(true)]` to all `unsafe`-or-sealed traits' definitions without the attribute, and `#[assumes_unique_impls(true)]` to all public items where a sealed-trait-bound is combined with another as above.
+> The migrations for that would add `#[asserts_non_supertrait_impls(true)]` to all `unsafe`-or-sealed traits' definitions without *this* attribute, and `#[assumes_unique_impls(true)]` to all public items without *that* attribute wherever a sealed-trait-bound is combined with another as above.
 
 These limits don't apply to `unsafe` implementations in place of `UnsafeGlobal` that are originally implemented as scoped. Instead, it is unsound to expose (to external safe code) an originally-scoped `unsafe` implementation that asserts non-supertrait implementations.
 
