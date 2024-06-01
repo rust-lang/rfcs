@@ -1492,30 +1492,40 @@ The same limitations as for trait object types apply to `Alias` of `type Alias =
 ## Forbidden implementation combinations
 [forbidden-implementation-combinations]: #forbidden-implementation-combinations
 
-Due to uniqueness of global implementations for trait/type pairs, it has been possible for `unsafe` implementations to generically make safety-relevant assertions also about only loosely-related implementations.
+Due to uniqueness of global implementations for trait/type pairs, it has been possible for `unsafe` implementations and blocks to generically make safety-relevant assertions and assumptions also about only loosely-related implementations.
 
 In order for existing code to remain sound in all cases, at least the following implementation combinations must be forbidden by default when fulfilling bounds:
 
 - `<T: UnsafeGlobal + Scoped>`
 - `<T: UnsafeGlobal<U>, U: Scoped>`
 - `<T: UnsafeGlobal<Type = U>, U: Scoped>`
+- `<T: Sealed + ExternalScoped>`
+- `<T: Sealed<U>, U: ExternalScoped>`
+- `<T: Sealed<Type = U>, U: ExternalScoped>`
+- for patterns with `U`: also cases where `T` is replaced with a concrete type
 - combinations of these patterns, regardless of how the connecting bounds are fulfilled
 
 where
 
 - `UnsafeGlobal` is fulfilled by a global implementation of an `unsafe` trait (including through imports (direct or indirect)),
-- `Scoped` is fulfilled by a scoped implementation and
+- `Scoped` is fulfilled by a scoped implementation,
+- `Sealed` is fulfilled by an implementation of a sealed trait,
+- `ExternalScoped` is fulfilled by a scoped implementation defined in a different crate from where the bounded item is defined and
 - the type parameter definitions and bounds may be split between an `impl` and e.g. `fn` or `type` (as what matters is only that the relation is visible generically in some way).
 
 Running afoul of this restriction produces the error [potentially-unsound-combination-of-implementations].
 
-Unsafe traits are opted-out of imposing these limits if their definition has the new attribute `#[asserts_non_supertrait_impls(false)]`. In particular, all auto-traits like `Send`, `Sync` and `Unpin` and to my knowledge all other `unsafe` traits defined in the standard library can do this without issue.
+Unsafe and sealed traits are opted-out of imposing these limits in place of `UnsafeGlobal` if their definition has the new attribute `#[asserts_non_supertrait_impls(false)]`. In particular, all auto-traits like `Send`, `Sync` and `Unpin` and to my knowledge all other `unsafe` traits defined in the standard library can do this without issue.
 
-> Depending on how much friction this rule causes, changing the default may eventually be a candidate for inclusion in an edition change, but personally I wouldn't do this before scoped implementations have become a well-established part of the language.
+Bounded items are opted out of imposing the limits containing `Sealed` on their uses if their definition has the new attribute `#[assumes_unique_impls(false)]`. Applying this attribute in turn triggers [potentially-unsound-combination-of-implementations] on nested uses of bounds combinations where the nested `ExternalScoped` bound is fulfilled through any outer bound (including indirectly through blanket implementations enabled by any outer bound).
+
+> Depending on how much friction these rules cause, changing the default(s) may eventually be a candidate for inclusion in an edition change, but personally I wouldn't do this before scoped implementations have become a well-established part of the language.
 >
-> The migration for that would add `#[asserts_non_supertrait_impls(true)]` to all `unsafe` trait definitions without the attribute.
+> The migrations for that would add `#[asserts_non_supertrait_impls(true)]` to all `unsafe`-or-sealed traits' definitions without the attribute, and `#[assumes_unique_impls(true)]` to all public items where a sealed-trait-bound is combined with another as above.
 
-These limits don't apply to `unsafe` implementations that are originally implemented as scoped. Instead, it is unsound to expose (to external safe code) an originally-scoped `unsafe` implementation that asserts non-supertrait implementations.
+These limits don't apply to `unsafe` implementations in place of `UnsafeGlobal` that are originally implemented as scoped. Instead, it is unsound to expose (to external safe code) an originally-scoped `unsafe` implementation that asserts non-supertrait implementations.
+
+By the same principle, scoped implementations defined by the same crate as the bounded item don't necessarily have to be forbidden when used in place of `ExternalScoped` for those bounds.
 
 ## Warnings
 
