@@ -1502,6 +1502,8 @@ In order for existing code to remain sound in all cases, at least the following 
 - `<T: Sealed + ExternalScoped>`
 - `<T: Sealed<U>, U: ExternalScoped>`
 - `<T: Sealed<Associated = U>, U: ExternalScoped>`
+- `<T: 'static + VisibleGlobal<U>, U: ExternalScoped>`
+- `<T: 'static + VisibleGlobal<Associated = U>, U: ExternalScoped>`
 - `<T: ExternalScoped>` with `where Type: Trait<T>`
 - `<T: ExternalScoped>` with `where Type: Trait<Associated = T>`
 - `<T: Trait>` with `where Type: ExternalScoped<T>`
@@ -1515,9 +1517,14 @@ where
 - `Scoped` is fulfilled by a scoped implementation,
 - `Sealed` is fulfilled by an implementation of a sealed trait,
 - `ExternalScoped` is fulfilled by a scoped implementation defined in a different crate from where the bounded item is defined,
+- `VisibleGlobal` is fulfilled by a global implementation potentially visible at the bounded item (i.e. not defined in the caller's crate),
 - `Type` is **any** type (including generics) where global implementations in downstream crates can't fulfill the bound on it,
 - `Trait` is fulfilled by **any** implementation and
 - the type parameter definitions and bounds may be split between an `impl` and e.g. `fn` or `type` (as what matters is only that the relation is visible generically in some way).
+
+> For the patterns with `T: 'static + VisibleGlobal`, the implementation could check `TypeId::of::<T>()` and then assume `U: ExternalScoped` to instead be the global implementation.
+>
+> It may be a good idea to slightly broaden some of these restrictions here for simplicity, but unfortunately adjusting them *at all* after scoped implementations are introduced could either be unsound or potentially break crates, and the migrations to mitigate that would still be somewhat messy. At the least, additional arguments to the attributes below would be needed.
 
 Running afoul of this restriction produces the error [potentially-unsound-combination-of-implementations].
 
