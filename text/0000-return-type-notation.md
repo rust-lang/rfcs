@@ -546,7 +546,7 @@ but we will use it to define the semantics of Return Type Notation.
 
 Return Type Notation extends the type grammar roughly as follows,
 where `?` indicates an optional nonterminal and `,*` indicates a comma
-separated list. These changes permit `where T::method(): Send`.
+separated list. These changes permit `where T::method(..): Send`.
 
 ```ebnf
 Type = i32
@@ -775,7 +775,7 @@ and a function bounding it
 fn start_health_check<H>(health_check: H, server: Server)
 where
     H: HealthCheck + Send + 'static,
-    H::check(): Send, // 👈 How would we write this with `typeof`?
+    H::check(..): Send, // 👈 How would we write this with `typeof`?
 ```
 
 To write the above with `typeof`, you would do something like this
@@ -859,7 +859,7 @@ To address the challenge of an implicit name, we could allow people to explicitl
 
 ```rust
 trait Factory {
-    #[associated_return_type(Widget)]
+    #[associated_return_type(Widgets)]
     fn widgets(&self) -> impl Iterator<Item = Widget>;
 }
 ```
@@ -1035,7 +1035,7 @@ There are multiple ways we could write this where-clause, varying in their speci
 * `where C::capture(..): Send` -- this indicates that `C::capture()` will return a `Send` value for any possible set of parameters
 * `where C::capture(&mut C, i32): Send` -- this indicates that `C::capture()` will return a `Send` value when invoked specifically on a `&mut C` (for the `self` parameter) and an `i32`
 * `where for<'a> C::capture(&'a mut C, i32): Send` -- same as the previous rule, but with the higher-ranked `'a` written explicitly
-* `where C::capture::<i32>(): Send` -- this indicates that `C::capture()` will return a `Send` value for any possible set of parameters, but with its `T` parameter set explicitly to `i32`
+* `where C::capture::<i32>(..): Send` -- this indicates that `C::capture()` will return a `Send` value for any possible set of parameters, but with its `T` parameter set explicitly to `i32`
 * `where C::capture::<i32>(&mut C, i32): Send` -- this indicates that `C::capture()` will return a `Send` value when its `T` parameter is `i32`
 * `where for<'a> C::capture::<i32>(&'a mut C, i32): Send` -- same as the previous rule, but with the higher-ranked `'a` written explicitly
 
@@ -1101,5 +1101,5 @@ We expect to  make traits with async functions and RPITIT dyn safe in the future
 
 ## Naming the zero-sized types for a method
 
-Every function and method `f` in Rust has a corresponding zero-sized type that uniquely identifies `f`. The RTN notation `T::check(..)` refers to the return value of `check`; conceivably `T::check` (without the parens) could be used to refer the type of `check` itself. In this case, `T::check()` can be thought of as shorthand for `<T::check as Fn<_>>::Output`.
+Every function and method `f` in Rust has a corresponding zero-sized type that uniquely identifies `f`. The RTN notation `T::check(..)` refers to the return value of `check`; conceivably `T::check` (without the parens) could be used to refer the type of `check` itself. In this case, `T::check(..)` can be thought of as shorthand for `<T::check as Fn<_>>::Output`.
 
