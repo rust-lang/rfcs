@@ -38,7 +38,7 @@ Overcapturing limits how callers can use returned opaque types in ways that are 
 
 ## Lifetime Capture Rules 2024
 
-In Rust 2021 and earlier editions, all type parameters in scope are implicitly captured in RPIT-like `impl Trait` opaque types.  In these editions, lifetime parameters are not implicitly captured unless named in the bounds of the opaque.  This resulted, among other things, in the use of "the `Captures` trick".  See [RFC 3498][] for more details about this.
+All type parameters in scope are implicitly captured in RPIT-like `impl Trait` opaque types.  In Rust 2021 and earlier editions, for RPIT on bare functions and on inherent functions and methods, lifetime parameters are not implicitly captured unless named in the bounds of the opaque.  This resulted, among other things, in the use of "the `Captures` trick".  See [RFC 3498][] for more details about this.
 
 In RFC 3498, we decided to capture all in-scope generic parameters in RPIT-like `impl Trait` opaque types, across all editions, for new features we were stabilizing such as return position `impl Trait` in Trait (RPITIT) and associated type position `impl Trait` (ATPIT), and to capture all in-scope generic parameters for RPIT on bare functions and on inherent functions and methods starting in the Rust 2024 edition.  Doing this made the language more predictable and consistent, eliminated weird "tricks", and, by solving key problems, allowed for the stabilization of RPITIT.
 
