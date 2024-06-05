@@ -62,7 +62,7 @@ We need some way to migrate this kind of code.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-In all editions, RPIT-like `impl Trait` opaque types may include `use<..>` in the bound to specify which in-scope generic parameters are captured or that no in-scope generic parameters are captured (with `use<>`).  If `use<..>` is provided, it entirely overrides the implicit rules for which generic parameters are captured.
+In all editions, RPIT-like `impl Trait` opaque types may include `use<..>` before any bounds to specify which in-scope generic parameters are captured or that no in-scope generic parameters are captured (with `use<>`).  If `use<..>` is provided, it entirely overrides the implicit rules for which generic parameters are captured.
 
 One way to think about `use<..>` is that, in Rust `use` brings things *into scope*, and here we are bringing certain generic parameters into scope for the hidden type.
 
