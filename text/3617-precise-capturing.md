@@ -42,7 +42,7 @@ All type parameters in scope are implicitly captured in RPIT-like `impl Trait` o
 
 In RFC 3498, we decided to capture all in-scope generic parameters in RPIT-like `impl Trait` opaque types, across all editions, for new features we were stabilizing such as return position `impl Trait` in Trait (RPITIT) and associated type position `impl Trait` (ATPIT), and to capture all in-scope generic parameters for RPIT on bare functions and on inherent functions and methods starting in the Rust 2024 edition.  Doing this made the language more predictable and consistent, eliminated weird "tricks", and, by solving key problems, allowed for the stabilization of RPITIT.
 
-However, the expansion of the RPIT rules in Rust 2024 means that some existing uses of RPIT, when migrated to Rust 2024, will now capture lifetime parameters that were not previously captured, and this may result in code failing to compile.  For example, consider:
+However, the expansion of the RPIT capture rules in Rust 2024 means that some existing uses of RPIT, when migrated to Rust 2024, will now capture lifetime parameters that were not previously captured, and this may result in code failing to compile.  For example, consider:
 
 ```rust
 //@ edition: 2021
@@ -64,7 +64,7 @@ We need some way to migrate this kind of code.
 
 In all editions, RPIT-like `impl Trait` opaque types may include `use<..>` before any bounds to specify which in-scope generic parameters are captured or that no in-scope generic parameters are captured (with `use<>`).  If `use<..>` is provided, it entirely overrides the implicit rules for which generic parameters are captured.
 
-One way to think about `use<..>` is that, in Rust `use` brings things *into scope*, and here we are bringing certain generic parameters into scope for the hidden type.
+One way to think about `use<..>` is that, in Rust, `use` brings things *into scope*, and here we are bringing certain generic parameters into scope for the hidden type.
 
 For example, we can solve the overcapturing in the original motivating example by writing:
 
@@ -703,7 +703,7 @@ As we saw in the reference desugaring above, associated type position `impl Trai
 
 As it turned out, there are four problems with this:
 
-1. ATPIT/TAIT is too indirect a solution.
+1. These features are too indirect a solution.
 2. They might not be stabilized in time.
 3. They would lead to a worse migration story.
 4. We would want this syntax anyway.
@@ -754,7 +754,7 @@ This is the syntax used throughout this RFC (but see the [unresolved questions][
 
 Using a separate keyword makes this syntax more scalable in the sense that we can apply `use<..>` in other places.
 
-Conveniently, the word "use" is quite appropriate here, since we are *using* the generic parameters in the type of the opaque type and allowing the generic parameters to be *used* in the hidden type.  That is, with `use`, we are bringing the generic parameters *into scope* for the hidden type, and `use` is the keyword in Rust for bringing things into scope.
+Conveniently, the word "use" is quite appropriate here, since we are *using* the generic parameters in the opaque type and allowing the generic parameters to be *used* in the hidden type.  That is, with `use`, we are bringing the generic parameters *into scope* for the hidden type, and `use` is the keyword in Rust for bringing things into scope.
 
 Picking an existing keyword allows for this syntax, including extensions to other positions, to be allowed in older editions.  Because `use` is a full keyword, we're not limited in where it can be placed.
 
