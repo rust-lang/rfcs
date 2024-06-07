@@ -128,7 +128,7 @@ main function.
 
 - A library that wants to make use of inheriting thread locals will have to
   register a global hook, and will need to keep track of whether its hook has
-  already been added (e.g. in a static `AtomicBool`).
+  already been added (e.g. in a static `std::sync::Once`).
 
 - The hooks will not run if threads are spawned through e.g. pthread directly,
   bypassing the Rust standard library.
