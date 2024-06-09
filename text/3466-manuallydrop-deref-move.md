@@ -28,7 +28,7 @@ pub struct Bar(String);
 
 impl Foo {
     pub fn into_bar(self) -> Bar {
-        let m = core::mem::ManuallyDrop::new(foo);
+        let m = core::mem::ManuallyDrop::new(self);
         Bar(unsafe { core::ptr::read(&m.0) }) // Need to use `unsafe`
     }
 }
