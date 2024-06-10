@@ -780,7 +780,20 @@ where
     ): Send,
 ```
 
-Note that we had to supply a callable expression (even if it will never execute), so we can't directly talk about the types of the arguments provided to `H::check`, instead we have to use the `dummy` function to produce a fake value of the type we want. 
+Alternatively, one could write something like this
+
+```rust
+fn start_health_check<H>(health_check: H, server: Server)
+where
+    H: HealthCheck + Send + 'static,
+    typeof {
+        let hc: &'a mut H;
+        let s: Server;        
+        H::check(h, ds)
+    }: Send,
+```
+
+Note that we had to supply a callable expression (even if it will never execute), so we can't directly talk about the types of the arguments provided to `H::check`, instead we have to use the `dummy` function to produce a fake value of the type we want or introduce dummy let-bound variables.
 
 Clearly, `typeof` on its own fails the "ergonomic enough to use for simple cases" threshold we were shooting for. But it's also a significantly more powerful feature that introduces a *lot* of complications. We were able to implement a minimal version of RTN in a few days, demonstrating that it fits relatively naturally into the compiler's architecture and existing trait system. In contrast, integrating `typeof` would be rather more complicated. To start, we would need to be running the type checker in new contexts (e.g., in a where clause) at large scale in order to normalize a type like `typeof H::check(x, y)` into the final type it represents.
 
