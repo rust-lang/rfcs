@@ -953,7 +953,14 @@ C++ has [`decltype`](https://en.cppreference.com/w/cpp/language/decltype) expres
 
 >- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
 
-None.
+## Does stabilizing `T::foo(..)` notation as a standalone type create a confusing inconsistency with `-> ()` shorthand?
+
+Unlike a regular associated type, this RFC does not allow a trait bound that specifies the return type of a method, only the ability to put bounds on that return type.
+rpjohnst suggested that we may wish to support a syntax like `T: Trait<method(..) -> T>`, perhaps in conjunction with specified argument types.
+They further pointed out that permitting `T::method(..)` as a standalone type could be seen as inconsistent, given that `fn foo()` is normally shorthand for `-> ()`.
+However, *not* supporting `T::method(..)` as a standalone type could also be seen as inconsistent, since normally `T: Trait<Bar: Send>` and `T::Bar: Send` are equivalent.
+Prior to stabilizing the "send position" syntax, we should be sure we are comfortable with this.
+
 
 # Future possibilities
 [future possibilities]: #future-possibilities
