@@ -626,7 +626,7 @@ The examples above illustrate the semantics but do not make clear how RTN can be
 
 ## RTN only applies to AFIT and RPITIT methods
 
-Although conceptually RTN could be used for any trait method, we choose to limits its use to `async fn` and other methods that directly return an `-> impl Future`. This limitation can be lifted in the future as we gain more experience.
+Although conceptually RTN could be used for any trait method, we choose to limits its use to `async fn` and other methods that directly return an `-> impl Trait`. This limitation can be lifted in the future as we gain more experience.
 
 * RTN may refer to the following examples:
     * `async fn method(&self)`
