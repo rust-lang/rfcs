@@ -8,9 +8,7 @@
 # Summary
 [summary]: #summary
 
-Return type notation (RTN) gives a way to reference or bound the type returned by a trait method.
-The new bounds look like `T: Trait<method(..): Send>` or `T::method(..): Send`.
-The primary use case is to add bounds such as `Send` to the futures returned by `async fn`s in traits and `-> impl Future` functions, but they work for any trait function defined with return-position impl trait (e.g., `where T: Factory<widgets(..): DoubleEndedIterator>` would also be valid).
+Return type notation (RTN) gives a way to reference or bound the type returned by a trait method. The new bounds look like `T: Trait<method(..): Send>` or `T::method(..): Send`. The primary use case is to add bounds such as `Send` to the futures returned by `async fn`s in traits and `-> impl Future` functions, but they work for any trait function defined with return-position impl trait (e.g., `where T: Factory<widgets(..): DoubleEndedIterator>` would also be valid).
 
 This RFC proposes a new kind of type written `<T as Trait>::method(..)` (or `T::method(..)` for short). RTN refers to "the type returned by invoking `method` on `T`". 
 
@@ -123,8 +121,7 @@ But this `SendService` trait is too strong for use outside a work-stealing setup
 
 ## Comparison to an analogous problem with `IntoIterator`
 
-It is useful to compare this situation with analogous scenarios that arise elsewhere in Rust, such as with associated types. Imagine a function that takes an `I: IntoIterator`
-and which wishes to make use of the returned iterator in a separate thread:
+It is useful to compare this situation with analogous scenarios that arise elsewhere in Rust, such as with associated types. Imagine a function that takes an `I: IntoIterator` and which wishes to make use of the returned iterator in a separate thread:
 
 ```rust
 fn into_iter_example<I: IntoIterator>(i: I) {
@@ -166,20 +163,13 @@ There are two ways the function `into_iter_example` could be made to compile:
 1. Modify the `IntoIterator` trait to require that the target iterator type is *always* `Send`
 2. Modify the function to have a where-clause `I::IntoIter: Send`.
 
-The 1st option is less flexible but more convenient;
-it is inappropriate in a highly generic trait like `IntoIterator` which is used in a number of scenarios.
-It would be fine for an application- or library-specific crate that is only used in narrow circumstances.
-Referring back to the compiler's error message, you can see that an additional where-clause is exactly what it suggested.
+The 1st option is less flexible but more convenient; it is inappropriate in a highly generic trait like `IntoIterator` which is used in a number of scenarios. It would be fine for an application- or library-specific crate that is only used in narrow circumstances. Referring back to the compiler's error message, you can see that an additional where-clause is exactly what it suggested.
 
-This is the challenge: **Rust does not currently have a way to write the equivalent of `where I::IntoIter: Send` for the futures returned by `async fn` (or the results of `-> impl Trait` methods in traits).**
-This creates a gap between the first `Service` example, which can only be resolved by modifying the trait,
-and `IntoIterator`, which can be resolved either by modifying the trait or by adding a where-clause to the function, 
-whichever is more appropriate.
+This is the challenge: **Rust does not currently have a way to write the equivalent of `where I::IntoIter: Send` for the futures returned by `async fn` (or the results of `-> impl Trait` methods in traits).** This creates a gap between the first `Service` example, which can only be resolved by modifying the trait, and `IntoIterator`, which can be resolved either by modifying the trait or by adding a where-clause to the function, whichever is more appropriate.
 
 ## Return type notation (RTN) permits the return type of AFIT and RPITIT to be bounded, closing the gap
 
-The core feature proposed in this RFC is the ability to write a bound that bounds the return type of an AFIT/RPITIT trait method.
-This allows the `spawn_call` definition to be amended to require that `call()` returns a `Send` future:
+The core feature proposed in this RFC is the ability to write a bound that bounds the return type of an AFIT/RPITIT trait method. This allows the `spawn_call` definition to be amended to require that `call()` returns a `Send` future:
 
 ```rust
 async fn spawn_call<S>(service: S) -> S::Response
@@ -201,9 +191,7 @@ A variant of the proposal in this RFC is already implemented, so you can [try th
 
 ## RTN is useful for more than `Send` bounds
 
-RTN is useful for more than `Send` bounds.
-For example, consider the trait `Factory`,
-which contains a method that returns an `impl Iterator`:
+RTN is useful for more than `Send` bounds. For example, consider the trait `Factory`, which contains a method that returns an `impl Iterator`:
 
 ```rust
 trait Factory {
