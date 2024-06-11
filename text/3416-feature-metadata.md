@@ -8,7 +8,14 @@
 
 [summary]: #summary
 
-This RFC is just meta tracking information for the three following RFCs:
+This RFC adds a "detailed" feature definition:
+```toml
+[features]
+# same as `foo = []`
+foo = { enables = [] }
+```
+
+This is to unblock the following RFCs:
 
 - [Cargo feature descriptions](https://github.com/rust-lang/rfcs/pull/3485)
 - [Cargo feature deprecation](https://github.com/rust-lang/rfcs/pull/3486)
@@ -68,20 +75,11 @@ features are enabled by a given feature. For example,
 
 All other keys are described in their individual RFCs.
 
-# Reference-level explanation
+## General Implementation & Usage
 
-[reference-level-explanation]: #reference-level-explanation
-
-`enables` will take the place of the feature dependency array that currently
-exists. Semantics will remain unchanged.
-
-This is a required key. If there are no requirements, an empty list should be
-provided (`enables = []`). This content is already in the index.
-
-# General Implementation & Usage
-
-Use cases for this information will likely develop with time, but one of the
-simplest applications is for information output with `cargo add`:
+Use cases for these new keys will likely develop with time,
+but one of the simplest applications is for information output with `cargo
+add`:
 
 ```text
 crab@rust foobar % cargo add regex
@@ -105,17 +103,23 @@ crab@rust foobar % cargo add regex
 Features like `aho-corasick`, `memchr`, or `use_std` would likely be
 `public = false` since they aren't listed on the crate landing page.
 
-## Implementation note: sort order
+# Reference-level explanation
 
-In general, any tool that renders features (`rustdoc`, `cargo add`) should
-attempt to present them in the following way:
+[reference-level-explanation]: #reference-level-explanation
 
-- Display default features first
-- Display non-default but stable features next (can be in a separate section)
-- Display deprecated features last (can be in a separate section)
-- Do not display private features unless receiving a flag saying to do so (e.g.
-  `--document-private-items` with `rustdoc`)
-- If ordering is not preserved, present the features alphabetically
+`enables` will take the place of the feature dependency array that currently
+exists. Semantics will remain unchanged.
+
+This is a required key. If there are no requirements, an empty list should be
+provided (`enables = []`). This content is already in the index.
+
+The availability of this new syntax should not require an MSRV bump.
+This means we need to make sure that if you use `feature_name = []` in your `Cargo.toml`,
+then the published `Cargo.toml` should as well.
+However, we leave it as an implementation detail whether using `feature_name = { enables =[] }`
+requires an MSRV bump for users of your published package as we have not been
+actively streamlining the workflow for maintaining separate development and
+published MSRVs.
 
 # Drawbacks
 
@@ -127,6 +131,23 @@ attempt to present them in the following way:
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+This RFC has no impact on the Index Summaries.
+Future RFCs will need to work with that.
+
+## Naming
+
+- `enables` reads better on the line than `enable`
+- `enables` is likely an easier word for non-native speakers than `activates`
+- `required` is used elsewhere to say "this should automatically be available if requirements are met"
+
+## Schema
+
+We could split the special feature syntax (`dep:`, etc) as distinct fields
+but we'd prefer trivial conversion from the "simple" schema to the "detailed" schema,
+like `dependencies`.
+However, we likely would want to prefer using new fields over adding more syntax,
+like with [disabling default features](https://github.com/rust-lang/cargo/issues/3126).
 
 # Prior art
 
@@ -140,12 +161,10 @@ attempt to present them in the following way:
 
 [future-possibilities]: #future-possibilities
 
-- A `rust-version` field that could indicate e.g. `rust-version = "nightly"` or
-  `rust-version = "1.65"` to specify a MSRV for that feature. See:
-  <https://github.com/rust-lang/rfcs/pull/3416#discussion_r1174478461>
-- `cargo add` can show the `doc` and `deprecated` summary with the listed
-  features.
-- [`cargo-info`] can use this information to provide feature descriptions.
+- [Cargo feature descriptions](https://github.com/rust-lang/rfcs/pull/3485)
+- [Cargo feature deprecation](https://github.com/rust-lang/rfcs/pull/3486)
+- [Cargo feature visibility](https://github.com/rust-lang/rfcs/pull/3487)
+- [Cargo feature stability](https://github.com/rust-lang/cargo/issues/10881)
 
 [cargo #12335]: https://github.com/rust-lang/cargo/issues/12235
 [cargo #10882]: https://github.com/rust-lang/cargo/issues/10882
