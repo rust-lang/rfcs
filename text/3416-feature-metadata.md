@@ -127,6 +127,8 @@ published MSRVs.
 
 - Added complexity to Cargo. Parsing is trivial, but exact implementation
   details do add test surface area
+- Extending the `Cargo.toml` schema, particularly having a field support
+  additional types, is disruptive to third-party parsers
 
 # Rationale and alternatives
 
