@@ -16,7 +16,9 @@ The overall goal is **bringing the Async Rust experience closer to parity with s
 * [resolving the "send bound problem"](#resolve-the-send-bound-problem), thus enabling foundational, generic traits like Tower's [`Service`]() trait;
 * [stabilizing a trait in libstd for async iteration](#stabilize-trait-for-async-iteration), thus enabling the ecosystem to build atop a stable foundation;
 * [authoring a draft RFC for async vision](#author-draft-rfc-for-async-vision), thus aligning the project around a coherent vision;
-* [completing the async drop experiments](#complete-async-drop-experiments) proposed in [MCP 727][], laying the groundwork for resolving the the next most
+* [completing the async drop experiments](#complete-async-drop-experiments) proposed in [MCP 727][], laying the groundwork for resolving the the next major gap in language feature support.
+
+Approving this goal implies agreement from the [Lang][] and [Libs-API][] team to the items marked as ![Team][] in the table of work items, along with potentially other design meetings as needed. The expectation is that 3-4 design meetings will be needed from lang over the course of H2 and 1-2 from libs API. Reviewing the async vision doc is expected to be the biggest requirement.
 
 # Motivation
 
