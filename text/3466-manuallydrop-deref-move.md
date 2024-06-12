@@ -152,7 +152,8 @@ impl DefuseWrapper {
 ```
 
 If code like the above example actually exists in the ecosystem, this proposal
-would make it unsound.
+would make it unsound. (Any such API is most likely also be unsound in the
+presence of [`replace_with`](https://docs.rs/replace_with).)
 
 # Rationale and alternatives
 
