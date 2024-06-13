@@ -198,12 +198,12 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 | ↳ ~~implementation~~                     | ~~[compiler-errors][]~~                 | ![Complete][]       |
 | ↳ author RFC                             | [nikomatsakis][] or [compiler-errors][] | ![Funded][]         |
 | ↳ approve RFC                            | ![Team][] [Lang]                        | ![Not funded][]     |
-| ↳ stabilization                          | [compiler-errors][]                     | ![Not funded][]     |
+| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]     |
 | resolve the ["send bound"][sb] problem   |                                         | ![Funded][]         |
 | ↳ ~~RTN implementation~~                 | ~~[compiler-errors][]~~                 | ![Complete][]       |
 | ↳ ~~RTN RFC~~                            | [nikomatsakis][]                        | ![Complete][]       |
 | ↳ approve RTN RFC or provide alternative | ![Team][] [Lang]                        | ![Not funded][]     |
-| ↳ stabilization                          | [compiler-errors][]                     | ![Not funded][]     |
+| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]     |
 | stabilize trait for async iteration      |                                         | ![Funded][]         |
 | ↳ author RFC                             | [eholk][]                               | ![Funded][]         |
 | ↳ approve RFC                            | ![Team][] [Libs-API]                    | ![Funded][]         |
