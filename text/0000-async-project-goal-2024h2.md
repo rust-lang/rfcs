@@ -20,11 +20,6 @@ The overall goal is **bringing the Async Rust experience closer to parity with s
 
 Approving this goal implies agreement from the [Lang][] and [Libs-API][] team to the items marked as ![Team][] in the table of work items, along with potentially other design meetings as needed. The expectation is that 3-4 design meetings will be needed from lang over the course of H2 and 1-2 from libs API. Reviewing the async vision doc is expected to be the biggest requirement.
 
-[Team]: https://img.shields.io/badge/Team%20ask-red
-[MCP 727]: https://github.com/rust-lang/compiler-team/issues/727
-[Lang]: https://www.rust-lang.org/governance/teams/lang
-[Libs-API]: https://www.rust-lang.org/governance/teams/library#team-libs-api
-
 # Motivation
 
 In 2024 we plan to deliver several critical async Rust building block features, most notably support for *async closures* and *`Send` bounds*. This is part of a multi-year program aiming to raise the experience of authoring "async Rust" to the same level of quality as "sync Rust". Async Rust is a crucial growth area, with 52% of the respondents in the [2023 Rust survey](https://blog.rust-lang.org/2024/02/19/2023-Rust-Annual-Survey-2023-results.html) indicating that they use Rust to build server-side or backend applications. 
@@ -138,7 +133,6 @@ We plan to revise the [Async Vision Doc][AVD] and restructure it as a draft RFC,
 
 This RFC will lay out a "plan of attack" for async, including both obvious good things (similar to [async closures][]) but also "known unknowns" and ways to resolve them. Areas the RFC is expected to cover are as follows:
 
-[Async Vision Doc]: 
 [Making Async Rust Reliable]: https://tmandry.gitlab.io/blog/posts/making-async-reliable/
 
 * Status quo, covering biggest challenges
@@ -274,3 +268,8 @@ Keyword generics is an ambitious initiative to enable code that is "maybe async"
 [compiler-errors]: https://github.com/compiler-errors
 [eholk]: https://github.com/eholk
 [petrochenkov]: https://github.com/petrochenkov
+[Team]: https://img.shields.io/badge/Team%20ask-red
+[MCP 727]: https://github.com/rust-lang/compiler-team/issues/727
+[Lang]: https://www.rust-lang.org/governance/teams/lang
+[Libs-API]: https://www.rust-lang.org/governance/teams/library#team-libs-api
+[sb]: https://smallcultfollowing.com/babysteps/blog/2023/02/01/async-trait-send-bounds-part-1-intro/
