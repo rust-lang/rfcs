@@ -20,6 +20,11 @@ The overall goal is **bringing the Async Rust experience closer to parity with s
 
 Approving this goal implies agreement from the [Lang][] and [Libs-API][] team to the items marked as ![Team][] in the table of work items, along with potentially other design meetings as needed. The expectation is that 3-4 design meetings will be needed from lang over the course of H2 and 1-2 from libs API. Reviewing the async vision doc is expected to be the biggest requirement.
 
+[Team]: https://img.shields.io/badge/Team%20ask-red
+[MCP 727]: https://github.com/rust-lang/compiler-team/issues/727
+[Lang]: https://www.rust-lang.org/governance/teams/lang
+[Libs-API]: https://www.rust-lang.org/governance/teams/library#team-libs-api
+
 # Motivation
 
 In 2024 we plan to deliver several critical async Rust building block features, most notably support for *async closures* and *`Send` bounds*. This is part of a multi-year program aiming to raise the experience of authoring "async Rust" to the same level of quality as "sync Rust". Async Rust is a crucial growth area, with 52% of the respondents in the [2023 Rust survey](https://blog.rust-lang.org/2024/02/19/2023-Rust-Annual-Survey-2023-results.html) indicating that they use Rust to build server-side or backend applications. 
@@ -160,7 +165,7 @@ This RFC will lay out a "plan of attack" for async, including both obvious good 
 
 ### Complete async drop experiments
 
-Authors of async code frequently need to call async functions as part of resource cleanup. Because Rust today only supports synchronous destructors, this cleanup must take place using alternative mechanisms, forcing a divergence between sync Rust (which uses destructors to arrange cleanup) and async Rust. [MCP 727](https://github.com/rust-lang/compiler-team/issues/727) proposed a series of experiments aimed at supporting async drop in the compiler. We would like to continue and complete those experiments. These experiments are aimed at defining how support for async drop will be implemented in the compiler and some possible ways that we could modify the type system to support it (in particular, one key question is how to prevent types that whose drop is async from being dropped in sync code).
+Authors of async code frequently need to call async functions as part of resource cleanup. Because Rust today only supports synchronous destructors, this cleanup must take place using alternative mechanisms, forcing a divergence between sync Rust (which uses destructors to arrange cleanup) and async Rust. [MCP 727][] proposed a series of experiments aimed at supporting async drop in the compiler. We would like to continue and complete those experiments. These experiments are aimed at defining how support for async drop will be implemented in the compiler and some possible ways that we could modify the type system to support it (in particular, one key question is how to prevent types that whose drop is async from being dropped in sync code).
 
 ## The "shiny future" we are working towards
 
@@ -219,7 +224,7 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 [Not approved]: https://img.shields.io/badge/Not%20yet%20approved-red
 [Complete]: https://img.shields.io/badge/Complete-green
 [TBD]: https://img.shields.io/badge/TBD-red
-[Team]: https://img.shields.io/badge/Team%20ask-red
+
 
 ## Support needed from the project
 
