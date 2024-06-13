@@ -197,20 +197,20 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 | stabilize async closures                 |                                         | ![Funded][]         |
 | ↳ ~~implementation~~                     | ~~[compiler-errors][]~~                 | ![Complete][]       |
 | ↳ author RFC                             | [nikomatsakis][] or [compiler-errors][] | ![Funded][]         |
-| ↳ approve RFC                            | ![Team][] [Lang]                        | ![Not funded][]     |
-| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]     |
+| ↳ approve RFC                            | ![Team][] [Lang]                        |                     |
+| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]         |
 | resolve the ["send bound"][sb] problem   |                                         | ![Funded][]         |
 | ↳ ~~RTN implementation~~                 | ~~[compiler-errors][]~~                 | ![Complete][]       |
 | ↳ ~~RTN RFC~~                            | [nikomatsakis][]                        | ![Complete][]       |
-| ↳ approve RTN RFC or provide alternative | ![Team][] [Lang]                        | ![Not funded][]     |
-| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]     |
+| ↳ approve RTN RFC or provide alternative | ![Team][] [Lang]                        |                     |
+| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]         |
 | stabilize trait for async iteration      |                                         | ![Funded][]         |
 | ↳ author RFC                             | [eholk][]                               | ![Funded][]         |
 | ↳ approve RFC                            | ![Team][] [Libs-API]                    | ![Funded][]         |
 | ↳ implementation                         | [eholk][]                               | ![Funded][]         |
 | author draft RFC for async vision        |                                         | ![Funded][]         |
 | ↳ author RFC                             | [tmandry][]                             | ![Funded][]         |
-| ↳ approve RFC                            | ![Team][] [Lang], [Libs-API]            | ![Not approved][]   |
+| ↳ approve RFC                            | ![Team][] [Lang], [Libs-API]            |                     |
 | complete async drop experiments          |                                         |                     |
 | ↳ ~~author MCP~~                         | ~~[petrochenkov][]~~                    | ![Complete][]       |
 | ↳ ~~approve MCP~~                        | ~~[Compiler]~~                          | ![Complete][]       |
