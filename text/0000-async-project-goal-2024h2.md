@@ -99,8 +99,14 @@ To support natural async closures, a trait is needed where `call_mut` is an `asy
 
 ```rust
 trait AsyncFnMut<A>: AsyncFnOnce<A> {
-    fn call_mut<'s>(&'s mut self, args: A) -> use<'s, A> impl Future<Output = Self::Output>;
+    fn call_mut<'s>(
+        &'s mut self,
+        args: A
+    ) -> impl Future<Output = Self::Output> + use<'s, A>;
     //                                        ^^^^^^^^^^ note that this captures `'s`
+    //
+    // (This precise capturing syntax is unstable and covered by
+    // rust-lang/rust#123432).
 }
 ```
 
@@ -116,7 +122,7 @@ The details (syntax, precise semantics) will be determined via experimentation a
 
 ### Stabilize trait for async iteration
 
-There has been extensive discussion about the best form of the trait for async iteration (sometimes called `Stream` and sometimes `AsyncIter`). We believe the design space has been sufficiently explored that it should be possible to author an RFC laying out the options and proposing a specific plan.
+There has been extensive discussion about the best form of the trait for async iteration (sometimes called `Stream`, sometimes `AsyncIter`, and now being called `AsyncGen`). We believe the design space has been sufficiently explored that it should be possible to author an RFC laying out the options and proposing a specific plan.
 
 ### Resolve the ["send bound"][sb] problem
 
