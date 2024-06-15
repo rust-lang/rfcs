@@ -35,8 +35,13 @@ impl Foo {
 ```
 
 I ran into this limitation while working on the [`async-lock` library](https://github.com/smol-rs/async-lock/blob/8045684f996b15b3dd9bfd621cfc3864d3760923/src/rwlock.rs#L879-L883).
-It has also been discussed elsewhere, including [this blog post from 2018](https://phaazon.net/blog/rust-no-drop)
-(which recommends `mem::uninitialized` as a workaround!) and [this pre-RFC on Internals](https://internals.rust-lang.org/t/pre-rfc-destructuring-values-that-impl-drop/10450).
+It has also been discussed elsewhere:
+
+- [Pre-RFC from 2024](https://internals.rust-lang.org/t/destructuring-droppable-structs/20993)
+- [Pe-RFC from 2019](https://internals.rust-lang.org/t/pre-rfc-destructuring-values-that-impl-drop/10450).
+- [Blog post from 2018](https://phaazon.net/blog/rust-no-drop) (recommends
+  `mem::uninitialized` as a workaround!)
+- [Internals thread from 2014](https://internals.rust-lang.org/t/destructuring-structs-which-implement-drop/137)
 
 # Explanation
 
@@ -99,10 +104,12 @@ impl Foo {
 
 # Drawbacks
 
-- Adds more "magic" to the language.
+- Adds more “magic” to the language.
 - This change would give safe Rust code a new capability (moving out of fields
-  of `Drop`-implementing structs). It's possible that existing `unsafe` is
-  relying on this capability not existing for soundness. For example:
+  of `Drop`-implementing structs). It's currently possible for the soundess of
+  `unsafe` code to rely on this capability not existing (though any such API is
+  also unsound if combined with [`replace_with`](https://docs.rs/replace_with)).
+  For example:
 
 ```rust
 use core::hint::unreachable_unchecked;
@@ -151,28 +158,48 @@ impl DefuseWrapper {
 }
 ```
 
-If code like the above example actually exists in the ecosystem, this proposal
-would make it unsound. (Any such API is most likely also be unsound in the
-presence of [`replace_with`](https://docs.rs/replace_with).)
-
 # Rationale and alternatives
 
-- A more general mechanism for move-out-of-deref, which would subsume `Box`'s
-  special-case support, has long been desired. There have been [three](https://github.com/rust-lang/rfcs/pull/178)
-  [different](https://github.com/rust-lang/rfcs/pull/1646) [RFCs](https://github.com/rust-lang/rfcs/pull/2439)
-  attempting it, and extensive discussion going back to 2014. However, these
-  proposals have all gone nowhere; finding a good design for this API seems to
-  be a hard problem. Also, such an API would not subsume this RFC, as partial
-  moves out of structs with `Drop` impls would still need hard-coded compiler
-  support. In light of these facts, I think adding an existing lang-item type to
-  an existing special case is justified while we wait for a more general
-  `DerefMove`.
-- It's possible that that such partial moves could be supported via a different
-  API, such as an attribute (as suggested by the pre-RFC linked in the
-  motivation section) or macro. However, move-out-of-deref is already familiar
-  to Rust developers who have worked with `Box`, and `ManuallyDrop` is the
-  recommended API for avoiding drop. Combining the two seems like the most
-  minimal and intuitive solution.
+## Versus `DerefMove`
+
+A more general mechanism for move-out-of-deref, which would subsume `Box`'s
+special-case support, has long been desired. There have been [three](https://github.com/rust-lang/rfcs/pull/178)
+[different](https://github.com/rust-lang/rfcs/pull/1646) [RFCs](https://github.com/rust-lang/rfcs/pull/2439)
+attempting it, and extensive discussion going back to 2014. However, these
+proposals have all gone nowhere; finding a good design for this API seems to be
+a hard problem. Also, such an API would not subsume this RFC, as partial moves
+out of structs with `Drop` impls would still need hard-coded compiler support.
+In light of these facts, I think adding an existing lang-item type to an
+existing special case is justified while we wait for a more general `DerefMove`.
+
+## Versus a different API
+
+It's possible that that partial moves out of `Drop` types scould be supported
+via a different API, such as an attribute, macro, or even silently omitting the
+`Drop` call (possibly with a lint). However, the design presented by this RFC
+hase several desirable properties:
+
+- **Familiarity:** move-out-of-deref is already familiar to Rust developers who
+  have worked with `Box`, and `ManuallyDrop` is the recommended API for avoiding
+  drop. So, combining these behaviors should be intuitive to users.
+- **Explicitness**: There is a prominent indication in the source code
+  (`ManuallyDrop`) that a `drop` impl is being skipped.
+- **Soundness:** with `ManuallyDrop`, fields that are not moved out of will be
+  leaked. This includes fields that are inaccessible due to privacy. Therefore,
+  if a type temporarily violates the safety invariant of a private field,
+  relying on its `Drop` impl to restore the invariant before the field is
+  dropped, this RFC will preserve the soundness of that API.
+  - APIs that expose broken safety invariants in *public* fields *will* become
+    unsound, as explained [above](#drawbacks). However, these are already
+    incompatible with [`replace_with`](https://docs.rs/replace_with).
+  - The tradeoff for preserving soundness is that it is possible to accidentally
+    leak memory by forgetting to move out of a field.
+- **Interaction with `Copy`:** the presence or absence of a `Copy`
+  implementation can determine whether a particular segment of code performs a
+  copy or a move. Under a model where the `Drop::drop()` call is simply omitted
+  following a partial move, whether `drop()` is called can therefore depend on
+  the presence of a `Copy` impl—which could be added in a semver-compatible
+  dependency upgrade. The design proposed by this RFC avoids this pitfall.
 
 # Prior art
 
