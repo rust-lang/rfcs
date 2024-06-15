@@ -51,6 +51,7 @@ But more realistically, here's an alternative design that would avoid the `self:
 
 * Until a future edition, the current set of valid representations is solidified as taking precedence over any shadowed identifiers. For example, if someone defines `type transparent = u32`, then `repr(transparent)` still means `repr(transparent)` and not `repr(u32)`.
 * At said future edition, type aliases now shadow all valid representations. So, for example, defining `type transparent = u32` would truly mean `repr(u32)`, not `repr(transparent)`. The only way to actually reference `repr(transparent)` would be to not have a type inside the current scope named `transparent`. There could be a deny-by-default warning when people do this.
+* Alternatively, you could continue the dance at every future edition, making each new edition define the unshadowable representations allowed.
 
 Alternatively, you could require that the types start with capital letters- oh, right, `repr(C)` is a thing. It feels like there's not a good way to solve the shadowing problem besides adding in something that will never be a part of future representation names, that is, a double-colon token representing a path.
 
@@ -67,4 +68,6 @@ None currently.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Future RFCs like #3607 propose explicit methods of obtaining enum discriminants, and that further justifies the desire to include a change like this. There aren't many other extensions that could be added, however.
+Future RFCs like [#3607] propose explicit methods of obtaining enum discriminants, and that further justifies the desire to include a change like this. There aren't many other extensions that could be added, however.
+
+[#3607]: https://github.com/rust-lang/rfcs/pull/3607
