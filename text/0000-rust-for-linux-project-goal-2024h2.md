@@ -12,10 +12,10 @@ This is a proposed flagship goal for 2024h2 covering **Rust for Linux**. You can
 The overall goal is **resolving the biggest blockers to Linux building on stable Rust** via the following steps:
 
 * [stabilizing support for arbitrary `self` types and unsizeable smart pointers](#stable-support-for-rfls-customized-arc-type), thus permitting ergonomic support for [in-place linked lists](https://rust-for-linux.com/arc-in-the-linux-kernel) on stable;
-* [stabilizing features for labeled goto in inline assembler and extended `offset_of!` support](#labeled-goto-in-inline-assembler-and-extended-offset_of-support), needed for various bts of low-level coding;
+* [stabilizing features for labeled goto in inline assembler and extended `offset_of!` support](#labeled-goto-in-inline-assembler-and-extended-offset_of-support), needed for various bits of low-level coding;
 * [adding Rust For Linux project on Rust CI](#rfl-on-rust-ci), thus ensuring we don't accidentally cause regressions for this highly visible project (done!);
 * [stabilizing support for pointers to statics in constants](#pointers-to-statics-in-constants), permitting the construction of vtables for kernel modules;
-* [code-generation features and compiler options](#code-generation-features-and-compiler-options), allowing Rust to match the compilers given to gcc/clang when building the kernel;
+* [code-generation features and compiler options](#code-generation-features-and-compiler-options), allowing Rust to match the compiler flags given to gcc/clang when building the kernel;
 * and, if possible, [stabilize options for building core/alloc with fewer features](#custom-builds-of-corealloc-with-specialized-configuration-options), allowing the kernel to forbid infallible allocation and other aspects of the standard libraries that it does not want (this requires further investigation).
     
 Approving this goal implies agreement from the [Lang][], [Compiler][], and [Libs-API][] teams to the items marked as ![Team][] in the table of work items, along with potentially other design meetings as needed.
@@ -36,23 +36,24 @@ The [experimental support for Rust development in the Linux kernel][RFL] is a wa
 
 ## The status quo
 
-The [Rust For Linux (RFL)][RFL] project has been accepted into the Linux kernel in experimental status. RFL permits authoring Rust-based modules that are compiled and linked into the Linux kernel. Rust would be the only other general purpose language apart from C used to author Kernel modules. This is a very exciting milestone for Rust, but it's also a big challenge.
+The [Rust For Linux (RFL)][RFL] project has been accepted into the Linux kernel in experimental status. The project's goal, as described in the [Kernel RFC introducing it](https://lore.kernel.org/lkml/20210414184604.23473-1-ojeda@kernel.org/), is to to add support for authoring kernel components (modules, subsystems) using Rust. Rust would join C as the only two languages permitted in the linux kernel. This is a very exciting milestone for Rust, but it's also a big challenge.
 
 Integrating Rust into the Linux kernel means that Rust must be able to interoperate with the kernel's low-level C primitives for things like locking, linked lists, allocation, and so forth.
-Integration requires Rust to expose low-level capabilities that don't all have stable interfaces.
-In some cases, the needed features may be stable, but may not be enough to provide for an ergonomic coding style (e.g., see the macros used for [pinned (in-place) initialization][pinned-init]).
+This interop requires Rust to expose low-level capabilities that don't currently have stable interfaces.
 
 [pinned-init]: https://rust-for-linux.com/pinned-init
 [arclk]: https://rust-for-linux.com/arc-in-the-linux-kernel
 
-In the short term, the biggest blocker to the RFL exiting "experimental" status is its use of unstable features. Because unstable features have no kind of reliability guarantee, this in turn means that RFL can only be built with a specific, pinned version of the Rust compiler. This is a challenge for distributions which wish to be able to build a range of kernel sources with the same compiler, rather than having to select a particular toolchain for a particular kernel version.
+The dependency on unstable features is the biggest blocker to Rust exiting "experimental" status. Because unstable features have no kind of reliability guarantee, this in turn means that RFL can only be built with a specific, pinned version of the Rust compiler. This is a challenge for distributions which wish to be able to build a range of kernel sources with the same compiler, rather than having to select a particular toolchain for a particular kernel version.
 
 Longer term, having Rust in the Linux kernel is an opportunity to expose more C developers to the benefits of using Rust. But that exposure can go both ways. If Rust is constantly causing pain related to toolchain instability, or if Rust isn't able to interact gracefully with the kernel's data structures, kernel developers may have a bad first impression that causes them to write off Rust altogether. We wish to avoid that outcome. And besides, the Linux kernel is exactly the sort of low-level systems application we want Rust to be great for!
 
 For deeper background, please refer to these materials:
 
-* [Original RFC proposing Rust support](https://lore.kernel.org/lkml/20210414184604.23473-1-ojeda@kernel.org/)
-* [Articles on LWN about Kangrejos over the years](https://lwn.net/Archives/ConferenceIndex/#Kangrejos)
+* The article on the latest Maintainer Summit: [Committing to Rust for kernel code](https://lwn.net/Articles/952029/)
+* The [LWN index on articles related to Rust in the kernel](https://lwn.net/Kernel/Index/#Development_tools-Rust)
+* [The latest status update at LPC](https://www.youtube.com/watch?v=qvlgIaYrd3g).
+* [Linus talking about Rust](https://www.youtube.com/watch?v=OvuEYtkOH88&t=335s).
 * [Rust in the linux kernel, by Alice Ryhl](https://www.youtube.com/watch?v=CEznkXjYFb4)
 * [Using Rust in the binder driver, by Alice Ryhl](https://www.youtube.com/watch?v=Kt3hpvMZv8o)
 
