@@ -105,12 +105,12 @@ Therefore guard patterns appearing at the top level in those places must also be
 
 ```rust
 // Not allowed:
-let x if guard(x) = foo() {}
+let x if guard(x) = foo() {} else { loop {} }
 if let x if guard(x) = foo() {}
 while let x if guard(x) = foo() {}   
 
 // Allowed:
-let (x if guard(x)) = foo() {} // Note that this would still error after parsing, since guard patterns are always refutable.
+let (x if guard(x)) = foo() {} else { loop {} }
 if let (x if guard(x)) = foo() {}
 while let (x if guard(x)) = foo() {} 
 ```
