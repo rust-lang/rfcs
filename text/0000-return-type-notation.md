@@ -959,7 +959,7 @@ Unlike a regular associated type, this RFC does not allow a trait bound that spe
 rpjohnst suggested that we may wish to support a syntax like `T: Trait<method(..) -> T>`, perhaps in conjunction with specified argument types.
 They further pointed out that permitting `T::method(..)` as a standalone type could be seen as inconsistent, given that `fn foo()` is normally shorthand for `-> ()`.
 However, *not* supporting `T::method(..)` as a standalone type could also be seen as inconsistent, since normally `T: Trait<Bar: Send>` and `T::Bar: Send` are equivalent.
-Prior to stabilizing the "send position" syntax, we should be sure we are comfortable with this.
+Prior to stabilizing the "associated type position" syntax, we should be sure we are comfortable with this.
 
 
 # Future possibilities
