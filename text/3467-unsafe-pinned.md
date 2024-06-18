@@ -36,7 +36,7 @@ impl S {
     pub fn new() -> Self {
         S { data: 42, ptr_to_data: ptr::null_mut() }
     }
-    
+
     pub fn get_data(self: Pin<&mut Self>) -> i32 {
         // SAFETY: We're not moving anything.
         let this = unsafe { Pin::get_unchecked_mut(self) };
@@ -46,7 +46,7 @@ impl S {
         // SAFETY: if the pointer is non-null, then we are pinned and it points to the `data` field.
         unsafe { this.ptr_to_data.read() }
     }
-    
+
     pub fn set_data(self: Pin<&mut Self>, data: i32) {
         // SAFETY: We're not moving anything.
         let this = unsafe { Pin::get_unchecked_mut(self) };
@@ -147,7 +147,7 @@ fn main() {
 </details>
 
 <br>
-    
+
 Beyond self-referential types, a similar problem also comes up with intrusive linked lists: the nodes of such a list often live on the stack frames of the functions participating in the list, but also have incoming pointers from other list elements.
 When a function takes a mutable reference to its stack-allocated node, that will alias the pointers from the neighboring elements.
 [This](https://github.com/rust-lang/rust/issues/114581) is an example of an intrusive list in the standard library that is breaking Rust's aliasing rules.
