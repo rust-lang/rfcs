@@ -3,7 +3,7 @@
 - Feature Name: `unsafe_pinned`
 - Start Date: 2022-11-05
 - RFC PR: [rust-lang/rfcs#3467](https://github.com/rust-lang/rfcs/pull/3467)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#125735](https://github.com/rust-lang/rust/issues/125735)
 
 # Summary
 [summary]: #summary
