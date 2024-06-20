@@ -68,7 +68,7 @@ rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021  --en
 Merge the docs with `cp`. This can be avoided if `--out-dir=$(MERGED)` is used for all of the rustdoc calls. We copy here to illustrate that documenting `s` is independent of documenting `t`, and could happen on separate machines.
 
 ```shell
-cp -r s/target/doc/* t/target/doc/* i/target/doc/*
+cp -r s/target/doc/* t/target/doc/* i/target/doc/* merged/doc
 ```
 
 Browse `merged/doc/index.html` with cross-crate information.
