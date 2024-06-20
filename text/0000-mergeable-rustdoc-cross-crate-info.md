@@ -21,7 +21,7 @@ There are some files in the rustdoc output directory that are read and overwritt
 
 Build systems may run build actions in a distributed environment across separate logical filesystems. It might also be desirable to run rustdoc in a lock-free parallel mode, where every rustdoc process writes to a disjoint set of files.
 
-Cargo fully supports cross-crate information, at the cost of requiring read-write access to the documentation root (`target/doc/`). There are significant scalability issues with this approach.
+Cargo fully supports cross-crate information, at the cost of requiring global read-write access to the doc root (`target/doc`). There are significant scalability issues with this approach.
 
 Rustdoc needing global mutable access to the files that encode this cross-crate information has implications for caching, reproducible builds, and content hashing. By adding an option to avoid this mutation, rustdoc will serve as a first-class citizen in non-cargo build systems.
 
@@ -287,14 +287,14 @@ $ tree . -a
 
 Currently, cross-crate information is written during the invocation of the `write_shared` function in [write_shared.rs](https://github.com/rust-lang/rust/blob/04ab7b2be0db3e6787f5303285c6b2ee6279868d/src/librustdoc/html/render/write_shared.rs#L47). This proposal does not add any new CCI or change their contents (modulo sorting order, whitespace).
 
-The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc/`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of a the CCI.
+The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of a the CCI.
 
 ## New subdirectory: `<parts out dir>/<crate name>/<cci type>`
 
 Typically, `<parts out dir>` is selected as `./target/doc.parts`. The `<parts out dir>/<crate name>/<cci type>` files contain the unmerged contents of a single crates' version of their corresponding CCI. It is written if the flag `--parts-out-dir=<parts out dir>` is provided.
 
 Every file in `<parts out dir>/<crate name>/*` is a JSON array. Every element of the
-array is a two-element array: a destination filename (relative to `doc/`), and
+array is a two-element array: a destination filename (relative to the doc root), and
 the representation of the part. The representation of that part depends on the type
 of CCI that it describes.
 
@@ -358,7 +358,7 @@ In the Guide-level explanation, for example, crate `i` needs to identify the loc
 
 ## Merge step
 
-This step is provided with a list of crates. It merges their documentation. This step involves copying parts (individual item, module documentation) from each of the provided crates. It merges the parts, renders, and writes the CCI to the documentation root.
+This step is provided with a list of crates. It merges their documentation. This step involves copying parts (individual item, module documentation) from each of the provided crates. It merges the parts, renders, and writes the CCI to the doc root.
 
 Discussion of the merge step is described in the Unresolved questions.
 
@@ -368,7 +368,7 @@ The WIP may change the sorting order of the elements in the CCI. It does not cha
 
 # Rationale and alternatives
 
-Running rustdoc in parallel is essential in enabling the tool to scale to large projects. The alternative, implemented by Cargo, is to run rustdoc in parallel by locking the CCI files. There are some environments where having synchronized access to the CCI is impossible. This proposal implements a reasonable approach to shared rustdoc, because it cleanly enables the addition of new kinds of CCI without changing existing documentation.
+Running rustdoc in parallel is essential in enabling the tool to scale to large projects. The approach implemented by Cargo is to run rustdoc in parallel by locking the CCI files. There are some environments where having synchronized access to the CCI is impossible. This proposal implements a reasonable approach to shared rustdoc, because it cleanly enables the addition of new kinds of CCI without changing existing documentation.
 
 # Prior art
 
@@ -426,7 +426,7 @@ Require users to generate documentation bundles via an index crate (current) vs.
 
 If one would like to merge the documentation of several crates, we could continue to require users to provide an index crate, like [the fuchsia index](https://fuchsia-docs.firebaseapp.com/rust/rustdoc_index/). This serves as the target of the rustdoc invocation, and the landing page for the collected documentation. Supporting only this style of index would require the fewest changes. This is the mode described in the Guide-level explanation.
 
-The proposition, to allow users of rustdoc the flexibility of not having to produce an index, is to allow rustdoc to be run in a mode where no target crate is provided. The source crates are provided to rustdoc, through a mechanism like `--extern`, rustdoc merges and writes the CCI, and copies the item and module links to `doc/`. This would require more extensive changes, as rustdoc assumes that it is invoked with a target crate. This mode is somewhat analogous to the [example scraping mode](https://github.com/rust-lang/rfcs/blob/master/text/3123-rustdoc-scrape-examples.md). Having to create an index crate, that actively uses all of the crates in the environment, might prohibit the use of this feature in settings where users do not intend to produce an index, or where exhaustively listing all dependencies (to `--extern` them) is difficult.
+The proposition, to allow users of rustdoc the flexibility of not having to produce an index, is to allow rustdoc to be run in a mode where no target crate is provided. The source crates are provided to rustdoc, through a mechanism like `--extern`, rustdoc merges and writes the CCI, and copies the item and module links to the doc root. This would require more extensive changes, as rustdoc assumes that it is invoked with a target crate. This mode is somewhat analogous to the [example scraping mode](https://github.com/rust-lang/rfcs/blob/master/text/3123-rustdoc-scrape-examples.md). Having to create an index crate, that actively uses all of the crates in the environment, might prohibit the use of this feature in settings where users do not intend to produce an index, or where exhaustively listing all dependencies (to `--extern` them) is difficult.
 
 ## Unconditionally generating the `doc.parts` files?
 
@@ -434,7 +434,7 @@ Generate no extra files (current) vs. unconditionally creating `doc.parts` to en
 
 The current version of rustdoc performs merging by [collecting JSON](https://github.com/rust-lang/rust/blob/c25ac9d6cc285e57e1176dc2da6848b9d0163810/src/librustdoc/html/render/write_shared.rs#L166) blobs from the contents of the already-rendered CCI. 
 This proposal proposes to continue reading from the rendered cross-crate information under the default `--read-rendered-cci=true`. It can also read `doc.parts` files, under `--fetch-parts`. However, there are several issues with reading from the rendered CCI that must be stated:
-* If a user has a single `doc/` output directory, it is impossible to avoid shared mutation if every rustdoc process is writing to the same CCI
+* Every rustdoc process outputs the CCI to the same doc root by default
 * It is difficult to extract the items in a diverse set of rendered HTML files. This is anticipating of the CCI to include HTML files that, for example, statically include type+trait implementations directly
 * Reading exclusively from `doc.parts` is simpler than the existing `serde_json` dependency for extracting the blobs, as opposed to handwritten CCI-type specific parsing (current)
 * With this proposal, there will be duplicate logic to read from both `doc.parts` files and rendered CCI. 
@@ -455,11 +455,11 @@ There is a render option, `no_emit_shared`, which is used to conditionally gener
 
 This option is not configurable from the command line, and appears to be enabled unless rustdoc is run in its example scraping mode. 
 
-We could make it configurable from the command line, unconditionally generate `doc.parts/`, and use it to gate the merging of CCI.
+We could make it configurable from the command line, unconditionally generate `doc.parts`, and use it to gate the merging of CCI.
 
-We could also make it configurable from the command line, and use it to gate the generation of `doc.parts/` and the generation of all of the shared files.
+We could also make it configurable from the command line, and use it to gate the generation of `doc.parts` and the generation of all of the shared files.
 
-We could also leave it as-is: always false unless we're scraping examples, and gate the generation of `doc.parts/` and the generation of all of the shared files.
+We could also leave it as-is: always false unless we're scraping examples, and gate the generation of `doc.parts` and the generation of all of the shared files.
 
 # Future possibilities
 
