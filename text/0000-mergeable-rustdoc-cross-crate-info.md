@@ -3,12 +3,6 @@
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Rustdoc Proposal - Merge Documentation From Multiple Crates
-
-# Work in progress
-
-<https://github.com/EtomicBomb/rust/tree/master>
-
 # Summary
 
 Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in environments with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `doc.parts` directory to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that make build actions independent.
