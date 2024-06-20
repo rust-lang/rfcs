@@ -15,9 +15,9 @@ Mergeable cross-crate information in rustdoc. Facilitates the generation of docu
 
 # Motivation
 
-The main goal of this proposal is to facilitate users producing a documentation bundle of every crate in a large environment. When a crate needs to be re-documented, only a relatively lightweight merge step will be needed to produce a complete documentation bundle. This proposal is to facilitate the creation and updating of these bundles. 
+The main goal of this proposal is to facilitate users producing a documentation bundle of every crate in a large environment. When a crate needs to be re-documented, only a relatively lightweight merge step will be needed to produce a complete documentation bundle. This proposal is to facilitate the creation and updating of these bundles.
 
-There are some files in the rustdoc output directory that are read and overwritten during every invocation of rustdoc. This proposal refers to these files as **cross-crate information**, or **CCI**, as in <https://rustc-dev-guide.rust-lang.org/rustdoc.html#multiple-runs-same-output-directory>. 
+There are some files in the rustdoc output directory that are read and overwritten during every invocation of rustdoc. This proposal refers to these files as **cross-crate information**, or **CCI**, as in <https://rustc-dev-guide.rust-lang.org/rustdoc.html#multiple-runs-same-output-directory>.
 
 Build systems may run build actions in a distributed environment across separate logical filesystems. It might also be desirable to run rustdoc in a lock-free parallel mode, where every rustdoc process writes to a disjoint set of files.
 
@@ -29,7 +29,7 @@ These considerations motivate adding an option for outputting partial CCI (parts
 
 # Guide-level explanation
 
-In this example, there is a crate `t` which defines a trait `T`, and a crate `s` which defines a struct `S` that implements `T`. Our goal in this demo is for `S` to appear as in implementer in `T`'s docs, even if `s` and `t` are documented independently. This guide will be assuming that we want a crate `i` that serves as our documentation index. See the Unresolved questions section for ideas that do not require an index crate. 
+In this example, there is a crate `t` which defines a trait `T`, and a crate `s` which defines a struct `S` that implements `T`. Our goal in this demo is for `S` to appear as in implementer in `T`'s docs, even if `s` and `t` are documented independently. This guide will be assuming that we want a crate `i` that serves as our documentation index. See the Unresolved questions section for ideas that do not require an index crate.
 
 ```shell
 mkdir -p t/src s/src i/src merged/doc
@@ -68,7 +68,7 @@ rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021  --en
 Merge the docs with `cp`. This can be avoided if `--out-dir=$(MERGED)` is used for all of the rustdoc calls. We copy here to illustrate that documenting `s` is independent of documenting `t`, and could happen on separate machines.
 
 ```shell
-cp -r s/target/doc/* t/target/doc/* i/target/doc/* merged/doc
+cp -r s/target/doc/* t/target/doc/* i/target/doc/*
 ```
 
 Browse `merged/doc/index.html` with cross-crate information.
@@ -279,7 +279,7 @@ $ tree . -a
         │       └── type-impl
         └── libs.rmeta
 </pre>
-    
+
 </details>
 
 
@@ -320,7 +320,7 @@ This part is the also crate name. It represents a different kind of CCI because 
 
 * `<parts out dir>/<crate name>/type-impl`: for `doc/type.impl/**/*.js`
 
-This part is a two element array with the crate name and the JSON representation of a type implementation. 
+This part is a two element array with the crate name and the JSON representation of a type implementation.
 
 * `<parts out dir>/<crate name>/trait-impl`: for `doc/trait.impl/**/*.js`
 
@@ -385,7 +385,7 @@ Bazel has `rules_rust` for building Rust targets and rustdoc documentation.
 
 It does not document crates' dependencies. `search-index.js`, for example, is both a dependency and an output file for rustdoc in multi-crate documentation environments. If it is declared as a dependency in this way, Bazel could not build docs for the members of an environment in parallel with a single output directory, as it strictly enforces hermiticity. For a recursive, parallel rustdoc to ever serve as a first-class citizen in Bazel, changes similar to the ones described in this proposal would be needed.
 
-There is an [open issue](https://github.com/bazelbuild/rules_rust/issues/1837) raised about the fact that Bazel does not document crates dependencies. The comments in the issue discuss a pull request on Bazel that documents each crates dependencies in a separate output directory. It is noted in the discussion that this solution, being implemented under the current rustdoc, "doesn't scale well and it should be implemented in a different manner long term." In order to get CCI in a mode like this, rustdoc would need to adopt changes, like the ones in this proposal, for merging cross-crate information. 
+There is an [open issue](https://github.com/bazelbuild/rules_rust/issues/1837) raised about the fact that Bazel does not document crates dependencies. The comments in the issue discuss a pull request on Bazel that documents each crates dependencies in a separate output directory. It is noted in the discussion that this solution, being implemented under the current rustdoc, "doesn't scale well and it should be implemented in a different manner long term." In order to get CCI in a mode like this, rustdoc would need to adopt changes, like the ones in this proposal, for merging cross-crate information.
 
 ## Buck2
 
@@ -405,7 +405,7 @@ buck2 build //:library[doc] --verbose 5
 ```
 -->
 
-It has a subtarget, `[doc]`, for generating rustdoc for a crate. 
+It has a subtarget, `[doc]`, for generating rustdoc for a crate.
 
 You can provide a coarse-grained `extern-html-root-url` for all dependencies. You could document all crates independently, but no cross-crate information would be shared.
 
@@ -432,12 +432,12 @@ The proposition, to allow users of rustdoc the flexibility of not having to prod
 
 Generate no extra files (current) vs. unconditionally creating `doc.parts` to enable more complex future CCI (should consider)
 
-The current version of rustdoc performs merging by [collecting JSON](https://github.com/rust-lang/rust/blob/c25ac9d6cc285e57e1176dc2da6848b9d0163810/src/librustdoc/html/render/write_shared.rs#L166) blobs from the contents of the already-rendered CCI. 
+The current version of rustdoc performs merging by [collecting JSON](https://github.com/rust-lang/rust/blob/c25ac9d6cc285e57e1176dc2da6848b9d0163810/src/librustdoc/html/render/write_shared.rs#L166) blobs from the contents of the already-rendered CCI.
 This proposal proposes to continue reading from the rendered cross-crate information under the default `--read-rendered-cci=true`. It can also read `doc.parts` files, under `--fetch-parts`. However, there are several issues with reading from the rendered CCI that must be stated:
 * Every rustdoc process outputs the CCI to the same doc root by default
 * It is difficult to extract the items in a diverse set of rendered HTML files. This is anticipating of the CCI to include HTML files that, for example, statically include type+trait implementations directly
 * Reading exclusively from `doc.parts` is simpler than the existing `serde_json` dependency for extracting the blobs, as opposed to handwritten CCI-type specific parsing (current)
-* With this proposal, there will be duplicate logic to read from both `doc.parts` files and rendered CCI. 
+* With this proposal, there will be duplicate logic to read from both `doc.parts` files and rendered CCI.
 
 ## Item links?
 
@@ -446,14 +446,14 @@ Require users to pass `--extern-html-root-url` on all external dependencies (cur
 Cross-crate links are an important consideration when merging documentation. rustdoc provides a flag, `--extern-html-root-url`, which can provide fine-grain control over the generated URL for documentation. We believe this is already sufficient for generating cross-crate links, and we will make no changes to the generation of item links. Example usage of this flag is in the Guide-level explanation.
 
 A proposal is to provide more options to facilitate cross-crate links. For example, we could add a flag that implies `--extern-html-root-url` and `--fetch-parts` on all crates passed through `--extern`. It could be something like `--extern-html-root-url-all-user-crates`. User crates would be taken to mean the transitive dependencies of the current crate, excluding the standard library. This is complicated by things like <https://doc.rust-lang.org/cargo/reference/unstable.html#build-std>.
-    
+
 ## Reuse existing option?
 
-Create a new flag, `--write-rendered-cci` (proposed), vs. use existing option `no_emit_shared` 
-    
+Create a new flag, `--write-rendered-cci` (proposed), vs. use existing option `no_emit_shared`
+
 There is a render option, `no_emit_shared`, which is used to conditionally generate the cross-crate information. It also controls the generation of static files, user CSS, etc.
 
-This option is not configurable from the command line, and appears to be enabled unless rustdoc is run in its example scraping mode. 
+This option is not configurable from the command line, and appears to be enabled unless rustdoc is run in its example scraping mode.
 
 We could make it configurable from the command line, unconditionally generate `doc.parts`, and use it to gate the merging of CCI.
 
@@ -468,7 +468,7 @@ statically compiled as part of the .html documentation, instead of being loaded
 as separate JavaScript files. Each type and trait alias could be stored as an
 HTML part, which are then merged into the regular documentation.
 
-Another possibility is for `doc.parts` to be distributed on `docs.rs` along with the regular documentation. This would facilitate a mode where documentation of the dependencies could be downloaded externally, instead of being rebuilt locally. 
+Another possibility is for `doc.parts` to be distributed on `docs.rs` along with the regular documentation. This would facilitate a mode where documentation of the dependencies could be downloaded externally, instead of being rebuilt locally.
 
 A future possibility related to the index crate idea is to have an option for embedding user-specified HTML into the `--enable-index-page`'s HTML.
 
