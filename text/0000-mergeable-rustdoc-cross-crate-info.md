@@ -38,7 +38,7 @@ echo "pub struct S; impl t::T for S {}" > s/src/lib.rs
 MERGED=$(realpath merged/doc)
 ```
 
-[Actively use](https://doc.rust-lang.org/rustc/command-line-arguments.html#--extern-specify-where-an-external-library-is-located) `t` and `s` in `i`. The `extern crate` declarations are not needed if you reference the crates in another way in the index;  intra-doc links are enough.
+[Actively use](https://doc.rust-lang.org/rustc/command-line-arguments.html#--extern-specify-where-an-external-library-is-located) `t` and `s` in `i`. The `extern crate` declarations are not needed if the crates are otherwise referenced in the index; intra-doc links are enough.
 
 ```shell
 echo "extern crate t; extern crate s;" > i/src/lib.rs
@@ -52,17 +52,17 @@ rustc --crate-name=s --crate-type=lib --edition=2021 --emit=metadata --out-dir=s
 rustc --crate-name=i --crate-type=lib --edition=2021 --emit=metadata --out-dir=i/target --extern s=s/target/libs.rmeta --extern t=t/target/libt.rmeta -L t/target i/src/lib.rs
 ```
 
-Document `s` and `t` independently, providing `--write-merged-cci=false`, `--read-merged-cci=false`, and `--parts-out-dir=<crate name>/target/doc.parts`
+Document `s` and `t` independently, providing `--write-rendered-cci=false`, `--read-rendered-cci=false`, and `--parts-out-dir=<crate name>/target/doc.parts`
 
 ```shell
-rustdoc -Z unstable-options --crate-name=t --crate-type=lib --edition=2021 --out-dir=t/target/doc --extern-html-root-url t=$(MERGED) --write-merged-cci=false --read-merged-cci=false --parts-out-dir=t/target/doc.parts t/src/lib.rs
-rustdoc -Z unstable-options --crate-name=s --crate-type=lib --edition=2021 --out-dir=s/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --write-merged-cci=false --read-merged-cci=false --parts-out-dir=t/target/doc.parts --extern t=t/target/libt.rmeta s/src/lib.rs
+rustdoc -Z unstable-options --crate-name=t --crate-type=lib --edition=2021 --out-dir=t/target/doc --extern-html-root-url t=$(MERGED) --write-rendered-cci=false --read-rendered-cci=false --parts-out-dir=t/target/doc.parts t/src/lib.rs
+rustdoc -Z unstable-options --crate-name=s --crate-type=lib --edition=2021 --out-dir=s/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --write-rendered-cci=false --read-rendered-cci=false --parts-out-dir=t/target/doc.parts --extern t=t/target/libt.rmeta s/src/lib.rs
 ```
 
-Link everything with a final invocation of rustdoc on `i`. We will **not** provide `--write-merged-cci=false`, because we are merging the parts. We will also provide `--read-merged-cci=false` and `--fetch-parts=<path>`. See the Reference-level explanation about these flags.
+Link everything with a final invocation of rustdoc on `i`. We will **not** provide `--write-rendered-cci=false`, because we are merging the parts. We will also provide `--read-rendered-cci=false` and `--fetch-parts=<path>`. See the Reference-level explanation about these flags.
 
 ```shell
-rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021  --enable-index-page --out-dir=i/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --extern-html-root-url i=$(MERGED) --read-merged-cci=false --fetch-parts t=t/target/doc.parts --fetch-parts s=s/target/doc.parts --extern t=t/target/libt.rmeta --extern s=s/target/libs.rmeta -L t/target i/src/lib.rs
+rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021  --enable-index-page --out-dir=i/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --extern-html-root-url i=$(MERGED) --read-rendered-cci=false --fetch-parts t=t/target/doc.parts --fetch-parts s=s/target/doc.parts --extern t=t/target/libt.rmeta --extern s=s/target/libs.rmeta -L t/target i/src/lib.rs
 ```
 
 Merge the docs with `cp`. This can be avoided if `--out-dir=$(MERGED)` is used for all of the rustdoc calls. We copy here to illustrate that documenting `s` is independent of documenting `t`, and could happen on separate machines.
@@ -334,13 +334,13 @@ If this flag is not provided, no `doc.parts` will be written.
 
 This flag is the complement to `--fetch-parts`.
 
-## New flag: `--write-merged-cci[=true|false]`
+## New flag: `--write-rendered-cci[=true|false]`
 
 This flag defaults to true if not specified.
 
 With this flag is true, rustdoc will write the rendered CCI to the output directory, on each invocation. The user-facing behavior without the flag is the same as the current behavior. When this flag is false, the CCI will not be written nor rendered. Another call to a merge step will be required to merge the parts and write the CCI.
 
-## New flag: `--read-merged-cci=[=true|false]`
+## New flag: `--read-rendered-cci=[=true|false]`
 
 This flag defaults to true if not specified.
 
@@ -433,7 +433,7 @@ The proposition, to allow users of rustdoc the flexibility of not having to prod
 Generate no extra files (current) vs. unconditionally creating `doc.parts` to enable more complex future CCI (should consider)
 
 The current version of rustdoc performs merging by [collecting JSON](https://github.com/rust-lang/rust/blob/c25ac9d6cc285e57e1176dc2da6848b9d0163810/src/librustdoc/html/render/write_shared.rs#L166) blobs from the contents of the already-rendered CCI. 
-This proposal proposes to continue reading from the rendered cross-crate information under the default `--read-merged-cci=true`. It can also read `doc.parts` files, under `--fetch-parts`. However, there are several issues with reading from the rendered CCI that must be stated:
+This proposal proposes to continue reading from the rendered cross-crate information under the default `--read-rendered-cci=true`. It can also read `doc.parts` files, under `--fetch-parts`. However, there are several issues with reading from the rendered CCI that must be stated:
 * If a user has a single `doc/` output directory, it is impossible to avoid shared mutation if every rustdoc process is writing to the same CCI
 * It is difficult to extract the items in a diverse set of rendered HTML files. This is anticipating of the CCI to include HTML files that, for example, statically include type+trait implementations directly
 * Reading exclusively from `doc.parts` is simpler than the existing `serde_json` dependency for extracting the blobs, as opposed to handwritten CCI-type specific parsing (current)
@@ -449,7 +449,7 @@ A proposal is to provide more options to facilitate cross-crate links. For examp
     
 ## Reuse existing option?
 
-Create a new flag, `--write-merged-cci` (proposed), vs. use existing option `no_emit_shared` 
+Create a new flag, `--write-rendered-cci` (proposed), vs. use existing option `no_emit_shared` 
     
 There is a render option, `no_emit_shared`, which is used to conditionally generate the cross-crate information. It also controls the generation of static files, user CSS, etc.
 
@@ -472,4 +472,4 @@ Another possibility is for `doc.parts` to be distributed on `docs.rs` along with
 
 A future possibility related to the index crate idea is to have an option for embedding user-specified HTML into the `--enable-index-page`'s HTML.
 
-The changes in this proposal are intended to work with no changes to Cargo and docs.rs. However, there may be benefits to using `--write-merged-cci=false` with Cargo, as it would remove the need for locking the output directory. More of the documentation process could happen in parallel, which may speed up execution time..
+The changes in this proposal are intended to work with no changes to Cargo and docs.rs. However, there may be benefits to using `--write-rendered-cci=false` with Cargo, as it would remove the need for locking the output directory. More of the documentation process could happen in parallel, which may speed up execution time..
