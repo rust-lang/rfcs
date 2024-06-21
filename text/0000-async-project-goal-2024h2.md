@@ -232,13 +232,6 @@ Agreement from [Lang] and [Libs-API] to the items marked ![Team][] in the table 
 
 Expectation is that 3-4 design meetings will be needed from lang over the course of H2 and 1-2 from libs API. Reviewing the async vision doc is expected to be the biggest requirement.
 
-# Outputs and milestones
-
-Stabilized features for
-
-* async closures
-* a ["send bound"][sb] solution, most likely [RTN][]
-
 # Frequently asked questions
 
 ## Why focus on send bounds + async closures?
