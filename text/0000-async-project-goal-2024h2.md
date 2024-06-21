@@ -144,13 +144,8 @@ This RFC will lay out a "plan of attack" for async, including both obvious good 
     * Common idioms contain footguns that cause unexpected failures (see e.g., Tyler's blog post [Making Async Rust Reliable][])
     * Low-level performance hurdles, such as large future sizes and downsides of the poll model
     * Fragmentation between runtimes
-* Design axioms to pursue for async (see e.g. axioms proposed below)
-* Goals, some variant of
-    * Free of accidental complexity
-    * Easy to get started
-    * Easy to pick executor and integrate with other systems (e.g., mobile runtimes, company-specific threadpools, etc)
-    * Moderately easy to adapt to "extreme" embedded environments
-    * Good performance by default, peak performance with tuning
+* Design axioms, an expanded version of the [axioms](#design-axiom) described here
+* Goals, an expanded version of the [shiny future](#the-shiny-future-we-are-working-towards) described here
 * Key unknowns in terms of how to achieve the above goals, for example 
     * how to replace footgun-prone APIs with more reliable alternatives:
         * buffered-streams, cancellation (esp. due to use of select)
@@ -176,14 +171,15 @@ Authors of async code frequently need to call async functions as part of resourc
 Our eventual goal is to provide Rust users building on async with
 
 * the same core language capabilities as sync Rust (async traits with dyn dispatch, async closures, async drop, etc);
-* reliable and standardized abstractions for async control flow (streams of data, error recovery, concurrent execution);
+* reliable and standardized abstractions for async control flow (streams of data, error recovery, concurrent execution), free of accidental complexity;
 * an easy "getting started" experience that builds on a rich ecosystem;
+* good performance by default, peak performance with tuning;
 * the ability to easily adopt custom runtimes when needed for particular environments, language interop, or specific business needs.
 
 # Design axiom
 
-* **We lay the foundations for a thriving ecosystem.** The role of the Rust org is to develop the rudiments that support an interoperable and thriving async crates.io ecosystem.
 * **Uphold sync Rust's bar for reliability.** Sync Rust famously delivers on the general feeling of "if it compiles, in works" -- async Rust should do the same.
+* **We lay the foundations for a thriving ecosystem.** The role of the Rust org is to develop the rudiments that support an interoperable and thriving async crates.io ecosystem.
 * **When in doubt, zero-cost is our compass.** Many of Rust's biggest users are choosing it becase they know it can deliver the same performnace (or better) than C. If we adopt abstractions that add overhead, we are compromising that core strength. As we build out our designs, we ensure that they don't introduce an "abstraction tax" for using them.
 * **From embedded to GUI to the cloud.** Async Rust covers a wide variety of use cases and we aim to make designs that can span those differing constraints with ease.
 * **Consistent, incremental progress.** People are building async Rust systems *today* -- we need to ship incremental improvements while also steering towards the overall outcome we want.
