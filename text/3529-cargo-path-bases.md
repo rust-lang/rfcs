@@ -172,11 +172,9 @@ dev = "/home/user/dev/rust/libraries/"
 This will produce a `path` dependency `foo` located at
 `/home/user/dev/rust/libraries/foo`.
 
-If the base path is not found in any `[base-paths]` table or one of the built-in
-base paths then Cargo will generate an error.
-
-If the name of a base path is specified in both the manifest and configuration,
-then the value in the manifest is preferred.
+Base paths can be either absolute or relative. Relative base paths are relative
+to the parent directory of the configuration or manifest file that declared that
+base path.
 
 The name of a base path must use only [alphanumeric](https://doc.rust-lang.org/std/primitive.char.html#method.is_alphanumeric)
 characters or `-` or `_`, must start with an [alphabetic](https://doc.rust-lang.org/std/primitive.char.html#method.is_alphabetic)
@@ -188,17 +186,32 @@ Cargo provides implicit base paths that can be used without the need to specify
 them in a `[base-paths]` table.
 
 * `workspace` - If a project is [a workspace or workspace member](https://doc.rust-lang.org/cargo/reference/workspaces.html)
-then this base path is defined as the path to the directory containing the root
-Cargo.toml of the workspace.
+then this base path is defined as the parent directory of the root Cargo.toml of
+the workspace.
 
-If one of these built-in base paths is also specified in the manifest or
-configuration, then that value is preferred over the built-in value. This allows
-Cargo to introduce additional built-in paths in the future without compatibility
-issues, as any existing uses will shadow Cargo's built-in name.
+#### Base paths resolution order
+
+Cargo will search for base paths in the following order:
+
+1. In the [configuration](https://doc.rust-lang.org/cargo/reference/config.html).
+1. In the [manifest](https://doc.rust-lang.org/cargo/reference/manifest.html)
+that is using the base path.
+1. In the workspace's [manifest](https://doc.rust-lang.org/cargo/reference/manifest.html).
+1. In the list of built-in base paths.
+
+If the base path is not found in during this search then Cargo will generate an
+error.
+
+Once a base path is found Cargo will stop searching, thus it is possible to
+shadow a base path by declaring it earlier in the search order. This allows the
+user's configuration to override the base path in a package, or for Cargo to add
+new built-in base paths without compatibility issues (as existing uses will
+shadow the built-in name).
 
 ## The Manifest Format
 
-[`[base-paths]`](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#base-paths) - Base paths for path dependencies.
+* Dependency tables:
+  * [`[base-paths]`](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#base-paths) - Base paths for path dependencies.
 
 ## Configuration
 
