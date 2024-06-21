@@ -31,7 +31,7 @@ We propose to allow crate authors to delete their **crates** from crates.io unde
 * The crate has been published for less than 72 hours,
 * or if all the following conditions are met:
   * The crate has a single owner,
-  * The crate has no reverse dependencies,
+  * The crate is not depended upon by any other crate on crates.io (i.e. it has no reverse dependencies),
   * The crate has been downloaded less than 100 times for each month it has been published.
 
 We also propose to allow crate authors to delete **versions** of their crates from crates.io under the following conditions:
