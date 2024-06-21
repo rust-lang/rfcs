@@ -261,7 +261,7 @@ The existing doc was authored some time back and is in need of an update. Moreov
 
 ## What about "maybe async", effect systems, and keyword generics?
 
-Keyword generics is an ambitious initiative to enable code that is "maybe async". It has generated significant controversy, with some people feeling it is necessary for Rust to scale and others judging it to be overly complex. We anticipate having more debate on this topic as part of drafting the async vision doc.
+Keyword generics is an ambitious initiative to enable code that is "maybe async". It has generated significant controversy, with some people feeling it is necessary for Rust to scale and others judging it to be overly complex. We anticipate having more debate on this topic as part of drafting the async vision doc. We may not fully settle it, but we will better characterize the design space and key considerations.
 
 [tmandry]: https://github.com/tmandry
 [nikomatsakis]: https://github.com/nikomatsakis
