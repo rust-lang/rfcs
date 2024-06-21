@@ -5,11 +5,13 @@
 
 # Summary
 
-Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in environments with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `doc.parts` directory to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that make build actions independent.
+Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in workspaces with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `doc.parts` directory to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that make build actions independent.
 
 # Motivation
 
 The main goal of this proposal is to facilitate users producing a documentation bundle of every crate in a large environment. When a crate needs to be re-documented, only a relatively lightweight merge step will be needed to produce a complete documentation bundle. This proposal is to facilitate the creation and updating of these bundles.
+
+This proposal also targets documenting individual crates and their dependencies in non-cargo build systems. As will be explained, doc targets in non-cargo build systems often do not support cross-crate information.
 
 There are some files in the rustdoc output directory that are read and overwritten during every invocation of rustdoc. This proposal refers to these files as **cross-crate information**, or **CCI**, as in <https://rustc-dev-guide.rust-lang.org/rustdoc.html#multiple-runs-same-output-directory>.
 
@@ -44,7 +46,7 @@ Compile the crates.
 rustc --crate-name=t --crate-type=lib --edition=2021 --emit=metadata --out-dir=t/target t/src/lib.rs
 rustc --crate-name=s --crate-type=lib --edition=2021 --emit=metadata --out-dir=s/target --extern t=t/target/libt.rmeta s/src/lib.rs
 rustc --crate-name=i --crate-type=lib --edition=2021 --emit=metadata --out-dir=i/target --extern s=s/target/libs.rmeta --extern t=t/target/libt.rmeta -L t/target i/src/lib.rs
-```
+
 
 Document `s` and `t` independently, providing `--write-rendered-cci=false`, `--read-rendered-cci=false`, and `--parts-out-dir=<crate name>/target/doc.parts`
 
@@ -76,9 +78,6 @@ In general, instead of two crates in the environment (`s` and `t`) you could hav
 $ tree . -a
 .
 ├── i
-│   ├── Cargo.lock
-│   ├── Cargo.toml
-│   ├── .gitignore
 │   ├── src
 │   │   └── lib.rs
 │   └── target
@@ -217,9 +216,6 @@ $ tree . -a
 │           ├── sidebar-items.js
 │           └── trait.T.html
 ├── s
-│   ├── Cargo.lock
-│   ├── Cargo.toml
-│   ├── .gitignore
 │   ├── src
 │   │   └── lib.rs
 │   └── target
@@ -245,9 +241,6 @@ $ tree . -a
 │       │       └── type-impl
 │       └── libs.rmeta
 └── t
-    ├── Cargo.lock
-    ├── Cargo.toml
-    ├── .gitignore
     ├── src
     │   └── lib.rs
     └── target
@@ -310,7 +303,7 @@ This part is the crate name.
 
 * `<parts out dir>/<crate name>/crates-index`: for `doc/crates.js`, `doc/index.html`
 
-This part is the also crate name. It represents a different kind of CCI because it is written to a `doc/index.html`, and rendered as an HTML document instead as JSON. In principal, we could use this part to add more information to the crates index `doc/index.html` (the first line of the top level crate documentation, for example).
+This part is also the crate name. It represents a different kind of CCI because it is written to a `doc/index.html`, and rendered as an HTML document instead as JSON. In principal, we could use this part to add more information to the crates index `doc/index.html` (the first line of the top level crate documentation, for example).
 
 * `<parts out dir>/<crate name>/type-impl`: for `doc/type.impl/**/*.js`
 
@@ -362,13 +355,13 @@ The WIP may change the sorting order of the elements in the CCI. It does not cha
 
 # Rationale and alternatives
 
-Running rustdoc in parallel is essential in enabling the tool to scale to large projects. The approach implemented by Cargo is to run rustdoc in parallel by locking the CCI files. There are some environments where having synchronized access to the CCI is impossible. This proposal implements a reasonable approach to shared rustdoc, because it cleanly enables the addition of new kinds of CCI without changing existing documentation.
+Running rustdoc in parallel is essential in enabling the tool to scale to large projects. The approach implemented by Cargo is to run rustdoc in parallel by locking the CCI files. There are some workspaces where having synchronized access to the CCI is impossible. This proposal implements a reasonable approach to shared rustdoc, because it cleanly enables the addition of new kinds of CCI without changing existing documentation.
 
 # Prior art
 
 Prior art for linking and merging independently generated documentation was **not** identified in Javadoc, Godoc, Doxygen, Sphinx (intersphinx), nor any documentation system for other languages. Analogs of cross-crate information were not found, but a more thorough investigation or experience with other systems may be needed.
 
-However, the issues presented here have been encountered in multiple build systems that interact with rustdoc. They limit the usefulness of rustdoc in large environments.
+However, the issues presented here have been encountered in multiple build systems that interact with rustdoc. They limit the usefulness of rustdoc in large workspaces.
 
 ## Bazel
 
@@ -377,7 +370,7 @@ Bazel has `rules_rust` for building Rust targets and rustdoc documentation.
 * <https://bazelbuild.github.io/rules_rust/rust_doc.html>
 * <https://github.com/bazelbuild/rules_rust/blob/67b3571d7e5e341de337317d84a6bec6b9d02ed7/rust/private/rustdoc.bzl#L174>
 
-It does not document crates' dependencies. `search-index.js`, for example, is both a dependency and an output file for rustdoc in multi-crate documentation environments. If it is declared as a dependency in this way, Bazel could not build docs for the members of an environment in parallel with a single output directory, as it strictly enforces hermiticity. For a recursive, parallel rustdoc to ever serve as a first-class citizen in Bazel, changes similar to the ones described in this proposal would be needed.
+It does not document crates' dependencies. `search-index.js`, for example, is both a dependency and an output file for rustdoc in multi-crate documentation workspaces. If it is declared as a dependency in this way, Bazel could not build docs for the members of an environment in parallel with a single output directory, as it strictly enforces hermiticity. For a recursive, parallel rustdoc to ever serve as a first-class citizen in Bazel, changes similar to the ones described in this proposal would be needed.
 
 There is an [open issue](https://github.com/bazelbuild/rules_rust/issues/1837) raised about the fact that Bazel does not document crates dependencies. The comments in the issue discuss a pull request on Bazel that documents each crates dependencies in a separate output directory. It is noted in the discussion that this solution, being implemented under the current rustdoc, "doesn't scale well and it should be implemented in a different manner long term." In order to get CCI in a mode like this, rustdoc would need to adopt changes, like the ones in this proposal, for merging cross-crate information.
 
@@ -403,7 +396,7 @@ It has a subtarget, `[doc]`, for generating rustdoc for a crate.
 
 You can provide a coarse-grained `extern-html-root-url` for all dependencies. You could document all crates independently, but no cross-crate information would be shared.
 
-It does not document crates' dependencies for the same reason that Bazel does not.
+buck2 does not natively merge rustdoc from separate targets. The buck2 maintainers have a [proprietary search backend](https://rust-lang.zulipchat.com/#narrow/stream/266220-t-rustdoc/topic/mergable.20rustdoc.20proposal/near/445952204) that merges and parses `search-index.js` files from separately documented crates. Their proprietary tooling does not handle cross-crate trait implementations from upstream crates. By implementing this merging directly in rustdoc, we could avoid fragmentation and bring cross-crate information to more consumers.
 
 <https://github.com/facebook/buck2/blob/d390e31632d3b4a726aaa2aaf3c9f1f63935e069/prelude/rust/build.bzl#L213>
 
