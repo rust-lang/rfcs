@@ -32,11 +32,15 @@ Async Rust is the most common Rust application area according to our [2023 Rust 
 
 * **Rust scales up**. Async Rust reduces cost for large dataplanes because a single server can serve high load without significantly increasing tail latency.
 * **Rust scales down.** Async Rust can be run without requiring a garbage collector or [even an operating system][embassy], making it a great fit for embedded systems.
-* **Rust is reliable.** Networked services run 24/7, so Rust's "if it compiles, it works" mantra means unexpected failures and, in turn, fewer pages in the middle of the night.
+* **Rust is reliable.** Networked services run 24/7, so Rust's "if it compiles, it works" mantra means fewer unexpected failures and, in turn, fewer pages in the middle of the night.
 
 Despite async Rust's popularity, using async I/O makes Rust significantly harder to use. As one Rust user memorably put it, "Async Rust is Rust on hard mode." Several years back the async working group collected a number of ["status quo" stories](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo.html) as part of authoring an async vision doc. These stories reveal a number of characteristic challenges:
 
-* Common language features like ~~[traits](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/alan_needs_async_in_traits.html)~~ (they [do now][afitblog], though gaps remain), closures, and [drop](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/alan_finds_database_drops_hard.html) do not support async, meaning that [users cannot write Rust code in the way they are accustomed to](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_plays_with_async.html?highlight=closure#the-story). In many cases there are workarounds or crates that can close the gap, but users have to learn about and find those crates.
+* Common language features do not support async, meaning that [users cannot write Rust code in the way they are accustomed to](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_plays_with_async.html?highlight=closure#the-story):
+  * [x] ~~[traits](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/alan_needs_async_in_traits.html)~~ (they [do now][afitblog], though gaps remain)
+  * [ ] closures
+  * [ ] [drop](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/alan_finds_database_drops_hard.html)
+  In many cases there are workarounds or crates that can close the gap, but users have to learn about and find those crates.
 * Common async idioms have "sharp edges" that lead to unexpected failures, forcing users to manage [cancellation safety](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_gets_burned_by_select.html), subtle [deadlocks](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/aws_engineer/solving_a_deadlock.html) and other failure modes for [buffered streams](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_battles_buffered_streams.html). See also tmandry's blog post on [Making async Rust reliable](https://tmandry.gitlab.io/blog/posts/making-async-reliable/)).
 * Using async today requires users to select a runtime which provides many of the core primitives. Selecting a runtime as a user [can be stressful](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_makes_their_first_steps_into_async.html#the-wrong-time-for-big-decisions), as the [decision once made is hard to reverse](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_wishes_for_easy_runtime_switch.html). Moreover, in an attempt to avoid "picking favories", the project has not endorsed a particular runtime, making it [harder to write new user documentation](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/niklaus_wants_to_share_knowledge.html). Libaries meanwhile [cannot easily be made interoperable across runtimes](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_writes_a_runtime_agnostic_lib.html) and so are often written against the API of a particular runtime; even when libraries can be retargeted, it is difficult to do things like run their test suites to test compatibility. [Mixing and matching libraries can cause surprising failures.](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/alan_started_trusting_the_rust_compiler_but_then_async.html)
 
@@ -46,7 +50,7 @@ Despite async Rust's popularity, using async I/O makes Rust significantly harder
 
 ### First focus: language parity, interop traits
 
-Based on the above analysis, the Rust org has been focused on driving async/sync language parity, especially in those areas that block the development of a rich ecosystem. The biggest progress took place in [Dec 2023][afitblog], when async fn in traits and return position impl trait in trait were stabilizd. Other work includes authoring the async vision doc, stabilizing helpers like [`std::future::poll_fn`](https://doc.rust-lang.org/std/future/fn.poll_fn.html)), and polishing and improving async error messages.
+Based on the above analysis, the Rust org has been focused on driving async/sync language parity, especially in those areas that block the development of a rich ecosystem. The biggest progress took place in [Dec 2023][afitblog], when async fn in traits and return position impl trait in trait were stabilized. Other work includes documenting async usability challenges in the original async vision doc, stabilizing helpers like [`std::future::poll_fn`](https://doc.rust-lang.org/std/future/fn.poll_fn.html), and polishing and improving async error messages.
 
 ### Lack of internal alignment within the Rust org about the direction for async
 
@@ -64,7 +68,7 @@ In the second half of 2024 we are planning on the following work items:
 
 ### Stabilize async closures
 
-Building ergonomic APIs in async is often blocked by the lack of *async closures*. Async combinator-like APIs today typically make use an ordinary Rust closure that returns a future, such as the `filter` API from [`StreamExt`](https://docs.rs/futures/latest/futures/prelude/stream/trait.StreamExt.html#method.filter):
+Building ergonomic APIs in async is often blocked by the lack of *async closures*. Async combinator-like APIs today typically make use of an ordinary Rust closure that returns a future, such as the `filter` API from [`StreamExt`](https://docs.rs/futures/latest/futures/prelude/stream/trait.StreamExt.html#method.filter):
 
 ```rust
 fn filter<Fut, F>(self, f: F) -> Filter<Self, Fut, F>
@@ -121,17 +125,17 @@ There has been extensive discussion about the best form of the trait for async i
 
 ### Resolve the ["send bound"][sb] problem
 
-Although async functions in traits were stabilized, there is currently no way to write a generic function that requires only impls where the returned futures are `Send`. This blocks the use of async function in traits in some core ecosystem crates, such as [tower](https://crates.io/crates/tower), which want to work across all kinds of async executors. This problem is called the ["send bound"][sb] problem and there has been extensive discussion of the various ways to solve it. [RFC #3654][] has been opened proposing one solution and describing why that path is preferred. Our goal for the year is to adopt *some* solution on stable.
+Although async functions in traits were stabilized, there is currently no way to write a generic function that requires impls where the returned futures are `Send`. This blocks the use of async function in traits in some core ecosystem crates, such as [tower](https://crates.io/crates/tower), which want to work across all kinds of async executors. This problem is called the ["send bound"][sb] problem and there has been extensive discussion of the various ways to solve it. [RFC #3654][] has been opened proposing one solution and describing why that path is preferred. Our goal for the year is to adopt *some* solution on stable.
 
 [RFC #3654]: https://github.com/rust-lang/rfcs/pull/3654
 
 ### Author draft RFC for async vision
 
-We plan to revise the [Async Vision Doc][AVD] and restructure it as a draft RFC, most likely to be approved by the [Lang][] and [Libs-API][] teams (we do not necessarily expect that RFC to be accepted by end of year). Our observation is that the previous version of the async vision doc, which was never RFC'd, never attained the legitimacy of being the "plan of record". In addition, a number of things have changed in the intervening years (for example, async functions in traits are now stable) and we are in a position to identify clearer next steps. The 
+We plan to revise the [Async Vision Doc][AVD] and restructure it as a draft RFC, most likely to be approved by the [Lang][] and [Libs-API][] teams (we do not necessarily expect that RFC to be accepted by end of year). Our observation is that the previous version of the async vision doc, which was never RFC'd, never attained the legitimacy of being the "plan of record". In addition, a number of things have changed in the intervening years (for example, async functions in traits are now stable) and we are in a position to identify clearer next steps.
 
 [AVD]: https://rust-lang.github.io/wg-async/vision.html
 
-This RFC will lay out a "plan of attack" for async, including both obvious good things (similar to [async closures][]) but also "known unknowns" and ways to resolve them. Areas the RFC is expected to cover are as follows:
+This RFC will lay out a "plan of attack" for async, including both obvious good things (similar to [async closures](#stabilize-async-closures)) but also "known unknowns" and ways to resolve them. Areas the RFC is expected to cover are as follows:
 
 [Making Async Rust Reliable]: https://tmandry.gitlab.io/blog/posts/making-async-reliable/
 
@@ -140,7 +144,7 @@ This RFC will lay out a "plan of attack" for async, including both obvious good 
     * Common idioms contain footguns that cause unexpected failures (see e.g., Tyler's blog post [Making Async Rust Reliable][])
     * Low-level performance hurdles, such as large future sizes and downsides of the poll model
     * Fragmentation between runtimes
-* Design axioms to pursue for async (see e.g. axioms proposed)
+* Design axioms to pursue for async (see e.g. axioms proposed below)
 * Goals, some variant of
     * Free of accidental complexity
     * Easy to get started
@@ -165,7 +169,7 @@ This RFC will lay out a "plan of attack" for async, including both obvious good 
 
 ### Complete async drop experiments
 
-Authors of async code frequently need to call async functions as part of resource cleanup. Because Rust today only supports synchronous destructors, this cleanup must take place using alternative mechanisms, forcing a divergence between sync Rust (which uses destructors to arrange cleanup) and async Rust. [MCP 727][] proposed a series of experiments aimed at supporting async drop in the compiler. We would like to continue and complete those experiments. These experiments are aimed at defining how support for async drop will be implemented in the compiler and some possible ways that we could modify the type system to support it (in particular, one key question is how to prevent types that whose drop is async from being dropped in sync code).
+Authors of async code frequently need to call async functions as part of resource cleanup. Because Rust today only supports synchronous destructors, this cleanup must take place using alternative mechanisms, forcing a divergence between sync Rust (which uses destructors to arrange cleanup) and async Rust. [MCP 727][] proposed a series of experiments aimed at supporting async drop in the compiler. We would like to continue and complete those experiments. These experiments are aimed at defining how support for async drop will be implemented in the compiler and some possible ways that we could modify the type system to support it (in particular, one key question is how to prevent types whose drop is async from being dropped in sync code).
 
 ## The "shiny future" we are working towards
 
@@ -178,8 +182,8 @@ Our eventual goal is to provide Rust users building on async with
 
 # Design axiom
 
-* **We lay the foundations for a thriving ecosystem.** The role of the Rust org is to deelop the rudiments that support an interoperable and thriving async crates.io ecosystem.
-* **Uphold sync's Rust bar for reliability.** Sync Rust famously delivers on the general feeling of "if it compiles, in works" -- async Rust should do the same.
+* **We lay the foundations for a thriving ecosystem.** The role of the Rust org is to develop the rudiments that support an interoperable and thriving async crates.io ecosystem.
+* **Uphold sync Rust's bar for reliability.** Sync Rust famously delivers on the general feeling of "if it compiles, in works" -- async Rust should do the same.
 * **When in doubt, zero-cost is our compass.** Many of Rust's biggest users are choosing it becase they know it can deliver the same performnace (or better) than C. If we adopt abstractions that add overhead, we are compromising that core strength. As we build out our designs, we ensure that they don't introduce an "abstraction tax" for using them.
 * **From embedded to GUI to the cloud.** Async Rust covers a wide variety of use cases and we aim to make designs that can span those differing constraints with ease.
 * **Consistent, incremental progress.** People are building async Rust systems *today* -- we need to ship incremental improvements while also steering towards the overall outcome we want.
@@ -253,7 +257,7 @@ Async fn in traits do not currently support native dynamic dispatch. We have exp
 
 There has been extensive discussion about the best design for the "Stream" or "async iter" trait and we judge that the design space is well understood. We would like to unblock generator syntax in 2025 which will require some form of trait.
 
-The majority of the debate about the trait has been on the topic of whether to base the trait on a `poll_next` function, as we do today, or to try and make the trait use `async fn next`, making it more anaologous with the `Iterator` trait (and potentially even making it be two versions of a single trait). We will definitely explore forwards compatibility questions as part of this discussion. nikomatsakis for example still wants to explore maybe-async-like designs, especially for combinator APIs like `map`. However, we also refer to the design axiom that that "when in doubt, zero-cost is our compass" -- we believe we should be able to stabilize a trait that does the low-level details right, and then design higher level APIs atop that.
+The majority of the debate about the trait has been on the topic of whether to base the trait on a `poll_next` function, as we do today, or to try and make the trait use `async fn next`, making it more anaologous with the `Iterator` trait (and potentially even making it be two versions of a single trait). We will definitely explore forwards compatibility questions as part of this discussion. nikomatsakis for example still wants to explore maybe-async-like designs, especially for combinator APIs like `map`. However, we also refer to the design axiom that "when in doubt, zero-cost is our compass" -- we believe we should be able to stabilize a trait that does the low-level details right, and then design higher level APIs atop that.
 
 ## Why work on a revised async vision doc? Don't we already have one?
 
