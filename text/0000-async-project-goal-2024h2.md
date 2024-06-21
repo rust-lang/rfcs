@@ -58,13 +58,19 @@ Progress on async-related issues within the Rust org has been slowed due to lack
 
 ## The next few steps
 
-In the second half of 2024 we are planning on the following work items:
+In the second half of 2024 we are planning on the following work items. These items are ambitious and likely will not all get done. For that reason, they are prioritized, with higher priority items being listed first.
 
-* [stabilize async closures](#stabilize-async-closures)
 * [resolve the "Send bound" problem](#stabilize-async-closures)
+* [stabilize async closures](#stabilize-async-closures)
 * [stabilize trait for async iteration](#stabilize-trait-for-async-iteration)
 * [author draft RFC for async vision](#author-draft-rfc-for-async-vision)
 * [complete async drop experiments](#complete-async-drop-experiments) (currently unfunded)
+
+### Resolve the ["send bound"][sb] problem
+
+Although async functions in traits were stabilized, there is currently no way to write a generic function that requires impls where the returned futures are `Send`. This blocks the use of async function in traits in some core ecosystem crates, such as [tower](https://crates.io/crates/tower), which want to work across all kinds of async executors. This problem is called the ["send bound"][sb] problem and there has been extensive discussion of the various ways to solve it. [RFC #3654][] has been opened proposing one solution and describing why that path is preferred. Our goal for the year is to adopt *some* solution on stable.
+
+[RFC #3654]: https://github.com/rust-lang/rfcs/pull/3654
 
 ### Stabilize async closures
 
@@ -122,12 +128,6 @@ The details (syntax, precise semantics) will be determined via experimentation a
 ### Stabilize trait for async iteration
 
 There has been extensive discussion about the best form of the trait for async iteration (sometimes called `Stream`, sometimes `AsyncIter`, and now being called `AsyncGen`). We believe the design space has been sufficiently explored that it should be possible to author an RFC laying out the options and proposing a specific plan.
-
-### Resolve the ["send bound"][sb] problem
-
-Although async functions in traits were stabilized, there is currently no way to write a generic function that requires impls where the returned futures are `Send`. This blocks the use of async function in traits in some core ecosystem crates, such as [tower](https://crates.io/crates/tower), which want to work across all kinds of async executors. This problem is called the ["send bound"][sb] problem and there has been extensive discussion of the various ways to solve it. [RFC #3654][] has been opened proposing one solution and describing why that path is preferred. Our goal for the year is to adopt *some* solution on stable.
-
-[RFC #3654]: https://github.com/rust-lang/rfcs/pull/3654
 
 ### Author draft RFC for async vision
 
@@ -194,15 +194,15 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 | Subgoal                                  | Owner(s) or team(s)                     | Status              |
 | ---------------------------------------- | --------------------------------------- | ------------------- |
 | overall program management               | [tmandry][], [nikomatsakis][]           | ![Funded][]         |
-| stabilize async closures                 |                                         | ![Funded][]         |
-| ↳ ~~implementation~~                     | ~~[compiler-errors][]~~                 | ![Complete][]       |
-| ↳ author RFC                             | [nikomatsakis][] or [compiler-errors][] | ![Funded][]         |
-| ↳ approve RFC                            | ![Team][] [Lang]                        |                     |
-| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]         |
 | resolve the ["send bound"][sb] problem   |                                         | ![Funded][]         |
 | ↳ ~~RTN implementation~~                 | ~~[compiler-errors][]~~                 | ![Complete][]       |
 | ↳ ~~RTN RFC~~                            | [nikomatsakis][]                        | ![Complete][]       |
 | ↳ approve RTN RFC or provide alternative | ![Team][] [Lang]                        |                     |
+| ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]         |
+| stabilize async closures                 |                                         | ![Funded][]         |
+| ↳ ~~implementation~~                     | ~~[compiler-errors][]~~                 | ![Complete][]       |
+| ↳ author RFC                             | [nikomatsakis][] or [compiler-errors][] | ![Funded][]         |
+| ↳ approve RFC                            | ![Team][] [Lang]                        |                     |
 | ↳ stabilization                          | [compiler-errors][]                     | ![Funded][]         |
 | stabilize trait for async iteration      |                                         | ![Funded][]         |
 | ↳ author RFC                             | [eholk][]                               | ![Funded][]         |
