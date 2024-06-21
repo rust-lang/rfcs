@@ -103,8 +103,6 @@ extern "C" {
 }
 ```
 
-If `#[export_ordinal(n)]` is not provided above an exported function, the current behaviour should apply, where an unused ordinal is provided sequentially. For example, if ordinals `1` and `3` are specified with the `export_ordinal` attribute, and there are two other exported functions without specified ordinals, they should use ordinals `2` and `4`.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -138,6 +136,7 @@ Some unresolved questions are:
 1. Can ordinals be skipped? If you specify ordinals `1, 3, 4`, should this throw an error as `2` is skipped?
 2. If ordinals `1, 3` are specified, and you have another exported function, should it use `2` (the next unused ordinal) or `4` (the next in the sequence)?
 3. Instead of implementing this proposal, Could the usage of the `.def` file be changed to allow other functions to stay exported, even if they aren't included in the `.def` file?
+4. When [RFC3325 - Unsafe Attributes](https://rust-lang.github.io/rfcs/3325-unsafe-attributes.html) is implemented, should `link_ordinal` be marked unsafe if there is a chance of collisions?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
