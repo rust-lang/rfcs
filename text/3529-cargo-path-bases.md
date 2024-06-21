@@ -179,7 +179,8 @@ If the name of a base path is specified in both the manifest and configuration,
 then the value in the manifest is preferred.
 
 The name of a base path must use only [alphanumeric](https://doc.rust-lang.org/std/primitive.char.html#method.is_alphanumeric)
-characters or `-` or `_`, and cannot be empty.
+characters or `-` or `_`, must start with an [alphabetic](https://doc.rust-lang.org/std/primitive.char.html#method.is_alphabetic)
+character, and must not be empty.
 
 #### Built-in base paths
 
@@ -191,7 +192,9 @@ then this base path is defined as the path to the directory containing the root
 Cargo.toml of the workspace.
 
 If one of these built-in base paths is also specified in the manifest or
-configuration, then that value is preferred over the built-in value.
+configuration, then that value is preferred over the built-in value. This allows
+Cargo to introduce additional built-in paths in the future without compatibility
+issues, as any existing uses will shadow Cargo's built-in name.
 
 ## The Manifest Format
 
@@ -361,7 +364,7 @@ could help.
 [unresolved-questions]: #unresolved-questions
 
 - What should the Cargo configuration table and dependency key be called? This
-  RFC calls the configuration table `base_path` to be explicit that it is
+  RFC calls the configuration table `base-paths` to be explicit that it is
   dealing with paths (as `base` would be ambiguous) but calls the key `base` to
   keep it concise.
 - Is there other reasonable behavior we could fall back to if a `base`
@@ -377,7 +380,7 @@ It seems reasonable to extend `base` to `git` dependencies, with
 something like:
 
 ```toml
-[base_path]
+[base-paths]
 gh = "https://github.com/jonhoo"
 ```
 
