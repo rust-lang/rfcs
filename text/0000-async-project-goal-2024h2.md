@@ -13,7 +13,7 @@ This is a proposed flagship goal for 2024h2 covering **async Rust**. You can [re
 The overall goal is **bringing the Async Rust experience closer to parity with sync Rust**. We have identified three high-priority goals that we believe would do the most to improve async over the long term:
 
 * [resolving the "send bound problem"](#resolve-the-send-bound-problem), thus enabling foundational, generic traits like Tower's [`Service`]() trait;
-* stabilizing async closures, thus enabling richer, combinator APIs like sync Rust's [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html);
+* [stabilizing async closures](#stabilize-async-closures), thus enabling richer, combinator APIs like sync Rust's [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html);
 * [reorganizing the async WG](#reorganize-the-async-wg), so the project can benefit from a group of async rust experts with deep knowledge of the space that can align around a shared vision;
 
 We have also identified two "stretch goals":
