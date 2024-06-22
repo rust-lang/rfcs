@@ -239,7 +239,7 @@ This can also be seen as a special case of the previous argument, as pattern mac
 # Prior art
 [prior-art]: #prior-art
 
-This feature has been implemented in the [E programming language](https://en.wikipedia.org/wiki/E_(programming_language)) under the name ["such-that patterns"](http://erights.org/elang/grammar/patterns.html#suchThat).
+This feature has been implemented in the [Unison](https://www.unison-lang.org/docs/language-reference/guard-patterns/), [Wolfram](https://reference.wolfram.com/language/ref/Condition.html), and [E ](https://en.wikipedia.org/wiki/E_(programming_language)) languages.
 
 Guard patterns are also very similar to Haskell's [view patterns](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/view_patterns.html), which are more powerful and closer to a hypothetical "`if let` pattern" than a guard pattern as this RFC proposes it.
 
