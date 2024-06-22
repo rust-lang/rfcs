@@ -167,7 +167,7 @@ Our eventual goal is to provide Rust users building on async with
 
 # Design axiom
 
-* **Uphold sync Rust's bar for reliability.** Sync Rust famously delivers on the general feeling of "if it compiles, in works" -- async Rust should do the same.
+* **Uphold sync Rust's bar for reliability.** Sync Rust famously delivers on the general feeling of "if it compiles, it works" -- async Rust should do the same.
 * **We lay the foundations for a thriving ecosystem.** The role of the Rust org is to develop the rudiments that support an interoperable and thriving async crates.io ecosystem.
 * **When in doubt, zero-cost is our compass.** Many of Rust's biggest users are choosing it becase they know it can deliver the same performnace (or better) than C. If we adopt abstractions that add overhead, we are compromising that core strength. As we build out our designs, we ensure that they don't introduce an "abstraction tax" for using them.
 * **From embedded to GUI to the cloud.** Async Rust covers a wide variety of use cases and we aim to make designs that can span those differing constraints with ease.
