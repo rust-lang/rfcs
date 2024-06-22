@@ -121,3 +121,5 @@ The npm registry blocks re-uploads of deleted versions indefinitely.
 # Future possibilities
 
 It is conceivable that the restrictions could be adjusted in the future if the crates.io team finds that the proposed restrictions are too strict or too lenient. For example, the download threshold could be adjusted based on how well the proposed ruleset will work in practice.
+
+Once the backend of crates.io has been updated to support this feature, we could also consider adding a web interface for crate owners to delete their crates and versions directly from the crates.io website. Similarly, we could add a subcommand to the `cargo` CLI, either implemented as a plugin or as part of the main `cargo` codebase.
