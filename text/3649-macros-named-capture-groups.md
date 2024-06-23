@@ -336,5 +336,14 @@ as valid, which could conflict with this proposal.
 - Exact interaction with metavariable expressions is out of this RFC's scope. 
   There is a proposal around
   <https://github.com/rust-lang/rust/pull/122808#issuecomment-2124471027>.
+- Directly reemit all tokens captured in a group ([original proposal]):
+  ````rust
+  // macro LHS, capture "exactly once" repetition
+  $my_tokens(a b $var c d)①
+  
+  // macro RHS, reemit the entire capture `a b value_for_var c d`
+  $my_tokens
+  ````
 
+[original proposal]: https://github.com/rust-lang/rfcs/pull/3649#discussion_r1618998153
 [`macro_metavar_expr`]: https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html
