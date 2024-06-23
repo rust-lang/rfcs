@@ -21,14 +21,14 @@ behavior in a few places:
   the ordering and nesting of different groups is restricted based on what can
   be inferred by the contained variables, since the groups themselves are
   ambiguous.
-- Metavariable expressions use an unintuitive format: syntax like 
-  `${count($var, n)}` is used to refer to the `n`th parent group of the
-  smallest group that captures `$var`. Referring to groups directly would be
+- Metavariable expressions as they currently exist use an unintuitive format:
+  syntax like `${count($var, n)}` is used to refer to the `n`th parent group of
+  the smallest group that captures `$var`. Referring to groups directly would be
   more straightforward than using a proxy.
-- Repetition-related diagnostics are limited because the compiler has limited
+- Repetition-related diagnostics are suboptimal because the compiler has limited
   ability to guess what a capture group _should_ refer to when a captured
   groups and variables do not align correctly.
-- Repetition mismatch diagnostics like can only be emitted after the macro is
+- Repetition mismatch diagnostics can only be emitted after the macro is
   instantiated, rather than when the macro is written. (E.g. "meta-variable
   `foo` repeats 2 times, but `bar` repeats 1 time")
 - As a result of the above, using repetition is somewhat fragile; small
@@ -42,13 +42,12 @@ do a better job of guiding the macro mental model.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Capture groups can now take a name by providing an identifier and `:` between
-the `$` and opening `(`. This group can then be referred to by name in the
-expansion:
+Capture groups can now take a name by providing an identifier between the `$`
+and opening `(`. This group can then be referred to by name in the expansion:
 
 ```rust
 macro_rules! foo {
-    ( $group1:( $a:ident ),+ ) => {
+    ( $group1( $a:ident ),+ ) => {
         $group1( println!("{}", $a); )+
     }
 }
@@ -71,9 +70,9 @@ Named groups can be used to create code that depends on nested repetitions:
 macro_rules! make_functions {
     ( 
         // Create a function for each name
-        names: [ $names:($name:ident),+ ],
+        names: [ $names($name:ident),+ ],
         // Optionally specify a greeting
-        $greetings:( greeting: $greeting:literal, )?
+        $greetings( greeting: $greeting:literal, )?
     ) => {
         $names(
             // Create a function with the specified name
@@ -107,7 +106,7 @@ fn main() {
 This expansion is not easily possible without named capture groups because
 of ambiguity regarding which groups are referred to.
 
-Expansion will approximately follow this procedural model:
+Expansion of the above will approximately follow this procedural model:
 
 ```rust
 let mut ret = TokenStream::new();
@@ -136,9 +135,9 @@ Macro captures currently include the following grammar node:
 
 This will be expanded to the following:
 
-> `$` ( (IDENTIFIER_OR_KEYWORD except crate | RAW_IDENTIFIER | _ ) `:` )<sup>?</sup> ( _MacroMatch<sup>+</sup>_ ) _MacroRepSep_<sup>?</sup> _MacroRepOp_
+> `$` ( IDENTIFIER_OR_KEYWORD except crate | RAW_IDENTIFIER | _ )<sup>?</sup> ( _MacroMatch<sup>+</sup>_ ) _MacroRepSep_<sup>?</sup> _MacroRepOp_
 
-As a result, `$identifier:( /* ... */ ) /* sep and kleene */` will allow naming
+As a result, `$identifier( /* ... */ ) /* sep and kleene */` will allow naming
 a capture group. It can then be used in expansion:
 
 ```rust
@@ -207,7 +206,7 @@ Using named groups removes ambiguity so should work:
 // Note: this is just a simple example. Metavariable expressions will provide a
 // better way to get the same result with `${count(...)}`.
 macro_rules! count {
-    ( $idents:( $i:ident ),* ) => {{
+    ( $idents( $i:ident ),* ) => {{
         0 $idents( + 1 )*
     }};
 }
@@ -273,7 +272,7 @@ Rewritten to use named groups instead:
 
 ```rust
 macro_rules! innermost1 {
-    ( $outer_rep:( $a:ident: $inner_rep:( $b:literal ),* );+ ) => {
+    ( $outer_rep( $a:ident: $inner_rep( $b:literal ),* );+ ) => {
         [$outer_rep( $inner_rep( ${index($outer_rep)}, )* )+]
     };
 }
@@ -307,7 +306,7 @@ Why should we *not* do this?
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Variable definition syntax could be `$ident(/* ... */)` rather than
-  `$ident:(/* ... */)`. Including the `:` is proposed to be more consistent
+  `$ident(/* ... */)`. Including the `:` is proposed to be more consistent
   with existing fragment specifiers.
 - There is room for macros to become smarter in their expansions without adding
   named capture groups. As mentioned elsewhere in this RFC, it seems like
@@ -322,7 +321,14 @@ Why should we *not* do this?
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None at this time.
+- Syntax: the original proposal was to include a colon, e.g.
+  `$group1:(/* ... */)`. A label-like syntax of `$'group1 $(/* ... */)` was
+  also proposed.
+
+**Possibly edition-sensitive** the proposed syntaxes are currently rejected
+under the `missing_fragment_specifier` lint. That means that
+`#![allow(missing_fragment_specifier)]` makes rustc accept the proposed syntax
+as valid, which could conflict with this proposal.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
