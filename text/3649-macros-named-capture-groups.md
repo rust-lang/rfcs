@@ -10,6 +10,10 @@ It will now be possible to give names to capture (repetition) groups in macro
 patterns, which can then be referred to directly in the macro body and macro
 metavariable expressions.
 
+_Rustc usually refers to these groups as "repetitions" in diagnostics. This
+RFC uses "capture groups" which is more general (they don't always repeat),
+and more in line with regex._
+
 # Motivation
 [motivation]: #motivation
 
@@ -125,6 +129,24 @@ for NamesCaptures { name } in greetings {
 }
 ```
 
+Groups can also be used in the expansion without `(...)` to emit their entire
+capture.
+
+This works well with a new "match exactly once" grouping that takes no kleene
+operator (as opposed to matching zero or more times (`*`), matching once or
+more (`+`), or matching zero or one times (`?`)).
+
+```rust
+macro_rules! check_and_pass {
+    ($group1(exact1 exact2 $v:ident exact3 $group2($tt:tt)* )) => {
+        other_macro!($group1)
+    }
+}
+
+// other_macro! will receive the exact arguments passed to `check_and_pass`,
+// including "exact*" tokens.
+check_and_pass!(exact1 exact2 foo exact3 a b 1.5 -72);
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -150,9 +172,15 @@ Names will remain optional; however, if a capture group is given a name, it
 _must_ also be referred to by name during expansion. That is, an unnamed
 group in expansion will never be matched to a named group in the pattern.
 
-This addition will have implications in a few places:
+To keep things simple, it may be preferred to forbid the mixing of named and
+unnamed macro capture groups.
 
-## Nesting repetition expansions
+## Overview of changes
+
+A summary of the implications of this language addition is provided before
+explaining detailed semantics.
+
+### Nesting repetition expansions
 
 Nesting or intermixing repetition groups is currently not possible, mostly due
 to ambiguity of capture group expansions. Using an example from above:
@@ -183,7 +211,7 @@ would work with no additional syntax. However, this RFC posits that referring
 to groups by name provides an overall better user experience than changing
 the rules (more clear code, better diagnostics, and an easier model to follow).
 
-## Zero-length capture groups
+### Zero-length capture groups
 
 As a side effect of more precise repetition, groups in expansion that do not
 contain any metavariables will become more straightforward. For example, this
@@ -242,7 +270,7 @@ fn main() {
 Adding named capture groups to the above would allow it to work.
 `${ignore(...)}` does not directly help here.
 
-## Metavariable expressions
+### Metavariable expressions
 
 Metavariable expressions currently use a combination of location within the
 expansion (i.e. which capture groups contain it), variables captured, and
@@ -292,6 +320,276 @@ Further reading:
   [tracking issue](https://github.com/rust-lang/rust/issues/83527)
 - [Proposal for possible specific behavior](https://github.com/rust-lang/rust/pull/122808#issuecomment-2124471027)
 
+### "Exactly one" matching and full group emission
+
+If a group is specified without a kleene operator (`*`, `+`, `?`), it will now
+be assumed to match exactly once. This will be most useful with the ability to
+emit an entire matched group.
+
+```rust
+macro_rules! check_and_pass {
+    // `group1` will get matched exactly once
+    ($group1(a b $v:ident c $group2($tt:tt)* )) => {
+        // All tokens including exact `a` `b` will get passed to `other_macro`
+        other_macro!($group1)
+    }
+}
+```
+
+This should make it much easier to work with optional exact matches. Currently
+there is no way to do anything useful with capture groups that don't capture
+metavariables (such as `$pub` and `$mut` in the below example).
+
+```rust
+macro_rules! rename_fn {
+    (
+        $newname:ident;
+        $pub(pub)? fn $oldname:ident( $args( $mut(mut)? $arg:ident: $ty:ty )* );
+    ) => {
+        $pub fn $newname( $args );
+    }
+}
+```
+
+_TODO: will this preserve the coercion of tokens to fragments
+(e.g. tt -> ident)?_
+
+## Detailed semantics
+
+To illustrate detailed semantics, an example will be used in which the
+token pattern approximately mirrors the named groups:
+
+```rust
+macro_rules! m {
+    ( $outer_a(oa[ $middle(m[ $inner(i[ $x:ident ])* ])* ])*; $outer_b(ob[ $y:ident ])*)
+        => { println!("{}", stringify!(/* relevant expansion */)) }
+}
+
+m!( oa[ m[i[x0] i[x1]] ] oa[] oa[m[] m[]]; ob[y0] );
+```
+
+This can be thought of as a tree structure that loosely matches the `TokenTree`
+of the captured items.
+
+
+```text
+    Level 0     |    Level 1     |    Level 2     |     Level 3     |    Level 4
+
+                                                  /- $inner[0,0,0] --- $x[0,0,0,0]
+                |-- $outer_a[0] --- $middle[0,0] -|   `i[v0]`           `x0`
+                |    `oa[...]`        `m[..]`     |
+                |                                 \- $inner[0,0,1] --- $x[0,0,0,1]
+                |                                     `i[v1]`           `x1`
+                |
+                |-- $outer_a[1]
+                |    `oa[...]`
+    $root      -|            
+(entire macro)  |                /- $middle[2,0]
+                |-- $outer_a[2] -|   `m[..]`
+                |    `oa[...]`   |
+                |                \- $middle[2,1]
+                |                    `m[..]`
+                |   
+                |-- $outer_b[0] --- $y[0,0,0,1]
+                    `ob[...]`        `y0`
+
+Summary of captures:
+
+- `$outer_a`: captured 3 times
+- `$middle`: captured 3 times
+- `$inner`: captured 2 times
+- `$x`: captured 2 times
+- `$outer_b`: captured 1 time
+- `$y`: captured 1 time
+```
+
+In the above dia|ram, `$metavar[i_n, ..., i_1, i_0]` refers to the `i_0`th
+captured instance of `$metavar` within the `i_1`th instance of its parent group
+capture.
+
+Some of this section intends to solidify rules that are currently implemented
+but not well described.
+
+### Definitions
+
+This section uses some common terms to refer to relevant ideas.
+
+- "Pattern" or "capture pattern": the left hand side of the macro that defines
+  metavariables and gets pattern matched against code.
+- "Captured": when a token or tokens are matched by a variable or group.
+  This has some overlap with what rustc refers to as "repeating n times" in
+  error messages, but this RFC seeks to make this less ambiguous.
+- "Expansion": the right hand side of the macro that uses metavariables and new
+  tokens to update the file's AST.
+- "Contents": Whatever is contained within a group
+- "Level": a nesting level (or generation in the tree diagram. Adding a new
+  group around a metavarible increases its nesting level.
+- "Parent": any group that is at a higher level of the subject ("child") and
+  shares a direct lineage. E.g. `$inner` and `$middle` are both parents of `$v`.
+- "Immediate parent": parent exactly one level above. E.g. `$inner` is an
+  immediate  parent of `$v`, `$middle` is not.
+- "Capture parent", "capture level", "capture contents": a parent, level, or
+  group contents in the capture, which may not exist or be the same in the
+  expansion.
+- "Expansion parent", "expansion level", "expansion contents": a parent, level,
+  or group contents in the expansion, which may not exist or be the same in the
+  capture.
+
+### Expansion rules
+
+In current macro expansion, the following rules are observed:
+
+1. Groups must contain at least one metavariable (`$()*` fails with "repetition
+   matches empty token tree").
+2. Metavariables must be expanded with the same level of nesting in which they
+   are captured. That is, if a metavariable is captured within two nested
+   groups as `$($($v:ident),*),*`, it may only be expanded as `$($($v)*)*`.
+3. Metavariables _or groups_ at the same level of the capture group must be
+   be captured the same number of times.
+
+This is easier to visualize with examples. Named capture groups are used to
+make things more clear, even though this is discussing the current unnamed
+groups.
+
+```rust
+// Possible expansions for the above sample macro
+
+// Ok: prints `x0 x1`
+$outer_a( $middle( $inner( $x )* )* )*
+
+// Ok: prints `y0`
+$outer_b( $y )*
+
+// Forbidden: "variable 'x' is still repeating at this depth"
+$??( $x )*
+$x
+
+// Forbidden: "attempted to repeat an expression containing no syntax variables
+// matched as repeating at this depth"
+// Basically, it is unable to determine what the groups are supposed to refer to.
+$outer_b( $??( $??( $y )* )* )*
+
+// Forbidden: "`x` repeats 3 times, but `y` repeats 1 time"
+// This is an example diagnostic where referring to groups by their captures
+// doesn't work well; `x` is actually only captured twice, but _`$middle`_ is
+// captured three times.
+$??( $??( $??( $x $y )* )* )*
+
+// Forbidden: "`x` repeats 3 times, but `y` repeats 1 time"
+// Makes sense; if `$combined` must refer to only a single group then it has
+// no way to pick between `$outer_a` and `$outer_b`.
+$combined( $middle( $inner( $x )* )* $y )*
+
+// ...except the above actually works with the following invocation, printing
+// `x0 y0`, because `$middle` (level 2) and `$y` (also level 2) are captured
+// the same number of times. This is an example of invocation-dependent
+// expansion correctness that this RFC hopes to minimize.
+m!( oa[ m[i[x0]] ]; ob[y0] );
+```
+
+With named repetition groups, these rules will be changed to the following:
+
+1. Capture groups no longer need to contain any metavariables.
+2. Captured variables or groups may only be expanded within their parent group.
+3. In expansion, the group will repeat as many times as its entire pattern
+   was captured, independent of whatever its expansion contents are.
+4. Expansion nesting variables or groups within groups that are not capture
+   parents has no effect on nesting level. The entire child group is repeated
+   as many times as the expansion parent repeats.
+5. If a group name is given in the expansion with no `(...)`, the entire
+   capture of that group is reemitted _including exact literals_.
+
+These are detailed in the following sections.
+
+#### Expansion within an immediate parent
+
+If a group or metavariable has capture parents, it must have those same parents
+for expansion (though they need not be immediate).
+
+```rust
+// Correct: prints `x0 x1`
+$outer_a( $middle( $inner( $x )* )* )*
+
+// Correct, emits entire middle group. Result: `m[i[x0] i[x1]] m[] m[]`
+$outer_a( $middle )*
+
+// Skipping a group level
+// ERROR: `$inner` must be contained within a `$middle` group, but it is within
+// `$outer_a`
+$outer_a( $inner( $x )* )*
+
+// No grouping at all
+// ERROR: `$x` must be within an `$inner` group, but it is not within any group
+$x
+```
+
+_TODO: if `foo[x0] foo[] foo[x2]` is captured and the expansion is
+`$foo( $x ),+`, should `x0, x2` be emitted of `x0, , x2` (extra comma)?
+Probably the first one._
+
+A possible relaxation of this rule is to allow groups or variables to expand to
+all captures within that level when not nested within the immediate parent.
+
+TBD whether this should be part of this RFC or a future possibility
+
+```rust
+// Expands to `x0 x1`
+$x
+
+// Expands to `x0 x1`
+$outer_a( $middle( $x )* )*
+```
+
+
+#### Expansion within non-parent groups
+
+If a group or metavariable is nested within a group that is not a capture
+parent, it should repeat as many times as that group. It must still have
+its capture parents during expansion, so as not to break the parent rule.
+
+```rust
+// Correct: prints `y0 y0 y0`
+// This is because the _entire_ expansion of `$outer_b` (one instance of $y)
+// is repeated once for each `$outer_a` (three instances)
+$outer_a( $outer_b( $y ) )
+
+// Correct: prints `ob[ oa[y0 i[x0 y0] oa[x1 y0]] oa[y0] oa[y0]]`.
+// Explanation:
+// - `root > outer_a > middle > inner > x` and `outer_b > y` ordering are both
+//   still respected, even though they are interleaved
+// - `outer_b` repeats once within root
+// - `outer_a` repeats three times within root, so repeats 3x within `outer_b`
+// - `inner` repeats `[2, 0, 0]` times within the `outer_a` instances. This
+//   drives how often `x` and `y` get repeated within that group.
+$outer_b( ob[$outer_a( oa[$y $middle( $inner( i[$x $y] ) )] )] )
+
+// Forbidden: `x` is missing parent `outer_a`
+$outer_b( $middle( $inner( $x $y ) ) ) )
+```
+
+#### Empty groups, single matches, entire group expansion
+
+_TODO: make real sentences_
+
+Must still follow the above rules, but `(...)` can be omited. In this case,
+everything captured will be emitted, including literals.
+
+```rust
+macro_rules! foo {
+    ($group(foo)) => $group
+}
+```
+
+### Metavariable Expressions
+
+TODO: entire section
+
+brainstorm: we can probably make the names more clear, `len` and `count` are
+too similar. E.g. `count_in($x0, $middle)` for however man `x0`s are in the
+current `middle`, `current_repetition_of($middle)` to say which one is
+being expanded.`
+
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -333,17 +631,7 @@ as valid, which could conflict with this proposal.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- Exact interaction with metavariable expressions is out of this RFC's scope. 
-  There is a proposal around
-  <https://github.com/rust-lang/rust/pull/122808#issuecomment-2124471027>.
-- Directly reemit all tokens captured in a group ([original proposal]):
-  ````rust
-  // macro LHS, capture "exactly once" repetition
-  $my_tokens(a b $var c d)①
-  
-  // macro RHS, reemit the entire capture `a b value_for_var c d`
-  $my_tokens
-  ````
+None at this time
 
 [original proposal]: https://github.com/rust-lang/rfcs/pull/3649#discussion_r1618998153
 [`macro_metavar_expr`]: https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html
