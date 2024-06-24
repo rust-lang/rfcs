@@ -35,9 +35,9 @@ behavior in a few places:
   adjustments can break working patterns with little indication of what exactly
   is wrong. Reading code with multiple capture groups can also be confusing.
 - Metavariable expressions as they currently exist use an unintuitive format:
-  syntax like `${count($var, n)}` is used to refer to the `n`th parent group of
-  the smallest group that captures `$var`. Referring to groups directly would be
-  more straightforward than using a proxy.
+  syntax like `${count($var, n)}` is used to refer to the `n`th ancestor group
+  of the smallest group that captures `$var`. Referring to groups directly would
+  be more straightforward than using a proxy.
 
 It is expected that named capture groups will provide a way to remove ambiguity
 in expansion and metavariable expressions, as well as unblock diagnostics that
@@ -167,12 +167,15 @@ $identifier(
 ) /* sep and kleene */
 ```
 
+Group and metavariables share the same namespace; all groups and metavariables
+must have a unique name within the macro capture pattern.
+
 Names will remain optional; however, if a capture group is given a name, it
 _must_ also be referred to by name during expansion. That is, an unnamed
 group in expansion will never be matched to a named group in the pattern.
 
-To keep things simple, it may be preferred to forbid the mixing of named and
-unnamed macro capture groups.
+To make expansion rules easier, _it is forbidden to mix named and unnamed
+groups_ within the same macro.
 
 ## Overview of changes
 
@@ -219,7 +222,7 @@ simple counter is not possible as written:
 ```rust
 macro_rules! count {
     ( $( $i:ident ),* ) => {{
-        // error: attempted to repeat an expression containing no syntax variables
+        // Error: attempted to repeat an expression containing no syntax variables
         //↓  the compiler does not know which group this refers to (here there
         //   is only one choice, but that is not always the case).
         0 $( + 1 )* 
@@ -255,7 +258,7 @@ macro_rules! match_fn {
         //       ↓ we want to reproduce the `mut` here
         fn $name($(mut)? $a: u32) {
         //       ^^^^^^^
-        // error: attempted to repeat an expression containing no syntax variables
+        // Error: attempted to repeat an expression containing no syntax variables
             println!("hello {}!", $a);
         }
     }
@@ -392,8 +395,16 @@ Summary of captures:
 - `$y`: captured 1 time
 ```
 
-In the above diagram, `$metavar[i_n, ..., i_1, i_0]` refers to the `i_0`th
-captured instance of `$metavar` within the `i_1`th instance of its parent group
+In the above diagram, `$metavar[i_n, ..., i_1, i_0]` shows that this is the
+`i`th 
+
+
+the `i`th
+capture for the `n`th ancestor
+captured instance of `$metavar`
+
+
+ within the `i_1`th instance of its parent group
 capture.
 
 Some of this section intends to solidify rules that are currently implemented
@@ -502,12 +513,12 @@ $outer_a( $middle( $inner( $x )* )* )*
 $outer_a( $middle )*
 
 // Skipping a group level
-// ERROR: `$inner` must be contained within a `$middle` group, but it is within
+// Error: `$inner` must be contained within a `$middle` group, but it is within
 // `$outer_a`
 $outer_a( $inner( $x )* )*
 
 // No grouping at all
-// ERROR: `$x` must be within an `$inner` group, but it is not within any group
+// Error: `$x` must be within an `$inner` group, but it is not within any group
 $x
 ```
 
@@ -535,6 +546,9 @@ parent, it should be repeated as many times as that group. It must still have
 its capture parents as expansion parents so as not to break other rules, but
 they need not be the immediate parents.
 
+In order to avoid edge cases with metavariable expressions, a group is not
+allowed to be nested within itself.
+
 ```rust
 // Correct: prints `y0 y0 y0`
 // This is because the _entire_ expansion of `$outer_b` (one instance of $y)
@@ -553,6 +567,10 @@ $outer_b( ob[$outer_a( oa[$y $middle( $inner( i[$x $y] ) )] )] )
 
 // Forbidden: `x` is missing parent `outer_a`
 $outer_b( $middle( $inner( $x $y ) ) ) )
+
+// Forbidden: group nesting within itself
+$outer_b( $outer_b( $y ) )
+$outer_b( $outer_b )
 ```
 
 #### Single matches
@@ -586,13 +604,147 @@ The above rules regarding allowed group usage locations must still be followed.
 
 ### Metavariable Expressions
 
-TODO: entire section
+This RFC proposes some changes to metavariable expressions that will leverage
+named groups to hopefully make them more user-friendly.
 
-brainstorm: we can probably make the names more clear, `len` and `count` are
-too similar. E.g. `count_in($x0, $middle)` for however man `x0`s are in the
-current `middle`, `current_repetition_of($middle)` to say which one is
-being expanded.`
+_At time of writing, part of macro metavariable expressions are under
+consideration for stabilization. Depending on what is selected, these rules may
+need to change slightly._
 
+- `${index($group)}`: Return the number of times that the group has been
+  _expanded_ so far. Must be used within the group that is given as an
+  argument.
+- `${count($metavar)}`: Return the number of times a group or metavariable was
+  _captured_.
+- `${len($metavar)}`: Because `count` becomes more flexible, `len` is no longer
+  needed and can be removed.
+- `${ignore($metavar)}`: if this RFC is accepted than `$ignore` can be removed.
+  It is used to specify which capture group an expansion group belongs to when
+  no metavariables are used in the expansion; with named groups, however, this
+  is specified by the group name rather than by contained metavariables.
+
+#### `${index($group)}`
+
+The `index` metavariable expression is used to indicate the number of times
+a group has been expanded so far. It can be thought of a form of `enumerate`.
+
+- Arguments: one required argument, `$group`
+- Allowed usage: may only be used within `$group`
+- Output: The number of times the _current expansion of `$group`_ has repeated
+  so far. That is, if `$group` is captured twice but used >2 times in the
+  expansion, `${index($group)}` will still only ever return 0 or 1.
+- Changes from current implementation:
+  - Takes a group as an argument, not a depth
+  - The argument is no longer optional
+
+In the tree diagram, this can be thought of as returning the final number for
+the given group in the `[i_n, ..., i_0]` index list.
+
+```rust
+// Ok: prints `o0 m0 i0 i1; o1; o2 m0 m1;`
+$outer_a( o ${index($outer_a)} $middle( m ${index($middle)} $inner( i ${index($inner)})* ),* );*
+
+// Ok: prints `o m outer_idx 0; o; o m outer_idx 2 m outer_idx 2`
+$outer_a( o $middle( m outer_idx ${index($outer_a)} ),* );*
+
+// Ok: prints `ob oa0 oa1 oa2`
+// The outer repetition (`outer_b`) has no influence on `index`
+$outer_b( ob $outer_a( oa ${index($outer_a)} ),* )*
+
+// Forbidden: not used within a `$middle` group
+$outer_a( ${index($middle)} $middle );*
+```
+
+The location of `index` within its group does not affect its output. That is,
+all of the below will return 0:
+
+```rust
+// For this example, `$g1` is captured exactly once. All other groups are
+// captured any number of times
+
+// Prints `0`
+$g1( ${index($g1)} )
+
+// Increasing the nestin does nothing; still returns `0` for each `g2` capture
+$g1( $g2( ${index($g1)} )* )
+
+// Still returns `0`
+$g1( $g2( $g3 ( ${index($g1)} )* )* )
+```
+
+#### `${count($name)}`
+
+`count` is used to return the number of times a group or variable has been
+captured. It can be used in any location, but its exact behavior is location-
+dependent.
+
+- Arguments: one required argument, `$group` or `$metavariable`
+- Allowed usage: may be used anywhere within the expansion, but some arguments
+  may be disallowed.
+- Output: this returns the number of times a group or metavariable was
+  captured, with some scoping specifics.
+- Changes from current implementation:
+  - Can take a group as an argument
+  - Functionality combined with `len`
+
+Looking at a group or variable that is more deeply nested will return how many
+of that variable were captured in the current repetition. Looking at a variable
+or group that is less deeply nested will return the total times that group was
+captured.
+
+This can be represented as a simple tree walking algorithm to the _capture_
+tree to determine what gets counted. The starting position in the _expansion_
+determines where to start, and then the following rules are applied:
+
+- If `level($name)` >= `level(expression)` (more deeply nested), walk all
+  descendents, including those of neighbors, and count each `$name`
+- If `level($name) < `level(expression)` (less deeply nested):
+  - Walk the entire tree and count each `$name`
+  - Reject code with an error if `$name` is not an ancestor
+
+```rust
+/* looking at descendents */
+
+// Ok: prints `[oa 3, m 3, i 2, x 2; ob 1, y 1]`
+// Demo printing totals. Expansion is at the root (level 0), so each variable
+// is at a higher level; the entire tree is walked and all instances are counted.
+[
+    oa ${count($outer_a)}, m ${count($middle)}, i ${count($inner)}, x ${count($x)};
+    ob ${count($outer_b)}, y ${count($y)},
+]
+
+// Ok: prints `[1 0 2]`
+[$outer_a( ${count($middle} )*]
+
+// Ok: prints `[2 0 0]`
+[$outer_a( ${count($inner} )*]
+
+// Ok: prints `[2 0 0]`
+[$outer_a( ${count($x} )*]
+
+// Ok: prints `o[m[x 2]] o[] o[m[x 0] m[x 0]]`
+// `$middle[0,0]``"sees" two `$x` captures. `$middle[2,0]` and `$middle[2,1]` both
+// don't see any.
+$outer_a( o[$middle( m[x ${count($x)}] )*] )*
+
+/* looking at ancestors */
+
+// Ok: prints [3 3 3]
+// `count` is used at level 2 (one deeper than `outer_a`), so it sees all
+// `outer_a`s each time.
+[$outer_a( ${count($outer_a)} )*]
+
+// Ok: prints [[3] [] [3 3]]
+// Similar to the above
+[$outer_a( [$middle( ${count($outer_a)} )*] )*]
+
+/* errors */
+
+// Error: trying to count a variable that is neither a descendent or anscestor
+[$outer_a( ${count($y} )*]
+```
+
+TODO: we could relax the final rule and allow counting siblings of ancestors
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -637,7 +789,9 @@ as valid, which could conflict with this proposal.
 
 - Macros 2.0: if accepted, the same rules expressed in this RFC should also
   apply to Macros 2.0. Macros 2.0 may even opt to forbid unnamed capture
-  groups
+  groups.
+- A `${count_in($var, $group)}` expression that allows further scoping of
+  `count` (TODO: describe this better).
 
 [original proposal]: https://github.com/rust-lang/rfcs/pull/3649#discussion_r1618998153
 [`macro_metavar_expr`]: https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html
