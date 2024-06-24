@@ -789,7 +789,7 @@ where
     typeof {
         let hc: &'a mut H;
         let s: Server;        
-        H::check(h, ds)
+        H::check(hc, s)
     }: Send,
 ```
 
