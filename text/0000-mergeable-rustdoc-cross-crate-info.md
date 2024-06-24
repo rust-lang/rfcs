@@ -5,11 +5,11 @@
 
 # Summary
 
-Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in workspaces with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `crate-info.json` directory to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that make build actions independent.
+Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in workspaces with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `crate-info.json` file to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that enforce the independence of build actions.
 
 # Motivation
 
-The main goal of this proposal is to facilitate users producing a documentation bundle of every crate in a large environment. When a crate needs to be re-documented, only a relatively lightweight merge step will be needed to produce a complete documentation bundle. This proposal is to facilitate the creation and updating of these bundles.
+The main goal of this proposal is to facilitate users producing a documentation bundle of every crate in a large environment. When a crate needs to be re-documented, only a relatively lightweight merge step will be needed to produce an updated documentation bundle. This proposal is to facilitate the creation and updating of these bundles.
 
 This proposal also targets documenting individual crates and their dependencies in non-cargo build systems. As will be explained, doc targets in non-cargo build systems often do not support cross-crate information.
 
@@ -300,7 +300,7 @@ If this flag is not provided, no `crate-info.json` will be written.
 
 If this flag is provided, rustdoc will expect `<path>/<crate name>/crate-info.json` to contain the parts for `<crate name>`. It will append these parts to the ones it will render in the doc root (`--out-dir`). This info is not written to `crate-info.json`, as `crate-info.json` only holds the CCI parts for the current crate.
 
-This flag is similar to `--extern-html-root-url` in that it only applies to externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-info-json` tells rustdoc where to search for the `crate-info.json` directory at documentation-time. It must not be a hyperlink.
+This flag is similar to `--extern-html-root-url` in that it only applies to externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-info-json` tells rustdoc where to search for the `crate-info.json` directory at documentation-time. It must not be a URL.
 
 In the Guide-level explanation, for example, crate `i` needs to identify the location of `s`'s parts. Since they could be located in an arbitrary directory, `i` must be instructed on where to fetch them. In this example, `s`'s parts happen to be in `./s/target/doc.parts/s`, so rustdoc is called with `--include-info-json s=s/target/doc.parts`.
 
@@ -319,11 +319,13 @@ When `read_rendered_cci` is active, rustdoc will look in the `--out-dir` for ren
 
 ## Merge step
 
-This step is provided with a list of crates. It merges their documentation. This step involves copying parts (individual item, module documentation) from each of the provided crates. It merges the parts, renders, and writes the CCI to the doc root.
+This proposal is capable of addressing two primary use cases. It allows developers to enable CCI in these scenarios:
+* Documenting a crate and its transitive dependencies in parallel in build systems that require build actions to be independent
+* Producing a documentation index of a large number of crates, in such a way that if one crate is updated, only the updated crates and an index have to be redocumented. This scenario is demonstrated in the Guide-level explanation.
 
-In short, without any specific merge step, merging the documentation for multiple crates is performed as shown in the Guide-level explanation.
+CCI is not automatically enabled in either situation. A combination of the `--include-info-json`, `--merge`, and `--write-info-json` flags are needed to produce this behavior. This RFC provides a minimal set of tools that allow developers of build systems, like Bazel and Buck2, to create rules for these scenarios.
 
-Discussion of a dedicated merge step is described in the Unresolved questions (Index crate).
+Discussion of whether additional features should be included to facilitate this merge step can be found in Unresolved questions (Index crate).
 
 ## Compatibility
 
