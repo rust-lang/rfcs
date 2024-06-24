@@ -25,10 +25,6 @@ behavior in a few places:
   the ordering and nesting of different groups is restricted based on what can
   be inferred by the contained variables, since the groups themselves are
   ambiguous.
-- Metavariable expressions as they currently exist use an unintuitive format:
-  syntax like `${count($var, n)}` is used to refer to the `n`th parent group of
-  the smallest group that captures `$var`. Referring to groups directly would be
-  more straightforward than using a proxy.
 - Repetition-related diagnostics are suboptimal because the compiler has limited
   ability to guess what a capture group _should_ refer to when a captured
   groups and variables do not align correctly.
@@ -38,6 +34,10 @@ behavior in a few places:
 - As a result of the above, using repetition is somewhat fragile; small
   adjustments can break working patterns with little indication of what exactly
   is wrong. Reading code with multiple capture groups can also be confusing.
+- Metavariable expressions as they currently exist use an unintuitive format:
+  syntax like `${count($var, n)}` is used to refer to the `n`th parent group of
+  the smallest group that captures `$var`. Referring to groups directly would be
+  more straightforward than using a proxy.
 
 It is expected that named capture groups will provide a way to remove ambiguity
 in expansion and metavariable expressions, as well as unblock diagnostics that
@@ -137,15 +137,14 @@ operator (as opposed to matching zero or more times (`*`), matching once or
 more (`+`), or matching zero or one times (`?`)).
 
 ```rust
-macro_rules! check_and_pass {
-    ($group1(exact1 exact2 $v:ident exact3 $group2($tt:tt)* )) => {
-        other_macro!($group1)
+macro_rules! rename_fn {
+    (
+        $newname:ident;
+        $pub(pub)? fn $oldname:ident( $args( $mut(mut)? $arg:ident: $ty:ty )* );
+    ) => {
+        $pub fn $newname( $args );
     }
 }
-
-// other_macro! will receive the exact arguments passed to `check_and_pass`,
-// including "exact*" tokens.
-check_and_pass!(exact1 exact2 foo exact3 a b 1.5 -72);
 ```
 
 # Reference-level explanation
@@ -338,18 +337,8 @@ macro_rules! check_and_pass {
 
 This should make it much easier to work with optional exact matches. Currently
 there is no way to do anything useful with capture groups that don't capture
-metavariables (such as `$pub` and `$mut` in the below example).
-
-```rust
-macro_rules! rename_fn {
-    (
-        $newname:ident;
-        $pub(pub)? fn $oldname:ident( $args( $mut(mut)? $arg:ident: $ty:ty )* );
-    ) => {
-        $pub fn $newname( $args );
-    }
-}
-```
+metavariables (such as `$pub` and `$mut` in the
+[Guide-level explanation](#guide-level-explanation) example).
 
 _TODO: will this preserve the coercion of tokens to fragments
 (e.g. tt -> ident)?_
@@ -368,8 +357,8 @@ macro_rules! m {
 m!( oa[ m[i[x0] i[x1]] ] oa[] oa[m[] m[]]; ob[y0] );
 ```
 
-This can be thought of as a tree structure that loosely matches the `TokenTree`
-of the captured items.
+This can be thought of as a tree structure that loosely matches the token
+`Group` of the captured items.
 
 
 ```text
@@ -403,7 +392,7 @@ Summary of captures:
 - `$y`: captured 1 time
 ```
 
-In the above dia|ram, `$metavar[i_n, ..., i_1, i_0]` refers to the `i_0`th
+In the above diagram, `$metavar[i_n, ..., i_1, i_0]` refers to the `i_0`th
 captured instance of `$metavar` within the `i_1`th instance of its parent group
 capture.
 
@@ -489,13 +478,12 @@ m!( oa[ m[i[x0]] ]; ob[y0] );
 
 With named repetition groups, these rules will be changed to the following:
 
-1. Capture groups no longer need to contain any metavariables.
-2. Captured variables or groups may only be expanded within their parent group.
-3. In expansion, the group will repeat as many times as its entire pattern
+1. Group expansions no longer need to contain any metavariables.
+2. In expansion, the group will repeat as many times as its entire pattern
    was captured, independent of whatever its expansion contents are.
-4. Expansion nesting variables or groups within groups that are not capture
-   parents has no effect on nesting level. The entire child group is repeated
-   as many times as the expansion parent repeats.
+3. Captured variables or groups may only be expanded within their parent group,
+   if any. However, the capture parent does not need to be the immediate
+   expansion parent.
 5. If a group name is given in the expansion with no `(...)`, the entire
    capture of that group is reemitted _including exact literals_.
 
@@ -503,8 +491,8 @@ These are detailed in the following sections.
 
 #### Expansion within an immediate parent
 
-If a group or metavariable has capture parents, it must have those same parents
-for expansion (though they need not be immediate).
+If a group or metavariable has capture parents, it must be scoped within those
+same parents for expansion (though they need not be immediate).
 
 ```rust
 // Correct: prints `x0 x1`
@@ -540,12 +528,12 @@ $x
 $outer_a( $middle( $x )* )*
 ```
 
-
 #### Expansion within non-parent groups
 
 If a group or metavariable is nested within a group that is not a capture
-parent, it should repeat as many times as that group. It must still have
-its capture parents during expansion, so as not to break the parent rule.
+parent, it should be repeated as many times as that group. It must still have
+its capture parents as expansion parents so as not to break other rules, but
+they need not be the immediate parents.
 
 ```rust
 // Correct: prints `y0 y0 y0`
@@ -567,18 +555,34 @@ $outer_b( ob[$outer_a( oa[$y $middle( $inner( i[$x $y] ) )] )] )
 $outer_b( $middle( $inner( $x $y ) ) ) )
 ```
 
-#### Empty groups, single matches, entire group expansion
+#### Single matches
 
-_TODO: make real sentences_
+Capture groups must currently specify a kleene operator (`*`, `+`, or `?`) that
+determines if the group should match zero or more times, one or more times, or
+up to one time. This RFC will allow omitting the kleene operator to indicate
+that a group must be captured exactly once. That is, `$group(foo)` is a valid
+pattern (with current rules, `$(foo)` is forbidden).
 
-Must still follow the above rules, but `(...)` can be omited. In this case,
-everything captured will be emitted, including literals.
+With this "exactly once" match there is no purpose in having a repetition token
+(e.g. the comma in `$(...),*`), so it must be omitted.
+
+#### Entire group expansion
+
+Since groups are named, it is now possible to write a group name to reemit its
+captured contents with no further expansion. This syntax uses the group name
+but omits the `(/* expansion pattern */)/* kleene */`:
 
 ```rust
-macro_rules! foo {
-    ($group(foo)) => $group
-}
+// Ok: prints `ob[y0]`
+$outer_b
 ```
+
+The entire contents of the capture group are emitted, including both exact
+tokens and anything that would be bound to a metavariable. Span from the
+macro invocation can be kept here, which should improve the diagnosability of
+some macros.
+
+The above rules regarding allowed group usage locations must still be followed.
 
 ### Metavariable Expressions
 
@@ -631,7 +635,9 @@ as valid, which could conflict with this proposal.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-None at this time
+- Macros 2.0: if accepted, the same rules expressed in this RFC should also
+  apply to Macros 2.0. Macros 2.0 may even opt to forbid unnamed capture
+  groups
 
 [original proposal]: https://github.com/rust-lang/rfcs/pull/3649#discussion_r1618998153
 [`macro_metavar_expr`]: https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html
