@@ -265,9 +265,8 @@ The macro sets the following requirements on its input:
 2. The struct must have at least one type parameter. If multiple type
    parameters are present, exactly one of them has to be annotated with the
    `#[pointee]` derive helper attribute.
-3. The struct must not be `#[repr(packed)]` or `#[repr(C)]`.
-4. Other than one-aligned, zero-sized fields, the struct must have exactly one
-   field.
+3. The struct must be `#[repr(transparent)]`.
+4. The struct must have at least one field.
 5. Assume that `T` is a type that can be unsized to `U`, and let `FT` and `FU`
    be the type of the struct's field when the pointee is equal to `T` and `U`
    respectively. If the struct's trait bounds are satisfied for both `T` and
@@ -276,9 +275,10 @@ The macro sets the following requirements on its input:
 
 (Adapted from the docs for [`DispatchFromDyn`].)
 
-Point 1 and 2 are verified syntactically by the derive macro, whereas 3, 4 and 5
+Point 1 and 2 are verified syntactically by the derive macro. Points 4 and 5
 are verified semantically by the compiler when checking the generated
-[`DispatchFromDyn`] implementation as it does today.
+[`DispatchFromDyn`] implementation as it does today. Point 3 is verified by
+introducing a new unstable helper trait `AssertReprTransparent`.
 
 The `#[pointee]` attribute may also be written as `#[smart_pointer::pointee]`.
 
@@ -329,6 +329,16 @@ where
     T: ?Sized + SomeTrait<T>,
     U: ?Sized + SomeTrait<U>,
     T: ::core::marker::Unsize<U>,
+{}
+```
+The macro will also generate an implementation of the new
+`AssertReprTransparent` helper trait. The implementation will have the same
+trait bounds as the struct definition.
+```rust
+#[automatically_derived]
+impl<'a, T, A> ::core::ops::AssertReprTransparent for MySmartPointer<'a, T, A>
+where
+    T: ?Sized + SomeTrait<T>,
 {}
 ```
 
@@ -389,6 +399,13 @@ The trait is implemented for all standard library types that implement
 Although this RFC proposes to add the `PinCoerceUnsized` trait to ensure that
 unsizing coercions of pinned pointers cannot be used to cause unsoundness, the
 RFC does not propose to stabilize the trait.
+
+## `AssertReprTransparent`
+
+To verify the requirement that the struct is `#[repr(transparent)]`, we
+introduce a new unstable marker trait called `AssertReprTransparent`. This trait
+will be a lang item, and the compiler will emit an error if the trait is used
+with a type that is not `#[repr(transparent)]`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -714,6 +731,27 @@ This RFC does not propose it because it is a breaking change and the
 `PinCoerceUnsized` or `DerefPure` solutions are simpler. This solution is
 discussed in more details in [the pre-RFC for stabilizing the underlying
 traits][pre-rfc].
+
+## `AssertReprTransparent`
+
+When you implement the [`DispatchFromDyn`] trait, the compiler enforces various
+things about the type to verify that it makes sense to implement
+`DispatchFromDyn`. One of the things that the compiler verifies is that the
+struct must not be `#[repr(packed)]` or `#[repr(C)]`.
+
+However, because `#[derive(SmartPointer)]` has more narrow use-case than
+`DispatchFromDyn`, we would like to restrict it further so that the macro only
+works with `#[repr(transparent)]` types. To do this, we use a new trait called
+`AssertReprTransparent` that verifies that the struct is `#[repr(transparent)]`
+like how `DispatchFromDyn` verifies that the struct must not be
+`#[repr(packed)]` or `#[repr(C)]`.
+
+We cannot change the logic in `DispatchFromDyn` because some existing standard
+library types cannot be `#[repr(transparent)]`. For example, this includes
+`Box<T, A>` due to its allocator field.
+
+This requirement may be relaxed in the future, in which case
+`AssertReprTransparent` can be removed again.
 
 # Prior art
 [prior-art]: #prior-art
