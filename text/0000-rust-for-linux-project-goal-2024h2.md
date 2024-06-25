@@ -146,37 +146,37 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 * The ![Funded][] badge indicates that the owner has committed and work will be funded by their employer or other sources.
 * The ![Team][] badge indicates a requirement where Team support is needed.
 
-| Subgoal                                              | Owner(s) or team(s)                | Status            |
-| ---------------------------------------------------- | ---------------------------------- | ----------------- |
-| overall program management                           | [nikomatsakis][], [joshtriplett][] | ![Funded][]       |
-| arbitrary self types v2                              |                                    |                   |
-| ↳ ~~author [RFC][RFC 3519]~~                         | ~~[Adrian Taylor][]~~              | ![Complete][]     |
-| ↳ ~~approve [RFC][RFC 3519]~~                        | ~~[Lang]~~                         | ![Complete][]     |
-| ↳ implementation                                     | [Adrian Taylor][]                  | ![Funded][]       |
-| ↳ assigned reviewer                                  | ![Team] [Compiler]                 | ![Not approved][] |
-| ↳ stabilization                                      | [Adrian Taylor][]                  | ![Funded][]       |
-| derive smart pointer                                 |                                    |                   |
-| ↳ ~~author [RFC][RFC 3621]~~                         | ~~[Alice Ryhl][]~~                 | ![Complete][]     |
-| ↳ approve [RFC][RFC 3621]                            | ![Team][] [Lang]                   | ![Approved][]     |
-| ↳ implementation                                     | [Xiang][]                          | ![Volunteer][]    |
-| ↳ stabilization                                      | [Xiang][]                          | ![Volunteer][]    |
-| `asm_goto`                                           |                                    |                   |
-| ↳ ~~implementation~~                                 | -                                  | ![Complete][]     |
-| ↳ real-world usage in Linux kernel                   | [Gary Guo]                         | ![Volunteer][]    |
-| ↳ stabilization                                      | [Gary Guo]                         | ![Volunteer][]    |
-| extended `offset_of` syntax                          |                                    |                   |
-| ↳ stabilization                                      | [Xiang][]                          | ![Volunteer][]    |
-| ~~RFL on Rust CI~~                                   |                                    | ![Complete][]     |
-| ↳ ~~implementation ([#125209][])~~                   | ~~[Jakub Beránek][]~~              |                   |
-| ↳ ~~policy draft~~                                   | ~~[Jakub Beránek][]~~              |                   |
-| ↳ ~~policy approval~~                                |                                    |                   |
-| Pointers to static in constants                      |                                    |                   |
-| ↳ stabilization proposal                             | [nikomatsakis][]                   | ![Funded][]       |
-| ↳ stabilization decision                             | ![Team][] [Lang]                   |                   |
+| Subgoal                            | Owner(s) or team(s)                | Status            |
+| ---------------------------------- | ---------------------------------- | ----------------- |
+| overall program management         | [nikomatsakis][], [joshtriplett][] | ![Funded][]       |
+| arbitrary self types v2            |                                    |                   |
+| ↳ ~~author [RFC][RFC 3519]~~       | ~~[Adrian Taylor][]~~              | ![Complete][]     |
+| ↳ ~~approve [RFC][RFC 3519]~~      | ~~[Lang]~~                         | ![Complete][]     |
+| ↳ implementation                   | [Adrian Taylor][]                  | ![Funded][]       |
+| ↳ assigned reviewer                | ![Team] [Compiler]                 | ![Not approved][] |
+| ↳ stabilization                    | [Adrian Taylor][]                  | ![Funded][]       |
+| derive smart pointer               |                                    |                   |
+| ↳ ~~author [RFC][RFC 3621]~~       | ~~[Alice Ryhl][]~~                 | ![Complete][]     |
+| ↳ approve [RFC][RFC 3621]          | ![Team][] [Lang]                   | ![Approved][]     |
+| ↳ implementation                   | [Xiang][]                          | ![Volunteer][]    |
+| ↳ stabilization                    | [Xiang][]                          | ![Volunteer][]    |
+| `asm_goto`                         |                                    |                   |
+| ↳ ~~implementation~~               | -                                  | ![Complete][]     |
+| ↳ real-world usage in Linux kernel | [Gary Guo]                         | ![Volunteer][]    |
+| ↳ extend to cover full RFC         | [Gary Guo]                         | ![Volunteer][]    |
+| ↳ stabilization                    | [Gary Guo]                         | ![Volunteer][]    |
+| extended `offset_of` syntax        |                                    |                   |
+| ↳ stabilization                    | [Xiang][]                          | ![Volunteer][]    |
+| ~~RFL on Rust CI~~                 |                                    | ![Complete][]     |
+| ↳ ~~implementation ([#125209][])~~ | ~~[Jakub Beránek][]~~              |                   |
+| ↳ policy draft                     | [Jakub Beránek][]                  |                   |
+| ↳ policy approval                  |                                    |                   |
+| Pointers to static in constants    |                                    |                   |
+| ↳ stabilization proposal           | [nikomatsakis][]                   | ![Funded][]       |
+| ↳ stabilization decision           | ![Team][] [Lang]                   |                   |
 
 [oli-obk]: https://github.com/oli-obk/
 [wesleywiser]: https://github.com/wesleywiser
-
 
 ## Support needed from the project
 
