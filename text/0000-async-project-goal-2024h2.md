@@ -178,7 +178,7 @@ Our eventual goal is to provide Rust users building on async with
 Here is a detailed list of the work to be done and who is expected to do it. This table includes the work to be done by owners and the work to be done by Rust teams (subject to approval by the team in an RFC/FCP). The overall owners of the async effort (and authors of this goal document) are [tmandry][] and [nikomatsakis][]. We have identified owners for subitems below; these may change over time.
 
 * The ![Funded][] badge indicates that the owner has committed and work will be funded by their employer or other sources.
-* The ![Not founded][] badge indictes that there is a willing owner but they need funding to pursue the goal. Depending on the owner's individual circumstances, this could be support/authorizaiton from their employer, grants, or contracting.
+* The ![Not funded][] badge indicates that there is a willing owner but they need funding to pursue the goal. Depending on the owner's individual circumstances, this could be support/authorization from their employer, grants, or contracting.
 * The ![Team][] badge indicates a requirement where Team support is needed.
 
 | Subgoal                                  | Owner(s) or team(s)                     | Status              |
