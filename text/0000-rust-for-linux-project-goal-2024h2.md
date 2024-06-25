@@ -95,7 +95,9 @@ Both have been implemented but more experience and/or may be needed before stabi
 
 ### RFL on Rust CI
 
-> **Update**: This was completed in [PR #125209] by Jakub Beránek during the planning process!
+> **Update**: Basic work was completed in [PR #125209] by Jakub Beránek during the planning process!
+> We are however still including a team ask of T-compiler to make sure we have agreed around the policy
+> regarding breakage due to unstable features.
 
 [PR #125209]: https://github.com/rust-lang/rust/pull/125209
 
@@ -170,7 +172,7 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 | ~~RFL on Rust CI~~                 |                                    | ![Complete][]     |
 | ↳ ~~implementation ([#125209][])~~ | ~~[Jakub Beránek][]~~              |                   |
 | ↳ policy draft                     | [Jakub Beránek][]                  |                   |
-| ↳ policy approval                  |                                    |                   |
+| ↳ policy approval                  | ![Team][] [Compiler]               |                   |
 | Pointers to static in constants    |                                    |                   |
 | ↳ stabilization proposal           | [nikomatsakis][]                   | ![Funded][]       |
 | ↳ stabilization decision           | ![Team][] [Lang]                   |                   |
