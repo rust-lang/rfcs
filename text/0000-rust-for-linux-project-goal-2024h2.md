@@ -15,10 +15,8 @@ The overall goal is **resolving the biggest blockers to Linux building on stable
 * [stabilizing features for labeled goto in inline assembler and extended `offset_of!` support](#labeled-goto-in-inline-assembler-and-extended-offset_of-support), needed for various bits of low-level coding;
 * [adding Rust For Linux project on Rust CI](#rfl-on-rust-ci), thus ensuring we don't accidentally cause regressions for this highly visible project (done!);
 * [stabilizing support for pointers to statics in constants](#pointers-to-statics-in-constants), permitting the construction of vtables for kernel modules;
-* [code-generation features and compiler options](#code-generation-features-and-compiler-options), allowing Rust to match the compiler flags given to gcc/clang when building the kernel;
-* and, if possible, [stabilize options for building core/alloc with fewer features](#custom-builds-of-corealloc-with-specialized-configuration-options), allowing the kernel to forbid infallible allocation and other aspects of the standard libraries that it does not want (this requires further investigation).
-    
-Approving this goal implies agreement from the [Lang][], [Compiler][], and [Libs-API][] teams to the items marked as ![Team][] in the table of work items, along with potentially other design meetings as needed.
+
+Approving this goal implies agreement from the [Lang][] and [Libs-API][] teams to the items marked as ![Team][] in the table of work items, along with potentially other design meetings as needed.
 
 [Lang]: https://www.rust-lang.org/governance/teams/lang
 [Compiler]: https://www.rust-lang.org/governance/teams/infra
@@ -122,13 +120,13 @@ The ultimate goal is to enable smooth and ergonomic interop between Rust and the
 
 In addition to the work listed above, there are a few other obvious items that the Rust For Linux project needs. If we can find owners for these this year, we could even get them done as a "stretch goal":
 
-### Custom builds of core/alloc with specialized configuration options
-
-The RFL project builds the stdlib with a number of configuration options to eliminate undesired aspects of libcore (listed in [RFL#2][]). They need a standard way to build a custom version of core as well as agreement on the options that the kernel will continue using.
-
 ### Stable sanitizer support
 
 Support for building and using sanitizers, in particular KASAN.
+
+### Custom builds of core/alloc with specialized configuration options
+
+The RFL project builds the stdlib with a number of configuration options to eliminate undesired aspects of libcore (listed in [RFL#2][]). They need a standard way to build a custom version of core as well as agreement on the options that the kernel will continue using.
 
 ### Code-generation features and compiler options
 
@@ -175,17 +173,6 @@ Here is a detailed list of the work to be done and who is expected to do it. Thi
 | Pointers to static in constants                      |                                    |                   |
 | ↳ stabilization proposal                             | [nikomatsakis][]                   | ![Funded][]       |
 | ↳ stabilization decision                             | ![Team][] [Lang]                   |                   |
-| Stable sanitizer support                             | [WesleyWiser][]                    | ![Funded][]       |
-| ↳ stabilization decision                             | ![Team][] [Compiler]               |                   |
-| Code-generation features and compiler options        |                                    |                   |
-| ↳ ~~propose unstable `-Zfixed-x18` flag ([#748][])~~ | ~~[Alice Ryhl][]~~                 | ![Complete][]     |
-| ↳ ~~implement  `-Zfixed-x18` flag ([#124655])~~      | ~~[Alice Ryhl][]~~                 | ![Complete][]     |
-| ↳ stabilization PR for `-Zfixed-x18`                 | [Xiang][]                          | ![Volunteer][]    |
-| ↳ stabilization decision                             | ![Team][] [Compiler]               |                   |
-| ↳ research and summarization for other flags         | ![Help wanted][]                   |                   |
-| Custom builds of core/alloc                          |                                    |                   |
-| ↳ stabilization proposal for subsetting std          |                                    |                   |
-| ↳ stabilize subset of std                            | ![Team][] [Libs-API]               |                   |
 
 [oli-obk]: https://github.com/oli-obk/
 [wesleywiser]: https://github.com/wesleywiser
