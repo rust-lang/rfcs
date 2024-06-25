@@ -256,9 +256,9 @@ $ tree . -a
 
 Currently, cross-crate information is written during the invocation of the `write_shared` function in [write_shared.rs](https://github.com/rust-lang/rust/blob/04ab7b2be0db3e6787f5303285c6b2ee6279868d/src/librustdoc/html/render/write_shared.rs#L47). This proposal does not add any new CCI or change their contents (modulo sorting order, whitespace).
 
-The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of a the CCI.
+The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of the CCI.
 
-## New subdirectory: `<parts out dir>/<crate name>/crate-info.json`
+## New file: `<parts out dir>/<crate name>/crate-info.json`
 
 The `<parts out dir>/<crate name>/crate-info.json` file contains the unmerged contents of a single crates' version of their corresponding CCI. Typically, `<parts out dir>` is selected as `./target/doc.parts`. This file is written if the flag `--write-info-json=<parts out dir>` is provided.
 
@@ -337,6 +337,7 @@ The implementation of the RFC itself is designed to produce only minimal changes
 * Change the sorting order of trait implementations, type implementations, and other cross-crate info in the HTML output of rustdoc
 * Add a comment on the last line of generated HTML pages, to store metadata relevant to appending items to them
 * Refactor the JavaScript contents of cross-crate information files, in ways that do not change their overall behavior. If the JavaScript fragment declared an array called `ALL_CRATES` with certain contents, it will continue to do so.
+
 Changes this minimal are intended to avoid breaking tools that use the output of rustdoc, like Cargo, docs.rs, and rustdoc's JavaScript frontend, in the near-term. Going forward, rustdoc will not make formal guarantees about the content of cross-crate info files.
 
 # Drawbacks
