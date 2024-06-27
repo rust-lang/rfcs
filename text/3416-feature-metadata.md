@@ -2,7 +2,7 @@
 - Start Date: 2023-04-14
 - RFC PR: [rust-lang/rfcs#3416](https://github.com/rust-lang/rfcs/pull/3416)
 - Rust Issue:
-  [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+  [rust-lang/cargo#13576](https://github.com/rust-lang/cargo/issues/13576)
 
 # Summary
 
