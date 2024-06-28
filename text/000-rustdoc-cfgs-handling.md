@@ -222,7 +222,7 @@ Example:
 pub mod desktop {
     #[doc(cfg(not(unix)))]
     pub mod non_unix {
-        //
+        // code
     }
 }
 
@@ -236,6 +236,19 @@ pub use desktop::non_unix as inlined_non_unix_desktop;
 In this example, `non_unix_desktop` will only display `cfg(target_os = "freeebsd")` and not display any `cfg` from `desktop::non_unix`.
 
 On the contrary, `inlined_non_unix_desktop` will have cfgs from both the re-export and the re-exported item.
+
+So that also means that if a crate re-exports a foreign item, unless it has `#[doc(inline)]`, the `cfg` and `doc(cfg)` attributes will not be visible:
+
+```rust
+// dep:
+#[cfg(feature = "a")]
+pub struct S;
+
+// crate using dep:
+
+// There will be no mention of `feature = "a"` in the documentation.
+pub use dep::S as Y;
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
