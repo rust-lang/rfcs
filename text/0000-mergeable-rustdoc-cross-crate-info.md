@@ -48,17 +48,17 @@ rustc --crate-name=s --crate-type=lib --edition=2021 --emit=metadata --out-dir=s
 rustc --crate-name=i --crate-type=lib --edition=2021 --emit=metadata --out-dir=i/target --extern s=s/target/libs.rmeta --extern t=t/target/libt.rmeta -L t/target i/src/lib.rs
 ```
 
-Document `s` and `t` independently, providing `--merge=none` and `--write-info-json=<crate name>/target/doc.parts`
+Document `s` and `t` independently, providing `--merge=none` and `--write-info-json`
 
 ```shell
-rustdoc -Z unstable-options --crate-name=t --crate-type=lib --edition=2021 --out-dir=t/target/doc --extern-html-root-url t=$(MERGED) --merge=none --write-info-json=t/target/doc.parts t/src/lib.rs
-rustdoc -Z unstable-options --crate-name=s --crate-type=lib --edition=2021 --out-dir=s/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --merge=none --write-info-json=t/target/doc.parts --extern t=t/target/libt.rmeta s/src/lib.rs
+rustdoc -Z unstable-options --crate-name=t --crate-type=lib --edition=2021 --out-dir=t/target/doc --extern-html-root-url t=$(MERGED) --merge=none --write-info-json=t/target/doc.parts/t/crate-info.json t/src/lib.rs
+rustdoc -Z unstable-options --crate-name=s --crate-type=lib --edition=2021 --out-dir=s/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --merge=none --write-info-json=s/target/doc.parts/s/crate-info.json --extern t=t/target/libt.rmeta s/src/lib.rs
 ```
 
 Link everything with a final invocation of rustdoc on `i`. We will provide `--merge=write-only` and `--include-info-json=<path>`. See the Reference-level explanation about these flags.
 
 ```shell
-rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021 --enable-index-page --out-dir=i/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --extern-html-root-url i=$(MERGED) --merge=write-only --include-info-json t=t/target/doc.parts --include-info-json s=s/target/doc.parts --extern t=t/target/libt.rmeta --extern s=s/target/libs.rmeta -L t/target i/src/lib.rs
+rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021 --enable-index-page --out-dir=i/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --extern-html-root-url i=$(MERGED) --merge=write-only --include-info-json=t/target/doc.parts/t/crate-info.json --include-info-json=s/target/doc.parts/s/crate-info.json --extern t=t/target/libt.rmeta --extern s=s/target/libs.rmeta -L t/target i/src/lib.rs
 ```
 
 Merge the docs with `cp`. This can be avoided if `--out-dir=$(MERGED)` is used for all of the rustdoc calls. We copy here to illustrate that documenting `s` is independent of documenting `t`, and could happen on separate machines.
@@ -258,9 +258,9 @@ Currently, cross-crate information is written during the invocation of the `writ
 
 The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of the CCI.
 
-## New file: `<parts out dir>/<crate name>/crate-info.json`
+## New file: `crate-info.json`
 
-The `<parts out dir>/<crate name>/crate-info.json` file contains the unmerged contents of a single crates' version of their corresponding CCI. Typically, `<parts out dir>` is selected as `./target/doc.parts`. This file is written if the flag `--write-info-json=<parts out dir>` is provided.
+The `crate-info.json` file contains the unmerged contents of a single crates' version of their corresponding CCI. This file is written if the flag `--write-info-json=path/to/crate-info.json` is provided.
 
 `crate-info.json` is a JSON object with several key-value pairs. Every value is a JSON array. Every element of the JSON array is a two-element array: a destination filename relative to the doc root, and the representation of the part. The representation of the part depends on the type of CCI that it describes.
 
@@ -288,21 +288,21 @@ This part is a two element array with the crate name and the JSON representation
 
 This part is a two element array with the crate name and the JSON representation of a trait implementation.
 
-## New flag: `--write-info-json=<path>`
+## New flag: `--write-info-json=path/to/crate-info.json`
 
-When this flag is provided, the unmerged parts for the current crate will be written to `<path>/<crate name>/crate-info.json`. A typical `<path>` is `./target/doc.parts`.
+When this flag is provided, the unmerged parts for the current crate will be written to `path/to/crate-info.json`. A typical `<path to crate-info.json>` is `./target/doc.parts/<crate name>/crate-info.json`.
 
 Crates `--include-info-json`ed will not appear in `crate-info.json`, as `crate-info.json` only includes the CCI parts for the current crate.
 
 If this flag is not provided, no `crate-info.json` will be written.
 
-## New flag: `--include-info-json <crate name>=<path>`
+## New flag: `--include-info-json=path/to/crate-info.json`
 
-If this flag is provided, rustdoc will expect `<path>/<crate name>/crate-info.json` to contain the parts for `<crate name>`. It will append these parts to the ones it will render in the doc root (`--out-dir`). This info is not written to `crate-info.json`, as `crate-info.json` only holds the CCI parts for the current crate.
+If this flag is provided, rustdoc will expect `path/to/crate-info.json` to be the `crate-info.json` file containing the parts for a crate. It will append these parts to the ones it will render in the doc root (`--out-dir`). The info that's included is not written to `crate-info.json`, as `crate-info.json` only holds the CCI parts for the current crate.
 
-This flag is similar to `--extern-html-root-url` in that it only applies to externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-info-json` tells rustdoc where to search for the `crate-info.json` directory at documentation-time. It must not be a URL.
+This flag is similar to `--extern-html-root-url` in that it only needs to be provided for externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-info-json` tells rustdoc where to search for the `crate-info.json` directory at documentation-time. It must not be a URL.
 
-In the Guide-level explanation, for example, crate `i` needs to identify the location of `s`'s parts. Since they could be located in an arbitrary directory, `i` must be instructed on where to fetch them. In this example, `s`'s parts happen to be in `./s/target/doc.parts/s`, so rustdoc is called with `--include-info-json s=s/target/doc.parts`.
+In the Guide-level explanation, for example, crate `i` needs to identify the location of `s`'s parts. Since they could be located in an arbitrary directory, `i` must be instructed on where to fetch them. In this example, `s`'s parts happen to be in `./s/target/doc.parts/s`, so rustdoc is called with `--include-info-json=s/target/doc.parts/s/crate-info.json`.
 
 ## New flag: `--merge=auto|none|write-only`
 
@@ -314,7 +314,7 @@ When `read_rendered_cci` is active, rustdoc will look in the `--out-dir` for ren
 
 * `--merge=auto` (`read_rendered_cci && write_rendered_cci`) is the default, and reflects the current behavior of rustdoc. 
 * `--merge=none` (`!read_rendered_cci && !write_rendered_cci`) means that rustdoc will ignore the cross-crate files in the doc root. Only generate item docs. 
-* `--merge=write-only` (`!read_rendered_cci && write_rendered_cci`) only outputs item docs that are based on the current crate and `--include-info-json`'ed crates.
+* `--merge=write-only` (`!read_rendered_cci && write_rendered_cci`) outputs crate info based only on the current crate and `--include-info-json`'ed crates.
 * A (`read_rendered_cci && !write_rendered_cci`) mode would be useless, since the data that is read would be ignored and not written.
 
 ## Merge step
@@ -397,7 +397,7 @@ The proposition, to allow users of rustdoc the flexibility of not having to prod
 Generate no extra files (current) vs. unconditionally creating `doc.parts` to enable more complex future CCI (should consider)
 
 The current version of rustdoc performs merging by [collecting JSON](https://github.com/rust-lang/rust/blob/c25ac9d6cc285e57e1176dc2da6848b9d0163810/src/librustdoc/html/render/write_shared.rs#L166) blobs from the contents of the already-rendered CCI.
-This proposal proposes to continue reading from the rendered cross-crate information under the default `--merge=auto`. It can also read `doc.parts` files, under `--include-info-json`. However, there are several issues with reading from the rendered CCI that must be stated:
+This proposal proposes to continue reading from the rendered cross-crate information under the default `--merge=auto`. It can also read `crate-info.json` files, under `--include-info-json`. However, there are several issues with reading from the rendered CCI that must be stated:
 * Every rustdoc process outputs the CCI to the same doc root by default
 * It is difficult to extract the items in a diverse set of rendered HTML files. This is anticipating of the CCI to include HTML files that, for example, statically include type+trait implementations directly
 * Reading exclusively from `crate-info.json` is simpler than the existing `serde_json` dependency for extracting the blobs, as opposed to handwritten CCI-type specific parsing (current)
