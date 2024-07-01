@@ -2,7 +2,7 @@
 [^rework]: This RFC reworks the "async closures" section of [RFC 2394]
 [^plural]: The original feature name was not pluralized, and though it'd be more correct in the plural, it's probably too late to change at this point.
 - Start Date: 2024-06-25
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3668](https://github.com/rust-lang/rfcs/pull/3668)
 - Tracking Issue: [rust-lang/rust#62290](https://github.com/rust-lang/rust/issues/62290)
 
 [RFC 2394]: https://rust-lang.github.io/rfcs/2394-async_await.html#async--closures
