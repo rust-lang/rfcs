@@ -274,9 +274,28 @@ let _: Box<dyn async Fn()> = todo!();
 
 All currently-stable callable types (i.e., closures, function items, function pointers, and `dyn Fn*` trait objects) automatically implement `async Fn*() -> T` if they implement `Fn*() -> Fut` for some output type `Fut`, and `Fut` implements `Future<Output = T>`.
 
-Async closures also implement `async Fn*()`, but their relationship to this trait is detailed later in the RFC.
+This is to make sure that `async Fn*()` trait bounds have maximum compatibility with existing callable types which return futures, such as async function items and closures which return boxed futures. These implementations are built-in, but can conceptually be understood as:
 
-Some stable types that would implement `async Fn()` today include, e.g.:
+```rust
+impl<F, Args, Fut, T> AsyncFnOnce<Args> for F
+where
+    F: FnOnce<A, Output = Fut>,
+    Fut: Future<Output = T>,
+{
+    type Output = T;
+    type CallOnceFuture = Fut;
+
+    fn async_call_once(self, args: Args) -> Self::CallOnceFuture {
+        FnOnce::call_once(self, args)
+    }
+}
+```
+
+And similarly for `AsyncFnMut` and `AsyncFn`, with the appropriate `FnMut` and `Fn` trait bounds, respectively. 
+
+Async closures also implement `async Fn*()`, but their relationship to this trait is detailed later in the RFC. The reason that all of these bounds (for regular callable types *and* async closures) are built-in is because these blanket impls would overlap with the built-in implementation of `AsyncFn*` for async closures, which must have distinct implementations to support self-borrowing futures.
+
+Some stable types that implement `async Fn()` today include, e.g.:
 
 ```rust!
 // Async functions:
