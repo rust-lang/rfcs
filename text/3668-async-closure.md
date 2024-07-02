@@ -10,7 +10,7 @@
 # Summary
 [summary]: #summary
 
-This RFC adds an `async` bound modifier to the `Fn` family of trait bounds.  The combination desugars to a set of perma-unstable `AsyncFn{,Mut,Once}` traits that parallel the current `Fn{,Mut,Once}` traits.
+This RFC adds an `async` bound modifier to the `Fn` family of trait bounds.  The combination desugars to a set of unstable `AsyncFn{,Mut,Once}` traits that parallel the current `Fn{,Mut,Once}` traits.
 
 These traits give users the ability to express bounds for async callable types that are higher-ranked, and allow async closures to return futures which borrow from the closure's captures.
 
@@ -146,7 +146,7 @@ When called, they return an anonymous future type corresponding to the (not-yet-
 
 ### `AsyncFn*`
 
-This RFC introduces a family of `AsyncFn` traits. These traits are intended to remain perma-unstable to name or implement, just like the `Fn` traits. Nonetheless, we'll describe the details of these traits so as to explain the user-facing features enabled by them.
+This RFC introduces a family of `AsyncFn` traits. These traits are intended to remain unstable to name or implement, just like the `Fn` traits. Nonetheless, we'll describe the details of these traits so as to explain the user-facing features enabled by them.
 
 The definition of the traits is (modulo `rustc_` attributes, and the `"rust-call"` ABI):
 
@@ -555,7 +555,7 @@ This shouldn't be too difficult to support, and we can unify these further by mo
 
 There has been previous discussion of allowing `async` trait bounds on arbitrary traits, possibly based off a `?async` maybe-async genericity system.
 
-This RFC neither requires this more general extension to the language to be implemented, nor does it necessarily preclude this being an eventual possibility, since `AsyncFn*` remains perma-unstable to implement.
+This RFC neither requires this more general extension to the language to be implemented, nor does it necessarily preclude this being an eventual possibility, since `AsyncFn*` remains unstable to implement.
 
 ### Making `async Fn()` object-safe
 
