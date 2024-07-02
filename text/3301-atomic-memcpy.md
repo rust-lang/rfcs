@@ -67,14 +67,16 @@ all use a regular non-atomic write (preceded by an atomic fence) for writing,
 and `ptr::read_volatile` (followed by an atomic fence) for reading.
 This "works" "fine", but is technically undefined behavior.
 
-The C++ and Rust memory model don't allow for data races,
-so don't allow for a data race to be detected after the fact;
+The C++ and Rust memory model doesn't allow for data races,
+so doesn't allow for a data race to be detected after the fact;
 that's too late.
 
 All of the data would have to be written and read through
-atomic operations to prevent such a data race.
+atomic operations to prevent a data race.
 We don't need the atomicity of the data as a whole though;
 it's fine if there's tearing, since we re-start on a race anyway.
+
+Additionally, memory fences technically only "interact" with atomic operations, not with volatile operations.
 
 # The C++ Solution
 
@@ -205,7 +207,7 @@ The slice functions panic if the slices are not of the same length.
 - Require `T: Copy` for `AtomicPerByte<T>`, such that we don't need to worry about
   duplicating non-`Copy` data.
 
-  There might be valid use cases with non-`Copy` data.
+  There are valid use cases with non-`Copy` data, though, such as [in crossbeam-deque](https://github.com/crossbeam-rs/crossbeam/blob/2d9e7e0f81d3dd3efb1975b6379ea8b05fcf9bdd/crossbeam-deque/src/deque.rs#L60-L78).
   Also, not all "memcpy'able" data is always marked as `Copy` (e.g. to prevent implicit copies).
 
 - Leave this to the ecosystem, outside of the standard library.
@@ -213,6 +215,20 @@ The slice functions panic if the slices are not of the same length.
   Since this requires special compiler support, a community crate would
   have to use (platform specific) inline assembly
   or (probably technically unsound) hacks like volatile operations.
+
+- Use a new `MaybeTorn<T>` instead of `MaybeUninit<T>`.
+
+  `AtomicPerByte` doesn't _have_ to support uninitialized bytes,
+  but it does need a wrapper type to represent potentially torn values.
+
+  If Rust had a `MaybeTorn<T>`, we could make it possible to load types like `[bool; _]` or even `f32` without any unsafe code,
+  since, for those types, combining bytes from different values always results in a valid value.
+
+  However, the use cases for this are very limited, it would require a new trait to mark the types for which this is valid,
+  and it makes the API a lot more complicated or verbose to use.
+
+  Also, such a API for safely handling torn values can be built on top of the proposed API,
+  so we can leave that to a (niche) ecosystem crate.
 
 # Unresolved questions
 
