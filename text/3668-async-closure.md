@@ -34,7 +34,7 @@ Users often employ `Fn()` trait bounds to write more functional code and reduce 
 [^alloc]: Or return a concrete future type, like `F: Fn() -> Pin<Box<dyn Future<Output = T>>>`.
 
 ```rust
-async fn for_each_city(mut f: F)
+async fn for_each_city<F, Fut>(mut f: F)
 where
     F: for<'c> FnMut(&'c str) -> Fut,
     Fut: Future<Output = ()>,
@@ -293,7 +293,7 @@ Notably, we can now express higher-ranked async callback bounds:
 
 ```rust
 // We could also use APIT: `mut f: impl async FnMut(&str)`.
-async fn for_each_city(mut f: F)
+async fn for_each_city<F>(mut f: F)
 where
     F: async FnMut(&str),
 //     ...which is sugar for:
@@ -532,7 +532,7 @@ We should be able to detect when users write `|| async {}` -- and subsequently h
 A similar problem could occur if users try to write "old style" trait bounds with two generic parameters `F: Fn() -> Fut` and `Fut: Future<Output = T>`.  For example:
 
 ```rust!
-async fn for_each_city(cb: F)
+async fn for_each_city<F, Fut>(cb: F)
 where
     F: Fn(&str) -> Fut,
     Fut: Future<Output = ()>,
