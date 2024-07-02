@@ -253,7 +253,7 @@ This RFC specifies the modification to the _TraitBound_ nonterminal in the gramm
 > &nbsp;&nbsp;&nbsp;&nbsp;`async`<sup>?</sup> `?`<sup>?</sup> _ForLifetimes_<sup>?</sup> _TypePath_\
 > &nbsp;&nbsp;| `(` `async`<sup>?</sup> `?`<sup>?</sup> _ForLifetimes_<sup>?</sup> _TypePath_ `)`
 
-**note**: The grammar specifies that any `for<'a>` higher-ranked lifetimes come *after* the `?` trait polarity. This seems inconsistent, but should be changed independently from this RFC. There's an open question about how to deal with the ordering problem of `?`, `for<'a>`, and `async`, or we want to separate `async` traits into their own production rule.
+**note**: The grammar specifies that any `for<'a>` higher-ranked lifetimes come *after* the `?` trait polarity. This seems inconsistent, but should be changed independently from this RFC. There's an open question about how to deal with the ordering problem of `?`, `for<'a>`, and `async`, or if we want to separate `async` traits into their own production rule that enforces the right ordering of `for<'a> async`.
 
 Since the grammar doesn't distinguish parenthesized and angle-bracketed generics in `_TypePath_`, `async` as a trait bound modifier will be **accepted** in all trait bounds at _parsing_ time, but it will be **rejected** by the compiler _post-expansion_ if it's not attached to a parenthesized `Fn()` trait bound. Similarly, the combination of `async` and `?` is syntactically valid but semantically invalid, and will be rejected by the compiler post-expansion.
 
