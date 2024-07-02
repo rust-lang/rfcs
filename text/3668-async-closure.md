@@ -250,8 +250,10 @@ This RFC specifies the modification to the _TraitBound_ nonterminal in the gramm
 
 > **<sup>Syntax</sup>**
 > _TraitBound_ :
-> &nbsp;&nbsp;&nbsp;&nbsp;`?`<sup>?</sup> _ForLifetimes_<sup>?</sup> `async`<sup>?</sup> _TypePath_\
-> &nbsp;&nbsp;| `(` `?`<sup>?</sup> _ForLifetimes_<sup>?</sup> `async`<sup>?</sup> _TypePath_ `)`
+> &nbsp;&nbsp;&nbsp;&nbsp;`async`<sup>?</sup> `?`<sup>?</sup> _ForLifetimes_<sup>?</sup> _TypePath_\
+> &nbsp;&nbsp;| `(` `async`<sup>?</sup> `?`<sup>?</sup> _ForLifetimes_<sup>?</sup> _TypePath_ `)`
+
+**note**: The grammar specifies that any `for<'a>` higher-ranked lifetimes come *after* the `?` trait polarity. This seems inconsistent, but should be changed independently from this RFC. There's an open question about how to deal with the ordering problem of `?`, `for<'a>`, and `async`, or we want to separate `async` traits into their own production rule.
 
 Since the grammar doesn't distinguish parenthesized and angle-bracketed generics in `_TypePath_`, `async` as a trait bound modifier will be **accepted** in all trait bounds at _parsing_ time, but it will be **denied** by the compiler _post-expansion_ if it's not attached to a parenthesized `Fn()` trait bound.
 
@@ -583,7 +585,15 @@ Fixing this is a follow-up goal that we're interested in pursuing in the near fu
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-We leave no language questions unresolved in this RFC.
+### `? for<'a>` and its interaction with `async`
+
+Currently on nightly, we parse the `async` trait bound modifier along with `?` (called polarity) *before* the `for<'a>` lifetime binders. This probably should get fixed so that the binder occurs on the *outside* of the trait, like so:
+
+```
+where T: for<'a> async ?Trait
+```
+
+(Which is semantically invalid but syntactically valid.) This is currently proposed in [rust-lang/rust#127054](https://github.com/rust-lang/rust/pull/127054), which should be decided before stabilization, and the stabilization report can re-confirm the correct ordering of `for<'a>` and `async`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
