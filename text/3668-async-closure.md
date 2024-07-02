@@ -125,7 +125,7 @@ takes_async_closure(async |i| {
 });
 ```
 
-We recommend using `async Fn` and `async ||` for async closures. This is more flexible than a closure returning a future for the reasons described elsewhere in this RFC.
+We recommend using `async Fn()`/`async FnMut()`/`async FnOnce()` and `async ||` for async closures. This is more flexible than a closure returning a future for the reasons described elsewhere in this RFC.
 
 Async closures act similarly to closures, and can have parts of their their signatures specified:
 
@@ -141,6 +141,26 @@ let hr = async |x: &str| { do_something(x).await };
 ```
 
 When called, they return an anonymous future type corresponding to the (not-yet-executed) body of the closure. These can be awaited like any other future.
+
+The `async Fn` trait bound syntax can be used anywhere a trait bound is allowed, such as:
+
+```rust
+/// In return-position impl trait:
+fn closure() -> impl async Fn() { async || {} }
+
+/// In trait bounds:
+trait Foo<F>: Sized
+where
+    F: async Fn()
+{
+    fn new(f: F) -> Self;
+}
+
+/// in GATs:
+trait Gat {
+    type AsyncHasher<T>: async Fn(T) -> i32;
+}
+```
 
 # Detailed Explanation
 
@@ -409,7 +429,7 @@ error[E0277]: cannot be sent between threads safely
     |     required by a bound introduced by this call
 ```
 
-When the RTN RFC is accepted, this RFC specifies that users will be allowed to add RTN-like bounds to type parameters that are also bounded by `async Fn()`, like so:
+With the acceptance of the RTN (return-type notation) [RFC 3654](https://github.com/rust-lang/rfcs/pull/3654), this RFC specifies that users will be allowed to add RTN-like bounds to type parameters that are also bounded by `async Fn()`. Concretely, this bound expands to bound both `CallOnceFuture` and `CallRefFuture` (if the latter exists):
 
 ```rust
 async fn foo(x: F) -> Result<()>
@@ -417,6 +437,10 @@ where
     F: async Fn(&str) -> Result<()>,
     // The future from calling `F` is `Send` and `'static`.
     F(..): Send + 'static,
+    // Which expands to two bounds:
+    // `for<'a> <F as AsyncFnMut>::CallRefFuture<'a>: Send`
+    // `<F as AsyncFnOnce>::CallOnceFuture: Send`
+    // the latter is only if `F` is bounded with `async Fn` or `async FnMut`.
 {
     tokio::spawn(x("hello, world")).await
 }
