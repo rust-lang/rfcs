@@ -193,7 +193,34 @@ pub trait AsyncFn<Args>: AsyncFnMut<Args> {
 
 ### Associated types of `AsyncFn*` traits are not nameable
 
-Note that, unlike what is true today with the current `Fn*` traits, this RFC reserves as an implementation detail the associates types of the `AsyncFn*` traits, and these will not be nameable as part of the stable interface specified by this RFC.
+Unlike what is true today with the current `Fn*` traits, this RFC reserves as an implementation detail the associated types of the `AsyncFn*` traits, and these will not be nameable as part of the stable interface specified by this RFC.
+
+That is, using the existing `FnOnce` trait, we can write this today on stable Rust:
+
+```rust
+fn foo<F, T>()
+where
+    F: FnOnce() -> T,
+    F::Output: Send, //~ OK
+{
+}
+```
+
+(We decided to allow this in [#34365](https://github.com/rust-lang/rust/pull/34365).)
+
+However, this RFC reserves as an implementation detail the associated types of the traits specified above, so this does not work:
+
+```rust
+fn foo<F, T>()
+where
+    F: async FnOnce() -> T,
+    F::Output: Send,
+    //~^ ERROR use of unstable library feature
+    F::CallOnceFuture: Send,
+    //~^ ERROR use of unstable library feature
+{
+}
+```
 
 ### `async` bound modifier on `Fn()` trait bounds
 
