@@ -125,7 +125,7 @@ takes_async_closure(async |i| {
 });
 ```
 
-We recommend using `async Fn()`/`async FnMut()`/`async FnOnce()` and `async ||` for async closures. This is more flexible than a closure returning a future for the reasons described elsewhere in this RFC.
+We recommend for users to write `async Fn()`/`async FnMut()`/`async FnOnce()` and `async ||` for async closures. This is more flexible than a closure returning a future for the reasons described elsewhere in this RFC.
 
 Async closures act similarly to closures, and can have parts of their their signatures specified:
 
