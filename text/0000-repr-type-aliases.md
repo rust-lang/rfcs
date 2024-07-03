@@ -39,7 +39,7 @@ You can use any type alias in the `repr` attribute, but it *must* be an alias to
 
 The `repr` attribute now accepts a `discriminant = ...` argument to indicate an arbitrary type instead of a well-known primitive type. It accepts both fully-resolved types (including all necessary generics) as well as macros that expand to types.
 
-If the resulting type resolves to a type alias to a valid primitive type which can be used in the `repr` attribute, that will be used as the actual discriminant representation. Otherwise, the result is an error.
+If the resulting type resolves to a type alias to a valid primitive type which can be used in the `repr` attribute, that will be used as the actual discriminant representation. Otherwise, the result is an error which states that only primitive types and type aliases to them are allowed.
 
 An automatically-applicable lint should be added that warns a user if a `repr` argument is invalid but references in an-scope type alias without the `discriminant = ` prefix. (For example, `#[repr(MyType)]` becomes `#[repr(discriminant = MyType)]`, but `#[repr(C)]` does not warn even if an alias `C` is in scope.)
 
@@ -104,6 +104,7 @@ In the future, more potential discriminant types could be added which might be u
 * `repr(transparent)` structs over valid types
 * Floating-point primitives
 * `char` or other restricted primitives like `NonZeroU*` and `NonZeroI*`
+* Arbitrary `StructuralEq` types
 
 Of course, all of these would require larger changes to the compiler than the ones proposed, and are currently left as future extensions.
 
