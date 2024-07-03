@@ -79,6 +79,23 @@ Match ergonomics works a little differently in edition 2024 and above.
 //let (x, mut y) = &(true, false); // ERROR
 ```
 
+## `&` matches against `&mut`
+
+On all editions, `&` patterns can match against `&mut` references. On edition
+2024 and above, this includes "inherited" references as described below.
+
+```rust
+//! All editions
+let &foo = &mut 42;
+let _: u8 = foo;
+```
+
+```rust
+//! Edition ≥ 2024
+let [&foo] = &mut [42];
+let _: u8 = foo;
+```
+
 ## Matching against inherited references
 
 In all editions, when you match against an `&` or `&mut` reference with the type
@@ -111,23 +128,6 @@ fn foo(arg: &(String, Vec<i32>, u8)) {
 
 let [&x] = &[&42];
 let _: &u8 = x;
-```
-
-## `&` matches against `&mut`
-
-On all editions, `&` patterns can match against `&mut` references (on edition
-2024 and above, this includes "inherited" references).
-
-```rust
-//! All editions
-let &foo = &mut 42;
-let _: u8 = foo;
-```
-
-```rust
-//! Edition ≥ 2024
-let [&foo] = &mut [42];
-let _: u8 = foo;
 ```
 
 # Reference-level explanation
@@ -201,13 +201,17 @@ let _: u8 = a;
 //let &b = 17; // ERROR
 ```
 
-If the default binding mode is `ref`, then `&mut` patterns are forbidden. If it
-is by-value, then they have the same effect as on older editions.
+If the default binding mode is `ref`, then `&mut` patterns will not be able to
+match against it, so they will match structurally instead (preserving the
+binding mode).
 
 ```rust
 //! Edition ≥ 2024
-//let [&mut x] = &[&mut 42]; // ERROR
+let [&mut x] = &[&mut 42];
+let _: &u8 = x;
 ```
+
+`&mut` patterns are otherwise unchanged.
 
 ```rust
 //! All editions
@@ -490,25 +494,26 @@ fully compatible with proposals for "deref patterns", including allowing
 question that would need to be resolved is whether and how deref patterns
 (explicit or implicit) affect the default binding mode.
 
-## Matching `&mut` behind `&`
+## Matching `&mut` directly behind `&`
 
 There is one notable situation where match ergonomics cannot be used, and
 explicit `ref` is required. This happens where `&mut` is nested behind `&`:
 
 ```rust
 // No way to avoid the `ref`, even with this RFC
-let &[&mut ref x] = &[&mut 42]; // x: &i32
+let &&mut ref x = &&mut 42; // x: &i32
 ```
 
 There are two strategies we could take to support this:
 
-- `&mut` patterns could match "behind" `&`. For example, in `let [&mut x] = &[&mut 42];`,
-  the `&mut` pattern would match the `&mut` reference in the scrutinee, leaving
-  `&` to be inherited and resulting in `x: &i32`.
+- `&mut` patterns could “strip off” outer `&`. For example, in
+  `let &mut x = &&mut 42;`, the `&mut` pattern would match the `&mut` reference
+  in the scrutinee, leaving `&` to be inherited and resulting in `x: &i32`.
   - This may not extend gracefully to future language features (partial borrows,
-    for example) as it relies on reference types forming a total order.
+    for example) as it potentially relies on reference types forming a total
+    order.
 - The compiler could insert `&mut ref` in front of identifier patterns of type
-  `&mut` that are behind an `&` pattern. For example, `let &[x] = &[&mut 42];`
-  would be transformed into `let &[&mut ref x] = &[&mut 42];`.
+  `&mut` that are behind an `&` pattern. For example, `let &x = &&mut 42;` would
+  be transformed into `let &&mut ref x = &&mut 42;`.
   - The full desugaring would be more complicated, as it would need to handle
     `@` patterns.
