@@ -303,7 +303,7 @@ The reason that these implementations are built-in is because using blanket impl
 
 Some stable types that implement `async Fn()` today include, e.g.:
 
-```rust!
+```rust
 // Async functions:
 async fn foo() {}
 
@@ -361,7 +361,7 @@ The closure captures `vec` with some `&'closure mut Vec<String>` which lives unt
 
 As another example:
 
-```rust!
+```rust
 let string: String = "Hello, world".into();
 
 let closure = async move || {
@@ -510,13 +510,13 @@ These limitations, plus the fact that the underlying trait should have no effect
 
 `async ||` is analogous with `async fn`, and has an intuitive, first-class way to declare the return type of the future:
 
-```rust!
+```rust
 let c = async || -> i32 { 0 };
 ```
 
 There isn't currently a way to annotate the future's return type in a closure that returns a future:
 
-```rust!
+```rust
 let c = || -> /* ??? */ async { 0 };
 ```
 
@@ -524,7 +524,7 @@ We could reuse `impl Future` to give users the ability to annotate the type of t
 
 This also would have subtle limitations, e.g.:
 
-```rust!
+```rust
 // Easy to reanalyze as an async closure.
 let _ = || async { do_stuff().await };
 
@@ -556,7 +556,7 @@ We should be able to detect when users write `|| async {}` -- and subsequently h
 
 A similar problem could occur if users try to write "old style" trait bounds with two generic parameters `F: Fn() -> Fut` and `Fut: Future<Output = T>`.  For example:
 
-```rust!
+```rust
 async fn for_each_city<F, Fut>(cb: F)
 where
     F: Fn(&str) -> Fut,
