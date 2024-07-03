@@ -171,14 +171,14 @@ impl<T> AtomicPerByte<T> {
     pub const fn new(value: T) -> Self;
     pub const fn uninit() -> Self;
 
-    pub fn load(&self, ordering: Ordering) -> MaybeUninit<T>;
     pub fn store(&self, value: T, ordering: Ordering);
+    pub fn load(&self, ordering: Ordering) -> MaybeUninit<T>;
 
-    pub fn load_to(&self, dest: &mut MaybeUninit<T>, ordering: Ordering);
     pub fn store_from(&self, src: &MaybeUninit<T>, ordering: Ordering);
+    pub fn load_to(&self, dest: &mut MaybeUninit<T>, ordering: Ordering);
 
-    pub fn load_to_slice(this: &[Self], dest: &mut [MaybeUninit<T>], ordering: Ordering);
     pub fn store_from_slice(this: &[Self], src: &[MaybeUninit<T>], ordering: Ordering);
+    pub fn load_to_slice(this: &[Self], dest: &mut [MaybeUninit<T>], ordering: Ordering);
 
     pub const fn into_inner(self) -> MaybeUninit<T>;
 
@@ -193,12 +193,11 @@ impl<T> AtomicPerByte<T> {
 }
 
 impl<T> Debug for AtomicPerByte<T>;
-impl<T> From<T> for AtomicPerByte<T>;
 impl<T> From<MaybeUninit<T>> for AtomicPerByte<T>;
 ```
 
 Note how the entire interface is safe.
-All potential unsafety is captured by using `MaybeUninit`.
+All potential unsafety is captured by the use of `MaybeUninit`.
 
 The load functions panic if the `ordering` is not `Relaxed` or `Acquire`.
 The store functions panic if the `ordering` is not `Relaxed` or `Release`.
@@ -212,7 +211,9 @@ The slice functions panic if the slices are not of the same length.
 - It's not immediately obvious this type behaves like a `MaybeUninit`,
   making it easy to forget to manually drop any values that implement `Drop`.
 
-  This could be solved by requiring `T: Copy`, or by using a better name for this type.
+  This could be solved by requiring `T: Copy`, or by using a better name for this type. (See alternatives below.)
+
+  Very clear documentation might be enough, though.
 
 - `MaybeUninit<T>` today isn't as ergonomic as it should be.
 
