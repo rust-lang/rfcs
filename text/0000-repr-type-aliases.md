@@ -87,7 +87,9 @@ In future editions, we could either:
 # Prior art
 [prior-art]: #prior-art
 
-No known prior art exists.
+This was previously suggested in [#1605] and was rejected at the time. The primary reasoning at the time was due to the lack of advanced syntax in attributes which were able to support this feature, which is no longer the case; the compiler has improved a lot in 8 years!
+
+[#1605]: https://github.com/rust-lang/rfcs/pull/1605
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
