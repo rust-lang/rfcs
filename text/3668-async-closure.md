@@ -276,7 +276,7 @@ let _: Box<dyn async Fn()> = todo!();
 
 All currently-stable callable types (i.e., closures, function items, function pointers, and `dyn Fn*` trait objects) automatically implement `async Fn*() -> T` if they implement `Fn*() -> Fut` for some output type `Fut`, and `Fut` implements `Future<Output = T>`.
 
-This is to make sure that `async Fn*()` trait bounds have maximum compatibility with existing callable types which return futures, such as async function items and closures which return boxed futures. Async closures also implement `async Fn*()`, but their relationship to this trait is detailed later in the RFC.
+This is to make sure that `async Fn*()` trait bounds have maximum compatibility with existing callable types which return futures, such as async function items and closures which return boxed futures. Async closures also implement `async Fn*()`, but their relationship to this trait is detailed later in the RFC -- specifically the relationship between the `CallRefFuture` and `CallOnceFuture` associated types.
 
 These implementations are built-in, but can conceptually be understood as:
 
@@ -406,7 +406,9 @@ let _ = async move || {
 
 #### Specifics about the `AsyncFnOnce` implementation, interaction with `move`
 
-If the closure is inferred to be `async Fn` or `async FnMut`, then the compiler will synthesize an `async FnOnce` implementation for the closure which returns a future that doesn't borrow any captured values from the closure, but instead *moves* the captured values into the future.
+If the closure is inferred to be `async Fn` or `async FnMut`, then the compiler will synthesize an `async FnOnce` implementation for the closure which returns a future that doesn't borrow any captured values from the closure, but instead *moves* the captured values into the future. Synthesizing a distinct future that is returned by `async FnOnce` is necessary because the trait *consumes* the closure when it is called (evident from the `self` receiver type in the method signature), meaning that a self-borrowing future would have references to dropped data. This is an interesting problem described in more detail in [compiler-errors' blog post written on async closures][blog post].
+
+This is reflected in the fact that `AsyncFnOnce::CallOnceFuture` is a distinct type from `AsyncFnMut::CallRefFuture`. While the latter is a generic-associated-type (GAT) due to supporting self-borrows of the called async closure, the former is not, since it must own all of the captures mentioned in the async closures' body.
 
 For example:
 
@@ -431,6 +433,8 @@ fut.await;
 // After the future is awaited, it's dropped.  At that
 // point, the allocation for `s` is dropped.
 ```
+
+Importantly, although these are distinct futures, they still have the same `Output` type (in other words, their futures await to the same type), and for types that have `async Fn*` implementations, the two future types *execute* identically, since they execute the same future body. They only differ in their captures.
 
 ### Interaction with return-type notation, naming the future returned by calling
 
@@ -478,7 +482,11 @@ This bound is only valid if there is a corresponding `async Fn*()` trait bound.
 
 ### Why do we need a new set of `AsyncFn*` traits?
 
-As demonstrated in the motivation section, we need a set of traits that are *lending* in order to represent futures which borrow from the closure's captures. We technically only need to add `LendingFn` and `LendingFnMut` to our lattice of `Fn*` traits, leaving us with a hierarchy of traits like so:
+As demonstrated in the motivation section, we need a set of traits that are *lending* in order to represent futures which borrow from the closure's captures. This is described in more detail in [a blog post written on async closures][blog post].
+
+[blog post]: https://hackmd.io/@compiler-errors/async-closures
+
+We technically only need to add `LendingFn` and `LendingFnMut` to our lattice of `Fn*` traits to support the specifics about async closures' self-borrowing pattern, leaving us with a hierarchy of traits like so:
 
 ```mermaid
 flowchart LR
@@ -496,6 +504,16 @@ LendingFn -- isa --> LendingFnMut
 
 Fn -- isa --> LendingFn
 FnMut -- isa --> LendingFnMut
+```
+
+In this case, `async Fn()` would desugar to a `LendingFnMut` trait bound and a `FnOnce` trait bound, like:
+
+```rust
+where F: async Fn() -> i32
+
+// is
+
+where F: for<'s> LendingFn<LendingOutput<'s>: Future<Output = i32>> + FnOnce<Output: Future<Output = i32>>
 ```
 
 However, there are some concrete technical implementation details that limit our ability to use `LendingFn` ergonomically in the compiler today. These have to do with:
@@ -623,3 +641,17 @@ let handlers: HashMap<Id, Box<dyn async Fn()>> = todo!();
 ```
 
 This work will likely take a similar approach to making `async fn` in traits object-safe, since the major problem is how to "erase" the future returned by the async closure or callable, which differs for each implementation of the trait.
+
+### Changing the underlying definition to use `LendingFn*`
+
+As mentioned above, `async Fn*()` trait bounds can be adjusted to desugar to `LendingFn*` + `FnOnce` trait bounds, using associated-type-bounds like:
+
+```rust
+where F: async Fn() -> i32
+
+// desugars to
+
+where F: for<'s> LendingFn<LendingOutput<'s>: Future<Output = i32>> + FnOnce<Output: Future<Output = i32>>
+```
+
+This should be doable in a way that does not affect existing code, but remain blocked on improvements to higher-ranked trait bounds around [GATs](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html#when-gats-go-wrong---a-few-current-bugs-and-limitations). Any changes along these lines remain implementation details unless we decide separately to stabilize more user-observable aspects of the `AsyncFn*` trait, which is not likely to happen soon.
