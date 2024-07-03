@@ -257,6 +257,26 @@ The slice functions panic if the slices are not of the same length.
   Also, such a API for safely handling torn values can be built on top of the proposed API,
   so we can leave that to a (niche) ecosystem crate.
 
+- Don't allow an uninitialized state.
+
+  Even if we use `MaybeUninit<T>` to represent a 'potentially torn value',
+  we could still attempt to design an API where we do not allow an uninitialized state.
+
+  It might seem like that results in a much simpler API with `MaybeUninit<T>` replaced by `T` in
+  methods like `into_inner()` and `get_mut()`, but that is not the case:
+
+  As long as `store()` can be called concurrently by multiple threads,
+  it is not only the `load()` method that can result in a torn value,
+  since the `AtomicPerByte<T>` object itself might end up storing a torn value.
+
+  Therefore, even if we disallow uninitialized values,
+  every method will still have `MaybeUninit<T>` in its signature,
+  at which point we lose basically all benefits of removing the uninitialized state.
+
+  Removing the uninitialized state does result in a big downside for users who need to add that state back,
+  as the interface of a `AtomicPerByte<MaybeUninit<T>>` would result in doubly wrapped `MaybeUninit<MaybeUninit<T>>` in many places,
+  which is can be quite unergonomic and confusing.
+
 # Unresolved questions
 
 - Should we require `T: Copy`?
