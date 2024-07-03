@@ -126,6 +126,33 @@ the data might be in, since it might be the result of tearing during a race.
 Only after confirming that there was no race and the data is valid
 can one safely use `MaybeUninit::assume_init` to get the actual `T` out.
 
+```rust
+pub struct SeqLock<T> {
+    seq: AtomicUsize,
+    data: AtomicPerByte<T>,
+}
+
+impl<T: Copy> SeqLock<T> {
+    /// Safety: Only call from one thread.
+    pub unsafe fn write(&self, value: T) {
+        self.seq.fetch_add(1, Relaxed);
+        self.data.store(value, Release);
+        self.seq.fetch_add(1, Release);
+    }
+
+    pub fn read(&self) -> T {
+        loop {
+            let s1 = self.seq.load(Acquire);
+            let data = self.data.load(Acquire);
+            let s2 = self.seq.load(Relaxed);
+            if s1 & 1 == 0 && s1 == s2 {
+                return unsafe { data.assume_init() };
+            }
+        }
+    }
+}
+```
+
 # Full API Overview
 
 The `AtomicPerByte<T>` type can be thought of as
