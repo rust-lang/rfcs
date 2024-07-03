@@ -24,7 +24,7 @@ Enums allow `#[repr(discriminant = type)]` attributes to offer an explicit discr
 
 [#3607]: https://github.com/rust-lang/rfcs/pull/3607
 
-To ensure compatibility, the `#[repr(discriminant = type)]` form is required if the type is a type alias instead of a known primitive type. Depending on circumstances, it might be more beneficial to use the old `#[repr(type)]` syntax instead of `#[repr(discriminant = type)]` syntax, explained below:
+To ensure compatibility, the `#[repr(discriminant = type)]` form is required if the type is a type alias instead of a known primitive type. While this may cause additional issues compared to the native `#[repr(type)]` syntax, it is possible to work around these issues as explained below:
 
 > Since `type` is resolved as a path instead of being a hard-coded value, it's possible to shadow existing primitive types and cause weird results. For example, if a scope contains `type u32 = u8`, then `#[repr(discriminant = u32)` means `#[repr(u8)]`, not `#[repr(u32)]`. You can always refer to these types directly, however, and `#[repr(discriminant = ::std::u32)]` will always mean `#[repr(u32)]`.
 >
@@ -37,7 +37,9 @@ You can use any type alias in the `repr` attribute, but it *must* be an alias to
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `repr` attribute now accepts a `discriminant = ...` argument to indicate a resolved path instead of a well-known primitive type. If those the path resolves to a type alias to a valid primitive type which can be used in the `repr` attribute, that will be used as the actual discriminant representation.
+The `repr` attribute now accepts a `discriminant = ...` argument to indicate an arbitrary type instead of a well-known primitive type. It accepts both fully-resolved types (including all necessary generics) as well as macros that expand to types.
+
+If the resulting type resolves to a type alias to a valid primitive type which can be used in the `repr` attribute, that will be used as the actual discriminant representation. Otherwise, the result is an error.
 
 An automatically-applicable lint should be added that warns a user if a `repr` argument is invalid but references in an-scope type alias without the `discriminant = ` prefix. (For example, `#[repr(MyType)]` becomes `#[repr(discriminant = MyType)]`, but `#[repr(C)]` does not warn even if an alias `C` is in scope.)
 
@@ -46,9 +48,17 @@ To aid macro authors, an allow-by-default lint should be added that warns a user
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The requirement for `discriminant =` is unfortunate, but it feels like the best way to ensure that adding new representations isn't a breaking change going forward. Even if we were to decide it weren't a "breaking change," it would still break things anyway, being de-facto breaking.
+The requirement for `discriminant =` is unfortunate, but it feels like the best way to ensure that adding new representations isn't a breaking change going forward. Even if we were to decide it weren't a "breaking change," it would still break things anyway, being de-facto breaking. Some people have expressed desire for a dedicated syntax instead, which would fix this problem, but this can still be added after the fact.
 
-And, of course, this complicates the compiler. But that's about it.
+Some proc macros like [`zerocopy::FromBytes`] may also have to complicate their logic if they depend on checking the existing `#[repr]` attribute for validity. In particular, since they can no longer exactly know which primitive type is being used for the representation, they would have to instead depend on associated constants on the types like `BITS` to verify which type is being used. Instead of being able to emit an error at macro expansion time, this error will have to be triggered at constant evaluation time or runtime instead, which is unfortunate.
+
+Complicating proc macros in this way is considered acceptable for the following reasons:
+
+* Since errors can still be included in constants now that `const` panics are stable, errors can still be caught at compile time.
+* Users of special `repr` attributes are more likely to have more knowledge about specifics of how these proc macros work, and are thus more equipped to deal with weird errors like these.
+* Ultimately, the benefits of adding the feature outweigh this negative.
+
+[`zerocopy::FromBytes`]: https://docs.rs/zerocopy/latest/zerocopy/derive.FromBytes.html
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
