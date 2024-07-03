@@ -84,10 +84,6 @@ In future editions, we could either:
 * Let type aliases shadow all valid representations. This isn't ideal since there is no way to override the shadowing besides nesting your code in a new module and then re-exporting it outside that module, which is very messy.
 * Expand the list of unshadowable representations every edition where necessary.
 
-## Capital letters
-
-You could require that the types start with capital letters- oh, right, `repr(C)` is a thing.
-
 # Prior art
 [prior-art]: #prior-art
 
