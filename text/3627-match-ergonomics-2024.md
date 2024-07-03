@@ -12,7 +12,7 @@ Various changes to the match ergonomics rules:
   references.
 - On edition ≥ 2024, `mut` on an identifier pattern does not force its binding
   mode to by-value.
-- On edition ≥ 2024, `&` patterns can match against `&mut` references.
+- On all editions, `&` patterns can match against `&mut` references.
 - On all editions, the binding mode can no longer ever be implicitly set to
   `ref mut` behind an `&` pattern.
 
@@ -34,11 +34,11 @@ let (x, mut y) = &(true, false);
 let _: (&bool, bool) = (x, y);
 ```
 
-## Can't cancel out an inherited reference
+## Can’t cancel out an inherited reference
 
 `&` and `&mut` patterns must correspond with a reference in the same position in
 the scrutinee, even if there is an inherited reference present. Therefore, users
-have no general mechanism to "cancel out" an inherited reference
+have no general mechanism to “cancel out” an inherited reference
 (<https://users.rust-lang.org/t/reference-of-tuple-and-tuple-of-reference/91713/6>,
 <https://users.rust-lang.org/t/cannot-deconstruct-reference-inside-match-on-reference-why/92147>,
 <https://github.com/rust-lang/rust/issues/50008>,
@@ -71,8 +71,8 @@ Match ergonomics works a little differently in edition 2024 and above.
 
 ## `mut` no longer strips the inherited reference
 
-`mut` on a binding does not reset the binding mode on edition ≥ 2024.
-Instead, `mut` on a binding with non-default binding mode is an error.
+`mut` on a binding does not reset the binding mode on edition ≥ 2024. Instead,
+`mut` on a binding with non-default binding mode is an error.
 
 ```rust
 //! Edition ≥ 2024
@@ -115,12 +115,18 @@ let _: &u8 = x;
 
 ## `&` matches against `&mut`
 
-In edition 2024 and above, `&` patterns can match against `&mut` references
-(including "inherited" references).
+On all editions, `&` patterns can match against `&mut` references (on edition
+2024 and above, this includes "inherited" references).
+
+```rust
+//! All editions
+let &foo = &mut 42;
+let _: u8 = foo;
+```
 
 ```rust
 //! Edition ≥ 2024
-let &foo = &mut 42;
+let [&foo] = &mut [42];
 let _: u8 = foo;
 ```
 
@@ -140,12 +146,12 @@ instead, `mut` on a binding with a by-reference binding mode is an error.
 // let [mut a] = &[42]; //ERROR
 ```
 
-## Edition 2024: `&` patterns can match against `&mut` references
+## All editions: `&` patterns can match against `&mut` references
 
 `&` patterns can match against `&mut` references.
 
 ```rust
-//! Edition ≥ 2024
+//! All editions
 let &foo = &mut 42;
 let _: u8 = foo;
 ```
@@ -328,7 +334,7 @@ anyway is that the current behavior is unintuitive and surprising for users.
 
 ## Never setting default binding mode to `ref mut` behind `&`
 
-### We can't delay this choice
+### We can’t delay this choice
 
 #### Patterns that work only with this rule
 
@@ -423,14 +429,14 @@ There are several motivations for allowing this:
 - It makes refactoring less painful. Sometimes, one is not certain whether an
   unfinished API will end up returning a shared or a mutable reference. But as
   long as the reference returned by said API is not actually used to perform
-  mutation, it often doesn't matter either way, as `&mut` implicitly reborrows
+  mutation, it often doesn’t matter either way, as `&mut` implicitly reborrows
   as `&` in many situations. Pattern matching is currently one of the most
   prominent exceptions to this, and match ergonomics magnifies the pain because
   a reference in one part of the pattern can affect the binding mode in a
   different, faraway location[^nrmba]. If patterns can be written to always use
   `&` unless mutation is required, then the amount of editing necessary to
   perform various refactors is lessened.
-- It's intuitive. `&mut` is strictly more powerful than `&`. It's conceptually a
+- It’s intuitive. `&mut` is strictly more powerful than `&`. It’s conceptually a
   subtype, and even if not implemented that way[^sub], coercions mean it often
   feels like one in practice.
 
@@ -478,7 +484,7 @@ concerns with certain proposals for "deref patterns".
 
 ## Deref patterns
 
-Because it is compositional, the "eat-one-layer" model proposed by this RFC is
+Because it is compositional, the “eat-one-layer” model proposed by this RFC is
 fully compatible with proposals for "deref patterns", including allowing
 `&`/`&mut` patterns to match against types implementing `Deref`/`DerefMut`. One
 question that would need to be resolved is whether and how deref patterns
