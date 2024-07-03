@@ -520,7 +520,7 @@ There isn't currently a way to annotate the future's return type in a closure th
 let c = || -> /* ??? */ async { 0 };
 ```
 
-We could reuse `impl Future` to give users the ability to annotate the type of the future returned by the closure this position, but it would require giving yet another subtly different meaning to `impl Trait`, since async closures return a *different* type when being called by-ref or by-move.
+We could reuse `impl Future` to give users the ability to annotate the type of the future returned by the closure in this position, but it would require giving yet another subtly different meaning to `impl Trait`, since async closures return a *different* type when being called by-ref or by-move.
 
 This also would have subtle limitations, e.g.:
 
