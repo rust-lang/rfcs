@@ -561,6 +561,40 @@ Reusing the `async` keyword allows users to understand what an `async Fn() -> T`
 
 We could desugar `async FnOnce() -> T` directly to `FnOnce<(), Output: Future<Output = T>>`. It seems overly complicated for an implementation detail, since users should never care what's *behind* the `AsyncFnOnce` trait bound.
 
+### Why do we recommend the `AsyncFnOnce::Output` type remains unstable, unlike `FnOnce::Output`?
+
+As mentioned above, `FnOnce::Output` was stabilized in [#34365](https://github.com/rust-lang/rust/pull/34365) as an alternative to break ecosystem code when a bug was fixed to detect usage of unstable associated items in "type-dependent" associated type paths (e.g. `T::Output` that is not qualified with a trait). This allows the following code on stable:
+
+```rust
+fn foo<F, T>()
+where
+    F: FnOnce() -> T,
+    F::Output: Send, //~ OK
+{
+}
+```
+
+However, the stabilization of the assoicated type did not actually enable new things to be expressed, and instead `FnOnce::Output` just serves as a type alias for an existing type that may already be named.
+
+This is because uniquely to `Fn*` trait bounds (compared to the other `std::ops::*` traits that define `Output` associated types, like `Add`), the associated type for `FnOnce::Output` is always constrained by the parenthesized generic syntax. In other words, given `F: Fn*() -> T`, `F::Output` can always be replaced by some type `T`, since `T` is necessary to complete the parenthesized trait bound syntax[^higher]. In that way, naming a type via the `Output` associated type is not more general or flexible than just naming the type itself:
+
+[^higher]: In fact, the `::Output` syntax doesn't even make it easier to name the return type of a higher-ranked `Fn` trait bound either: https://godbolt.org/z/1rTGhfr9x
+
+```rust
+fn foo<F, T>()
+where
+    F: FnOnce() -> T,
+    F::Output: Send,
+    // Should just be rewritten like:
+    T: Send,
+{
+}
+```
+
+Exposing the `Output` type for `AsyncFnOnce` complicates eventually moving onto other desugarings for `async Fn*`. For example, if `AsyncFnOnce` is replaced by a trait alias for `FnOnce`, it may change the meaning of `Output` in a way that would require extending the language or adding a hack into the compiler to preserve its meaning.
+
+Given that expressivity isn't meaningfully impaired by keeping the `Output` associated type as unstable, we do not expect to stabilize this associated type at the same time as async closures, and a stabilization report for the associated type should mention how it affects future possibilities to change the desugaring of `async Fn*`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
