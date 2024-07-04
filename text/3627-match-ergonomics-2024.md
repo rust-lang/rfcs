@@ -165,6 +165,58 @@ let &ref mut foo = &mut 42;
 let _: &mut u8 = foo;
 ```
 
+However, if the type of the scrutinee is unknown, an `&` pattern will still
+constrain inference to force it to be a shared reference.
+
+```rust
+//! All editions
+fn generic<R: Ref>() -> (R, bool) {
+    R::meow()
+}
+
+trait Ref: Sized {
+    fn meow() -> (Self, bool);
+}
+
+impl Ref for &'static [(); 0] {
+    fn meow() -> (Self, bool) {
+        (&[], false)
+    }
+}
+
+impl Ref for &'static mut [(); 0] {
+    fn meow() -> (Self, bool) {
+        (&mut [], true)
+    }
+}
+
+fn main() {
+    let (&_, b) = generic();
+    assert!(!b);
+}
+```
+
+```rust
+//! All editions
+fn generic<R: Ref>() -> R {
+    R::meow()
+}
+
+trait Ref: Sized {
+    fn meow() -> Self;
+}
+
+impl Ref for &'static mut [(); 0] {
+    fn meow() -> Self {
+        &mut []
+    }
+}
+
+fn main() {
+    let &_ = generic(); //~ERROR[E0277]: the trait bound `&_: Ref` is not satisfied
+}
+```
+
 ## Edition 2024: `&` and `&mut` can match against inherited references
 
 When the default binding mode is `ref` or `ref mut`, `&` and `&mut` patterns can
