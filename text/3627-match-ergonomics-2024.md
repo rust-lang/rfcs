@@ -136,6 +136,33 @@ let _: &u8 = x;
 This explanation assumes familiarity with the current match ergonomics rules,
 including the "default binding mode" terminology. Refer to [RFC 2005](./2005-match-ergonomics.md#detailed-design).
 
+## The rules in brief
+
+Building on the rules of [RFC 2005](./2005-match-ergonomics.md), this RFC adopts
+the following five rules for match ergonomics:
+
+- **Rule 1**: When the DBM (default binding mode) is not `move` (whether or not
+  behind a reference), writing `mut` on a binding is an error.
+- **Rule 2**: When a reference pattern matches against a reference, do not
+  update the DBM.
+- **Rule 3**: If we've previously matched against a shared reference in the
+  scrutinee (or against a `ref` DBM under *Rule 4*, or against a mutable
+  reference treated as a shared one or a `ref mut` DBM treated as a `ref` one
+  under *Rule 5*), set the DBM to `ref` whenever we would otherwise set it to
+  `ref mut`.
+- **Rule 4**: If an `&` pattern is being matched against a non-reference type or
+  an `&mut` pattern is being matched against a shared reference type or a
+  non-reference type, **and if** the DBM is `ref` or `ref mut`, match the
+  pattern against the DBM as though it were a type.
+- **Rule 5**: If an `&` pattern is being matched against a mutable reference
+  type (or against a `ref mut` DBM under *Rule 4*), act as if the type were a
+  shared reference instead (or that the `ref mut` DBM is a `ref` DBM instead).
+
+*Rule 1* and *Rule 2* are edition-dependent and will be stabilized with
+Rust 2024.  The other three rules will be stabilized in all editions.
+
+In the sections below, we describe these rules and their effects in more detail.
+
 ## Edition 2024: `mut` does not reset binding mode to by-value
 
 In the new edition, `mut` no longer resets the binding mode to by-value;
