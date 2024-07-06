@@ -110,7 +110,7 @@ The `rust-lang-owner` is needed because team owners cannot add new owners.
 # Prior art
 [prior-art]: #prior-art
 
-- [Rust RFC 3119](https://rust-lang.github.io/rfcs/3119-rust-crate-ownership.html) establishes the Rust crate ownership policy. Under its categories, `rustdoc-types` would be am **intentional artifact**
+- [Rust RFC 3119](https://rust-lang.github.io/rfcs/3119-rust-crate-ownership.html) establishes the Rust crate ownership policy. Under its categories, `rustdoc-types` would be an **intentional artifact**
 - [Some old zulip discussion about why `rustdoc-json-types` was created.](https://rust-lang.zulipchat.com/#narrow/stream/266220-t-rustdoc/topic/JSON.20Format/near/223685843) What was said then is that if T-Rustdoc wants to publish a crate, it needs to go through an RFC. This is that RFC.
 - the [`cargo
   metadata`](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)
