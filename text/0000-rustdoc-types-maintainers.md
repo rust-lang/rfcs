@@ -66,7 +66,10 @@ if they would make it not possible to publish `rustdoc-types`.
 
 GitHub has a [list of requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) for transferring repositories. T-infra will handle the permissions of moving the repository into the rust-lang GitHub organization.
 
-At the end of this we should have a crate in the rust-lang GitHub org with T-rustdoc as contributors, and T-infra as owners.
+At the end of this we should have a moved the [`aDotInTheVoid/rustdoc-types`]
+repo into the rust-lang GitHub org. T-rustdoc will have contributors
+permissions, and T-infra (or rust-lang-owner) will have GitHub admin permissions
+to the repo.
 
 ### crates.io
 
