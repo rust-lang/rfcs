@@ -11,7 +11,7 @@ The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from b
 # Motivation
 [motivation]: #motivation
 
-[`rustdoc-types`](https://crates.io/crates/rustdoc-types) is a crate published on crates.io. It is used by users of the unstable [rustdoc JSON](https://github.com/rust-lang/rust/issues/76578) backend to provided a type representing the output of `rustdoc --output-format json`.  It's published on crates.io to be used by out-of-tree tools that take rustdoc-json as an input. Eg:.
+[`rustdoc-types`](https://crates.io/crates/rustdoc-types) is a crate published on crates.io. It is used by users of the unstable [rustdoc JSON](https://github.com/rust-lang/rust/issues/76578) backend to provided a type representing the output of `rustdoc --output-format json`.  It's published on crates.io to be used by out-of-tree tools that take rustdoc-json as an input. E.g:
 
 | Name | Purpose |
 |--|--|
@@ -29,9 +29,9 @@ The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from b
 
 [RFC 1977]: https://rust-lang.github.io/rfcs/1977-public-private-dependencies.html
 
-Currently I ([`@aDotInTheVoid`](https://github.com/aDotInTheVoid/)) maintain the `rustdoc-types` crate on [my personal github](https://github.com/aDotInTheVoid/rustdoc-types/). No-one else has either github or crates.io permissions. This means if I become unable (or more likely disinterested), the crate will not see updates.
+Currently I ([`@aDotInTheVoid`](https://github.com/aDotInTheVoid/)) maintain the `rustdoc-types` crate on [my personal GitHub](https://github.com/aDotInTheVoid/rustdoc-types/). No-one else has either GitHub or crates.io permissions. This means if I become unable (or more likely disinterested), the crate will not see updates.
 
-Additionally, if an update to `rustdoc-json-types` happens while I'm away from a computer for an extended period of time, their will be a delay in this update being published on crates.io. This happened with format_version 29, which was merged on [April 8th](https://github.com/rust-lang/rust/commit/537aab7a2e7fe9cdf50b5ff18485e0793cd8db62),
+Additionally, if an update to `rustdoc-json-types` happens while I'm away from a computer for an extended period of time, there will be a delay in this update being published on crates.io. This happened with format_version 29, which was merged on [April 8th](https://github.com/rust-lang/rust/commit/537aab7a2e7fe9cdf50b5ff18485e0793cd8db62),
 but was only published to crates.io on
 [April 19th](https://github.com/aDotInTheVoid/rustdoc-types/commit/ad92b911488dd42681e3dc7e496f777f556a94f6), due to personal reasons.
 [This almost happened previously](https://github.com/aDotInTheVoid/rustdoc-types/issues/25), but was avoided due to the bors queue being quiet at the time.
@@ -47,26 +47,26 @@ This involves:
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-`rustdoc-types` is a republishing of the in-tree [`rustdoc-json-types`](https://github.com/rust-lang/rust/tree/b8536c1aa1973dd2438841815b1eeec129480e45/src/rustdoc-json-types) crate. `rustdoc-json-types` is a dependency of `librustdoc`, and is the canonical source of truth for the rustdoc-json output format. Changes to the format are made a a PR to `rust-lang/rust`, and will modify `src/rustdoc-json-types`, `src/librustdoc/json` and `tests/rustdoc-json`. None of this will change.
+`rustdoc-types` is a republishing of the in-tree [`rustdoc-json-types`](https://github.com/rust-lang/rust/tree/b8536c1aa1973dd2438841815b1eeec129480e45/src/rustdoc-json-types) crate. `rustdoc-json-types` is a dependency of `librustdoc`, and is the canonical source of truth for the rustdoc-json output format. Changes to the format are made as a PR to `rust-lang/rust`, and will modify `src/rustdoc-json-types`, `src/librustdoc/json` and `tests/rustdoc-json`. None of this will change.
 
 Republishing `rustdoc-json-types` as `rustdoc-types` is done with [a script](https://github.com/aDotInTheVoid/rustdoc-types/blob/17cbe9f8f07de954261dbb9536c394381770de7b/update.sh) so that it is as low maintenance as possible. This also ensures that all format/documentation changes happen in the rust-lang/rust repo, and go through the normal review process there.
 
-The update/publishing process will be moved to T-Rustdoc. In the medium term, I (`@aDotInTheVoid`) will still do it, but
+The update/publishing process will be moved to T-rustdoc. In the medium term, I (`@aDotInTheVoid`) will still do it, but
 - In an official capacity
 - With bus factor for when I stop.
 
-We (T-Rustdoc) will continue to publish new version of the `rustdoc-types` crate
+We (T-rustdoc) will continue to publish a new version of the `rustdoc-types` crate
 every time the upstream implementation changes, and these will be versioned with
-normal semver. Changes to rustdoc-json in `rust-lang/rust` will not be accepted
+normal SemVer. Changes to rustdoc-json in `rust-lang/rust` will not be accepted
 if they would make it not possible to publish `rustdoc-types`.
 
 ## Actual Mechanics of the move
 
-### Github
+### GitHub
 
-Github has a [list of requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) for transferring repositories. T-Infra will handle the permissions of moving the repository into the rust-lang github organization.
+GitHub has a [list of requirements](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) for transferring repositories. T-infra will handle the permissions of moving the repository into the rust-lang GitHub organization.
 
-At the end of this we should have a crate in the rust-lang github org with T-Rustdoc as contributors, and T-infra as owners.
+At the end of this we should have a crate in the rust-lang GitHub org with T-rustdoc as contributors, and T-infra as owners.
 
 ### crates.io
 
@@ -110,7 +110,7 @@ The `rust-lang-owner` is needed because team owners cannot add new owners.
 # Prior art
 [prior-art]: #prior-art
 
-- [Rust RFC 3119](https://rust-lang.github.io/rfcs/3119-rust-crate-ownership.html) establishes the Rust crate ownership policy. Under it's categories, `rustdoc-types` would be a **Intentional artifact**
+- [Rust RFC 3119](https://rust-lang.github.io/rfcs/3119-rust-crate-ownership.html) establishes the Rust crate ownership policy. Under its categories, `rustdoc-types` would be am **intentional artifact**
 - [Some old zulip discussion about why `rustdoc-json-types` was created.](https://rust-lang.zulipchat.com/#narrow/stream/266220-t-rustdoc/topic/JSON.20Format/near/223685843) What was said then is that if T-Rustdoc wants to publish a crate, it needs to go through an RFC. This is that RFC.
 - the [`cargo
   metadata`](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)
