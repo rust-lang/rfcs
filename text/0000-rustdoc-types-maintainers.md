@@ -99,10 +99,10 @@ The `rust-lang-owner` is needed because team owners cannot add new owners.
    - It may be desirable to one day use different types for rustdoc serialization vs users deserialization
 
      Reasons for this:
-     - It could enable performance optmizations by avoiding allocations into strings
+     - It could enable performance optimizations by avoiding allocations into strings
      - It could help with stabilization:
-       - Allows making structs/enums `#[non_exaustive]`
-       - Allows potentially supporting multiple format verions.
+       - Allows making structs/enums `#[non_exhaustive]`
+       - Allows potentially supporting multiple format versions.
    - `rustdoc-types` is a nicer name, and what people already depend on.
 
 # Prior art
@@ -115,8 +115,8 @@ The `rust-lang-owner` is needed because team owners cannot add new owners.
   command gives JSON information about a cargo package. The
   [cargo-metadata](https://docs.rs/cargo_metadata/latest/cargo_metadata/) crate
   provides access to this. Instead of being a export of the cargo-side type declarations,
-  it's manually written, and not officially maintained. This has [lead to compatibilty issues](https://github.com/oli-obk/cargo_metadata/issues/240)
-  in the past. Desipite being stable, the exact compatibilty story [isn't yet determined](https://github.com/rust-lang/cargo/issues/12377).
+  it's manually written, and not officially maintained. This has [lead to compatibility issues](https://github.com/oli-obk/cargo_metadata/issues/240)
+  in the past. Despite being stable, the exact compatibility story [isn't yet determined](https://github.com/rust-lang/cargo/issues/12377).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
