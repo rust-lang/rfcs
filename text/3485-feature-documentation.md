@@ -8,7 +8,7 @@
 
 [summary]: #summary
 
-This RFC describes a new key to under `features` in `Cargo.toml` for
+This RFC describes a new key under `features` in `Cargo.toml` for
 documentation. This will allow Cargo to display this information to the user and
 provide a way for `rustdoc` to eventually render this data (how this is rendered
 is outside the scope of this RFC).
