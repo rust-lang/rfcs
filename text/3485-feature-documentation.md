@@ -21,7 +21,7 @@ Please see the parent meta RFC for background information: [`feature-metadata`].
 
 Cargo features have become extremely widely used, with many crates having at
 least some level of configuration and larger crates winding up with tens of
-gates. Desipte being a first class component of crate structure, they suffer
+gates. Despite being a first class component of crate structure, they suffer
 from a documentation problem: users need to maintain documentation separate from
 feature definition, typically a manually-created table within API docs.
 
