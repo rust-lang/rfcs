@@ -65,6 +65,7 @@ stabilizing its expansion.
 By using the macro, the following example will compile:
 ```rust
 #[derive(SmartPointer)]
+#[repr(transparent)]
 struct MySmartPointer<T: ?Sized>(Box<T>);
 
 impl<T: ?Sized> Deref for MySmartPointer<T> {
@@ -147,12 +148,13 @@ Whenever a `self: MySmartPointer<Self>` method is called on a trait object, the
 compiler will convert from `MySmartPointer<dyn MyTrait>` to
 `MySmartPointer<MyStruct>` using something similar to a transmute. Because of
 this, there are strict requirements on the layout of `MySmartPointer`. It is
-required that `MySmartPointer` is a struct, and that (other than one-aligned,
-zero-sized fields) it must have exactly one field. The type must either be a
-standard library pointer type (reference, raw pointer, NonNull, Box, Arc, etc.)
-or another user-defined type also using this derive macro.
+required that `MySmartPointer` is a `#[repr(transparent)]` struct, and the type
+of its non-zero-sized field must either be a standard library pointer type
+(reference, raw pointer, NonNull, Box, Arc, etc.) or another user-defined type
+also using this derive macro.
 ```rust
 #[derive(SmartPointer)]
+#[repr(transparent)]
 struct MySmartPointer<T: ?Sized> {
     ptr: Box<T>,
     _phantom: PhantomData<T>,
@@ -165,6 +167,7 @@ If the type has multiple type parameters, then you must explicitly specify
 which one should be used for dynamic dispatch. For example:
 ```rust
 #[derive(SmartPointer)]
+#[repr(transparent)]
 struct MySmartPointer<#[pointee] T: ?Sized, U> {
     ptr: Box<T>,
     _phantom: PhantomData<U>,
@@ -194,6 +197,7 @@ you could implement your own `Rc` type like this:
 
 ```rust
 #[derive(SmartPointer)]
+#[repr(transparent)]
 pub struct Rc<T: ?Sized> {
     inner: NonNull<RcInner<T>>,
 }
@@ -275,10 +279,9 @@ The macro sets the following requirements on its input:
 
 (Adapted from the docs for [`DispatchFromDyn`].)
 
-Point 1 and 2 are verified syntactically by the derive macro. Points 4 and 5
+Points 1, 2 and 3 are verified syntactically by the derive macro. Points 4 and 5
 are verified semantically by the compiler when checking the generated
-[`DispatchFromDyn`] implementation as it does today. Point 3 is verified by
-introducing a new unstable helper trait `AssertReprTransparent`.
+[`DispatchFromDyn`] implementation as it does today.
 
 The `#[pointee]` attribute may also be written as `#[smart_pointer::pointee]`.
 
@@ -303,6 +306,7 @@ following procedure:
 Given the following example code:
 ```rust
 #[derive(SmartPointer)]
+#[repr(transparent)]
 struct MySmartPointer<'a, #[pointee] T, A>
 where
     T: ?Sized + SomeTrait<T>,
@@ -329,16 +333,6 @@ where
     T: ?Sized + SomeTrait<T>,
     U: ?Sized + SomeTrait<U>,
     T: ::core::marker::Unsize<U>,
-{}
-```
-The macro will also generate an implementation of the new
-`AssertReprTransparent` helper trait. The implementation will have the same
-trait bounds as the struct definition.
-```rust
-#[automatically_derived]
-impl<'a, T, A> ::core::ops::AssertReprTransparent for MySmartPointer<'a, T, A>
-where
-    T: ?Sized + SomeTrait<T>,
 {}
 ```
 
@@ -400,13 +394,6 @@ Although this RFC proposes to add the `PinCoerceUnsized` trait to ensure that
 unsizing coercions of pinned pointers cannot be used to cause unsoundness, the
 RFC does not propose to stabilize the trait.
 
-## `AssertReprTransparent`
-
-To verify the requirement that the struct is `#[repr(transparent)]`, we
-introduce a new unstable marker trait called `AssertReprTransparent`. This trait
-will be a lang item, and the compiler will emit an error if the trait is used
-with a type that is not `#[repr(transparent)]`.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -455,6 +442,7 @@ However, it turns out that there are quite a few different ways we might
 implement `Deref`. For example, consider [the custom `Rc` example][custom-rc]:
 ```rust
 #[derive(SmartPointer)]
+#[repr(transparent)]
 pub struct Rc<T: ?Sized> {
     inner: NonNull<RcInner<T>>,
 }
@@ -692,6 +680,7 @@ RFC][unsafe-attribute].
 ```rust
 // SAFETY: The Deref impl is not malicious.
 #[unsafe(derive(SmartPointer))]
+#[repr(transparent)]
 pub struct Rc<T: ?Sized> {
     inner: NonNull<RcInner<T>>,
 }
@@ -731,27 +720,6 @@ This RFC does not propose it because it is a breaking change and the
 `PinCoerceUnsized` or `DerefPure` solutions are simpler. This solution is
 discussed in more details in [the pre-RFC for stabilizing the underlying
 traits][pre-rfc].
-
-## `AssertReprTransparent`
-
-When you implement the [`DispatchFromDyn`] trait, the compiler enforces various
-things about the type to verify that it makes sense to implement
-`DispatchFromDyn`. One of the things that the compiler verifies is that the
-struct must not be `#[repr(packed)]` or `#[repr(C)]`.
-
-However, because `#[derive(SmartPointer)]` has more narrow use-case than
-`DispatchFromDyn`, we would like to restrict it further so that the macro only
-works with `#[repr(transparent)]` types. To do this, we use a new trait called
-`AssertReprTransparent` that verifies that the struct is `#[repr(transparent)]`
-like how `DispatchFromDyn` verifies that the struct must not be
-`#[repr(packed)]` or `#[repr(C)]`.
-
-We cannot change the logic in `DispatchFromDyn` because some existing standard
-library types cannot be `#[repr(transparent)]`. For example, this includes
-`Box<T, A>` due to its allocator field.
-
-This requirement may be relaxed in the future, in which case
-`AssertReprTransparent` can be removed again.
 
 # Prior art
 [prior-art]: #prior-art
@@ -820,9 +788,10 @@ proposals for relaxing them have been seen before (e.g., in the
 [pre-RFC][pre-rfc].)
 
 One example of a restriction that we could lift is the restriction that there is
-only one non-zero-sized field. This would allow smart pointers to use custom
-allocators. (Today, types like `Box` and `Rc` only work with trait objects when
-using the default zero-sized allocator.)
+only one non-zero-sized field (i.e., that it must be `#[repr(transparent)]`).
+This would allow smart pointers to use custom allocators. (Today, types like
+`Box` and `Rc` only work with trait objects when using the default zero-sized
+allocator.)
 
 This could also allow implementations of `Rc` and `Arc` that store the value and
 refcount in two different allocations, like how the C++ `shared_ptr` works.
