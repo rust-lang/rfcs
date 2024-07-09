@@ -53,8 +53,7 @@ bar = { enables = ["foo"], doc = "simple docstring here"}
 [features.corge]
 enables = ["bar", "baz"]
 doc = """
-# corge
-
+The first paragraph is a short summary, which might be displayed standalone.
 This could be a longer description of this feature
 """
 ```
