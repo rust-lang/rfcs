@@ -114,7 +114,7 @@ concerns about bloat, but this is further discussed in
   for `rustdoc` to get the information it requires. This will require separate
   design work.
 - Unlike with the [`document-features`](https://crates.io/crates/document-features)
-  crate there is no way to group features in into sections or have a
+  crate there is no way to group features into sections or have a
   user-specified layout
 - Users cannot control features ordering in documentation since the TOML specification defines table keys as unordered.
 
