@@ -33,8 +33,13 @@ for keeping feature definitions and documentation together.
 [guide-level-explanation]: #guide-level-explanation
 
 A new `doc` key will be allowed within a feature's table. This key provides a
-markdown docstring describing the feature. Like with `#[doc(...)]`, the first
-line will be treated as a summary.
+markdown docstring describing the feature. The first paragraph
+will be treated as a summary, and should be suitable to display
+standalone without the rest of the description.
+
+Don't include the name of the feature in the summary; tools
+will typically already display this documentation alongside
+the name of the feature.
 
 ```toml
 [features]
