@@ -404,11 +404,13 @@ let _ = async move || {
 };
 ```
 
-#### Specifics about the `AsyncFnOnce` implementation, interaction with `move`
+#### Specifics about the `AsyncFnOnce` implementation, `CallOnceFuture` vs `CallRefFuture`
 
-If the closure is inferred to be `async Fn` or `async FnMut`, then the compiler will synthesize an `async FnOnce` implementation for the closure which returns a future that doesn't borrow any captured values from the closure, but instead *moves* the captured values into the future. Synthesizing a distinct future that is returned by `async FnOnce` is necessary because the trait *consumes* the closure when it is called (evident from the `self` receiver type in the method signature), meaning that a self-borrowing future would have references to dropped data. This is an interesting problem described in more detail in [compiler-errors' blog post written on async closures][blog post].
+From a user's perspective, it makes sense that if they have an `async FnMut` closure then they should be able to "call it only once" in a way that is uniform with an `async FnOnce` closure. This is because an `FnOnce` is seen as less restrictive to the callee than `FnMut`, and we preserve that distinction with the `async Fn*` trait bounds.
 
-This is reflected in the fact that `AsyncFnOnce::CallOnceFuture` is a distinct type from `AsyncFnMut::CallRefFuture`. While the latter is a generic-associated-type (GAT) due to supporting self-borrows of the called async closure, the former is not, since it must own all of the captures mentioned in the async closures' body.
+If the closure is inferred to be `async Fn` or `async FnMut`, then the compiler needs to synthesize an `async FnOnce` implementation for the closure which returns a future that doesn't borrow any captured values from the closure, but instead *moves* those captured values into the future. Synthesizing a distinct future that is returned by `async FnOnce` is necessary because the trait *consumes* the closure when it is called (evident from the `self` receiver type in the method signature), meaning that a self-borrowing future would have references to dropped data. This is an interesting problem described in more detail in [compiler-errors' blog post written on async closures][blog post].
+
+This is reflected in the unstable trait implementations by the fact that `AsyncFnOnce::CallOnceFuture` is a distinct type from `AsyncFnMut::CallRefFuture`. While the latter is a generic-associated-type (GAT) due to supporting self-borrows of the called async closure, the former is not, since it must own all of the captures mentioned in the async closures' body.
 
 For example:
 
@@ -434,7 +436,7 @@ fut.await;
 // point, the allocation for `s` is dropped.
 ```
 
-Importantly, although these are distinct futures, they still have the same `Output` type (in other words, their futures await to the same type), and for types that have `async Fn*` implementations, the two future types *execute* identically, since they execute the same future body. They only differ in their captures.
+For the purposes of the compiler implementation, although these are distinct futures, they still have the same `Output` type (in other words, their futures await to the same type), and for types that have `async Fn*` implementations, the two future types *execute* identically, since they execute the same future body. They only differ in their captures. Given that users usually do not care about the concrete future type itself, but only its final output type, and that both futures are fully anonymous, the fact that a different future is used when calling an `async FnMut` via `async_call_mut` vs `async_call_once` are not noticeable except for pathological examples.
 
 ### Interaction with return-type notation, naming the future returned by calling
 
