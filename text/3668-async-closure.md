@@ -633,7 +633,27 @@ We can similarly implement a lint to detect cases where users write these two-pa
 
 It's not possible to directly name the future returned by calling some generic `T: async Fn()`. This means that it's not possible, for example, to convert `futures-rs`'s [`StreamExt::then` combinator](https://docs.rs/futures/0.3.30/futures/stream/trait.StreamExt.html#method.then), since the output future is referenced in the definition of [`Then`](https://docs.rs/futures-util/0.3.30/src/futures_util/stream/stream/then.rs.html#19) returned by the combinator.
 
-Fixing this is a follow-up goal that we're interested in pursuing in the near future.
+For example, consider a `Then` combinator that allows mapping a stream under a future:
+
+```rust
+pub struct Then<St, F, Fut, U>
+where
+    St: Stream,
+    F: async FnMut(St::Item) -> Fut::Output,
+    Fut: Future,
+{
+    stream: St,
+    fun: F,
+    future: Option</* how do we name this future type? */>,
+
+}
+```
+
+The first problem here is that the RTN [RFC 3654](https://github.com/rust-lang/rfcs/pull/3654) says that RTN is only allowed in *trait bound* positions, so we can't use it to name the returned future in type position, like in this struct field, without further design work.
+
+Secondly, even if we could name the `CallRefFuture` type directly, we still need a lifetime to plug into the GAT. Conceptually, the future lives for the transient period of processing a single element in the stream, which isn't representable with a lifetime argument. We would need some sort of `'unsafe` or unsafe binder type.
+
+Fixing this is a follow-up goal that we're interested in pursuing in the near future. Design work regarding naming the future types in struct position can be done additively on top of what is exposed in this RFC, and ties into the larger question of how to use RTN in struct fields and other non-inference type positions.
 
 # Prior art
 [prior-art]: #prior-art
