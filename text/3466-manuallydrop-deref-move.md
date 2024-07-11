@@ -37,6 +37,7 @@ impl Foo {
 I ran into this limitation while working on the [`async-lock` library](https://github.com/smol-rs/async-lock/blob/8045684f996b15b3dd9bfd621cfc3864d3760923/src/rwlock.rs#L879-L883).
 It has also been discussed elsewhere:
 
+- [Blog post by @withoutboats](https://without.boats/blog/ownership/#e0509)
 - [Pre-RFC from 2024](https://internals.rust-lang.org/t/destructuring-droppable-structs/20993)
 - [Pe-RFC from 2019](https://internals.rust-lang.org/t/pre-rfc-destructuring-values-that-impl-drop/10450).
 - [Blog post from 2018](https://phaazon.net/blog/rust-no-drop) (recommends
