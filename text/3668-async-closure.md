@@ -357,7 +357,7 @@ let closure = async || {
 };
 ```
 
-The closure captures `vec` with some `&'closure mut Vec<String>` which lives until the closure is dropped. Then every call to the closure reborrows that mutable reference `&'call Vec<String>` which lives until the future is dropped (e.g. `await`ed).
+The closure captures `vec` with some `&'closure mut Vec<String>` which lives until the closure is dropped. Then every call to the closure reborrows that mutable reference `&'call mut Vec<String>` which lives until the future is dropped (e.g. `await`ed).
 
 As another example:
 
