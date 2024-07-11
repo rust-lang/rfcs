@@ -1,6 +1,8 @@
+> *![Status: Under consideration](https://img.shields.io/badge/Status-Under%20consideration-yellow) This RFC has been opened on the RFC repo as [RFC #3672](https://github.com/rust-lang/rfcs/pull/3672).*
+
 - Feature Name: N/A
 - Start Date: 2024-07-09
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/issue/0000)(https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: N/A
 
 ## Summary
@@ -17,7 +19,7 @@ Flagship goals represent the goals expected to have the broadest overall impact.
 
 ## Motivation
 
-This RFC marks the first goal slate proposed under the experimental new roadmap process described in [RFC #3614](https://github.com/rust-lang/rfcs/pull/3614). It consists of 24 project goals, of which we have selected three as **flagship goals**. Flagship goals represent the goals expected to have the broadest overall impact. 
+This RFC marks the first goal slate proposed under the experimental new roadmap process described in [RFC #3614](https://github.com/rust-lang/rfcs/pull/3614). It consists of NN project goals, of which we have selected three as **flagship goals**. Flagship goals represent the goals expected to have the broadest overall impact. 
 
 ### How the goal process works
 
@@ -58,7 +60,7 @@ The flagship goals proposed for this roadmap are as follows:
     * never type fallback ([#123748](https://github.com/rust-lang/rust/issue/123748))
     * and a [number of other potential changes](https://github.com/rust-lang/rust/issues?q=label%3AC-tracking-issue+label%3AA-edition-2024+label%3AS-tracking-ready-to-stabilize%2CS-tracking-needs-documentation+-label%3AS-tracking-impl-incomplete%2CS-tracking-design-concerns) that may be included if they make enough progress
 * [**Bringing the Async Rust experience closer to parity with sync Rust**](https://rust-lang.github.io/rust-project-goals/2024h2/./async.html) via:
-    * resolving the "send bound problem", thus enabling foundational, generic traits like Tower's [`Service`]() trait;
+    * resolving the "send bound problem", thus enabling foundational, generic traits like Tower's [`Service`](https://docs.rs/tower-service/latest/tower_service/trait.Service.html) trait;
     * stabilizing async closures, thus enabling richer, combinator APIs like sync Rust's [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html);
     * reorganizing the async WG, so the project can benefit from a group of async rust experts with deep knowledge of the space that can align around a shared vision.
 * [**Resolving the biggest blockers to Linux building on stable Rust**](https://rust-lang.github.io/rust-project-goals/2024h2/./rfl_stable.html) via:
@@ -85,28 +87,28 @@ The flagship goals proposed for this roadmap are as follows:
 
 The slate of additional project goals are as follows. These goals all have identified owners who will drive the work forward as well as a viable work plan. The goals include asks from the listed Rust teams, which are cataloged in the [reference-level explanation](#reference-level-explanation) section below. Some goals are actively looking for volunteers; these goals are tagged with ![Help wanted][].
 
-| Goal                                                                                                      | Owner                | Team                                                         |
-| ---                                                                                                       | ---                  | ---                                                          |
-| [Const traits](https://rust-lang.github.io/rust-project-goals/2024h2/const-traits.html)                                                                           | [Deadbeef][]           | [lang], [types]                                              |
-| [Patterns of empty types](https://rust-lang.github.io/rust-project-goals/2024h2/Patterns-of-empty-types.html)                                                     | [@Nadrieril][]           | [compiler], [lang]                                           |
-| [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html)                                                                 | [Ed Page][]               | [cargo], [lang]                                              |
-| [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html)                                                            | [lcnr][]                | [rust-analyzer], [types]                                     |
-| [Assemble project goal slate](https://rust-lang.github.io/rust-project-goals/2024h2/Project-goal-slate.html)                                                      | [Niko Matsakis][]        | [leadership-council]                                         |
-| [Optimizing Clippy & linting](https://rust-lang.github.io/rust-project-goals/2024h2/optimize-clippy.html)                                                         | [Alejandra González][]             | [clippy]                                                     |
-| [Make Rustdoc Search easier to learn](https://rust-lang.github.io/rust-project-goals/2024h2/rustdoc-search.html)                                                  | [Michael Howell][]           | [infra], [leadership-council], [rustdoc], [rustdoc-frontend] |
-| ["Stabilizable" prototype for expanded const generics](https://rust-lang.github.io/rust-project-goals/2024h2/min_generic_const_arguments.html)                    | [Boxy][]             | [lang]                                                       |
-| [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html)                                              | [Weihang Lo][]           | [cargo], [compiler]                                          |
-| [Stabilize parallel front end](https://rust-lang.github.io/rust-project-goals/2024h2/parallel-front-end.html)                                                     | [Sparrow Li][]          | [compiler]                                                   |
-| [Scalable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2024h2/Polonius.html)                                                       | [Rémy Rakic][]                 | [types]                                                      |
-| [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2024h2/pubgrub-in-cargo.html)                              | [Jacob Finkelman][]              |                                                              |
-| [Use annotate-snippets for rustc diagnostic output](https://rust-lang.github.io/rust-project-goals/2024h2/annotate-snippets.html)                                 | [Esteban Kuber][], [Scott Schafer][] | [compiler], [leadership-council]                             |
-| [Stabilize doc_cfg](https://rust-lang.github.io/rust-project-goals/2024h2/doc_cfg.html)                                                                           | [Guillaume Gomez][]      | [rustdoc]                                                    |
-| [Implement "merged doctests" to save doctest time](https://rust-lang.github.io/rust-project-goals/2024h2/merged-doctests.html)                                    | [Guillaume Gomez][]      | [rustdoc]                                                    |
-| [Testing infra + contributors for a-mir-formality](https://rust-lang.github.io/rust-project-goals/2024h2/a-mir-formality.html)                                    | [Niko Matsakis][]        | [types]                                                      |
-| [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2024h2/ergonomic-rc.html)                                                                 | [Jonathan Kelley][]          | [compiler], [lang], [libs-api]                               |
-| [Associated type position impl trait (https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT)](ATPIT.html)                                                   | [Oliver Scherer][]             | [lang], [types]                                              |
-| [Expose experimental LLVM features for automatic differentiation and GPU offloading](https://rust-lang.github.io/rust-project-goals/2024h2/Rust-for-SciComp.html) | [Manuel Drehwald][]              | [compiler], [lang]                                           |
-| [Administrator-provided reasons for yanked crates](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html)                          | [二手掉包工程师][]           | [cargo], [crates-io]                                         |
+| Goal                                                                                                      | Owner                | Team                                                           |
+| ---                                                                                                       | ---                  | ---                                                            |
+| ["Stabilizable" prototype for expanded const generics](https://rust-lang.github.io/rust-project-goals/2024h2/min_generic_const_arguments.html)                    | [Boxy][]             | [lang]                                                         |
+| [Administrator-provided reasons for yanked crates](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html)                          | [二手掉包工程师][]           | [cargo], [crates-io]                                           |
+| [Assemble project goal slate](https://rust-lang.github.io/rust-project-goals/2024h2/Project-goal-slate.html)                                                      | [Niko Matsakis][]        | [leadership-council]                                           |
+| [Associated type position impl trait](https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT.html)                                                           | [Oliver Scherer][]             | [lang], [types]                                                |
+| [Const traits](https://rust-lang.github.io/rust-project-goals/2024h2/const-traits.html)                                                                           | [Deadbeef][]           | [lang], [types]                                                |
+| [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2024h2/ergonomic-rc.html)                                                                 | [Jonathan Kelley][]          | [compiler], [lang], [libs-api]                                 |
+| [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html)                                              | [Weihang Lo][]           | [cargo], [compiler]                                            |
+| [Expose experimental LLVM features for automatic differentiation and GPU offloading](https://rust-lang.github.io/rust-project-goals/2024h2/Rust-for-SciComp.html) | [Manuel Drehwald][]              | [compiler], [lang]                                             |
+| [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2024h2/pubgrub-in-cargo.html)                              | [Jacob Finkelman][]              | [cargo]                                                        |
+| [Implement "merged doctests" to save doctest time](https://rust-lang.github.io/rust-project-goals/2024h2/merged-doctests.html)                                    | [Guillaume Gomez][]      | [rustdoc]                                                      |
+| [Make Rustdoc Search easier to learn](https://rust-lang.github.io/rust-project-goals/2024h2/rustdoc-search.html)                                                  | [Michael Howell][]           | [docs-rs], [leadership-council], [rustdoc], [rustdoc-frontend] |
+| [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html)                                                            | [lcnr][]                | [rust-analyzer], [types]                                       |
+| [Optimizing Clippy & linting](https://rust-lang.github.io/rust-project-goals/2024h2/optimize-clippy.html)                                                         | [Alejandra González][]             | [clippy]                                                       |
+| [Patterns of empty types](https://rust-lang.github.io/rust-project-goals/2024h2/Patterns-of-empty-types.html)                                                     | [@Nadrieril][]           | [compiler], [lang]                                             |
+| [Scalable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2024h2/Polonius.html)                                                       | [Rémy Rakic][]                 | [types]                                                        |
+| [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html)                                                                 | [Ed Page][]               | [cargo], [lang]                                                |
+| [Stabilize doc_cfg](https://rust-lang.github.io/rust-project-goals/2024h2/doc_cfg.html)                                                                           | [Guillaume Gomez][]      | [rustdoc]                                                      |
+| [Stabilize parallel front end](https://rust-lang.github.io/rust-project-goals/2024h2/parallel-front-end.html)                                                     | [Sparrow Li][]          | [compiler]                                                     |
+| [Testing infra + contributors for a-mir-formality](https://rust-lang.github.io/rust-project-goals/2024h2/a-mir-formality.html)                                    | [Niko Matsakis][]        | [types]                                                        |
+| [Use annotate-snippets for rustc diagnostic output](https://rust-lang.github.io/rust-project-goals/2024h2/annotate-snippets.html)                                 | [Esteban Kuber][], [Scott Schafer][] | [compiler], [leadership-council]                               |
 
 
 ### Orphaned goals ![Help wanted][]
@@ -126,17 +128,18 @@ The "owner" in the column is the person expecting to do the design/implementatio
 
 
 ### cargo team
-| Goal                                                                                     | Owner      | Notes |
-| ---                                                                                      | ---        | --- |
-| *Approve RFC*                                                                            |            |  |
-| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)      | [二手掉包工程师][] |  |
-| *Discussion and moral support*                                                           |            |  |
-| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)   | [Weihang Lo][] |  |
-| *Stabilization decision*                                                                 |            |  |
-| ↳ [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html#ownership-and-team-asks)                      | [Ed Page][]     |  |
-| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)      | [二手掉包工程师][] |  |
-| *Standard reviews*                                                                       |            |  |
-| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)   | [Weihang Lo][] |  |
+| Goal                                                                                                     | Owner      | Notes |
+| ---                                                                                                      | ---        | --- |
+| *Approve RFC*                                                                                            |            |  |
+| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)                      | [二手掉包工程师][] |  |
+| *Discussion and moral support*                                                                           |            |  |
+| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)                   | [Weihang Lo][] |  |
+| ↳ [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2024h2/pubgrub-in-cargo.html#ownership-and-team-asks)   | [Jacob Finkelman][]    |  |
+| *Stabilization decision*                                                                                 |            |  |
+| ↳ [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html#ownership-and-team-asks)                                      | [Ed Page][]     |  |
+| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)                      | [二手掉包工程师][] |  |
+| *Standard reviews*                                                                                       |            |  |
+| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)                   | [Weihang Lo][] |  |
 
 ### clippy team
 | Goal                                                                | Owner    | Notes |
@@ -173,12 +176,10 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | *Try it out in crates.io*                                                             |            |  |
 | ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)   | [二手掉包工程师][] |  |
 
-### infra team
+### docs-rs team
 | Goal                                                                  | Owner      | Notes |
 | ---                                                                   | ---        | --- |
 | *Collecting popular queries for review*                               |            |  |
-| ↳ [Feedback and testing](https://rust-lang.github.io/rust-project-goals/2024h2/rustdoc-search.html#ownership-and-team-asks)   | [Michael Howell][] |  |
-| *Inside Rust blog post inviting feedback*                             |            |  |
 | ↳ [Feedback and testing](https://rust-lang.github.io/rust-project-goals/2024h2/rustdoc-search.html#ownership-and-team-asks)   | [Michael Howell][] |  |
 
 ### lang team
@@ -213,7 +214,7 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | ↳ [`asm_goto`](https://rust-lang.github.io/rust-project-goals/2024h2/rfl_stable.html#ownership-and-team-asks)                                                                                 | [Gary Guo][]        |                    |
 | ↳ [Pointers to static in constants](https://rust-lang.github.io/rust-project-goals/2024h2/rfl_stable.html#ownership-and-team-asks)                                                            | [Niko Matsakis][]    |                    |
 | ↳ [Rust 2024 Edition](https://rust-lang.github.io/rust-project-goals/2024h2/Rust-2024-Edition.html#ownership-and-team-asks)                                                                   | [TC][]     |                    |
-| ↳ [Associated type position impl trait (https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT)](ATPIT.html#ownership-and-team-asks)                                                     | [Oliver Scherer][]         |                    |
+| ↳ [Associated type position impl trait](https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT.html#ownership-and-team-asks)                                                             | [Oliver Scherer][]         |                    |
 
 ### leadership-council team
 | Goal                                                                                                  | Owner                | Notes                                                                                     |
@@ -250,7 +251,7 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | ---                                                                                  | ---   | --- |
 | *Standard reviews*                                                                   |       |  |
 | ↳ [Stabilize coherence coherence support](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)    | [lcnr][] |  |
-| ↳ [Support in [rust-analyzer]](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)               | [lcnr][] |  |
+| ↳ [Support in rust-analyzer](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)                 | [lcnr][] |  |
 
 ### rustdoc team
 | Goal                                                                                               | Owner           | Notes |
@@ -282,14 +283,14 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | ↳ [Const traits](https://rust-lang.github.io/rust-project-goals/2024h2/const-traits.html#ownership-and-team-asks)                                           | [Deadbeef][]       |                    |
 | ↳ [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)                            | [lcnr][]            |                    |
 | *FCP decisions*                                                                                     |                  |                    |
-| ↳ [Associated type position impl trait (https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT)](ATPIT.html#ownership-and-team-asks)                   | [Oliver Scherer][]         |                    |
+| ↳ [Associated type position impl trait](https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT.html#ownership-and-team-asks)                           | [Oliver Scherer][]         |                    |
 | *Stabilization decision*                                                                            |                  |                    |
 | ↳ [Stabilize coherence coherence support](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)                   | [lcnr][]            |                    |
 | ↳ [Rust 2024 Edition](https://rust-lang.github.io/rust-project-goals/2024h2/Rust-2024-Edition.html#ownership-and-team-asks)                                 | [TC][]     |                    |
-| ↳ [Associated type position impl trait (https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT)](ATPIT.html#ownership-and-team-asks)                   | [Oliver Scherer][]         |                    |
+| ↳ [Associated type position impl trait](https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT.html#ownership-and-team-asks)                           | [Oliver Scherer][]         |                    |
 | *Standard reviews*                                                                                  |                  |                    |
 | ↳ [Stabilize coherence coherence support](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)                   | [lcnr][]            |                    |
-| ↳ [Support in [rust-analyzer]](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)                              | [lcnr][]            |                    |
+| ↳ [Support in rust-analyzer](https://rust-lang.github.io/rust-project-goals/2024h2/next-solver.html#ownership-and-team-asks)                                | [lcnr][]            |                    |
 | ↳ [Scalable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2024h2/Polonius.html#ownership-and-team-asks)                       | [Rémy Rakic][]             | [Matthew Jasper][]     |
 | ↳ [Testing infra + contributors for a-mir-formality](https://rust-lang.github.io/rust-project-goals/2024h2/a-mir-formality.html#ownership-and-team-asks)    | [Niko Matsakis][]    |                    |
 
