@@ -2,8 +2,8 @@
 
 - Feature Name: `return_type_notation`
 - Start Date: 2024-06-04
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3654](https://github.com/rust-lang/rfcs/pull/3654)
+- Rust Issue: [rust-lang/rust#109417](https://github.com/rust-lang/rust/issues/109417)
 
 # Summary
 [summary]: #summary
