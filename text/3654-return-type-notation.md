@@ -1,9 +1,9 @@
-# Return Type Notation in Bounds and Where-clauses
+# Return type notation (RTN) in bounds and where-clauses
 
 - Feature Name: `return_type_notation`
 - Start Date: 2024-06-04
 - RFC PR: [rust-lang/rfcs#3654](https://github.com/rust-lang/rfcs/pull/3654)
-- Rust Issue: [rust-lang/rust#109417](https://github.com/rust-lang/rust/issues/109417)
+- Tracking Issue: [rust-lang/rust#109417](https://github.com/rust-lang/rust/issues/109417)
 
 # Summary
 [summary]: #summary
@@ -29,8 +29,6 @@ Examples of RTN usage allowed by this RFC include:
 
 # Motivation
 [motivation]: #motivation
-
-> Why are we doing this? What use cases does it support? What is the expected outcome?
 
 Rust now supports async fns and `-> impl Trait` in traits (acronymized as AFIT and RPITIT, respectively), but we currently lack the ability for users to declare additional bounds on the values returned by such functions. This is often referred to as the [Send bound problem][sbp], because the most acute manifestation is the inability to require that an `async fn` returns a `Send` future, but it is actually more general than both async fns and the `Send` trait (as discussed below).
 
@@ -177,8 +175,8 @@ where
     S: Service<
         (),
         Response: Send,
-        call(..): Send, // 👈 "the method `call`
-                        //     returns a `Send` future"
+        // "The method `call` returns a `Send` future."
+        call(..): Send,
     > + Send + 'static,
 {
     tokio::spawn(async move {
@@ -213,7 +211,7 @@ where
 {
     fn widgets(&self) -> impl Iterator<Item = Widget> {
         self.factory.widgets().rev()
-        //                     👆 requires that the iterator be double-ended
+        //                     ^^^ requires that the iterator be double-ended
     }
 }
 ```
@@ -269,7 +267,7 @@ The function `spawn_call` can then be written as follows:
 async fn spawn_call<S>(service: S) -> S::Response
 where
     S: SendService<(), Response: Send> + 'static,
-    // 👆 use the alias
+    // ^^^^^^^^^^^ use the alias
 {
     tokio::spawn(async move {
         service.call(()).await // <--- OK!
@@ -305,8 +303,6 @@ While `SendBackend` may be convenient most of the time, it is also stricter than
 
 # Guide-level explanation
 [guide-level explanation]: #guide-level-explanation
-
-> Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer.
 
 Async functions can be used in many ways. The most common configuration is to use a *work stealing* setup, in which spawned tasks may migrate between threads. In this case, all futures have to be `Send` to ensure that this migration is safe. But many applications prefer to use a *thread-per-core* setup, in which tasks, once spawned, never move to another thread (one important special case is where the entire application runs on a single thread to begin with, common in embedded environments but also in e.g. Google's Fuchsia operating system).
 
@@ -492,14 +488,6 @@ When using a trait `MyTrait` that defines a sendable alias `SendMyTrait`...
 # Reference-level explanation
 [reference-level explanation]: #reference-level-explanation
 
->This is the technical portion of the RFC. Explain the design in sufficient detail that:
->
->- Its interaction with other features is clear.
->- It is reasonably clear how the feature would be implemented.
->- Corner cases are dissected by example.
->
->The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
-
 ## Background and running examples
 
 ### The `Widgets` trait
@@ -543,8 +531,8 @@ Type = i32
      | Type "::" AssociatedTypeName
      | "<" Type as TraitName Generics? ">" "::" AssociatedTypeName
      | ...
-     | Type "::" MethodName "(" ".." ")" // 👈 new
-     | "<" Type as TraitName Generics? ">" "::" MethodName "(" ".." ")" // 👈 new
+     | Type "::" MethodName "(" ".." ")" // <--- new
+     | "<" Type as TraitName Generics? ">" "::" MethodName "(" ".." ")" // <--- new
 
 Generics = "<" Generic,* ">"
 Generic = Type | Lifetime | ...
@@ -566,7 +554,7 @@ TraitRef = TraitName "<" Generic,* AssociatedBound ">"
 
 AssociatedBound = Identifier "=" Generic
                 | Identifier ":" TraitRef // (from RFC #2289)
-                | Identifier "(" ".." ")" ":" TraitRef // 👈 new
+                | Identifier "(" ".." ")" ":" TraitRef // <--- new
 ```
 
 Examples: given the `Widgets` trait defined earlier in this section...
@@ -626,8 +614,6 @@ Although conceptually RTN could be used for any trait method, we choose to limit
 # Drawbacks
 [drawbacks]: #drawbacks
 
->Why should we *not* do this?
-
 ## Confusion about future type vs awaited type
 
 When writing an async function, the future is implicit:
@@ -662,11 +648,6 @@ It is a consequence of existing precedent:
 
 # Rationale and alternatives
 [rationale and alternatives]: #rationale-and-alternatives
-
->- Why is this design the best in the space of possible designs?
->- What other designs have been considered and what is the rationale for not choosing them?
->- What is the impact of not doing this?
->- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
 
 ## What is the impact of not doing this?
 
@@ -763,7 +744,7 @@ and a function bounding it
 fn start_health_check<H>(health_check: H, server: Server)
 where
     H: HealthCheck + Send + 'static,
-    H::check(..): Send, // 👈 How would we write this with `typeof`?
+    H::check(..): Send, // <--- How would we write this with `typeof`?
 ```
 
 To write the above with `typeof`, you would do something like this
@@ -821,7 +802,7 @@ might have been desugared as follows:
 
 ```rust
 trait Factory {
-    type widgets<'a>: Iterator<Item = Widget>; // 👈 implicitly introduced
+    type widgets<'a>: Iterator<Item = Widget>; // <--- implicitly introduced
     fn widgets(&self) -> Self::widgets<'_>;
 }
 ```
@@ -951,8 +932,6 @@ C++ has [`decltype`](https://en.cppreference.com/w/cpp/language/decltype) expres
 # Unresolved questions
 [unresolved questions]: #unresolved-questions
 
->- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-
 ## Does stabilizing `T::foo(..)` notation as a standalone type create a confusing inconsistency with `-> ()` shorthand?
 
 Unlike a regular associated type, this RFC does not allow a trait bound that specifies the return type of a method, only the ability to put bounds on that return type.
@@ -964,10 +943,6 @@ Prior to stabilizing the "associated type position" syntax, we should be sure we
 
 # Future possibilities
 [future possibilities]: #future-possibilities
-
->Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way.
 
 ## Implementing trait aliases
 
