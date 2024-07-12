@@ -10,7 +10,7 @@
 
 Return type notation (RTN) gives a way to reference or bound the type returned by a trait method. The new bounds look like `T: Trait<method(..): Send>` or `T::method(..): Send`. The primary use case is to add bounds such as `Send` to the futures returned by `async fn`s in traits and `-> impl Future` functions, but they work for any trait function defined with return-position impl trait (e.g., `where T: Factory<widgets(..): DoubleEndedIterator>` would also be valid).
 
-This RFC proposes a new kind of type written `<T as Trait>::method(..)` (or `T::method(..)` for short). RTN refers to "the type returned by invoking `method` on `T`". 
+This RFC proposes a new kind of type written `<T as Trait>::method(..)` (or `T::method(..)` for short). RTN refers to "the type returned by invoking `method` on `T`".
 
 To keep this RFC focused, it only covers usage of RTN as the `Self` type of a bound or where-clause. The expectation is that, after accepting this RFC, we will gradually expand RTN usage to other places as covered under [Future Possibilities](#future-possibilities). As a notable example, supporting RTN in struct field types would allow constructing types that store the results of a call to a trait `-> impl Trait` method, making them [more suitable for use in public APIs](https://rust-lang.github.io/api-guidelines/future-proofing.html).
 
@@ -43,7 +43,7 @@ To create an interoperable async ecosystem, we need the ability to write a singl
 ```rust
 trait Service<Request> {
     type Response;
-    
+
     // Invoke the service.
     async fn call(&self, req: Request) -> Self::Response;
 }
@@ -60,7 +60,7 @@ where
     R: Debug,
 {
     type Response = S::Response;
-    
+
     async fn call(&self, request: R) -> S::Response {
         eprintln!("{request:?}");
         self.0.call(request).await
@@ -73,7 +73,7 @@ Defining `Service` as shown above works fine in a thread-per-core or single-thre
 
 ```rust
 async fn spawn_call<S>(service: S) -> S::Response
-where 
+where
     S: Service<(), Response: Send> + Send + 'static,
 {
     tokio::spawn(async move {
@@ -108,7 +108,7 @@ The only way today to make this code compile is to modify the `Service` trait de
 ```rust
 trait SendService<Request>: Send {
     type Response;
-    
+
     // Invoke the service.
     fn call(
         &self,
@@ -127,7 +127,7 @@ It is useful to compare this situation with analogous scenarios that arise elsew
 fn into_iter_example<I: IntoIterator>(i: I) {
     let iter = i.into_iter();
     std::thread::spawn(move || {
-        iter.next(); // <-- Error!       
+        iter.next(); // <-- Error!
     });
 }
 ```
@@ -147,7 +147,7 @@ error[E0277]: `<I as IntoIterator>::IntoIter` cannot be sent between threads saf
     |  _____|__________________within this `{closure@src/lib.rs:3:24: 3:31}`
     | |     |
     | |     required by a bound introduced by this call
-4   | |         iter.next();        
+4   | |         iter.next();
 5   | |     });
     | |_____^ `<I as IntoIterator>::IntoIter` cannot be sent between threads safely
 ...
@@ -155,7 +155,7 @@ help: consider further restricting the associated type
     |
 1   | fn into_iter_example<I: IntoIterator>(i: I)
     |   where <I as IntoIterator>::IntoIter: Send {
-    |     
+    |
 ```
 
 There are two ways the function `into_iter_example` could be made to compile:
@@ -173,11 +173,11 @@ The core feature proposed in this RFC is the ability to write a bound that bound
 
 ```rust
 async fn spawn_call<S>(service: S) -> S::Response
-where 
+where
     S: Service<
         (),
         Response: Send,
-        call(..): Send, // 👈 "the method `call` 
+        call(..): Send, // 👈 "the method `call`
                         //     returns a `Send` future"
     > + Send + 'static,
 {
@@ -239,7 +239,7 @@ We expect most users in the wild to define "trait aliases" to indicate cases whe
 //                    by async or `-> impl Trait` methods
 trait Service<Request> {
     type Response;
-    
+
     // Invoke the service.
     async fn call(&self, req: Request) -> Self::Response;
 }
@@ -250,7 +250,7 @@ The expansion of this macro use RTN to create a trait that both (1) implies a `S
 ```rust
 trait SendService<R>:   // a `SendService` is...
     Service<            // ...a `Service`...
-        R, 
+        R,
         call(..): Send, // ...where `call` returns
                         // a `Send` future...
     > +
@@ -267,7 +267,7 @@ The function `spawn_call` can then be written as follows:
 
 ```rust
 async fn spawn_call<S>(service: S) -> S::Response
-where 
+where
     S: SendService<(), Response: Send> + 'static,
     // 👆 use the alias
 {
@@ -320,7 +320,7 @@ For traits whose futures may or may not be `Send`, the recommend pattern is to l
 #[trait_variant::make(SendHealthCheck: Send)]
 trait HealthCheck {
     async fn check(&mut self, server: &Server) -> bool;
-    
+
     async fn shutdown(&mut self, server: &Server);
 }
 ```
@@ -337,7 +337,7 @@ impl HealthCheck for DummyCheck {
     async fn check(&mut self, server: &Server) -> bool {
         true
     }
-        
+
     async fn shutdown(&mut self, server: &Server) {}
 }
 ```
@@ -375,9 +375,9 @@ where
             //             be Send because this code runs.
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
-        
+
         emit_failure_log(&server).await;
-        
+
         server.shutdown().await;
         //     ----- Error: Returned future must be Send
         //           because this code runs.
@@ -416,7 +416,7 @@ For example, the following function spawns a task to shutdown the server:
 fn spawn_shutdown<HC>(health_check: H, server: Server)
 where
     HC: SendHealthCheck + 'static,
-    //  --------------- stricter than necessary 
+    //  --------------- stricter than necessary
 {
     tokio::spawn(async move {
         server.shutdown().await;
@@ -444,7 +444,7 @@ where
 The `shutdown(..)` notation acts like an associated type referring to the return type of the method.
 The bound `HC: HealthCheck<shutdown(..): Send>` indicates that the `shutdown` method,
 regardless of what arguments it is given,
-will return a `Send` future. 
+will return a `Send` future.
 These bounds do not have to be written in the `HealthCheck` trait, it could also be written as follows:
 
 ```rust
@@ -574,7 +574,7 @@ Examples: given the `Widgets` trait defined earlier in this section...
 * `T: Widgets<widgets(..): Send>` is a valid associated type bound
 
 RTN bounds are internally desugared to an RTN in a standalone where-clause,
-so e.g. `where T: Widgets<widgets(..): Send>` becomes `where <T as Widgets>::widgets(..): Send`. 
+so e.g. `where T: Widgets<widgets(..): Send>` becomes `where <T as Widgets>::widgets(..): Send`.
 We will not consider them further in this section.
 
 ## Where RTN can be used (for now)
@@ -690,7 +690,7 @@ The Async Working Group has performed [five case studies][cs] around the use of 
 We found that all of these key use cases required a way to handle send bounds, with only two exceptions:
 
 * `embassy`, where the entire process is single-threaded (and hence `Send` is not important),
-* Fuchsia, where the developers at first thought they needed `Send` bounds, but ultimately found they were able to refactor so that spawns did not occur in generic code ([link to the relevant section](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/case-studies/socket-handler.html#send-bound-limitation)). 
+* Fuchsia, where the developers at first thought they needed `Send` bounds, but ultimately found they were able to refactor so that spawns did not occur in generic code ([link to the relevant section](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/case-studies/socket-handler.html#send-bound-limitation)).
 
 From this we conclude that offering async functions in traits without *some* solution to the "send bound problem" means it will not be usable for most Rust developers. The Fuchsia case also provides evidence that, even when workarounds exist, they are not obvious to Rust developers.
 
@@ -714,7 +714,7 @@ Versus aliases that always bound every method, RTN can be used to
 * bound individual methods
 * introduce bounds for traits other than `Send`.
 
-As [described in the motivation](#bounding-specific-methods), bounding individual methods allows for greater reuse. 
+As [described in the motivation](#bounding-specific-methods), bounding individual methods allows for greater reuse.
 For functions that only make use of a subset of the methods in a trait, RTN can be used to create a "maximally reusable" signature.
 
 ## What other syntax options were considered?
@@ -737,7 +737,7 @@ The document reviewed the following designs overall:
 We briefly review the key arguments here:
 
 * "StatusQuo": `D: Database<items(): DoubleEndedIterator>`
-    * This notation is more concise and feels less heavy-weight. However, we expect users to primarily use aliases; also, the syntax "feels" surprising to many users, since Rust tends to use `..` to indicate elided items. The biggest concern here is a potential future conflict. If we (a) extend the notation to allow argument types to be specified ([as described in the future possibilities section](#future-possibilities)) AND (b) support some kind of variadic arguments, then `D::items()` would most naturally indicate "no arguments". 
+    * This notation is more concise and feels less heavy-weight. However, we expect users to primarily use aliases; also, the syntax "feels" surprising to many users, since Rust tends to use `..` to indicate elided items. The biggest concern here is a potential future conflict. If we (a) extend the notation to allow argument types to be specified ([as described in the future possibilities section](#future-possibilities)) AND (b) support some kind of variadic arguments, then `D::items()` would most naturally indicate "no arguments".
 * "Return": `D: Database<items::return: DoubleEndedIterator>`
     * This notation avoids looking like a function call. Many team members found it dense and difficult to read. While intended to look more like an associated type, the use of a lower-case keyword still makes it feel like a new thing. The syntax does not support future extensions (e.g., specifying the value of argument types).
 * "Output": `D: Database<items::Output: DoubleEndedIterator>` (see [this blog post](https://smallcultfollowing.com/babysteps/blog/2023/06/12/higher-ranked-projections-send-bound-problem-part-4/) for details)
@@ -747,7 +747,7 @@ We briefly review the key arguments here:
 
 ## Why not use `typeof`, isn't that more general?
 
-The compiler currently supports a `typeof` operation as an experimental feature (never RFC'd). The idea is that `typeof <expr>` type-checks `expr` and evaluates to the result of that expression. Therefore `typeof 22_i32` would be equivalent to `i32`, and `typeof x` would be equivalent to whatever the type of `x` is in that context (or an error if there is no identifier `x` in scope). 
+The compiler currently supports a `typeof` operation as an experimental feature (never RFC'd). The idea is that `typeof <expr>` type-checks `expr` and evaluates to the result of that expression. Therefore `typeof 22_i32` would be equivalent to `i32`, and `typeof x` would be equivalent to whatever the type of `x` is in that context (or an error if there is no identifier `x` in scope).
 
 It might appear that `typeof`  can be used in a similar way to RTN, but in fact it is significantly more complex. Consider our first example, the `HealthCheck` trait:
 
@@ -788,7 +788,7 @@ where
     H: HealthCheck + Send + 'static,
     typeof {
         let hc: &'a mut H;
-        let s: Server;        
+        let s: Server;
         H::check(hc, s)
     }: Send,
 ```
@@ -935,7 +935,7 @@ Second, it covers far fewer use cases than RTN: it cannot be used to express spe
 
 ## Why not Send trait transformers?
 
-[Trait transformers][] are a proposal to have "modifiers" on trait bounds that produce a derived version of the trait. For example, `T: async Iterator` might mean "T implements a version of `Iterator` where the `next` function is `async`". Following this idea, one can imagine `T: Send HealthCheck` to mean "implement a version of `HealthCheck` where every async fn returns a `Send` future". This idea is an ergonomic way to manage traits that have a lot of async functions, as [came up in the Microsoft case study](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/case-studies/microsoft.html#send-bounds). 
+[Trait transformers][] are a proposal to have "modifiers" on trait bounds that produce a derived version of the trait. For example, `T: async Iterator` might mean "T implements a version of `Iterator` where the `next` function is `async`". Following this idea, one can imagine `T: Send HealthCheck` to mean "implement a version of `HealthCheck` where every async fn returns a `Send` future". This idea is an ergonomic way to manage traits that have a lot of async functions, as [came up in the Microsoft case study](https://rust-lang.github.io/async-fundamentals-initiative/evaluation/case-studies/microsoft.html#send-bounds).
 
 [Trait transformers]: https://smallcultfollowing.com/babysteps/blog/2023/03/03/trait-transformers-send-bounds-part-3/
 
@@ -967,11 +967,11 @@ Prior to stabilizing the "associated type position" syntax, we should be sure we
 
 >Think about what the natural extension and evolution of your proposal would
 be and how it would affect the language and project as a whole in a holistic
-way. 
+way.
 
 ## Implementing trait aliases
 
-Referring to the `Service` trait specifically, 
+Referring to the `Service` trait specifically,
 the Tokio developers expressed a preference to name the "base trait" `LocalService`
 and to call the "sendable alias" `Service`.
 This reflects the way that Tokio uses work-stealing executors by default.
@@ -981,7 +981,7 @@ This formulation can be done with `trait_variant` like so
 #[trait_variant::make(Service: Send)]
 trait LocalService<R> {
     type Response;
-    
+
     async fn call(&self, request: R) -> Self::Response;
 }
 ```
@@ -1084,7 +1084,7 @@ fn load_data<D: DataFactory>(data_factory: D) {
     //   value.
     await_future(load_future);
 }
-    
+
 fn await_future<D: DataFactory>(load_future: D::load(..)) -> Data {
     //                                       -------
     //                      As above, expands to `D::load(&'_ D)`, which
@@ -1110,4 +1110,3 @@ We expect to  make traits with async functions and RPITIT dyn safe in the future
 ## Naming the zero-sized types for a method
 
 Every function and method `f` in Rust has a corresponding zero-sized type that uniquely identifies `f`. The RTN notation `T::check(..)` refers to the return value of `check`; conceivably `T::check` (without the parens) could be used to refer the type of `check` itself. In this case, `T::check(..)` can be thought of as shorthand for `<T::check as Fn<_>>::Output`.
-
