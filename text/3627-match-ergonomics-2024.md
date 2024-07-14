@@ -1,7 +1,7 @@
 - Feature Name: `ref_pat_eat_one_layer_2024`
 - Start Date: 2024-05-06
 - RFC PR: [rust-lang/rfcs#3627](https://github.com/rust-lang/rfcs/pull/3627)
-- Rust Issue: [rust-lang/rust#123076](https://github.com/rust-lang/rust/issues/123076)
+- Tracking Issue: [rust-lang/rust#123076](https://github.com/rust-lang/rust/issues/123076)
 
 # Summary
 [summary]: #summary
