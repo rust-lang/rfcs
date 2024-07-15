@@ -13,6 +13,14 @@ This will allow Cargo to display this information to the user and provide a way
 for `rustdoc` to eventually render this data (how this is rendered is outside
 the scope of this RFC).
 
+Example:
+
+```toml
+[features.serde]
+enables = []
+doc = "enable support for serialization and deserialization via serde"
+```
+
 Please see the parent meta RFC for background information: [`feature-metadata`].
 
 # Motivation
