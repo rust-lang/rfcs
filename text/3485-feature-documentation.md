@@ -169,6 +169,11 @@ concerns about bloat, but this is further discussed in
 [future-possibilities]: #future-possibilities
 
 - Rustdoc can build on this to show feature documentation.
+
+  If this RFC gets stabilized before any corresponding change in rustdoc, its
+  documentation should highlight that rustdoc may parse the description and
+  support intra-doc links in the future, but not at the current time. Users need
+  to be aware of this potential incompatibility.
 - At some point, the decision to not include `doc` in the index could be
   reevaluated. Including only the first (summary) line of `doc` could be a
   possibility.
