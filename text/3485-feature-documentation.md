@@ -8,10 +8,10 @@
 
 [summary]: #summary
 
-This RFC describes a new key under `features` in `Cargo.toml` for
-documentation. This will allow Cargo to display this information to the user and
-provide a way for `rustdoc` to eventually render this data (how this is rendered
-is outside the scope of this RFC).
+This RFC describes a new key under `features` in `Cargo.toml` for documentation.
+This will allow Cargo to display this information to the user and provide a way
+for `rustdoc` to eventually render this data (how this is rendered is outside
+the scope of this RFC).
 
 Please see the parent meta RFC for background information: [`feature-metadata`].
 
@@ -33,13 +33,12 @@ for keeping feature definitions and documentation together.
 [guide-level-explanation]: #guide-level-explanation
 
 A new `doc` key will be allowed within a feature's table. This key provides a
-markdown docstring describing the feature. The first paragraph
-will be treated as a summary, and should be suitable to display
-standalone without the rest of the description.
+markdown docstring describing the feature. The first paragraph will be treated
+as a summary, and should be suitable to display standalone without the rest of
+the description.
 
-Don't include the name of the feature in the summary; tools
-will typically already display this documentation alongside
-the name of the feature.
+Don't include the name of the feature in the summary; tools will typically
+already display this documentation alongside the name of the feature.
 
 ```toml
 [features]
@@ -69,9 +68,9 @@ the equivalent to a `#[doc(...)]` attribute. Like doc comments, the first line
 should be treated as a summary. Intra-doc link support is not included in this
 RFC, so they should not be used.
 
-There is nothing in this RFC that cargo **must** do with this action, since it is
-mainly intended for the consumption of `rustdoc` or `docs.rs`. However, it can
-be used for general diagnostic information such as during `cargo add` or a
+There is nothing in this RFC that cargo **must** do with this action, since it
+is mainly intended for the consumption of `rustdoc` or `docs.rs`. However, it
+can be used for general diagnostic information such as during `cargo add` or a
 possible `cargo info` command. A sample application with `cargo add`:
 
 ```text
@@ -92,8 +91,8 @@ crab@rust foobar % cargo add regex
     Updating crates.io index
 ```
 
-*(features like `aho-corasick`, `memchr`, or `use_std` would likely be
-`public = false` since they aren't listed on the crate landing page)*
+_(features like `aho-corasick`, `memchr`, or `use_std` would likely be
+`public = false` since they aren't listed on the crate landing page)_
 
 Any tools that want the information in `doc` will require access to the
 manifest. Adding this information to the index was decided against due to
@@ -112,18 +111,19 @@ concerns about bloat, but this is further discussed in
 - When rendering features in documentation, this RFC does not specify any way
   for `rustdoc` to get the information it requires. This will require separate
   design work.
-- Unlike with the [`document-features`](https://crates.io/crates/document-features)
-  crate there is no way to group features into sections or have a
-  user-specified layout
-- Users cannot control features ordering in documentation since the TOML specification defines table keys as unordered.
+- Unlike with the
+  [`document-features`](https://crates.io/crates/document-features) crate there
+  is no way to group features into sections or have a user-specified layout
+- Users cannot control features ordering in documentation since the TOML
+  specification defines table keys as unordered.
 
 # Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- To avoid increasing the size of the registry index, this does not add `doc`
-  to a package's index entry.  This means a `.crate` file must be downloaded
-  and extracted to access the features.
+- To avoid increasing the size of the registry index, this does not add `doc` to
+  a package's index entry. This means a `.crate` file must be downloaded and
+  extracted to access the features.
 - Feature descriptions could be specified somewhere in Rust source files. This
   has the downside of creating multiple sources of truth on features.
 - Cargo could parse doc comments in `Cargo.toml`, like the `document-features`
@@ -153,8 +153,10 @@ concerns about bloat, but this is further discussed in
 - There is an existing crate that uses TOML comments to create a features table:
   <https://docs.rs/document-features/latest/document_features/>
 - `docs.rs` displays a feature table, but it is fairly limited. If features
-  start with `_`, they are hidden from this table ([example](https://docs.rs/crate/regex/latest/features)).
-- `lib.rs` extracts feature documentation from `Cargo.toml` and source ([example](https://lib.rs/crates/regex/features))
+  start with `_`, they are hidden from this table
+  ([example](https://docs.rs/crate/regex/latest/features)).
+- `lib.rs` extracts feature documentation from `Cargo.toml` and source
+  ([example](https://lib.rs/crates/regex/features))
 
 # Unresolved questions
 
