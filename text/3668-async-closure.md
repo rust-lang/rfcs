@@ -138,6 +138,10 @@ let ret = async || -> Vec<Id> { async_iterator.collect().await };
 
 // They can be higher-ranked:
 let hr = async |x: &str| { do_something(x).await };
+
+// They can capture values by move:
+let s = String::from("hello, world");
+let c = async || do_something(&s).await };
 ```
 
 When called, they return an anonymous future type corresponding to the (not-yet-executed) body of the closure. These can be awaited like any other future.
@@ -672,6 +676,12 @@ where T: for<'a> async ?Trait
 ```
 
 (Which is semantically invalid but syntactically valid.) This is currently proposed in [rust-lang/rust#127054](https://github.com/rust-lang/rust/pull/127054), which should be decided before stabilization, and the stabilization report can re-confirm the correct ordering of `for<'a>` and `async`.
+
+### Where exactly is `async || {}` not backwards with `|| async {}`
+
+The stabilization report for async closures should thoroughly note any cases where rewriting `|| async {}` into `async || {}` causes errors, as they will be pitfalls for adoption of async closures.
+
+One predicted shortcoming will likely be due to corner cases of closure signature inference and pre-async-closure trait bounds in a [previous section](#users-might-write-f-fn---fut-fut-futureoutput--t-over-f-async-fn---t). This is not necessarily a blocker, since as the ecosystem migrates to `async Fn()`-style trait bounds, closure signature inference will be restored.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
