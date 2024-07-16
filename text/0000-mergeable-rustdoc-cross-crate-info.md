@@ -45,26 +45,57 @@ Compile the crates.
 ```shell
 rustc --crate-name=t --crate-type=lib --edition=2021 --emit=metadata --out-dir=t/target t/src/lib.rs
 rustc --crate-name=s --crate-type=lib --edition=2021 --emit=metadata --out-dir=s/target --extern t=t/target/libt.rmeta s/src/lib.rs
-rustc --crate-name=i --crate-type=lib --edition=2021 --emit=metadata --out-dir=i/target --extern s=s/target/libs.rmeta --extern t=t/target/libt.rmeta -L t/target i/src/lib.rs
 ```
 
-Document `s` and `t` independently, providing `--merge=none` and `--write-info-json`
+Document `s` and `t` independently, providing `--merge=none`, `--write-info-json`.
 
 ```shell
-rustdoc -Z unstable-options --crate-name=t --crate-type=lib --edition=2021 --out-dir=t/target/doc --extern-html-root-url t=$(MERGED) --merge=none --write-info-json=t/target/doc.parts/t/crate-info.json t/src/lib.rs
-rustdoc -Z unstable-options --crate-name=s --crate-type=lib --edition=2021 --out-dir=s/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --merge=none --write-info-json=s/target/doc.parts/s/crate-info.json --extern t=t/target/libt.rmeta s/src/lib.rs
+rustdoc \
+    -Z unstable-options \
+    --crate-name=t \
+    --crate-type=lib \
+    --edition=2021 \
+    --out-dir=t/target/doc \
+    --extern-html-root-url t=$MERGED \
+    --merge=none \
+    --write-info-json=t/target/doc.parts/t/crate-info.json \
+    t/src/lib.rs
+rustdoc \
+    -Z unstable-options \
+    --crate-name=s \
+    --crate-type=lib \
+    --edition=2021 \
+    --out-dir=s/target/doc \
+    --extern-html-root-url s=$MERGED \
+    --extern-html-root-url t=$MERGED \
+    --merge=none \
+    --write-info-json=s/target/doc.parts/s/crate-info.json \
+    --extern t=t/target/libt.rmeta \
+    s/src/lib.rs
 ```
 
-Link everything with a final invocation of rustdoc on `i`. We will provide `--merge=write-only` and `--include-info-json=<path>`. See the Reference-level explanation about these flags.
+Link everything with a final invocation of rustdoc on `i`. We will provide `--merge=write-only`, `--include-info-json`, and `--include-rendered-docs`. See the Reference-level explanation about these flags.
 
 ```shell
-rustdoc -Z unstable-options --crate-name=i --crate-type=lib --edition=2021 --enable-index-page --out-dir=i/target/doc --extern-html-root-url s=$(MERGED) --extern-html-root-url t=$(MERGED) --extern-html-root-url i=$(MERGED) --merge=write-only --include-info-json=t/target/doc.parts/t/crate-info.json --include-info-json=s/target/doc.parts/s/crate-info.json --extern t=t/target/libt.rmeta --extern s=s/target/libs.rmeta -L t/target i/src/lib.rs
-```
-
-Merge the docs with `cp`. This can be avoided if `--out-dir=$(MERGED)` is used for all of the rustdoc calls. We copy here to illustrate that documenting `s` is independent of documenting `t`, and could happen on separate machines.
-
-```shell
-cp -r s/target/doc/* t/target/doc/* i/target/doc/* merged/doc
+rustdoc \
+    -Z unstable-options \
+    --crate-name=i \
+    --crate-type=lib \
+    --edition=2021 \
+    --enable-index-page \
+    --out-dir=i/target/doc \
+    --extern-html-root-url s=$MERGED \
+    --extern-html-root-url t=$MERGED \
+    --extern-html-root-url i=$MERGED \
+    --merge=write-only \
+    --include-info-json=t/target/doc.parts/t/crate-info.json \
+    --include-info-json=s/target/doc.parts/s/crate-info.json \
+    --extern t=t/target/libt.rmeta \
+    --extern s=s/target/libs.rmeta \
+    --include-rendered-docs=t/target/doc/t \
+    --include-rendered-docs=s/target/doc/s \
+    -L t/target \
+    i/src/lib.rs
 ```
 
 Browse `merged/doc/index.html` with cross-crate information.
@@ -81,78 +112,47 @@ $ tree . -a
 │   ├── src
 │   │   └── lib.rs
 │   └── target
-│       ├── doc
-│       │   ├── crates.js
-│       │   ├── help.html
-│       │   ├── i
-│       │   │   ├── all.html
-│       │   │   ├── fn.add.html
-│       │   │   ├── index.html
-│       │   │   └── sidebar-items.js
-│       │   ├── index.html
-│       │   ├── .lock
-│       │   ├── search.desc
-│       │   │   ├── i
-│       │   │   │   └── i-desc-0-.js
-│       │   │   ├── s
-│       │   │   │   └── s-desc-0-.js
-│       │   │   └── t
-│       │   │       └── t-desc-0-.js
-│       │   ├── settings.html
-│       │   ├── src
-│       │   │   └── i
-│       │   │       └── lib.rs.html
-│       │   ├── src-files.js
-│       │   ├── static.files
-│       │   │   ├── COPYRIGHT-23e9bde6c69aea69.txt
-│       │   │   ├── favicon-2c020d218678b618.svg
-│       │   │   ├── favicon-32x32-422f7d1d52889060.png
-│       │   │   ├── FiraSans-LICENSE-db4b642586e02d97.txt
-│       │   │   ├── FiraSans-Medium-8f9a781e4970d388.woff2
-│       │   │   ├── FiraSans-Regular-018c141bf0843ffd.woff2
-│       │   │   ├── LICENSE-APACHE-b91fa81cba47b86a.txt
-│       │   │   ├── LICENSE-MIT-65090b722b3f6c56.txt
-│       │   │   ├── main-20a3ad099b048cf2.js
-│       │   │   ├── NanumBarunGothic-0f09457c7a19b7c6.ttf.woff2
-│       │   │   ├── NanumBarunGothic-LICENSE-18c5adf4b52b4041.txt
-│       │   │   ├── normalize-76eba96aa4d2e634.css
-│       │   │   ├── noscript-df360f571f6edeae.css
-│       │   │   ├── rustdoc-dd39b87e5fcfba68.css
-│       │   │   ├── rust-logo-151179464ae7ed46.svg
-│       │   │   ├── scrape-examples-ef1e698c1d417c0c.js
-│       │   │   ├── search-0fe7219eb170c82e.js
-│       │   │   ├── settings-4313503d2e1961c2.js
-│       │   │   ├── SourceCodePro-It-1cc31594bf4f1f79.ttf.woff2
-│       │   │   ├── SourceCodePro-LICENSE-d180d465a756484a.txt
-│       │   │   ├── SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2
-│       │   │   ├── SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2
-│       │   │   ├── SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2
-│       │   │   ├── SourceSerif4-It-acdfaf1a8af734b1.ttf.woff2
-│       │   │   ├── SourceSerif4-LICENSE-3bb119e13b1258b7.md
-│       │   │   ├── SourceSerif4-Regular-46f98efaafac5295.ttf.woff2
-│       │   │   ├── src-script-e66d777a5a92e9b2.js
-│       │   │   └── storage-118b08c4c78b968e.js
-│       │   └── trait.impl
-│       │       ├── core
-│       │       │   ├── marker
-│       │       │   │   ├── trait.Freeze.js
-│       │       │   │   ├── trait.Send.js
-│       │       │   │   ├── trait.Sync.js
-│       │       │   │   └── trait.Unpin.js
-│       │       │   └── panic
-│       │       │       └── unwind_safe
-│       │       │           ├── trait.RefUnwindSafe.js
-│       │       │           └── trait.UnwindSafe.js
-│       │       └── t
-│       │           └── trait.T.js
-│       └── libi.rmeta
+│       └── doc
+│           ├── crates.js
+│           ├── help.html
+│           ├── i
+│           │   ├── all.html
+│           │   ├── index.html
+│           │   └── sidebar-items.js
+│           ├── index.html
+│           ├── .lock
+│           ├── search.desc
+│           │   └── i
+│           │       └── i-desc-0-.js
+│           ├── search-index.js
+│           ├── settings.html
+│           ├── src
+│           │   └── i
+│           │       └── lib.rs.html
+│           ├── src-files.js
+│           ├── static.files
+│           │   ├── COPYRIGHT-23e9bde6c69aea69.txt
+│           │   ├── favicon-2c020d218678b618.svg
+│           │   └── <rest of the contents excluded>
+│           └── trait.impl
+│               ├── core
+│               │   ├── marker
+│               │   │   ├── trait.Freeze.js
+│               │   │   ├── trait.Send.js
+│               │   │   ├── trait.Sync.js
+│               │   │   └── trait.Unpin.js
+│               │   └── panic
+│               │       └── unwind_safe
+│               │           ├── trait.RefUnwindSafe.js
+│               │           └── trait.UnwindSafe.js
+│               └── t
+│                   └── trait.T.js
 ├── merged
 │   └── doc
 │       ├── crates.js
 │       ├── help.html
 │       ├── i
 │       │   ├── all.html
-│       │   ├── fn.add.html
 │       │   ├── index.html
 │       │   └── sidebar-items.js
 │       ├── index.html
@@ -162,8 +162,13 @@ $ tree . -a
 │       │   ├── sidebar-items.js
 │       │   └── struct.S.html
 │       ├── search.desc
-│       │   └── i
-│       │       └── i-desc-0-.js
+│       │   ├── i
+│       │   │   └── i-desc-0-.js
+│       │   ├── s
+│       │   │   └── s-desc-0-.js
+│       │   └── t
+│       │       └── t-desc-0-.js
+│       ├── search-index.js
 │       ├── settings.html
 │       ├── src
 │       │   ├── i
@@ -174,39 +179,27 @@ $ tree . -a
 │       │       └── lib.rs.html
 │       ├── src-files.js
 │       ├── static.files
-│       │   ├── COPYRIGHT-23e9bde6c69aea69.txt
-│       │   ├── favicon-2c020d218678b618.svg
-│       │   ├── favicon-32x32-422f7d1d52889060.png
-│       │   ├── FiraSans-LICENSE-db4b642586e02d97.txt
-│       │   ├── FiraSans-Medium-8f9a781e4970d388.woff2
-│       │   ├── FiraSans-Regular-018c141bf0843ffd.woff2
-│       │   ├── LICENSE-APACHE-b91fa81cba47b86a.txt
-│       │   ├── LICENSE-MIT-65090b722b3f6c56.txt
-│       │   ├── main-20a3ad099b048cf2.js
-│       │   ├── NanumBarunGothic-0f09457c7a19b7c6.ttf.woff2
-│       │   ├── NanumBarunGothic-LICENSE-18c5adf4b52b4041.txt
-│       │   ├── normalize-76eba96aa4d2e634.css
-│       │   ├── noscript-df360f571f6edeae.css
-│       │   ├── rustdoc-dd39b87e5fcfba68.css
-│       │   ├── rust-logo-151179464ae7ed46.svg
-│       │   ├── scrape-examples-ef1e698c1d417c0c.js
-│       │   ├── search-0fe7219eb170c82e.js
-│       │   ├── settings-4313503d2e1961c2.js
-│       │   ├── SourceCodePro-It-1cc31594bf4f1f79.ttf.woff2
-│       │   ├── SourceCodePro-LICENSE-d180d465a756484a.txt
-│       │   ├── SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2
-│       │   ├── SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2
-│       │   ├── SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2
-│       │   ├── SourceSerif4-It-acdfaf1a8af734b1.ttf.woff2
-│       │   ├── SourceSerif4-LICENSE-3bb119e13b1258b7.md
-│       │   ├── SourceSerif4-Regular-46f98efaafac5295.ttf.woff2
-│       │   ├── src-script-e66d777a5a92e9b2.js
-│       │   └── storage-118b08c4c78b968e.js
-│       └── t
-│           ├── all.html
-│           ├── index.html
-│           ├── sidebar-items.js
-│           └── trait.T.html
+│           │   ├── COPYRIGHT-23e9bde6c69aea69.txt
+│           │   ├── favicon-2c020d218678b618.svg
+│           │   └── <rest of the contents excluded>
+│       ├── t
+│       │   ├── all.html
+│       │   ├── index.html
+│       │   ├── sidebar-items.js
+│       │   └── trait.T.html
+│       └── trait.impl
+│           ├── core
+│           │   ├── marker
+│           │   │   ├── trait.Freeze.js
+│           │   │   ├── trait.Send.js
+│           │   │   ├── trait.Sync.js
+│           │   │   └── trait.Unpin.js
+│           │   └── panic
+│           │       └── unwind_safe
+│           │           ├── trait.RefUnwindSafe.js
+│           │           └── trait.UnwindSafe.js
+│           └── t
+│               └── trait.T.js
 ├── s
 │   ├── src
 │   │   └── lib.rs
@@ -219,6 +212,9 @@ $ tree . -a
 │       │   │   ├── index.html
 │       │   │   ├── sidebar-items.js
 │       │   │   └── struct.S.html
+│       │   ├── search.desc
+│       │   │   └── s
+│       │   │       └── s-desc-0-.js
 │       │   ├── settings.html
 │       │   └── src
 │       │       └── s
@@ -234,19 +230,22 @@ $ tree . -a
         ├── doc
         │   ├── help.html
         │   ├── .lock
-        │   ├── t
-        │   │   ├── all.html
-        │   │   ├── index.html
-        │   │   ├── sidebar-items.js
-        │   │   └── trait.T.html
+        │   ├── search.desc
+        │   │   └── t
+        │   │       └── t-desc-0-.js
         │   ├── settings.html
-        │   └── src
-        │       └── t
-        │           └── lib.rs.html
+        │   ├── src
+        │   │   └── t
+        │   │       └── lib.rs.html
+        │   └── t
+        │       ├── all.html
+        │       ├── index.html
+        │       ├── sidebar-items.js
+        │       └── trait.T.html
         ├── doc.parts
         │   └── t
         │       └── crate-info.json
-        └── libs.rmeta
+        └── libt.rmeta
 </pre>
 
 </details>
@@ -254,15 +253,17 @@ $ tree . -a
 
 # Reference-level explanation
 
-Currently, cross-crate information is written during the invocation of the `write_shared` function in [write_shared.rs](https://github.com/rust-lang/rust/blob/04ab7b2be0db3e6787f5303285c6b2ee6279868d/src/librustdoc/html/render/write_shared.rs#L47). This proposal does not add any new CCI or change their contents (modulo sorting order, whitespace).
-
-The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of the CCI.
+The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of the CCI. This proposal does not add any new CCI or change their contents (modulo sorting order, whitespace).
 
 ## New file: `crate-info.json`
 
 The `crate-info.json` file contains the unmerged contents of a single crates' version of their corresponding CCI. This file is written if the flag `--write-info-json=path/to/crate-info.json` is provided.
 
 `crate-info.json` is a JSON object with several key-value pairs. Every value is a JSON array. Every element of the JSON array is a two-element array: a destination filename relative to the doc root, and the representation of the part. The representation of the part depends on the type of CCI that it describes.
+
+* key: `version`
+
+The value will be a string encoding of a version number. If rustdoc is provided a `--include-info-json` flag that points to a `crate-info.json` file with a version number that it cannot support, it will fail. Rustdoc only guarantees that it will accept `crate-info.json` files written by the same version of rustdoc. There is no forward or backward compatibility. A single-digit, incremental version number is chosen for convenience, as `crate-info.json` does not make distinctions between breaking and non-breaking changes. Rustdoc is the only explicitly supported consumer of `crate-info.json`.
 
 * key: `src-files-js`, for `doc/src-files.js`
 
@@ -296,13 +297,17 @@ Crates `--include-info-json`ed will not appear in `crate-info.json`, as `crate-i
 
 If this flag is not provided, no `crate-info.json` will be written.
 
-## New flag: `--include-info-json=path/to/crate-info.json`
+## New flag: `--include-info-json=<path/to/crate-info.json>`
 
 If this flag is provided, rustdoc will expect `path/to/crate-info.json` to be the `crate-info.json` file containing the parts for a crate. It will append these parts to the ones it will render in the doc root (`--out-dir`). The info that's included is not written to `crate-info.json`, as `crate-info.json` only holds the CCI parts for the current crate.
 
 This flag is similar to `--extern-html-root-url` in that it only needs to be provided for externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-info-json` tells rustdoc where to search for the `crate-info.json` directory at documentation-time. It must not be a URL.
 
 In the Guide-level explanation, for example, crate `i` needs to identify the location of `s`'s parts. Since they could be located in an arbitrary directory, `i` must be instructed on where to fetch them. In this example, `s`'s parts happen to be in `./s/target/doc.parts/s`, so rustdoc is called with `--include-info-json=s/target/doc.parts/s/crate-info.json`.
+
+## New flag: `--include-rendered-docs=<path/to/target/doc/extern-crate-name>`
+
+Rustdoc will assume that `<path/to/target/doc>` was used as the `--out-dir` for `<extern-crate-name>`. This documentation will be copied into the directory specified by `--out-dir`. Rustdoc will effectively run `cp -r <path/to/target/doc/extern-crate-name> <current --out-dir>`.
 
 ## New flag: `--merge=read-write|none|write-only`
 
@@ -331,7 +336,7 @@ Discussion of whether additional features should be included to facilitate this 
 
 This RFC does not alter previous compatibility guarantees made about the output of rustdoc. In particular it does not stabilize the presence of the rendered cross-crate information files, their content, or the HTML generated by rustdoc.
 
-In the same way that the [rustdoc HTML output is unstable](https://rust-lang.github.io/rfcs/2963-rustdoc-json.html#:~:text=The%20HTML%20output%20of%20rustdoc,into%20a%20different%20format%20impractical), the content of `crate-info.json` will be considered unstable. Between versions of rustdoc, breaking changes to the content of `crate-info.json` should be expected. Only the presence of a `crate-info.json` file is promised, under `--write-info-json`. Merging cross-crate information generated by disparate versions of rustdoc is not supported.
+In the same way that the [rustdoc HTML output is unstable](https://rust-lang.github.io/rfcs/2963-rustdoc-json.html#:~:text=The%20HTML%20output%20of%20rustdoc,into%20a%20different%20format%20impractical), the content of `crate-info.json` will be considered unstable. Between versions of rustdoc, breaking changes to the content of `crate-info.json` should be expected. Only the presence of a `crate-info.json` file is promised, under `--write-info-json`. Merging cross-crate information generated by disparate versions of rustdoc is not supported. To detect whether `crate-info.json` is compatible, rustdoc includes a version number in these files (see New file: `crate-info.json`).
 
 The implementation of the RFC itself is designed to produce only minimal changes to cross-crate info files and the HTML output of rustdoc. Exhaustively, the implementation is allowed to 
 * Change the sorting order of trait implementations, type implementations, and other cross-crate info in the HTML output of rustdoc
