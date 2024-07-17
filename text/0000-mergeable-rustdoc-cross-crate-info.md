@@ -263,7 +263,7 @@ The `crate-info.json` file contains the unmerged contents of a single crates' ve
 
 * key: `version`
 
-The value will be a string encoding of a version number. If rustdoc is provided a `--include-info-json` flag that points to a `crate-info.json` file with a version number that it cannot support, it will fail. Rustdoc only guarantees that it will accept `crate-info.json` files written by the same version of rustdoc. There is no forward or backward compatibility. A single-digit, incremental version number is chosen for convenience, as `crate-info.json` does not make distinctions between breaking and non-breaking changes. Rustdoc is the only explicitly supported consumer of `crate-info.json`.
+The value will be a string encoding of a version number. If rustdoc is provided a `--include-info-json` flag that points to a `crate-info.json` file with a version number that it cannot support, it will fail. Rustdoc only guarantees that it will accept `crate-info.json` files written by the same version of rustdoc. There is no forward or backward compatibility. A single number prefixed with capital V is chosen for convenience, as `crate-info.json` does not make distinctions between breaking and non-breaking changes. Rustdoc is the only explicitly supported consumer of `crate-info.json`.
 
 * key: `src-files-js`, for `doc/src-files.js`
 
