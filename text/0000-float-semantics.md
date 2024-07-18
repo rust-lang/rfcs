@@ -90,7 +90,7 @@ Unless noted otherwise, the same rules also apply to NaNs returned by other libr
 
 ### `const` semantics
 
-Const-evaluation must necessarily be deterministic to ensure soundness of the type system.
+Evaluation of `const` items (and other entry points to CTFE) must necessarily be deterministic to ensure soundness of the type system.
 `const` use of floating points does not make any guarantees beyond that:
 when a floating-point operation produces a NaN result, the resulting NaN bit pattern is *some* deterministic function of the operation's inputs that satisfies the constraints placed on run-time floating point semantics.
 However, the exact function is not specified, and it is allowed to change across targets and Rust versions, and even with compiler flags.
@@ -126,6 +126,9 @@ assert_eq!(C, div(0.0));
 The first assertion is very unlikely to fail in practice (it would require the two invocations of `div` to be optimized differently).
 The second however [actually fails](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=0b4b952929c9ebcd2bd50aee54e6cdf4) on current nightlies in debug mode.
 
+Even running the same expression (such as `0.0 / 0.0`) twice as part of evaluating a given `const` item, or in two different `const` items, may produce different results.
+The only guarantee the type system needs is that evaluating `some_crate::SOME_CONST` will produce consistent results if evaluation is repeated in different compilation units, and so that is all we guarantee.
+
 This resolves the last open question blocking floating-point operations in `const fn`.
 When the RFC is accepted, the `const_fn_floating_point_arithmetic` feature gate and the `const fn to_bits` methods can be stabilized.
 
@@ -151,6 +154,9 @@ Furthermore, observing the floating-point exception state yields entirely unspec
   There is little we can do here with the current state of LLVM; and even once LLVM provides the necessary features, these signal handlers will need annotations in the code that tell the compiler about the non-default floating point state.
   Those targets chose to use a semantics that is hard to support well in a highly optimized language, and there's not much we can do to paper over such target quirks.
   We can only hope that eventually those targets will decide to provide a reliable floating-point environment.
+  Meanwhile, the best work-around is to use inline assembly to change the floating-point environment to the state that rustc expects it to be in.
+  While strictly speaking that would have to happen before any Rust function gets called, practically speaking if this is the first thing the signal handler does, it is very unlikely to cause a problem:
+  that would require the compiler to put a floating-point operation between the function start and the inline assembly block.
 
 ### Target-specific problems
 
@@ -243,6 +249,7 @@ Even under this alternative we would allow `const fn` to perform operations that
 
 The core advantage of this option is that it avoids having `const` results change when the unspecified compile-time NaN changes on a compiler update or across compilers.
 However, having `const` results depend on NaN bits should be very rare, and we already have other (more common) cases of `const` results depending on unspecified implementation details that can and sometimes do change on compiler updates, namely the layout of `repr(Rust)` types (observable via `size_of` and `offset_of`).
+We can also consider adding a lint against accidentally producing a NaN in CTFE.
 
 ### Alternative: `const` tracks NaN values, fails when their bits matter during compile-time
 
@@ -252,6 +259,7 @@ This would keep `const C = 0.0/0.0;` working, but requires `const fn is_nan` to 
 However, it would require massive amounts of work in the compile-time interpreter, comparable in complexity to all the work that is already required to support symbolic pointers (and the RFC author doubts that there will be a lot of opportunity for those two kinds of symbolic state to share infrastructure).
 That effort should only be invested if there is a significant payoff.
 The RFC author considers the downsides of unspecified NaN bit patterns being observable in const-evaluation to be minimal, and hence the payoff of this alternative to be low.
+A less invasive approach to dealing with potential problems from NaN non-determinism is to lint against producing NaNs in `const` evaluation.
 
 # Prior art
 [prior-art]: #prior-art
@@ -303,3 +311,4 @@ In Rust itself, questions around float semantics have been discussed for a long 
 - To support fast-math transformations, separate fast-path intrinsics / types could be introduced in the future (also see [this issue](https://github.com/rust-lang/rust/issues/21690)).
 - There might be a way to specify floating-point operations such that if they return a signaling NaN, then the sign is deterministic.
   However, doing so would require (a) coming up with a suitable specification and then (b) convincing LLVM to adopt that specification.
+- We could have a lint that triggers when a compile-time float operation produces a NaN, as that will usually not be intended behavior.
