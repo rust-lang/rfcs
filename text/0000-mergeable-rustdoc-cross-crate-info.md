@@ -250,6 +250,18 @@ $ tree . -a
 
 </details>
 
+## Suggested workflows
+
+### No cross-crate information 
+Provide `--merge=none` to every invocation of rustdoc.
+
+### Cross-crate information, mutate shared directory
+
+Use `--merge=read-write`, and specify the same `--out-dir` to every invocation of rustdoc. `--merge=read-write` will be the default value if `--merge` is not provided. This is the workflow that Cargo uses.
+
+### Cross-crate information, no shared directory
+
+Specify a different `--out-dir` to every invocation of rustdoc. Additionally, you should provide `--write-info-json=<crate-specific path to file>` and `--merge=none` when documenting the dependencies of your root crate. Then, when you document the root crate, you will provide  `--include-info-json=<crate-specific path selected previously>`, `--include-rendered-docs=<out dirs chosen previously>` for each one of your dependencies, and `--merge=write-only`. You should provide `--extern-html-root-url`, and specify a static, absolute location for the URL. This flag, with the same URL, will be needed for every invocation of rustdoc, for every dependency.
 
 # Reference-level explanation
 
@@ -257,37 +269,18 @@ The existing cross-crate information files, like `search-index.js`, all are list
 
 ## New file: `crate-info.json`
 
-The `crate-info.json` file contains the unmerged contents of a single crates' version of their corresponding CCI. This file is written if the flag `--write-info-json=path/to/crate-info.json` is provided.
+`crate-info.json` is an artifact that encodes the partial contents and destination of several cross-crate information files. It only encodes information about a single-crate. This file is written if `--write-info-json` is provided. The current crate's information and any `crate-info.json` added through `--include-info-json` are merged and rendered if `--merge=read-write` or `--merge=write-only` are provided.
 
-`crate-info.json` is a JSON object with several key-value pairs. Every value is a JSON array. Every element of the JSON array is a two-element array: a destination filename relative to the doc root, and the representation of the part. The representation of the part depends on the type of CCI that it describes.
+The content of `crate-info.json` is unstable. Rustdoc only guarantees that it will accept `crate-info.json` files written by the same version of rustdoc, and rustdoc is the only explicitly supported consumer of `crate-info.json`. Only the presence of `crate-info.json` is stabilized. Non-normatively, there are several pieces of information that `crate-info.json` may contain:
 
-* key: `version`
-
-The value will be a string encoding of a version number. If rustdoc is provided a `--include-info-json` flag that points to a `crate-info.json` file with a version number that it cannot support, it will fail. Rustdoc only guarantees that it will accept `crate-info.json` files written by the same version of rustdoc. There is no forward or backward compatibility. A single number prefixed with capital V is chosen for convenience, as `crate-info.json` does not make distinctions between breaking and non-breaking changes. Rustdoc is the only explicitly supported consumer of `crate-info.json`.
-
-* key: `src-files-js`, for `doc/src-files.js`
-
-This part is the JSON representation of the source index that is later stored in a `srcIndex` global variable.
-
-* key: `search-index-js`, for `doc/search-index.js`
-
-This part is the JSON encoded search index, before it has been installed in `search-index.js`.
-
-* key: `all-crates`, for `doc/crates.js`
-
-This part is the crate name.
-
-* key: `crates-index`, for `doc/index.html`
-
-This part is also the crate name. It represents a different kind of CCI because it is written to a `doc/index.html`, and rendered as an HTML document instead as JSON. In principal, we could use this part to add more information to the crates index `doc/index.html` (the first line of the top level crate documentation, for example).
-
-* key: `type-impl`, for `doc/type.impl/**/*.js`
-
-This part is a two element array with the crate name and the JSON representation of a type implementation.
-
-* key: `trait-impl`, for `doc/trait.impl/**/*.js`
-
-This part is a two element array with the crate name and the JSON representation of a trait implementation.
+* Partial source file index for generating `doc/src-files.js`.
+* Partial search index for generating `doc/search-index.js`.
+* Crate name for generating `doc/crates.js`.
+* Crate name and information for generating `doc/index.html`.
+* Trait implementation list for generating `doc/trait.impl/**/*.js`.
+* Type implementation list for generating `doc/type.impl/**/*.js`.
+* The file may include versioning information intended to assist in generating error messages if an incompatible `crate-info.json` is provided through `--include-info-json`.
+* The file may contain other information related to cross-crate information that is added in the future.
 
 ## New flag: `--write-info-json=path/to/crate-info.json`
 
