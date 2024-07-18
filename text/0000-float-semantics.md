@@ -143,6 +143,16 @@ Furthermore, observing the floating-point exception state yields entirely unspec
 
 (This is very similar to C without `#pragma STD FENV_ACCESS`.)
 
+**Debugging floating-point computations by trapping on NaN generation.**
+One way that people make use of floating-point control bits is for debugging: by enabling a trap on NaN generation, the program can be aborted or a debugger can be triggered when a float operation generates a NaN.
+This is UB under the wording above.
+The reason for this is that compiler transformations can and will change when and where that trap is triggered:
+for instance, the optimizer may move a float operation `a / b` out of a loop without proving that the loop ever executes, and if this operation turns out to produce a NaN, the program would now trap even though according to Rust source semantics, there wasn't even any floating-point operation being executed.
+That is the sense in which the compiler relies on floating-point operations to never trap, and the sense in which violating that assumption is UB.
+However, for all the RFC author knows, this is currently the worst possible consequence that this particular UB can have: the trap might trigger even when there was no float operation in the original program, and the trap might *not* trigger when though there was a NaN generated at some point (due to optimizations moving or removing this operation).
+Programmers that use trap-on-NaN as a debugging technique can still use this technique as long as they are aware of these caveats.
+That said, this is not a stable guarantee, and it is hard to figure out how exactly a stable guaranteed could be worded.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
