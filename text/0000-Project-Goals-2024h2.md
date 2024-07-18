@@ -91,6 +91,7 @@ The slate of additional project goals are as follows. These goals all have ident
 | [Administrator-provided reasons for yanked crates](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html)                          | [二手掉包工程师][]           | [cargo], [crates-io]           |
 | [Assemble project goal slate](https://rust-lang.github.io/rust-project-goals/2024h2/Project-goal-slate.html)                                                      | [Niko Matsakis][]        | [leadership-council]           |
 | [Associated type position impl trait](https://rust-lang.github.io/rust-project-goals/2024h2/ATPIT.html)                                                           | [Oliver Scherer][]             | [lang], [types]                |
+| [Begin resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-semver-checks.html)           | [Predrag Gruevski][]          | [cargo]                        |
 | [Const traits](https://rust-lang.github.io/rust-project-goals/2024h2/const-traits.html)                                                                           | [Deadbeef][]           | [lang], [types]                |
 | [Ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2024h2/ergonomic-rc.html)                                                                 | [Jonathan Kelley][]          | [compiler], [lang], [libs-api] |
 | [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html)                                              | [Weihang Lo][]           | [cargo], [compiler]            |
@@ -126,21 +127,22 @@ The "owner" in the column is the person expecting to do the design/implementatio
 
 
 ### cargo team
-| Goal                                                                                                     | Owner            | Notes |
-| ---                                                                                                      | ---              | --- |
-| *Approve RFC*                                                                                            |                  |  |
-| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)                      | [二手掉包工程师][]       |  |
-| *Design meeting*                                                                                         |                  |  |
-| ↳ [User-wide caching](https://rust-lang.github.io/rust-project-goals/2024h2/user-wide-cache.html#ownership-and-team-asks)                                        | ![Help wanted][] |  |
-| *Discussion and moral support*                                                                           |                  |  |
-| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)                   | [Weihang Lo][]       |  |
-| ↳ [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2024h2/pubgrub-in-cargo.html#ownership-and-team-asks)   | [Jacob Finkelman][]          |  |
-| *Stabilization decision*                                                                                 |                  |  |
-| ↳ [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html#ownership-and-team-asks)                                      | [Ed Page][]           |  |
-| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)                      | [二手掉包工程师][]       |  |
-| *Standard reviews*                                                                                       |                  |  |
-| ↳ [User-wide caching](https://rust-lang.github.io/rust-project-goals/2024h2/user-wide-cache.html#ownership-and-team-asks)                                        | ![Help wanted][] |  |
-| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)                   | [Weihang Lo][]       |  |
+| Goal                                                                                                                        | Owner            | Notes |
+| ---                                                                                                                         | ---              | --- |
+| *Approve RFC*                                                                                                               |                  |  |
+| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)                                         | [二手掉包工程师][]       |  |
+| *Design meeting*                                                                                                            |                  |  |
+| ↳ [User-wide caching](https://rust-lang.github.io/rust-project-goals/2024h2/user-wide-cache.html#ownership-and-team-asks)                                                           | ![Help wanted][] |  |
+| *Discussion and moral support*                                                                                              |                  |  |
+| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)                                      | [Weihang Lo][]       |  |
+| ↳ [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2024h2/pubgrub-in-cargo.html#ownership-and-team-asks)                      | [Jacob Finkelman][]          |  |
+| ↳ [Begin resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-semver-checks.html#ownership-and-team-asks)   | [Predrag Gruevski][]      |  |
+| *Stabilization decision*                                                                                                    |                  |  |
+| ↳ [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html#ownership-and-team-asks)                                                         | [Ed Page][]           |  |
+| ↳ [Yank crates with a reason](https://rust-lang.github.io/rust-project-goals/2024h2/yank-crates-with-a-reason.html#ownership-and-team-asks)                                         | [二手掉包工程师][]       |  |
+| *Standard reviews*                                                                                                          |                  |  |
+| ↳ [User-wide caching](https://rust-lang.github.io/rust-project-goals/2024h2/user-wide-cache.html#ownership-and-team-asks)                                                           | ![Help wanted][] |  |
+| ↳ [Explore sandboxed build scripts](https://rust-lang.github.io/rust-project-goals/2024h2/sandboxed-build-script.html#ownership-and-team-asks)                                      | [Weihang Lo][]       |  |
 
 ### clippy team
 | Goal                                                                | Owner    | Notes |
@@ -494,6 +496,7 @@ Definitions for terms used above:
 [Gary Guo]: https://github.com/nbdd0121
 [Niko Matsakis]: https://github.com/nikomatsakis
 [Michael Howell]: https://github.com/notriddle
+[Predrag Gruevski]: https://github.com/obi1kenobi
 [Oliver Scherer]: https://github.com/oli-obk
 [Vadim Petrochenkov]: https://github.com/petrochenkov
 [Tyler Mandry]: https://github.com/tmandry
@@ -506,3 +509,4 @@ Definitions for terms used above:
 [Not funded]: https://img.shields.io/badge/Not%20yet%20funded-red
 [TBD]: https://img.shields.io/badge/TBD-red
 [Team]: https://img.shields.io/badge/Team%20ask-red
+
