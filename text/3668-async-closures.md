@@ -563,6 +563,14 @@ let _ = || {
 
 Reusing the `async` keyword allows users to understand what an `async Fn() -> T` trait bound does by analogy, since they already should know that adding `async` to some `fn foo() -> T` makes it return an `impl Future<Output = T>` instead of the type `T`.
 
+### Wouldn't `F: AsyncFn() -> T` save more space for `async` trait bound modifiers?
+
+Some have argued that using `F: AsyncFn() -> T` rather than `F: async Fn() -> T` would better save space for whatever we might want the semantics to be if we were to later adopt generalized `async` trait bound modifiers.
+
+We don't think this is correct in a practical sense. If we were give meaning to and stabilize `AsyncFn()` trait bounds, and then later, due to work on generalized `async` trait bound modifiers, we were to give a different meaning to `async Fn()`, that would seem so undesirable that it's hard to imagine we would ever actually do it.  People would too strongly expect `AsyncFn()` and `async Fn()` to work in the same way.
+
+If that's true, then stabilizing either of `AsyncFn()` or `async Fn()` trait bounds would potentially affect our decisions about generalized `async` trait bound modifiers to the same degree.
+
 ### Why do we even need `AsyncFnOnce`?
 
 We could desugar `async FnOnce() -> T` directly to `FnOnce<(), Output: Future<Output = T>>`. It seems overly complicated for an implementation detail, since users should never care what's *behind* the `AsyncFnOnce` trait bound.
