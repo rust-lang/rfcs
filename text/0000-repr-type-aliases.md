@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Primitive representations on enums now accept type aliases, meaning that in addition to primitives like `#[repr(u32)]`, `#[repr(discriminant = core::ffi::c_int)]` and `#[repr(discriminant = my_type)]` are now accepted.
+Primitive representations on enums now accept type aliases, meaning that in addition to primitives like `#[repr(u32)]`, `#[repr(tag = core::ffi::c_int)]` and `#[repr(tag = my_type)]` are now accepted.
 
 # Motivation
 [motivation]: #motivation
@@ -20,15 +20,15 @@ For the same reasons why type aliases are useful, having type aliases in `repr` 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Enums allow `#[repr(discriminant = type)]` attributes to offer an explicit discriminant type. (`type` can be any primitive integer type, like `u8`, `i32`, or `usize`, but not `char`.) If all variants of the enum are unit variants, this means that the enum will be easily castable to `type` using `as`. Otherwise, the discriminant will still be of the specified type, but unsafe code is required to actually access it. (Future RFCs like [#3607] might change this.)
+Enums allow `#[repr(tag = type)]` attributes to explicitly tag variants using the given type. (`type` can be any primitive integer type, like `u8`, `i32`, or `usize`, but not `char`.) If all variants of the enum are unit variants, this means that the enum will be easily castable to `type` using `as`. Otherwise, the discriminant will still be a tag of the specified type, but unsafe code is required to actually access it. (Future RFCs like [#3607] might change this.)
 
 [#3607]: https://github.com/rust-lang/rfcs/pull/3607
 
-To ensure compatibility, the `#[repr(discriminant = type)]` form is required if the type is a type alias instead of a known primitive type. While this may cause additional issues compared to the native `#[repr(type)]` syntax, it is possible to work around these issues as explained below:
+To ensure compatibility, the `#[repr(tag = type)]` form is required if the type is a type alias instead of a known primitive type. While this may cause additional issues compared to the native `#[repr(type)]` syntax, it is possible to work around these issues as explained below:
 
-> Since `type` is resolved as a path instead of being a hard-coded value, it's possible to shadow existing primitive types and cause weird results. For example, if a scope contains `type u32 = u8`, then `#[repr(discriminant = u32)` means `#[repr(u8)]`, not `#[repr(u32)]`. You can always refer to these types directly, however, and `#[repr(discriminant = ::std::u32)]` will always mean `#[repr(u32)]`.
+> Since `type` is resolved as a path instead of being a hard-coded value, it's possible to shadow existing primitive types and cause weird results. For example, if a scope contains `type u32 = u8`, then `#[repr(tag = u32)` means `#[repr(u8)]`, not `#[repr(u32)]`. You can always refer to these types directly, however, and `#[repr(tag = ::std::u32)]` will always mean `#[repr(u32)]`.
 >
-> It's also worth noting that this syntax allows using type aliases with names of other `repr` arguments, like `C`. For example, `type C = u8` in the scope means that `#[repr(discriminant = C)]` means `#[repr(u8)]`, not `#[repr(C)]`.
+> It's also worth noting that this syntax allows using type aliases with names of other `repr` arguments, like `C`. For example, `type C = u8` in the scope means that `#[repr(tag = C)]` means `#[repr(u8)]`, not `#[repr(C)]`.
 
 You can use any type alias in the `repr` attribute, but it *must* be an alias to an accepted primitive type like `u8` or `i32`, and cannot be a pointer, reference, struct, etc. See the [future possibilities] section for some potential alternatives that may be allowed in the future.
 
@@ -37,18 +37,18 @@ You can use any type alias in the `repr` attribute, but it *must* be an alias to
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `repr` attribute now accepts a `discriminant = ...` argument to indicate an arbitrary type instead of a well-known primitive type. It accepts both fully-resolved types (including all necessary generics) as well as macros that expand to types.
+The `repr` attribute now accepts a `tag = ...` argument to indicate an arbitrary type instead of a well-known primitive type. It accepts both fully-resolved types (including all necessary generics) as well as macros that expand to types.
 
-If the resulting type resolves to a type alias to a valid primitive type which can be used in the `repr` attribute, that will be used as the actual discriminant representation. Otherwise, the result is an error which states that only primitive types and type aliases to them are allowed.
+If the resulting type resolves to a type alias to a valid primitive type which can be used in the `repr` attribute, that will be used as a tag for the discriminant representation. Otherwise, the result is an error which states that only primitive integer types and type aliases to them are allowed.
 
-An automatically-applicable lint should be added that warns a user if a `repr` argument is invalid but references in an-scope type alias without the `discriminant = ` prefix. (For example, `#[repr(MyType)]` becomes `#[repr(discriminant = MyType)]`, but `#[repr(C)]` does not warn even if an alias `C` is in scope.)
+An automatically-applicable lint should be added that warns a user if a `repr` argument is invalid but references in an-scope type alias without the `tag = ` prefix. (For example, `#[repr(MyType)]` becomes `#[repr(tag = MyType)]`, but `#[repr(C)]` does not warn even if an alias `C` is in scope.)
 
-To aid macro authors, an allow-by-default lint should be added that warns a user if they use `discriminant = ...` with a relative path instead of an absolute one, since the resolved type depends on the existing scope. For example, `discriminant = u32` or `discriminant = my_type` could potentially be shadowed by another type in the scope, but `discriminant = ::std::u32` and `discriminant = $crate::my_type` will always work as expected. This could potentially be relegated to a `clippy::pedantic` lint instead of a `rustc` lint.
+To aid macro authors, an allow-by-default lint should be added that warns a user if they use `tag = ...` with a relative path instead of an absolute one, since the resolved type depends on the existing scope. For example, `tag = u32` or `tag = my_type` could potentially be shadowed by another type in the scope, but `tag = ::std::u32` and `tag = $crate::my_type` will always work as expected. This could potentially be relegated to a `clippy::pedantic` lint instead of a `rustc` lint.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The requirement for `discriminant =` is unfortunate, but it feels like the best way to ensure that adding new representations isn't a breaking change going forward. Even if we were to decide it weren't a "breaking change," it would still break things anyway, being de-facto breaking. Some people have expressed desire for a dedicated syntax instead, which would fix this problem, but this can still be added after the fact.
+The requirement for `tag =` is unfortunate, but it feels like the best way to ensure that adding new representations isn't a breaking change going forward. Even if we were to decide it weren't a "breaking change," it would still break things anyway, being de-facto breaking. Some people have expressed desire for a dedicated syntax instead, which would fix this problem, but this can still be added after the fact.
 
 Some proc macros like [`zerocopy::FromBytes`] may also have to complicate their logic if they depend on checking the existing `#[repr]` attribute for validity. In particular, since they can no longer exactly know which primitive type is being used for the representation, they would have to instead depend on associated constants on the types like `BITS` to verify which type is being used. Instead of being able to emit an error at macro expansion time, this error will have to be triggered at constant evaluation time or runtime instead, which is unfortunate.
 
@@ -67,9 +67,13 @@ We could always not do this.
 
 But more realistically, here are some alternative designs that were rejected.
 
-## `type`
+## `type`, `discriminant`
 
-The second proposal for this RFC used `type = ...` instead of `discriminant = ...`. Initially, this decision was chosen because `discriminant` was long to type, but it was ultimately decided that `discriminant` is more clear and that the extra typing is worth it. Additionally, RFC [#3607] proposes using `discriminant` in its proposed syntax, so, this would be further in line with that as well.
+The previous proposals for this RFC used `type = ...` and `discriminant = ...` instead of `tag = ...`. Initially, this decision was chosen because `discriminant` was long to type, but it was ultimately decided that `discriminant` is more clear and that the extra typing is worth it. However, the lang team was swayed by the brevity of `tag` and, because this representation is explicitly a tagged discriminant, the shorter `tag` seems most fitting.
+
+RFC [#3607] is considering `discriminant` but may be moving to `tag` also, so, it's worth considering the outcome of that RFC as well.
+
+Note that `tag` also works because alternative representations could be considered. For example, an enum of two other enums with disjoint values could have a representation that avoids tags altogether, while still having the same "discriminant type" of the two individual enums.
 
 ## `self::`
 
@@ -94,7 +98,7 @@ This was previously suggested in [#1605] and was rejected at the time. The prima
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None currently.
+* Is `tag` really the best name, or should it be `discriminant` instead?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
