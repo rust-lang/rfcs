@@ -111,6 +111,8 @@ In order for this to work, the `FnMut` trait would need to be ["lending"](https:
 
 # Guide Level Explanation
 
+(**note**: See the [naming blocking concern](#what-do-we-call-the-trait) about `async Fn*` vs `AsyncFn*` syntax. This RFC uses the `async Fn` syntax for trait bounds to avoid duplicating explanations for two different proposed syntaxes, but the syntax remains an open question.)
+
 Just as you can write functions which accept closures, you can write functions which accept async closures:
 
 ```rust
