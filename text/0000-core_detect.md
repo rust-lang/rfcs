@@ -14,7 +14,7 @@ This RFC moves the `is_*_feature_detected` macros into `core`, but keeps the log
 Why are we doing this? What use cases does it support? What is the expected outcome?
 
 This has 2 main benefits:
-- It allows ``core`` and `alloc` to use CPU-specific features, e.g. for string processing which can make use of newer CPU instructions specifically designed for this.
+- It allows `core` and `alloc` to use CPU-specific features, e.g. for string processing which can make use of newer CPU instructions specifically designed for this.
 - It allows `#![no_std]` libraries to use CPU feature detection.
 
 # Guide-level explanation
