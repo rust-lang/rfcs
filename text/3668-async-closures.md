@@ -10,7 +10,7 @@
 # Summary
 [summary]: #summary
 
-This RFC adds an `async` bound modifier to the `Fn` family of trait bounds.  The combination desugars to a set of unstable `AsyncFn{,Mut,Once}` traits that parallel the current `Fn{,Mut,Once}` traits.
+This RFC adds an `async` bound modifier to the `Fn` family of trait bounds.  The combination currently desugars to a set of unstable `AsyncFn{,Mut,Once}` traits that parallel the current `Fn{,Mut,Once}` traits.
 
 These traits give users the ability to express bounds for async callable types that are higher-ranked, and allow async closures to return futures which borrow from the closure's captures.
 
@@ -170,7 +170,7 @@ trait Gat {
 
 ### `AsyncFn*`
 
-This RFC introduces a family of `AsyncFn` traits. These traits are intended to remain unstable to name or implement, just like the `Fn` traits. Nonetheless, we'll describe the details of these traits so as to explain the user-facing features enabled by them.
+This RFC begins by introducing a family of `AsyncFn` traits for the purposes of demonstrating the lending behavior of async closures. These traits are intended to remain unstable to name or implement, just like the `Fn` traits. Nonetheless, we'll describe the details of these traits so as to explain the user-facing features enabled by them.
 
 The definition of the traits is (modulo `rustc_` attributes, and the `"rust-call"` ABI):
 
@@ -247,6 +247,8 @@ where
 ```
 
 ### `async` bound modifier on `Fn()` trait bounds
+
+(**note**: See the [naming blocking concern](#what-do-we-call-the-trait), which reflects that this remains an open question. Repeating the blocking concern: within this RFC, we generally name the user-facing semantics of async trait bounds as `async Fn*`, and we use the name `AsyncFn*` for the internal details of the trait implementation for the purpose of demonstrating the lending behavior.)
 
 The `AsyncFn*` traits specified above are nameable via a new `async` bound modifier that is allowed on `Fn` trait bounds. That is, `async Fn*() -> T` desugars to `AsyncFn*() -> T` in bounds, where `Fn*` is one of the three flavors of existing function traits: `Fn`/`FnMut`/`FnOnce`.
 
@@ -561,15 +563,9 @@ let _ = || {
 
 ### Why not `F: AsyncFn() -> T`, naming `AsyncFn*` directly?
 
+(**note**: See the [naming blocking concern](#what-do-we-call-the-trait), which reflects that this remains an open question.)
+
 Reusing the `async` keyword allows users to understand what an `async Fn() -> T` trait bound does by analogy, since they already should know that adding `async` to some `fn foo() -> T` makes it return an `impl Future<Output = T>` instead of the type `T`.
-
-### Wouldn't `F: AsyncFn() -> T` save more space for `async` trait bound modifiers?
-
-Some have argued that using `F: AsyncFn() -> T` rather than `F: async Fn() -> T` would better save space for whatever we might want the semantics to be if we were to later adopt generalized `async` trait bound modifiers.
-
-We don't think this is correct in a practical sense. If we were give meaning to and stabilize `AsyncFn()` trait bounds, and then later, due to work on generalized `async` trait bound modifiers, we were to give a different meaning to `async Fn()`, that would seem so undesirable that it's hard to imagine we would ever actually do it.  People would too strongly expect `AsyncFn()` and `async Fn()` to work in the same way.
-
-If that's true, then stabilizing either of `AsyncFn()` or `async Fn()` trait bounds would potentially affect our decisions about generalized `async` trait bound modifiers to the same degree.
 
 ### Why do we even need `AsyncFnOnce`?
 
@@ -674,6 +670,10 @@ Fixing this is a follow-up goal that we're interested in pursuing in the near fu
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
+
+### What do we call the trait?
+
+There is some discussion about whether to call the bound `T: AsyncFn()` or `T: async Fn()`. As stated above, there is not full consensus about whether `async Fn()` is the syntax we want to commit to name these bounds, but for the purposes of decoupling the fact that `async Fn` is the user-observable trait family, and `AsyncFn` is the traits of the implementation detail, this RFC names them separately.
 
 ### `? for<'a>` and its interaction with `async`
 
