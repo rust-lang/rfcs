@@ -49,10 +49,31 @@ When this happens, the sub-trait method is selected instead of reporting an ambi
 
 Note that this only happens when *both* traits are in scope since this is required for the ambiguity to occur in the first place.
 
+When an ambiguity is resolved in this way, a lint warning is also emitted to warn the user about the potential ambiguity. The aim of this lint is to discourage reliance on this mechanism in normal code usage: it should only be used for backwards-compatibilty and the lint can be silenced by having users change their code. We can always later change this lint to be allowed by default if we consider that there are valid use cases for this feature other than backwards-compatiblity.
+
+### Type inference
+
+This change happens during name resolution and specifically doesn't interact with type inference. Consider this example:
+
+```rust
+trait Foo { fn method(&self) {} }
+trait Bar: Foo { fn method(&self) {} }
+impl<T> Foo for Vec<T> { }
+impl<T: Copy> Bar for Vec<T> { }
+
+fn main() {
+    let x = vec![];
+    x.method(); // which to call?
+    x.push(Box::new(22)); // oh, looks like `Foo`
+}
+```
+
+Today that example will give an ambiguity error because `method` is provided by multiple traits in scope. With this RFC, it will instead always resolve to the sub-trait method and then compilation will fail because `Vec` does not implement the `Copy` trait required by `Bar::method`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This behavior can be surprising: adding a method to a sub-trait can change which function is called in unrelated code. A lint could be emitted to warn users about the potential ambiguity.
+This behavior can be surprising: adding a method to a sub-trait can change which function is called in unrelated code. This is mitigated by the which warns users about the potential ambiguity.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
