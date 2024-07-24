@@ -5,7 +5,7 @@
 
 ## Summary
 
-This RFC presents the Rust project goal slate for 2024H2. The slate consists of 25 total project goals of which we have selected 3 as our "flagship goals":
+This RFC presents the Rust project goal slate for 2024H2. The slate consists of 26 total project goals of which we have selected 3 as our "flagship goals":
 
 * Release the Rust 2024 edition (owner: [TC][])
 * Bring the Async Rust experience closer to parity with sync Rust (owners: [Tyler Mandry][], [Niko Matsakis][])
@@ -17,7 +17,7 @@ Flagship goals represent the goals expected to have the broadest overall impact.
 
 ## Motivation
 
-This RFC marks the first goal slate proposed under the experimental new roadmap process described in [RFC #3614](https://github.com/rust-lang/rfcs/pull/3614). It consists of 25 project goals, of which we have selected three as **flagship goals**. Flagship goals represent the goals expected to have the broadest overall impact. 
+This RFC marks the first goal slate proposed under the experimental new roadmap process described in [RFC #3614](https://github.com/rust-lang/rfcs/pull/3614). It consists of 26 project goals, of which we have selected three as **flagship goals**. Flagship goals represent the goals expected to have the broadest overall impact. 
 
 ### How the goal process works
 
@@ -106,6 +106,7 @@ The slate of additional project goals are as follows. These goals all have ident
 | [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2024h2/cargo-script.html)                                                                 | [Ed Page][]               | [cargo], [lang]                |
 | [Stabilize doc_cfg](https://rust-lang.github.io/rust-project-goals/2024h2/doc_cfg.html)                                                                           | [Guillaume Gomez][]      | [rustdoc]                      |
 | [Stabilize parallel front end](https://rust-lang.github.io/rust-project-goals/2024h2/parallel-front-end.html)                                                     | [Sparrow Li][]          | [compiler]                     |
+| [Survey tools suitability for Std safety verification](https://rust-lang.github.io/rust-project-goals/2024h2/std-verification.html)                               | [Celina V.][]            | [libs]                         |
 | [Testing infra + contributors for a-mir-formality](https://rust-lang.github.io/rust-project-goals/2024h2/a-mir-formality.html)                                    | [Niko Matsakis][]        | [types]                        |
 | [Use annotate-snippets for rustc diagnostic output](https://rust-lang.github.io/rust-project-goals/2024h2/annotate-snippets.html)                                 | [Esteban Kuber][], [Scott Schafer][] | [compiler]                     |
 
@@ -220,10 +221,14 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | ↳ [Rust 2024 Edition](https://rust-lang.github.io/rust-project-goals/2024h2/Rust-2024-Edition.html#ownership-and-team-asks)              | [TC][]  | ![Complete][] ([RFC #3501](https://github.com/rust-lang/rfcs/pull/3501)) |
 
 ### libs team
-| Goal                                                            | Owner         | Notes |
-| ---                                                             | ---           | --- |
-| *Org decision*                                                  |               |  |
-| ↳ [Async WG reorganization](https://rust-lang.github.io/rust-project-goals/2024h2/async.html#ownership-and-team-asks)   | [Niko Matsakis][] |  |
+| Goal                                                                                                    | Owner         | Notes                                                                 |
+| ---                                                                                                     | ---           | ---                                                                   |
+| *Discussion and moral support*                                                                          |               |                                                                       |
+| ↳ [Survey tools suitability for Std safety verification](https://rust-lang.github.io/rust-project-goals/2024h2/std-verification.html#ownership-and-team-asks)   | [Celina V.][]     |                                                                       |
+| *Org decision*                                                                                          |               |                                                                       |
+| ↳ [Async WG reorganization](https://rust-lang.github.io/rust-project-goals/2024h2/async.html#ownership-and-team-asks)                                           | [Niko Matsakis][] |                                                                       |
+| *Standard review*                                                                                       |               |                                                                       |
+| ↳ [Survey tools suitability for Std safety verification](https://rust-lang.github.io/rust-project-goals/2024h2/std-verification.html#ownership-and-team-asks)   | [Celina V.][]     | We would like to contribute upstream the contracts added to the fork. |
 
 ### libs-api team
 | Goal                                                                     | Owner             | Notes |
@@ -480,6 +485,7 @@ Definitions for terms used above:
 [Manuel Drehwald]: https://github.com/ZuseZ4
 [Adrian Taylor]: https://github.com/adetaylor
 [Alejandra González]: https://github.com/blyxyas
+[Celina V.]: https://github.com/celinval
 [Michael Goulet]: https://github.com/compiler-errors
 [Ding Xiang Fei]: https://github.com/dingxiangfei2009
 [Jacob Finkelman]: https://github.com/eh2406
