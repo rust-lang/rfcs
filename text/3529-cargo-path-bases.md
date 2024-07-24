@@ -6,8 +6,11 @@
 # Summary
 [summary]: #summary
 
-Introduce shared base directories in Cargo configuration files that in
-turn enable base-relative `path` dependencies.
+Introduce a table of path "bases" in Cargo configuration files that can be used
+to prefix the path of `path` dependencies and `patch` entries.
+
+This feature will not support declaring path bases in manifest files to avoid
+additional design complexity, though this may be added in the future.
 
 # Motivation
 [motivation]: #motivation
@@ -30,14 +33,13 @@ relative paths (which makes refactoring and moving sub-projects very difficult)
 and don't work at all if the mono-repo requires publishing and consuming from an
 intermediate directory (as this may very per host, or per target being built).
 
-This RFC proposes a mechanism to specify path bases in `config.toml` or
-`Cargo.toml` files which can be used to prepend `path` dependencies. This allows
-mono-repos to specify dependencies relative to their root directory, which
-allows the consuming project to be moved freely (no relative paths to update)
-and a simple find-and-replace to handle a producing project being moved.
-Additionally, a host-specific or target-specific intermediate directory may be
-specified as a `base`, allowing code to be consumed from there using `path`
-dependencies.
+This RFC proposes a mechanism to specify path bases in `config.toml` files which
+can be used to prepend `path` dependencies. This allows mono-repos to specify
+dependencies relative to their root directory, which allows the consuming
+project to be moved freely (no relative paths to update) and a simple
+find-and-replace to handle a producing project being moved. Additionally, a
+host-specific or target-specific intermediate directory may be specified as a
+`base`, allowing code to be consumed from there using `path` dependencies.
 
 ### Example
 
@@ -105,7 +107,7 @@ root directory. Instead of repeating the same path fragment many times in their
 `Cargo.toml`, they can instead specify it once in a `config.toml` as a path
 base, then use that path base in each of their `path` dependencies.
 
-Cargo can also provide built-in base paths, for example `workspace` to point to
+Cargo will also provide built-in base paths, for example `workspace` to point to
 the root directory of the workspace. This allows workspace members to reference
 each other without first needing to `../` their way back to the workspace root.
 
@@ -141,6 +143,10 @@ Like with other path dependencies, keep in mind that both the base _and_
 the path must exist on any other host where you want to use the same
 `Cargo.toml` to build your project.
 
+You can also use `base` along with `path` when specifying a `[patch]`.
+Specifying a `path` and `base` on a `[patch]` is equivalent to specifying just a
+`path` containing the full path including the prepended base.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -152,10 +158,11 @@ A `path` dependency may optionally specify a base by setting the `base` key to
 the name of a path base from the `[path-bases]` table in either the
 [configuration](https://doc.rust-lang.org/cargo/reference/config.html#path-bases)
 or one of the [built-in path bases](#built-in-path-bases). The value of that
-path base is prepended to the `path` value to produce the actual location where
-Cargo will look for the dependency.
+path base is prepended to the `path` value (along with a path separator if
+necessary) to produce the actual location where Cargo will look for the
+dependency.
 
-For example, if the Cargo.toml contains:
+For example, if the `Cargo.toml` contains:
 
 ```toml
 [dependencies]
@@ -188,8 +195,8 @@ Cargo provides implicit path bases that can be used without the need to specify
 them in a `[path-bases]` table.
 
 * `workspace` - If a project is [a workspace or workspace member](https://doc.rust-lang.org/cargo/reference/workspaces.html)
-then this path base is defined as the parent directory of the root Cargo.toml of
-the workspace.
+then this path base is defined as the parent directory of the root `Cargo.toml`
+of the workspace.
 
 If a built-in path base name is also declared in the configuration, then Cargo
 will prefer the value in the configuration. The allows Cargo to add new built-in
@@ -208,6 +215,30 @@ The `[path-bases]` table defines a set of path prefixes that can be used to
 prepend the locations of `path` dependencies. See the
 [specifying dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#path-bases)
 documentation for more information.
+
+## cargo add
+
+### Synopsis
+
+`cargo add` *[options]* `--path` *path* [`--base` *base*]
+
+### Options
+
+#### Source options
+
+`--base` *base*
+
+The [path base](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#path-bases)
+to use when adding from a local crate.
+
+## Workspaces
+
+Path bases can be used in a workspace's `[dependencies]` table.
+
+If a member is inheriting a dependency (i.e., using `workspace = true`) then the
+`base` key cannot also be specified for that dependency in the member manifest.
+That is, the member will use the `path` dependency as specified in the workspace
+manifest and has no ability to override the base path being used (if any).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -382,8 +413,34 @@ could help.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+* What exact names we should use for the table (`path-bases`) and field names
+(`base`)?
+* What other built-in base paths could be useful?
+  * `package` or `current-dir` for the directory of the current project?
+  * `home` or `user_home` for the user's home directory?
+  * `sysroot` for the current rustc sysroot?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Add support for declaring path bases in the manifest
+
+As mentioned [above](#support-for-declaring-path-bases-in-the-manifest),
+declaring path bases is only supported in the configuration.
+
+Support could be added to declare path bases in the manifest, but the following
+design questions need to be answered:
+
+* Is `[path-bases]` a package or a workspace field?
+* If it is a package field, would it support workspace inheritance? Or would we
+introduce a new mechanism (e.g., one version of the RFC introduced a "search
+order" such that Cargo would search for a path base in the package manifest,
+then the workspace manifest, then the configuration and finally the built-in
+list).
+* Would a relative path base in the workspace manifest be relative to that
+manifest, or to the package that uses it?
+* If using inheritance, should path bases be implicitly or explicitly inherited?
+(e.g., requiring `[base-paths] workspace = true`)
 
 ## Path bases relative to other path bases
 
@@ -420,7 +477,3 @@ foo = { git = "foo.git", base = "gh" }
 
 However, this may get complicated if someone specifies `git`, `path`, _and_
 `base`.
-
-## Support patches
-
-It may also be useful to be able to use path bases in `patch` and `path` tables.
