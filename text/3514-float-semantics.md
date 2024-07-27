@@ -1,7 +1,7 @@
 - Feature Name: `float_semantics`
 - Start Date: 2023-10-14
 - RFC PR: [rust-lang/rfcs#3514](https://github.com/rust-lang/rfcs/pull/3514)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#128288](https://github.com/rust-lang/rust/issues/128288)
 
 # Summary
 [summary]: #summary
@@ -26,7 +26,6 @@ This is caused by a combination of surprising effects introduced by LLVM optimiz
 
 It's time to stop leaving our users in the dark about what actually is and is not guaranteed.
 
-
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -44,7 +43,6 @@ In particular, the bit pattern produced at compile-time can differ from the bit 
 
 Certain targets unfortunately are known to not implement these semantics precisely (see [below](#target-specific-problems)).
 The [platform support page](https://doc.rust-lang.org/rustc/platform-support.html) will list those caveats.
-
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -96,6 +94,7 @@ when a floating-point operation produces a NaN result, the resulting NaN bit pat
 However, the exact function is not specified, and it is allowed to change across targets and Rust versions, and even with compiler flags.
 In particular, there is no guarantee that the choice made in const evaluation is consistent with the choice made at runtime.
 That is, the following assertion is allowed to fail (and in fact, it [fails on current versions of Rust](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=a594d2975c29b1c7fa457a4ec4ae4b87)):
+
 ```rust
 use std::hint::black_box;
 
@@ -111,6 +110,7 @@ This means that evaluating the same `const fn` on the same arguments can produce
 However, note that these functions are already non-deterministic: even evaluating the same function with the same arguments twice at runtime can [and does](https://play.rust-lang.org/?version=stable&mode=release&edition=2021&gist=50b5a549fa1fe259cea5ad138066ccf0) produce different results!
 
 In other words, consider this code:
+
 ```rust
 const fn div(x: f32) -> i32 {
     unsafe { std::mem::transmute(x / x) }
@@ -123,6 +123,7 @@ assert_eq!(div(0.0), div(0.0));
 const C: i32 = div(0.0);
 assert_eq!(C, div(0.0));
 ```
+
 The first assertion is very unlikely to fail in practice (it would require the two invocations of `div` to be optimized differently).
 The second however [actually fails](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=0b4b952929c9ebcd2bd50aee54e6cdf4) on current nightlies in debug mode.
 
@@ -177,8 +178,6 @@ We should consider documenting on the "platform support" page (and we probably w
 - On 32bit x86 without SSE2 (i586 targets), x87 registers are used even more pervasively, leading to more opportunities for unstable bit patterns. Furthermore, operations are internally computed with a different precision, which can lead to results that differ from IEEE 754-2008 even outside of NaNs. [Tracking issue](https://github.com/rust-lang/rust/issues/114479)
 - On old MIPS, the interpretation of "signaling" and "quiet" is the opposite of what has been specified above. The effective spec on those targets is that any NaN-producing operation can non-deterministically produce an arbitrary (signaling or quiet) NaN. Currently, LLVM does not have a way of implementing their own NaN semantics for this target, so there's not a lot we can do on the Rust side. [LLVM issue](https://github.com/llvm/llvm-project/issues/60796)
 - On 32bit ARM, NEON SIMD operations [always flush-to-zero](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Pre-RFC.3A.20floating.20point.20guarantees/near/376893307). *If* LLVM auto-vectorizes code for that target, that would lead to divergence from IEEE semantics. It is currently unclear whether this is the case; people keep bringing this up as a cause of potential non-conformance but the author was unable to find concrete records of any actual misbehavior. However, this will become an issue if NEON operations are ever exposed to Rust users: we would expect SIMD operations to follow the same NaN rules as their non-SIMD counterparts, but ARM NEON would violate those semantics.
-
-
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
