@@ -79,21 +79,22 @@ Note that `T: Freeze` is a shallow property: `T` is still allowed to contain int
 provided that it is behind an indirection (such as `Box<UnsafeCell<U>>`).
 Notable `!Freeze` types are [`UnsafeCell`](core::cell::UnsafeCell) and its safe wrappers
 such as the types in the [`cell` module](core::cell), [`Mutex`](std::sync::Mutex), and [atomics](core::sync::atomic).
-Any type which contains any one of these without indirection is also `!Freeze`.
+Any type which contains a `!Freeze` type without indirection is also `!Freeze`.
 
 `T: Freeze` is notably a requirement for static promotion (`const REF: &'a T;`) to be legal.
 
 Note that static promotion doesn't guarantee a single address: if `REF` is assigned to multiple variables,
 they may still refer to distinct addresses.
 
-Whether or not `T: Freeze` may also affect whether `static STATIC: T` is placed
+Whether or not `T` implements `Freeze` may also affect whether `static STATIC: T` is placed
 in read-only static memory or writeable static memory, or the optimizations that may be performed
 in code that holds an immutable reference to `T`.
 
 # Semver hazard
 `Freeze` being an auto-trait, it may leak private properties of your types to semver.
-Specifically, adding an `UnsafeCell` to a type's layout is a _major_ breaking change,
-as it removes a trait implementation from it.
+Specifically, adding a non-`Freeze` field to a type's layout is a _major_ breaking change,
+as it removes a trait implementation from it. Removing the last non-`Freeeze` field of a type's
+layout is a _minor_ breaking change, as it adds a trait implementation to that type.
 
 ## The ZST caveat
 While `UnsafeCell<T>` is currently `!Freeze` regardless of `T`, allowing `UnsafeCell<T>: Freeze` iff `T` is
@@ -129,6 +130,8 @@ Notable types that are currently `!Freeze` but might not remain so in the future
 Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze`ness.
 ```
 
+The note on `PhantomData` is part of the RFC to reflect the current status, which cannot be changed without causing breakage.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -159,6 +162,7 @@ Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze
     // New version: does not build
     const C2: &v2::S = &v2::S::new();
 	```
+ 	- The provided example is also, in RFC author's estimation, the main way in which `Freeze` is likely to be depended upon: allowing bounds on it will likely not expand the hazard much.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -180,8 +184,27 @@ Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- [Should the trait be exposed under a different name?](https://github.com/rust-lang/rust/pull/121501#issuecomment-1962900148)
-	- An appealing proposition is `ShallowImmutable` to avoid collision with `llvm`'s `freeze`, while highlighting that the property is "shallow".
+- [Should the trait be exposed under a different name?](https://github.com/rust-lang/rust/pull/121501#issuecomment-1962900148) to avoid collisions with `llvm`'s `freeze`? Here are the options cited during the design meeting:
+	- `Freeze` has become part of the Rustacean jargon, should `llvm`'s `freeze` get a new name in the Rust jargon instead and this trait keep its current name?
+ 	- `ShallowImmutable`
+  	- `LocalImmutable`
+  	- `InlineImmutable`
+  	- `ValueImmutable`
+  	- `DirectImmutable`
+  	- `InteriorImmutable`
+- How concerned are we about `Freeze` as a semver hazard?
+	- `Freeze` and `PhantomNotFreeze` could be stabilized at the same time.
+ 	- `PhantomNotFreeze` could be stabilized first, offering library authors a grace period to include it in their types before `Freeze` gets stabilized, adding new ways to depend on a type implementing it.
+  	- Regardless, semver compliance guides and tools should be updated to ensure they handle it properly.
+- What should be done about `PhantomData<T>` historically implementing `Freeze` regardless of whether or not `T` does?
+	- We could simply ship `PhantomNotFreeze` (alternative names: `PhantomMutable`, `PhantomInteriorMutable`) as the RFC proposes.
+ 	- We could provide `PhantomFreezeIf<T>` which would be equivalent to `PhantomData<T>`, except it would only impl `Freeze` if `T` does.
+  		- While slightly more complex than `PhantomNotFreeze` on the surface, this option does grant more flexibility. `type PhantomNotFreeze = PhantomFrezeIf<UnsafeCell<u8>>` could still be defined for convenience.
+	- We could make `PhantomData` communicate `Freeze` the way it does `Send`, `Sync` and `Unpin`.
+		- While this makes the behaviour more consistent, it may cause substantial breakage.
+  		- If such an option was taken, crates that use `PhantomData<T>` to keep information about a type next to an indirected representation of it would need to be guided to modify it to `PhantomData<&'static T>`.
+- Does `PhantomNotFreeze` have any operation semantics consequences? As in: is the exception of "mutation allowed behind shared references" tied to `UnsafeCell` or to the newly public trait?
+	- If tied to `UnsafeCell`, the guarantee that any type containing `UnsafeCell` must never implement the trait should be ensured; this is the case as long as `unsafe impl Freeze` is disallowed.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -194,3 +217,4 @@ Note that `core::marker::PhantomData<T>` is `Freeze` regardless of `T`'s `Freeze
 - Adding a `trait Pure: Freeze` which extends the interior immutability guarantee to indirected data could be valuable:
 	- This is however likely to be a fool's errand, as indirections could (for example) be hidden behind keys to global collections. 
 	- Providing such a trait could be left to the ecosystem unless we'd want it to be an auto-trait also (unlikely).
+- `impl !Freeze for T` could be a nice alternative to `PhantomNotFreeze`. However, this would be a significant language change that needs much deeper consideration.
