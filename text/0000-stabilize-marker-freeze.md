@@ -79,7 +79,7 @@ Note that `T: Freeze` is a shallow property: `T` is still allowed to contain int
 provided that it is behind an indirection (such as `Box<UnsafeCell<U>>`).
 Notable `!Freeze` types are [`UnsafeCell`](core::cell::UnsafeCell) and its safe wrappers
 such as the types in the [`cell` module](core::cell), [`Mutex`](std::sync::Mutex), and [atomics](core::sync::atomic).
-Any type which contains a `!Freeze` type without indirection is also `!Freeze`.
+Any type which contains a non-`Freeze` type without indirection also does not implement `Freeze`.
 
 `T: Freeze` is notably a requirement for static promotion (`const REF: &'a T;`) to be legal.
 
