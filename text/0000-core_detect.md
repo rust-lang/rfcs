@@ -79,7 +79,7 @@ There is no general precedent for this in other languages since the clean split 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None
+Calling `set_*_feature_detected` ~100 times at startup may have some overhead, could it be optimized in any way?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
