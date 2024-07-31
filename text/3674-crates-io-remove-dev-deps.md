@@ -41,3 +41,8 @@ To reduce the amount of unnecessary commits to download for users of the git ind
 [unresolved-questions]: #unresolved-questions
 
 - Are there any legitimate uses of the dev-dependencies in the index?
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+- crates.io could consider allowing crates to be published if their **dev**-dependencies are not also available on crates.io.
