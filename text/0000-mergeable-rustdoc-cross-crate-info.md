@@ -351,6 +351,14 @@ The implementation of the RFC itself is designed to produce only minimal changes
 
 Changes this minimal are intended to avoid breaking tools that use the output of rustdoc, like Cargo, docs.rs, and rustdoc's JavaScript frontend, in the near-term. Going forward, rustdoc will not make formal guarantees about the content of cross-crate info files.
 
+## Note about the existing flag `--extern-html-root-url`
+
+For the purpose of generating cross-crate links, rustdoc classifies the location of crates as external, local, or unknown (relative to the crate in the current invocation of rustdoc). Local crates are the crates that share the same `--out-dir`. External crates have documentation that could not be found in the current `--out-dir`, but otherwise have a known location. Item links are not generated to crates with an unknown location. When the `--extern-html-root-url=<crate name>=<url>` flag is provided, an otherwise unknown crate `<crate name>` becomes an externally located crate, forcing it to generate item links.
+
+This is of relevance to this proposal, because users who document crates with separate `--out-dir`s may still expect cross-crate links to work. Currently, `--extern-html-root-url` is the exclusive command line option for specifying link destinations for crates who would otherwise have an unknown location. We will expect users to provide `--extern-html-root-url` for all direct dependencies of a crate they are documenting, if they use separate `--out-dir`s. Example usage of this flag is in the Guide-level explanation.
+
+The limitation of `--extern-html-root-url` is that it needs to be provided with an absolute URL for the final docs destination. If your docs are hosted on `https://example.com/docs/`, this URL must be *known at documentation time*, and provided through `--extern-html-root-url=<crate name>=https://example.com/docs/`. *Absolute URLs*, instead of relative URLs, are generated for items in externally located crates. A future proposal may address this limitation by providing a command line option that generates relative URLs (like is done between items in the current crate, or other locally documented crates) for selected external crates, assuming that these crates will end up in the same bundle. The existing `--extern-html-root-url` is sufficient for the use cases envisioned by this RFC, despite the limitation.
+
 # Drawbacks
 
 The WIP may change the sorting order of the elements in the CCI. It does not change the content of the documentation, and is intended to work without modifying Cargo and docs.rs.
@@ -415,30 +423,6 @@ This proposal proposes to continue reading from the rendered cross-crate informa
 * With this proposal, there will be duplicate logic to read from both `doc.parts` files and rendered CCI.
 
 [@jsha proposes](https://github.com/rust-lang/rfcs/pull/3662#issuecomment-2184077829) unconditionally generating and reading from `doc.parts`, with no appending to the rendered crate info.
-
-## Item links?
-
-Require users to pass `--extern-html-root-url` on all external dependencies (current), vs. add a new flag to facilitate missing docs links being generated across all user crates (should consider).
-
-For the purpose of generating cross-crate links, rustdoc classifies the location of crates as external, local, or unknown (relative to the crate in the current invocation of rustdoc). Local crates are the crates that share the same `--out-dir`. External crates have documentation that could not be found in the current `--out-dir`, but otherwise have a known location. Item links are not generated to crates with an unknown location. When the `--extern-html-root-url=<crate name>=<url>` flag is provided, an otherwise unknown crate `<crate name>` becomes an externally located crate, forcing it to generate item links.
-
-This is of relevance to this proposal, because users who document crates with separate `--out-dir`s may still expect cross-crate links to work. Currently, `--extern-html-root-url` is the exclusive mechanism for specifying link destinations for crates who would otherwise have an unknown location. We will expect users to provide `--extern-html-root-url` for all direct dependencies of a crate they are documenting. Example usage of this flag is in the Guide-level explanation.
-
-A proposal is to provide more options to facilitate cross-crate links. For example, we could add a flag that implies `--extern-html-root-url`, with a fixed location, to all crates passed through `--extern`. User crates would be taken to mean the transitive dependencies of the current crate, excluding the standard library.
-
-## Reuse existing option?
-
-Create a new flag, `--merge` (proposed), vs. use existing option `no_emit_shared`.
-
-There is a render option, `no_emit_shared`, which is used to conditionally generate the cross-crate information. It also controls the generation of static files, user CSS, etc.
-
-This option is not configurable from the command line, and appears to be enabled unless rustdoc is run in its example scraping mode.
-
-We could make it configurable from the command line, unconditionally generate `doc.parts`, and use it to gate the merging of CCI.
-
-We could also make it configurable from the command line, and use it to gate the generation of `doc.parts` and the generation of all of the shared files.
-
-We could also leave it as-is: always false unless we're scraping examples, and gate the generation of `doc.parts` and the generation of all of the shared files.
 
 # Future possibilities
 
