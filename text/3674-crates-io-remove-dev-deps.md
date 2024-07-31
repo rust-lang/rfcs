@@ -35,7 +35,7 @@ To reduce the amount of unnecessary commits to download for users of the git ind
 # Prior art
 [prior-art]: #prior-art
 
-[margo](https://github.com/integer32llc/margo) is a private crate registry implementation that explicitly does include dev-dependencies in the index. The development of margo triggered the initial discussion on Zulip about whether dev-dependencies are used by cargo or not.
+[margo](https://github.com/integer32llc/margo) is a private crate registry implementation that explicitly does not include dev-dependencies in the index. The development of margo triggered the initial discussion on Zulip about whether dev-dependencies are used by cargo or not.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
