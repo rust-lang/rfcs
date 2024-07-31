@@ -5,7 +5,7 @@
 
 # Summary
 
-Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in workspaces with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `crate-info.json` file to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that enforce the independence of build actions.
+Mergeable cross-crate information in rustdoc. Facilitates the generation of documentation indexes in workspaces with many crates by allowing each crate to write to an independent output directory. Final documentation is rendered with a lightweight merge step. Configurable with command-line flags, this proposal writes a `doc.parts` directory to hold pre-merge cross-crate information. Currently, rustdoc requires global mutable access to a single output directory to generate cross-crate information, which is an obstacle to integrating rustdoc in build systems that enforce the independence of build actions.
 
 # Motivation
 
@@ -47,7 +47,7 @@ rustc --crate-name=t --crate-type=lib --edition=2021 --emit=metadata --out-dir=t
 rustc --crate-name=s --crate-type=lib --edition=2021 --emit=metadata --out-dir=s/target --extern t=t/target/libt.rmeta s/src/lib.rs
 ```
 
-Document `s` and `t` independently, providing `--merge=none`, `--write-info-json`.
+Document `s` and `t` independently, providing `--merge=none`, `--parts-out-dir`.
 
 ```shell
 rustdoc \
@@ -58,7 +58,7 @@ rustdoc \
     --out-dir=t/target/doc \
     --extern-html-root-url t=$MERGED \
     --merge=none \
-    --write-info-json=t/target/doc.parts/t/crate-info.json \
+    --parts-out-dir=t/target/doc.parts/t \
     t/src/lib.rs
 rustdoc \
     -Z unstable-options \
@@ -69,12 +69,12 @@ rustdoc \
     --extern-html-root-url s=$MERGED \
     --extern-html-root-url t=$MERGED \
     --merge=none \
-    --write-info-json=s/target/doc.parts/s/crate-info.json \
+    --parts-out-dir=s/target/doc.parts/s \
     --extern t=t/target/libt.rmeta \
     s/src/lib.rs
 ```
 
-Link everything with a final invocation of rustdoc on `i`. We will provide `--merge=write-only`, `--include-info-json`, and `--include-rendered-docs`. See the Reference-level explanation about these flags.
+Link everything with a final invocation of rustdoc on `i`. We will provide `--merge=finalize`, `--include-parts-dir`, and `--include-rendered-docs`. See the Reference-level explanation about these flags.
 
 ```shell
 rustdoc \
@@ -87,9 +87,9 @@ rustdoc \
     --extern-html-root-url s=$MERGED \
     --extern-html-root-url t=$MERGED \
     --extern-html-root-url i=$MERGED \
-    --merge=write-only \
-    --include-info-json=t/target/doc.parts/t/crate-info.json \
-    --include-info-json=s/target/doc.parts/s/crate-info.json \
+    --merge=finalize \
+    --include-parts-dir=t/target/doc.parts/t \
+    --include-parts-dir=s/target/doc.parts/s \
     --extern t=t/target/libt.rmeta \
     --extern s=s/target/libs.rmeta \
     --include-rendered-docs=t/target/doc/t \
@@ -252,26 +252,39 @@ $ tree . -a
 
 ## Suggested workflows
 
-### No cross-crate information 
-Provide `--merge=none` to every invocation of rustdoc.
+With this proposal, there are three modes of invoking rustdoc. These modes are configured through the choice of the `--merge`, `--parts-out-dir`, `--include-parts-dir`, and `--include-rendered-docs` flags.
 
-### Cross-crate information, mutate shared directory
+### Default workflow: mutate shared directory
 
-Use `--merge=read-write`, and specify the same `--out-dir` to every invocation of rustdoc. `--merge=read-write` will be the default value if `--merge` is not provided. This is the workflow that Cargo uses.
+In this workflow, we document a single crate, or a collection of crates into a shared output directory that is continuously updated.
+Files in this output directory are modified by multiple rustdoc invocations. Use `--merge=shared`, and specify the same `--out-dir` to every invocation of rustdoc. `--merge=shared` will be the default value if `--merge` is not provided. This is the workflow that Cargo uses, and only mode of invoking rustdoc before this RFC.
 
-### Cross-crate information, no shared directory
+### Document intermediate crates
 
-Specify a different `--out-dir` to every invocation of rustdoc. Additionally, you should provide `--write-info-json=<path to crate-specific file>` and `--merge=none` when documenting the dependencies of your root crate. Then, when you document the root crate, you will provide  `--include-info-json=<crate-specific path selected previously>`, `--include-rendered-docs=<out dirs chosen previously>` for each one of your dependencies, and `--merge=write-only`. You should provide `--extern-html-root-url`, and specify a static, absolute location for the URL. This flag, with the same URL, will be needed for every invocation of rustdoc, for every dependency.
+Document regular (non-root, non-index) crates using a dedicated HTML output directory and a dedicated "parts" output directory. No cross-crate data nor rendered HTML output is included from other crates.
+
+This mode only renders the HTML item documentation for the current crate. It does not produce a search index, cross-crate trait implementations, or an index page. It is expected that users follow this mode with 'Document a final crate' if these cross-crate features are desired.
+
+In this mode, a user may specify a different `--out-dir` to every invocation of rustdoc. Additionally, a user will provide `--parts-out-dir=<path to crate-specific directory>` and `--merge=none` when documenting every crate.
+The user should provide `--extern-html-root-url`, and specify a absolute final location for the URL, if they document crates in separate `--out-dir`s. This flag, with the same URL, will be needed for every invocation of rustdoc, for every dependency.
+
+### Document a final crate
+
+In this context, a final crate is a crate that depends directly on every crate that a user intends to appear in the documentation bundle. It may be an index crate that has no meaningful functionality on its own. It may also be a library crate that depends on every crate in a workspace.
+
+In this mode, rendered HTML and *finalized* cross-crate information are generated into a `target/doc/my-final-crate` folder. No *incremental* parts are generated (i.e., no `target/doc.parts/my-final-crate`).
+
+When a user documents the final crate, they will provide  `--include-parts-dir=<crate-specific path selected previously>`, `--include-rendered-docs=<out dirs chosen previously>` for each one of the dependencies, and `--merge=finalize`. They will provide `--extern-html-root-url`, in the way described in 'Document an intermediate crate'.
 
 # Reference-level explanation
 
 The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of the CCI. This proposal does not add any new CCI or change their contents (modulo sorting order, whitespace).
 
-## New file: `crate-info.json`
+## New directory: `doc.parts`
 
-`crate-info.json` is an artifact that encodes the partial contents and destination of several cross-crate information files. It only encodes information about a single-crate. This file is written if `--write-info-json` is provided. The current crate's information and any `crate-info.json` added through `--include-info-json` are merged and rendered if `--merge=read-write` or `--merge=write-only` are provided.
+`doc.parts` is a directory that holds the partial contents and destination of several cross-crate information files. It only encodes information about a single-crate. This file is written if `--parts-out-dir` is provided. The current crate's information and any `doc.parts` added through `--include-parts-dir` are merged and rendered if `--merge=shared` or `--merge=finalize` are provided.
 
-The content of `crate-info.json` is unstable. Rustdoc only guarantees that it will accept `crate-info.json` files written by the same version of rustdoc, and rustdoc is the only explicitly supported consumer of `crate-info.json`. Only the presence of `crate-info.json` is stabilized. Non-normatively, there are several pieces of information that `crate-info.json` may contain:
+The content of `doc.parts` is unstable. Rustdoc only guarantees that it will accept `doc.parts` files written by the same version of rustdoc, and rustdoc is the only explicitly supported consumer of `doc.parts`. Only the presence of `doc.parts` is stabilized. Non-normatively, there are several pieces of information that `doc.parts` may contain:
 
 * Partial source file index for generating `doc/src-files.js`.
 * Partial search index for generating `doc/search-index.js`.
@@ -279,40 +292,40 @@ The content of `crate-info.json` is unstable. Rustdoc only guarantees that it wi
 * Crate name and information for generating `doc/index.html`.
 * Trait implementation list for generating `doc/trait.impl/**/*.js`.
 * Type implementation list for generating `doc/type.impl/**/*.js`.
-* The file may include versioning information intended to assist in generating error messages if an incompatible `crate-info.json` is provided through `--include-info-json`.
+* The file may include versioning information intended to assist in generating error messages if an incompatible `doc.parts` is provided through `--include-parts-dir`.
 * The file may contain other information related to cross-crate information that is added in the future.
 
-## New flag: `--write-info-json=path/to/crate-info.json`
+## New flag: `--parts-out-dir=<path/to>/doc.parts/<crate-name>`
 
-When this flag is provided, the unmerged parts for the current crate will be written to `path/to/crate-info.json`. A typical `<path to crate-info.json>` is `./target/doc.parts/<crate name>/crate-info.json`.
+When this flag is provided, the unmerged parts for the current crate will be written to `path/to/doc.parts/<crate name>`. A typical argument is `./target/doc.parts/rand`.
 
-Crates `--include-info-json`ed will not appear in `crate-info.json`, as `crate-info.json` only includes the CCI parts for the current crate.
+Crates `--include-parts-dir`ed will not appear in `doc.parts`, as `doc.parts` only includes the CCI parts for the current crate.
 
-If this flag is not provided, no `crate-info.json` will be written.
+If this flag is not provided, no `doc.parts` will be written.
 
-## New flag: `--include-info-json=<path/to/crate-info.json>`
+## New flag: `--include-parts-dir=<path/to/doc.parts/crate-name>`
 
-If this flag is provided, rustdoc will expect `path/to/crate-info.json` to be the `crate-info.json` file containing the parts for a crate. It will append these parts to the ones it will render in the doc root (`--out-dir`). The info that's included is not written to `crate-info.json`, as `crate-info.json` only holds the CCI parts for the current crate.
+If this flag is provided, rustdoc will expect that a previous invocation of rustdoc was made with `--parts-out-dir=<path/to/doc.parts/crate-name>`. It will append the parts from the previous invocation to the ones it will render in the doc root (`--out-dir`). The info that's included is not written to its own `doc.parts`, as `doc.parts` only holds the CCI parts for the current crate.
 
-This flag is similar to `--extern-html-root-url` in that it only needs to be provided for externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-info-json` tells rustdoc where to search for the `crate-info.json` directory at documentation-time. It must not be a URL.
+This flag is similar to `--extern-html-root-url` in that it only needs to be provided for externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-parts-dir` tells rustdoc where to search for the `doc.parts` directory at documentation-time. It must not be a URL.
 
-In the Guide-level explanation, for example, crate `i` needs to identify the location of `s`'s parts. Since they could be located in an arbitrary directory, `i` must be instructed on where to fetch them. In this example, `s`'s parts happen to be in `./s/target/doc.parts/s`, so rustdoc is called with `--include-info-json=s/target/doc.parts/s/crate-info.json`.
+In the Guide-level explanation, for example, crate `i` needs to identify the location of `s`'s parts. Since they could be located in an arbitrary directory, `i` must be instructed on where to fetch them. In this example, `s`'s parts happen to be in `./s/target/doc.parts/s`, so rustdoc is called with `--include-parts-dir=s/target/doc.parts/s`.
 
 ## New flag: `--include-rendered-docs=<path/to/target/doc/extern-crate-name>`
 
 Rustdoc will assume that `<path/to/target/doc>` was used as the `--out-dir` for `<extern-crate-name>`. This documentation will be copied into the directory specified by `--out-dir`. Rustdoc will effectively run `cp -r <path/to/target/doc/extern-crate-name> <current --out-dir>`.
 
-## New flag: `--merge=read-write|none|write-only`
+## New flag: `--merge=none|shared|finalize`
 
-This flag controls two internal paramaters: `read_rendered_cci`, and `write_rendered_cci`.
+This flag corresponds to the three modes of invoking rustdoc described in 'Suggested workflows'. It controls two internal paramaters: `read_rendered_cci`, and `write_rendered_cci`.
 
 When `write_rendered_cci` is active, rustdoc will output the rendered parts to the doc root (`--out-dir`). Rustdoc will generate files like `doc/search-index.js`, `doc/search.desc`, `doc/index.html`, etc if and only if this parameter is true.
 
-When `read_rendered_cci` is active, rustdoc will look in the `--out-dir` for rendered cross-crate info files. These files will be used as the base. Any new parts that rustdoc generates with its current invocation and any parts fetched with `include-info-json` will be appended to these base files. When it is disabled, the cross-crate info files start empty and are populated with the current crate's info and any crates fetched with `--include-info-json`.
+When `read_rendered_cci` is active, rustdoc will look in the `--out-dir` for rendered cross-crate info files. These files will be used as the base. Any new parts that rustdoc generates with its current invocation and any parts fetched with `include-parts-dir` will be appended to these base files. When it is disabled, the cross-crate info files start empty and are populated with the current crate's info and any crates fetched with `--include-parts-dir`.
 
-* `--merge=read-write` (`read_rendered_cci && write_rendered_cci`) is the default, and reflects the current behavior of rustdoc. 
+* `--merge=shared` (`read_rendered_cci && write_rendered_cci`) is the default, and reflects the current behavior of rustdoc.
 * `--merge=none` (`!read_rendered_cci && !write_rendered_cci`) means that rustdoc will ignore the cross-crate files in the doc root. Only generate item docs. 
-* `--merge=write-only` (`!read_rendered_cci && write_rendered_cci`) outputs crate info based only on the current crate and `--include-info-json`'ed crates.
+* `--merge=finalize` (`!read_rendered_cci && write_rendered_cci`) outputs crate info based only on the current crate and `--include-parts-dir`'ed crates.
 * A (`read_rendered_cci && !write_rendered_cci`) mode would be useless, since the data that is read would be ignored and not written.
 
 ## Merge step
@@ -321,7 +334,7 @@ This proposal is capable of addressing two primary use cases. It allows develope
 * Documenting a crate and its transitive dependencies in parallel in build systems that require build actions to be independent
 * Producing a documentation index of a large number of crates, in such a way that if one crate is updated, only the updated crates and an index have to be redocumented. This scenario is demonstrated in the Guide-level explanation.
 
-CCI is not automatically enabled in either situation. A combination of the `--include-info-json`, `--merge`, and `--write-info-json` flags are needed to produce this behavior. This RFC provides a minimal set of tools that allow developers of build systems, like Bazel and Buck2, to create rules for these scenarios.
+CCI is not automatically enabled in either situation. A combination of the `--include-parts-dir`, `--merge`, and `--parts-out-dir` flags are needed to produce this behavior. This RFC provides a minimal set of tools that allow developers of build systems, like Bazel and Buck2, to create rules for these scenarios.
 
 Discussion of whether additional features should be included to facilitate this merge step can be found in Unresolved questions (Index crate).
 
@@ -329,7 +342,7 @@ Discussion of whether additional features should be included to facilitate this 
 
 This RFC does not alter previous compatibility guarantees made about the output of rustdoc. In particular it does not stabilize the presence of the rendered cross-crate information files, their content, or the HTML generated by rustdoc.
 
-In the same way that the [rustdoc HTML output is unstable](https://rust-lang.github.io/rfcs/2963-rustdoc-json.html#:~:text=The%20HTML%20output%20of%20rustdoc,into%20a%20different%20format%20impractical), the content of `crate-info.json` will be considered unstable. Between versions of rustdoc, breaking changes to the content of `crate-info.json` should be expected. Only the presence of a `crate-info.json` file is promised, under `--write-info-json`. Merging cross-crate information generated by disparate versions of rustdoc is not supported. To detect whether `crate-info.json` is compatible, rustdoc includes a version number in these files (see New file: `crate-info.json`).
+In the same way that the [rustdoc HTML output is unstable](https://rust-lang.github.io/rfcs/2963-rustdoc-json.html#:~:text=The%20HTML%20output%20of%20rustdoc,into%20a%20different%20format%20impractical), the content of `doc.parts` will be considered unstable. Between versions of rustdoc, breaking changes to the content of `doc.parts` should be expected. Only the presence of a `doc.parts` directory is promised, under `--parts-out-dir`. Merging cross-crate information generated by disparate versions of rustdoc is not supported. To detect whether `doc.parts` is compatible, rustdoc includes a version number in these files (see New directory: `doc.parts`).
 
 The implementation of the RFC itself is designed to produce only minimal changes to cross-crate info files and the HTML output of rustdoc. Exhaustively, the implementation is allowed to 
 * Change the sorting order of trait implementations, type implementations, and other cross-crate info in the HTML output of rustdoc.
@@ -388,20 +401,20 @@ Require users to generate documentation bundles via an index crate (current) vs.
 
 If one would like to merge the documentation of several crates, we could continue to require users to provide an index crate, like [the fuchsia index](https://fuchsia-docs.firebaseapp.com/rust/rustdoc_index/). This serves as the target of the rustdoc invocation, and the landing page for the collected documentation. Supporting only this style of index would require the fewest changes. This is the mode described in the Guide-level explanation.
 
-The proposition, to allow users of rustdoc the flexibility of not having to produce an index, is to allow rustdoc to be run in a mode where no target crate is provided. It would generate rendered cross-crate information based only on what is provided through `--include-info-json`. The source crates are provided to rustdoc, through a mechanism like `--extern`, rustdoc merges and writes the CCI, and copies the item and module links to the doc root. This would require more extensive changes, as rustdoc assumes that it is invoked with a target crate. This mode is somewhat analogous to the [example scraping mode](https://github.com/rust-lang/rfcs/blob/master/text/3123-rustdoc-scrape-examples.md). Having to create an index crate, that actively uses all of the crates in the environment, might prohibit the use of this feature in settings where users do not intend to produce an index, or where exhaustively listing all dependencies (to `--extern` them) is difficult.
+The proposition, to allow users of rustdoc the flexibility of not having to produce an index, is to allow rustdoc to be run in a mode where no target crate is provided. It would generate rendered cross-crate information based only on what is provided through `--include-parts-dir`. The source crates are provided to rustdoc, through a mechanism like `--extern`, rustdoc merges and writes the CCI, and copies the item and module links to the doc root. This would require more extensive changes, as rustdoc assumes that it is invoked with a target crate. This mode is somewhat analogous to the [example scraping mode](https://github.com/rust-lang/rfcs/blob/master/text/3123-rustdoc-scrape-examples.md). Having to create an index crate, that actively uses all of the crates in the environment, might prohibit the use of this feature in settings where users do not intend to produce an index, or where exhaustively listing all dependencies (to `--extern` them) is difficult.
 
 ## Unconditionally generating the `doc.parts` files?
 
 Generate no extra files (current) vs. unconditionally creating `doc.parts` to enable more complex future CCI (should consider).
 
 The current version of rustdoc performs merging by [collecting JSON](https://github.com/rust-lang/rust/blob/c25ac9d6cc285e57e1176dc2da6848b9d0163810/src/librustdoc/html/render/write_shared.rs#L166) blobs from the contents of the already-rendered CCI.
-This proposal proposes to continue reading from the rendered cross-crate information under the default `--merge=read-write`. It can also read `crate-info.json` files, under `--include-info-json`. However, there are several issues with reading from the rendered CCI that must be stated:
+This proposal proposes to continue reading from the rendered cross-crate information under the default `--merge=shared`. It can also read `doc.parts` directories, under `--include-parts-dir`. However, there are several issues with reading from the rendered CCI that must be stated:
 * Every rustdoc process outputs the CCI to the same doc root by default
 * It is difficult to extract the items in a diverse set of rendered HTML files. This is anticipating of the CCI to include HTML files that, for example, statically include type+trait implementations directly
-* Reading exclusively from `crate-info.json` is simpler than the existing `serde_json` dependency for extracting the blobs, as opposed to handwritten CCI-type specific parsing (current)
+* Reading exclusively from `doc.parts` is simpler than the existing `serde_json` dependency for extracting the blobs, as opposed to handwritten CCI-type specific parsing (current)
 * With this proposal, there will be duplicate logic to read from both `doc.parts` files and rendered CCI.
 
-[@jsha proposes](https://github.com/rust-lang/rfcs/pull/3662#issuecomment-2184077829) unconditionally generating and reading from `crate-info.json`, with no appending to the rendered crate info.
+[@jsha proposes](https://github.com/rust-lang/rfcs/pull/3662#issuecomment-2184077829) unconditionally generating and reading from `doc.parts`, with no appending to the rendered crate info.
 
 ## Item links?
 
@@ -438,4 +451,4 @@ Another possibility is for `doc.parts` to be distributed on `docs.rs` along with
 
 A future possibility related to the index crate idea is to have an option for embedding user-specified HTML into the `--enable-index-page`'s HTML.
 
-The changes in this proposal are intended to work with no changes to Cargo and docs.rs. However, there may be benefits to using `--merge=write-only` with Cargo, as it would remove the need for locking the output directory. More of the documentation process could happen in parallel, which may speed up execution time.
+The changes in this proposal are intended to work with no changes to Cargo and docs.rs. However, there may be benefits to using `--merge=finalize` with Cargo, as it would remove the need for locking the output directory. More of the documentation process could happen in parallel, which may speed up execution time.
