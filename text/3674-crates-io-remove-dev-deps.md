@@ -21,7 +21,7 @@ From the user's perspective, this change should not have any impact. The `cargo`
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The crates.io server will still process and save dev-dependencies in the database, but it will no longer include them in the index. To be more precise, any item in the `deps` field with `"kind": "normal"` will be removed from the index.
+The crates.io server will still process and save dev-dependencies in the database, but it will no longer include them in the index. To be more precise, any item in the `deps` field with `"kind": "dev"` will be removed from the index.
 
 To reduce the amount of unnecessary commits to download for users of the git index we could implement this in a way where dev-dependencies are only removed from an index file if a release for the corresponding crate is being published and the file needs to be touched anyway. We could keep running in this state for a couple of weeks/months and then later trigger a full sync when a bigger chunk of the actively maintained crates have already been updated, reducing the amount of commits needed for the migration.
 
