@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Adding an attribute, `#[export_ordinal(n)]`, that marks the ordinal position of an exported function in a cdylib on windows targets without creating a `lib.def` file.
+Adding an unsafe attribute, `#[unsafe(export_ordinal(n))]`, that marks the ordinal position of an exported function in a cdylib on windows targets without creating a `lib.def` file.
 
 # Motivation
 [motivation]: #motivation
@@ -45,10 +45,10 @@ Function Ordinals refer to the position of an exported function in a Dynamically
 
 ## Usage
 
-You can specify the ordinality of an exported function using the `export_ordinal` attribute on it.
+You can specify the ordinality of an exported function using the `export_ordinal` attribute on it. The attribute must be marked as unsafe.
 
 ```rs
-#[export_ordinal(1)]
+#[unsafe(export_ordinal(1))]
 pub extern "C" fn hello() {
     println!("Hello, World!");
 }
@@ -68,7 +68,7 @@ If `export_ordinal` isn't provided, an unused ordinal will be assigned during co
 `export_ordinal` is a new attribute for functions which has a signature similar to the following:
 
 ```rs
-#[export_ordinal(n)]
+#[unsafe(export_ordinal(n))]
 ```
 
 `n` must be:
@@ -79,28 +79,20 @@ If `export_ordinal` isn't provided, an unused ordinal will be assigned during co
 
 The attribute should only affect windows targets, as ordinals are not a feature of shared libraries on other targets.
 
+The attribute must be marked as unsafe.
+
 The attribute must be placed above an exported function like so:
 
 ```rs
 #[no_mangle]
-#[export_ordinal(1)]
+#[unsafe(export_ordinal(1))]
 pub fn hello() {}
 
 // Also works with extern and unsafe functions
 
 #[no_mangle]
-#[export_ordinal(2)]
+#[unsafe(export_ordinal(2))]
 pub unsafe extern "C" fn world() {}
-```
-
-This should also work with exported bindings, such as:
-
-```rs
-#[link(name = "external_library")]
-extern "C" {
-    #[export_ordinal(2)]
-    pub fn external_function();
-}
 ```
 
 # Drawbacks
@@ -112,6 +104,8 @@ extern "C" {
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This design is consistent with the [`link_ordinal`](https://doc.rust-lang.org/reference/items/external-blocks.html#the-link_ordinal-attribute) attribute already in use.
+
+The attribute is marked as unsafe as it shares the same concerns as `export_name`, which is [unsafe as of Rust 2024 Edition](https://github.com/ehuss/edition-guide/blob/b80cba8af64a9c52d56f7081c764e5396e406f6c/src/rust-2024/unsafe-attributes.md).
 
 Some considered alternatives are:
 
@@ -136,7 +130,6 @@ Some unresolved questions are:
 1. Can ordinals be skipped? If you specify ordinals `1, 3, 4`, should this throw an error as `2` is skipped?
 2. If ordinals `1, 3` are specified, and you have another exported function, should it use `2` (the next unused ordinal) or `4` (the next in the sequence)?
 3. Instead of implementing this proposal, Could the usage of the `.def` file be changed to allow other functions to stay exported, even if they aren't included in the `.def` file?
-4. When [RFC3325 - Unsafe Attributes](https://rust-lang.github.io/rfcs/3325-unsafe-attributes.html) is implemented, should `link_ordinal` be marked unsafe if there is a chance of collisions?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
