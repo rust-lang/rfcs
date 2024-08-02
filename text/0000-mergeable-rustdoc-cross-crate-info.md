@@ -25,82 +25,106 @@ These considerations motivate adding an option for outputting partial CCI (parts
 
 # Guide-level explanation
 
-In this example, there is a crate `t` which defines a trait `T`, and a crate `s` which defines a struct `S` that implements `T`. Our goal in this demo is for `S` to appear as an implementer in `T`'s docs, even if `s` and `t` are documented independently. This guide will be assuming that we want a crate `i` that serves as our documentation index. See the Unresolved questions section for ideas that do not require an index crate.
+## New flag summary
+
+More details are in the Reference-level explanation.
+
+* `--parts-out-dir=doc.parts/<crate-name>`: Write information from the current crate to a provided directory.
+* `--include-parts-dir=doc.parts/<crate-name>`: Include cross-crate information from these previously written `doc.parts` directories into a collection that will be written by the current invocation of rustdoc.
+* `--merge=none`: Do not write cross-crate information to the `--out-dir`.
+* `--merge=shared`: Read cross-crate information from the `--out-dir`, and write cross-crate information from the current crate and any crates included via `--include-parts-dir` to the `--out-dir`.
+* `--merge=finalize`: Write cross-crate information from the current crate and any crates included via `--include-parts-dir`, overwriting conflicting files in the `--out-dir`.
+
+## Example
+
+In this example, there is a crate `trait-crate` which defines a trait `Trait`, and a crate `struct-crate` which defines a struct `Struct` that implements `Trait`. Our goal in this demo is for `Struct` to appear as an implementer in `Trait`'s docs, even if `struct-crate` and `trait-crate` are documented independently. This guide will be assuming that we want a crate `index-crate` that serves as our documentation index. See the Unresolved questions section for ideas that do not require an index crate.
 
 ```shell
-mkdir -p t/src s/src i/src merged/doc
-echo "pub trait T {}" > t/src/lib.rs
-echo "pub struct S; impl t::T for S {}" > s/src/lib.rs
+mkdir -p trait-crate/src struct-crate/src index-crate/src merged/doc
+echo "pub trait Trait {}" > trait-crate/src/lib.rs
+echo "pub struct Struct; impl trait-crate::Trait for Struct {}" > struct-crate/src/lib.rs
 MERGED=file://$(realpath merged/doc)
 ```
 
-[Actively use](https://doc.rust-lang.org/rustc/command-line-arguments.html#--extern-specify-where-an-external-library-is-located) `t` and `s` in `i`. The `extern crate` declarations are not needed if the crates are otherwise referenced in the index; intra-doc links are enough.
+[Actively use](https://doc.rust-lang.org/rustc/command-line-arguments.html#--extern-specify-where-an-external-library-is-located) `trait-crate` and `struct-crate` in `index-crate`. The `extern crate` declarations are not needed if the crates are otherwise referenced in the index; intra-doc links are enough.
 
 ```shell
-echo "extern crate t; extern crate s;" > i/src/lib.rs
+echo "extern crate trait-crate; extern crate struct-crate;" > index-crate/src/lib.rs
 ```
 
 Compile the crates.
 
 ```shell
-rustc --crate-name=t --crate-type=lib --edition=2021 --emit=metadata --out-dir=t/target t/src/lib.rs
-rustc --crate-name=s --crate-type=lib --edition=2021 --emit=metadata --out-dir=s/target --extern t=t/target/libt.rmeta s/src/lib.rs
+rustc \
+    --crate-name=trait-crate \
+    --crate-type=lib \
+    --edition=2021 \
+    --emit=metadata \
+    --out-dir=trait-crate/target \
+    trait-crate/src/lib.rs
+rustc \
+    --crate-name=struct-crate \
+    --crate-type=lib \
+    --edition=2021 \
+    --emit=metadata \
+    --out-dir=struct-crate/target \
+    --extern trait-crate=trait-crate/target/libt.rmeta struct-crate/src/lib.rs
 ```
 
-Document `s` and `t` independently, providing `--merge=none`, `--parts-out-dir`.
+Document `struct-crate` and `trait-crate` independently, providing `--merge=none`, `--parts-out-dir`.
 
 ```shell
 rustdoc \
     -Z unstable-options \
-    --crate-name=t \
+    --crate-name=trait-crate \
     --crate-type=lib \
     --edition=2021 \
-    --out-dir=t/target/doc \
-    --extern-html-root-url t=$MERGED \
+    --out-dir=trait-crate/target/doc \
+    --extern-html-root-url trait-crate=$MERGED \
     --merge=none \
-    --parts-out-dir=t/target/doc.parts/t \
-    t/src/lib.rs
+    --parts-out-dir=trait-crate/target/doc.parts/trait-crate \
+    trait-crate/src/lib.rs
 rustdoc \
     -Z unstable-options \
-    --crate-name=s \
+    --crate-name=struct-crate \
     --crate-type=lib \
     --edition=2021 \
-    --out-dir=s/target/doc \
-    --extern-html-root-url s=$MERGED \
-    --extern-html-root-url t=$MERGED \
+    --out-dir=struct-crate/target/doc \
+    --extern-html-root-url struct-crate=$MERGED \
+    --extern-html-root-url trait-crate=$MERGED \
     --merge=none \
-    --parts-out-dir=s/target/doc.parts/s \
-    --extern t=t/target/libt.rmeta \
-    s/src/lib.rs
+    --parts-out-dir=struct-crate/target/doc.parts/struct-crate \
+    --extern trait-crate=trait-crate/target/libt.rmeta \
+    struct-crate/src/lib.rs
 ```
 
-Link everything with a final invocation of rustdoc on `i`. We will provide `--merge=finalize`, `--include-parts-dir`, and `--include-rendered-docs`. See the Reference-level explanation about these flags.
+Link everything with a final invocation of rustdoc on `index-crate`. We will provide `--merge=finalize`, `--include-parts-dir`, and `--include-rendered-docs`. See the Reference-level explanation about these flags.
 
 ```shell
 rustdoc \
     -Z unstable-options \
-    --crate-name=i \
+    --crate-name=index-crate \
     --crate-type=lib \
     --edition=2021 \
     --enable-index-page \
-    --out-dir=i/target/doc \
-    --extern-html-root-url s=$MERGED \
-    --extern-html-root-url t=$MERGED \
-    --extern-html-root-url i=$MERGED \
+    --out-dir=index-crate/target/doc \
+    --extern-html-root-url struct-crate=$MERGED \
+    --extern-html-root-url trait-crate=$MERGED \
+    --extern-html-root-url index-crate=$MERGED \
     --merge=finalize \
-    --include-parts-dir=t/target/doc.parts/t \
-    --include-parts-dir=s/target/doc.parts/s \
-    --extern t=t/target/libt.rmeta \
-    --extern s=s/target/libs.rmeta \
-    --include-rendered-docs=t/target/doc/t \
-    --include-rendered-docs=s/target/doc/s \
-    -L t/target \
-    i/src/lib.rs
+    --include-parts-dir=trait-crate/target/doc.parts/trait-crate \
+    --include-parts-dir=struct-crate/target/doc.parts/struct-crate \
+    --extern trait-crate=trait-crate/target/libt.rmeta \
+    --extern struct-crate=struct-crate/target/libs.rmeta \
+    --include-rendered-docs=trait-crate/target/doc/trait-crate \
+    --include-rendered-docs=struct-crate/target/doc/struct-crate \
+    -L trait-crate/target \
+    index-crate/src/lib.rs
 ```
 
 Browse `merged/doc/index.html` with cross-crate information.
 
-In general, instead of two crates in the environment (`s` and `t`) you could have thousands. Upon any changes, only the index and the crates that are changed have to be re-documented.
+In general, instead of two crates in the environment (`struct-crate` and `trait-crate`) you could have thousands. Upon any changes, only the index and the crates that are changed have to be re-documented.
 
 <details>
 <summary>Click here for a directory listing after running the example above.</summary>
@@ -108,26 +132,26 @@ In general, instead of two crates in the environment (`s` and `t`) you could hav
 <pre>
 $ tree . -a
 .
-├── i
+├── index-crate
 │   ├── src
 │   │   └── lib.rs
 │   └── target
 │       └── doc
 │           ├── crates.js
 │           ├── help.html
-│           ├── i
+│           ├── index-crate
 │           │   ├── all.html
 │           │   ├── index.html
 │           │   └── sidebar-items.js
 │           ├── index.html
 │           ├── .lock
 │           ├── search.desc
-│           │   └── i
-│           │       └── i-desc-0-.js
+│           │   └── index-crate
+│           │       └── index-crate-desc-0-.js
 │           ├── search-index.js
 │           ├── settings.html
 │           ├── src
-│           │   └── i
+│           │   └── index-crate
 │           │       └── lib.rs.html
 │           ├── src-files.js
 │           ├── static.files
@@ -145,48 +169,48 @@ $ tree . -a
 │               │       └── unwind_safe
 │               │           ├── trait.RefUnwindSafe.js
 │               │           └── trait.UnwindSafe.js
-│               └── t
-│                   └── trait.T.js
+│               └── trait-crate
+│                   └── trait.Trait.js
 ├── merged
 │   └── doc
 │       ├── crates.js
 │       ├── help.html
-│       ├── i
+│       ├── index-crate
 │       │   ├── all.html
 │       │   ├── index.html
 │       │   └── sidebar-items.js
 │       ├── index.html
-│       ├── s
+│       ├── struct-crate
 │       │   ├── all.html
 │       │   ├── index.html
 │       │   ├── sidebar-items.js
-│       │   └── struct.S.html
+│       │   └── struct.Struct.html
 │       ├── search.desc
-│       │   ├── i
-│       │   │   └── i-desc-0-.js
-│       │   ├── s
-│       │   │   └── s-desc-0-.js
-│       │   └── t
-│       │       └── t-desc-0-.js
+│       │   ├── index-crate
+│       │   │   └── index-crate-desc-0-.js
+│       │   ├── struct-crate
+│       │   │   └── struct-crate-desc-0-.js
+│       │   └── trait-crate
+│       │       └── trait-crate-desc-0-.js
 │       ├── search-index.js
 │       ├── settings.html
 │       ├── src
-│       │   ├── i
+│       │   ├── index-crate
 │       │   │   └── lib.rs.html
-│       │   ├── s
+│       │   ├── struct-crate
 │       │   │   └── lib.rs.html
-│       │   └── t
+│       │   └── trait-crate
 │       │       └── lib.rs.html
 │       ├── src-files.js
 │       ├── static.files
 │           │   ├── COPYRIGHT-23e9bde6c69aea69.txt
 │           │   ├── favicon-2c020d218678b618.svg
 │           │   └── <rest of the contents excluded>
-│       ├── t
+│       ├── trait-crate
 │       │   ├── all.html
 │       │   ├── index.html
 │       │   ├── sidebar-items.js
-│       │   └── trait.T.html
+│       │   └── trait.Trait.html
 │       └── trait.impl
 │           ├── core
 │           │   ├── marker
@@ -198,32 +222,32 @@ $ tree . -a
 │           │       └── unwind_safe
 │           │           ├── trait.RefUnwindSafe.js
 │           │           └── trait.UnwindSafe.js
-│           └── t
-│               └── trait.T.js
-├── s
+│           └── trait-crate
+│               └── trait.Trait.js
+├── struct-crate
 │   ├── src
 │   │   └── lib.rs
 │   └── target
 │       ├── doc
 │       │   ├── help.html
 │       │   ├── .lock
-│       │   ├── s
+│       │   ├── struct-crate
 │       │   │   ├── all.html
 │       │   │   ├── index.html
 │       │   │   ├── sidebar-items.js
-│       │   │   └── struct.S.html
+│       │   │   └── struct.Struct.html
 │       │   ├── search.desc
-│       │   │   └── s
-│       │   │       └── s-desc-0-.js
+│       │   │   └── struct-crate
+│       │   │       └── struct-crate-desc-0-.js
 │       │   ├── settings.html
 │       │   └── src
-│       │       └── s
+│       │       └── struct-crate
 │       │           └── lib.rs.html
 │       ├── doc.parts
-│       │   └── s
+│       │   └── struct-crate
 │       │       └── crate-info.json
 │       └── libs.rmeta
-└── t
+└── trait-crate
     ├── src
     │   └── lib.rs
     └── target
@@ -231,19 +255,19 @@ $ tree . -a
         │   ├── help.html
         │   ├── .lock
         │   ├── search.desc
-        │   │   └── t
-        │   │       └── t-desc-0-.js
+        │   │   └── trait-crate
+        │   │       └── trait-crate-desc-0-.js
         │   ├── settings.html
         │   ├── src
-        │   │   └── t
+        │   │   └── trait-crate
         │   │       └── lib.rs.html
-        │   └── t
+        │   └── trait-crate
         │       ├── all.html
         │       ├── index.html
         │       ├── sidebar-items.js
-        │       └── trait.T.html
+        │       └── trait.Trait.html
         ├── doc.parts
-        │   └── t
+        │   └── trait-crate
         │       └── crate-info.json
         └── libt.rmeta
 </pre>
@@ -280,11 +304,15 @@ When a user documents the final crate, they will provide  `--include-parts-dir=<
 
 The existing cross-crate information files, like `search-index.js`, all are lists of elements, rendered in an specified way (e.g. as a JavaScript file with a JSON array or an HTML index page containing an unordered list). The current rustdoc (in `write_shared`) pushes the current crate's version of the CCI into the one that is already found in `doc`, and renders a new version. The rest of the proposal uses the term **part** to refer to the pre-merged, pre-rendered element of the CCI. This proposal does not add any new CCI or change their contents (modulo sorting order, whitespace).
 
-## New directory: `doc.parts`
+## New directory: `doc.parts/<crate-name>/crate-info.json`
 
 `doc.parts` is a directory that holds the partial contents and destination of several cross-crate information files. It only encodes information about a single-crate. This file is written if `--parts-out-dir` is provided. The current crate's information and any `doc.parts` added through `--include-parts-dir` are merged and rendered if `--merge=shared` or `--merge=finalize` are provided.
 
-The content of `doc.parts` is unstable. Rustdoc only guarantees that it will accept `doc.parts` files written by the same version of rustdoc, and rustdoc is the only explicitly supported consumer of `doc.parts`. Only the presence of `doc.parts` is stabilized. Non-normatively, there are several pieces of information that `doc.parts` may contain:
+The directory `doc.parts` contains subdirectories for each crate. The crate names are chosen by the caller that invokes rustdoc, and are  `--include-parts-dir` and `--parts-out-dir`. These crate names are arbitrary from the perspective of rustdoc, with the constraint that they must be unique. Rustdoc will write a file called `crate-info.json`, whose contents are unstable, to the subdirectory provided to `--parts-out-dir`. Even though the contents of `crate-info.json` are only intended to be consumed by rustdoc, its existence must be stabilized due to the fact that it may be declared to build systems.
+
+This directory structure may change with a new edition.
+
+Rustdoc only guarantees that it will accept `doc.parts` files written by the same version of rustdoc, and rustdoc is the only explicitly supported consumer of `doc.parts`. Only the presence of `doc.parts`, and its opaque child `crate-info.json`, are stabilized. Non-normatively, there are several pieces of information that `doc.parts` may contain:
 
 * Partial source file index for generating `doc/src-files.js`.
 * Partial search index for generating `doc/search-index.js`.
@@ -302,6 +330,8 @@ When this flag is provided, the unmerged parts for the current crate will be wri
 Crates `--include-parts-dir`ed will not appear in `doc.parts`, as `doc.parts` only includes the CCI parts for the current crate.
 
 If this flag is not provided, no `doc.parts` will be written.
+
+The output generated by this flag may be consumed by a future invocation to rustdoc that provides `--include-parts-dir=<path/to>/doc.parts/<crate-name>`.
 
 ## New flag: `--include-parts-dir=<path/to/doc.parts/crate-name>`
 
@@ -323,7 +353,7 @@ When `write_rendered_cci` is active, rustdoc will output the rendered parts to t
 
 When `read_rendered_cci` is active, rustdoc will look in the `--out-dir` for rendered cross-crate info files. These files will be used as the base. Any new parts that rustdoc generates with its current invocation and any parts fetched with `include-parts-dir` will be appended to these base files. When it is disabled, the cross-crate info files start empty and are populated with the current crate's info and any crates fetched with `--include-parts-dir`.
 
-* `--merge=shared` (`read_rendered_cci && write_rendered_cci`) is the default, and reflects the current behavior of rustdoc.
+* `--merge=shared` (`read_rendered_cci && write_rendered_cci`) is the default, and reflects the current behavior of rustdoc. Rustdoc will look in its `--out-dir` for pre-existing cross-crate information files, and append information to these files from the current crate and any crates referenced through `--include-parts-dir`.
 * `--merge=none` (`!read_rendered_cci && !write_rendered_cci`) means that rustdoc will ignore the cross-crate files in the doc root. Only generate item docs. 
 * `--merge=finalize` (`!read_rendered_cci && write_rendered_cci`) outputs crate info based only on the current crate and `--include-parts-dir`'ed crates.
 * A (`read_rendered_cci && !write_rendered_cci`) mode would be useless, since the data that is read would be ignored and not written.
