@@ -120,7 +120,7 @@ rustdoc \
     index-crate/src/lib.rs
 ```
 
-Copy the docs from external locations to the given `--out-dir`.
+Copy the docs from the given `--out-dir`s to a central location.
 
 ```shell
 cp -r struct-crate/target/doc/* trait-crate/target/doc/* index-crate/target/doc/* merged/doc
