@@ -1,7 +1,7 @@
 - Feature Name: promote-aarch64-apple-darwin-to-tier-1
 - Start Date: 2024-07-09
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3671](https://github.com/rust-lang/rfcs/pull/3671)
+- Rust Issue: [rust-lang/rust#73908](https://github.com/rust-lang/rust/issues/73908)
 
 # Summary
 [summary]: #summary
