@@ -1,7 +1,7 @@
 - Feature Name: `path_bases`
 - Start Date: 2023-11-13
 - RFC PR: [rust-lang/rfcs#3529](https://github.com/rust-lang/rfcs/pull/3529)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/cargo#14355](https://github.com/rust-lang/cargo/issues/14355)
 
 # Summary
 [summary]: #summary
