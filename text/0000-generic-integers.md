@@ -208,7 +208,7 @@ The size and alignment of `uint<N>` and `int<N>` should be rounded up to a power
 
 The existing macro-based implementation for `uN` and `iN` should be changed to implement for only `uint<N>`, `int<N>`, `usize`, and `isize` instead; this has already been implemented in a mostly-generic way and should work as expected.
 
-Unfortunately, there are a couple things that will have to remain implemented only for the existing powers of two due to the lack of constant bounds, namely:
+Unfortunately, there are a couple things that will have to remain implemented only for the existing powers of two due to the lack of constant bounds and complex const generics, namely:
 
 * `From` and `TryFrom` implementations
 * `from_*e_bytes` and `to_*e_bytes` methods
@@ -303,6 +303,10 @@ Crates like [`uint`], [`bounded-integer`], and [`intx`] exist, but they come wit
 * They still require you to generalise integer types with macros instead of const generics.
 
 A library solution really doesn't feel like the right option here. While libraries can create general integer *traits* to work over all of the existing `uN` and `iN` types, they can't easily make generic integer types.
+
+[`uint`]: https://docs.rs/uint
+[`bounded-integers`]: https://docs.rs/bounded-integer
+[`intx`]: https://docs.rs/intx
 
 ## Going without
 
