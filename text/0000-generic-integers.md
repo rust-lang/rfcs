@@ -76,15 +76,22 @@ As you can see, getting the shift (`21`) and mask (`!(!0 << 5)`) is not as obvio
 While having an explicit bitfield representation is a ways off, with generic integers, we can at least make a proc macro to generate all this code for us, and use an API that explicitly specifies the sizes of each field:
 
 ```rust
-#[derive(Bitfield)]
-struct MipsInstruction {
-    opcode: uint<6>,
-    rs: uint<5>,
-    rt: uint<5>,
-    rd: uint<5>,
-    shift: uint<5>,
-    function: uint<6>,
+bitfield! {
+    struct MipsInstruction {
+        opcode: uint<6>,
+        rs: uint<5>,
+        rt: uint<5>,
+        rd: uint<5>,
+        shift: uint<5>,
+        function: uint<6>,
+    }
 }
+```
+
+Which would roughly be equivalent to:
+
+```rust
+struct MipsInstruction { /* ... */ }
 impl MipsInstruction {
     fn pack(opcode: uint<6>, rs: uint<5>, rt: uint<5>, rd: uint<5>, shift: uint<5>, function: uint<6>) -> MipsInstruction { /* ... */ }
     fn opcode(&self) -> uint<6> { /* ... */ }
@@ -181,7 +188,7 @@ Overall, you should expect integers where `N` is not a power of two to take up m
 
 ## Basic semantics
 
-The compiler will gain the built-in integer types `uint<N>` and `int<N>`, where `const N: usize`. These will alias to existing `uN` and `iN` types wherever possible. `usize`, `isize`, and `bool` remain separate types because of coherence issues, i.e. they can have separate implementations and additional restrictions applied.
+The compiler will gain the built-in integer types `uint<N>` and `int<N>`, where `const N: usize`. These be identical to existing `uN` and `iN` types wherever possible, e.g. `uint<8> == u8`. `usize`, `isize`, and `bool` remain separate types because of coherence issues, i.e. they can have separate implementations and additional restrictions applied.
 
 `uint<N>` are able to store integers in the range `0..2.pow(N)` and `int<N>` are able to store integers in the range `-2.pow(N-1)..2.pow(N-1)`. The cheeky specificity of "integers in the range" ensures that, for `int<0>`, the range `-0.5..0.5` only contains the integer zero; in general, `uint<0>` and `int<0>` will need to be special-cased anyway, as they must be ZSTs.
 
@@ -203,6 +210,10 @@ In general, operations on `uint<N>` and `int<N>` should work the same as they do
 When stored, `uint<N>` should always zero-extend to the size of the type and `int<N>` should always sign-extend. This means that any padding bits for `uint<N>` can be expected to be zero, but padding bits for `int<N>` may be either all-zero or all-one.
 
 The size and alignment of `uint<N>` and `int<N>` should be rounded up to a power of two.
+
+The ABI of `uint<N>` and `int<N>` is not necessarily compatible with C23's [`_BitInt`], although `ffi::c_unsigned_bit_int` and `ffi::c_bit_int` type aliases could be added in the future.
+
+[`_BitInt`]: https://en.cppreference.com/w/c/language/arithmetic_types
 
 ## Standard library
 
@@ -318,6 +329,7 @@ This is always an option, but hopefully it seems like a worse option after all t
 * [The previous RFC.][#2581]
 * [Zulip RFC revival topic.][Zulip]
 * [Generic integers in Zig.][Zig]
+* [Generic integers in C23.][`_BitInt`]
 * Probably several others discussions I'm missing.
 
 [Zulip]: https://rust-lang.zulipchat.com/#narrow/stream/260443-project-const-generics/topic/adding.20int.3CN.3E
