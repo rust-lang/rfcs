@@ -201,19 +201,34 @@ It's always valid to `as`-cast `uint<N>` or `int<N>` to `uint<M>` or `int<M>`, a
 
 Note that casting directly to `uint<0>` or `int<0>` is still allowed, to avoid forcing users to special-case their code. See later notes on possible lints.
 
-There is no official limit on the size of `N`, although one may be imposed for large `N` (above `u32::MAX`) to avoid compiler crashes and other issues. I can't personally imagine someone needing an integer larger than 4 GiB in size, but maybe I don't have that great of an imagination.
-
 Integer literals can be automatically coerced to `uint<N>` and `int<N>`, although generic `iN` and `uN` suffixes are left out for future RFCs. When coercing literals to an explicit `uint<N>` or `int<N>`, the `overflowing_literals` lint should trigger as usual, although this should not apply for generic code. See later notes on possible lint changes.
 
 In general, operations on `uint<N>` and `int<N>` should work the same as they do for existing integer types, although code may have to special-case `N = 0` and `N = 1`.
 
 When stored, `uint<N>` should always zero-extend to the size of the type and `int<N>` should always sign-extend. This means that any padding bits for `uint<N>` can be expected to be zero, but padding bits for `int<N>` may be either all-zero or all-one.
 
-The size and alignment of `uint<N>` and `int<N>` should be rounded up to a power of two.
-
 The ABI of `uint<N>` and `int<N>` is not necessarily compatible with C23's [`_BitInt`], although `ffi::c_unsigned_bit_int` and `ffi::c_bit_int` type aliases could be added in the future.
 
+If `N <= 128`, then `uint<N>` and `int<N>` should have a size/alignment rounded up to a power of two. Past that point, the alignment should remain at 128 bits and the size should be a multiple of 64 bits. These guarantees may be changed in the future depending on the development of a standard ABI for `_BitInt`, and how people use these types.
+
 [`_BitInt`]: https://en.cppreference.com/w/c/language/arithmetic_types
+
+## Limits on `N`
+
+There are two primary limits that restrict how large `N` can be:
+
+1. All allocations in rust are limited to `isize::MAX` bytes.
+2. Most integer methods and constants use `u32` when counting bits
+
+The first restriction doesn't matter since `isize::MAX` bytes is `isize::MAX * 8` bits, which is larger than `usize::MAX` bits.
+
+However, the second restriction is somewhat significant: for systems where `usize::MAX > u32::MAX`, we are still effectively restricted to `N <= u32::MAX` unless we wish to change these APIs. We can treat this as effectively a post-monomorphisation error similar to the error you might get when adding very large arrays inside your type; it's unlikely that someome might encounter them, but they do exist and have to be accounted for.
+
+It's worth noting that `u32::MAX` bits is equivalent to 0.5 GiB, and thus no integer in Rust will be able to be larger than this amount. This is seen as acceptable because at that size, people can just use their own big-integer types; fixing your operands to 0.5 GiB is quite frankly, ridiculous.
+
+The compiler should be allowed to restrict this number even further, maybe even as low as `u16::MAX`, due to other restrictions that may apply. For example, the LLVM backend currently only allows integers with widths up to `uint<23>::MAX` (not a typo; 23, not 32). On 16-bit targets, using `usize` further restricts these integers to `u16::MAX` bits.
+
+While `N` could be a `u32` instead of `usize`, keeping it at `usize` makes things slightly more natural when converting bits to array lengths and other length-generics, and these quite high cutoff points are seen as acceptable.
 
 ## Standard library
 
