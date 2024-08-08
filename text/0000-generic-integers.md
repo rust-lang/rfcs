@@ -217,8 +217,8 @@ If `N <= 128`, then `uint<N>` and `int<N>` should have a size/alignment rounded 
 
 There are two primary limits that restrict how large `N` can be:
 
-1. All allocations in rust are limited to `isize::MAX` bytes.
-2. Most integer methods and constants use `u32` when counting bits
+1. All allocations in Rust are limited to `isize::MAX` bytes.
+2. Most integer methods and constants use `u32` when counting bits.
 
 The first restriction doesn't matter since `isize::MAX` bytes is `isize::MAX * 8` bits, which is larger than `usize::MAX` bits.
 
