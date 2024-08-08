@@ -364,7 +364,9 @@ This is always an option, but hopefully it seems like a worse option after all t
 
 ## Bit sizes and `repr(bitpacked)`
 
-In the future, types could be sized in terms of bits instead of bytes, with `bit_size_of::<T>().div_ceil(8) == size_of::<T>()`. All types would have a bit size, allowing for a future `repr(bitpacked)` extension which packs all values in a struct or enum variant into the smallest number of bytes possible, given their bit sizes. Doing so would prevent referencing the fields of the struct, although the ability to set/get fields is still possible.
+In the future, types could be sized in terms of bits instead of bytes, with `bit_size_of::<T>().div_ceil(8) <= size_of::<T>()`. Note that the `<=` here specifically allows for cases where types include multiple bytes of padding, like for example on `uint<48>`.
+
+All types would have a bit size, allowing for a future `repr(bitpacked)` extension which packs all values in a struct or enum variant into the smallest number of bytes possible, given their bit sizes. Doing so would prevent referencing the fields of the struct, although the ability to set/get fields is still possible.
 
 For example, here's a modified version of our previous example:
 
