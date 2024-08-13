@@ -23,6 +23,8 @@ Rustdoc needing global mutable access to the files that encode this cross-crate 
 
 These considerations motivate adding an option for outputting partial CCI (parts), which are merged (linked) with a later step.
 
+This RFC has the goal of enabling the future deprecation of the default (called `--merge=shared` here) practice of appending to cross-crate information files in the doc root.
+
 # Guide-level explanation
 
 ## New flag summary
@@ -33,26 +35,20 @@ More details are in the Reference-level explanation.
 * `--include-parts-dir=path/to/doc.parts/<crate-name>`: Include cross-crate information from this previously written `doc.parts` directories into a collection that will be written by the current invocation of rustdoc. May only be provided with `--merge=finalize`. May be provided any number of times.
 * `--merge=none`: Do not write cross-crate information to the `--out-dir`. The flag `--parts-out-dir` may instead be provided with the destination of the current crate's cross-crate information parts.
 * `--merge=shared` (default): Append information from the current crate to any info files found in the `--out-dir`.
-* `--merge=finalize`: Write cross-crate information from the current crate and any crates included via `--include-parts-dir` to the `--out-dir`, overwriting conflicting files.
+* `--merge=finalize`: Write cross-crate information from the current crate and any crates included via `--include-parts-dir` to the `--out-dir`, overwriting conflicting files. This flag may be used with or without an input crate root, as it can links existing docs.
 
 ## Example
 
-In this example, there is a crate `trait-crate` which defines a trait `Trait`, and a crate `struct-crate` which defines a struct `Struct` that implements `Trait`. Our goal in this demo is for `Struct` to appear as an implementer in `Trait`'s docs, even if `struct-crate` and `trait-crate` are documented independently. This guide will assume that we want a crate `index-crate` that serves as our documentation index. See the Unresolved questions section for ideas that do not require an index crate.
+In this example, there is a crate `trait-crate` which defines a trait `Trait`, and a crate `struct-crate` which defines a struct `Struct` that implements `Trait`. Our goal in this demo is for `Struct` to appear as an implementer in `Trait`'s docs, even if `struct-crate` and `trait-crate` are documented independently.
 
 ```shell
-mkdir -p trait-crate/src struct-crate/src index-crate/src merged/doc
+mkdir -p trait-crate/src struct-crate/src merged/doc
 echo "pub trait Trait {}" > trait-crate/src/lib.rs
 echo "pub struct Struct; impl trait-crate::Trait for Struct {}" > struct-crate/src/lib.rs
 MERGED=file://$(realpath merged/doc)
 ```
 
-[Actively use](https://doc.rust-lang.org/rustc/command-line-arguments.html#--extern-specify-where-an-external-library-is-located) `trait-crate` and `struct-crate` in `index-crate`. The `extern crate` declarations are not needed if the crates are otherwise referenced in the index; intra-doc links are enough.
-
-```shell
-echo "extern crate trait-crate; extern crate struct-crate;" > index-crate/src/lib.rs
-```
-
-Compile the crates. This will produce the `.rmeta` files that rustdoc requires to depend on a crate.
+Compile `trait-crate`, so that `struct-crate` can depend on its `.rmeta` file.
 
 ```shell
 rustc \
@@ -62,21 +58,12 @@ rustc \
     --emit=metadata \
     --out-dir=trait-crate/target \
     trait-crate/src/lib.rs
-rustc \
-    --crate-name=struct-crate \
-    --crate-type=lib \
-    --edition=2021 \
-    --emit=metadata \
-    --out-dir=struct-crate/target \
-    --extern trait-crate=trait-crate/target/libt.rmeta \
-    struct-crate/src/lib.rs
 ```
 
-Document `struct-crate` and `trait-crate` independently, providing `--merge=none`, `--parts-out-dir`.
+Document `struct-crate` and `trait-crate` independently, providing `--merge=none`, and `--parts-out-dir`.
 
 ```shell
 rustdoc \
-    -Z unstable-options \
     --crate-name=trait-crate \
     --crate-type=lib \
     --edition=2021 \
@@ -86,7 +73,6 @@ rustdoc \
     --parts-out-dir=trait-crate/target/doc.parts/trait-crate \
     trait-crate/src/lib.rs
 rustdoc \
-    -Z unstable-options \
     --crate-name=struct-crate \
     --crate-type=lib \
     --edition=2021 \
@@ -99,37 +85,26 @@ rustdoc \
     struct-crate/src/lib.rs
 ```
 
-Link everything with a final invocation of rustdoc on `index-crate`. We will provide `--merge=finalize`, and `--include-parts-dir`. See the Reference-level explanation about these flags.
+Link everything with a final invocation of rustdoc. We will provide `--merge=finalize`, and `--include-parts-dir`. See the Reference-level explanation about these flags. Notice that this invocation is given no source input file.
 
 ```shell
 rustdoc \
-    -Z unstable-options \
-    --crate-name=index-crate \
-    --crate-type=lib \
-    --edition=2021 \
     --enable-index-page \
-    --out-dir=index-crate/target/doc \
-    --extern-html-root-url struct-crate=$MERGED \
-    --extern-html-root-url trait-crate=$MERGED \
-    --extern-html-root-url index-crate=$MERGED \
-    --merge=finalize \
     --include-parts-dir=trait-crate/target/doc.parts/trait-crate \
     --include-parts-dir=struct-crate/target/doc.parts/struct-crate \
-    --extern trait-crate=trait-crate/target/libt.rmeta \
-    --extern struct-crate=struct-crate/target/libs.rmeta \
-    -L trait-crate/target \
-    index-crate/src/lib.rs
+    --out-dir=merged/doc \
+    --merge=finalize
 ```
 
 Copy the docs from the given `--out-dir`s to a central location.
 
 ```shell
-cp -r struct-crate/target/doc/* trait-crate/target/doc/* index-crate/target/doc/* merged/doc
+cp -r struct-crate/target/doc/* trait-crate/target/doc/* merged/doc
 ```
 
 Browse `merged/doc/index.html` with cross-crate information.
 
-In general, instead of two crates in the environment (`struct-crate` and `trait-crate`) you could have thousands. Upon any changes, only the index and the crates that are changed have to be re-documented.
+In general, instead of two crates in the environment (`struct-crate` and `trait-crate`) a user could have thousands. Upon any changes, only the crates that change have to be re-documented.
 
 <details>
 <summary>Click here for a directory listing after running the example above.</summary>
@@ -137,53 +112,10 @@ In general, instead of two crates in the environment (`struct-crate` and `trait-
 <pre>
 $ tree . -a
 .
-├── index-crate
-│   ├── src
-│   │   └── lib.rs
-│   └── target
-│       └── doc
-│           ├── crates.js
-│           ├── help.html
-│           ├── index-crate
-│           │   ├── all.html
-│           │   ├── index.html
-│           │   └── sidebar-items.js
-│           ├── index.html
-│           ├── .lock
-│           ├── search.desc
-│           │   └── index-crate
-│           │       └── index-crate-desc-0-.js
-│           ├── search-index.js
-│           ├── settings.html
-│           ├── src
-│           │   └── index-crate
-│           │       └── lib.rs.html
-│           ├── src-files.js
-│           ├── static.files
-│           │   ├── COPYRIGHT-23e9bde6c69aea69.txt
-│           │   ├── favicon-2c020d218678b618.svg
-│           │   └── <rest of the contents excluded>
-│           └── trait.impl
-│               ├── core
-│               │   ├── marker
-│               │   │   ├── trait.Freeze.js
-│               │   │   ├── trait.Send.js
-│               │   │   ├── trait.Sync.js
-│               │   │   └── trait.Unpin.js
-│               │   └── panic
-│               │       └── unwind_safe
-│               │           ├── trait.RefUnwindSafe.js
-│               │           └── trait.UnwindSafe.js
-│               └── trait-crate
-│                   └── trait.Trait.js
 ├── merged
 │   └── doc
 │       ├── crates.js
 │       ├── help.html
-│       ├── index-crate
-│       │   ├── all.html
-│       │   ├── index.html
-│       │   └── sidebar-items.js
 │       ├── index.html
 │       ├── struct-crate
 │       │   ├── all.html
@@ -191,8 +123,6 @@ $ tree . -a
 │       │   ├── sidebar-items.js
 │       │   └── struct.Struct.html
 │       ├── search.desc
-│       │   ├── index-crate
-│       │   │   └── index-crate-desc-0-.js
 │       │   ├── struct-crate
 │       │   │   └── struct-crate-desc-0-.js
 │       │   └── trait-crate
@@ -200,8 +130,6 @@ $ tree . -a
 │       ├── search-index.js
 │       ├── settings.html
 │       ├── src
-│       │   ├── index-crate
-│       │   │   └── lib.rs.html
 │       │   ├── struct-crate
 │       │   │   └── lib.rs.html
 │       │   └── trait-crate
@@ -286,25 +214,27 @@ With this proposal, there are three modes of invoking rustdoc: `--merge=shared`,
 ### Default workflow: mutate shared directory: `--merge=shared`
 
 In this workflow, we document a single crate, or a collection of crates into a shared output directory that is continuously updated.
-Files in this output directory are modified by multiple rustdoc invocations. Use `--merge=shared`, and specify the same `--out-dir` to every invocation of rustdoc. `--merge=shared` will be the default value if `--merge` is not provided. This is the workflow that Cargo uses, and only mode of invoking rustdoc before this RFC.
+Files in this output directory are modified by multiple rustdoc invocations. Use `--merge=shared`, and specify the same `--out-dir` to every invocation of rustdoc. `--merge=shared` will be the default value if `--merge` is not provided. This is the workflow that Cargo uses, and only mode of invoking rustdoc before this RFC. This RFC is intended to enable the future deprecation of this mode.
 
-### Document intermediate crates: `--merge=none`
+### Document crates, delaying generation of cross-crate information: `--merge=none`
 
-Document non-root, non-index crates using a dedicated HTML output directory and a dedicated "parts" output directory. No cross-crate data nor rendered HTML output is included from other crates.
+Document crates using a dedicated HTML output directory and a dedicated "parts" output directory. No cross-crate data nor rendered HTML output is included from other crates.
 
-This mode only renders the HTML item documentation for the current crate. It does not produce a search index, cross-crate trait implementations, or an index page. It is expected that users follow this mode with 'Document a final crate' if these cross-crate features are desired.
+This mode only renders the HTML item documentation for the current crate. It does not produce a search index, cross-crate trait implementations, or an index page. It is expected that users follow this mode with 'Link documentation' if these cross-crate features are desired.
 
 In this mode, a user will provide `--parts-out-dir=<path to crate-specific directory>` and `--merge=none` to each crate's rustdoc invocation. The user should provide `--extern-html-root-url`, and specify a absolute final destination for the docs, as a URL. The `--extern-html-root-url` flag should be provided for each crate's rustdoc invocation, for every dependency.
 
-The same `--out-dir` may be used for multiple parallel rustdoc invocations, as rustdoc will continue to acquire an flock to prevent conflicts. A user may select a different `--out-dir` for each crate's rustdoc invocation. If so, the user must merge the docs to a central location (e.g. `cp -r crate1/doc crate2/doc crate3/doc destination`) after 'Document a final crate'.
+The same `--out-dir` may be used for multiple parallel rustdoc invocations, as rustdoc will continue to acquire an flock on the `--out-dir` to address conflicts. A user may select a different `--out-dir` for each crate's rustdoc invocation. 
 
-### Document a final crate: `---merge=finalized`
+### Link documentation: `--merge=finalize`
 
-In this context, a final crate is a crate that depends directly on every crate that a user intends to appear in the documentation bundle. It may be an index crate that has no meaningful functionality on its own. It may also be a library crate that depends on several crates.
+In this mode, rendered HTML and *finalized* cross-crate information are generated into a `doc` folder. No *incremental* parts are generated (i.e., no `target/doc.parts/my-final-crate`).
 
-In this mode, rendered HTML and *finalized* cross-crate information are generated into a `target/doc/my-final-crate` folder. No *incremental* parts are generated (i.e., no `target/doc.parts/my-final-crate`).
+This flag can be used with or without an target crate root. When used with a target crate, the parts for the target crate are included in the final docs. Otherwise, this mode functions merely to merge the input docs.
 
-When a user documents the final crate, they will provide  `--include-parts-dir=<crate-specific path selected previously>` for each one of the dependencies, and `--merge=finalize`. They will provide `--extern-html-root-url`, in the way described in 'Document an intermediate crate'.
+When a user documents the final crate, they will provide  `--include-parts-dir=<crate-specific path selected previously>` for each crate whose documentation is being combined, and `--merge=finalize`.
+
+The user must merge every distinct `--out-dir` selected during the `--merge=none`, (e.g. `cp -r crate1/doc crate2/doc crate3/doc destination`). Most workspaces are expected to use a single `--out-dir`, so no manual merging is needed.
 
 # Reference-level explanation
 
@@ -358,7 +288,7 @@ If this flag is provided, rustdoc will expect that a previous invocation of rust
 
 This flag may only be used in the `--merge=finalize` mode. It is optional, and can be provided any number of times (once per crate whose documentation is merged).
 
-In the Guide-level explanation, for example, the `index-crate` needs to identify the location of the `struct-crate`'s parts. Since they could be located in an arbitrary directory, the `index-crate` must be instructed on where to fetch them. In this example, the `struct-crate`'s parts happen to be in `./struct-crate/target/doc.parts/struct-crate`, so rustdoc is called with `--include-parts-dir=struct-crate/target/doc.parts/struct-crate`.
+In the Guide-level explanation, for example, the final invocation of rustdoc needs to identify the location of the `struct-crate`'s parts. Since they could be located in an arbitrary directory, the final invocation must be instructed on where to fetch them. In this example, the `struct-crate`'s parts happen to be in `./struct-crate/target/doc.parts/struct-crate`, so rustdoc is called with `--include-parts-dir=struct-crate/target/doc.parts/struct-crate`.
 
 This flag is similar to `--extern-html-root-url` in that it only needs to be provided for externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-parts-dir` tells rustdoc where to search for the `doc.parts` directory at documentation-time. It must not be a URL.
 
@@ -366,13 +296,11 @@ This flag is similar to `--extern-html-root-url` in that it only needs to be pro
 
 This proposal is capable of addressing two primary use cases. It allows developers to enable CCI in these scenarios:
 * Documenting a crate and its transitive dependencies in parallel in build systems that require build actions to be independent
-* Producing a documentation index of a large number of crates, in such a way that if one crate is updated, only the updated crates and an index have to be redocumented. This scenario is demonstrated in the Guide-level explanation.
+* Producing a documentation index of every crate in a workspace, in such a way that if one crate is updated, only the updated crates and an index have to be redocumented. This scenario is demonstrated in the Guide-level explanation.
 
 CCI is not automatically enabled in either situation. A combination of the `--include-parts-dir`, `--merge`, and `--parts-out-dir` flags are needed to produce this behavior. This RFC provides a minimal set of tools that allow developers of build systems, like Bazel and Buck2, to create rules for these scenarios. 
 
-With separate `--out-dir`s, copying item docs to an output destination is needed. Rustdoc will never support the entire breadth of workflows needed to merge arbitrary directories, and will rely on users to run external commands like `mv`, `cp`, `rsync`, `scp`, etc. for these purposes.
-
-Discussion of whether additional features should be included to facilitate this merge step can be found in Unresolved questions (Index crate).
+With separate `--out-dir`s, copying item docs to an output destination is needed. Rustdoc will never support the entire breadth of workflows needed to merge arbitrary directories, and will rely on users to run external commands like `mv`, `cp`, `rsync`, `scp`, etc. for these purposes. Most users are expected to use a single `--out-dir` for all crates, in which case these external tools are not needed.
 
 ## Compatibility
 
@@ -439,14 +367,6 @@ Currently, the Fuchsia project runs rustdoc on all of their crates to generate a
 
 # Unresolved questions
 
-## Index crate?
-
-Require users to generate documentation bundles via an index crate (current) vs. creating a new mode to allow rustdoc to run without a target crate (proposed).
-
-If one would like to merge the documentation of several crates, we could continue to require users to provide an index crate, like [the fuchsia index](https://fuchsia-docs.firebaseapp.com/rust/rustdoc_index/). This serves as the target of the rustdoc invocation, and the landing page for the collected documentation. Supporting only this style of index would require the fewest changes. This is the mode described in the Guide-level explanation.
-
-The proposition, to allow users of rustdoc the flexibility of not having to produce an index, is to allow rustdoc to be run in a mode where no target crate is provided. It would generate rendered cross-crate information based only on what is provided through `--include-parts-dir`. The source crates are provided to rustdoc, through a mechanism like `--extern`, rustdoc merges and writes the CCI, and copies the item and module links to the doc root. This would require more extensive changes, as rustdoc assumes that it is invoked with a target crate. This mode is somewhat analogous to the [example scraping mode](https://github.com/rust-lang/rfcs/blob/master/text/3123-rustdoc-scrape-examples.md). Having to create an index crate, that actively uses all of the crates in the environment, might prohibit the use of this feature in settings where users do not intend to produce an index, or where exhaustively listing all dependencies (to `--extern` them) is difficult.
-
 ## Unconditionally generating the `doc.parts` files?
 
 Generate no extra files (current) vs. unconditionally creating `doc.parts` to enable more complex future CCI (should consider).
@@ -462,13 +382,13 @@ This proposal proposes to continue reading from the rendered cross-crate informa
 
 # Future possibilities
 
+This RFC is primarily intended be followed by the deprecation of the now-default `--merge=shared` mode. This will reduce complexity in the long term. Changes to Cargo, docs.rs and other tools that directly invoke rustdoc will be required. To verify that the `--merge=none` -> `--merge=finalize` workflow is sufficient for real use cases, the deprecation of `--merge=shared` will be delayed to a future RFC.
+
 This change could begin to facilitate trait implementations being
 statically compiled as part of the .html documentation, instead of being loaded
 as separate JavaScript files. Each trait implementation could be stored as an
 HTML part, which are then merged into the regular documentation. Implementations of traits on type aliases should remain separate, as they serve as a [size hack](https://github.com/rust-lang/rust/pull/116471).
 
 Another possibility is for `doc.parts` to be distributed on `docs.rs` along with the regular documentation. This would facilitate a mode where documentation of the dependencies could be downloaded externally, instead of being rebuilt locally.
-
-A future possibility related to the index crate idea is to have an option for embedding user-specified HTML into the `--enable-index-page`'s HTML.
 
 The changes in this proposal are intended to work with no changes to Cargo and docs.rs. However, there may be benefits to using `--merge=finalize` with Cargo, as it would remove the need for locking the output directory. More of the documentation process could happen in parallel, which may speed up execution time.
