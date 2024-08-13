@@ -52,7 +52,7 @@ MERGED=file://$(realpath merged/doc)
 echo "extern crate trait-crate; extern crate struct-crate;" > index-crate/src/lib.rs
 ```
 
-Compile the crates.
+Compile the crates. This will produce the `.rmeta` files that rustdoc requires to depend on a crate.
 
 ```shell
 rustc \
@@ -68,7 +68,8 @@ rustc \
     --edition=2021 \
     --emit=metadata \
     --out-dir=struct-crate/target \
-    --extern trait-crate=trait-crate/target/libt.rmeta struct-crate/src/lib.rs
+    --extern trait-crate=trait-crate/target/libt.rmeta \
+    struct-crate/src/lib.rs
 ```
 
 Document `struct-crate` and `trait-crate` independently, providing `--merge=none`, `--parts-out-dir`.
@@ -293,12 +294,13 @@ Document non-root, non-index crates using a dedicated HTML output directory and 
 
 This mode only renders the HTML item documentation for the current crate. It does not produce a search index, cross-crate trait implementations, or an index page. It is expected that users follow this mode with 'Document a final crate' if these cross-crate features are desired.
 
-In this mode, a user may specify a different `--out-dir` to every invocation of rustdoc. Additionally, a user will provide `--parts-out-dir=<path to crate-specific directory>` and `--merge=none` when documenting every crate.
-The user should provide `--extern-html-root-url`, and specify a absolute final location for the URL, if they document crates in separate `--out-dir`s. This flag, with the same URL, will be needed for every invocation of rustdoc, for every dependency.
+In this mode, a user will provide `--parts-out-dir=<path to crate-specific directory>` and `--merge=none` to each crate's rustdoc invocation. The user should provide `--extern-html-root-url`, and specify a absolute final destination for the docs, as a URL. The `--extern-html-root-url` flag should be provided for each crate's rustdoc invocation, for every dependency.
+
+The same `--out-dir` may be used for multiple parallel rustdoc invocations, as rustdoc will continue to acquire an flock to prevent conflicts. A user may select a different `--out-dir` for each crate's rustdoc invocation. If so, the user must merge the docs to a central location (e.g. `cp -r crate1/doc crate2/doc crate3/doc destination`) after 'Document a final crate'.
 
 ### Document a final crate: `---merge=finalized`
 
-In this context, a final crate is a crate that depends directly on every crate that a user intends to appear in the documentation bundle. It may be an index crate that has no meaningful functionality on its own. It may also be a library crate that depends on every crate in a workspace.
+In this context, a final crate is a crate that depends directly on every crate that a user intends to appear in the documentation bundle. It may be an index crate that has no meaningful functionality on its own. It may also be a library crate that depends on several crates.
 
 In this mode, rendered HTML and *finalized* cross-crate information are generated into a `target/doc/my-final-crate` folder. No *incremental* parts are generated (i.e., no `target/doc.parts/my-final-crate`).
 
@@ -310,7 +312,7 @@ The existing cross-crate information files, like `search-index.js`, all are list
 
 ## New flag: `--merge=none|shared|finalize`
 
-This flag corresponds to the three modes of invoking rustdoc described in 'Suggested workflows'. It controls two internal paramaters: `read_rendered_cci`, and `write_rendered_cci`. It also gates whether the user is allowed to provide the `--parts-out-dir` and `--include-parts-dir` flags.
+This flag corresponds to the three modes of invoking rustdoc described in 'Suggested workflows'. It controls two internal paramaters: `read_rendered_cci`, and `write_rendered_cci`. It also gates whether the user is allowed to provide the `--parts-out-dir` and `--include-parts-dir` flags. It can be provided at most once.
 
 When `write_rendered_cci` is active, rustdoc outputs the rendered parts to the doc root (`--out-dir`). Rustdoc will generate files like `doc/search-index.js`, `doc/search.desc`, `doc/index.html`, etc if and only if this parameter is true.
 
@@ -323,11 +325,11 @@ When `read_rendered_cci` is active, rustdoc will look in the `--out-dir` for ren
 
 The use of `--include-parts-dir` and `--parts-out-dir` is gated by `--merge` in order to prevent meaningless invocations, detect user error, and to provide for future changes to the interface.
 
-## New directory: `doc.parts/<crate-name>/crate-info`
+## New directory: `doc.parts/`
 
 `doc.parts` is the suggested name for the parent of the subdirectory that the user provides to `--parts-out-dir` and `--include-parts-dir`. A unique subdirectory for each crate must be provided to `--parts-out-dir` and `--include-parts-dir`. The user is encouraged to chose a directory outside of the `--out-dir`, as `--parts-out-dir` writes intermediate information that is not intended to be served on a static doc server. 
 
-Rustdoc only guarantees that it will accept `doc.parts` files written by the same version of rustdoc. Rustdoc is the only explicitly supported consumer of `doc.parts`. In the initial implementation, rustdoc will write a file called `crate-info` as a child of the directory provided to `--parts-out-dir`, and an reasonable effort will be made for this to continue to be the structure of the subdirectory. However, the contents of `--parts-out-dir` are considered formally unstable. Non-normatively, there are several pieces of information that `doc.parts` may contain:
+Rustdoc only guarantees that it will accept `doc.parts` files written by the same version of rustdoc. Rustdoc is the only explicitly supported consumer of `doc.parts`. In the initial implementation, rustdoc will write a file called `crate-info` as a child of the directory provided to `--parts-out-dir`, and an reasonable effort will be made for this to continue to be the structure of the subdirectory. However, the contents of `--parts-out-dir` are considered formally unstable, leaving open the possible future addition of other related files. Non-normatively, there are several pieces of information that `doc.parts` may contain:
 
 * Partial source file index for generating `doc/src-files.js`.
 * Partial search index for generating `doc/search-index.js`.
@@ -342,7 +344,7 @@ Rustdoc only guarantees that it will accept `doc.parts` files written by the sam
 
 When this flag is provided, the unmerged parts for the current crate will be written to `path/to/doc.parts/<crate-name>`. A typical argument is `./target/doc.parts/rand`.
 
-This flag may only be used in the `--merge=none` mode.
+This flag may only be used in the `--merge=none` mode. It is optional, and may be provided at most one time.
 
 Crates `--include-parts-dir`ed will not appear in `doc.parts`, as `doc.parts` only includes the CCI parts for the current crate.
 
@@ -354,9 +356,9 @@ The output generated by this flag may be consumed by a future invocation to rust
 
 If this flag is provided, rustdoc will expect that a previous invocation of rustdoc was made with `--parts-out-dir=path/to/doc.parts/<crate-name>`. It will append the parts from the previous invocation to the ones it will render in the doc root (`--out-dir`). The info that's included is not written to its own `doc.parts`, as `doc.parts` only holds the CCI parts for the current crate.
 
-This flag may only be used in the `--merge=finalize` mode.
+This flag may only be used in the `--merge=finalize` mode. It is optional, and can be provided any number of times (once per crate whose documentation is merged).
 
-In the Guide-level explanation, for example, the `index-crate` needs to identify the location of the `struct-crate`'s parts. Since they could be located in an arbitrary directory, the `index-crate` must be instructed on where to fetch them. In this example, the `struct-crate`'s parts happen to be in `./struct-crate/target/doc.parts/struct-crate`, so rustdoc is called with `--include-parts-dir=s/target/doc.parts/s`.
+In the Guide-level explanation, for example, the `index-crate` needs to identify the location of the `struct-crate`'s parts. Since they could be located in an arbitrary directory, the `index-crate` must be instructed on where to fetch them. In this example, the `struct-crate`'s parts happen to be in `./struct-crate/target/doc.parts/struct-crate`, so rustdoc is called with `--include-parts-dir=struct-crate/target/doc.parts/struct-crate`.
 
 This flag is similar to `--extern-html-root-url` in that it only needs to be provided for externally documented crates. The flag `--extern-html-root-url` controls hyperlink generation. The hyperlink provided in `--extern-html-root-url` never accessed by rustdoc, and represents the final destination of the documentation. The new flag `--include-parts-dir` tells rustdoc where to search for the `doc.parts` directory at documentation-time. It must not be a URL.
 
