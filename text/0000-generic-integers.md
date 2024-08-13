@@ -219,7 +219,7 @@ For now, the exact size and alignment of `uint<N>` and `int<N>` can be decided a
 
 * Users can always *increase* the alignment and size of integers by wrapping them in `repr(align(...))` structs, but they cannot *decrease* them. This is an argument for making the size/alignment of these integers as small as possible.
 * Loading unaligned integers (lower than the alignment of `usize`) can be particularly slow and require additional operations. However, once these integers are loaded, the backend doesn't need to do any extra operations until they need to be stored again. This is an argument for making the size/alignment of these integers larger than necessary.
-* Right now, C's [`_BitInt`] does prefer the second option, but the actual status of the spec is in flux due to [incompatibilities with the ABI for `__int128`][`__int128`], and it's unclear what the final version will be. Whether we should always match the ABI for C depends on what the community prefers most, and whether wrapping values in a struct at FFI boundaries is reasonable.
+* Right now, C's [`_BitInt`] on x86_64 Unix does prefer the second option, but the actual status of the spec is in flux due to [incompatibilities with the ABI for `__int128`][`__int128`], and it's unclear what the final version will be. Whether we should always match the ABI for C depends on what the community prefers most, and whether wrapping values in a struct at FFI boundaries is reasonable.
 
 [`_BitInt`]: https://en.cppreference.com/w/c/language/arithmetic_types
 [`__int128`]: https://gitlab.com/x86-psABIs/x86-64-ABI/-/issues/11
@@ -231,9 +231,9 @@ There are two primary limits that restrict how large `N` can be:
 1. All allocations in Rust are limited to `isize::MAX` bytes.
 2. Most integer methods and constants use `u32` when counting bits.
 
-The first restriction doesn't matter since `isize::MAX` bytes is `isize::MAX * 8` bits, which is larger than `usize::MAX = isize::MAX * 2` bits.
+The first restriction doesn't matter since `isize::MAX` bytes is `isize::MAX * 8` bits, which is larger than `usize::MAX = isize::MAX * 2 + 1` bits.
 
-However, the second restriction is somewhat significant: for systems where `usize::MAX > u32::MAX`, we are still effectively restricted to `N <= u32::MAX` unless we wish to change these APIs. We can treat this as effectively a post-monomorphisation error similar to the error you might get when adding very large arrays inside your type; it's unlikely that someome might encounter them, but they do exist and have to be accounted for.
+However, the second restriction is somewhat significant: for systems where `usize::MAX > u32::MAX`, we are still effectively restricted to `N <= u32::MAX` unless we wish to change these APIs. We can treat this as effectively a post-monomorphisation error similar to the error you might get when adding very large arrays inside your type; it's unlikely that someone might encounter them, but they do exist and have to be accounted for.
 
 It's worth noting that `u32::MAX` bits is equivalent to 0.5 GiB, and thus no integer in Rust will be able to be larger than this amount. This is seen as acceptable because at that size, people can just use their own big-integer types. For now, adding a dedicated big-integer type to the standard library is left as a potential future change.
 
