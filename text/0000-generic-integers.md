@@ -36,6 +36,8 @@ Having generic impls would drastically reduce the noise in the "implementations"
 
 Using a smaller number of bits for a value also has the benefit of niche enum optimisations. For example, `uint<7>` represents a single ASCII character, and `Option<uint<7>>` can be stored in a single byte. Additionally, `Result<uint<7>, E>` also takes one byte if `E` is zero-sized.
 
+This works because we know that values in the range `0b0_0000000..=0b0_1111111` are valid `uint<7>`, but the values in the range `0b1_0000000..=0b1_1111111` are not and can represent the zero-sized variants `None` and `Err(E)`.
+
 ## Bit masks
 
 Integers are very useful as a simple list of bits, and specifically for generic integers, this allows numbers of bits that aren't an existing integer type. There will probably always be a need for dedicated data structures like [`BitVec`], but at least for simple cases, being able to do this with your standard integer types is nice too.
@@ -162,7 +164,7 @@ That's a lot better. Now, as you'll notice, we still have to cover the types `us
 
 There's one slight caveat here: our `my_default` method might overflow. This seems silly, but there's three types, `int<1>`, `uint<0>`, and `int<0>`, which can't have the value 1. In general, if you're casting a literal *to* a generic integer, you can't expect any value other than zero to work. In the future, we'll be able to annotate our `int<N>` impl with something like `where N > 1` or `where N >= 8`, but until then, we'll have to deal with this weird overflow behaviour.
 
-The rules you'd expect apply to `uint<N>` and `int<N>`, which is that `uint<N>` stores values in the range `0..2.pow(N)`, and `int<N>` stores integers in the range `-2.pow(N - 1)..2.pow(N - 1)`. This means that `uint<1>` only holds the values `0` and `1`, and `int<1>` only holds the values `-1` and `0`. The meaning for `uint<0>` and `int<0>` is a little less clear, but they both are only allowed to contain the value `0`; the ranges end up being `0..1` and `-1/2..1/2`, which… yeah, zero is the only integer in those ranges, but it still can be confusing.
+The rules you'd expect apply to `uint<N>` and `int<N>`, which is that `uint<N>` stores values in the range `0..2.pow(N)`, and `int<N>` stores integers in the range `-2.pow(N - 1)..2.pow(N - 1)`. This means that `uint<1>` only holds the values `0` and `1`, and `int<1>` only holds the values `-1` and `0`. The meaning for `uint<0>` and `int<0>` is a little less clear, but they both are only allowed to contain the value `0`; the ranges end up being `0..1` and `-0.5..0.5`, which… yeah, zero is the only integer in those ranges, but it still can be confusing.
 
 For now, if you want to ensure that your integers are the right size, you can add a `const { ... }` assertion to your implementations like so:
 
@@ -188,7 +190,9 @@ Overall, you should expect integers where `N` is not a power of two to take up m
 
 ## Basic semantics
 
-The compiler will gain the built-in integer types `uint<N>` and `int<N>`, where `const N: usize`. These be identical to existing `uN` and `iN` types wherever possible, e.g. `uint<8> == u8`. `usize`, `isize`, and `bool` remain separate types because of coherence issues, i.e. they can have separate implementations and additional restrictions applied.
+The compiler will gain the built-in integer types `uint<N>` and `int<N>`, where `const N: usize`. These be identical to existing `uN` and `iN` types wherever possible, e.g. `uint<8> == u8`.
+
+`usize`/`isize` continue to be separate from `uint<N>`/`int<N>`, where `N` is the target pointer width, as this also applied to `uN` and `iN`. `bool` will also be made different from `uint<1>` for similar reasons, even though casting `false` to `0` and `true` to `1` will remain possible.
 
 `uint<N>` are able to store integers in the range `0..2.pow(N)` and `int<N>` are able to store integers in the range `-2.pow(N-1)..2.pow(N-1)`. The cheeky specificity of "integers in the range" ensures that, for `int<0>`, the range `-0.5..0.5` only contains the integer zero; in general, `uint<0>` and `int<0>` will need to be special-cased anyway, as they must be ZSTs.
 
@@ -203,15 +207,22 @@ Note that casting directly to `uint<0>` or `int<0>` is still allowed, to avoid f
 
 Integer literals can be automatically coerced to `uint<N>` and `int<N>`, although generic `iN` and `uN` suffixes are left out for future RFCs. When coercing literals to an explicit `uint<N>` or `int<N>`, the `overflowing_literals` lint should trigger as usual, although this should not apply for generic code. See later notes on possible lint changes.
 
-In general, operations on `uint<N>` and `int<N>` should work the same as they do for existing integer types, although code may have to special-case `N = 0` and `N = 1`.
+In general, operations on `uint<N>` and `int<N>` should work the same as they do for existing integer types, although the compiler may need to special-case `N = 0` and `N = 1` if they're not supported by the backend.
 
 When stored, `uint<N>` should always zero-extend to the size of the type and `int<N>` should always sign-extend. This means that any padding bits for `uint<N>` can be expected to be zero, but padding bits for `int<N>` may be either all-zero or all-one.
 
-The ABI of `uint<N>` and `int<N>` is not necessarily compatible with C23's [`_BitInt`], although `ffi::c_unsigned_bit_int` and `ffi::c_bit_int` type aliases could be added in the future.
+## Size, alignment, and ABI
 
-If `N <= 128`, then `uint<N>` and `int<N>` should have a size/alignment rounded up to a power of two. Past that point, the alignment should remain at 128 bits and the size should be a multiple of 64 bits. These guarantees may be changed in the future depending on the development of a standard ABI for `_BitInt`, and how people use these types.
+The ABI of `uint<N>` and `int<N>` is not required to be compatible with C23's [`_BitInt`], although `ffi::c_unsigned_bit_int` and `ffi::c_bit_int` types could be added in the future. Adding those two types, either as special aliases or wrapper structs, is left for as a future change, mostly because the ABI for `_BitInt` is still uncertain.
+
+For now, the exact size and alignment of `uint<N>` and `int<N>` can be decided as part of the actual implementation, based upon what the community most desires. There are a few things to consider, namely:
+
+* Users can always *increase* the alignment and size of integers by wrapping them in `repr(align(...))` structs, but they cannot *decrease* them. This is an argument for making the size/alignment of these integers as small as possible.
+* Loading unaligned integers (lower than the alignment of `usize`) can be particularly slow and require additional operations. However, once these integers are loaded, the backend doesn't need to do any extra operations until they need to be stored again. This is an argument for making the size/alignment of these integers larger than necessary.
+* Right now, C's [`_BitInt`] does prefer the second option, but the actual status of the spec is in flux due to [incompatibilities with the ABI for `__int128`][`__int128`], and it's unclear what the final version will be. Whether we should always match the ABI for C depends on what the community prefers most, and whether wrapping values in a struct at FFI boundaries is reasonable.
 
 [`_BitInt`]: https://en.cppreference.com/w/c/language/arithmetic_types
+[`__int128`]: https://gitlab.com/x86-psABIs/x86-64-ABI/-/issues/11
 
 ## Limits on `N`
 
@@ -220,15 +231,17 @@ There are two primary limits that restrict how large `N` can be:
 1. All allocations in Rust are limited to `isize::MAX` bytes.
 2. Most integer methods and constants use `u32` when counting bits.
 
-The first restriction doesn't matter since `isize::MAX` bytes is `isize::MAX * 8` bits, which is larger than `usize::MAX` bits.
+The first restriction doesn't matter since `isize::MAX` bytes is `isize::MAX * 8` bits, which is larger than `usize::MAX = isize::MAX * 2` bits.
 
 However, the second restriction is somewhat significant: for systems where `usize::MAX > u32::MAX`, we are still effectively restricted to `N <= u32::MAX` unless we wish to change these APIs. We can treat this as effectively a post-monomorphisation error similar to the error you might get when adding very large arrays inside your type; it's unlikely that someome might encounter them, but they do exist and have to be accounted for.
 
-It's worth noting that `u32::MAX` bits is equivalent to 0.5 GiB, and thus no integer in Rust will be able to be larger than this amount. This is seen as acceptable because at that size, people can just use their own big-integer types; fixing your operands to 0.5 GiB is quite frankly, ridiculous.
+It's worth noting that `u32::MAX` bits is equivalent to 0.5 GiB, and thus no integer in Rust will be able to be larger than this amount. This is seen as acceptable because at that size, people can just use their own big-integer types. For now, adding a dedicated big-integer type to the standard library is left as a potential future change.
 
-The compiler should be allowed to restrict this number even further, maybe even as low as `u16::MAX`, due to other restrictions that may apply. For example, the LLVM backend currently only allows integers with widths up to `uint<23>::MAX` (not a typo; 23, not 32). On 16-bit targets, using `usize` further restricts these integers to `u16::MAX` bits.
+The compiler should be allowed to restrict `N` even further, maybe even as low as `u16::MAX`, due to other restrictions that may apply. For example, the LLVM backend currently only allows integers with widths up to `uint<23>::MAX` (not a typo; 23, not 32). On 16-bit targets, using `usize` further restricts these integers to `u16::MAX` bits.
 
-While `N` could be a `u32` instead of `usize`, keeping it at `usize` makes things slightly more natural when converting bits to array lengths and other length-generics, and these quite high cutoff points are seen as acceptable.
+While `N` could be a `u32` instead of `usize`, keeping it at `usize` makes things slightly more natural when converting bits to array lengths and other length-generics, and these quite high cutoff points are seen as acceptable. In particular, this helps using `N` for an array index until [`generic_const_exprs`] is stabilized.
+
+[`generic_const_exprs`]: https://github.com/rust-lang/rust/issues/76560
 
 ## Standard library
 
@@ -236,8 +249,8 @@ The existing macro-based implementation for `uN` and `iN` should be changed to i
 
 Unfortunately, there are a couple things that will have to remain implemented only for the existing powers of two due to the lack of constant bounds and complex const generics, namely:
 
-* `From` and `TryFrom` implementations
-* `from_*e_bytes` and `to_*e_bytes` methods
+* `From` and `TryFrom` implementations (requires const-generic bounds)
+* `from_*e_bytes` and `to_*e_bytes` methods (requires [`generic_const_exprs`])
 
 Currently, the LLVM backend already supports generic integers (you can refer to `iN` and `uN` as much as you want), although other backends may need additional code to work with generic integers.
 
@@ -262,6 +275,8 @@ For now, additional `primitive.uint` and `primitive.int` pages will be added to 
 
 There certainly is a precedent for this: as of right now, all of these pages share the same documentation, and the examples are modified to work for all of these types. Removing these separate pages would help remove documentation redundancy, although `usize` and `isize` would still have to be kept separate.
 
+Since the `uN` modules are currently deprecated, no `std::uint` or `std::int` module should be added.
+
 ## Possible lints
 
 Due to the presence of edge cases like `N = 0` and `N = 1`, it feels reasonable to add in a few lints to prevent people from doing silly things like:
@@ -285,7 +300,7 @@ Overall, things have changed dramatically since [the last time this RFC was subm
 Finally, there are still a few features lacking in the compiler that will add additional hurdles to implementation, like:
 
 * a lack of const-generic bounds, like `N >= 8`
-* the lack of generic const expressions, like `[u8; {N.div_ceil(8)}]`
+* the lack of [generic const expressions][`generic_const_exprs`], like `[u8; {N.div_ceil(8)}]`
 
 However, this is substantially fewer hurdles than last time, and more cases have been brought up where generic integers will be useful despite these.
 
@@ -300,18 +315,20 @@ However, this is substantially fewer hurdles than last time, and more cases have
 
 This would seem closer to the existing types, but has a potential conflict: `u` and `i`, two names which could easily show up in a program, may shadow builtin types. Considering how often the variable `i` is used for loops, this seems like a no-go.
 
-However, this RFC doesn't actually stop `uN` and `iN` from being added as aliases to `uint<N>` and `int<N>` in the future. While the version with an explicit generic parameter is required for generic code, it should in theory be possible to add these aliases if people want them.
+However, this RFC doesn't actually stop `uN` and `iN` from being added as aliases to `uint<N>` and `int<N>` in the future. While the version with an explicit generic parameter is required for generic code, it should in theory be possible to add these aliases if people want them. These would require special changes to the language itself, since it does not make sense to add `2.pow(32)` items to the prelude.
 
 ## Bound-based generalisation
 
 Generalising integers over their number of bits is certainly a very logical way to generalise integers *for computers*, but generalising based upon bounds is a very natural way for humans to do it, *and* more general. For example, instead of `uint<N>` and `int<N>` types, we could get away with just one type,
 `int<A..=B>`. This would be more powerful than the original: for example, a percentage could be represented exactly as `int<0..=100>`. Whether an integer is signed simply depends on whether its lower bound is negative.
 
-The primary reason for leaving this out is… well, it's a lot different from the existing integer types in the language. Additionally, as mentioned in the drawbacks section, the proposal for [pattern types] feels like a substantially more natural way to implement integer ranges, and it would be able to coexist with this implementation. Additionally, it solves the problem of the actual representation of `int<A..=B>`, since it's a bit unclear whether you always want to use the minimum possible size and alignment for these types.
+The primary reason for leaving this out is… well, it's a lot different from the existing integer types in the language. Additionally, as mentioned in the drawbacks section, the proposal for [pattern types] feels like a substantially more natural way to implement integer ranges, and it would be able to coexist with this implementation. Additionally, it solves the problem of the actual representation of `int<A..=B>`, since it's a bit unclear whether you always want to use the minimum possible size and alignment for these types. Additionally, it's unclear how the integers inside the ranges would be defined if range-based integers were the canonical representation of integers, unless they had some sort of compiler-magic `{integer}` type.
+
+Another worry with this representation is that, unlike bits-based generalisation where operations are bounded by overflow semantics, these types lend themselves a lot to "inference creep" and narrowing down values based upon conditionals instead of actual type-casting. This would be rather unprecedented in the language and seems best to keep as part of the system most fit for that kind of inference, the pattern system, rather than inheriting it as part of the type system.
 
 ## Integer traits
 
-Previously, Rust had traits which generalised the integer types and their methods, but these were ultimately removed in favour of inherent methods. Going with a generic `uint<N>` over an `Int` trait would avoid the problem of determining which methods are suited for these traits; instead, the `uint<N>` type would have all of them.
+Previously, Rust had traits which generalized the integer types and their methods, but these were ultimately removed in favour of inherent methods. Going with a generic `uint<N>` over an `Int` trait would avoid the problem of determining which methods are suited for these traits; instead, the `uint<N>` type would have all of them.
 
 Additionally, having these traits does not allow non-power-of-two `uint<N>` outright, and so, this feature is a strict superset of that.
 
@@ -354,7 +371,6 @@ This is always an option, but hopefully it seems like a worse option after all t
 
 * How should `NonZero` be updated to account for `uint<N>` and `int<N>`. Should `NonZero<uint<0>>` and `NonZero<int<0>>` be uninhabited?
 * Should we generalise even further between `uint`, `int`, `usize`, and `isize`? This could be possible with [`adt_const_params`].
-* Should there be a limit to the size of `N` enforced by the compiler?
 * How can we implement const-generic bounds in a way that supports implementations of `From` and `TryFrom` for generic integers?
 
 [`adt_const_params`]: https://github.com/rust-lang/rust/issues/95174
@@ -382,8 +398,36 @@ struct MipsInstruction {
 
 We could allow referencing `&self.immediate` as it is aligned to a byte boundary, although all of the other fields can only be copied (e.g. `self.rs`) or set explicitly (e.g. `self.rt = 4`).
 
+## Unsized integer types
+
+Similar to the way that arrays can be unsized to slices, this feature currently lends itself to having an "unsized" version of `uint<N>` or `int<N>` in a rather natural way.
+
+Unfortunately, there are a lot of design problems to solve for this type, one of them being that operations will generally either require asserting that two integers are the same size, or allocating some owned big-integer type. For now, this is left as a future addition to the language instead of part of this RFC.
+
+## Never-overflowing operations
+
+With the addition of variable-bits integers, operations can be added that simply increase the size of the operand instead of overflowing:
+
+```rust
+impl<const N: usize> uint<N> {
+    fn widening_add(self, rhs: uint<N>) -> uint<{N+1}>;
+    fn widening_mul(self, rhs: uint<N>) -> uint<{2*N}>;
+}
+```
+
+In particular, `widening_mul` could solve the [current questions regarding the existing `widening_mul` type][bigint methods]. These are interesting methods, but left out of the RFC to be designed later.
+
+[bigint methods]: https://github.com/rust-lang/rust/issues/85532
+
 ## ASCII-specific methods for `uint<7>` and `[uint<7>]`
 
 Right now, the standard library has an unstable [`ascii::Char`] to represent ASCII characters, but this could be replaced with `uint<7>` instead. Ultimately, it's unclear whether it's useful to distinguish between ASCII chars and `uint<7>`, since unlike `u32` and `char`, all possible values are allowed.
 
 [`ascii::Char`]: https://github.com/rust-lang/rust/issues/110998
+
+## Generic floats
+
+At some point in the future, floating-point numbers could similarly be generalised, allowing users to implement things for `float<N>` instead of `f16`, `f32`, `f64`, and `f128`. Unfortunately, floating-point numbers are [substantially more complicated][IEEE 754] than integers, and there's no one-size-fits-all formula to compute the various parameters of these types. Even if we generalized to `float<M, E>` (mantissa bits, exponent bits), we would still have issues with "weird" floating-point types like `f80` and `f64f64`, both proposed in RFC [#3456] (nice). Ultimately, a proper API for generic floats would require substantially more work and thus is not included in this RFC.
+
+[IEEE 754]: https://en.wikipedia.org/wiki/IEEE_754
+[#3456]: https://github.com/rust-lang/rfcs/pull/3456
