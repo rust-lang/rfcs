@@ -132,3 +132,6 @@ This feature is similar to `final` methods in Java or C++.
 We could theoretically allow `impl` restrictions on associated types, as well.
 This seems less useful, but if it's trivial to implement we might want to
 support it.
+
+We could support `impl(unsafe)`, to make a trait safe to implement if *not*
+overriding a method, and only unsafe to implement if overriding a method.
