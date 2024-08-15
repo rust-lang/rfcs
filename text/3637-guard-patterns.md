@@ -157,6 +157,20 @@ let (Struct { x, y } if x == y) = Struct { x: 0, y: 0 } else { /* ... */ }
 
 In general, guards can, without changing meaning, "move outwards" until they reach an or-pattern where the condition can be different in other branches, and "move inwards" until they reach a level where the identifiers they reference are not bound.
 
+## Bindings Must Still Match Across Disjunctions
+
+This RFC does _not_ propose to change what bindings are allowed in disjunctions, even when those bindings are used only within guard patterns.
+
+For example, the following code will error just like it would without any guard patterns:
+
+```rust
+match Some(0) {
+    Some(x if x > 0) | None => {},
+    //~^ ERROR variable `x` is not bound in all patterns
+    _ => {},
+}
+```
+
 ## As Macro Arguments
 
 Currently, `if` is in the follow set of `pat` and `pat_param` fragments, so top-level guards cannot be used as arguments for the current edition. This is identical to the situation with top-level or-patterns as macro arguments, and guard patterns will take the same approach:
