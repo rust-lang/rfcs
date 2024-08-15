@@ -286,3 +286,28 @@ One way to think about this is that patterns serve two functions:
 Guard patterns as described here provide _arbitrary refinement_. That is, guard patterns can match based on whether any arbitrary expression evaluates to true.
 
 Allowing `if let` allows not just arbitrary refinement, but also _arbitrary destructuring_. The value(s) bound by an `if let` pattern can depend on the value of an arbitrary expression.
+
+## Allowing Mismatching Bindings When Possible
+
+Users will likely want to write something like
+
+```rust
+match Some(0) {
+    Some(x if x > 0) | None => {},
+    _ => {}
+}
+```
+
+As mentioned above, this case is not covered by this RFC, because `x` would need to be bound in both cases of the disjunction.
+
+However, we could support this by automatically detecting that `x` is not ever used outside of the guard pattern, and allowing the guard to capture the binding, so it wouldn't have to be bound in other cases of the disjunction.
+
+We could also make this capturing behavior explicit, with some kind of syntax extending guard patterns:
+
+```rust
+// example syntax by analogy with closures
+// probably not what we'd want to go with, since you can't specify which bindings are captured
+Some(x move if x > 0) | None 
+```
+
+This would also give the guard ownership of the bound value, which may be desirable in other cases.
