@@ -33,6 +33,11 @@ methods, such that implementers only choose whether to provide the trait and
 never how to implement it; the trait then provides all the method
 implementations.
 
+One example of a trait in the standard library benefiting from this:
+`Error::type_id`, which has thus far remained unstable because it's unsafe to
+override. This RFC would allow stabilizing that method so users can call it,
+without permitting reimplementation of it.
+
 # Explanation
 [explanation]: #explanation
 
