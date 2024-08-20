@@ -35,7 +35,7 @@ More details are in the Reference-level explanation.
 * `--include-parts-dir=path/to/doc.parts/<crate-name>`: Include cross-crate information from this previously written `doc.parts` directories into a collection that will be written by the current invocation of rustdoc. May only be provided with `--merge=finalize`. May be provided any number of times.
 * `--merge=none`: Do not write cross-crate information to the `--out-dir`. The flag `--parts-out-dir` may instead be provided with the destination of the current crate's cross-crate information parts.
 * `--merge=shared` (default): Append information from the current crate to any info files found in the `--out-dir`.
-* `--merge=finalize`: Write cross-crate information from the current crate and any crates included via `--include-parts-dir` to the `--out-dir`, overwriting conflicting files. This flag may be used with or without an input crate root, as it can links existing docs.
+* `--merge=finalize`: Write cross-crate information from the current crate and any crates included via `--include-parts-dir` to the `--out-dir`, overwriting conflicting files. This flag may be used with or without an input crate root, in which case it only links crates included via `--include-parts-dir`.
 
 ## Example
 
