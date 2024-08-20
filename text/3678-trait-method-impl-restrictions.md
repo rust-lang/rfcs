@@ -82,6 +82,11 @@ Note that in some cases, the compiler may be able to avoid placing an
 `impl`-restricted method in the trait's vtable, if there is only a single
 implementation that can ever be invoked.
 
+In addition to `impl(visibility)`, a trait method or associated function can
+also use `impl()`, which does not permit overriding the method *anywhere*, even
+in the current module. In this case, all implementations will always use the
+default body.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -111,11 +116,6 @@ final *except* within the crate"?)
 reference `self` referring to an instance of an object. However, `impl(self)`
 syntax is already used within RFC 3323, and introducing a different syntax
 seems likely to lead to *greater* confusion.
-
-We could introduce a syntax for not permitting implementations of the method at
-*all*, even in the same module; for instance, `impl()`. In practice, this seems
-likely to be *more* common than implementing the method for trait impls in the
-same module, and it would eliminate the potential incongruity of `impl(self)`.
 
 It's possible to work around the lack of this functionality by placing the
 additional methods in an extension trait with a blanket implementation.
