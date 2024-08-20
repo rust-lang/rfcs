@@ -140,3 +140,6 @@ support it.
 
 We could support `impl(unsafe)`, to make a trait safe to implement if *not*
 overriding a method, and only unsafe to implement if overriding a method.
+
+We could integrate this with stability markers, to stabilize calling a method
+but keep it unstable to *implement*.
