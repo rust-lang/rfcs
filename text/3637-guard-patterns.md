@@ -334,6 +334,10 @@ match Some(0) {
 }
 ```
 
+This is also very useful for macros, because it allows
+1. pattern macros to use guard patterns freely without introducing new bindings the user has to be aware of in order to use the pattern macro within a disjunction, and
+2. macro users to pass guard patterns to macros freely, even if the macro uses the pattern within a disjunction.
+
 As mentioned above, this case is not covered by this RFC, because `x` would need to be bound in both cases of the disjunction.
 
 However, we could support this by automatically detecting that `x` is not ever used outside of the guard pattern, and allowing the guard to capture the binding, so it wouldn't have to be bound in other cases of the disjunction.
