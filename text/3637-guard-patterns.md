@@ -252,17 +252,10 @@ This can also be seen as a special case of the previous argument, as pattern mac
 
 ## Deref and Const Patterns Must Be Pure, But Not Guards
 
-It may seem odd that we explicitly require `deref!` and const patterns to use pure `Deref` and `PartialEq` implementations, respectively, but allow arbitrary side effects in guards. The ultimate reason for this is that, unlike `deref!` and const patterns, guard patterns are always refutable.
+It may seem odd that we explicitly require const patterns to use pure `PartialEq` implementations (and the upcoming [proposal](https://hackmd.io/4qDDMcvyQ-GDB089IPcHGg) for deref patterns to use pure `Deref` implementations), but allow arbitrary side effects in guards. The ultimate reason for this is that, unlike const patterns and the proposed deref patterns, guard patterns are always refutable.
 
-With `deref!` patterns, we can write an impure `Deref` impl which alternates between returning `true` or `false` to get UB:
-```rust
-match EvilBox::new(false) {
-    deref!(true) => {} // Here the `EvilBox` dereferences to `false`.
-    deref!(false) => {} // And here to `true`.
-}
-```
 
-And similarly, without the requirement of `StructuralPartialEq` we could write a `PartialEq` implementation which always returns `false`:
+Without the requirement of `StructuralPartialEq` we could write a `PartialEq` implementation which always returns `false`, resulting either in UB or a failure to ensure match exhaustiveness:
 
 ```rust
 const FALSE: EvilBool = EvilBool(false);
@@ -274,7 +267,16 @@ match EvilBool(false) {
 }
 ```
 
-However, this is not a problem with guard patterns because they already need a irrefutable alternative anyway.
+And similarly, with an impure version of the proposed deref patterns, we could write a `Deref` impl which alternates between returning `true` or `false` to get UB:
+
+```rust
+match EvilBox::new(false) {
+    deref!(true) => {} // Here the `EvilBox` dereferences to `false`.
+    deref!(false) => {} // And here to `true`.
+}
+```
+
+However, this is not a problem with guard patterns because they already need an irrefutable alternative anyway.
 For example, we could rewrite the const pattern example with guard patterns as follows:
 
 ```rust
