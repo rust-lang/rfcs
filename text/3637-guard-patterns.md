@@ -250,6 +250,42 @@ If guards can only appear immediately within or-patterns, then either
 
 This can also be seen as a special case of the previous argument, as pattern macros fundamentally assume that patterns can be built out of composable, local pieces.
 
+## Deref and Const Patterns Must Be Pure, But Not Guards
+
+It may seem odd that we explicitly require `deref!` and const patterns to use pure `Deref` and `PartialEq` implementations, respectively, but allow arbitrary side effects in guards. The ultimate reason for this is that, unlike `deref!` and const patterns, guard patterns are always refutable.
+
+With `deref!` patterns, we can write an impure `Deref` impl which alternates between returning `true` or `false` to get UB:
+```rust
+match EvilBox::new(false) {
+    deref!(true) => {} // Here the `EvilBox` dereferences to `false`.
+    deref!(false) => {} // And here to `true`.
+}
+```
+
+And similarly, without the requirement of `StructuralPartialEq` we could write a `PartialEq` implementation which always returns `false`:
+
+```rust
+const FALSE: EvilBool = EvilBool(false);
+const TRUE: EvilBool = EvilBool(true); 
+
+match EvilBool(false) {
+    FALSE => {},
+    TRUE => {},    
+}
+```
+
+However, this is not a problem with guard patterns because they already need a irrefutable alternative anyway.
+For example, we could rewrite the const pattern example with guard patterns as follows:
+
+```rust
+match EvilBool(false) {
+    x if x == FALSE => {},
+    x if x == TRUE => {},
+}
+```
+
+But this will always be a compilation error because the `match` statement is no longer assumed to be exhaustive.
+
 # Prior art
 [prior-art]: #prior-art
 
