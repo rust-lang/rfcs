@@ -680,42 +680,8 @@ When lints check attributes such as `#[allow(lint_name)]` are placed on a
 
 #### Initialization expressions
 
-Given an expression `τ` of the form (e.g. `Foo { x: 1, .. }`):
-
-```rust
-path:Path "{" attrs:InnerAttr* fields:StructExprField+ % "," "," ".." "}"
-```
-
-all the following rules apply when type-checking:
-
-1. All `fields` in `τ` mentioned must exist in the `struct` or `enum` variant
-   referenced by `path`. No field in `fields` may be mentioned twice.
-
-2. For each `field: expr` pair in `fields` of `τ`,
-   `expr` must unify with the type of `field` in the `struct`
-   or `enum` variant referenced by `path`.
-
-3. For each `field: expression` pair in `fields` of `τ`,
-   `field` must be visible in the context which `τ` occurs in.
-
-4. For each field `f` in `τ` *not* mentioned in `fields`, a default value must
-   exist for `f` in the `struct` or `enum` variant referenced by `path`.
-
----------------------
-
-**Lemma 1:** If `τ` is of a type `σ` where `σ: Sync`, and if all `field: expr`
-has an `expr` component which is a valid constant expression, then `τ` is
-also a valid constant expression.
-
-**Proof:** It trivially holds that if all `expr`s in `τ` are
-constant expressions and all default values for fields omitted
-are also constant expressions, then `τ` is a constant expression.
-
-**Lemma 2:** If an expression `x` of form `Path { .. }` is of a type `σ` where
-`σ: Sync`, then `x` is a constant expression.
-
-**Proof:** `x` is a special case of `τ` with all fields according to the default
-values. Since there are no explicitly provided fields, by Lemma 1 it holds.
+`Path { fields, .. }` is `const` since the defaulted fields are initialized
+from constants.
 
 ## `#[derive(Default)]`
 
