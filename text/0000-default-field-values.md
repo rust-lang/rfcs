@@ -18,18 +18,23 @@ struct Pet {
 }
 ```
 
-These can then be used in the following way with the Functional Record Update syntax, with no value:
+[FUS]: https://doc.rust-lang.org/reference/expressions/struct-expr.html#functional-update-syntax
+
+These can then be used in the following way with the existing [functional update
+syntax][FUS], but without a "base expression" after the `..`:
 
 ```rust
 // Pet { name: Some(""), age: 42 }
 let _ = Pet { name: Some(String::new()), .. }
 // Compilation error: `name` needs to be specified
 let _ = Pet { .. }
-// Derived `Default` uses struct field defaults if present:
+```
+
+Derived `Default` `impl` also uses struct field defaults if present:
+
+```rust
 // Pet { name: None, age: 42 }
 let _ = Pet::default();
-// Pet { name: None, age: 42 }
-let _ = Pet { ..Pet::default() };
 ```
 
 # Motivation
