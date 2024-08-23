@@ -732,6 +732,7 @@ the rule `StructExprFieldsAndBase` is extended with:
 
 ```rust
 StructExprFieldsAndBase =| FieldsAndDefault:{ fields:StructExprField+ % "," "," ".." };
+StructExprFieldsAndBase =| Default:{ ".." }
 ```
 
 ### Static semantics
@@ -748,7 +749,7 @@ all the following rules apply when type-checking:
 
 1. The expression `def` must be a constant expression.
 
-2. The expression `def` must unify with the type `ty`.
+2. The expression `def` must coerces with the type `ty`.
 
 When lints check attributes such as `#[allow(lint_name)]` are placed on a
 `RecordField`, it also applies to `def` if it exists.
@@ -1437,7 +1438,7 @@ enum Foo {
 
 There a few aspects to note:
 
-1. The signal to noise ratio is high as compared to the notation in this RFC.
+1. The signal to noise ratio is low as compared to the notation in this RFC.
   Substantial of syntactic overhead is accumulated to specify defaults.
 
 2. Expressions need to be wrapped in strings, i.e. `value="2 * (1 << 20)"`.
@@ -1703,6 +1704,24 @@ pub struct Foo;
 let _ = Foo { .. }; // ok
 ```
 
+## Use of `_` on struct literals
+
+On patterns, one can currently use `field: _` to explicitly ignore a single
+named field, in order to force a compilation error at the pattern use place
+if a field is explicitly added to the type. One could envision a desire to
+allow for the use of the same syntax during construction, as an explicit
+expression to set a given default, but still fail to compile if a field has
+been added to the type:
+
+```rust
+struct Foo {
+    bar: i32 = 42,
+}
+
+let _ = Foo {
+    bar: _,
+};
+```
 
 ## Tuple structs and tuple variants
 
