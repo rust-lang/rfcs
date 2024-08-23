@@ -1853,3 +1853,11 @@ Although there are strong reasons to restrict default values only to const
 values, it would be possible to allow non-const values as well, potentially
 allowed but linted against. Expanding the kind of values that can be accepted
 can be expanded in the future.
+
+## Lint against explicit `impl Default` when `#[derive(Default)]` would be ok
+
+As a future improvement, we could nudge implementors towards leveraging the
+feature for less verbosity, but care will have to be taken in not being overly
+annoying, particularly for crates that have an MSRV that would preclude them
+from using this feature. This could be an edition lint, which would simplify
+implementation.
