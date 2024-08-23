@@ -688,8 +688,8 @@ from constants.
 When generating an implementation of `Default` for a `struct` named `$s` on
 which `#[derive(Default)]` has been attached, the compiler will omit all fields
 which have default values provided in the `struct`. The the associated function
-`default` shall then be defined as (where `$f_i` denotes a vector of the fields
-of `$s`):
+`default` shall then be defined as (where `$f_i` denotes the `i`-th field of
+`$s`):
 
 ```rust
 fn default() -> Self {
