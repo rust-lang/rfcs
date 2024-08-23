@@ -717,20 +717,6 @@ are also constant expressions, then `τ` is a constant expression.
 **Proof:** `x` is a special case of `τ` with all fields according to the default
 values. Since there are no explicitly provided fields, by Lemma 1 it holds.
 
-### Dynamic semantics
-
-Given a well-formed expression `τ` according to the aforementioned form,
-the operational semantics is the same as the semantics of an expression
-`path { new_fields }` with `new_fields = fields ∪ default_fields` where:
-
-+ `∪` computes the left-biased union where equal elements are determined
-  solely on equality of field names.
-
-+ `fields` are the set of explicitly given `field: expr` pairs.
-
-+ `default_fields` are the fields in `τ`'s data-type or variant which
-  have provided default values.
-
 ## `#[derive(Default)]`
 
 When generating an implementation of `Default` for a `struct` named `$s` on
