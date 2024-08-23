@@ -1136,6 +1136,12 @@ Among the drawbacks are:
 + By writing `Foo { .. }`, you have there is explicit indication that default
   values are being used; this enhances local reasoning further.
 
+This RFC requires the `..` to get defaulted fields because it wants to continue
+to allow the workflow of intentionally *not* including `..` in the struct
+literal expression so that when a user adds a field they get compilation errors
+on every use -- just like is currently possible in patterns by not including
+`..` in the struct pattern.
+
 ## Named function arguments with default values
 
 A frequently requested feature is named function arguments. Today, the way to
