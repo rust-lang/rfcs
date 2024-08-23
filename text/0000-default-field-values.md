@@ -282,7 +282,7 @@ Another example is the `structopt` crate with which you can write:
 #[structopt(name = "example", about = "An example of StructOpt usage.")]
 struct Opt {
     /// Set speed
-    #[structopt(short = "s", long = "speed", default_value = "42")]
+    #[structopt(short = "s", long = "speed", default_value_t = 42)]
     speed: f64,
     ...
 }
