@@ -590,12 +590,21 @@ if you allow for the possibility of having fields be ignored with `..` (14):
 let Config { width, height, .. } = config;
 ```
 
-Because this RFC gives a way to have default field values, you can now simply
-invert the pattern expression and initialize a `Config` like so (15):
+This RFC restricts the use of default field values only to types that are *not*
+annotated with `#[non_exhaustive]`, leaving it and the specifics of their
+interaction if allowed as an open question of future concern. Supporting this
+without additional compiler support could mean that the following
 
 ```rust
-let config = Config { width, height, .. };
+#[non_exhaustive]
+pub struct Foo;
+
+// another crate
+let _ = Foo { .. }; // Currently forbidden
 ```
+
+Would be *allowed*, changing the meaning of this code in a way that goes against
+user intention.
 
 ## Defaults for `enum`s
 
@@ -632,7 +641,7 @@ Furthermore, when `#[non_exhaustive]` is specified directly on an `enum`,
 it has no interaction with the defaults values and the ability to construct
 variants of said enum. However, as specified by [RFC 2008], `#[non_exhaustive]`
 is permitted on variants. When that occurs, the behaviour is the same as if
-it had been attached to a `struct` with the same fields.
+it had been attached to a `struct` with the same fields and field visibility.
 
 ### Interaction with `#[default]`
 
@@ -1579,7 +1588,8 @@ this RFC so that constructor functions are regained if so desired.
    }
    ```
 
-   it is possible to construct a `Config` like so:
+   it could be possible to construct a `Config` like so, if the construction of
+   types without default field values is allowed (to support semver changes):
 
    ```rust
    let config = Config { width: 640, height: 480, .. };
@@ -1602,6 +1612,79 @@ this RFC so that constructor functions are regained if so desired.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## `#[non_exhaustive]` interactions
+
+This RFC doesn't allow mixing default field values and `#[non_exhaustive]`
+because of the interaction with the allowance to build struct literals
+that have private fields:
+
+```rust
+#[non_exhaustive]
+pub struct Foo {
+    bar: i32 = 42,
+}
+
+// another crate
+let _ = Foo { .. }; // Currently forbidden, but would be allowed by this RFC without the attribute
+```
+
+There are several options:
+
+ - Allow `#[non_exhaustive]` but deny the hability to build a struct literal
+   when there are non-accessible fields with defaults
+ - Disallow both `#[non_exhaustive]` and building struct literals with private
+   fields in order to resolve the interaction some-time in the future, as
+   *enabling* either hability is a backwards compatible change that strictly
+   allows more code to work
+ - Have additional rules on what the interactions are, like for example allow
+   building struct literals with private fields *as long as* the type isn't
+   annotated with `#[non_exhaustive]`
+ - Extend `#[non_exhaustive]` with arguments in order to specify the desired
+   behavior
+ - Change the defaults of `#[non_exhaustive]` and allow for the change in
+   meaning of it being set
+
+I propose to go for the maximally restrictive version of the default field
+values feature, and allow for future experimentation of which of these options
+best fits the language.
+
+The following also needs to be specified:
+
+```rust
+#[non_exhaustive]
+pub struct Foo;
+
+// another crate
+let _ = Foo { .. }; // Currently forbidden
+```
+
+## "Empty" types and types without default field values
+
+Under this RFC, the following code isn't specified one way or the other:
+
+```rust
+pub struct Foo;
+
+let _ = Foo { .. }; // should be denied
+```
+
+I propose we disallow this at least initially. `..` can then *only* be used
+if there is at least one default field. We might want to change this rule in
+the future, but careful with how it would interact with `#[non_exhaustive]`, as
+it could accidentally allow for types that are not meant to be constructed
+outside of a given crate to all of a sudden be constructable.
+
+One alternative can be to provide an explicit opt-in attribute to allow for the
+use of default field values even if the type doesn't currently have any:
+
+```rust
+#[allow(default_field_construction)]
+pub struct Foo;
+
+let _ = Foo { .. }; // ok
+```
+
 
 ## Tuple structs and tuple variants
 
