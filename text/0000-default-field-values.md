@@ -971,15 +971,19 @@ remains at all times private to `alpha`. Therefore, privacy, and by extension
 soundness, is preserved.
 
 If a user wishes to keep other modules from constructing a `Foo` with
-`Foo { .. }` they can simply add, or keep, one private field without a default.
-Situations where this can be important include those where `Foo` is some token
-for some resource and where fabricating a `Foo` may prove dangerous or worse
-unsound. This is however no different than carelessly adding `#[derive(Default)]`.
+`Foo { .. }` they can simply add, or keep, one private field without a default
+or add `#[non_exhaustive]`, as mising these two features is not allowed under
+this RFC. Situations where this can be important include those where `Foo` is
+some token for some resource and where fabricating a `Foo` may prove dangerous
+or worse unsound. This is however no different than carelessly adding
+`#[derive(Default)]`.
 
 The feature *can* be stabilized *without* the privacy changes, turning the above
 snippet into invalid code, in order to expedite the acceptance of this change,
 leaving us to revisit this question at a later time once we get further real
-world experience.
+world experience, particularly regarding questions around allowing the use of
+this syntax with types that have *no* default fields, including for ZST, as well
+as the open questions around interactions with `#[non_exhaustive]`.
 
 ## On `const` contexts
 
