@@ -232,82 +232,6 @@ fn main() {
 The builder pattern is quite common in the Rust ecosystem, but as shown above its need is greatly
 reduced with `struct` field defaults.
 
-### `PhantomData` ergonomics
-
-[nomicon]: https://doc.rust-lang.org/nightly/nomicon/phantom-data.html
-[PhantomData]: https://doc.rust-lang.org/stable/std/marker/struct.PhantomData.html
-
-Say that you want to define our own `Vec<T>` type. As the [nomicon] says,
-you need to use [PhantomData] to make sure that drop-checking is sound like so:
-
-```rust
-use std::marker::PhantomData;
-
-struct Vec<T> {
-    data: *const T, // *const for variance!
-    len: usize,
-    cap: usize,
-    _marker: PhantomData<T>,
-}
-```
-
-You then go on to define some operations for `Vec<T>`:
-
-```rust
-impl<T> Vec<T> {
-    pub fn new() -> Self {
-        Self {
-            // other fields...
-            _marker: PhantomData,
-        }
-    }
-
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            // other fields...
-            _marker: PhantomData,
-        }
-    }
-}
-```
-
-Here, `_marker: PhantomData` is just provided to satisfy the compiler.
-`PhantomData` carries no useful information since it is a ZST.
-Therefore, the result of having to add a field of type `PhantomData`
-is a regression to ergonomics throughout. With default values you can
-improve the situation slightly and provide the value in a single place:
-
-```rust
-use std::marker::PhantomData;
-
-struct Vec<T> {
-    data: *const T, // *const for variance!
-    len: usize,
-    cap: usize,
-    _marker: PhantomData<T> = PhantomData,
-}
-```
-
-You then go on to define some operations for `Vec<T>`:
-
-```rust
-impl<T> Vec<T> {
-    pub fn new() -> Self {
-        Self {
-            // other fields...
-            ..
-        }
-    }
-
-    pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            // other fields...
-            ..
-        }
-    }
-}
-```
-
 ## `#[derive(Default)]` in more cases
 
 The `#[derive(..)]` ("custom derive") mechanism works by defining procedural
@@ -473,7 +397,7 @@ mix and match. Given the definition of `LaunchCommand` from the [motivation] (7)
 ```rust
 struct LaunchCommand {
     cmd: String,
-    args: Vec<String> = vec![],
+    args: Vec<String> = Vec::new(),
     some_special_setting: Option<FancyConfig> = None,
     setting_most_people_will_ignore: Option<FlyMeToTheMoon> = None,
 }
