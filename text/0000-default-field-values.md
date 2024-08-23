@@ -895,9 +895,15 @@ variable.
 
 ## On privacy
 
+[RFC-0736]: https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md
+
 This RFC specifies that when field defaults are specified, the desugaring
 semantics of `Foo { .. }` spans `field: default_value` with the context in
-which the type is defined as opposed to where `Foo { .. }` occurs.
+which the type is defined as opposed to where `Foo { .. }` occurs, in the same
+way that the Functional Record Update syntax worked *before* [RFC-0736], where
+we previously allowed for the construction of a value with private fields with
+values from a base expression.
+
 In other words, the following is valid:
 
 ```rust
@@ -931,8 +937,8 @@ some token for some resource and where fabricating a `Foo` may prove dangerous
 or worse unsound. This is however no different than carelessly adding
 `#[derive(Default)]`.
 
-The feature *can* be stabilized *without* the privacy changes, turning the above
-snippet into invalid code, in order to expedite the acceptance of this change,
+**The feature *can* be stabilized *without* the privacy changes, turning the above
+snippet into invalid code, in order to expedite the acceptance of this change**,
 leaving us to revisit this question at a later time once we get further real
 world experience, particularly regarding questions around allowing the use of
 this syntax with types that have *no* default fields, including for ZST, as well
@@ -1577,9 +1583,6 @@ this RFC so that constructor functions are regained if so desired.
    As an alternative, users who desire the semantics described above can
    omit `#[non_exhaustive]` from their type and instead add a private
    defaulted field that has a ZST.
-
-   Resolving this question may be deferred to stabilization of either
-   `#[non_exhaustive]` or field defaults, whichever comes last.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
