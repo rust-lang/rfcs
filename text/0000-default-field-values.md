@@ -831,6 +831,34 @@ In particular, the syntax `Foo { .. }` mirrors the identical and already
 existing pattern syntax. This makes the addition of `Foo { .. }` at worst
 low-cost and potentially cost-free.
 
+It is true that there are cases where `Foo { ..Default::default() }` will be
+allowed where `Foo { .. }` won't be, and vice-versa.
+
+This new syntax is more ergonomic to use, but it requires specifying a default
+value for every field which can be much less ergonomic than using
+`#[derive(Default)]` on your type. The following two are almost equivalent, and
+the more fields there are, the more the verbosity is increased:
+
+```rust
+#[derive(Default)]
+struct S {
+    foo: Option<String>,
+    bar: Option<String>,
+}
+```
+
+```rust
+struct S {
+    foo: Option<String> = None,
+    bar: Option<String> = None,
+}
+```
+
+This can become relevant when an API author wants to push users towards the new
+syntax because `..` is shorter than `..Default::default()`, or when some fields
+with types that `impl Default` are optional, but `#[derive(Default)]` can't be
+used because some fields are mandatory.
+
 The main complexity comes instead from introducing `field: Type = expr`.
 However, as seen in the [prior-art], there are several widely-used languages
 that have a notion of field / property / instance-variable defaults.
