@@ -845,6 +845,14 @@ error: default values on `struct` fields aren't supported
   |                            ^^^^^ help: remove this unsupported default value
 ```
 
+An issue arises when considering `const` patterns. A pattern `Foo { .. }` can
+match more things than just the expression `Foo { .. }`, because the pattern
+matches any value of the unmentioned fields, but the expression sets them to a
+particular value. This means that, with the unstable `inline_const_pat`, the arm
+`const { Foo { .. } } =>` matches less than the arm `Foo { .. } =>` (assuming a
+type like `struct Foo { a: i32 = 1 }`). A way to mitigate this might be to use
+an alternative syntax, like `...` or `..kw#default`.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
