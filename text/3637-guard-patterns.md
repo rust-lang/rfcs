@@ -4,16 +4,19 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
+
 [summary]: #summary
 
 This RFC proposes to add a new kind of pattern, the **guard pattern.** Like match arm guards, guard patterns restrict another pattern to match only if an expression evaluates to `true`. The syntax for guard patterns, `pat if condition`, is compatible with match arm guard syntax, so existing guards can be superceded by guard patterns without breakage.
 
 # Motivation
+
 [motivation]: #motivation
 
 Guard patterns, unlike match arm guards, can be nested within other patterns. In particular, guard patterns nested within or-patterns can depend on the branch of the or-pattern being matched. This has the potential to simplify certain match expressions, and also enables the use of guards in other places where refutable patterns are acceptable. Furthermore, by moving the guard condition closer to the bindings upon which it depends, pattern behavior can be made more local.
 
 # Guide-level explanation
+
 [guide-level-explanation]: #guide-level-explanation
 
 Guard patterns allow you to write guard expressions to decide whether or not something should match anywhere you can use a pattern, not just at the top level of `match` arms.
@@ -60,6 +63,7 @@ This is a **guard pattern**. It matches a value if `pattern` (the pattern it wra
 For new users, guard patterns are better explained without reference to match arm guards. Instead, they can be explained by similar examples to the ones currently used for match arm guards, followed by an example showing that they can be nested within other patterns and used outside of match arms.
 
 # Reference-level explanation
+
 [reference-level-explanation]: #reference-level-explanation
 
 ## Supersession of Match Arm Guards
@@ -76,7 +80,7 @@ x @ A(..) if pred       <=> (x @ A(..)) if pred
 A(..) | B(..) if pred   <=> (A(..) | B(..)) if pred
 ```
 
-## Precedence Relative to `|` 
+## Precedence Relative to `|`
 
 Consider the following match expression:
 
@@ -107,12 +111,12 @@ Therefore guard patterns appearing at the top level in those places must also be
 // Not allowed:
 let x if guard(x) = foo() {} else { loop {} }
 if let x if guard(x) = foo() {}
-while let x if guard(x) = foo() {}   
+while let x if guard(x) = foo() {}
 
 // Allowed:
 let (x if guard(x)) = foo() {} else { loop {} }
 if let (x if guard(x)) = foo() {}
-while let (x if guard(x)) = foo() {} 
+while let (x if guard(x)) = foo() {}
 ```
 
 Therefore the syntax for patterns becomes
@@ -121,15 +125,16 @@ Therefore the syntax for patterns becomes
 > _Pattern_ :\
 > &nbsp;&nbsp; &nbsp;&nbsp; _PatternNoTopGuard_\
 > &nbsp;&nbsp; | _GuardPattern_
-> 
+>
 > _PatternNoTopGuard_ :\
-> &nbsp;&nbsp; &nbsp;&nbsp; `|`<sup>?</sup> _PatternNoTopAlt_  ( `|` _PatternNoTopAlt_ )<sup>\*</sup>
+> &nbsp;&nbsp; &nbsp;&nbsp; `|`<sup>?</sup> _PatternNoTopAlt_ ( `|` _PatternNoTopAlt_ )<sup>\*</sup>
 
 With `if let` and `while let` expressions now using `PatternNoTopGuard`. `let` statements and function parameters can continue to use `PatternNoTopAlt`.
 
 ## Bindings Available to Guards
 
 The only bindings available to guard conditions are
+
 - bindings from the scope containing the pattern match, if any; and
 - bindings introduced by identifier patterns _within_ the guard pattern.
 
@@ -157,20 +162,6 @@ let (Struct { x, y } if x == y) = Struct { x: 0, y: 0 } else { /* ... */ }
 
 In general, guards can, without changing meaning, "move outwards" until they reach an or-pattern where the condition can be different in other branches, and "move inwards" until they reach a level where the identifiers they reference are not bound.
 
-## Bindings Must Still Match Across Disjunctions
-
-This RFC does _not_ propose to change what bindings are allowed in disjunctions, even when those bindings are used only within guard patterns.
-
-For example, the following code will error just like it would without any guard patterns:
-
-```rust
-match Some(0) {
-    Some(x if x > 0) | None => {},
-    //~^ ERROR variable `x` is not bound in all patterns
-    _ => {},
-}
-```
-
 ## As Macro Arguments
 
 Currently, `if` is in the follow set of `pat` and `pat_param` fragments, so top-level guards cannot be used as arguments for the current edition. This is identical to the situation with top-level or-patterns as macro arguments, and guard patterns will take the same approach:
@@ -180,11 +171,13 @@ Currently, `if` is in the follow set of `pat` and `pat_param` fragments, so top-
 3. In the next edition, update `pat` fragments to accept `Pattern` once again.
 
 # Drawbacks
+
 [drawbacks]: #drawbacks
 
 Rather than matching only by structural properties of ADTs, equality, and ranges of certain primitives, guards give patterns the power to express arbitrary restrictions on types. This necessarily makes patterns more complex both in implementation and in concept.
 
 # Rationale and alternatives
+
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## "Or-of-guards" Patterns
@@ -203,7 +196,7 @@ Therefore, we could choose to restrict guard patterns so that they appear only i
 This RFC refers to this as "or-of-guards" patterns, because it changes or-patterns from or-ing together a list of patterns to or-ing together a list of optionally guarded patterns.
 
 Note that, currently, most patterns are actually parsed as an or-pattern with only one choice.
-Therefore, to achieve the effect of forcing patterns as far out as possible guards would only be allowed  in or-patterns with more than one choice.
+Therefore, to achieve the effect of forcing patterns as far out as possible guards would only be allowed in or-patterns with more than one choice.
 
 There are, however, a couple reasons where it could be desirable to allow guards further inwards than strictly necessary.
 
@@ -245,6 +238,7 @@ match order {
 ### Pattern Macros
 
 If guards can only appear immediately within or-patterns, then either
+
 - pattern macros can emit guards at the top-level, in which case they can only be called immediately within or-patterns without risking breakage if the macro definition changes (even to another valid pattern!); or
 - pattern macros cannot emit guards at the top-level, forcing macro authors to use terrible workarounds like `(Some(x) if guard(x)) | (Some(x) if false)` if they want to use the feature.
 
@@ -254,16 +248,15 @@ This can also be seen as a special case of the previous argument, as pattern mac
 
 It may seem odd that we explicitly require const patterns to use pure `PartialEq` implementations (and the upcoming [proposal](https://hackmd.io/4qDDMcvyQ-GDB089IPcHGg) for deref patterns to use pure `Deref` implementations), but allow arbitrary side effects in guards. The ultimate reason for this is that, unlike const patterns and the proposed deref patterns, guard patterns are always refutable.
 
-
 Without the requirement of `StructuralPartialEq` we could write a `PartialEq` implementation which always returns `false`, resulting either in UB or a failure to ensure match exhaustiveness:
 
 ```rust
 const FALSE: EvilBool = EvilBool(false);
-const TRUE: EvilBool = EvilBool(true); 
+const TRUE: EvilBool = EvilBool(true);
 
 match EvilBool(false) {
     FALSE => {},
-    TRUE => {},    
+    TRUE => {},
 }
 ```
 
@@ -289,28 +282,55 @@ match EvilBool(false) {
 But this will always be a compilation error because the `match` statement is no longer assumed to be exhaustive.
 
 # Prior art
+
 [prior-art]: #prior-art
 
-This feature has been implemented in the [Unison](https://www.unison-lang.org/docs/language-reference/guard-patterns/), [Wolfram](https://reference.wolfram.com/language/ref/Condition.html), and [E ](https://en.wikipedia.org/wiki/E_(programming_language)) languages.
+This feature has been implemented in the [Unison](https://www.unison-lang.org/docs/language-reference/guard-patterns/), [Wolfram](https://reference.wolfram.com/language/ref/Condition.html), and [E ](<https://en.wikipedia.org/wiki/E_(programming_language)>) languages.
 
 Guard patterns are also very similar to Haskell's [view patterns](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/view_patterns.html), which are more powerful and closer to a hypothetical "`if let` pattern" than a guard pattern as this RFC proposes it.
 
 # Unresolved questions
+
 [unresolved-questions]: #unresolved-questions
 
-- How should we refer to this feature?
-  - "Guard pattern" will likely be most intuitive to users already familiar with match arm guards. Most likely, this includes anyone reading this, which is why this RFC uses that term.
-  - "`if`-pattern" agrees with the naming of or-patterns, and obviously matches the syntax well. This is probably the most intuitive name for new users learning the feature.
-  - Some other possibilities: "condition/conditioned pattern," "refinement/refined pattern," "restriction/restricted pattern," or "predicate/predicated pattern."
-- What anti-patterns should we lint against?
-    - Using guard patterns to test equality or range membership when a literal or range pattern could be used instead?
-    - Using guard patterns at the top-level of `if let` or `while let` instead of let chains?
-    - Guard patterns within guard patterns instead of using one guard with `&&` in the condition?
-    - `foo @ (x if guard(x))` rather than `(foo @ x) if guard(x)`? Or maybe this is valid in some cases for localizing match behavior?
-- Is `pat_no_top_guard` a good name, or should we use something shorter like `pat_unguarded`?
+## Allowing Mismatching Bindings When Possible
 
-# Future possibilities
+Ideally, users would be able to write something to the effect of
+
+```rust
+match Some(0) {
+    Some(x if x > 0) | None => {},
+    _ => {}
+}
+```
+
+This is also very useful for macros, because it allows
+
+1. pattern macros to use guard patterns freely without introducing new bindings the user has to be aware of in order to use the pattern macro within a disjunction, and
+2. macro users to pass guard patterns to macros freely, even if the macro uses the pattern within a disjunction.
+
+As mentioned above, this case is not covered by this RFC, because `x` would need to be bound in both cases of the disjunction.
+
+### Possible Design
+
+[@tmandry proposed](https://github.com/rust-lang/rfcs/pull/3637#issuecomment-2307839511) amending the rules for how names can be bound in patterns to the following:
+
+1. Unchanged: If a name is bound in any part of a pattern, it shadows existing definitions of the name.
+2. Unchanged: If a name bound by a pattern is used in the body, it must be defined in every part of a disjunction and be the same type in each.
+3. Removed: ~~Bindings introduced in one branch of a disjunction must be introduced in all branches.~~
+4. Added: If a name is bound in multiple parts of a disjunction, it must be bound to the same type in every part. (Enforced today by the combination of 2 and 3.)
+
+## How to Refer to Guard Patterns
+
+Some possibilities:
+
+- "Guard pattern" will likely be most intuitive to users already familiar with match arm guards. Most likely, this includes anyone reading this, which is why this RFC uses that term.
+- "`if`-pattern" agrees with the naming of or-patterns, and obviously matches the syntax well. This is probably the most intuitive name for new users learning the feature.
+- Some other possibilities: "condition/conditioned pattern," "refinement/refined pattern," "restriction/restricted pattern," or "predicate/predicated pattern."
+
 [future-possibilities]: #future-possibilities
+
+# Future Possibilities
 
 ## Allowing `if let`
 
@@ -324,32 +344,3 @@ One way to think about this is that patterns serve two functions:
 Guard patterns as described here provide _arbitrary refinement_. That is, guard patterns can match based on whether any arbitrary expression evaluates to true.
 
 Allowing `if let` allows not just arbitrary refinement, but also _arbitrary destructuring_. The value(s) bound by an `if let` pattern can depend on the value of an arbitrary expression.
-
-## Allowing Mismatching Bindings When Possible
-
-Users will likely want to write something like
-
-```rust
-match Some(0) {
-    Some(x if x > 0) | None => {},
-    _ => {}
-}
-```
-
-This is also very useful for macros, because it allows
-1. pattern macros to use guard patterns freely without introducing new bindings the user has to be aware of in order to use the pattern macro within a disjunction, and
-2. macro users to pass guard patterns to macros freely, even if the macro uses the pattern within a disjunction.
-
-As mentioned above, this case is not covered by this RFC, because `x` would need to be bound in both cases of the disjunction.
-
-However, we could support this by automatically detecting that `x` is not ever used outside of the guard pattern, and allowing the guard to capture the binding, so it wouldn't have to be bound in other cases of the disjunction.
-
-We could also make this capturing behavior explicit, with some kind of syntax extending guard patterns:
-
-```rust
-// example syntax by analogy with closures
-// probably not what we'd want to go with, since you can't specify which bindings are captured
-Some(x move if x > 0) | None 
-```
-
-This would also give the guard ownership of the bound value, which may be desirable in other cases.
