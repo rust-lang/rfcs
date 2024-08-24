@@ -673,7 +673,7 @@ all the following rules apply when type-checking:
 
 1. The expression `def` must be a constant expression.
 
-2. The expression `def` must coerces with the type `ty`.
+2. The expression `def` must coerce to the type `ty`.
 
 When lints check attributes such as `#[allow(lint_name)]` are placed on a
 `RecordField`, it also applies to `def` if it exists.
@@ -1557,11 +1557,11 @@ let _ = Foo { .. }; // Currently forbidden, but would be allowed by this RFC wit
 
 There are several options:
 
- - Allow `#[non_exhaustive]` but deny the hability to build a struct literal
+ - Allow `#[non_exhaustive]` but deny the ability to build a struct literal
    when there are non-accessible fields with defaults
  - Disallow both `#[non_exhaustive]` and building struct literals with private
    fields in order to resolve the interaction some-time in the future, as
-   *enabling* either hability is a backwards compatible change that strictly
+   *enabling* either ability is a backwards compatible change that strictly
    allows more code to work
  - Have additional rules on what the interactions are, like for example allow
    building struct literals with private fields *as long as* the type isn't
@@ -1664,14 +1664,9 @@ there are some tricky design choices; in particular:
 + The syntax `Alpha(..)` as an expression already has a meaning.
   Namely, it is sugar for `Alpha(RangeFull)`. Thus unfortunately,
   this syntax cannot be used to mean `Alpha(42, true)`.
-  In some future edition, the syntax `Alpha(...)` (three dots)
-  could be used for filling in defaults. This would ostensibly entail
+  In newer editions, the syntax `Alpha(...)` (three dots)
+  can be used for filling in defaults. This would ostensibly entail
   adding the pattern syntax `Alpha(...)` as well.
-
-  Until a syntax such as `Alpha(...)` is made available,
-  tuple structs could be constructed with `Alpha { 0: 43 }`.
-  However, that is not particularly ergonomic and that diminishes the value
-  of having field defaults for tuple structs.
 
 For these reasons, default values for positional fields are not included in
 this RFC and are instead left as a possible future extension.
