@@ -148,7 +148,12 @@ This expands on [RFC-3107]. No other changes are needed.
 
 [perfect derives]: https://smallcultfollowing.com/babysteps/blog/2022/04/12/implied-bounds-and-perfect-derive/
 
-The usual drawback of increasing the complexity of the language applies. However, the degree to which complexity is increased is not substantial.
+The usual drawback of increasing the complexity of the implementation applies.
+However, the degree to which complexity is increased is not substantial. If
+anything, the complexity of the concepts needed to be understood is reduced, as
+there are fewer special cases users need to keep in mind when using
+`#[derive(Default)]`, as well as allow us to remove `impl Default`s from the
+standard library.
 
 [The same](https://github.com/rust-lang/rust/issues/26925) issue highlighted on
 [RFC-3107] of current `#[derive(Default)]` on `struct`s producing `impl`s with
