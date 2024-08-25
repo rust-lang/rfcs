@@ -1812,7 +1812,9 @@ as `height` is visible in the current scope.
 
 ## Non-const values
 
-Although there are strong reasons to restrict default values only to const
+[strong reasons]: #on-const-contexts
+
+Although there are [strong reasons] to restrict default values only to const
 values, it would be possible to allow non-const values as well, potentially
 allowed but linted against. Expanding the kind of values that can be accepted
 can be expanded in the future.
