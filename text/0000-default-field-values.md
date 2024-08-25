@@ -1810,6 +1810,21 @@ this should be done or advanced, but there's nothing in this RFC that precludes
 these values can be accessed by instantiating `Config { .. }.height`, as long
 as `height` is visible in the current scope.
 
+Note that the *opposite* is supported, writing that code will compile, so any
+API author that wants to make these `const` values on the type can (only
+restriction is that `Self` isn't accepted in current `const` contexts):
+
+```rust
+struct Config {
+    height: u32 = Config::HEIGHT,
+    width: u32 = Config::WIDTH,
+}
+
+impl Config {
+    const HEIGHT: u32 = 1080,
+    const WIDTH: u32 = 1920,
+}
+```
 ## Non-const values
 
 [strong reasons]: #on-const-contexts
