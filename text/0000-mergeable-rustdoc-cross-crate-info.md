@@ -325,7 +325,7 @@ The limitation of `--extern-html-root-url` is that it needs to be provided with 
 
 # Drawbacks
 
-The WIP may change the sorting order of the elements in the CCI. It does not change the content of the documentation, and is intended to work without modifying Cargo and docs.rs.
+The implementation may change the sorting order of the elements in the CCI. It does not change the content of the documentation, and is intended to work without modifying Cargo and docs.rs.
 
 # Rationale and alternatives
 
