@@ -1273,6 +1273,8 @@ enum Foo {
 }
 ```
 
+[perfect-derives]: https://smallcultfollowing.com/babysteps/blog/2022/04/12/implied-bounds-and-perfect-derive/
+
 There a few aspects to note:
 
 1. The signal to noise ratio is low as compared to the notation in this RFC.
@@ -1300,10 +1302,10 @@ There a few aspects to note:
 
 6. To its credit, the macro provides `#[derivative(Default(bound=""))]`
    with which you can remove unnecessary bounds as well as add needed ones.
-   This addresses a deficiency in the current deriving system for built-in
-   derive macros. However, the attribute solves an orthogonal problem.
-   The ability to specify default values would mean that `derivative` can
-   piggyback on the default value syntax due to this RFC. The mechanism for
+   This addresses a [deficiency in the current deriving system][perfect-derives]
+   for built-in derive macros. However, the attribute solves an orthogonal
+   problem.  The ability to specify default values would mean that `derivative`
+   can piggyback on the default value syntax due to this RFC. The mechanism for
    removing or adding bounds can remain the same. Similar mechanisms could
    also be added to the language itself.
 
