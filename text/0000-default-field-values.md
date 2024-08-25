@@ -1505,6 +1505,7 @@ this RFC so that constructor functions are regained if so desired.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## `#[non_exhaustive]`
 1. What is the right interaction wrt. `#[non_exhaustive]`?
 
    In particular, if given the following definition:
@@ -1535,6 +1536,16 @@ this RFC so that constructor functions are regained if so desired.
    As an alternative, users who desire the semantics described above can
    omit `#[non_exhaustive]` from their type and instead add a private
    defaulted field that has a ZST.
+
+## `enum` variants
+
+[RFC-3683]: https://github.com/rust-lang/rfcs/pull/3683
+
+Currently `#[derive(Default)]` only supports unit `enum` variants. In this RFC
+we propose supporting `..` on struct `enum` variants. It would be nice to keep
+the symmetry with `struct`s and support `#[derive(Default)]` on them, but it is
+not absolutely necessary. [RFC-3683] proposes that support. These two features
+are technically orthogonal, but work well together.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
