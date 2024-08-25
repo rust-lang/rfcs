@@ -33,7 +33,7 @@ Currently, `#[derive(Default)]` is not usable on `enum` variants with data. To
 rectify this situation, we expand the existing `#[default]` attribute
 implementation to support tuple and struct variants.
 
-This allows you to use #[derive(Default)] on enums wherefore you can now write:
+This allows you to use `#[derive(Default)]` on enums wherefore you can now write:
 
 ```rust
 #[derive(Default)]
