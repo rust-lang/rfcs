@@ -49,8 +49,7 @@ let _ = Pet::default();
 Rust allows you to create an instance of a `struct` using the struct literal
 syntax `Foo { bar: expr, baz: expr }`. To do so, all fields in the `struct`
 must be assigned a value. This makes it inconvenient to create large `struct`s
-whose fields usually receive the same values. Struct literals also cannot be
-used to initialize `struct`s with fields which are inaccessible due to privacy.
+whose fields usually receive the same values.
 *[Functional record updates (FRU)][FRU]* can reduce noise when a `struct`
 derives `Default`, but are also invalid when the `struct` has inaccessible
 fields and do not allow the creation of an `impl` where *some* fields are
@@ -456,32 +455,11 @@ deterministic compilation.
 
 ## Privacy interactions
 
-In examples thus far, initialization literal expressions `Foo { bar, .. }` have
-been used in the same module as where the constructed type was defined in.
-
-Let's now consider a scenario where this is not the case (11):
-
-```rust
-pub mod foo {
-    pub struct Alpha {
-        beta: u8 = 42,
-        gamma: bool = true,
-    }
-}
-
-mod bar {
-    fn baz() {
-        let x = Alpha { .. };
-    }
-}
-```
-
-Despite `foo::bar` being in a different module than `foo::Alpha` and despite
-`beta` and `gamma` being private to `foo::bar`, a Rust compiler will accept
-the above snippet. It is legal because when `Alpha { .. }` expands to
-`Alpha { beta: 42, gamma: true }`, the fields `beta` and `gamma` are considered
-in the context of `foo::Alpha`'s *definition site* rather than `bar::baz`'s
-definition site.
+The same privacy interactions that the struct update syntax has when a base is
+present are still at place under this RFC: if a type can't be constructed from
+another base expression due to private fields, then it can't be constructed from
+field defaults either. See [Future Possibilities][future-privacy] for additional
+context.
 
 ## `#[non_exhaustive]` interactions
 
@@ -844,57 +822,6 @@ placeholder is similar to `..`; in the case of `_` both cases indicate something
 unimportant going on. For patterns, `_` matches everything and doesn't give
 access to the value; for types, the placeholder is just an unbounded inference
 variable.
-
-## On privacy
-
-[RFC-0736]: https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md
-
-This RFC specifies that when field defaults are specified, the desugaring
-semantics of `Foo { .. }` spans `field: default_value` with the context in
-which the type is defined as opposed to where `Foo { .. }` occurs, in the same
-way that the Functional Record Update syntax worked *before* [RFC-0736], where
-we previously allowed for the construction of a value with private fields with
-values from a base expression.
-
-In other words, the following is valid:
-
-```rust
-pub mod alpha {
-    pub struct Foo {
-        field: u8 = 42,
-    }
-}
-
-use alpha::Foo;
-
-mod beta {
-    // `field` isn't visible here.
-    fn bar() -> Foo {
-        Foo { .. } // OK!
-    }
-}
-```
-
-By permitting the above snippet, you are able to construct a default value
-for a type more ergonomically with `Foo { .. }`. Since it isn't possible for
-functions in `beta` to access `field`'s value, the value `42` or any other
-remains at all times private to `alpha`. Therefore, privacy, and by extension
-soundness, is preserved.
-
-If a user wishes to keep other modules from constructing a `Foo` with
-`Foo { .. }` they can simply add, or keep, one private field without a default
-or add `#[non_exhaustive]`, as mising these two features is not allowed under
-this RFC. Situations where this can be important include those where `Foo` is
-some token for some resource and where fabricating a `Foo` may prove dangerous
-or worse unsound. This is however no different than carelessly adding
-`#[derive(Default)]`.
-
-**The feature *can* be stabilized *without* the privacy changes, turning the above
-snippet into invalid code, in order to expedite the acceptance of this change**,
-leaving us to revisit this question at a later time once we get further real
-world experience, particularly regarding questions around allowing the use of
-this syntax with types that have *no* default fields, including for ZST, as well
-as the open questions around interactions with `#[non_exhaustive]`.
 
 ## On `const` contexts
 
@@ -1595,6 +1522,92 @@ pub struct Foo;
 // another crate
 let _ = Foo { .. }; // Currently forbidden
 ```
+
+## Privacy: building `struct`s with private defaulted fields
+
+[privacy]: #future-privacy
+
+[RFC-0736]: https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md
+
+
+In this RFC we do not propose any changes to the normal visibility rules:
+constructing a `struct` with default fields requires those fields to be visible
+in that scope.
+
+Let's consider a scenario where this comes into play:
+
+```rust
+pub mod foo {
+    pub struct Alpha {
+        beta: u8 = 42,
+        gamma: bool = true,
+    }
+}
+
+mod bar {
+    fn baz() {
+        let x = Alpha { .. };
+    }
+}
+```
+
+Despite `foo::bar` being in a different module than `foo::Alpha` and despite
+`beta` and `gamma` being private to `foo::bar`, a Rust compiler could accept
+the above snippet. It would be legal because when `Alpha { .. }` expands to
+`Alpha { beta: 42, gamma: true }`, the fields `beta` and `gamma` can be
+considered in the context of `foo::Alpha`'s *definition site* rather than
+`bar::baz`'s definition site.
+
+By permitting the above snippet, you are able to construct a default value
+for a type more ergonomically with `Foo { .. }`. Since it isn't possible for
+functions in `beta` to access `field`'s value, the value `42` or any other
+remains at all times private to `alpha`. Therefore, privacy, and by extension
+soundness, is preserved.
+
+This used to be the behavior the Functional Record Update syntax had *before*
+[RFC-0736], where we previously allowed for the construction of a value with
+private fields with values from a base expression.
+
+If a user wishes to keep other modules from constructing a `Foo` with
+`Foo { .. }` they can simply add, or keep, one private field without a default
+or add `#[non_exhaustive]`, as mising these two features is not allowed under
+this RFC. Situations where this can be important include those where `Foo` is
+some token for some resource and where fabricating a `Foo` may prove dangerous
+or worse unsound. This is however no different than carelessly adding
+`#[derive(Default)]`.
+
+Changing this behavior after stabilization of this RFC does present a potential
+foot-gun: if an API author relies on the privacy of a defaulted field to make a
+type unconstructable outside of its defining crate, then this change would cause
+the API to no longer be correct, needing the addition of a non-defaulted private
+field to keep its prior behavior. If we were to make this change, we could lint
+about the situation when all default values are private, which would be silenced
+by adding another non-defaulted private field.
+
+Another alternative would be to allow this new behavior in an opt in manner,
+such as an attribute or item modifier:
+
+```rust
+pub mod foo {
+    #[allow_private_defaults]
+    pub struct Alpha {
+        beta: u8 = 42,
+        gamma: bool = true,
+    }
+}
+```
+
+```rust
+pub mod foo {
+    pub(default) struct Alpha {
+        beta: u8 = 42,
+        gamma: bool = true,
+    }
+}
+```
+
+Additionally, the interaction between this privacy behavior and
+`#[non_exhaustive]` is fraught and requires additional discussion.
 
 ## "Empty" types and types without default field values
 
