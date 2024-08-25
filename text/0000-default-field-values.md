@@ -653,6 +653,34 @@ all the following rules apply when type-checking:
 
 2. The expression `def` must coerce to the type `ty`.
 
+3. Generic parameters of the current items are accessible
+```rust
+struct Bar<const A: usize> {
+    field: usize = A,
+}
+```
+
+4. Default const expressions are *not* evaluated at definition time, only
+   during instantiation. This means that the following will not fail to compile:
+```rust
+struct Bar {
+    field1: usize = panic!(),
+    field2: usize = 42,
+}
+
+let _ = Bar { field1: 0, .. };
+```
+
+5. The `struct`'s parameters are properly propagated, meaning the following is
+   possible:
+```rust
+struct Bar<T> {
+    field: Vec<T> = Vec::new(),
+}
+
+let _ = Bar::<i32> { .. };
+```
+
 When lints check attributes such as `#[allow(lint_name)]` are placed on a
 `RecordField`, it also applies to `def` if it exists.
 
