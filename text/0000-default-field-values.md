@@ -1692,6 +1692,10 @@ there are some tricky design choices; in particular:
   can be used for filling in defaults. This would ostensibly entail
   adding the pattern syntax `Alpha(...)` as well.
 
++ As mentioned in the previous section, `_` could also be allowed in `struct`
+  literals. If so, then they would also be allowed in tuple literals, allowing
+  us to use the `struct` in the prior snippet with `Beta(_, true)`.
+
 For these reasons, default values for positional fields are not included in
 this RFC and are instead left as a possible future extension.
 
