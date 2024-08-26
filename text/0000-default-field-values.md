@@ -189,7 +189,7 @@ impl<const A: bool, const B: bool> FooBuilder<A, B, false> {
         unsafe { std::mem::transmute(self) }
     }
 }
-// If any field is optional, 
+// If any field is optional,
 impl<const G: bool> FooBuilder<true, true, G> {
     fn build(self) -> Foo { // can only be called if all fields have been set
         Foo {
@@ -256,6 +256,62 @@ used in many more circumstances and thus boilerplate is further reduced.  The
 addition of a single field, expands the code written by the `struct` author from
 a single `derive` line to a whole `Default` `impl`, which becomes more verbose
 linearly with the number of fields.
+
+### Imperfect derives
+
+One thing to notice, is that taking default values into consideration during the
+desugaring of `#[derive(Default)]` would allow to side-step the issue of our
+lack of [perfect derives], by making the desugaring syntactically check which
+type parameters correspond to fields that don't have a default field, as in the
+expansion they will use the default value instead of `Default::default()`. By
+doing this a user can side-step the introduction of unnecessary bounds by
+specifying a default value of the same return value of `Default::default()`:
+
+```rust
+#[derive(Default)]
+struct Foo<T> {
+    bar: Option<T>,
+}
+```
+
+previously expands to:
+
+```rust
+struct Foo<T> {
+    bar: Option<T>,
+}
+impl<T: Default> Default for Foo<T> {
+    fn default() -> Foo<T> {
+        Foo {
+            bar: Default::default(),
+        }
+    }
+}
+```
+
+but we can make the following:
+
+```rust
+#[derive(Default)]
+struct Foo<T> {
+    bar: Option<T> = None,
+}
+```
+
+expand to:
+
+```rust
+struct Foo<T> {
+    bar: Option<T>,
+}
+impl<T> Default for Foo<T> {
+    fn default() -> Foo<T> {
+        Foo {
+            bar: None,
+        }
+    }
+}
+```
 
 ## Usage by other `#[derive(..)]` macros
 
