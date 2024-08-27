@@ -60,9 +60,9 @@ If a downstream crate attempts to use a feature marked `deprecated`, Cargo
 should produce a warning that contains the `note`. This warning should not be
 emitted for crates that reexport the feature under a feature also marked
 deprecated. For example: crate `foo` exports feature `phooey`, and crate `bar`
-exports feature `barred = ["foo/phooey"]`. If `foo` markes `bar` as deprecated,
+exports feature `barred = ["foo/phooey"]`. If `foo` markes `phooey` as deprecated,
 running any cargo action on `bar` will emit a warning unless `barred` is also
-marked `deprecated.
+marked `deprecated`.
 
 Accessing this information will require access to the manifest as it will not be
 in the index.
