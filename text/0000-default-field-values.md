@@ -1685,9 +1685,9 @@ pub mod foo {
 
 ```rust
 pub mod foo {
-    pub(default) struct Alpha {
-        beta: u8 = 42,
-        gamma: bool = true,
+    struct Alpha {
+        pub(default) beta: u8 = 42,
+        pub(default) gamma: bool = true,
     }
 }
 ```
