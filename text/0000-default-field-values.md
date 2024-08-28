@@ -1924,6 +1924,9 @@ values, it would be possible to allow non-const values as well, potentially
 allowed but linted against. Expanding the kind of values that can be accepted
 can be expanded in the future.
 
+Of note, `Default` implementations are not currently `~const`, but that is
+something to be addressed by making them `~const` when suitable instead.
+
 ## Lint against explicit `impl Default` when `#[derive(Default)]` would be ok
 
 As a future improvement, we could nudge implementors towards leveraging the
