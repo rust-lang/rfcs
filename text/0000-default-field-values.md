@@ -564,6 +564,42 @@ let _ = Foo { .. }; // Currently forbidden
 Would be *allowed*, changing the meaning of this code in a way that goes against
 user intention.
 
+Some alternatives present for the case mentioned above can be:
+
+- Add a private non-defaulted field:
+  ```rust
+  #[non_exhaustive]
+  pub struct Config {
+      pub width: u16 = 640,
+      pub height: u16 = 480,
+      __priv: PhantomData<()>
+  }
+  ```
+  which disallows the following
+  ```rust
+  let _ = Config { .. };
+  let _ = Config { width: 800, height: 600, .. };
+  ```
+  at the cost of forcing the API-internal construction of `Config` to specify `__priv`
+  everywhere.
+- If defaulting private fields is allowed outside of the current crate, or that behavior
+  can be explicitly set by the user, then the following:
+  ```rust
+  #[non_exhaustive]
+  pub struct Config {
+      pub width: u16 = 640,
+      pub height: u16 = 480,
+      __priv: PhantomData<()> = PhantomData,
+  }
+  ```
+  still disallows the following
+  ```rust
+  let _ = Config { .. };
+  let _ = Config { width: 800, height: 600, .. };
+  ```
+  while also allowing precisely that syntax within the API-internal constructions of
+  `Config`.
+
 ## Defaults for `enum`s
 
 The ability to give fields default values is not limited to `struct`s.
@@ -1552,7 +1588,9 @@ this RFC so that constructor functions are regained if so desired.
 
    As an alternative, users who desire the semantics described above can
    omit `#[non_exhaustive]` from their type and instead add a private
-   defaulted field that has a ZST.
+   defaulted field that has a ZST, if the construction of structs with
+   private fields is allowed. If they are not, then the attribute is still
+   relevant and needed to control the accepted code to force `..`.
 
 ## `enum` variants
 
@@ -1619,7 +1657,6 @@ let _ = Foo { .. }; // Currently forbidden
 
 [RFC-0736]: https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md
 
-
 In this RFC we do not propose any changes to the normal visibility rules:
 constructing a `struct` with default fields requires those fields to be visible
 in that scope.
@@ -1659,8 +1696,8 @@ This used to be the behavior the Functional Record Update syntax had *before*
 private fields with values from a base expression.
 
 If a user wishes to keep other modules from constructing a `Foo` with
-`Foo { .. }` they can simply add, or keep, one private field without a default
-or add `#[non_exhaustive]`, as mising these two features is not allowed under
+`Foo { .. }` they can add, or keep, one private field without a default, or add
+(for now) `#[non_exhaustive]`, as mixing these two features is not allowed under
 this RFC. Situations where this can be important include those where `Foo` is
 some token for some resource and where fabricating a `Foo` may prove dangerous
 or worse unsound. This is however no different than carelessly adding
@@ -1679,7 +1716,7 @@ such as an attribute or item modifier:
 
 ```rust
 pub mod foo {
-    #[allow_private_defaults]
+    #[allow_private_defaults(gamma)]
     pub struct Alpha {
         beta: u8 = 42,
         gamma: bool = true,
