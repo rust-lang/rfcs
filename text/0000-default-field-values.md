@@ -259,6 +259,8 @@ linearly with the number of fields.
 
 ### Imperfect derives
 
+[perfect derives]: https://smallcultfollowing.com/babysteps/blog/2022/04/12/implied-bounds-and-perfect-derive/
+
 One thing to notice, is that taking default values into consideration during the
 desugaring of `#[derive(Default)]` would allow to side-step the issue of our
 lack of [perfect derives], by making the desugaring syntactically check which
@@ -639,9 +641,9 @@ it had been attached to a `struct` with the same fields and field visibility.
 
 ### Interaction with `#[default]`
 
-[`#[default]`]: https://github.com/rust-lang/rfcs/pull/3107
+[default]: https://github.com/rust-lang/rfcs/pull/3107
 
-It is possible today to specify a [`#[default]` variant] in an enum so that it
+It is possible today to specify a [`#[default]` variant][default] in an enum so that it
 can be `#[derive(Default)]`. A variant marked with `#[default]` will use
 defaulted fields when present.
 
@@ -1653,7 +1655,7 @@ let _ = Foo { .. }; // Currently forbidden
 
 ## Privacy: building `struct`s with private defaulted fields
 
-[privacy]: #future-privacy
+[future-privacy]: #future-privacy
 
 [RFC-0736]: https://github.com/rust-lang/rfcs/blob/master/text/0736-privacy-respecting-fru.md
 
