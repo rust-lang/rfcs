@@ -44,16 +44,16 @@ let _ = Pet::default();
 
 ### For `struct`s
 
-[FRU]: https://doc.rust-lang.org/1.31.0/book/ch05-01-defining-structs.html#creating-instances-from-other-instances-with-struct-update-syntax
+[update-syntax]: https://doc.rust-lang.org/book/ch05-01-defining-structs.html#creating-instances-from-other-instances-with-struct-update-syntax
 
 Rust allows you to create an instance of a `struct` using the struct literal
 syntax `Foo { bar: expr, baz: expr }`. To do so, all fields in the `struct`
 must be assigned a value. This makes it inconvenient to create large `struct`s
-whose fields usually receive the same values.
-*[Functional record updates (FRU)][FRU]* can reduce noise when a `struct`
-derives `Default`, but are also invalid when the `struct` has inaccessible
-fields and do not allow the creation of an `impl` where *some* fields are
-mandatory.
+whose fields usually receive the same values. It also allows you construct [a
+new instance of the same `struct` by consuming some (or all) of the fields of
+an existing value][update-syntax], which can reduce noise when a `struct` derives `Default`,
+but are also invalid when the `struct` has inaccessible fields and do not allow
+the creation of an `impl` where *some* fields are mandatory.
 
 To work around these shortcomings, you can create constructor functions:
 
@@ -1693,7 +1693,7 @@ functions in `beta` to access `field`'s value, the value `42` or any other
 remains at all times private to `alpha`. Therefore, privacy, and by extension
 soundness, is preserved.
 
-This used to be the behavior the Functional Record Update syntax had *before*
+This used to be the behavior the [Functional Record Update syntax had *before*
 [RFC-0736], where we previously allowed for the construction of a value with
 private fields with values from a base expression.
 
