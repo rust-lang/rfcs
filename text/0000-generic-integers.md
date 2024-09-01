@@ -282,7 +282,7 @@ Since the `uN` modules are currently deprecated, no `std::u` or `std::i` module 
 Due to the presence of edge cases like `N = 0` and `N = 1`, it feels reasonable to add in a few lints to prevent people from doing silly things like:
 
 * casting anything to `u<0>` or `i<0>` (these are just the singleton zero, and so a cast is a meaningless operation)
-* coercing a literal integer to a generic integer (anything besides zero might overflow without a restriction on `N`, and once restrictions on `N` become possible)
+* coercing a literal integer to a generic integer (anything besides zero might overflow without a restriction on `N`, and once restrictions on `N` become possible, we can take that into account)
 
 Preferably, a lot of the lints surrounding generic integers should be added to clippy before being accepted into the compiler, since it's likely many of them will cause more headaches than they're worth. We can continue to investigate possible lints to avoid these errors.
 
@@ -352,7 +352,7 @@ Crates like [`u`], [`bounded-integer`], and [`intx`] exist, but they come with t
 A library solution really doesn't feel like the right option here. While libraries can create general integer *traits* to work over all of the existing `uN` and `iN` types, they can't easily make generic integer types.
 
 [`u`]: https://docs.rs/u
-[`bounded-integers`]: https://docs.rs/bounded-integer
+[`bounded-integer`]: https://docs.rs/bounded-integer
 [`intx`]: https://docs.rs/intx
 
 ## Going without
