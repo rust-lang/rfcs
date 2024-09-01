@@ -366,11 +366,9 @@ This is always an option, but hopefully it seems like a worse option after all t
 * [Zulip RFC revival topic.][Zulip]
 * [Generic integers in Zig.][Zig]
 * [Generic integers in C23.][`_BitInt`]
-* [Proposal to add generic integers in Swift.][Swift]
 * Probably several others discussions I'm missing.
 
 [Zulip]: https://rust-lang.zulipchat.com/#narrow/stream/260443-project-const-generics/topic/adding.20int.3CN.3E
-[Swift]: https://forums.swift.org/t/integer-generic-parameters/74181
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
