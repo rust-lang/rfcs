@@ -1,7 +1,7 @@
 - Feature Name: `guard_patterns`
 - Start Date: 2024-05-13
 - RFC PR: [rust-lang/rfcs#3637](https://github.com/rust-lang/rfcs/pull/3637)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#129967](https://github.com/rust-lang/rust/issues/129967)
 
 # Summary
 
