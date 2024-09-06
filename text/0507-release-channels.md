@@ -3,7 +3,7 @@
 - Rust Issue: [rust-lang/rust#20445](https://github.com/rust-lang/rust/issues/20445)
 
 # Summary
-
+guibescos:fix/recursive-idl-gen
 This RFC describes changes to the Rust release process, primarily the
 division of Rust's time-based releases into 'release channels',
 following the 'release train' model used by e.g. Firefox and Chrome;
