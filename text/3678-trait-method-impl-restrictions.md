@@ -78,9 +78,10 @@ fn takes_mytrait(m: &impl MyTrait) {
 }
 ```
 
-Note that in some cases, the compiler may be able to avoid placing an
+Note that in some cases, the compiler might choose to avoid placing an
 `impl`-restricted method in the trait's vtable, if there is only a single
-implementation that can ever be invoked.
+implementation that can ever be invoked and the implementation does not benefit
+from monomorphization.
 
 In addition to `impl(visibility)`, a trait method or associated function can
 also use `impl()`, which does not permit overriding the method *anywhere*, even
