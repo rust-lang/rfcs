@@ -1,4 +1,4 @@
-- Feature Name: `trait_method_impl_restrictions`
+- Feature Name: `final`
 - Start Date: 2024-07-20
 - RFC PR: [rust-lang/rfcs#3678](https://github.com/rust-lang/rfcs/pull/3678)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,9 +6,8 @@
 # Summary
 [summary]: #summary
 
-Support restricting implementation of individual methods within traits, as an
-extension of the restriction mechanism defined in
-[RFC 3323](https://rust-lang.github.io/rfcs/3323-restrictions.html).
+Support restricting implementation of individual methods within traits, using
+the already reserved `final` keyword.
 
 # Motivation
 [motivation]: #motivation
@@ -18,15 +17,10 @@ implementations, which become available on every implementation of the trait.
 However, the implementer of the trait can still provide their own
 implementation of such a method. In some cases, the trait does not want to
 allow implementations to vary, and instead wants to guarantee that all
-implementations of the trait (or all third-party implementations outside the
-module or crate) use an identical method implementation. For instance, this may
-be an assumption required for correctness.
+implementations of the trait use an identical method implementation. For
+instance, this may be an assumption required for correctness.
 
 This RFC allows restricting the implementation of trait methods.
-
-Alternatively, a trait may wish to allow implementations within the same crate
-to override a method, but not allow external implementations to override that
-method.
 
 This mechanism also faciliates marker-like traits providing no implementable
 methods, such that implementers only choose whether to provide the trait and
@@ -47,30 +41,20 @@ instance:
 
 ```rust
 trait MyTrait: Display {
-    impl(crate) fn method(&self) {
+    final fn method(&self) {
         println!("MyTrait::method: {self}");
     }
 }
 ```
 
-Note that if a method or associated function marked with an `impl` restriction
-does not have a default body, the trait will not be possible to implement
-outside the indicated visibility. For instance, if a trait has a method with
-`impl(crate)` and no default body, the trait will not be possible to implement
-outside the crate.
+A method or associated function marked as `final` must have a default body.
 
-When implementing a trait, the compiler checks if any implemented methods or
-associated functions have an `impl` restriction. If so, and the restriction
-does not include the current module, the compiler will emit an error on the
-implementation. If the method or associated function has a default
-implementation in the trait, the compiler will suggest removing the
-implementation from the `impl Trait for` block; otherwise, the compiler will
-state that the trait cannot be implemented here because the method or
-associated function cannot be implemented here.
+When implementing a trait, the compiler will emit an error if the
+implementation attempts to define any method or associated function marked as
+`final`, and will emit a suggestion to delete the implementation.
 
-In every other way, an `impl`-restricted method or associated function acts
-identically to any other method or associated function, and can be invoked
-accordingly:
+In every other way, a `final` method or associated function acts identically to
+any other method or associated function, and can be invoked accordingly:
 
 ```rust
 fn takes_mytrait(m: &impl MyTrait) {
@@ -78,15 +62,14 @@ fn takes_mytrait(m: &impl MyTrait) {
 }
 ```
 
-Note that in some cases, the compiler might choose to avoid placing an
-`impl`-restricted method in the trait's vtable, if there is only a single
-implementation that can ever be invoked and the implementation does not benefit
-from monomorphization.
+Note that in some cases, the compiler might choose to avoid placing a `final`
+method in the trait's vtable, if the one-and-only implementation does not
+benefit from monomorphization.
 
-In addition to `impl(visibility)`, a trait method or associated function can
-also use `impl()`, which does not permit overriding the method *anywhere*, even
-in the current module. In this case, all implementations will always use the
-default body.
+Note that removing a `final` restriction is always forwards-compatible.
+
+The keyword `final` has been reserved since Rust 1.0, so this feature can ship
+identically in all editions.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -96,36 +79,24 @@ As with any language feature, this adds more surface area to the language.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Rather than using the `impl(visibility)` syntax from
-[RFC 3323](https://rust-lang.github.io/rfcs/3323-restrictions.html), we could
-instead use the `final` keyword, which is a reserved and unused keyword in all
-editions of Rust. This would be similar to the use of `final` in other
-languages. However, we already have RFC 3323, and the use of the
-`impl(visibility)` syntax is completely consistent with the semantics defined
-there. The `impl` syntax is more flexible, supporting restrictions such as
-`impl(self)` or `impl(crate)` that permit implementation in certain contexts.
+Rather than using `final`, we could use the `impl(visibility)` syntax from [RFC
+3323](https://rust-lang.github.io/rfcs/3323-restrictions.html). This would
+allow more flexibility (such as overriding a method within the crate but not
+outside the crate), and would be consistent with other uses of RFC 3323. On the
+other hand, such flexibility would come at the cost of additional complexity,
+and would be less familiar to people who have seen `final` in other languages.
+We can always add such syntax for the more general cases in the future if
+needed; see the future possibilities section.
 
-We could potentially use the `final` keyword with an optional visibility,
-effectively using `final` in place of `impl` in this proposal. However, that
-would be inconsistent with RFC 3323, and seems potentially confusing depending
-on whether users perceive `final` as having positive or negative polarity. (In
-other words, does `final(crate)` mean "it's final within the crate" or "it's
-final *except* within the crate"?)
-
-`impl(self)` on a trait method may look slightly incongruous, because the
-`self` in `impl(self)` refers to the scope of the module, while the method will
-reference `self` referring to an instance of an object. However, `impl(self)`
-syntax is already used within RFC 3323, and introducing a different syntax
-seems likely to lead to *greater* confusion.
+We could use `#[final]` rather than `final`. However, since we already have the
+`final` keyword reserved, using that keyword seems syntactically simpler than
+an attribute.
 
 It's possible to work around the lack of this functionality by placing the
 additional methods in an extension trait with a blanket implementation.
 However, this is a user-visible API difference: the user must import the
 extension trait, and use methods from the extension trait rather than from the
 base trait.
-
-In addition, relaxing an `impl` restriction is always forwards-compatible,
-without any additional complexity.
 
 # Prior art
 [prior-art]: #prior-art
@@ -135,12 +106,18 @@ This feature is similar to `final` methods in Java or C++.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-We could theoretically allow `impl` restrictions on associated types, as well.
+We could add additional flexibility using the restriction mechanism defined in
+[RFC 3323](https://rust-lang.github.io/rfcs/3323-restrictions.html), using
+syntax like `impl(crate)` to restrict implementation of a method or associated
+function outside a crate while allowing implementations within the crate.
+(Likewise with `impl(self)` or any other visibility.)
+
+We could theoretically allow `final` restrictions on associated types, as well.
 This seems less useful, but if it's trivial to implement we might want to
 support it.
 
 We could support `impl(unsafe)`, to make a trait safe to implement if *not*
-overriding a method, and only unsafe to implement if overriding a method.
+overriding the method, and only unsafe to implement if overriding the method.
 
 We could integrate this with stability markers, to stabilize calling a method
 but keep it unstable to *implement*.
