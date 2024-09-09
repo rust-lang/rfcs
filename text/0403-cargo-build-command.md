@@ -184,7 +184,7 @@ are target triples. The dependencies section underneath is the same as the
 top-level dependencies section in terms of functionality.
 
 Semantically, platform specific dependencies are activated whenever Cargo is
-compiling for a the exact target. Dependencies in other `$target` sections
+compiling for the exact target. Dependencies in other `$target` sections
 will not be compiled.
 
 However, when generating a lockfile, Cargo will always download all dependencies

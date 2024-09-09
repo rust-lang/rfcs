@@ -537,7 +537,7 @@ Where `rust-version` is used by cargo to determine whether to pass along this
 lint and `threshold` is used by the tool.  We'd need to define how to
 distinguish between reserved and unreserved field names.
 
-Tool-wide configuration would be in in the `lints.<tool>.metadata` table and be
+Tool-wide configuration would be in the `lints.<tool>.metadata` table and be
 completely ignored by `cargo`.  For example:
 ```toml
 [lints.clippy.metadata]

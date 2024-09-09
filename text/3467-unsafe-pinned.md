@@ -412,7 +412,7 @@ However, of course one could imagine alternatives:
 - `UnsafePinned` could affect aliasing guarantees *both* on mutable and shared references. This would avoid the currently rather subtle situation that arises when one of many aliasing `&mut UnsafePinned<T>` is cast or coerced to `&UnsafePinned<T>`: that is a read-only shared reference and all aliases must stop writing!
   It would make this type strictly more 'powerful' than `UnsafeCell` in the sense that replacing `UnsafeCell` by `UnsafePinned` would always be correct. (Under the RFC as written, `UnsafeCell` and `UnsafePinned` can be nested to remove aliasing requirements from both shared and mutable references.)
 
-  If we don't do this, we could consider removing `get` since since it seems too much like a foot-gun.
+  If we don't do this, we could consider removing `get` since it seems too much like a foot-gun.
   But that makes shared references to `UnsafePinned` fairly pointless. Shared references to generators/futures are basically useless so it is unclear what the potential use-cases here are.
 
 - Instead of introducing a new type, we could say that `UnsafeCell` affects *both* shared and mutable references. That would lose some optimization potential on types like `&mut Cell<T>`, but would avoid the footgun of coercing an `&mut UnsafePinned<T>` to `&UnsafePinned<T>`. That said, so far the author is not aware of Miri detecting code that would run into this footgun (and Miri is [able to detect such issues](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=aab417b535f7dbd266fbfe470ea208c7)).
