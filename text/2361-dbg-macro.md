@@ -140,7 +140,7 @@ However a library can always define another macro with the same name and shadow 
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-[RFC 2173] and provides an a more complex alternative that offers more control but is also more complex.
+[RFC 2173] and provides a more complex alternative that offers more control but is also more complex.
 This RFC was designed with the goal of being a simpler and thus better fit for the standard library.
 
 ## Alternative: tweaking formatting

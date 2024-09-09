@@ -215,7 +215,7 @@ impl Index<std::range::Range<usize>> for Bar { ... }
 
 ## Diagnostics
 
-There is a substantial amount of educational material in the wild which assumes the the range types implement `Iterator`. If a user references this outdated material, it is important that compiler errors guide them to the new solution.
+There is a substantial amount of educational material in the wild which assumes the range types implement `Iterator`. If a user references this outdated material, it is important that compiler errors guide them to the new solution.
 
 ```
 error[E0599]: `Range<usize>` is not an iterator
