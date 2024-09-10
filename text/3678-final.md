@@ -112,7 +112,7 @@ syntax like `impl(crate)` to restrict implementation of a method or associated
 function outside a crate while allowing implementations within the crate.
 (Likewise with `impl(self)` or any other visibility.)
 
-We could theoretically allow `final` restrictions on associated types, as well.
+We could theoretically allow `final` restrictions on associated consts and types, as well.
 This seems less useful, but if it's trivial to implement we might want to
 support it.
 
