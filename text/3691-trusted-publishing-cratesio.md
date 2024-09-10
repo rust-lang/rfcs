@@ -189,7 +189,7 @@ For GitHub Actions, the crate author will need to provide:
 
 With a _Trusted Publisher Configuration_ in place, a example GitHub Actions workflow may look like this:
 
-```yaml=
+```yaml
 name: Publish Crate
 
 # Some may opt to use a trigger based on a push with a tag instead
@@ -248,7 +248,7 @@ The crate owner will need to provide which crate the particular Trusted Publishe
 
 The Trusted Publisher Configuration might look like the below, represented in JSON format:
 
-```json=
+```json
 {
     "name": "trusted-publisher-config-for-sampleproject",
     "required-claims": {
