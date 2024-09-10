@@ -169,8 +169,8 @@ Prior to publishing a crate through a GitHub Actions workflow, the crate author 
 
 > [!Note]
 > Initially, a _Trusted Publisher Configuration_ can only be created after an initial manual publishing of a crate.
-
-> See [Future Possibilities][#future-possibilities] for future plans to alleviate this pain.
+> 
+> See [Future Possibilities](#future-possibilities) for future plans to alleviate this pain.
 
 Without a corresponding _Trusted Publisher Configuration_ any attempts from a GitHub Action workflow to exchange an ID token for an access token from crates.io will be unauthorized and fail. 
 
