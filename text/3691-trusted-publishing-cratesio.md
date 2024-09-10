@@ -2,7 +2,7 @@
 
 - Feature Name: crates-io-trusted-publishing
 - Start Date: 2024-09-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3691](https://github.com/rust-lang/rfcs/pull/3691)
 
 ## Summary
 [summary]: #summary
