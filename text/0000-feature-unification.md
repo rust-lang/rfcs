@@ -1,17 +1,40 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: `feature-unification`
+- Start Date: 2024-09-11
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+Allow users to control feature unifcation.
+
+Related issues:
+- [#4463: Feature selection in workspace depends on the set of packages compiled](https://github.com/rust-lang/cargo/issues/4463)
+- [#8157: --bin B resolves features differently than -p B in a workspace](https://github.com/rust-lang/cargo/issues/8157)
+- [#13844: The cargo build --bins re-builds binaries again after cargo build --all-targets](https://github.com/rust-lang/cargo/issues/13844)
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+Today, when Cargo is building, features in dependencies are enabled baed on the set of packages selected to build.
+This is an attempt to balance
+- Build speed: we should reuse builds between packages within the same invocation
+- Ability to verify features for a given package
+
+This isn't always ideal.
+
+If a user is building an application, they may be jumping around the application's components which are packages within the workspace.
+The final artifact is the same but Cargo will select different features depending on which package they are currently building,
+causing build churn for the same set of dependencies that, in the end, will only be used with the same set of features.
+The "cargo-workspace-hack" is a pattern that has existed for years
+(e.g. [`rustc-workspace-hack`](https://crates.io/crates/rustc-workspace-hack))
+where users have all workspace members that depend on a generated package that depends on direct-dependemncies in the workspace along with their features.
+Tools like [`cargo-hakari`](https://crates.io/crates/cargo-hakari) automate this process.
+To allow others to pull in a package depending on a workspace-hack package as a git dependency, you then need to publish the workspace-hack as an empty package with no dependencies
+and then locally patch in the real instance of it.
+
+This also makes testing of features more difficult because a user can't just run `cargo check --workspace` to verify that the correct set of features are enabled.
+This has led to the rise of tools like [cargo-hack](https://crates.io/crates/cargo-hack) which de-unify packages.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -30,68 +53,78 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+### Rust Version
 
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
+We'll add two new modes to feature unifcation:
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+**Unify features across the workspace, independent of the selected packages**
+
+This would be built-in support for "cargo-workspace-hack".
+
+This would require effectively changing from
+1. Resolve dependencies
+2. Filter dependencies down for current target and selected packages
+3. Resolve features
+
+To
+1. Resolve dependencies
+2. Filter dependencies down for current target
+3. Resolve features
+4. Filter for selected packages
+
+**Features will be evaluated for each package in isolation**
+
+This will require building duplicate copies of build units when there is disjoint sets of features.
+
+For example purposes., this could be implemented as either
+- Loop over the packages, resolving, and then run a build plan for that package
+- Resolve for each package and generate everything into the same build plan
+
+This is not prescriptive of the implementation but to illustrate what the feature does.
+
+**Note:** these features do not need to be stabilized together.
+
+##### `resolver.feature-unification`
+
+*(update to [Configuration](https://doc.rust-lang.org/cargo/reference/config.html))*
+
+* Type: string
+* Default: "selected"
+* Environment: `CARGO_RESOLVER_FEATURE_UNIFICATION`
+
+Specify which packages participate in [feature unification](https://doc.rust-lang.org/cargo/reference/features.html#feature-unification).
+
+* `selected`: merge dependency features from all package specified for the current build
+* `workspace`: merge dependency features across all workspace members, regardless of which packages are specified for the current build
+* `package`: dependency features are only enabled for each package, preferring duplicate builds of dependencies to when different feature sets are selected
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+This increases entropy within Cargo and the universe at large.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+This is done in the config instead of the manifest:
+- As this can change from run-to-run, this covers more use cases
+- As this fits easily into the `resolver` table. there is less design work
+
+This will not support exceptions for mutually exclusive features because those are officially unsupported.
+Instead, effort should be put towards [official mutually exclusive globals](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 
 # Prior art
 [prior-art]: #prior-art
 
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
+[`cargo-hakari`](https://crates.io/crates/cargo-hakari) is a "cargo-workspace-hack" generator that builds a graph off of `cargo metadata` and re-implements feature unification.
 
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+[cargo-hack](https://crates.io/crates/cargo-hack) can run each selected package in a separate `cargo` invocation to prevent unification.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+Add a related field to manifests that the config can override.
