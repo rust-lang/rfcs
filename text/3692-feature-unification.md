@@ -95,6 +95,9 @@ If someone enables mutually exclusive features in different packages, then `work
 Officially, features are supposedd to be additive., making mutuallyu exclusive features officially unsupported.
 Instead, effort should be put towards [official mutually exclusive globals](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 
+Some features cannot be enabled in some packages, like a `no_std` package not wanting `std` features.
+These workspaces will not be able to use `workspace` unification.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
