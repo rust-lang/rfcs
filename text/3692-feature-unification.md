@@ -74,7 +74,7 @@ To
 
 **Features will be evaluated for each package in isolation**
 
-This will require building duplicate copies of build units when there is disjoint sets of features.
+This will require building duplicate copies of build units when there are disjoint sets of features.
 
 For example purposes., this could be implemented as either
 - Loop over the packages, resolving, and then run a build plan for that package
