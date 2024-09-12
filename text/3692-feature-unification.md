@@ -92,7 +92,7 @@ Specify which packages participate in [feature unification](https://doc.rust-lan
 This increases entropy within Cargo and the universe at large.
 
 If someone enables mutually exclusive features in different packages, then `workspace` unification will fail.
-Officially, features are supposedd to be additive., making mutuallyu exclusive features officially unsupported.
+Officially, features are supposed to be additive, making mutually exclusive features officially unsupported.
 Instead, effort should be put towards [official mutually exclusive globals](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 
 Some features cannot be enabled in some packages, like a `no_std` package not wanting `std` features.
