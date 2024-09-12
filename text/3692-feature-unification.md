@@ -43,8 +43,6 @@ This has led to the rise of tools like [cargo-hack](https://crates.io/crates/car
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-### Rust Version
-
 We'll add two new modes to feature unification:
 
 **Unify features across the workspace, independent of the selected packages**
