@@ -115,7 +115,7 @@ This is done in the config instead of the manifest:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- This keeps buid/host feature unification behavior delegated to `workspace.resolver`
+- This keeps build/host feature unification behavior delegated to `workspace.resolver`
   - `cargo hakari` exposes multiple ways to configure this, see [unify-target-host](https://docs.rs/cargo-hakari/latest/cargo_hakari/config/index.html#unify-target-host)
   - For Oxide this reduced build units from 1900 to 1500, dramatically improving compile times (remembered off the top of head)
   - However, this required effort to make sure additional settings are unified between host and target
