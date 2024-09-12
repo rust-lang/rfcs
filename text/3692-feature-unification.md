@@ -120,6 +120,7 @@ This is done in the config instead of the manifest:
   - For Oxide this reduced build units from 1900 to 1500, dramatically improving compile times, see https://github.com/oxidecomputer/omicron/pull/4535
   - However, this required effort to make sure additional settings are unified between host and target
   - This might be somewhat related to [`-Ztarget-applies-to-host`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#target-applies-to-host)
+  - If this got pulled in, there would no longer be enough of a case to justify `cargo-hakari` development
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
