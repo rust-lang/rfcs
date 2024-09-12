@@ -16,7 +16,7 @@ Related issues:
 # Motivation
 [motivation]: #motivation
 
-Today, when Cargo is building, features in dependencies are enabled baed on the set of packages selected to build.
+Today, when Cargo is building, features in dependencies are enabled based on the set of packages selected to build.
 This is an attempt to balance
 - Build speed: we should reuse builds between packages within the same invocation
 - Ability to verify features for a given package
