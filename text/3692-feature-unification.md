@@ -28,7 +28,7 @@ The final artifact is the same but Cargo will select different features dependin
 causing build churn for the same set of dependencies that, in the end, will only be used with the same set of features.
 The "cargo-workspace-hack" is a pattern that has existed for years
 (e.g. [`rustc-workspace-hack`](https://crates.io/crates/rustc-workspace-hack))
-where users have all workspace members that depend on a generated package that depends on direct-dependemncies in the workspace along with their features.
+where users have all workspace members that depend on a generated package that depends on direct-dependencies in the workspace along with their features.
 Tools like [`cargo-hakari`](https://crates.io/crates/cargo-hakari) automate this process.
 To allow others to pull in a package depending on a workspace-hack package as a git dependency, you then need to publish the workspace-hack as an empty package with no dependencies
 and then locally patch in the real instance of it.
