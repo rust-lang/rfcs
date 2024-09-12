@@ -55,7 +55,7 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 
 ### Rust Version
 
-We'll add two new modes to feature unifcation:
+We'll add two new modes to feature unification:
 
 **Unify features across the workspace, independent of the selected packages**
 
