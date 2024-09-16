@@ -1,6 +1,6 @@
 - Feature Name: `cfg_boolean_literal`
 - Start Date: 2024-09-16
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3695](https://github.com/rust-lang/rfcs/pull/3695)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
