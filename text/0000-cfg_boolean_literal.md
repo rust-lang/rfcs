@@ -57,7 +57,7 @@ By making it more convenient, this may encourage unconditionally disabled blocks
 # Prior art
 [prior-art]: #prior-art
 
-Many languages with conditional compilation constructs have a way to disable a blog entirely.
+Many languages with conditional compilation constructs have a way to disable a block entirely.
 
 - C: `#if 0`
 - C#: `#if false`
