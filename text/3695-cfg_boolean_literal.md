@@ -50,8 +50,7 @@ By making it more convenient, this may encourage unconditionally disabled blocks
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- This could instead be spelled as `cfg(disabled|enabled)`, or `cfg(none)` for disabling code only
-- Giving special meaning to a valid identifier can change the meaning of existing code (although `check-cfg` warnings should reduce the impact of this)
+- This could instead be spelled as `cfg(disabled|enabled)`, or `cfg(none)` for disabling code only. However, giving special meaning to a valid identifier can change the meaning of existing code (although `check-cfg` warnings should reduce the impact of this)
 - As the existing predicates evaluate to booleans, using boolean literals is the most intuitive way to spell this
 
 # Prior art
