@@ -42,6 +42,8 @@ And the line
 
 should be added to the explanation of the predicates.
 
+`cfg(r#true)` and `cfg(r#false)` should continue to work as they did previously (i.e. enabled when `--cfg true`/`--cfg false` are passed).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
