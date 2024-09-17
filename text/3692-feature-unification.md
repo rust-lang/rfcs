@@ -181,3 +181,13 @@ Like with `resolver.incompatible-rust-version`, a solution for this would overri
 
 For Oxide `unify-target-host` reduced build units from 1900 to 1500, dramatically improving compile times, see https://github.com/oxidecomputer/omicron/pull/4535
 If integrated into cargo, there would no longer be a use case for the current maintainer of `cargo-hakari` to continue maintenance.
+
+If we supported `dev-dependencies` / `dependencies` like `resolver = "1"`, it
+could help with cases like `cargo miri` where through `dev-dependencies` a
+`libc` feature is enabled. preventing reuse of builds between `cargo build` and
+`cargo test` for local development.
+
+In helping this case, we should make clear that this can also break people
+- `fail` injects failures into your production code, only wanting it enabled for tests
+- Tests generally enabled `std` on dependencies for `no_std` packages
+- We were told of use cases around private keys where `Clone` is only provided when testing but not for production to help catch the leaking of secrets
