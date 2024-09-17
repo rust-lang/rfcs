@@ -73,4 +73,4 @@ None at the moment.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I suspect that having a similar `decode_utf8` may be desired.
+I suspect that having a similar `decode_utf8` method may be desired.
