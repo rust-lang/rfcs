@@ -69,6 +69,8 @@ For example purposes., this could be implemented as either
 - Resolve for each package and generate everything into the same build plan
 
 This is not prescriptive of the implementation but to illustrate what the feature does.
+The initial implementation may be sub-optimal.
+Likely, the implementation could be improved over time.
 
 **Note:** these features do not need to be stabilized together.
 
@@ -97,6 +99,8 @@ Instead, effort should be put towards [official mutually exclusive globals](http
 
 Some features cannot be enabled in some packages, like a `no_std` package not wanting `std` features.
 These workspaces will not be able to use `workspace` unification.
+For now, unifying for the `"workspace"` is primarily targeted at single-application workspaces.
+The other config fields can always be used instead.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -104,6 +108,9 @@ These workspaces will not be able to use `workspace` unification.
 This is done in the config instead of the manifest:
 - As this can change from run-to-run, this covers more use cases
 - As this fits easily into the `resolver` table. there is less design work
+
+We could extend this with configuration for to exclude packages for the various use cases mentioned.
+Supporting excludes as environemnt/project configuration complexity as well as implementation complexity.
 
 # Prior art
 [prior-art]: #prior-art
