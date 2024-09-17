@@ -17,7 +17,7 @@ Currently, the easiest ways for programmers to do this are to comment out the co
 
 By allowing `#[cfg(false)]`, we can provide programmers with an explicit and more intuitive way to disable code, while retaining IDE functionality.
 
-Allowing `cfg(true)` would also make temporarily enabling `cfg`'ed out code easier; a `true` may be added to a `cfg(any(..))` list.
+Allowing `cfg(true)` would also make temporarily enabling `cfg`'ed out code easier; a `true` may be added to a `cfg(any(..))` list. Adding a `cfg(all())` is the current equivalent of this.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
