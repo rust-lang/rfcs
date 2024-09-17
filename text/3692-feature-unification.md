@@ -122,14 +122,62 @@ Supporting excludes as environemnt/project configuration complexity as well as i
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- This keeps build/host feature unification behavior delegated to `workspace.resolver`
-  - `cargo hakari` exposes multiple ways to configure this, see [unify-target-host](https://docs.rs/cargo-hakari/latest/cargo_hakari/config/index.html#unify-target-host)
-  - For Oxide this reduced build units from 1900 to 1500, dramatically improving compile times, see https://github.com/oxidecomputer/omicron/pull/4535
-  - However, this required effort to make sure additional settings are unified between host and target
-  - This might be somewhat related to [`-Ztarget-applies-to-host`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#target-applies-to-host)
-  - If this got pulled in, there would no longer be enough of a case to justify `cargo-hakari` development
+- How to name the config field to not block the future possibilities
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+### Manifest support
+
 Add a related field to manifests that the config can override.
+
+### Dependency version unification
+
+Unlike feature unification, dependency versions are alwayd unified across the
+entire workspace, making `Cargo.lock` the same regardless of which package you
+select or how you build.
+
+This can mask minimal-version bugs.
+If a version-req is lower than it needs, `-Zminimal-versions` won't resolve down to that to show the problem if another version req in the workspace is higher.
+We have `-Zdirect-minimal-versions` which will error if workspace members do not have the lowest version reqs of all of the workspace but that is brittle.
+
+If you have a workspace with multiple MSRVs, you can't verify your MSRV if you
+set a high-MSRV package's version req for a dependency that invalidates the
+MSRV-requirements of a low-MSRV package.
+
+We could offer an opt-in to per-package `Cargo.lock` files.  For builds, this
+could be implemented similar to `resolver.feature-unification = "package"`.
+
+This could run into problems with
+- `cargo update` being workspace-focused
+- third-party updating tools
+
+As for the MSRV-case, this would only help if you develop with the latest
+versions locally and then have a job that resolves down to your MSRVs.
+
+### Unify features in other settings
+
+[`workspace.resolver = "2"`](https://doc.rust-lang.org/cargo/reference/resolver.html#features) removed unification from the following scenarios
+- Cross-platform target unification
+- `build-dependencies` / `dependencies` unification
+- `dev-dependencies` / `dependencies` unification unless a dev target is enabled
+
+Depending on how we design this, the solution might be good enough to
+re-evaluate
+[build-target features](https://github.com/rust-lang/rfcs/pull/3374) as we
+could offer a way for users to opt-out of build-target unification.
+
+Like with `resolver.incompatible-rust-version`, a solution for this would override the defaults of `workspace.resolver`.
+
+`cargo hakaro` gives control over `build-dependencies` / `dependencies` unification with
+[`unify-target-host`](https://docs.rs/cargo-hakari/latest/cargo_hakari/config/index.html#unify-target-host):
+- [`none`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.None): Perform no unification across the target and host feature sets.
+  - The same as `resolver = "2"`
+- [`unify-if-both`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.UnifyIfBoth): Perform unification across target and host feature sets, but only if a dependency is built on both the target and the host.
+- [`replicate-target-on-host`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.ReplicateTargetOnHost): Perform unification across target and host feature sets, and also replicate all target-only lines to the host.
+- [`auto`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.Auto) (default): select `replicate-target-on-host` if a workspace member may be built for the host (used as a proc-macro or build-dependency)
+
+`unify-target-host` might be somewhat related to [`-Ztarget-applies-to-host`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#target-applies-to-host)
+
+For Oxide `unify-target-host` reduced build units from 1900 to 1500, dramatically improving compile times, see https://github.com/oxidecomputer/omicron/pull/4535
+If integrated into cargo, there would no longer be a use case for the current maintainer of `cargo-hakari` to continue maintenance.
