@@ -13,7 +13,7 @@
 
 The `encode_utf8` method (in `char`) is currently **not** marked as "const" and is therefore rendered unusable in scenarios that require const-compatibility.
 
-With the recent stabilisation of [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349/), implementing `encode_utf8` with the same parameters is trivial would yield no incompatibilities with existing code.
+With the recent stabilisation of [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349/), implementing `encode_utf8` with the same parameters is trivial and would yield no incompatibilities with existing code.
 
 I expect that implementing this RFC &ndash; despite its limited scope &ndash; will however prove useful in supporting compile-time string handling in the future.
 
@@ -72,3 +72,5 @@ None at the moment.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+I suspect that having a similar `decode_utf8` may be desired.
