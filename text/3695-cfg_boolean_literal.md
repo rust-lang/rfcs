@@ -44,6 +44,11 @@ should be added to the explanation of the predicates.
 
 `cfg(r#true)` and `cfg(r#false)` should continue to work as they did previously (i.e. enabled when `--cfg true`/`--cfg false` are passed).
 
+`true` and `false` should be expected everywhere Configuration Predicates are used, i.e.
+- the `#[cfg(..)]` attribute
+- the `cfg!(..)` macro
+- the `#[cfg_attr(.., ..)]` attribute
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
