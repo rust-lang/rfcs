@@ -1,7 +1,7 @@
 - Feature Name: `const_char_encode_utf8`
 - Start Date: 2024-09-17
 - RFC PR: [rust-lang/rfcs#3696](https://github.com/rust-lang/rfcs/pull/3696)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#130512](https://github.com/rust-lang/rust/issues/130512)
 
 # Summary
 [summary]: #summary
