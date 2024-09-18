@@ -80,7 +80,7 @@ Currently none that I know of.
 [unresolved-questions]: #unresolved-questions
 
 The problem with diagnostic degeneration could be solved by allowing the used formatters in const environments.
-I do not know if there already exists such as feature for use by the standard library.
+I do not know if there already exists such a feature for use by the standard library.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
