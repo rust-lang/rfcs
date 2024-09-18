@@ -41,6 +41,7 @@ This is not a breaking change.
 Other than just adding the `const` qualifier to the function prototype, the function body would have to be changed due to some constructs currently not being supported in constant expressions.
 
 A working implementation can be found at [`bjoernager/rust:const-char-encode-utf8`](https://github.com/bjoernager/rust/tree/const-char-encode-utf8).
+Note that this implementation assumes [`const_slice_from_raw_parts_mut`](https://github.com/rust-lang/rust/issues/67456/).
 
 # Drawbacks
 [drawbacks]: #drawbacks
