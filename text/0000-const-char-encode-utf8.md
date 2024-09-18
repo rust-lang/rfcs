@@ -51,7 +51,7 @@ Implementing this RFC at the current moment could degenerate diagnostics as the 
 The reference implementation resolves this by instead using a generic message, although this may not be desired:
 
 ```
-"encode_utf8: buffer does not have enough bytes to encode code point"
+encode_utf8: buffer does not have enough bytes to encode code point
 ```
 
 This *could* be changed to have the number of bytes required hard-coded, but doing so may instead sacrifice code readability.
