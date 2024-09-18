@@ -7,6 +7,7 @@
 [summary]: #summary
 
 `char::encode_utf8` should be marked const to allow for compile-time conversions.
+Considering mutable references now being stable in const environments, this implementation would be trivial even without compiler magic.
 
 # Motivation
 [motivation]: #motivation
@@ -44,7 +45,7 @@ A working implementation can be found at [`bjoernager/rust:const-char-encode-utf
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Implementing this RFC at the current moment could degenerate diagnostics as the `assert` call in `encode_utf8_raw` relies on formatters that are non-const.
+Implementing this RFC at the current moment could degenerate diagnostics as the `assert` call in the `encode_utf8_raw` function relies on formatters that are non-const.
 
 The reference implementation resolves this by instead using a generic message, although this may not be desired:
 
@@ -78,7 +79,8 @@ Currently none that I know of.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None at the moment.
+The problem with diagnostic degeneration could be solved by allowing the used formatters in const environments.
+I do not know if there already exists such as feature for use by the standard library.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
