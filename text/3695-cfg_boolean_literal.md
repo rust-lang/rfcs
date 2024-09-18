@@ -70,6 +70,6 @@ Searching for `cfg(false)` on [GitHub](https://github.com/search?q=%23%5Bcfg%28f
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-A future lint could suggest replacing constructs such as `cfg(any())` with `cfg(false)`.
+A future lint could suggest replacing constructs such as `cfg(any())` with `cfg(false)`, and `cfg(all())` with `cfg(true)`.
 
 The `check-cfg` lint could be with a special case for identifiers such as `FALSE` and suggest `cfg(false)` instead.
