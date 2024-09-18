@@ -13,7 +13,7 @@
 
 The `encode_utf8` method (in `char`) is currently **not** marked as "const" and is therefore rendered unusable in scenarios that require const-compatibility.
 
-With the recent stabilisation of [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349/), implementing `encode_utf8` with the same parameters is trivial and would (in practice) yield no incompatibilities with existing code.
+With the recent stabilisation of [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349/), implementing `encode_utf8` with the current signature is trivial and would (in practice) yield no incompatibilities with existing code.
 
 I expect that implementing this RFC &ndash; despite its limited scope &ndash; will however prove useful in supporting compile-time string handling in the future.
 
@@ -37,7 +37,7 @@ This is not a breaking change.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Other than just adding the `const` qualifier to the function signature, the function body would have to be changed due to some constructs currently not being supported in constant expressions.
+Other than just adding the `const` qualifier to the function prototype, the function body would have to be changed due to some constructs currently not being supported in constant expressions.
 
 A working implementation can be found at [`bjoernager/rust:const-char-encode-utf8`](https://github.com/bjoernager/rust/tree/const-char-encode-utf8).
 
@@ -46,7 +46,13 @@ A working implementation can be found at [`bjoernager/rust:const-char-encode-utf
 
 Implementing this RFC at the current moment could degenerate diagnostics as the `assert` call in `encode_utf8_raw` relies on formatters that are non-const.
 
-The reference implementation resolves this by instead using a generic message, although this may not be desired.
+The reference implementation resolves this by instead using a generic message, although this may not be desired:
+
+```
+"encode_utf8: buffer does not have enough bytes to encode code point"
+```
+
+This *could* be changed to have the number of bytes required hard-coded, but doing so may instead sacrifice code readability.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -55,6 +61,10 @@ If the initial diagnostics are deemed to be worth more than const-compatibility 
 
 ```rust
 pub const unsafe fn encode_utf8_unchecked(self, dst: &mut [u8]) -> &mut str;
+
+// ... or...
+
+pub const unsafe fn encode_utf8_unchecked(self, dst: *mut u8) -> *mut str;
 ```
 
 This function would perform the same operation but without testing the length of `dst`.
