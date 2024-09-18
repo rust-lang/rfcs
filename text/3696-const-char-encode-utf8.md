@@ -1,6 +1,6 @@
 - Feature Name: `const_char_encode_utf8`
 - Start Date: 2024-09-17
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3696](https://github.com/rust-lang/rfcs/pull/3696)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -41,6 +41,8 @@ This is not a breaking change.
 Other than just adding the `const` qualifier to the function prototype, the function body would have to be changed due to some constructs currently not being supported in constant expressions.
 
 A working implementation can be found at [`bjoernager/rust:const-char-encode-utf8`](https://github.com/bjoernager/rust/tree/const-char-encode-utf8).
+Required changes are in [`/library/core/src/char/methods.rs`](https://github.com/bjoernager/rust/blob/const-char-encode-utf8/library/core/src/char/methods.rs/).
+
 Note that this implementation assumes [`const_slice_from_raw_parts_mut`](https://github.com/rust-lang/rust/issues/67456/).
 
 # Drawbacks
