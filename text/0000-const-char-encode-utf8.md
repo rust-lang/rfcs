@@ -68,8 +68,7 @@ pub const unsafe fn encode_utf8_unchecked(self, dst: &mut [u8]) -> &mut str;
 pub const unsafe fn encode_utf8_unchecked(self, dst: *mut u8) -> *mut str;
 ```
 
-This function would perform the same operation but without testing the length of `dst`.
-This would in turn allow const conversions &ndash; if very needed &ndash; without changing diagonstic messages.
+This function would perform the same operation but without testing the length of `dst`, allowing for const conversions at least in the short-term (until formatters are stabilised).
 
 # Prior art
 [prior-art]: #prior-art
