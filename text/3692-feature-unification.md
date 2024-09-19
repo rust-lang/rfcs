@@ -169,7 +169,7 @@ could offer a way for users to opt-out of build-target unification.
 
 Like with `resolver.incompatible-rust-version`, a solution for this would override the defaults of `workspace.resolver`.
 
-`cargo hakaro` gives control over `build-dependencies` / `dependencies` unification with
+`cargo hakari` gives control over `build-dependencies` / `dependencies` unification with
 [`unify-target-host`](https://docs.rs/cargo-hakari/latest/cargo_hakari/config/index.html#unify-target-host):
 - [`none`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.None): Perform no unification across the target and host feature sets.
   - The same as `resolver = "2"`
