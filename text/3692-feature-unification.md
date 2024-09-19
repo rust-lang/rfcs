@@ -133,7 +133,7 @@ Add a related field to manifests that the config can override.
 
 ### Dependency version unification
 
-Unlike feature unification, dependency versions are alwayd unified across the
+Unlike feature unification, dependency versions are always unified across the
 entire workspace, making `Cargo.lock` the same regardless of which package you
 select or how you build.
 
