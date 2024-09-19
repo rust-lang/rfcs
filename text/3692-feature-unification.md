@@ -86,7 +86,7 @@ Specify which packages participate in [feature unification](https://doc.rust-lan
 
 * `selected`: merge dependency features from all package specified for the current build
 * `workspace`: merge dependency features across all workspace members, regardless of which packages are specified for the current build
-* `package`: dependency features are only enabled for each package, preferring duplicate builds of dependencies to when different feature sets are selected
+* `package`: dependency features are only considered on a package-by-package basis, preferring duplicate builds of dependencies when different sets of feature are activated by the packages.
 
 # Drawbacks
 [drawbacks]: #drawbacks
