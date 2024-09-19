@@ -127,7 +127,7 @@ Supporting excludes adds environment/project configuration complexity as well as
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-### Manifest support
+### Support in manifests
 
 Add a related field to manifests that the config can override.
 
