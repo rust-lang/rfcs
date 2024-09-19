@@ -106,8 +106,8 @@ The other config fields can always be used instead.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This is done in the config instead of the manifest:
-- As this can change from run-to-run, this covers more use cases
-- As this fits easily into the `resolver` table. there is less design work
+- As this can change from run to run, this covers more use cases.
+- As this fits easily into the `resolver` table, there is less design work.
 
 We could extend this with configuration for to exclude packages for the various use cases mentioned.
 Supporting excludes as environemnt/project configuration complexity as well as implementation complexity.
