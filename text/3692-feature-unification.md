@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Allow users to control feature unifcation.
+Allow users to control feature unification.
 
 Related issues:
 - [#4463: Feature selection in workspace depends on the set of packages compiled](https://github.com/rust-lang/cargo/issues/4463)
