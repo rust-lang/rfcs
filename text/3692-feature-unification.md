@@ -9,6 +9,7 @@
 Allow users to control feature unification.
 
 Related issues:
+- [#5210: Resolve feature and optional dependencies for workspace as a whole](https://github.com/rust-lang/cargo/issues/5210)
 - [#4463: Feature selection in workspace depends on the set of packages compiled](https://github.com/rust-lang/cargo/issues/4463)
 - [#8157: --bin B resolves features differently than -p B in a workspace](https://github.com/rust-lang/cargo/issues/8157)
 - [#13844: The cargo build --bins re-builds binaries again after cargo build --all-targets](https://github.com/rust-lang/cargo/issues/13844)
