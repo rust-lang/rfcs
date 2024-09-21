@@ -1,7 +1,6 @@
-- Feature Name: `mergable_rustdoc_cross_crate_info`
 - Start Date: 2024-06-18
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3662](https://github.com/rust-lang/rfcs/pull/3662)
+- Rust Issue: [rust-lang/rust#130676](https://github.com/rust-lang/rust/issues/130676)
 
 # Summary
 
