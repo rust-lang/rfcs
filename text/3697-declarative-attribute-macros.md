@@ -1,6 +1,6 @@
 - Feature Name: `declarative_attribute_macros`
 - Start Date: 2024-09-20
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3697](https://github.com/rust-lang/rfcs/pull/3697)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
