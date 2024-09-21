@@ -75,6 +75,10 @@ This grammar addition is backwards compatible: previously, a _MacroRule_ could
 only start with `(`, `[`, or `{`, so the parser can easily distinguish the
 identifier `attribute`.
 
+Attribute macros declared using `macro_rules!` are
+[active](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
+just like those declared using proc macros.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
