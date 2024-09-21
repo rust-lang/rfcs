@@ -100,6 +100,11 @@ We could allow `macro_rules!` derive macros to emit a replacement token stream;
 however, that would be inconsistent with the restriction preventing proc macros
 from doing the same.
 
+We could allow directly invoking a `macro_rules!` derive macro as a
+function-like macro. This has the potential for confusion, given the
+append-only nature of derive macros versus the behavior of normal function-like
+macros. It might potentially be useful for code reuse, however.
+
 # Prior art
 [prior-art]: #prior-art
 
