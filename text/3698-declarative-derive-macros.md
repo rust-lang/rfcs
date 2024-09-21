@@ -1,0 +1,110 @@
+- Feature Name: `declarative_derive_macros`
+- Start Date: 2024-09-20
+- RFC PR: [rust-lang/rfcs#3698](https://github.com/rust-lang/rfcs/pull/3698)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+Support implementing `derive(Trait)` via a `macro_rules!` macro.
+
+# Motivation
+[motivation]: #motivation
+
+Many crates support deriving their traits with `derive(Trait)`. Today, this
+requires defining proc macros, in a separate crate, typically with several
+additional dependencies adding substantial compilation time, and typically
+guarded by a feature that users need to remember to enable.
+
+However, many common cases of derives don't require any more power than an
+ordinary `macro_rules!` macro. Supporting these common cases would allow many
+crates to avoid defining proc macros, reduce dependencies and compilation time,
+and provide these macros unconditionally without requiring the user to enable a
+feature.
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+You can define a macro to implement `derive(MyTrait)` by defining a
+`macro_rules!` macro with the `#[macro_derive]` attribute. Such a macro can
+create new items based on a struct, enum, or union. Note that the macro can
+only append new items; it cannot modify the item it was applied to.
+
+For instance, the following macro will ignore the item it is attached to, and
+append a function `answer()`:
+
+```rust
+#[macro_derive]
+macro_rules! AnswerFn {
+    ($_:tt) => { fn answer() -> u32 { 42 } };
+}
+
+#[derive(AnswerFn)]
+struct Struct;
+
+fn main() {
+    assert_eq!(42, answer());
+}
+```
+
+Derive macros defined using `macro_rules!` follow the same scoping rules as
+any other macro, and may be invoked by any path that resolves to them.
+
+A derive macro may share the same path as a trait of the same name. For
+instance, the name `mycrate::MyTrait` can refer to both the `MyTrait` trait and
+the macro for `derive(MyTrait)`. This is consistent with existing derive
+macros.
+
+A derive macro may also define *helper attributes*. These attributes are
+[inert](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
+and their only purpose is to be fed into the derive macro that defined them.
+That said, they can be seen by all macros.
+
+To define helper attributes, put an attributes key in the `macro_derive`
+attribute, with a comma-separated list of identifiers for helper attributes:
+`#[macro_derive(attributes(helper))]`. The derive macro can process the
+`#[helper]` attribute, along with any arguments to it, as part of the item the
+derive macro was applied to.
+
+If a derive macro mistakenly emits the token stream it was applied to
+(resulting in a duplicate item definition), the error the compiler emits for
+the duplicate item should hint to the user that the macro was defined
+incorrectly, and remind the user that derive macros only append new items.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+Adding this feature will allow many crates in the ecosystem to drop their proc
+macro crates and corresponding dependencies, and decrease their build times.
+
+Crates could instead define `macro_rules!` macros and encourage users to invoke
+them using existing syntax like `macroname! { ... }`, rather than using
+derives. This would provide the same functionality, but would not support the
+same syntax people are accustomed to, and could not maintain semver
+compatibility with an existing proc-macro-based derive. In addition, this would
+not preserve the property derive macros normally have that they cannot change
+the item they are applied to.
+
+A mechanism to define attribute macros would let people write attributes like
+`#[derive_mytrait]`, but that would not provide compatibility with existing
+derive syntax.
+
+We could allow `macro_rules!` derive macros to emit a replacement token stream;
+however, that would be inconsistent with the restriction preventing proc macros
+from doing the same.
+
+# Prior art
+[prior-art]: #prior-art
+
+We have had proc-macro-based derive macros for a long time, and the ecosystem
+makes extensive use of them.
+
+The [`macro_rules_attribute`](https://crates.io/crates/macro_rules_attribute)
+crate defines proc macros that allow invoking declarative macros as derives,
+demonstrating a demand for this. This feature would allow defining such derives
+without requiring proc macros at all, and would support the same invocation
+syntax as a proc macro.
+
+The `macro_derive` attribute and its `attributes` syntax are based on the
+[existing `proc_macro_derive` attribute for proc
+macros](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros).
