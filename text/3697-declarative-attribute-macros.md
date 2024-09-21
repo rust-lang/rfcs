@@ -19,7 +19,7 @@ users need to remember to enable.
 However, many common cases of attribute macros don't require any more power
 than an ordinary `macro_rules!` macro. Supporting these common cases would
 allow many crates to avoid defining proc macros, reduce dependencies and
-compilation time, and provide these macros unconditionally without requiring a
+compilation time, and provide these macros unconditionally without requiring
 the user to enable a feature.
 
 # Guide-level explanation
