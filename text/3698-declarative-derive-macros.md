@@ -30,20 +30,27 @@ You can define a macro to implement `derive(MyTrait)` by defining a
 create new items based on a struct, enum, or union. Note that the macro can
 only append new items; it cannot modify the item it was applied to.
 
-For instance, the following macro will ignore the item it is attached to, and
-append a function `answer()`:
+For example:
 
 ```rust
+trait Answer { fn answer(&self) -> u32; }
+
 #[macro_derive]
-macro_rules! AnswerFn {
-    ($_:tt) => { fn answer() -> u32 { 42 } };
+macro_rules! Answer {
+    // Simplified for this example
+    (struct $n:ident $_:tt) => {
+        impl Answer for $n {
+            fn answer(&self) -> u32 { 42 }
+        }
+    };
 }
 
-#[derive(AnswerFn)]
+#[derive(Answer)]
 struct Struct;
 
 fn main() {
-    assert_eq!(42, answer());
+    let s = Struct;
+    assert_eq!(42, s.answer());
 }
 ```
 
