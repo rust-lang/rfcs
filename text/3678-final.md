@@ -76,15 +76,20 @@ identically in all editions.
 
 At runtime, a `final fn` behaves exactly the same as a `fn`.
 
-It's a non-breaking change at the language level to turn a `final fn` into a `fn`, and thus may be done in a minor version, however care must be taken to ensure that doing so doesn't introduce soundness issues.
+It's a non-breaking change at the language level to turn a `final fn` into a
+`fn`, and thus may be done in a minor version, however care must be taken to
+ensure that doing so doesn't introduce soundness issues.
 
-It's a breaking change to turn `fn` into `final fn` unless the trait was already `impl(crate)` or narrower.
+It's a breaking change to turn `fn` into `final fn` unless the trait was
+already `impl(crate)` or narrower.
 
-At compile-time, a method declared as `final fn` in a trait must have a provided body and cannot be overridden in any `impl`.
+At compile-time, a method declared as `final fn` in a trait must have a
+provided body and cannot be overridden in any `impl`.
 
 `final fn` cannot be combined with `default fn`.
 
-`final fn` is allowed only on methods in trait definitions, not on inherent impls nor non-trait functions nor in `extern` blocks.
+`final fn` is allowed only on methods in trait definitions, not on inherent
+impls nor non-trait functions nor in `extern` blocks.
 
 `final` comes after visibility but before any qualifiers such as `async`.
 
