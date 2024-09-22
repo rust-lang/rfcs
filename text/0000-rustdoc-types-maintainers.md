@@ -1,6 +1,6 @@
 - Feature Name: `rustdoc_types_maintainers`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Start Date: 2023-10-3
+- RFC PR: [rust-lang/rfcs#3505](https://github.com/rust-lang/rfcs/pull/3505)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
