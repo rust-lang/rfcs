@@ -84,7 +84,8 @@ Adding `final` is a breaking change, unless the trait already did not allow
 third-party implementations (such as via a sealed trait).
 
 At compile-time, a method declared as `final fn` in a trait must have a
-provided body and cannot be overridden in any `impl`.
+provided body, and cannot be overridden in any `impl`, even an `impl` in the
+same crate or module.
 
 `final fn` cannot be combined with `default fn`.
 
