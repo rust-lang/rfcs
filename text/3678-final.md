@@ -71,6 +71,23 @@ Note that removing a `final` restriction is always forwards-compatible.
 The keyword `final` has been reserved since Rust 1.0, so this feature can ship
 identically in all editions.
 
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+At runtime, a `final fn` behaves exactly the same as a `fn`.
+
+It's a non-breaking change at the language level to turn a `final fn` into a `fn`, and thus may be done in a minor version, however care must be taken to ensure that doing so doesn't introduce soundness issues.
+
+It's a breaking change to turn `fn` into `final fn` unless the trait was already `impl(crate)` or narrower.
+
+At compile-time, a method declared as `final fn` in a trait must have a provided body and cannot be overridden in any `impl`.
+
+`final fn` cannot be combined with `default fn`.
+
+`final fn` is allowed only on methods in trait definitions, not on inherent impls nor non-trait functions nor in `extern` blocks.
+
+`final` comes after visibility but before `const`/`async`/`unsafe`/`extern`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
