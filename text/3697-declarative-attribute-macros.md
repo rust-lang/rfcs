@@ -26,7 +26,7 @@ the user to enable a feature.
 [guide-level-explanation]: #guide-level-explanation
 
 When defining a `macro_rules!` macro, you can prefix some of the macro's rules
-with `attribute(...)` to allow using the macro as an attribute. The
+with `attr(...)` to allow using the macro as an attribute. The
 arguments to the attribute, if any, are parsed by the *MacroMatcher* in the
 first set of parentheses; the second *MacroMatcher* parses the entire construct
 the attribute was applied to. The resulting macro will work anywhere an
@@ -34,8 +34,8 @@ attribute currently works.
 
 ```rust
 macro_rules! main {
-    attribute() ($func:item) => { make_async_main!($func) };
-    attribute(threads = $threads:literal) ($func:item) => { make_async_main!($threads, $func) };
+    attr() ($func:item) => { make_async_main!($func) };
+    attr(threads = $threads:literal) ($func:item) => { make_async_main!($threads, $func) };
 }
 
 #[main]
@@ -51,12 +51,12 @@ any other macro, and may be invoked by any path that resolves to them.
 An attribute macro must not require itself for resolution, either directly or
 indirectly (e.g. applied to a containing module or item).
 
-Note that a single macro can have both attribute and non-attribute rules.
-Attribute invocations can only match the attribute rules, and non-attribute
-invocations can only match the non-attribute rules.
+Note that a single macro can have both `attr` and non-`attr` rules. Attribute
+invocations can only match the `attr` rules, and non-attribute invocations can
+only match the non-`attr` rules.
 
-For simplicity, an attribute macro may not recursively invoke its attribute
-rules; to recurse, invoke a non-attribute rule or another macro.
+For simplicity, an attribute macro may not recursively invoke its `attr` rules;
+to recurse, invoke a non-`attr` rule or another macro.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -64,7 +64,7 @@ rules; to recurse, invoke a non-attribute rule or another macro.
 The grammar for macros is extended as follows:
 
 > _MacroRule_ :\
-> &nbsp;&nbsp; ( `attribute` _MacroMatcher_ )<sup>?</sup>  _MacroMatcher_ `=>` _MacroTranscriber_
+> &nbsp;&nbsp; ( `attr` _MacroMatcher_ )<sup>?</sup>  _MacroMatcher_ `=>` _MacroTranscriber_
 
 The first _MacroMatcher_ matches the attribute's arguments, which will be an
 empty token tree if not present. The second _MacroMatcher_ matches the entire
@@ -73,7 +73,7 @@ proc-macro-based attribute would in the same place.
 
 This grammar addition is backwards compatible: previously, a _MacroRule_ could
 only start with `(`, `[`, or `{`, so the parser can easily distinguish the
-identifier `attribute`.
+identifier `attr`.
 
 Attribute macros declared using `macro_rules!` are
 [active](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
@@ -104,9 +104,10 @@ solution is to parse one while carrying along the other.
 We could include another `=>` or other syntax between the first and second
 macro matchers.
 
-We could use `attr` rather than `attribute`. Rust usually avoids abbreviating
-except for the most common constructs; however, this can occur repeatedly in
-multiple rules, so it may make sense to abbreviate it.
+We could use `attribute` rather than `attr`. Rust usually avoids abbreviating
+except for the most common constructs; however, `cfg_attr` provides precedent
+for this abbreviation, and `attr` appears repeatedly in multiple rules which
+motivates abbreviating it.
 
 # Prior art
 [prior-art]: #prior-art
