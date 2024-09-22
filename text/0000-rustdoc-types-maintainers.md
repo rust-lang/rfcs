@@ -11,7 +11,7 @@ The [rustdoc-types](https://crates.io/crates/rustdoc-types) crate will go from b
 # Motivation
 [motivation]: #motivation
 
-[`rustdoc-types`](https://crates.io/crates/rustdoc-types) is a crate published on crates.io. It is used by users of the unstable [rustdoc JSON](https://github.com/rust-lang/rust/issues/76578) backend to provided a type representing the output of `rustdoc --output-format json`.  It's published on crates.io to be used by out-of-tree tools that take rustdoc-json as an input. E.g:
+[`rustdoc-types`](https://crates.io/crates/rustdoc-types) is a crate published on crates.io. It is used by users of the unstable [rustdoc JSON](https://github.com/rust-lang/rust/issues/76578) backend to provide a type representing the output of `rustdoc --output-format json`.  It's published on crates.io to be used by out-of-tree tools that take rustdoc-json as an input. E.g:
 
 | Name | Purpose |
 |--|--|
