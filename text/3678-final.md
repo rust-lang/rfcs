@@ -113,9 +113,9 @@ and would be less familiar to people who have seen `final` in other languages.
 We can always add such syntax for the more general cases in the future if
 needed; see the future possibilities section.
 
-We could use `#[final]` rather than `final`. However, since we already have the
-`final` keyword reserved, using that keyword seems syntactically simpler than
-an attribute.
+We could use `#[final]` rather than `final`. We already have the `final`
+keyword reserved, so there's no compatibility concern either way. This is
+entirely a matter of taste and syntax bikeshedding.
 
 It's possible to work around the lack of this functionality by placing the
 additional methods in an extension trait with a blanket implementation.
