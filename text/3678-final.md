@@ -94,6 +94,8 @@ inherent impls, non-trait functions, or `extern` blocks.
 
 `final` comes after visibility but before any qualifiers such as `async`.
 
+`final` has no impact on the `dyn`-compatibility of a trait.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
