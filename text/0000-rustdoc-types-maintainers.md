@@ -58,7 +58,8 @@ The update/publishing process will be moved to T-rustdoc. In the medium term, I 
 We (T-rustdoc) will continue to publish a new version of the `rustdoc-types` crate
 every time the upstream implementation changes, and these will be versioned with
 normal SemVer. Changes to rustdoc-json in `rust-lang/rust` will not be accepted
-if they would make it not possible to publish `rustdoc-types`.
+if they would make it not possible to publish `rustdoc-types` (eg: using `rustc_*` 
+crates, or nightly features).
 
 ## Actual Mechanics of the move
 
