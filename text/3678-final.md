@@ -89,8 +89,8 @@ same crate or module.
 
 `final fn` cannot be combined with `default fn`.
 
-`final fn` is allowed only on methods in trait definitions, not on inherent
-impls nor non-trait functions nor in `extern` blocks.
+`final` is only allowed in trait definitions. `final` is not allowed on
+inherent impls, non-trait functions, or `extern` blocks.
 
 `final` comes after visibility but before any qualifiers such as `async`.
 
