@@ -86,7 +86,7 @@ At compile-time, a method declared as `final fn` in a trait must have a provided
 
 `final fn` is allowed only on methods in trait definitions, not on inherent impls nor non-trait functions nor in `extern` blocks.
 
-`final` comes after visibility but before `const`/`async`/`unsafe`/`extern`.
+`final` comes after visibility but before any qualifiers such as `async`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
