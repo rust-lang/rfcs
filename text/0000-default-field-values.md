@@ -1579,7 +1579,7 @@ this RFC so that constructor functions are regained if so desired.
    let config = Config { width: 640, height: 480, .. };
    ```
 
-   then adding a field to `Config` can only happen iff that field
+   then adding a field to `Config` can only happen if and only if that field
    is provided a default value.
 
    This arrangement, while diminishing the usefulness of `#[non_exhaustive]`,
