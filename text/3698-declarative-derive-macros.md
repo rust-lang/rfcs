@@ -88,6 +88,9 @@ This will also give derive macros access to the `$crate` mechanism to refer to
 the defining crate, which is simpler than mechanisms currently used in proc
 macros to achieve the same goal.
 
+Macros defined this way can more easily support caching, as they cannot depend
+on arbitrary unspecified inputs.
+
 Crates could instead define `macro_rules!` macros and encourage users to invoke
 them using existing syntax like `macroname! { ... }`, rather than using
 derives. This would provide the same functionality, but would not support the
