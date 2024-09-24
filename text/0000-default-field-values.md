@@ -1943,8 +1943,7 @@ these values can be accessed by instantiating `Config { .. }.height`, as long
 as `height` is visible in the current scope.
 
 Note that the *opposite* is supported, writing that code will compile, so any
-API author that wants to make these `const` values on the type can (only
-restriction is that `Self` isn't accepted in current `const` contexts):
+API author that wants to make these `const` values on the type can:
 
 ```rust
 struct Config {
