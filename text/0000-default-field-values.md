@@ -1036,9 +1036,8 @@ There are many reasons for this restriction:
   is total than it is to ensure that it is deterministic; thus, while
   it is regrettable, this is an acceptable trade-off.
 
-+ Finally, note that `const fn`s, when coupled with planned future extensions,
-  can become quite expressive. For example, it is already planned that `loop`s,
-  `match`es, `let` statements, and `panic!(..)`s will be allowed.
++ Finally, note that `const fn`s, can become quite expressive. For example,
+  it is possible to use `loop`s, `match`es, `let` statements, and `panic!(..)`s.
   Another feasible extension in the future is allocation.
 
   Therefore, constant expressions should be enough to satisfy most expressive
