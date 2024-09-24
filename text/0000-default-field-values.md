@@ -1122,7 +1122,7 @@ design around the lack of these in the language are:
 A prior version of this RFC, from which part of the contents in this version
 were sourced, exists at https://github.com/Centril/rfcs/pull/19.
 
-This RFC was informed by a [lenghty discussion in internals.rust-lang.org](https://internals.rust-lang.org/t/pre-pre-rfc-syntactic-sugar-for-default-default/13234/75)
+This RFC was informed by a [lengthy discussion in internals.rust-lang.org](https://internals.rust-lang.org/t/pre-pre-rfc-syntactic-sugar-for-default-default/13234/75)
 from a few years prior.
 
 Another prior RFC for the same feature is at https://github.com/rust-lang/rfcs/pull/1806.
