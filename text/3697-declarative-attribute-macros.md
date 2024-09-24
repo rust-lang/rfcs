@@ -85,6 +85,10 @@ just like those declared using proc macros.
 Adding this feature will allow many crates in the ecosystem to drop their proc
 macro crates and corresponding dependencies, and decrease their build times.
 
+This will also give attribute macros access to the `$crate` mechanism to refer
+to the defining crate, which is simpler than mechanisms currently used in proc
+macros to achieve the same goal.
+
 Crates could instead define `macro_rules!` macros and encourage users to invoke
 them using existing syntax like `macroname! { ... }`. This would provide the
 same functionality, but would not support the same syntax people are accustomed
