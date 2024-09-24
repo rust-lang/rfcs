@@ -64,8 +64,9 @@ macros.
 
 A derive macro may also define *helper attributes*. These attributes are
 [inert](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
-and their only purpose is to be fed into the derive macro that defined them.
-That said, they can be seen by all macros.
+and exist for the derive macro to parse and act upon. Note that
+they're visible to *all* macros, not just the one that defined them; macros
+should ignore any attributes not meant for them.
 
 To define helper attributes, put an attributes key in the `macro_derive`
 attribute, with a comma-separated list of identifiers for helper attributes:
