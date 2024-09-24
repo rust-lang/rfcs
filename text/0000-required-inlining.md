@@ -1,4 +1,4 @@
-- Feature Name: `inline(required)`
+- Feature Name: `inline(must)` and `inline(required)`
 - Start Date: 2024-09-17
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -40,35 +40,40 @@ this RFC, or something providing equivalent guarantees, as a prerequisite.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-There are now be four variations of the `#[inline]` attribute - bare
-`#[inline]`, `#[inline(always)]`, `#[inline(never)]` and `#[inline(required)]`.
-Bare `#[inline]`, `#[inline(always)]` and `#[inline(never)]` are unchanged.
-`#[inline(required)]` will always inline the annotated item, regardless of
-optimization level.
+There are now be five variations of the `#[inline]` attribute, the
+existing bare `#[inline]`, `#[inline(always)]`, `#[inline(never)]` and
+the new  `#[inline(must)]` and `#[inline(required)]`. Bare `#[inline]`,
+`#[inline(always)]` and `#[inline(never)]` are unchanged. `#[inline(must)]`
+and `#[inline(required)]` will always attempt to inline the annotated item,
+regardless of optimization level.
 
-If it is not possible to inline the annotated item then the compiler will
-emit a warn-by-default lint on the caller of the annotated item that the
-item could not be inlined, providing a reason why inlining was not possible.
-`#[inline(required)]` is an alias for `#[inline(required = "warn")]`.
-`#[inline(required = "deny")]` can be used instead, which will emit a
-deny-by-default lint - this variant can be used by items which must be inlined
-to uphold security properties. Callers of annotated items can always override
-this lint with the usual `#[allow]`/`#[warn]`/`#[deny]`/`#[expect]` attributes.
-For example:
+If it is not possible to inline the annotated item then the compiler will emit
+a lint on the caller of the annotated item that the item could not be inlined,
+providing a reason why inlining was not possible. `#[inline(must)]` emits a
+warn-by-default lint and `#[inline(required)]` emits a deny-by-default lint,
+which can be used by items which must be inlined to uphold security properties.
+Callers of annotated items can always override this lint with the usual
+`#[allow]`/`#[warn]`/`#[deny]`/`#[expect]` attributes. For example:
 
 ```rust
 // somewhere/in/std/intrinsics.rs
-#[inline(required = "deny")]
+#[inline(required)]
 pub unsafe fn ptrauth_auth_and_load_32<const KEY: PtrAuthKey, const MODIFIER: u64, const OFFSET: u32>(value: u64) -> u32 {
     /* irrelevant detail */
 }
 
 // main.rs
+#[warn(required_inline)]
 fn do_ptrauth_warn() {
     intrinsics::ptrauth_auth_and_load_32(/* ... */);
-    //~^ ERROR `ptrauth_auth_and_load_32` could not be inlined but requires inlining
+    //~^ WARN `ptrauth_auth_and_load_32` could not be inlined but requires inlining
 }
 ```
+
+Both `#[inline(must)]` and `#[inline(required)]` can optionally provide
+the user a justification for why the annotated item is enforcing inlining,
+such as `#[inline(must("maintain performance characteristics"))]` or
+`#[inline(required("uphold security properties"))]`.
 
 Failures to force inline should not occur sporadically, users will only
 encounter this lint when they call an annotated item from a location that the
@@ -76,41 +81,41 @@ inliner cannot inline into (e.g. a coroutine - a current limitation of the MIR
 inliner), or when compiling with incompatible options (e.g. with code coverage -
 a current limitation of the MIR inliner/code coverage implementations).
 
-`#[inline(required)]` differs from `#[inline(always)]` in that it emits the
-lint when inlining does not happen and rustc will guarantee that no heuristics/
-optimization fuel considerations are employed to consider whether to inline
-the item.
+`#[inline(required)]` and `#[inline(must)]` differs from `#[inline(always)]` in
+that it emits the lint when inlining does not happen and rustc will guarantee
+that no heuristics/optimization fuel considerations are employed to consider
+whether to inline the item.
 
-It is intended that `#[inline(required)]` only be used in cases where inlining
-is strictly necessary and is documented to be so, such as with some intrinsics.
-`#[inline]`'s documentation should reflect that except in these cases, bare
-`#[inline]`, `#[inline(always)]`, and `#[inline(never)]` should be preferred.
+It is intended that `#[inline(required)]` and `#[inline(must)]` only be used
+in cases where inlining is strictly necessary and is documented to be so, such
+as with some intrinsics. `#[inline]`'s documentation should reflect that except
+in these cases, bare `#[inline]`, `#[inline(always)]`, and `#[inline(never)]`
+should be preferred.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-As LLVM does not provide a mechanism to require inlining, only a mechanism to
-provide hints as per the current `#[inline]` attributes, `#[inline(required)]`
-will be implemented in rustc as part of the MIR inliner. Small modifications to
-the MIR inliner will make the MIR pass run unconditionally (i.e. with `-O0`),
-while only inlining non-`#[inline(required)]` items under the current conditions
-and always inlining `#[inline(required)]` items. Any current limitations of the
-MIR inliner will also apply to `#[inline(required)]` items and will be cases
-where the lint is emitted. `#[inline(required)]` will be considered an alias of
-`#[inline(always)]` after MIR inlining when performing codegen.
+As LLVM does not provide a mechanism to require inlining, only a mechanism
+to provide hints as per the current `#[inline]` attributes, `#[inline(must)]`
+and `#[inline(required)]` will be implemented in rustc as part of the MIR
+inliner. Small modifications to the MIR inliner will make the MIR pass run
+unconditionally (i.e. with `-O0`), while only inlining non-`#[inline(must)]`/
+`#[inline(required)]` items under the current conditions and always inlining
+`#[inline(must)]`/`#[inline(required)]` items. Any current limitations of the
+MIR inliner will also apply to `#[inline(must)]`/`#[inline(required)]` items and
+will be cases where the lint is emitted. `#[inline(must)]`/`#[inline(required)]`
+will be considered an alias of `#[inline(always)]` after MIR inlining when
+performing codegen.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 - It may be undesirable for the MIR inliner to be necessary for the correctness
-of a Rust program (i.e. for the `#[inline(required)]` case).
+  of a Rust program (i.e. for the `#[inline(required)]` case).
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Instead of `#[inline(required = "deny")]`, instead have `#[inline(required)]`
-and `#[forced_inlining = "deny"]` or something like that - two separate
-attributes.
 - An "intrinsic macro" type of solution could be devised for the "security
 properties" use case instead as macros are inherently inlined.
 - Given the existence of security features with intrinsics that must be inlined
