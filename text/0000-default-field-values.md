@@ -1096,7 +1096,7 @@ Among the drawbacks are:
   introducing `Foo { .. }` is essentially cost-free in terms of the complexity
   budget. It is arguably even cost-negative.
 
-+ By writing `Foo { .. }`, you have there is explicit indication that default
++ By writing `Foo { .. }`, there is explicit indication that default
   values are being used; this enhances local reasoning further.
 
 This RFC requires the `..` to get defaulted fields because it wants to continue
