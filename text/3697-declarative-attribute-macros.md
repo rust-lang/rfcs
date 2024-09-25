@@ -53,7 +53,8 @@ indirectly (e.g. applied to a containing module or item).
 
 Note that a single macro can have both `attr` and non-`attr` rules. Attribute
 invocations can only match the `attr` rules, and non-attribute invocations can
-only match the non-`attr` rules.
+only match the non-`attr` rules. This allows adding `attr` rules to an existing
+macro without breaking backwards compatibility.
 
 For simplicity, an attribute macro may not recursively invoke its `attr` rules;
 to recurse, invoke a non-`attr` rule or another macro.
@@ -78,6 +79,8 @@ identifier `attr`.
 Attribute macros declared using `macro_rules!` are
 [active](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
 just like those declared using proc macros.
+
+Adding `attr` rules to an existing macro is a semver-compatible change.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
