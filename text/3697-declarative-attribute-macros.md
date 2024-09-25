@@ -108,6 +108,11 @@ construct they're applied to, rather than a combinatorial explosion of both.
 This problem is not unique to attribute macros. In both cases, the standard
 solution is to parse one while carrying along the other.
 
+We could leave out support for writing a function-like macro and an attribute
+macro with the same name. However, this would prevent crates from preserving
+backwards compatibility when adding attribute support to an existing
+function-like macro.
+
 Instead of or in addition to marking the individual rules, we could mark the
 whole macro with `#[attribute_macro]` or similar, and allow having an attribute
 macro and a non-attribute macro with the same name.
