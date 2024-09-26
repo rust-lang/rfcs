@@ -74,6 +74,10 @@ attribute, with a comma-separated list of identifiers for helper attributes:
 `#[helper]` attribute, along with any arguments to it, as part of the item the
 derive macro was applied to.
 
+If a derive macro emits a trait impl for the type, it may want to add the
+[`#[automatically_derived]`](https://doc.rust-lang.org/reference/attributes/derive.html#the-automatically_derived-attribute)
+attribute, for the benefit of diagnostics.
+
 If a derive macro mistakenly emits the token stream it was applied to
 (resulting in a duplicate item definition), the error the compiler emits for
 the duplicate item should hint to the user that the macro was defined
