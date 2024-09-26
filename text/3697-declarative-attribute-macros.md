@@ -72,6 +72,11 @@ empty token tree if not present. The second _MacroMatcher_ matches the entire
 construct the attribute was applied to, receiving precisely what a
 proc-macro-based attribute would in the same place.
 
+Only a rule matching both the arguments to the attribute and the construct the
+attribute was applied to will apply. Note that the captures in both
+`MacroMatcher`s share the same namespace; attempting to use the same name for
+two captures will give a "duplicate matcher binding" error.
+
 This grammar addition is backwards compatible: previously, a _MacroRule_ could
 only start with `(`, `[`, or `{`, so the parser can easily distinguish the
 identifier `attr`.
