@@ -68,9 +68,10 @@ The grammar for macros is extended as follows:
 > &nbsp;&nbsp; ( `attr` _MacroMatcher_ )<sup>?</sup>  _MacroMatcher_ `=>` _MacroTranscriber_
 
 The first _MacroMatcher_ matches the attribute's arguments, which will be an
-empty token tree if not present. The second _MacroMatcher_ matches the entire
-construct the attribute was applied to, receiving precisely what a
-proc-macro-based attribute would in the same place.
+empty token tree if either not present (`#[myattr]`) or empty (`#[myattr()]`).
+The second _MacroMatcher_ matches the entire construct the attribute was
+applied to, receiving precisely what a proc-macro-based attribute would in the
+same place.
 
 Only a rule matching both the arguments to the attribute and the construct the
 attribute was applied to will apply. Note that the captures in both
