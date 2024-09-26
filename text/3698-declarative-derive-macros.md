@@ -138,3 +138,7 @@ macros](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros
 
 We should provide a way for `macro_rules!` macros to provide better error
 reporting, with spans, rather than just pointing to the macro.
+
+We may want to support error recovery, so that a derive can produce an error
+but still provide enough for the remainder of the compilation to proceed far
+enough to usefully report further errors.
