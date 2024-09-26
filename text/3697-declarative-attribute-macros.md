@@ -150,3 +150,6 @@ invocation syntax as a proc macro.
 [future-possibilities]: #future-possibilities
 
 We should provide a way to define `derive` macros declaratively, as well.
+
+We should provide a way for `macro_rules!` macros to provide better error
+reporting, with spans, rather than just pointing to the macro.
