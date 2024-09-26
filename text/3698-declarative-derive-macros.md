@@ -128,3 +128,9 @@ syntax as a proc macro.
 The `macro_derive` attribute and its `attributes` syntax are based on the
 [existing `proc_macro_derive` attribute for proc
 macros](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros).
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+We should provide a way for `macro_rules!` macros to provide better error
+reporting, with spans, rather than just pointing to the macro.
