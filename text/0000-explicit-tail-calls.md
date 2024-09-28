@@ -1,7 +1,7 @@
 - Feature Name: explicit_tail_calls
 - Start Date: 2023-04-01
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3407](https://github.com/rust-lang/rfcs/pull/3407)
+- Rust Issue: [rust-lang/rust#112788](https://github.com/rust-lang/rust/issues/112788)
 
 # Summary
 [summary]: #summary
