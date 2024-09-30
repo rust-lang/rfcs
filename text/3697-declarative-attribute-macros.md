@@ -88,6 +88,20 @@ just like those declared using proc macros.
 
 Adding `attr` rules to an existing macro is a semver-compatible change.
 
+# Drawbacks
+[drawbacks]: #drawbacks
+
+This feature will not be sufficient for *all* uses of proc macros in the
+ecosystem, and its existence may create social pressure for crate maintainers
+to switch even if the result is harder to maintain.
+
+Before stabilizing this feature, we should receive feedback from crate
+maintainers, and potentially make further improvements to `macro_rules` to make
+it easier to use for their use cases. This feature will provide motivation to
+evaluate many new use cases that previously weren't written using
+`macro_rules`, and we should consider quality-of-life improvements to better
+support those use cases.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
