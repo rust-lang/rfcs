@@ -164,3 +164,6 @@ use cases.
 We may want to provide a means to namespace helper attributes or detect
 collisions between them. This would apply to both proc macros and
 `macro_rules!` macros.
+
+We may want to provide simple helpers for generating/propagating `where`
+bounds, which would otherwise be complex to do in a `macro_rules!` macro.
