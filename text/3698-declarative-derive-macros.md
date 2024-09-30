@@ -156,3 +156,7 @@ reporting, with spans, rather than just pointing to the macro.
 We may want to support error recovery, so that a derive can produce an error
 but still provide enough for the remainder of the compilation to proceed far
 enough to usefully report further errors.
+
+As people test this feature and run into limitations of `macro_rules!` parsing,
+we should consider additional features to make this easier to use for various
+use cases.
