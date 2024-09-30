@@ -167,3 +167,7 @@ We should provide a way to define `derive` macros declaratively, as well.
 
 We should provide a way for `macro_rules!` macros to provide better error
 reporting, with spans, rather than just pointing to the macro.
+
+As people test this feature and run into limitations of `macro_rules!` parsing,
+we should consider additional features to make this easier to use for various
+use cases.
