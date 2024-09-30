@@ -147,6 +147,14 @@ The `macro_derive` attribute and its `attributes` syntax are based on the
 [existing `proc_macro_derive` attribute for proc
 macros](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros).
 
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+Before stabilizing this feature, we should ensure there's a mechanism macros
+can use to ensure that an error when producing an impl does not result in a
+cascade of additional errors caused by a missing impl. This may take the form
+of a fallback impl, for instance.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
