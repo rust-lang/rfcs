@@ -160,3 +160,7 @@ enough to usefully report further errors.
 As people test this feature and run into limitations of `macro_rules!` parsing,
 we should consider additional features to make this easier to use for various
 use cases.
+
+We may want to provide a means to namespace helper attributes or detect
+collisions between them. This would apply to both proc macros and
+`macro_rules!` macros.
