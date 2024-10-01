@@ -51,12 +51,12 @@ This would be built-in support for "cargo-workspace-hack".
 
 This would require effectively changing from
 1. Resolve dependencies
-2. Filter dependencies down for current target and selected packages
+2. Filter dependencies down for current build-target and selected packages
 3. Resolve features
 
 To
 1. Resolve dependencies
-2. Filter dependencies down for current target
+2. Filter dependencies down for current build-target
 3. Resolve features
 4. Filter for selected packages
 
@@ -158,9 +158,9 @@ versions locally and then have a job that resolves down to your MSRVs.
 ### Unify features in other settings
 
 [`workspace.resolver = "2"`](https://doc.rust-lang.org/cargo/reference/resolver.html#features) removed unification from the following scenarios
-- Cross-platform target unification
+- Cross-platform build-target unification
 - `build-dependencies` / `dependencies` unification
-- `dev-dependencies` / `dependencies` unification unless a dev target is enabled
+- `dev-dependencies` / `dependencies` unification unless a dev build-target is enabled
 
 Depending on how we design this, the solution might be good enough to
 re-evaluate
@@ -173,8 +173,8 @@ Like with `resolver.incompatible-rust-version`, a solution for this would overri
 [`unify-target-host`](https://docs.rs/cargo-hakari/latest/cargo_hakari/config/index.html#unify-target-host):
 - [`none`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.None): Perform no unification across the target and host feature sets.
   - The same as `resolver = "2"`
-- [`unify-if-both`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.UnifyIfBoth): Perform unification across target and host feature sets, but only if a dependency is built on both the target and the host.
-- [`replicate-target-on-host`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.ReplicateTargetOnHost): Perform unification across target and host feature sets, and also replicate all target-only lines to the host.
+- [`unify-if-both`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.UnifyIfBoth): Perform unification across target and host feature sets, but only if a dependency is built on both the platform-target and the host.
+- [`replicate-target-on-host`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.ReplicateTargetOnHost): Perform unification across platform-target and host feature sets, and also replicate all target-only lines to the host.
 - [`auto`](https://docs.rs/hakari/0.17.4/hakari/enum.UnifyTargetHost.html#variant.Auto) (default): select `replicate-target-on-host` if a workspace member may be built for the host (used as a proc-macro or build-dependency)
 
 `unify-target-host` might be somewhat related to [`-Ztarget-applies-to-host`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#target-applies-to-host)
