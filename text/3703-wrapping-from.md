@@ -165,6 +165,79 @@ Also, having a separate trait that's just about numerics means that the error me
 can talk just about the implementations for that trait, rather than potentially giving you the giant list of every
 `From` that probably includes a bunch of irrelevant ones.  (That said, smart diagnostics could mitigate this too.)
 
+## Can we implement this for `NonZero<_>`?
+
+Trivially there cannot be a blanket impl
+```rust
+impl<T: WrappingFrom<U>, U> WrappingFrom<NonZero<U>> for NonZero<T> { … }
+```
+because `NonZero<u8>::wrapping_from(NonZero(0x100_u16))` would give `0`, which is disallowed.
+
+Thus what, if anything, to do here is a philosophical question about the intent of `NonZero` and `WrappingFrom`.
+
+This RFC doesn't propose any implementations for `NonZero` as part of the initial change.  People can use
+```rust
+NonZero::new(u8::wrapping_from(x.get()))
+```
+or similar if they want the version that gives an `Option`, which seems fine for now.
+
+There's at least two possible way we could go here:
+
+1. Convert to `Option`
+
+We could plausibly have something like
+```rust
+impl<T: WrappingFrom<U>, U> WrappingFrom<NonZero<U>> for Option<NonZero<T>> { … }
+```
+which calls `NonZero::new` internally.
+
+That seems like it'd be annoying to use, though, since the caller would have
+to write out the `Option::<NonZero<u8>>::wrapping_from(blah)`.
+
+2. Use the non-zero lattice instead
+
+It turns out that
+- `NonZero<u8>` has 2⁸ - 1 = 255 × 1 values
+- `NonZero<u16>` has 2¹⁶ - 1 = 255 × 257 values
+- `NonZero<u32>` has 2³² - 1 = 255 × 16843009 values
+- `NonZero<u64>` has 2⁶⁴ - 1 = 255 × 72340172838076673 values
+- `NonZero<u128>` has 2¹²⁸ - 1 = 255 × 1334440654591915542993625911497130241 values
+
+(This works for anything that's a multiple of octets, as `0xFF…FF = 0xFF * 0x01…01`.)
+
+So there is, in fact, a coherent wrapping arithmetic on `NonZero` itself.
+
+It would thus have
+```rust
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(  1_u16)), NonZero(  1_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(  2_u16)), NonZero(  2_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(254_u16)), NonZero(254_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(255_u16)), NonZero(255_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(256_u16)), NonZero(  1_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(257_u16)), NonZero(  2_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(509_u16)), NonZero(254_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(510_u16)), NonZero(255_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(511_u16)), NonZero(  1_u8));
+assert_eq!(<NonZero<u8>>::wrapping_from(NonZero(512_u16)), NonZero(  2_u8));
+```
+and analogously for other types.
+
+This would make sense if we decided to add a `wrapping_add` method to `NonZero`
+such that `NonZero(255_u8).wrapping_add(1)` → `NonZero(1_u8)`.
+
+But it's not clear that we *want* to do that.  It might be that we want people
+to think about `NonZero` as behaving like the underlying type, just with a value
+restriction, rather than a different cycle of values.
+
+As such, this RFC doesn't propose this directly, just like how we don't have
+`NonZero<u32>::wrapping_add` even as unstable.  So far we only have methods on
+`NonZero` which don't need to resolve that question: `saturating_add` and
+`checked_add` for *unsigned* types only, which by only being able to
+strictly-increase a value work the same as on the underlying type.
+
+An implementation of `wrapping_from` would need to deal with that issue, so this
+RFC leaves it as something to consider in the future.
+
 
 # Prior art
 [prior-art]: #prior-art
