@@ -1,6 +1,6 @@
 - Feature Name: `num_wrapping_from`
 - Start Date: 2024-09-13
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3703](https://github.com/rust-lang/rfcs/pull/3703)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -113,6 +113,57 @@ rather than having some technical enforcement in the trait system.
 
 Later helper methods might choose to bound on `where A: WrappingFrom<B>, B: WrappingFrom<A>`,
 if that's helpful to them, but the basic primitive won't.
+
+## What about just inherent methods on integers?
+
+We could go through and add 12 `.as_u8()`/`.as_isize()`/etc inherent methods to integers.
+Subjectively that's kinda messy, though, and doesn't help with the generics cases,
+nor the external types like `num::BigUint`.  When there's that many different cases,
+it'd be nicer to do it via the type system instead of copying type names into method names.
+
+This RFC was opened as an RFC to try to address the broader problem in a way that the ecosystem can use.
+It would be a failure of the RFC, from the perspective of its author, to end up with just a few inherent methods.
+If that's the way forward, it means closing this RFC as not-planned and having a separate ACP instead.
+
+There's probably space for *some* inherent methods on integers, however,
+in order to address particularly-common cases where not needing to write out a type would help.
+See, for example, [ACP#453] proposing inherent methods for converting `iNN`↔`uNN`.
+Those are a different question from this RFC, however.
+
+[ACP#453]: https://github.com/rust-lang/libs-team/issues/453
+
+## What about using `From<Wrapping<T>>` instead of a new trait?
+
+Coherent makes this one less appetizing.
+
+With a new trait, one can do this outside `core`
+```rust
+impl WrappingFrom<&BigInteger> for u32 {
+    fn wrapping_from(x: &BigInteger) -> u32 { … }
+}
+```
+
+whereas with `num::Wrapping` you get an error like
+```text
+error[E0117]: only traits defined in the current crate can be implemented for primitive types
+ --> src/lib.rs:4:1
+  |
+4 | impl From<Wrapping<&BigInteger>> for u32 {
+  | ^^^^^---------------------------^^^^^---
+  | |    |                               |
+  | |    |                               `u32` is not defined in the current crate
+  | |    `Wrapping` is not defined in the current crate
+  | impl doesn't use only types from inside the current crate
+  |
+  = note: define and implement a trait or new type instead
+```
+
+Maybe it'd be possible to mark `Wrapping` as `#[fundamental]` and thus allow crates to add impls like that,
+but that's a much bigger hammer than just adding a new trait for it.
+
+Also, having a separate trait that's just about numerics means that the error message when something isn't implemented
+can talk just about the implementations for that trait, rather than potentially giving you the giant list of every
+`From` that probably includes a bunch of irrelevant ones.  (That said, smart diagnostics could mitigate this too.)
 
 
 # Prior art
