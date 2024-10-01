@@ -171,3 +171,12 @@ reporting, with spans, rather than just pointing to the macro.
 As people test this feature and run into limitations of `macro_rules!` parsing,
 we should consider additional features to make this easier to use for various
 use cases.
+
+Some use cases involve multiple attribute macros that users expect to be able
+to apply in any order. For instance, `#[test]` and `#[should_panic]` can appear
+on the same function in any order. Implementing that via this mechanism for
+attribute macros would require making both of those attributes into macros that
+both do all the parsing regardless of which got invoked first, likely by
+invoking a common helper. We should consider if we consider that mechanism
+sufficient, or if we should provide another mechanism for a set of related
+attribute macros to appear in any order.
