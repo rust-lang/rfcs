@@ -168,6 +168,9 @@ attriute in its output? If there is no technical issue with allowing this, then
 we should do so, to allow simple recursion (e.g. handling defaults by invoking
 the same rule as if they were explicitly specified).
 
+Before stabilizing this feature, we should make sure it doesn't produce wildly
+worse error messages in common cases.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
