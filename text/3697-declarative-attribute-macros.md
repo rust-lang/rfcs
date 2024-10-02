@@ -165,7 +165,7 @@ invocation syntax as a proc macro.
 
 Is an attribute macro allowed to recursively invoke itself by emitting the
 attriute in its output? If there is no technical issue with allowing this, then
-we should do so, to allow simle recursion (e.g. handling defaults by invoking
+we should do so, to allow simple recursion (e.g. handling defaults by invoking
 the same rule as if they were explicitly specified).
 
 # Future possibilities
