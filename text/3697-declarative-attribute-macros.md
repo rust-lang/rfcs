@@ -56,7 +56,7 @@ invocations can only match the `attr` rules, and non-attribute invocations can
 only match the non-`attr` rules. This allows adding `attr` rules to an existing
 macro without breaking backwards compatibility.
 
-For simplicity, an attribute macro may not recursively invoke its `attr` rules;
+For simplicity, no special syntax is given to allow an attribute macro to recursively invoke its `attr` rules;
 to recurse, invoke a non-`attr` rule or another macro.
 
 # Reference-level explanation
