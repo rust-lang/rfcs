@@ -155,6 +155,9 @@ can use to ensure that an error when producing an impl does not result in a
 cascade of additional errors caused by a missing impl. This may take the form
 of a fallback impl, for instance.
 
+Before stabilizing this feature, we should make sure it doesn't produce wildly
+worse error messages in common cases.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
