@@ -112,6 +112,8 @@ This is done in the config instead of the manifest:
 We could extend this with configuration to exclude packages for the various use cases mentioned.
 Supporting excludes adds environment/project configuration complexity as well as implementation complexity.
 
+This field will not apply to `cargo install` to match the behavior of `resolver.incompatible-rust-versions`.
+
 # Prior art
 [prior-art]: #prior-art
 
