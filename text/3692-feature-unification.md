@@ -62,6 +62,10 @@ To
 3. Resolve features
 4. Filter for selected packages
 
+The same result can be achieved with `cargo check --workspace`,
+but with fewer packages built.
+Therefore, no fundamentally new "mode" is being introduced.
+
 **Features will be evaluated for each package in isolation**
 
 This will require building duplicate copies of build units when there are disjoint sets of features.
@@ -73,6 +77,10 @@ For example, this could be implemented as either
 This is not prescriptive of the implementation but to illustrate what the feature does.
 The initial implementation may be sub-optimal.
 Likely, the implementation could be improved over time.
+
+The same result can be achieved with `cargo check -p foo && cargo check -p bar`,
+but with the potential for optimizing the build further.
+Therefore, no fundamentally new "mode" is being introduced.
 
 **Note:** these features do not need to be stabilized together.
 
