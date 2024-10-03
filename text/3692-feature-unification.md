@@ -5,7 +5,9 @@
 # Summary
 [summary]: #summary
 
-Allow users to control feature unification.
+Give users control over the feature unification that happens based on the packages they select.
+- A way for `cargo check -p foo -p bar` to build like `cargo check -p foo && cargo check -p bar`
+- A way for `cargo check -p foo` to build `foo` as if `cargo check --workspace` was used
 
 Related issues:
 - [#5210: Resolve feature and optional dependencies for workspace as a whole](https://github.com/rust-lang/cargo/issues/5210)
