@@ -114,6 +114,15 @@ Supporting excludes adds environment/project configuration complexity as well as
 
 This field will not apply to `cargo install` to match the behavior of `resolver.incompatible-rust-versions`.
 
+The `workspace` setting breaks down if there are more than one "application" in
+a workspace, particularly if there are shared dependencies with intentionally
+disjoint feature sets.
+What this use case is really modeling is being able to tell Cargo "build package X as if its a dependency of package Y".
+There are many similar use cases to this (e.g. [cargo#2644](https://github.com/rust-lang/cargo/issues/2644), [cargo#14434](https://github.com/rust-lang/cargo/issues/14434)).
+While a solution that targeted this higher-level need would cover more uses cases,
+there is a lot more work to do within the design space and it could end up being more unwieldy.
+The solution offered in this RFC is simple in that it is just a re-framing of what already happens on the command line.
+
 # Prior art
 [prior-art]: #prior-art
 
