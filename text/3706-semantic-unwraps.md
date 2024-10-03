@@ -1,7 +1,7 @@
 - Feature Name: `semantic-unwraps`
 - Start Date: 2024-10-03
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3706](https://github.com/rust-lang/rfcs/pull/3706)
+- Rust Issue: [rust-lang/rust#3706](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
