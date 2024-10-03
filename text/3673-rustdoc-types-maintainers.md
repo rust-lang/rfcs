@@ -1,7 +1,5 @@
-- Feature Name: `rustdoc_types_maintainers`
 - Start Date: 2023-10-3
 - RFC PR: [rust-lang/rfcs#3505](https://github.com/rust-lang/rfcs/pull/3505)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
@@ -131,5 +129,4 @@ None yet
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-When the rustdoc-json feature is stabilized, we should release 1.0.0 to crates.io. How we can evolve the format post stabilization is an unanswered question. It's a blocker for stabilization, but not this RFC
-
+When the rustdoc-json feature is stabilized, we should release 1.0.0 to crates.io. How we can evolve the format post stabilization is an unanswered question. It's a blocker for stabilization, but not this RFC.
