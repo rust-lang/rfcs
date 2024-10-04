@@ -79,7 +79,7 @@ impl i8/i16/i32/i64/i128/isize/u8/u16/u32/u64/u128/usize for i8/i16/i32/i64/i128
 
 This could be left to an ecosystem crate instead of the standard library.
 
-Having this in the standard library is implicitly a request to add implemenetations of these to lots of ecosystem crates.
+Having this in the standard library is implicitly a request to add implementations of these to lots of ecosystem crates.
 
 
 # Rationale and alternatives
@@ -134,7 +134,7 @@ Those are a different question from this RFC, however.
 
 ## What about using `From<Wrapping<T>>` instead of a new trait?
 
-Coherent makes this one less appetizing.
+Coherence makes this one less appetizing.
 
 With a new trait, one can do this outside `core`
 ```rust
