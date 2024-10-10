@@ -547,7 +547,9 @@ One advantage of today's sugar for trait bounds (`T: Fn()`, `T: FnMut()`, etc) i
 * There is no obvious way to encode `T: FnMut()` or `FnOnce()`. Should the notation be `T: fn mut()`and `T: fn once()`? Then we are losing the parallel to function declarations and introducing some ad-hoc keywords.
 * Changing the notation for `T: Fn()` bounds is a massive change affects virtually all existing Rust code. To make a change like that, we have to be very confident the change will be a win, and many were not (particularly given the previous bullet).
 
-## How did you come up with "rewrite" color and "
+## How did you come up with "rewrite" color and "filter" color?
+
+We deliberately chose non-standard terms to avoid associations. For example, the "filter" color might also be called an "effect-carrying color", but that invites debate as to the precise definition of an effect and whether `unsafe` qualifies.
 
 ## Can `🚲K<$T>` be used in closure return types like it can for regular functions?
 
