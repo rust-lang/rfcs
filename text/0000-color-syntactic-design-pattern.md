@@ -540,6 +540,24 @@ However, it *is* true that `mut` is part of what often feels like "3 modes" in R
 
 Another similar split is `Send` vs not `Send`. We don't have a keyword for this, but especially in async code it is a very real split.
 
+## Why did you use the word "color" and not "effect"?
+
+clarfonthey [asked](https://github.com/rust-lang/rfcs/pull/3710#issuecomment-2405647443):
+
+> So, I understand why you're referring to these as colours, since "coloured functions" is what the larger programming language community uses as a term, but I think that the naming of effects should be used instead, especially since that's at least what the current Rust WGs have been settling on.
+
+I avoided the term "effect" for a few reasons. 
+
+One of them is that I think that it is overall kind of jargon. What's more, my observation is that it is *divisive* jargon, as people bring pre-conceived notions of what it *ought* to mean, and not everything that I consider a "color" fits into those notions.
+
+My take on an *effect* is that it is some kind of "operation" that occurs during execution, such as a write to a specific memory region, a panic, a memory allocation, etc. It's reasonable to model this kind of effect as a "function" you can call when that event occurs (perhaps with some arguments).
+
+From what I can tell, this definition lines up with Koka (which is a very cool language). However, Koka is also (I believe) based on Continuation Passing Style, which means that simple function calls get a lot more power. This allows them to model e.g. generators or exceptions as effects.
+
+To my mind, this is kind of cheating, or at least *misleading*. In particular, we can't "just" port over Koka's abstractions to Rust because we also have to account for rewrites.
+
+In any case, I'm open to a terminology discussion, though *personally* I'd be inclined not to rename colors to effects, but perhaps to rename *filter colors* to *effect* colors or *effect-carrying* colors.
+
 ## Why include `🚲K<$T>` syntax?
 
 Most parts of the color pattern already exist in Rust today or at least in accepted RFCs. The `🚲K<$T>` syntax for colored types stands out as the exception. It was included in the RFC because it forms an important part of the overall story (witness how prominent it is in the guide section). Some members of the lang team felt that, without `🚲K<$T>`, they didn't feel good about the color pattern overall.
