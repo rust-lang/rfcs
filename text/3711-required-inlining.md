@@ -91,7 +91,11 @@ whether to inline the item.
 
 `#[inline(must)]` and `#[inline(required)]` are intended to remain unstable
 indefinitely and be used only within the standard library (e.g. on intrinsics).
-This could be relaxed if there were sufficient motivation for use of these
+This is to avoid misuse of the attribute which ultimately harms performance
+of Rust programs. As these attributes can be used in the standard library
+on the relevant intrinsics which require inlining for performance or security
+reasons, they will still be useful despite being indefinitely unstable. These
+could be stabilized if there were sufficient motivation for use of these
 inlining attributes in user code.
 
 # Reference-level explanation
@@ -124,6 +128,11 @@ properties" use case instead as macros are inherently inlined.
 to guarantee their security properties, not doing this (or something else)
 isn't a viable solution unless the project decides these are use cases that the
 project does not wish to support.
+- Instead of having two attributes and two lints, merge both attributes and lints
+and require users use `#[deny(..)]` when calling those intrinsics which must be
+inlined to uphold security properties. This RFC prefers to have two lints and
+attributes so that the annotation on the intrinsic decides whether it is
+error-worthy for it to not be inlined.
 
 # Prior art
 [prior-art]: #prior-art
