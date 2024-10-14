@@ -2,6 +2,7 @@
 - Start Date: 2024-09-30
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
 # Summary
 [summary]: #summary
 
@@ -88,6 +89,24 @@ and deallocation.
 Introducing a hierarchy of `Sized` traits will enable extern types to implement
 a trait for unsized types and therefore not meet the bounds of `size_of_val`
 and `align_of_val`.
+
+# Terminology
+[terminology]: #terminology
+
+In the Rust community, "unsized" and "dynamically sized" are often used
+interchangeably to describe any type that does not implement `Sized`. This is
+unsurprising as any type which does not implement `Sized` is necessarily
+"unsized" and the only types this description captures are those which are
+dynamically sized.
+
+In this RFC, a distinction is made between "unsized" and "dynamically sized"
+types. Unsized types is used to refer only to those which have no known
+size/alignment, such as those described by [the extern types
+RFC][rfc_extern_types]. Dynamically-sized types describes those types whose size
+cannot be known statically at compilation time and must be computed at runtime.
+
+Within this RFC, no terminology is introduced to describe all types which do not
+implement `Sized` in the same sense as "unsized" is colloquially used.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -236,6 +255,15 @@ but only as the last field.
 As `RuntimeSized`, `DynSized` and `Unsized` are not default bounds, there is no
 equivalent to `?Sized` for these traits.
 
+There is a potential performance impact within the trait system to adding
+supertraits to `Sized`, as implementation of these supertraits will need to be
+proven whenever a `Sized` obligation is being proven (and this happens very
+frequently, being a default bound). It may be necessary to implement an
+optimisation whereby `Sized`'s supertraits are assumed to be implemented and
+checking them is skipped - this should be sound as all of these traits are
+implemented by the compiler and therefore this property can be guaranteed by
+the compiler implementation.
+
 ## Edition changes
 [edition-changes]: #edition-changes
 
@@ -247,8 +275,8 @@ Sized` bounds can be trivially rewritten to `DynSized` bounds by `rustup`.
 [auto-traits-and-backwards-compatibility]: #auto-traits-and-backwards-compatibility
 
 A hierarchy of `Sized` traits sidesteps [the backwards compatibility hazards
-which typically scupper attempts to add new traits implemented on every type]
-[changing_rules_of_rust].
+which typically scupper attempts to add new traits implemented on every
+type][changing_rules_of_rust].
 
 Adding a new auto trait to the bounds of an existing function would typically
 be a breaking change, despite all types implementing the new auto trait, in
@@ -287,35 +315,49 @@ fn std_fn<T: NewAutoTrait>(value: T) { /* .. */ }
      equivalent to a `T: DynSized` bound, as described earlier. Therefore there would
      be no change as `T: DynSized` implies the changed or relaxed bound.
 
-    ```rust
-fn user_fn<T>(value: T) { std_fn(value) } // T: Sized, so T: RuntimeSized
-fn std_fn<T: RuntimeSized>(value: T) { /* .. */ }
-    ```
+     ```rust
+     fn user_fn<T>(value: T) { std_fn(value) } // T: Sized, so T: RuntimeSized
+     fn std_fn<T: RuntimeSized>(value: T) { /* .. */ }
+     ```
 
-   If an existing function's generic parameter had a `?Sized` bound and this
-   bound were changed to `RuntimeSized` then this *would* be a breaking change, but
-   it is not expected that this change would be applied to any existing functions
-   in the standard library.
+     If an existing function's generic parameter had a `?Sized` bound and this
+     bound were changed to `RuntimeSized` then this *would* be a breaking change, but
+     it is not expected that this change would be applied to any existing functions
+     in the standard library.
    
-   The proposed traits in this RFC are only a non-breaking change because the
-   new auto traits are being added as subtraits of `Sized`, adding supertraits of
-   `Sized` would be a breaking change.
+     The proposed traits in this RFC are only a non-breaking change because the
+     new auto traits are being added as subtraits of `Sized`, adding supertraits of
+     `Sized` would be a breaking change.
 
 2. Trait objects passed by callers would not imply the new trait. For example,
    adding a new auto trait as a bound to `std_fn` would cause `user_fn` to stop
    compiling as its trait object would not automatically implement the new auto
    trait:
 
-    ```rust
-fn user_fn(value: Box<dyn ExistingTrait>) { std_fn(value) }
-fn std_fn<T: NewAutoTrait>(value: &T) { /* ... */}
-//~^ ERROR the trait bound `dyn ExistingTrait: NewAutoTrait` is not satisfied in `Box<dyn ExistingTrait>`
-    ```
+   ```rust
+   fn user_fn(value: Box<dyn ExistingTrait>) { std_fn(value) }
+   fn std_fn<T: NewAutoTrait>(value: &T) { /* ... */}
+   //~^ ERROR the trait bound `dyn ExistingTrait: NewAutoTrait` is not satisfied in `Box<dyn ExistingTrait>`
+   ```
 
    Like the previous case, due to the proposed traits being subtraits of
    `Sized`, and every trait object implementing `Sized`, adding a `RuntimeSized`,
    `DynSized`, or `Unsized` bound to any existing generic parameter would be
    already satisfied.
+
+Additionally, it is not expected that this RFC's additions would result in much
+churn within the ecosystem. All bounds in the standard library should be re-evaluated
+during the implementation of this RFC, but bounds in third-party crates need not be:
+
+Up-to-`RuntimeSized`-implementing types will primarily be used for localised
+performance optimisation, and `Unsized`-only-implementing types will primarily be
+used for localised FFI, neither is expected to be so pervasive throughout Rust
+software to the extent that all existing `Sized` or `?Sized` bounds would need to
+be immediately reconsidered in light of their addition. If a user of a
+up-to-`RuntimeSized`-implementing type or a `Unsized`-only-implementing type did
+encounter a bound that needed to be relaxed, this could be changed in a patch to
+the relevant crate without breaking backwards compatibility as-and-when such bounds
+are discovered.
 
 ## Changes to the standard library
 [changes-to-the-standard-library]: #changes-to-the-standard-library
@@ -390,9 +432,43 @@ There are various points of difference to the [prior art](#prior-art) related to
   traits. Custom DSTs are still compatible with this proposal using a `Contiguous`
   trait as in [rfcs#2594][rfc_custom_dst_electric_boogaloo].
 
+## Bikeshedding
 All of the trait names proposed in the RFC can be bikeshed and changed, they'll
 ultimately need to be decided but aren't the important part of the RFC.
 
+## Why have `Unsized`?
+It may seem that the `Unsized` trait is unnecessary as this is equivalent to the
+absense of any bounds whatsoever, but having an `Unsized` trait is necessary to
+enable the meaning of `?Sized` to be re-defined to be equivalent to `DynSized`
+and avoid complicated behaviour change over an edition.
+
+Without `Unsized`, if a user wanted to remove all sizedness bounds from a generic
+parameter then they would have two options:
+
+1. Introduce new relaxed bounds (i.e. `?DynSized`), which has been found
+   unacceptable in previous RFCs ([rfcs#2255][issue_more_implicit_bounds]
+   summarizes these discussions)
+2. Maintain `?Sized`'s existing meaning of removing the implicit `Sized` bound
+    - This could be maintained with or without having the existence of bounds
+      for `RuntimeSized` and `DynSized` remove the implicit `Sized` bound.
+      
+The latter is the only viable option, but this would complicate changing
+`size_of_val`'s existing `?Sized` bound.
+
+`?Sized` can be redefined to be equivalent to `DynSized` in all editions
+and the syntax can be removed in a future edition only because adding an
+`Unsized` bound is equivalent to removing the `Sized` bound and imposing
+no constraints on the sizedness of a parameter.
+
+Without `Unsized`, a complicated migration would be necessary to change
+all current uses of `?Sized` to `DynSized` (as these are equivalent) and
+then future uses of `?Sized` would now accept more types than `?Sized`
+previously did (they would now accept the `extern type`s).
+
+In [rfcs#3396][rfc_extern_types_v2], `MetaSized` was introduced and used a
+similar mechanism over an edition to redefine `?Sized`. 
+
+## Alternatives to this RFC
 There are not many alternatives to this RFC to unblock `extern type`s and
 scalable vectors:
 
