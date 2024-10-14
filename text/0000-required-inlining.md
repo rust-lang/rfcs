@@ -31,6 +31,9 @@ Since users rely on these intrinsics for their application's performance, Rust
 should be able to warn users when these have not been inlined and performance
 will not be as expected.
 
+In general, for many intrinsics, inlining is not an optimisation but an
+important part of the semantics, regardless of optimisation level.
+
 [^1]: Armv8.3-A's pointer authentication can be used implicitly (automatic,
 hint-based) and explicitly (intrinsics). Implicit pointer authentication is
 already implemented by Rust. Explicit pointer authentication intrinsics are not
@@ -86,11 +89,10 @@ that it emits the lint when inlining does not happen and rustc will guarantee
 that no heuristics/optimization fuel considerations are employed to consider
 whether to inline the item.
 
-It is intended that `#[inline(required)]` and `#[inline(must)]` only be used
-in cases where inlining is strictly necessary and is documented to be so, such
-as with some intrinsics. `#[inline]`'s documentation should reflect that except
-in these cases, bare `#[inline]`, `#[inline(always)]`, and `#[inline(never)]`
-should be preferred.
+`#[inline(must)]` and `#[inline(required)]` are intended to remain unstable
+indefinitely and be used only within the standard library (e.g. on intrinsics).
+This could be relaxed if there were sufficient motivation for use of these
+inlining attributes in user code.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -126,10 +128,10 @@ project does not wish to support.
 # Prior art
 [prior-art]: #prior-art
 
-gcc and clang both have equivalents of `inline(always)` (e.g. [clang](https://
+gcc and clang both have partial equivalents (e.g. [clang](https://
 clang.llvm.org/docs/AttributeReference.html#always-inline-force-inline))
-which ignore their heuristics but still only guarantee that they will attempt
-inlining, and do not notify the user if inlining was not possible.
+which ignore their inlining heuristics but still only guarantee that they
+will attempt inlining, and do not notify the user if inlining was not possible.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
