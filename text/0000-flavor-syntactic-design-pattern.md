@@ -577,6 +577,10 @@ We considered a number of alternatives to `K Trait` for denoting K-flavored trai
 
 Ultimately, the killer argument was that this felt like everybody's preferred "second choice option", but nobody's *favorite*. It's not a bold design.
 
+## Why not use camel-case names for most traits but `async Fn` for the fn traits?
+
+The concern is that typing the name `Fn` when, in fact, the trait is called `AsyncFn` seemed like to confuse users. Morever, it is not building a muscle memory that can be applied to other traits. (On the other hand, the function traits are already quite built-in and have significant "language syntax" associated with them, like custom `Fn()` notation in bounds and closure expressions.)
+
 ## Why not use a notation like `T: async fn()` instead of `T: async Fn()`?
 
 One advantage of today's sugar for trait bounds (`T: Fn()`, `T: FnMut()`, etc) is that it more closely resembles function declarations. Adding the async keyword continues that, in that one now puts `async` in front of the `fn` or closure and then likewise in front of the bound (`T: async Fn()`). Iterating on that vein, we considered going further with bound notation, so that one would write `T: fn()` instead of `T: Fn()` and then `T: async fn()` instead of `T: async Fn()`. The following objections were raised:
