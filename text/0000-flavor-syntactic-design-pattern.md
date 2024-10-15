@@ -28,20 +28,20 @@ In the flavor pattern, each flavor is tied to a specific keyword `K`. Flavors sh
 
 Some flavors rewrite code so that it executes differently (e.g., `async`). These are called **rewrite flavors**. Each such flavor should have the following:
 
-* A syntax `🚲K<$ty>` defining the `K`-type, the type that results from a `K`-block, `K`-function, or `K`-closure whose body has type `$ty`.
-    * The `🚲K<$ty>` is a placeholder. We expect a future RFC to define the actual syntax.
-* A "do" operation that, when executed in a `K`-block, consumes a `🚲K<$ty>` and produces a `$ty` value.
+* A syntax `🏠K<$ty>` defining the `K`-type, the type that results from a `K`-block, `K`-function, or `K`-closure whose body has type `$ty`.
+    * The `🏠K<$ty>` is a placeholder. We expect a future RFC to define the actual syntax.
+* A "do" operation that, when executed in a `K`-block, consumes a `🏠K<$ty>` and produces a `$ty` value.
 * The property that a `K`-function can be transformed to a regular function with a `K`-flavored return type and body.
     * i.e., the following are roughly equivalent (the precise translation can vary so as to e.g. preserve drop order):
         * `K fn $name($args) -> $ty { $expr }`
-        * `fn $name($args) -> 🚲K<$ty> { K { $expr } }`
+        * `fn $name($args) -> 🏠K<$ty> { K { $expr } }`
 
 ## Binding recommendations
 
 Existing flavor-like keywords in the language do not have all of these parts. The RFC therefore includes a limited set of binding recommendations that brings them closer to conformance:
 
 * Commit to `K $Trait` as the syntax for applying flavors to traits, with the `async Fn`, `async FnMut`, and `async FnOnce` traits being the only current usable example.
-* Commit to adding a TBD syntax `🚲async<$ty>` that will meet the equivalences described in this RFC.
+* Commit to adding a TBD syntax `🏠async<$ty>` that will meet the equivalences described in this RFC.
 
 ## Not part of this RFC
 
@@ -53,7 +53,7 @@ The [Future Possibilities](#future-possibilities) discusses other changes we cou
     * For example, the RFC specifies that **if** we add an async flavor of the `Read` trait, it will be referred to as `async Read`, but the RFC does **not** specify whether to add such a trait nor how such a trait would be defined or what its contents would be.
 * How `const Trait` ought to work ([under active exploration][#67792]):
     * The RFC only specifies that the syntax for naming a `const`-flavored trait should be `const Trait`; it does not specify what a `const`-flavored trait would mean or when that syntax can be used.
-* What specific syntax we should use for `🚲K<$ty>`:
+* What specific syntax we should use for `🏠K<$ty>`:
     * We are committed to adding this syntax at least for `async`, but the precise syntax still needs to be pinned down. [RFC #3628][] contains one possibility.
 
 # Motivation
@@ -182,32 +182,32 @@ In discussion the lang team concluded that having an explicit syntax for "the re
 
 #### What is new in this RFC
 
-This RFC commits us to adding *some* form of this syntax for `async` but defers the bikeshed for [RFC #3668][] or some future RFC. We refer to this future syntax `🚲async<$ty>`. Usage of this syntax should be equivalent to typing `impl Future<Output = $ty>`. Note that `🚲async<$ty>` is not a Rust type alias but a syntactic substitution, and therefore the `impl` keyword here has a different role depending on where it appears (in [function arguments][apit], it corresponds to a new generic argument to the fn; in [return position][rpit], it corresonds to an [abstract return type][rpit], etc).
+This RFC commits us to adding *some* form of this syntax for `async` but defers the bikeshed for [RFC #3668][] or some future RFC. We refer to this future syntax `🏠async<$ty>`. Usage of this syntax should be equivalent to typing `impl Future<Output = $ty>`. Note that `🏠async<$ty>` is not a Rust type alias but a syntactic substitution, and therefore the `impl` keyword here has a different role depending on where it appears (in [function arguments][apit], it corresponds to a new generic argument to the fn; in [return position][rpit], it corresonds to an [abstract return type][rpit], etc).
 
 [apit]: https://doc.rust-lang.org/stable/reference/types/impl-trait.html#anonymous-type-parameters
 [rpit]: https://doc.rust-lang.org/stable/reference/types/impl-trait.html#abstract-return-types
 
 This RFC also recommends that future flavors which "transform" the result of a block or function introduce a corresponding syntax.
 
-Where `🚲K<$ty>` exists it should meet the following invariants:
+Where `🏠K<$ty>` exists it should meet the following invariants:
 
-1. A `K`-function `K fn foo() -> $ty { $expr }` returns a value of type `🚲K<$ty>` when called.
+1. A `K`-function `K fn foo() -> $ty { $expr }` returns a value of type `🏠K<$ty>` when called.
     * The body `$expr` produces/returns a value of the declared type `$ty`.
-2. A `K`-block `K { $expr }` produces a result of type `🚲K<$ty>`, where:
+2. A `K`-block `K { $expr }` produces a result of type `🏠K<$ty>`, where:
     * `$ty` is the type produced by the body `$expr` (or `break` statements that target this block).
-3. A `K`-closure `K |$args| -> $ty { $expr }` returns a value of type `🚲K<$ty>` when called.
+3. A `K`-closure `K |$args| -> $ty { $expr }` returns a value of type `🏠K<$ty>` when called.
     * The body `$expr` produces/returns a value of the declared type `$ty`.
     * The `K`-closure implements the trait `K Fn<Output = T>`.
-4. There is some operation, called the "do" operation, that takes a `🚲K<$ty>` value and returns a `$ty` value to the surrounding code.
+4. There is some operation, called the "do" operation, that takes a `🏠K<$ty>` value and returns a `$ty` value to the surrounding code.
 
 #### Example: `async`
 
-* The definition of `🚲async<$ty>` is `impl Future<Output = $ty>`.
+* The definition of `🏠async<$ty>` is `impl Future<Output = $ty>`.
 * The "do" operation for `async` is `await`.
 
 ### Relationship between `K`-flavored functions, blocks, and types
 
-Looking at async functions and the proposed `🚲async<$ty>` notation, we observe the following relationship. An `async` function like `count_input`...
+Looking at async functions and the proposed `🏠async<$ty>` notation, we observe the following relationship. An `async` function like `count_input`...
 
 ```rust
 async fn count_input(urls: &[Url]) -> usize {
@@ -215,10 +215,10 @@ async fn count_input(urls: &[Url]) -> usize {
 }
 ```
 
-...can be transformed into an "ordinary" function that (a) returns `🚲async<$ty>` and (b) uses an `async move` block (caveat: the true transformation is slightly more subtle [in order to preserve the drop order for method arguments][droporder]):
+...can be transformed into an "ordinary" function that (a) returns `🏠async<$ty>` and (b) uses an `async move` block (caveat: the true transformation is slightly more subtle [in order to preserve the drop order for method arguments][droporder]):
 
 ```rust
-fn count_input(urls: &[Url]) -> 🚲async<usize> {
+fn count_input(urls: &[Url]) -> 🏠async<usize> {
     async move {
         // ... iterate over urls and load data ...
     }
@@ -229,9 +229,9 @@ This works because async blocks rewrite their content to produce a different val
 
 #### What is new in this RFC
 
-This RFC recommends that future flavors that define `🚲K<$ty>` meet this invariant:
+This RFC recommends that future flavors that define `🏠K<$ty>` meet this invariant:
 
-* A `K fn foo() -> T` should be equivalent to a (unflavored) `fn` that returns `🚲async<T>` and uses some form of `K`-flavored block.
+* A `K fn foo() -> T` should be equivalent to a (unflavored) `fn` that returns `🏠async<T>` and uses some form of `K`-flavored block.
 
 ## The "filter flavor" subset
 
@@ -264,10 +264,10 @@ Continuing with the Runtime-Rust hypothetical, most parts of the flavor pattern 
 
 There is one part however that doesn't really fit:
 
-* `K`-flavored types can be written with the syntax `🚲K<T>`:
-    * `K`-flavored functions, closures, and blocks return/produce `🚲K<T>` values, where `T` is their original type.
+* `K`-flavored types can be written with the syntax `🏠K<T>`:
+    * `K`-flavored functions, closures, and blocks return/produce `🏠K<T>` values, where `T` is their original type.
 
-Introducing a `🚲runtime<T>` syntax to describe a "runtime-flavored type" doesn't make sense, because `runtime` blocks don't change the type of value that is produced. So `🚲runtime<T> = T` always. We don't need syntax for this and having it would be confusing. Furthermore, the equivalence between a `K`-function and a function whose body returns a `K`-block doesn't hold:
+Introducing a `🏠runtime<T>` syntax to describe a "runtime-flavored type" doesn't make sense, because `runtime` blocks don't change the type of value that is produced. So `🏠runtime<T> = T` always. We don't need syntax for this and having it would be confusing. Furthermore, the equivalence between a `K`-function and a function whose body returns a `K`-block doesn't hold:
 
 * `runtime fn $name() -> T { $expr }` is NOT equivalent to `fn $name() -> T { runtime { $expr } }`
 
@@ -284,11 +284,11 @@ Based on our discussion of `runtime`, we can identify the parts of the full flav
 * `K`-closures using the syntax `K [move] |$args| $expr` to define a K-closure;
     * Closures implement the `K Fn` traits.
 
-The other parts of the pattern (e.g., the `🚲K<ty>` syntax or defining a "do" operation) do not apply because filter flavors don't change the type of the value produced by the block. Further, the transformation from `K fn $name` to a function with a `K`-block doesn't work, because the point of a `K fn $name()` is to signal to callers that `$name` can only be called inside of a `K`-block.
+The other parts of the pattern (e.g., the `🏠K<ty>` syntax or defining a "do" operation) do not apply because filter flavors don't change the type of the value produced by the block. Further, the transformation from `K fn $name` to a function with a `K`-block doesn't work, because the point of a `K fn $name()` is to signal to callers that `$name` can only be called inside of a `K`-block.
 
 ## Teaching async via the "flavor pattern"
 
-> The "flavor pattern" is meant to guide Rust designers as we extend the language, not to be something directly taught to end users. To illustrate how it might feel, this section covers an example of teaching `async` leveraging the syntax and concepts of the flavor pattern (but not teaching the pattern explicitly). To help illustrate where the overall vision for Rust, we assume that `🚲K<$T>` is `K -> $T` (a variant of [RFC #3628][] currently preferred by the author), that `async -> T` and its equivalent `impl Trait<Output = T>` are supported in local variable declarations ([RFC #2071][]), and that there is some form of `async Iterator` trait available in std.
+> The "flavor pattern" is meant to guide Rust designers as we extend the language, not to be something directly taught to end users. To illustrate how it might feel, this section covers an example of teaching `async` leveraging the syntax and concepts of the flavor pattern (but not teaching the pattern explicitly). To help illustrate where the overall vision for Rust, we assume that `🏠K<$T>` is `K -> $T` (a variant of [RFC #3628][] currently preferred by the author), that `async -> T` and its equivalent `impl Trait<Output = T>` are supported in local variable declarations ([RFC #2071][]), and that there is some form of `async Iterator` trait available in std.
 
 ### Async functions
 
@@ -509,13 +509,13 @@ Every flavor keyword `K` supports:
 
 Rewrite flavors further support:
 
-* `K`-types using a TBD syntax, denoted `🚲K<$ty>` for now.
-    * A `K`-type `🚲K<$ty>` is the type resulting from a `K`-block whose expression has type `$ty`.
+* `K`-types using a TBD syntax, denoted `🏠K<$ty>` for now.
+    * A `K`-type `🏠K<$ty>` is the type resulting from a `K`-block whose expression has type `$ty`.
 * A `K`-function `K fn $name($args) -> $ty { $expr }` is "roughly" equivalent to a regular function whose return type and body are `K`-flavored:
-    * `fn $name($args) -> 🚲K<$ty> { K { $expr } }`
+    * `fn $name($args) -> 🏠K<$ty> { K { $expr } }`
     * The translation will vary slightly depending on the specifics of the flavor. The goal is that `K`-functions should behave as close as possible to an unflavored function. For example, drop order should be preserved.
-* A `K`-closure returns `🚲K<$ty>`, where `$ty` would have been the return type had the closure been unflavored.
-* A "do" operation that, when executed in a `K`-block, consumes a `🚲K<$ty>` and produces a `$ty` value.
+* A `K`-closure returns `🏠K<$ty>`, where `$ty` would have been the return type had the closure been unflavored.
+* A "do" operation that, when executed in a `K`-block, consumes a `🏠K<$ty>` and produces a `$ty` value.
 
 Some flavors may only include a subset of these features. This subset should be documented and explained.
 
@@ -551,9 +551,9 @@ During the RFC period we evaluated several possible names. The term "flavor" was
 
 **Color** was initially chosen as a playful allusion to the ["What color is your function"?][WCIF] blog post. Color is approachable but such a common word in conversation that readers may not realize it is a "term of art". It is also widely used in some domains, such as GUIs, making it a poor choice for keyword (not that we are proposing a keyword). Also, while color is relatively grammatically flexible, it can still be awkward. For example, we sometimes talk about a specific "flavor" of a trait, and saying "the async color of the Trait" doesn't sound right. There was also the problem that, as y'all are hopefully aware, the term "colored" has been associated with some awful parts of human history, and some common phrasings could have undesirable connotations. 
 
-## Why include `🚲K<$T>` syntax?
+## Why include `🏠K<$T>` syntax?
 
-Most parts of the flavor pattern already exist in Rust today or at least in accepted RFCs. The `🚲K<$T>` syntax for flavored types stands out as the exception. It was included in the RFC because it forms an important part of the overall story (witness how prominent it is in the guide section). Some members of the lang team felt that, without `🚲K<$T>`, they didn't feel good about the flavor pattern overall.
+Most parts of the flavor pattern already exist in Rust today or at least in accepted RFCs. The `🏠K<$T>` syntax for flavored types stands out as the exception. It was included in the RFC because it forms an important part of the overall story (witness how prominent it is in the guide section). Some members of the lang team felt that, without `🏠K<$T>`, they didn't feel good about the flavor pattern overall.
 
 ## Why not use the camel-case named for K-flavored traits, like `AsyncFn` instead of `async Fn`?
 
@@ -576,14 +576,14 @@ One advantage of today's sugar for trait bounds (`T: Fn()`, `T: FnMut()`, etc) i
 
 We deliberately chose non-standard terms to avoid associations. For example, the "filter" flavor might also be called an "effect-carrying flavor", but that invites debate as to the precise definition of an effect and whether `unsafe` qualifies.
 
-## Can `🚲K<$T>` be used in closure return types like it can for regular functions?
+## Can `🏠K<$T>` be used in closure return types like it can for regular functions?
 
-The answer to this is complicated and left to be resolved by future RFCs that actually add the `🚲K<$T>` notation. Recall that we specified that `K`-flavors can be migrated from a `K`-function to its return type and body:
+The answer to this is complicated and left to be resolved by future RFCs that actually add the `🏠K<$T>` notation. Recall that we specified that `K`-flavors can be migrated from a `K`-function to its return type and body:
 
 ```rust
 K fn foo() -> T { ... }
 // becomes
-fn foo() -> 🚲K<T> { K { ... } }
+fn foo() -> 🏠K<T> { K { ... } }
 ```
 
 The question then is whether it is possible to transform a a `K`-closure in a similar way:
@@ -591,19 +591,19 @@ The question then is whether it is possible to transform a a `K`-closure in a si
 ```rust
 K |args| -> T { ... }
 // could maybe become
-|args| -> 🚲K<T> { K { ... } }
+|args| -> 🏠K<T> { K { ... } }
 ```
 
-Supporting this notation is tricky however because closure return types are often elided. Given that `K`-closure types implement `K Fn` rather than the typical `Fn` trait, we need to be able to determine if a closure has flavor `K` to decide what traits it implements. But there is no way to distinguish whether an expression like `|| K { .. }` is meant to be a `K`-closure that implements `K Fn<Output = T>` or an unflavored closure that implements `Fn<Output = 🚲K<T>>` value. As described in [RFC #3668][], these two traits are not equivalent for `async` and likely not for other future rewrite flavors.
+Supporting this notation is tricky however because closure return types are often elided. Given that `K`-closure types implement `K Fn` rather than the typical `Fn` trait, we need to be able to determine if a closure has flavor `K` to decide what traits it implements. But there is no way to distinguish whether an expression like `|| K { .. }` is meant to be a `K`-closure that implements `K Fn<Output = T>` or an unflavored closure that implements `Fn<Output = 🏠K<T>>` value. As described in [RFC #3668][], these two traits are not equivalent for `async` and likely not for other future rewrite flavors.
 
 We've left the behavior here to be specified in a future RFC, but we note that it would be simple to declare it as an error for now. Note that `-> impl Future` is also not accepted in this position.
 
 # Prior art
 [prior-art]: #prior-art
 
-The term "flavor" is taken from the ["What flavor is your function?"][WCIF] blog post. As that post indicates, many languages have added flavors of one form or another. This RFC is focused on the syntactic patterns around flavors, specifically using the flavor as a prefix (e.g., `async fn`, `🚲async<T>`, `async Trait`). This pattern of prefixing functions with flavors is very common and is very natural in English as the flavor plays the role of an adjective, describing the kind of function one has.
+The term "flavor" is taken from the ["What flavor is your function?"][WCIF] blog post. As that post indicates, many languages have added flavors of one form or another. This RFC is focused on the syntactic patterns around flavors, specifically using the flavor as a prefix (e.g., `async fn`, `🏠async<T>`, `async Trait`). This pattern of prefixing functions with flavors is very common and is very natural in English as the flavor plays the role of an adjective, describing the kind of function one has.
 
-Although the RFC is focused on syntax, it does also suggest some equivalences that flavors must maintain, such as how a `K fn foo() -> T { expr }` can be transformed to `fn foo() -> 🚲K<T> { K move { expr } }` for any rewrite flavor `K`. These equivalences hint at an underlying semantics for flavors. There are two related precedents in academia:
+Although the RFC is focused on syntax, it does also suggest some equivalences that flavors must maintain, such as how a `K fn foo() -> T { expr }` can be transformed to `fn foo() -> 🏠K<T> { K move { expr } }` for any rewrite flavor `K`. These equivalences hint at an underlying semantics for flavors. There are two related precedents in academia:
 
 * [Haskell]'s monads are comparable in some ways to rewrite flavors, and the [monadic laws][] suggest similar equivalences. A "[monad]" is like a flavor made up of two operations, one that "wraps" a value `v` to yield a `Wrapped<V>` (analogous to `K-type!(v)`) and one that does an `and_then` operation, often called "fold", taking a `Wrapped<V>`and a `V => Wrapped<W>` closure and yielding a `Wrapped<W>` value. The effect is kind of like a "programmable semicolon", allowing [Haskell] programs to introduce operations in in between each statement, and to potentially carry along "user data" with the wrapped `V` value. Haskell includes generic syntax ("do"-notation) designed to work with monads, allowing one to define generic functions that can be used with any monad `Wrapped`.
     * Monads are famously challenging to learn ("The sheer number of different monad tutorials on the internet is a good indication of the difficulty many people have understanding the concept", says the Haskell wiki). Flavors run the risk of being similarly complicated. However, this RFC is not introducing flavors as a concept that users would be taught, but rather as a syntactic pattern that they will pick up on as they learn about different existing parts of Rust (async, unsafe, etc).
@@ -620,7 +620,7 @@ Although the RFC is focused on syntax, it does also suggest some equivalences th
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## What syntax to use for `🚲K<$T>`?
+## What syntax to use for `🏠K<$T>`?
 
 This question is purposefully left unresolved by this RFC and is meant to be addressed in follow-up RFCs, such as [RFC #3628][].
 
@@ -631,7 +631,7 @@ This question is purposefully left unresolved by this RFC and is meant to be add
 
 This RFC suggests a number of future changes to "fill out" the support for flavors:
 
-* Async should add a `🚲async<T>` syntax (see [RFC #3628][]).
+* Async should add a `🏠async<T>` syntax (see [RFC #3628][]).
 * We will eventually need a mechanism for defining async-flavored traits like `async Iterator` or `async Default`. For the short term this is not urgent as the traits we are focused on (such as `Fn` and `Drop`) are special.
 * Const-flavored traits should use a notation like (e.g.) `const Default`.
 * Unsafe-flavored traits like `unsafe Default`, which would mean a `Default` trait with an unsafe `default` method, are a possibility, but they could be easily confused for an unsafe trait.
@@ -666,9 +666,9 @@ As described in [RFC #243][], a `try { $expr }` block executes `$expr` and "capt
 [#41414]: https://github.com/rust-lang/rust/issues/41414
 [#70941]: https://github.com/rust-lang/rust/issues/70941
 
-Looking at `try` as a flavor, it is clear that ok-wrapping is the correct and consistent behavior. `try`, like `async`, is a fully general flavor that transforms its result type, and the flavor pattern specifies that the type of an expression in a block should be "ok-wrapped" to produce the block's final output type. Another point of controversy about `try` has been how to support it syntactically at the function level. This RFC suggests that the right answer is `try fn foo() -> T`, where `T` represents the "ok" type. The final result of calling `foo()` would therefore be `🚲try<T>`, the ok-wrapped flavor of `T`.
+Looking at `try` as a flavor, it is clear that ok-wrapping is the correct and consistent behavior. `try`, like `async`, is a fully general flavor that transforms its result type, and the flavor pattern specifies that the type of an expression in a block should be "ok-wrapped" to produce the block's final output type. Another point of controversy about `try` has been how to support it syntactically at the function level. This RFC suggests that the right answer is `try fn foo() -> T`, where `T` represents the "ok" type. The final result of calling `foo()` would therefore be `🏠try<T>`, the ok-wrapped flavor of `T`.
 
-While treating `try` as a flavor is appealing, it does have one important difference from `async`: `try` and `?` are intended to be usable with many types, including `Result`, `Option`, and others. In terms of the flavor pattern, it is therefore unclear what the syntax `🚲try<T>` should expand to.
+While treating `try` as a flavor is appealing, it does have one important difference from `async`: `try` and `?` are intended to be usable with many types, including `Result`, `Option`, and others. In terms of the flavor pattern, it is therefore unclear what the syntax `🏠try<T>` should expand to.
 
 [`Try`]: https://doc.rust-lang.org/std/ops/trait.Try.html
 
@@ -693,19 +693,19 @@ try fn load_configuration_string() -> String {
 }
 ```
 
-This would be equivalent to the following unflavored function returning `🚲try<T>`:
+This would be equivalent to the following unflavored function returning `🏠try<T>`:
 
 ```rust
 use std::io::try;
 
-fn load_configuration_string() -> 🚲try<String> {
+fn load_configuration_string() -> 🏠try<String> {
     try { std::fs::read_to_string("config.txt")? }
 }
 ```
 
 This is only one possibility. There are several other ideas for how try could be integrated:
 
-* Define `type try = Result<!, std::io::Error>` as an alias for the residual and use `try -> T` to mean `impl Try<Output = T, Residual = X>` (this assumes `🚲try<T>` is defined as `try -> T`).
+* Define `type try = Result<!, std::io::Error>` as an alias for the residual and use `try -> T` to mean `impl Try<Output = T, Residual = X>` (this assumes `🏠try<T>` is defined as `try -> T`).
 * Extend `try fn` with a clause like `try fn foo() -> T throws X` and have it expand to `impl Try<Output = T, Residual = X>` or something like that.
 
 ### `gen` as a rewrite flavor
@@ -742,9 +742,9 @@ gen fn all() yields u32 {
 }
 ```
 
-Treating `gen` as a `flat_map` operation does not map to the "do" operation defined in the flavor pattern. The "do" operation is meant to take a transformed value of type `🚲gen<T>` and produce a single value of type `T`; but `flat_map` produces any number of `T` values. This is not necessarily a problem, not all flavors have to provide all parts of the pattern, but it would suggest that `gen` is a distinct category of flavor from a rewrite flavor like `async` or `try`.
+Treating `gen` as a `flat_map` operation does not map to the "do" operation defined in the flavor pattern. The "do" operation is meant to take a transformed value of type `🏠gen<T>` and produce a single value of type `T`; but `flat_map` produces any number of `T` values. This is not necessarily a problem, not all flavors have to provide all parts of the pattern, but it would suggest that `gen` is a distinct category of flavor from a rewrite flavor like `async` or `try`.
 
-There is however another "do" operation we might use for generators which *does* fit the rewrite pattern, but which may not be as intuitive or useful to end users. In addition to the yield type that we have been discussing, generators can be extended with the idea of a final value type; we can use the syntax `🚲gen<F, Yielding = Y>`, where `Y` is the *yielding* type and `F` is the *final* type that is returned. (An existing `impl Iterator<Item = I>` can be seen as having a yield type of `I` and a final type of `()`.) In this case, the "do" operation would be `yield_all`, which would yield up all `Y` items and then return the final `F` value.
+There is however another "do" operation we might use for generators which *does* fit the rewrite pattern, but which may not be as intuitive or useful to end users. In addition to the yield type that we have been discussing, generators can be extended with the idea of a final value type; we can use the syntax `🏠gen<F, Yielding = Y>`, where `Y` is the *yielding* type and `F` is the *final* type that is returned. (An existing `impl Iterator<Item = I>` can be seen as having a yield type of `I` and a final type of `()`.) In this case, the "do" operation would be `yield_all`, which would yield up all `Y` items and then return the final `F` value.
 
 Here is an example using the hypothesized "yield all" construct, showing how you could work with `gen<Yielding = Y>` as a flavor. In this case, the `yield_all` 'unwraps' the generator effect, propagating the yielded values, and returning the final value. Calling `outer` would then yield up [`0`, `1`, `2`, `6`, `7`, `8`] and return 42. Note how `.yield_all` appears at the same places that `.await` would appear if these were async functions:
 
