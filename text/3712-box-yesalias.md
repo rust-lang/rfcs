@@ -10,7 +10,7 @@
 
 Currently, the operational semantics of the type [`alloc::boxed::Box<T>`](https://doc.rust-lang.org/beta/alloc/boxed/struct.Box.html) is in dispute, but the compiler adds llvm `noalias` to it. To support it, the current operational semantics models have the type use a special form of the `Unique` (Stacked Borrows) or `Active` (Tree Borrows) tag, which has aliasing implications, validity implications, and also presents some unique complications in the model and in improvements to the type (e.g. Custom Allocators). We propose that, for the purposes of the runtime semantics of Rust, `Box` is treated as no more special than a user-defined smart pointer you can write today[^1]. In particular, it is given similar behaviour on a typed copy to a raw pointer.
 
-[^1]: We maintain some trivial validity invariants (such as alignment and address space limits) that a user cannot define, but these invariants only depend upon the value of the `Box` itself, rather than on memory.
+[^1]: We maintain some trivial validity invariants (such as alignment and address space limits) that a user cannot define, but these invariants only depend upon the value of the `Box` itself, rather than on memory pointed to by the `Box`.
 
 # Motivation
 [motivation]: #motivation
