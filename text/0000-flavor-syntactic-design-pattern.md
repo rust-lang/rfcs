@@ -79,6 +79,10 @@ Looking more closely at `async` and `const`, we see that there is a latent conce
 * `unsafe` functions can only be called from `unsafe` blocks or other `unsafe` functions.
 * `const` functions can only call other `const` functions.
 
+## Goal: adopting a flavor can be done by "just adding the keyword"
+
+The goal for all Rust flavors is to be consistent with unflavored Rust overall. Generally speaking, adding a flavor to some code should just require adding the flavor keyword in the right places, along with other complementary keywords (e.g., `await` for `async`). One goal of this RFC is to outline all the places that flavors must be supported to enable this "just add flavor" feel. We do this by exploring the example of `async` (and then exploring `const`, which requires a subset of those places).
+
 ## Tenet: consistent syntax and transformations makes Rust easier to learn
 
 The premise of this RFC is that flavor keywords like `const`, `async`, and `unsafe` "feel similar" to users and that we should make them work as consistently as possible (but no more than that). Because they serve different purposes, we don't wish to force them into a single shape if that shape is an ill-fit. Nonetheless, we wish to ensure that these flavors, and any future "flavor-like" features, feel as consistent and predictable as possible, so that users can develop "muscle memory" that helps them to predict syntax they haven't used or seen yet. The RFC describes the syntax to use for a flavor keyword applied to various constructs as well as some of the "approximate equivalences" that flavors should generally hold.
@@ -89,7 +93,7 @@ Code with a given flavor `K` is meant to interoperate fully with other code with
 
 Existing flavors do not yet support all the aspects described herein. This RFC recommends changes that close a limited number of these gaps; the [Future Possibilities](#future-possibilities) discusses other changes we could make to more fully support the flavor pattern for every flavor.
 
-## Tenet: all parts of the flavor pattern should have explicit syntax centered on the keyword `K`
+## Tenet: flavors should be understandable on their own
 
 One of the recommendations of this RFC is committing to add a `K`-flavored type syntax in the future, similar to what is proposed in [RFC #3628][]. The motivation for this is that it is important when teaching flavors to be able to teach the *flavor specifically*, without having to reference additional language features like `impl Trait`. This addresses feedback we have received from Rust trainers which is that one of the difficulties in teaching Rust is that users can't learn Rust in "layers", they have to learn all parts of Rust at once before any of it makes sense.
 
@@ -527,6 +531,14 @@ Some flavors may only include a subset of these features. This subset should be 
 Answer: nothing. It's just an observation of fact! `K` is a keyword that can be applied to blocks and functions and which affects how code can interoperate.
 
 Longer answer: it suggests that `K` should support the syntaxes and operations described in this RFC. Each flavor is different, so it is possible that a given piece of syntax is not relevant, but you ought to be able to explain why. Certainly past experience with flavors suggests that over time you will want to be able to use them in all the places identified in the flavor pattern to allow people to write code naturally.g
+
+## Will there be a mechanical connection between flavors of a trait (like `async Read`) and the original (`Read`)?
+
+That is not yet clear. The only flavored trait currently RFC'd is the `async` flavor of the `Fn` trait. It is not clear whether we will ever add an `async` flavor for the `Read` trait or what language mechanism we would use to do so. It could be automatically derived from `Read` but it could also be a divergent definition.
+
+However, the RFC does give some guidance for flavored traits. Specifically, it says that a flavored trait should offer *at least* the same members as the unflavored version, some of which may themselves now be flavored. The `async FnOnce` trait is a good example of this. Like the ordinary `FnOnce` trait, it offers a `call_once` method (but flavored `async`) and an `Output` associated type. As an implementation detail, it has additional members, like the `CallOnceFuture`; these are not currently exposed to users but they could be in the future.
+
+The reason that we specify that flavored traits have *at least* the same members as unflavored ones is to preserve the invariant that unflavored code can be ported to a flavor by "just adding the flavor keyword". If there is existing unflavored code using the trait, you should be able to "flavor" it easily. This would not be possible if the flavored version of the trait lacked some of the features or mechanisms of the original (unless of course the existence of those features is directly in contradiction with the purpose of the flavor, e.g., a panic-free flavor would not include a panic-free flavored method that is guaranteed to panic).
 
 ## What about `mut`, is that a flavor?
 
