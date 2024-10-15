@@ -81,6 +81,8 @@ However, past performance benchmarks have shown little to no performance is obta
 - Alternative 5: We could simply remove `noalias` from `Box` without modifying the language rules
     - This alternative is, in my opinion, the worst option. It doesn't actually solve the problems outlined, and `noalias` on `Box` has no soundness issues as it is currently used under the current rules. 
     - This neither provides any permissions to `unsafe` code, nor alievates any opsem issues, and simply disregards any optimizations, even theoretical ones, produced by `noalias`.
+- Alternative 6: Provide `Unique<T>` instead of `WellFormed<T>`, that provides the current behaviour as box
+    - Like other "Leave `Box<T>` as it is" proposals, it doesn't support unsafe code or simplify the opsem, and only benefits code wanting the same nebulous and largely unused optimization capacity.
 
 
 # Prior art
