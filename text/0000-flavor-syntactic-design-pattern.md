@@ -29,7 +29,7 @@ In the flavor pattern, each flavor is tied to a specific keyword `K`. Flavors sh
 Some flavors rewrite code so that it executes differently (e.g., `async`). These are called **rewrite flavors**. Each such flavor should have the following:
 
 * A syntax `🏠K<$ty>` defining the `K`-type, the type that results from a `K`-block, `K`-function, or `K`-closure whose body has type `$ty`.
-    * The `🏠K<$ty>` is a placeholder. We expect a future RFC to define the actual syntax.
+    * The `🏠K<$ty>` is a placeholder. We expect a future RFC to define the actual syntax. (The 🏠 emoji is meant to symbolize a "bikeshed".)c
 * A "do" operation that, when executed in a `K`-block, consumes a `🏠K<$ty>` and produces a `$ty` value.
 * The property that a `K`-function can be transformed to a regular function with a `K`-flavored return type and body.
     * i.e., the following are roughly equivalent (the precise translation can vary so as to e.g. preserve drop order):
