@@ -640,6 +640,13 @@ Although the RFC is focused on syntax, it does also suggest some equivalences th
 
 This question is purposefully left unresolved by this RFC and is meant to be addressed in follow-up RFCs, such as [RFC #3628][].
 
+## How will flavored traits work exactly (apart from `async Fn`)?
+
+This question is purposefully left unresolved by this RFC. Let's use `async std::io::Read` as an example. The RFC is not saying that `async Read` should be mechanically derived from `Read` (see also [this FAQ](#will-there-be-a-mechanical-connection-between-flavors-of-a-trait-like-async-read-and-the-original-read)). What the RFC does say is that we *intend* to support flavors and that future work will need to be done to elaborate those implications. There are some minimum requirements:
+
+* You should think of `async $Trait` as the *async flavor of `$Trait`*, which means that you import the "unflavored trait name" (e.g., `use std::io::Read`) and then apply the `async` keyword to it.
+* The methods/items available in the trait should should be a superset of the unflavored version, some of which may be "flavored" (e.g., `async Read` has the same methods as `Read`, but some of them are `async`; it may offer additional methods to account for extra functionality).
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
