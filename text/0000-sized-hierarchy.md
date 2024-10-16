@@ -2,7 +2,6 @@
 - Start Date: 2024-09-30
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
-
 # Summary
 [summary]: #summary
 
@@ -120,28 +119,33 @@ There are also types with a statically known size but only at runtime, and
 
 Rust uses marker traits to indicate whether a type is sized, when this is known
 and if the size needs to be computed. There are four traits related to the size of
-a type in Rust: `Sized` , `RuntimeSized`, `DynSized` and `Unsized`. 
+a type in Rust: `Sized` , `RuntimeSized`, `DynSized` and `Pointee`.
+
+*There is already an unstable trait named `Pointee`, this isn't intended to replace
+that trait and either trait may need to be renamed so as not to overlap, but
+`Pointee` made sense as a placeholder name for this.*
 
 Everything which implements `Sized` also implements `RuntimeSized`, and
-likewise with `RuntimeSized` with `DynSized`, and `DynSized` with `Unsized`.
+likewise with `RuntimeSized` with `DynSized`, and `DynSized` with `Pointee`.
 
 ```
 ┌─────────────────────────────────────────────────┐
 │ ┌─────────────────────────────────────┐         │
 │ │ ┌────────────────────────┐          │         │
 │ │ │ ┌───────┐              │          │         │
-│ │ │ │ Sized │ RuntimeSized │ DynSized │ Unsized │
+│ │ │ │ Sized │ RuntimeSized │ DynSized │ Pointee │
 │ │ │ └───────┘              │          │         │
 │ │ └────────────────────────┘          │         │
 │ └─────────────────────────────────────┘         │
 └─────────────────────────────────────────────────┘
 ```
 
-`Unsized` is implemented by any type which may or may not be sized, which is
+`Pointee` is implemented by any type which may or may not be sized (these
+types can always be used from behind a pointer, hence the name), which is
 to say, every type - from a `u32` which is obviously sized (32 bits) to an
 `extern type` (from [rfcs#1861][rfc_extern_types]) which has no known size.
 
-`DynSized` is a subset of `Unsized`, and excludes those types whose sizes
+`DynSized` is a subset of `Pointee`, and excludes those types whose sizes
 cannot be computed at runtime.
 
 Similarly, `RuntimeSized` is a subset of `DynSized`, and excludes those types
@@ -153,8 +157,8 @@ And finally, `Sized` is a subset of `RuntimeSized`, and excludes those types
 whose sizes are not statically known at compilation time.
 
 All type parameters have an implicit bound of `Sized` which will be automatically
-removed if a `RuntimeSized`, `DynSized` or `Unsized` bound is present instead.
-Prior to the introduction of `RuntimeSized`, `DynSized` and `Unsized`, `Sized`'s
+removed if a `RuntimeSized`, `DynSized` or `Pointee` bound is present instead.
+Prior to the introduction of `RuntimeSized`, `DynSized` and `Pointee`, `Sized`'s
 implicit bound could be removed using the `?Sized` syntax, which is now
 equivalent to a `DynSized` bound and will be deprecated in the next edition.
 
@@ -176,21 +180,22 @@ example:
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Introduce three new marker traits, `RuntimeSized`, `DynSized` and `Unsized`,
+Introduce three new marker traits, `RuntimeSized`, `DynSized` and `Pointee`,
 creating a "hierarchy" of `Sized` traits:
 
-- `Unsized`
+- `Pointee`
     - Types that may not have a knowable size at all.
-    - `Unsized` will be implemented for:
+        - i.e. Types which can be used from behind a pointer.
+    - `Pointee` will be implemented for:
         - `DynSized` types
             - if a type's size is computable at runtime then it may or
               may not have a size (it does)
         - `extern type`s from [rfcs#1861][rfc_extern_types] 
-        - compound types where every element is `Unsized`
-    - In practice, every type will implement `Unsized`.
+        - compound types where every element is `Pointee`
+    - In practice, every type will implement `Pointee`.
 - `DynSized`
     - Types whose size is computable at runtime.
-    - `DynSized` is a subtrait of `Unsized`.
+    - `DynSized` is a subtrait of `Pointee`.
     - `DynSized` will be implemented for:
         - `RuntimeSized` types
             - if a type's size is statically known at runtime time then it is
@@ -226,18 +231,17 @@ Like `Sized`, implementations of these three traits are automatically generated
 by the compiler and cannot be implemented manually.
 
 In the compiler, `?Sized` would be made syntactic sugar for a `DynSized`
-bound (and eventually removed in [an upcoming edition][#edition-changes]).
-A `DynSized` bound is equivalent to a `?Sized` bound: all values in
-Rust today whose types do not implement `Sized` are valid arguments to
-`std::mem::size_of_val` and as such have a size which can be computed at
-runtime, and therefore will implement `DynSized`. As there are currently no
-`extern type`s or other types which would not implement `DynSized`, every type
-in Rust today which would satisfy a `?Sized` bound would satisfy a `DynSized`
-bound.
+bound (and eventually removed in an upcoming edition). A `DynSized` bound is
+equivalent to a `?Sized` bound: all values in Rust today whose types do not
+implement `Sized` are valid arguments to `std::mem::size_of_val` and as such
+have a size which can be computed at runtime, and therefore will implement
+`DynSized`. As there are currently no `extern type`s or other types which
+would not implement `DynSized`, every type in Rust today which would satisfy
+a `?Sized` bound would satisfy a `DynSized` bound.
 
 A default implicit bound of `Sized` is added by the compiler to every type
 parameter `T` that does not have an explicit `Sized`, `?Sized`, `RuntimeSized`,
-`DynSized` or `Unsized` bound. This is somewhat unintuitive as typically adding
+`DynSized` or `Pointee` bound. This is somewhat unintuitive as typically adding
 a trait bound does not remove the implementation of another trait bound from
 being implemented, however it's debatable whether this is more or less confusing
 than existing `?Sized` bounds.
@@ -246,13 +250,13 @@ An implicit `DynSized` bound is added to the `Self` type of traits. Like
 implicit `Sized` bounds, this is omitted if an explicit `Sized`, `RuntimeSized`
 bound is present.
 
-Types implementing only `Unsized` cannot be used in structs (unless it is
-`#[repr(transparent)]`) as the alignment of these types would need to be known
-in order to calculate field offsets and this would not be possible. Types
-implementing only `DynSized` and `Unsized` could continue to be used in structs,
-but only as the last field.
+Types implementing only `Pointee` cannot be used in compound types (unless they
+are `#[repr(transparent)]`) as the alignment of these types would need to be
+known in order to calculate field offsets and this would not be possible. Types
+implementing only `DynSized` and `Pointee` could continue to be used in
+compound types, but only as the last field.
 
-As `RuntimeSized`, `DynSized` and `Unsized` are not default bounds, there is no
+As `RuntimeSized`, `DynSized` and `Pointee` are not default bounds, there is no
 equivalent to `?Sized` for these traits.
 
 There is a potential performance impact within the trait system to adding
@@ -264,12 +268,25 @@ checking them is skipped - this should be sound as all of these traits are
 implemented by the compiler and therefore this property can be guaranteed by
 the compiler implementation.
 
+Traits which are a supertrait of any of the proposed traits will not
+automatically imply the proposed trait in any bounds where the trait is
+used, e.g.
+
+```rust
+trait NewTrait: DynSized {}
+
+struct NewRc<T: NewTrait> {} // equiv to `T: NewTrait + Sized` as today
+```
+
+If the user wanted `T: DynSized` then it would need to be written
+explicitly.
+
 ## Edition changes
 [edition-changes]: #edition-changes
 
 In the next edition, writing `?Sized` bounds would no longer be accepted and the
 compiler would suggest to users writing `DynSized` bounds instead. Existing `?
-Sized` bounds can be trivially rewritten to `DynSized` bounds by `rustup`.
+Sized` bounds can be trivially rewritten to `DynSized` bounds by `rustfix`.
 
 ## Auto traits and backwards compatibility
 [auto-traits-and-backwards-compatibility]: #auto-traits-and-backwards-compatibility
@@ -280,18 +297,18 @@ type][changing_rules_of_rust].
 
 Adding a new auto trait to the bounds of an existing function would typically
 be a breaking change, despite all types implementing the new auto trait, in
-two cases:
+three cases:
 
 1. Callers with generic parameters would not have the new bound. For example,
    adding a new auto trait (which is not a default bound) as a bound to `std_fn`
    would cause `user_fn` to stop compiling as `user_fn`'s `T` would need the bound
    added too:
 
-    ```rust
-fn user_fn<T>(value: T) { std_fn(value) }
-fn std_fn<T: NewAutoTrait>(value: T) { /* .. */ }
-//~^ ERROR the trait bound `T: NewAutoTrait` is not satisfied
-    ```
+   ```rust
+   fn user_fn<T>(value: T) { std_fn(value) }
+   fn std_fn<T: NewAutoTrait>(value: T) { /* .. */ }
+   //~^ ERROR the trait bound `T: NewAutoTrait` is not satisfied
+   ```
    
    Unlike with an arbitrary new auto trait, the proposed traits are all
    subtraits of `Sized` and every generic parameter either has a default bound
@@ -299,14 +316,14 @@ fn std_fn<T: NewAutoTrait>(value: T) { /* .. */ }
    compatibility to be avoided.
 
    Relaxing the `Sized` bound of an existing function's generic parameters to
-   `RuntimeSized`, `DynSized` or `Unsized` would not break any callers, as those
+   `RuntimeSized`, `DynSized` or `Pointee` would not break any callers, as those
    callers' generic parameters must already have a `T: Sized` bound and therefore
    would already satisfy the new relaxed bound. Callers may now have a stricter
    bound than is necessary, but they likewise can relax their bounds without that
    being a breaking change.
 
    If an existing function had a generic parameter with a `?Sized` bound and
-   this bound were changed to `DynSized` or relaxed to `Unsized`, then callers'
+   this bound were changed to `DynSized` or relaxed to `Pointee`, then callers'
    generic parameters would either have a `T: Sized` or `T: ?Sized` bound:
 
    - If callers' generic parameters have a `T: Sized` bound then there would be
@@ -342,19 +359,45 @@ fn std_fn<T: NewAutoTrait>(value: T) { /* .. */ }
 
    Like the previous case, due to the proposed traits being subtraits of
    `Sized`, and every trait object implementing `Sized`, adding a `RuntimeSized`,
-   `DynSized`, or `Unsized` bound to any existing generic parameter would be
+   `DynSized`, or `Pointee` bound to any existing generic parameter would be
    already satisfied.
+
+3. Associated types of traits have default `Sized` bounds which can be being used.
+   For example, adding a `NewAutoTrait` bound to `Add::Output` breaks a function
+   which takes a `T: Add` and passes `<T as Add>::Output` to `size_of` as not all
+   types which implement `NewAutoTrait` will implement `Sized`.
+
+   ```rust
+   trait Add<Rhs = Self> {
+       type Output: NewAutoTrait;
+   }
+
+   fn user_fn<T: Add>() {
+       std::mem::size_of::<<T as Add>::Output>()
+       //~^ ERROR the trait bound `<T as Add>::Output: Sized` is not satisfied
+   }
+   ```
+
+   Relaxing the bounds of an associated type is in effect giving existing
+   parameters a less restrictive bound which may not be suitable.
+
+   Unfortunately, this means it is not possible to change existing associated
+   type bounds to any of the proposed sizedness traits from this RFC. While it
+   may be desirable to relax the `Sized` bound on associated types, it shouldn't
+   be necessary to do so in this RFC and thus this should not be considered a
+   blocker. It may be possible to work around this over an edition, which is
+   discussed in the future possibilities section.
 
 Additionally, it is not expected that this RFC's additions would result in much
 churn within the ecosystem. All bounds in the standard library should be re-evaluated
 during the implementation of this RFC, but bounds in third-party crates need not be:
 
 Up-to-`RuntimeSized`-implementing types will primarily be used for localised
-performance optimisation, and `Unsized`-only-implementing types will primarily be
+performance optimisation, and `Pointee`-only-implementing types will primarily be
 used for localised FFI, neither is expected to be so pervasive throughout Rust
 software to the extent that all existing `Sized` or `?Sized` bounds would need to
 be immediately reconsidered in light of their addition. If a user of a
-up-to-`RuntimeSized`-implementing type or a `Unsized`-only-implementing type did
+up-to-`RuntimeSized`-implementing type or a `Pointee`-only-implementing type did
 encounter a bound that needed to be relaxed, this could be changed in a patch to
 the relevant crate without breaking backwards compatibility as-and-when such bounds
 are discovered.
@@ -391,7 +434,7 @@ could be made to the standard library:
 - [`std::boxed::Box`][api_box]
     - `T: ?Sized` becomes `T: DynSized`
     - As before, this is not a breaking change and prevents types only
-      implementing `Unsized` from being used with `Box`, as these types do not have
+      implementing `Pointee` from being used with `Box`, as these types do not have
       the necessary size and alignment for allocation/deallocation.
 
 As part of the implementation of this RFC, each `Sized`/`?Sized` bound in the standard
@@ -415,7 +458,7 @@ There are various points of difference to the [prior art](#prior-art) related to
 - In contrast to [rfcs#1524][rfc_custom_dst], the `Sized` trait isn't extended
   as this wouldn't be sufficient to capture the range in sizedness that this RFC
   aims to capture (i.e. for scalable vectors with `RuntimeSized` or `extern type`s
-  with `Unsized`), even if it theoretically could enable Custom DSTs.
+  with `Pointee`), even if it theoretically could enable Custom DSTs.
 - In contrast to [rfcs#1993][rfc_opaque_data_structs], [rust#44469][pr_dynsized],
   [rust#46108][pr_dynsized_rebase],  [rfcs#2984][rfc_pointee_and_dynsized] and
   [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
@@ -436,13 +479,13 @@ There are various points of difference to the [prior art](#prior-art) related to
 All of the trait names proposed in the RFC can be bikeshed and changed, they'll
 ultimately need to be decided but aren't the important part of the RFC.
 
-## Why have `Unsized`?
-It may seem that the `Unsized` trait is unnecessary as this is equivalent to the
-absense of any bounds whatsoever, but having an `Unsized` trait is necessary to
+## Why have `Pointee`?
+It may seem that the `Pointee` trait is unnecessary as this is equivalent to the
+absense of any bounds whatsoever, but having an `Pointee` trait is necessary to
 enable the meaning of `?Sized` to be re-defined to be equivalent to `DynSized`
 and avoid complicated behaviour change over an edition.
 
-Without `Unsized`, if a user wanted to remove all sizedness bounds from a generic
+Without `Pointee`, if a user wanted to remove all sizedness bounds from a generic
 parameter then they would have two options:
 
 1. Introduce new relaxed bounds (i.e. `?DynSized`), which has been found
@@ -457,10 +500,10 @@ The latter is the only viable option, but this would complicate changing
 
 `?Sized` can be redefined to be equivalent to `DynSized` in all editions
 and the syntax can be removed in a future edition only because adding an
-`Unsized` bound is equivalent to removing the `Sized` bound and imposing
+`Pointee` bound is equivalent to removing the `Sized` bound and imposing
 no constraints on the sizedness of a parameter.
 
-Without `Unsized`, a complicated migration would be necessary to change
+Without `Pointee`, a complicated migration would be necessary to change
 all current uses of `?Sized` to `DynSized` (as these are equivalent) and
 then future uses of `?Sized` would now accept more types than `?Sized`
 previously did (they would now accept the `extern type`s).
@@ -653,7 +696,7 @@ the `Sized` trait, summarised below:
               `size_of_val` and `align_of_val` with `extern type`s, but it is
               unclear why this is necessary given that `extern type`s are
               unstable.
-        - It does not include `RuntimeSized` or `Unsized`.
+        - It does not include `RuntimeSized` or `Pointee`.
         - Adding an explicit bound for `DynSized` does not remove the implicit
           bound for `Sized`.
 - [rust#49708: `extern type` cannot support `size_of_val` and `align_of_val`][issue_extern_types_align_size], [joshtriplett][author_joshtriplett], Apr 2018
@@ -777,6 +820,7 @@ the `Sized` trait, summarised below:
       like in this RFC and proposes deprecating `T: ?Sized` in place of `T: Unsized`
       and sometimes `T: DynSized`. Adding a bound for any of `DynSized` or `Unsized`
       removes the default `Sized` bound.
+      - `Unsized` is the same as this RFC's `Pointee`
     - As described below it is the closest inspiration for this RFC.
 
 There are some even older RFCs that have tangential relevance that are listed
@@ -800,9 +844,9 @@ of the `RuntimeSized` trait, as the scalable vector types proposal in [RFC 3268]
 
 To summarise the above exhaustive listing of prior art:
 
-- No previous works have proposed a `RuntimeSized` trait or a `Unsized` trait
-  (with the exception of [Sized, DynSized, and Unsized][blog_dynsized_unsized] for
-  `Unsized`), only `DynSized`.
+- No previous works have proposed an equivalent of a `RuntimeSized` trait or
+  a `Pointee` trait (with the exception of[Sized, DynSized, and Unsized][blog_dynsized_unsized]
+  for `Pointee`), only `DynSized`.
 - One proposal proposed adding a marker type that as a field would result in the
   containing type no longer implementing `Sized`.
 - Often proposals focused at Custom DSTs preferred to combine the
@@ -860,13 +904,17 @@ this proposal:
   rustc, which currently works because it has a presumed alignment of one. This
   would be prohibited by the RFC as written, but relaxing this is listed as a
   future possibility.
-    - Adding limitations to the use of `Unsized` types in structs could be left
+    - Adding limitations to the use of `Pointee` types in structs could be left
       as a follow-up as it is more related to `extern type` than extending `Sized`
-      anyway. Implementation of this RFC would not create any `Unsized` types.
+      anyway. Implementation of this RFC would not create any `Pointee` types.
 - How would this interact with proposals to split alignment and sizedness into
   separate traits?
 - Some prior art had different rules for automatically implementing `DynSized`
   on structs/enums vs on unions - are those necessary for these traits?
+- `Pointee` is already the name of an unstable trait, so it may make sense to rename
+  this to something else, but it seemed better than `Unsized` as it was named
+  in earlier drafts.
+- How serious are the limitations on changing the bounds of associated types?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -875,17 +923,17 @@ this proposal:
   other delineations in sized-ness that make sense to be drawn.
     - e.g. `MetaSized` from [rfcs#3396][rfc_extern_types_v2], something like
       `Sized: MetaSized`, `MetaSized: RuntimeSized`, `RuntimeSized: DynSized` and
-      `DynSized: Unsized`.
+      `DynSized: Pointee`.
 - The requirement that users cannot implement any of these traits could be
   relaxed in future to support custom DSTs or any other proposed feature which
   required it.
-- Relax prohibition of `Unsized` fields in some limited contexts, for example if
+- Relax prohibition of `Pointee` fields in some limited contexts, for example if
   it is the final field and the offset of it is never computed.
-- In addition to the default bound changes described above, the default
-  `T: Sized` bound could be omitted if any other bound `T: Trait` had an explicit
-  supertrait of `RuntimeSized`, `DynSized` or `Unsized`. This would allow
-  boilerplate `?Sized` bounds to be removed.
-    - Credit to [Sized, DynSized, and Unsized][blog_dynsized_unsized] for this idea.
+- Depending on a trait which has one of the proposed traits as a supertrait could
+  imply a bound of the proposed trait, enabling the removal of boilerplate.
+- Consider allowing associated type bounds to be relaxed over an edition.
+    - i.e. `type Output: if_rust_2021(Sized) + NewAutoTrait` or something like that,
+      out of scope for this RFC.
 - This proposal is compatible with adding Custom DSTs in future.
     - Leveraging the already accepted [rfcs#2580][rfc_pointer_metadata_vtable]
       and taking an approach similar to [rfcs#2594][rfc_custom_dst_electric_boogaloo]
