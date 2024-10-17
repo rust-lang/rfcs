@@ -88,7 +88,9 @@ However, past performance benchmarks have shown little to no performance is obta
 # Prior art
 [prior-art]: #prior-art
 
-I am not aware of any prior art for this change, as I am not aware of prior art (outside of the language) for the special behaviour of `Box<T>`.
+I am not aware of any prior art for this change, as I am not aware of prior art (outside of the language) for the special behaviour of `Box<T>`. An equivalent type, C++'s `std::unique_ptr<T>` however, can serve as prior art for `Box<T>` not having the special behaviour, as it does not produce noalias (https://godbolt.org/z/hGexhTa9v).
+
+`Vec<T>` and other collections in the standard library also serve as prior art in this manner, as `Box<T>` is the only standard library type to have special treatment in the manner. `Vec<T>` in particular is quite similar to `Box<[T]>`, but lacks any memory aliasing optimizations like `Box<T>` presently offers. 
 
 The `WellFormed<T>` type, used in this document for *exposition* purposes, is proposed in [RFC 3204], though we do not propose any immediate changes to the layout algorithm implemented by rustc, nor that Rust guarantee the specified niches for `WellFormed<T>`, and only use it to express the full proposed validity invariant of `Box<T>` and `Box<T,A>`, which could be exploited by a Rust compiler for niche optimization. If #3204 is adopted, the implementation of `Box<T>` and `Box<T,A>` required here would be compatible with containing a field of the proposed type.
 
