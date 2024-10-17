@@ -2,6 +2,7 @@
 - Start Date: 2024-09-30
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
 # Summary
 [summary]: #summary
 
@@ -184,8 +185,9 @@ Introduce three new marker traits, `RuntimeSized`, `DynSized` and `Pointee`,
 creating a "hierarchy" of `Sized` traits:
 
 - `Pointee`
-    - Types that may not have a knowable size at all.
-        - i.e. Types which can be used from behind a pointer.
+    - Types that may not have a knowable size at all and which can be
+      used from behind a pointer.
+        - i.e. the type's size is a function of variables unknown to Rust
     - `Pointee` will be implemented for:
         - `DynSized` types
             - if a type's size is computable at runtime then it may or
@@ -195,6 +197,8 @@ creating a "hierarchy" of `Sized` traits:
     - In practice, every type will implement `Pointee`.
 - `DynSized`
     - Types whose size is computable at runtime.
+        - i.e. the type's size is a function of the type, the target and
+          the value
     - `DynSized` is a subtrait of `Pointee`.
     - `DynSized` will be implemented for:
         - `RuntimeSized` types
@@ -206,6 +210,8 @@ creating a "hierarchy" of `Sized` traits:
         - compound types where every element is `DynSized`
 - `RuntimeSized`
     - Types whose size is statically known at runtime.
+        - i.e. the type's size is a function of the type, the target
+          and the runtime environment
     - `RuntimeSized` is a subtrait of `DynSized`.
     - `RuntimeSized` will be implemented for:
         - `Sized` types
@@ -215,6 +221,7 @@ creating a "hierarchy" of `Sized` traits:
         - compound types where every element is `RuntimeSized`
 - `Sized`
     - Types whose size is statically known at compilation time.
+        - i.e. the type's size is a function of the type and the target
     - `Sized` is a subtrait of `RuntimeSized`.
     - `Sized` will be implemented for:
         - primitives `iN`, `uN`, `fN`, `char`, `bool`
@@ -418,9 +425,6 @@ could be made to the standard library:
     - `DynSized` would not be implemented by `extern type`s from [rfcs#1861]
       [rfc_extern_types], which would prevent these functions from being invoked on
       types which have no known size or alignment.
-    - `size_of_val` and `align_of_val` are currently `const` unstably and these
-      types would no longer be able to be made `const` as this would require `T:
-      Sized`, not `T: DynSized`.
 - [`std::clone::Clone`][api_clone]
     - `Clone: Sized` becomes `Clone: RuntimeSized`
     - `RuntimeSized` is implemented by more types than `Sized` and by all types
@@ -439,6 +443,24 @@ could be made to the standard library:
 
 As part of the implementation of this RFC, each `Sized`/`?Sized` bound in the standard
 library would need to be reviewed and updated as appropriate.
+
+## `RuntimeSized` and constness
+
+`RuntimeSized` is defined as types whose size is only known at runtime, not at
+compilation time (or put otherwise, that the type's size is a function of its
+runtime environment, amongst other things). In a `const` context, the runtime
+environment used when determining the size of a up-to-`RuntimeSized` type is
+the runtime environment of the host. This allows
+[`std::mem::size_of_val`][api_size_of_val] to be made a `const` function.
+
+For example, if the size of a up-to-`RuntimeSized` register were determined by
+checking the value of a register, then that register would be checked on the host
+during constant evaluation. This is largely a theoretical concern as it is not
+likely to be possible to get values of the up-to-`RuntimeSized` types in a
+`const` context.
+
+Alternatives to this are discussed in the [Host runtime environment in `const`
+contexts][host-runtime-environment-in-const-contexts] section.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -460,7 +482,7 @@ There are various points of difference to the [prior art](#prior-art) related to
   aims to capture (i.e. for scalable vectors with `RuntimeSized` or `extern type`s
   with `Pointee`), even if it theoretically could enable Custom DSTs.
 - In contrast to [rfcs#1993][rfc_opaque_data_structs], [rust#44469][pr_dynsized],
-  [rust#46108][pr_dynsized_rebase],  [rfcs#2984][rfc_pointee_and_dynsized] and
+  [rust#46108][pr_dynsized_rebase],  [rfcs#2984][rfc_pointee_dynsized] and
   [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
   none of the traits proposed in this RFC are default bounds and therefore do not
   need to support being relaxed bounds (i.e. no `?RuntimeSized`), which avoids
@@ -476,10 +498,14 @@ There are various points of difference to the [prior art](#prior-art) related to
   trait as in [rfcs#2594][rfc_custom_dst_electric_boogaloo].
 
 ## Bikeshedding
+[bikeshedding]: #bikeshedding
+
 All of the trait names proposed in the RFC can be bikeshed and changed, they'll
 ultimately need to be decided but aren't the important part of the RFC.
 
 ## Why have `Pointee`?
+[why-have-pointee]: #why-have-pointee
+
 It may seem that the `Pointee` trait is unnecessary as this is equivalent to the
 absense of any bounds whatsoever, but having an `Pointee` trait is necessary to
 enable the meaning of `?Sized` to be re-defined to be equivalent to `DynSized`
@@ -511,7 +537,59 @@ previously did (they would now accept the `extern type`s).
 In [rfcs#3396][rfc_extern_types_v2], `MetaSized` was introduced and used a
 similar mechanism over an edition to redefine `?Sized`. 
 
+## Host runtime environment in `const` contexts
+[host-runtime-environment-in-const-contexts]: #host-runtime-environment-in-const-contexts
+
+As previously described, the runtime environment of a up-to-`RuntimeSized`
+type in `const` context is defined to be the host's runtime environment.
+
+However, this is not the only possible solution - using
+[`std::mem::size_of_val`][api_size_of_val] as an example:
+
+| `size_of_val`  | Runtime Context                                  | `const` Context     |
+| -------------- | ------------------------------------------------ | ------------------- |
+| `Sized`        | Trivially known                                  | Trivially known     |
+| `RuntimeSized` | From runtime environment (i.e. check a register) | ???                 |
+| `DynSized`     | Computed from value                              | Computed from value |
+
+- Do not allow `size_of_val` to be a `const fn`
+    - This would prevent any function which may need `size_of_val` from
+      being `const` (and any function which depends on that function, etc etc).
+- Define a `size_of_val_runtime` and `size_of_val_const`
+    - It would be impossible to define a function which accepted both `Sized`
+      and `DynSized` but not `RuntimeSized` without having to reorder
+      the proposed hierarchy (which has many complications of its own).
+- Try to find an alternative hierarchy of traits
+    - Instead of having a linear hierarchy, have a diamond-shaped hierarchy or
+      something else - this adds significantly more complexity to the proposal.
+- Define the runtime environment for `RuntimeSized` in a `const` context
+
+Of the potential alternatives, defining the runtime environment to be the host
+in `const` contexts has the least complexity, but it is not immediately clear 
+that it is a feasible solution.
+
+| `size_of_val`  | Runtime Context                    | `const` Context                   |
+| -------------- | ---------------------------------- | --------------------------------- |
+| `Sized`        | Trivially known                    | Trivially known                   |
+| `RuntimeSized` | From runtime environment of target | From runtime environment of host  |
+| `DynSized`     | Computed from value                | Computed from value               |
+
+This solution necessitates that the requirements of a given type of its runtime
+environment (for example, that it be a specific target that has a register containing
+its size) are also satisfied by the host. If a value of one of these types exists in
+a `const` context to be provided to `size_of_val` then there must exist `const` functions
+with the appropriate `#[target_feature]` and/or `#[cfg]` attributes to create it and
+therefore the host must satisfy the type's requirements (and the implementation of the
+`size_of_val` intrinsic in the interpreter has likely been updated to know how to
+determine the size).
+
+In practice, there likely are not appropriate `const` functions which would enable
+values of these types to exist in a `const` context, so this is a largely theoretical
+concern (while still allowing `size_of_val` to be defined with just a `DynSized` bound).
+
 ## Alternatives to this RFC
+[alternatives-to-this-rfc]: #alternatives-to-this-rfc
+
 There are not many alternatives to this RFC to unblock `extern type`s and
 scalable vectors:
 
@@ -787,6 +865,9 @@ the `Sized` trait, summarised below:
         - Automatically implemented for all types with an alignment (includes
           all `Sized` types).
         - `Aligned` is a supertrait of `Sized`.
+    - It's not immediately obvious how `Aligned` would work with this RFC's proposed
+      traits - would `Aligned` still be a supertrait of `Sized` or of `Pointee`? would
+      you need a `SizedAligned`, `RuntimeAligned`, `DynAligned` and `Aligned`?
 - [rfcs#3396: Extern types v2][rfc_extern_types_v2], [Skepfyr][author_skepfyr], Feb 2023
     - Proposes a `MetaSized` trait for types whose size and alignment can
       be determined solely from pointer metadata without having to dereference the
@@ -914,6 +995,8 @@ this proposal:
 - `Pointee` is already the name of an unstable trait, so it may make sense to rename
   this to something else, but it seemed better than `Unsized` as it was named
   in earlier drafts.
+    - Could the existing `std::ptr::Pointee` trait be used as the supertrait
+      of all other sizedness traits?
 - How serious are the limitations on changing the bounds of associated types?
 
 # Future possibilities
