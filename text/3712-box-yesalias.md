@@ -68,7 +68,7 @@ However, past performance benchmarks have shown little to no performance is obta
 
 - Alternative 1: Status Quo
     - While the easiest alternative is to do nothing and maintain the status quo, as mentioned this has suprisingly implications both for the operational semantics of Rust
-- Alternative 2: Introduce a new type `AlisableBox<T>` which has the same interface as `Box<T>` but lacks the opsem implications that `Box<T>` has.
+- Alternative 2: Introduce a new type `AliasableBox<T>` which has the same interface as `Box<T>` but lacks the opsem implications that `Box<T>` has.
     - This also does not help remove the impact on the opsem model that the current `Box<T>` has, though provides an ergonomically equivalent option for `unsafe` code.
 - Alternative 3: We maintain the behaviour only for the unparameterized `Box<T>` type using the `Global` allocator, and remove it for `Box<T,A>` (for any allocator other than `A`), allowing unsafe code to use `Box<T, CustomAllocator>`
     - Likewise, this maintains the opsem implications. 
