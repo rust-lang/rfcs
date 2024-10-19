@@ -54,13 +54,15 @@ The following are not valid values of type `WellFormed<T>`, and a typed copy tha
 * A pointer with an address that is not well-aligned for `T` (or in the case of a DST, the `align_of_val_raw` of the value), or
 * A pointer with an address that offsetting that address (as though by `.wrapping_byte_offset`) by `size_of_val_raw` bytes would wrap arround the address space 
 
-The [`alloc::boxed::Box<T>`] type shall be laid out as though a `repr(transparent)` struct containing a field of type `WellFormed<T>`. The behaviour of doing a typed copy as type [`alloc::boxed::Box<T>`] shall be the same as though a typed copy of the struct `#[repr(transparent)] struct Box<T>(WellFormed<T>);`.
+The [`alloc::boxed::Box<T>`] type shall be laid out as though a `repr(transparent)` struct containing a field of type `WellFormed<T>`. The behaviour of doing a typed copy as type [`alloc::boxed::Box<T>`] shall be the same as though a typed copy of the struct `#[repr(transparent)] struct Box<T>(WellFormed<T>);`. 
 
 [`alloc::boxed::Box<T>`] shall have a niche of the all zeroes bit pattern, which is used for the `None` value of [`core::option::Option<Box<T>>`] (and similar types). Additional invalid values may be used as niches, but no guarantees are made about those niches. 
 
-When the unstable feature [`allocator_api`] is in use, the type [`alloc::boxed::Box<T,A>`] (where `A` is not the type `Global`, `alloc::boxed::Box<T,Global>` is the same type as [`alloc::boxed::Box<T>`]) is laid out as a struct containing a field of type `WellFormed<T>`, and a field of type `A`, and a typed copy as [`alloc::boxed::Box<T,A>`] is the same as a typed copy of that struct. The order and offsets of these fields is not specified, even for an `A` of size 0 and alignment 1.
+When the unstable feature [`allocator_api`] is in use (or after its stabilization), the type [`alloc::boxed::Box<T,A>`] (where `A` is not the type `Global`, `alloc::boxed::Box<T,Global>` is the same type as [`alloc::boxed::Box<T>`]) is laid out as a struct containing a field of type `WellFormed<T>`, and a field of type `A`, and a typed copy as [`alloc::boxed::Box<T,A>`] is the same as a typed copy of that struct. The order and offsets of these fields is not specified, even for an `A` of size 0 and alignment 1.
 
 A value of type [`alloc::boxed::Box<T,A>`] is invalid if either field is invalid.
+
+In addition to the above, [RFC 3336] is amended to remove the `MaybeDangling` behaviour of `ManuallyDrop` as it is no longer necessary. The type itself is preserved as it can be useful in other contexts.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -122,3 +124,4 @@ Finally, should optimizations begin to be implemented in Rust compilers that cou
 [`core::option::Option<T>`]: https://doc.rust-lang.org/nightly/core/option/enum.Option.html
 [`core::ptr::NonNull<T>`]: https://doc.rust-lang.org/nightly/core/ptr/struct.NonNull.html
 [RFC 3204]: https://github.com/rust-lang/rfcs/pull/3204
+[RFC 3336]: https://github.com/rust-lang/rfcs/blob/master/text/3336-maybe-dangling.md
