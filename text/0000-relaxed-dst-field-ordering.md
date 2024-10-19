@@ -6,11 +6,7 @@
 # Summary
 [summary]: #summary
 
-Relax the requirements on struct field ordering for dynamically sized fields:
-
-* for `repr(Rust)`, `?Sized` fields can be anywhere in the field list, as long as there is only one
-* for `repr(C)`, `?Sized` fields only have to be the last non-ZST field, and can be followed by ZST fields
-* for `repr(transparent)`, apply both rules, since only one non-ZST field is allowed anyway
+Relax the requirements on struct field ordering for dynamically sized fields for `repr(Rust)` and `repr(transparent)`, such that `?Sized` fields can be anywhere in the field list, as long as there is only one.
 
 # Motivation
 [motivation]: #motivation
@@ -26,16 +22,16 @@ Additionally, Rust has fully committed to zero-sized fields being truly invisibl
 
 Before, structs were allowed to have dynamically sized types (DSTs) in their last field only. Now, this restriction has been relaxed to allow at most one DST field, although it can occur anywhere inside the struct.
 
-For `repr(C)` structs specifically, an additional requirement is added that the DST must be the last field that is not a zero-sized type (ZST), which is still more permissive than the previous definition.
+For `repr(C)` structs specifically, the old requirement that DSTs be at the end remains.
 
-The dynamically sized field will always be physically located at the end of the struct, although because `repr(Rust)` can reorder fields and because ZST fields do not affect layout, this doesn't have to be reflected in the actual struct definition.
+The dynamically sized field will always be physically located at the end of the struct, although because `repr(Rust)` can reorder fields, this doesn't have to be reflected in the actual struct definition.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature should be relatively easy to implement: we already reorder fields in `repr(Rust)` structs explicitly, so, this is just ensuring that DST fields are always placed last without relying on the definition order.
+For `repr(transparent)` structs, the layout is altered so that ZST fields are always reordered to the beginning of the struct, so that their offsets are always zero. This is technically different than the status quo, since you could have the offset be the size of the struct, but this has never been specified or guaranteed. This ensures that the offsets are still static.
 
-The code for `repr(transparent)` effectively doesn't change, and the code for ensuring that the DST is the last field can be mostly reused for `repr(C)`, assuming that ZST fields are still ignored.
+Per the current requirements, `repr(transparent)` structs still can only have ZSTs with trivial alignment, and types like `[T; 0]` will still be rejected.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -45,9 +41,7 @@ It's work to change the status quo.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This arguably simplifies the language and makes the DST field more in line with the existing field ordering rules.
-
-But we could always not do it, I guess.
+We could extend the rules on ZST field ordering to `repr(C)` too, to allow ZSTs past the DST field. However, since `repr(C)` does imply strict ordering, it's more likely that people have been relying on the offsets for ZSTs in structs, and it's better to avoid breaking this.
 
 # Prior art
 [prior-art]: #prior-art
