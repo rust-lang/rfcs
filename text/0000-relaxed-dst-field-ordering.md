@@ -19,7 +19,7 @@ Rust allows creating structs with dynamically sized fields, but in a very limite
 
 However, `repr(Rust)` allows reordering fields, and this is not not reflected in this rule for dynamically sized fields: no matter what you do, the dynamically sized field must be at the end. This is inconsistent with the rest of the language and limits the ability of authors to reorder the fields in a more natural way, like they can for statically sized structs.
 
-Additionally, Rust has fully committed to zero-sized fields being truly invisible to struct layout, encoding this in the definition of `repr(transparent)`. So, why are dynamically sized fields unable to be followed by zero-sized fields, or reordered among statically sized fields in a `repr(Rust)` struct.
+Additionally, Rust has fully committed to zero-sized fields being truly invisible to struct layout, encoding this in the definition of `repr(transparent)`. So, why are dynamically sized fields unable to be followed by zero-sized fields, or reordered among statically sized fields in a `repr(Rust)` struct?
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
