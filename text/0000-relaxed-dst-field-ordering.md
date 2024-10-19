@@ -24,7 +24,7 @@ Additionally, Rust has fully committed to zero-sized fields being truly invisibl
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Before, structs were allowed to have dynamically sized types (DSTs) in their last field only. Now, this restriction has been relaxed to allow exactly one DST field, although it can occur anywhere inside the struct.
+Before, structs were allowed to have dynamically sized types (DSTs) in their last field only. Now, this restriction has been relaxed to allow at most one DST field, although it can occur anywhere inside the struct.
 
 For `repr(C)` structs specifically, an additional requirement is added that the DST must be the last field that is not a zero-sized type (ZST), which is still more permissive than the previous definition.
 
