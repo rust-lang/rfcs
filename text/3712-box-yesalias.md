@@ -62,7 +62,7 @@ When the unstable feature [`allocator_api`] is in use (or after its stabilizatio
 
 A value of type [`alloc::boxed::Box<T,A>`] is invalid if either field is invalid.
 
-In addition to the above, [RFC 3336] is amended to remove the `MaybeDangling` behaviour of `ManuallyDrop` as it is no longer necessary. The type itself is preserved as it can be useful in other contexts.
+In addition to the above, [RFC 3336] is amended to remove the `MaybeDangling` behaviour of `ManuallyDrop` as it is no longer necessary. The `MaybeDangling` type itself is preserved as it can be useful in other contexts.
 
 # Drawbacks
 [drawbacks]: #drawbacks
