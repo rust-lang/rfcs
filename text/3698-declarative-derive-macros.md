@@ -88,7 +88,9 @@ incorrectly, and remind the user that derive macros only append new items.
 
 This feature will not be sufficient for *all* uses of proc macros in the
 ecosystem, and its existence may create social pressure for crate maintainers
-to switch even if the result is harder to maintain.
+to switch even if the result is harder to maintain. We can and should attempt
+to avert and such pressure, such as by providing a post with guidance that
+crate maintainers can link to when responding to such requests.
 
 Before stabilizing this feature, we should receive feedback from crate
 maintainers, and potentially make further improvements to `macro_rules` to make
@@ -157,6 +159,11 @@ of a fallback impl, for instance.
 
 Before stabilizing this feature, we should make sure it doesn't produce wildly
 worse error messages in common cases.
+
+Before stabilizing this feature, we should have clear public guidance
+recommending against pressuring crate maintainers to adopt this feature
+rapidly, and encourage crate maintainers to link to that guidance if such
+requests arise.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
