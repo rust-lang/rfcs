@@ -212,10 +212,14 @@ pub fn times_two<S>(simd: S, v: &mut [f64]) {
         *v *= 2.0;
     }
 }
+
+#[target_feature(inherit)]
+struct AvxFma(Avx, Fma);
+
 fn main() {
     let mut v = [1.0; 1024];
     if let (Some(avx), Some(fma)) = (try_new_avx(), try_new_fma()) {
-        times_two((avx, fma), &mut v);
+        times_two(AvxFma(avx, fma), &mut v);
     }
 }
 ```
