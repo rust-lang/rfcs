@@ -160,6 +160,13 @@ of a fallback impl, for instance.
 Before stabilizing this feature, we should make sure it doesn't produce wildly
 worse error messages in common cases.
 
+Before stabilizing this feature, we should receive feedback from crate
+maintainers, and potentially make further improvements to `macro_rules` to make
+it easier to use for their use cases. This feature will provide motivation to
+evaluate many new use cases that previously weren't written using
+`macro_rules`, and we should consider quality-of-life improvements to better
+support those use cases.
+
 Before stabilizing this feature, we should have clear public guidance
 recommending against pressuring crate maintainers to adopt this feature
 rapidly, and encourage crate maintainers to link to that guidance if such
