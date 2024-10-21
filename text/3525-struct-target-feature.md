@@ -128,6 +128,7 @@ pub fn try_new_avx512f() -> Option<Avx512f> {
 Then the library code can now be written as
 
 ```rust
+#[target_feature(inherit)]
 pub fn times_two<S>(simd: S, v: &mut [f64]) {
     for v in v {
         *v *= 2.0;
@@ -176,84 +177,23 @@ Additionally, the process no longer requires any unsafe code.
 
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC proposes that unit structs be allowed to have one or several
+This RFC proposes that structs and tuple structs be allowed to have one or several
 `#[target_feature(enable = "...")]` attributes.
 
-Structs with such annotations are unsafe to construct. Creating an instance of
+Structs with such annotations are unsafe to construct, except in the body
+of a function with the same target features. Creating an instance of
 such a struct has the same safety requirements as calling a function marked with
 the same `#[target_feature]` attribute.
 
-This RFC additionally proposes that functions taking parameters with a type
-that has been annotated with a `#[target_feature]`,
+This RFC additionally proposes that functions annotated with `#[target_feature(inherit)]`, and
+taking parameters with a type that has been annotated with a `#[target_feature]`,
 also behave as if they have been annotated with the corresponding
 `#[target_feature(enable = "...")]`, except that this doesn't impose on them
 the requirement of having to be marked `unsafe`.
 
-# Drawbacks
-
-[drawbacks]: #drawbacks
-
-Implicitly annotating the functions with the `#[target_feature]` attribute may
-cause them to be uninlined in certain situations, which may pessimize
-performance.
-
-Since the proposed API is opt-in, this has no effect on existing code.
-
-# Rationale and alternatives
-
-[rationale-and-alternatives]: #rationale-and-alternatives
-
-One alternative for automatically enabling target features is determining them
-based on the function body. If the compiler can prove that a function `outer`
-unconditionally calls a function `inner`, then it could hypotheticall inherit `inner`'s
-target features. This would make the target features of `outer` depend on the
-contents of its body and may possibly affect its ABI due to enabling target
-features based on that.  
-Our approach on the other hand makes the implicitly enabled target features of
-a function knowable from those of its parameters. This avoids the issue of the ABI of the
-function's ABI changing without changing its interface, or the ABI of its parameter types.
-
-An alternative option to automatically enabling target features could be to make them also opt-in
-at the level of function declaration. Let us take our previous example:
-
-```rust
-pub fn times_two<S>(simd: S, v: &mut [f64]) {
-    // ...
-}
-```
-
-This RFC suggests that all of the input parameters of `times_two` are scanned
-during monomorphization, and target features are inherited from them
-appropriately. The alternative is to explicitly mark which parameters
-`times_two` is allowed to inherit target features from. Perhaps through the use
-of a second attribute.
-
-```rust
-pub fn times_two<S>(#[inherit_target_feature] simd: S, v: &mut [f64]) {
-    // ...
-}
-```
-
-It is not clear if there are any advantages to this approach, other than being
-more explicit.
-
-# Unresolved questions
-
-[unresolved-questions]: #unresolved-questions
-
-The main unresolved part of this RFC is whether the target features should be
-inherited implicitly or explicitly.
-The implicit approach could allow for more aggressive optimizations, but the explicit one
-also sufficiently covers most use cases.
-
-# Future possibilities
-
-[future-possibilities]: #future-possibilities
-
-We do not propose the following in this RFC, but references to a struct marked
-with a `#[target_feature]` attribute, as well as tuples and other structs/tuple structs
-containing that struct may also implicitly inherit its `#[target_feature]`
-attribute. Unlike the explicitly annotated struct, they remain safe to
+Structs and tuple structs
+containing members with such types can also opt into inheriting its members' `#[target_feature]`
+attributes with `#[target_feature(inherit)]`. Unlike the structs annotated, they remain safe to
 construct. This is sound because creating them requires creating an instance of
 the target feature type to exist, which guarantees the target features' availability.
 
@@ -266,6 +206,7 @@ define the structures of `Avx` and `Fma` separately, marked with the appropriate
 And then simply pass them together in a tuple or a struct containing both.
 
 ```rust
+#[target_feature(inherit)]
 pub fn times_two<S>(simd: S, v: &mut [f64]) {
     for v in v {
         *v *= 2.0;
@@ -278,3 +219,55 @@ fn main() {
     }
 }
 ```
+
+# Drawbacks
+
+[drawbacks]: #drawbacks
+
+Since the proposed API is opt-in, this has no effect on existing code.
+
+# Rationale and alternatives
+
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+An alternative option to inheriting all target features could be to make them also opt-in
+at the parameter level. Let us take our previous example:
+
+```rust
+#[target_feature(inherit)]
+pub fn times_two<S>(simd: S, v: &mut [f64]) {
+    // ...
+}
+```
+
+This RFC suggests that all of the input parameters of `times_two` are scanned
+during monomorphization, and target features are inherited from them
+appropriately. The alternative is to explicitly mark which parameters
+`times_two` is allowed to inherit target features from. Perhaps through the use
+of a second attribute.
+
+```rust
+#[target_feature(inherit)]
+pub fn times_two<S>(#[target_feature] simd: S, v: &mut [f64]) {
+    // ...
+}
+```
+
+It is not clear if there are any advantages to this approach, other than being
+more explicit.
+
+# Unresolved questions
+
+[unresolved-questions]: #unresolved-questions
+
+Should we also allow `#[target_feature(disable = "...")]` to be used with structs?
+
+Should references implicitly inherit their pointee's target features? This would
+potentially impose more strict validity requirements for references of such types
+than other types, which may break unsafe generic code that creates references pointing
+to uninit data, without dereferencing them.
+
+# Future possibilities
+
+[future-possibilities]: #future-possibilities
+
