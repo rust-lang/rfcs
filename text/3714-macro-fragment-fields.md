@@ -72,8 +72,9 @@ This RFC introduces the following new fragment specifiers, with specified fields
   - `name`: The name of the function, as an `ident`.
   - `params`: The parameters of the function, not including the surrounding
     parentheses. May be empty if the function has no parameters.
-  - `return_type`: The return type of the function, as a `ty`. Will be `()` if
-    the function has no explicitly specified return type.
+  - `return_type`: The return type of the function, as a `ty`. If the function
+    has no explicitly specified return type, this will be `()`, with a span of
+    the closing parenthesis for the function arguments.
   - `body`: The body of the function, as a block (including the
     surrounding braces).
   - `vis`: The visibility of the function, as a `vis` (may be empty).
@@ -82,8 +83,8 @@ This RFC introduces the following new fragment specifiers, with specified fields
 
 The tokens within fields have the spans of the corresponding tokens from the
 source. If a token has no corresponding source (e.g. the `()` in `return_type`
-for a `fn` with no explicitly specified return type) it will have the span of
-the entire fragment the field came from.
+for a `fn` with no explicitly specified return type), the field definition
+defines an appropriate span.
 
 Mentioning a field of a fragment counts as a use of the fragment, for the
 purposes of ensuring every fragment gets used at least once at the appropriate
@@ -110,12 +111,6 @@ a more natural fit for this concept.
 
 RFC 3086, for macro metavariable expressions, introduced a similar mechanism to
 add helpers for macros to more easily process the contents of fragments.
-
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
-
-Is the handling of synthesized tokens reasonable? Should we choose the span
-differently?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
