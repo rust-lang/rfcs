@@ -190,7 +190,7 @@ We may want to provide a means to namespace helper attributes or detect
 collisions between them. This would apply to both proc macros and
 `macro_rules!` macros.
 
-We could provide a maco matcher to match an entire struct field, along with
+We could provide a macro matcher to match an entire struct field, along with
 syntax (based on macro metavariable expressions) to extract the field name or
 type (e.g. `${f.name}`). This would simplify many common cases by leveraging
 the compiler's own parser.
