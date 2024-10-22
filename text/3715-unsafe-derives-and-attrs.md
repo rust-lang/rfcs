@@ -1,6 +1,6 @@
 - Feature Name: `unsafe_derives_and_attrs`
 - Start Date: 2024-10-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3715](https://github.com/rust-lang/rfcs/pull/3715)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
