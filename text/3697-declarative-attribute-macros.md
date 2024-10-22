@@ -183,6 +183,13 @@ the same rule as if they were explicitly specified).
 Before stabilizing this feature, we should make sure it doesn't produce wildly
 worse error messages in common cases.
 
+Before stabilizing this feature, we should receive feedback from crate
+maintainers, and potentially make further improvements to `macro_rules` to make
+it easier to use for their use cases. This feature will provide motivation to
+evaluate many new use cases that previously weren't written using
+`macro_rules`, and we should consider quality-of-life improvements to better
+support those use cases.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
