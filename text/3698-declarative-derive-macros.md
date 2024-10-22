@@ -178,6 +178,9 @@ requests arise.
 We should provide a way for derive macros to declare themselves `unsafe` to
 invoke, requiring an unsafe attribute syntax to invoke.
 
+We could support passing parameters to derive macros (e.g.
+`#[derive(Trait(params), OtherTrait(other, params))]`).
+
 We should provide a way for `macro_rules!` macros to provide better error
 reporting, with spans, rather than just pointing to the macro.
 
