@@ -137,6 +137,11 @@ Some examples of *possible* fields, to be evaluated in the future:
   both generics and where clauses. (This would work well together with a macro
   metavariable expression to generate the appropriate `where` bounds for a
   `derive`.)
+- For `adt`, `fn`, and various others, a field for the doc comment, if any.
+- For `block`, a field for the statements in the block.
+- For `path`, a field for the segments in the path, and a field for the leading
+  `::` if any.
+- For `lifetime`, a field for the lifetime identifier, without the `'`.
 
 Some examples of *possible* additional fragment specifiers, to be evaluated in
 the future:
@@ -146,6 +151,12 @@ the future:
 - `variant` for a single variant of an `enum`
 - `fndecl` for a function declaration (rather than a definition), such as in a
   trait or an extern block.
+- `trait` for a trait definition, with fields for functions and associated
+  types.
+- `binop` for a binary operator expression, with fields for the operator and
+  the two operands.
+- `match` for a match expression, with fields for the scrutinee and the arms.
+- `match_arm` for one arm of a match, with fields for the pattern and the body.
 - `doc` for a doc comment, with `head` and `body` fields (handled the same way
   rustdoc does).
 
