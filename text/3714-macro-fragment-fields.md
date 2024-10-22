@@ -133,7 +133,8 @@ Some examples of *possible* fields, to be evaluated in the future:
   metavariable expression to generate the appropriate `where` bounds for a
   `derive`.)
 
-Some examples of additional fragment specifiers, to be evaluated in the future:
+Some examples of *possible* additional fragment specifiers, to be evaluated in
+the future:
 - `param` for a single function parameter.
 - `field` for a single field of a `struct`, `union`, or struct-style enum
   variant.
