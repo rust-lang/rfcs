@@ -86,9 +86,9 @@ source. If a token has no corresponding source (e.g. the `()` in `return_type`
 for a `fn` with no explicitly specified return type), the field definition
 defines an appropriate span.
 
-Mentioning a field of a fragment counts as a use of the fragment, for the
-purposes of ensuring every fragment gets used at least once at the appropriate
-level of repetition.
+Using a field of a fragment counts as a use of the fragment, for the purposes
+of ensuring every fragment gets used at least once at the appropriate level of
+repetition.
 
 This extends the grammar of macro metavariable expressions to allow using a dot
 and identifier to access a field.
