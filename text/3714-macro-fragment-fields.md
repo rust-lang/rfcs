@@ -71,7 +71,7 @@ level of repetition; see the `param` field of `:fn`, below.
 
 This RFC introduces the following new fragment specifiers, with specified fields:
 
-- `:fn`: A function item.
+- `:fn`: A function definition (including body).
   - `name`: The name of the function, as an `ident`.
   - `param`: The parameters of the function, presented as though captured by a
     level of `*` repetition. For instance, you can write `$(${f.param}),*` to
