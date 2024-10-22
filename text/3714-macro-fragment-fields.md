@@ -62,16 +62,21 @@ invoked.
 [reference-level-explanation]: #reference-level-explanation
 
 Fragment fields may be used in a macro transcriber anywhere the corresponding
-fragment name could be used. They must follow the same rules for repetition
-handling as the corresponding fragment (e.g. being used at the same level/kind
-of repetition).
+fragment name could be used.
+
+Fragment fields typically follow the same rules for repetition handling as the
+corresponding fragment (e.g. being used at the same level/kind of repetition).
+However, fragment fields that contain multiple items require one additional
+level of repetition; see the `param` field of `:fn`, below.
 
 This RFC introduces the following new fragment specifiers, with specified fields:
 
 - `:fn`: A function item.
   - `name`: The name of the function, as an `ident`.
-  - `params`: The parameters of the function, not including the surrounding
-    parentheses. May be empty if the function has no parameters.
+  - `param`: The parameters of the function, presented as though captured by a
+    level of `*` repetition. For instance, you can write `$(${f.param}),*` to
+    get a comma-separated list of parameters, or `$(other_macro!(${f.param}))*`
+    to pass each parameter to another macro.
   - `return_type`: The return type of the function, as a `ty`. If the function
     has no explicitly specified return type, this will be `()`, with a span of
     the closing parenthesis for the function arguments.
