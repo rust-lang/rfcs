@@ -60,13 +60,17 @@ For simplicity, no special syntax is given to allow an attribute macro to
 recursively invoke its `attr` rules; to recurse, invoke a non-`attr` rule or
 another macro.
 
+An `attr` rule may be prefixed with `unsafe`. Invoking an attribute macro in a
+way that makes use of a rule declared with `unsafe attr` requires the unsafe
+attribute syntax `#[unsafe(attribute_name)]`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The grammar for macros is extended as follows:
 
 > _MacroRule_ :\
-> &nbsp;&nbsp; ( `attr` _MacroMatcher_ )<sup>?</sup>  _MacroMatcher_ `=>` _MacroTranscriber_
+> &nbsp;&nbsp; ( `unsafe`<sup>?</sup> `attr` _MacroMatcher_ )<sup>?</sup>  _MacroMatcher_ `=>` _MacroTranscriber_
 
 The first _MacroMatcher_ matches the attribute's arguments, which will be an
 empty token tree if either not present (`#[myattr]`) or empty (`#[myattr()]`).
@@ -79,9 +83,16 @@ attribute was applied to will apply. Note that the captures in both
 `MacroMatcher`s share the same namespace; attempting to use the same name for
 two captures will give a "duplicate matcher binding" error.
 
+An attribute macro invocation that uses an `unsafe attr` rule will produce an
+error if invoked without using the `unsafe` attribute syntax. An attribute
+macro invocation that uses an `attr` rule will trigger the "unused unsafe" lint
+if invoked using the `unsafe` attribute syntax. A single attribute macro may
+have both `attr` and `unsafe attr` rules, such as if only some invocations are
+unsafe.
+
 This grammar addition is backwards compatible: previously, a _MacroRule_ could
-only start with `(`, `[`, or `{`, so the parser can easily distinguish the
-identifier `attr`.
+only start with `(`, `[`, or `{`, so the parser can easily distinguish rules
+that start with `attr` or `unsafe.
 
 Attribute macros declared using `macro_rules!` are
 [active](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
@@ -179,6 +190,11 @@ We should provide a way to define `derive` macros declaratively, as well.
 
 We should provide a way for `macro_rules!` macros to provide better error
 reporting, with spans, rather than just pointing to the macro.
+
+We may want to provide more fine-grained control over the requirement for
+`unsafe`, to make it easier for attribute macros to be safe in some
+circumstances and unsafe in others (e.g. unsafe only if a given parameter is
+provided).
 
 As people test this feature and run into limitations of `macro_rules!` parsing,
 we should consider additional features to make this easier to use for various
