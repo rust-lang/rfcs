@@ -144,6 +144,8 @@ the future:
 - `field` for a single field of a `struct`, `union`, or struct-style enum
   variant.
 - `variant` for a single variant of an `enum`
+- `fndecl` for a function declaration (rather than a definition), such as in a
+  trait or an extern block.
 - `doc` for a doc comment, with `head` and `body` fields (handled the same way
   rustdoc does).
 
