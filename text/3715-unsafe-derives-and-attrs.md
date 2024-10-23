@@ -70,6 +70,11 @@ more visible, and allows deriving several traits using one `unsafe`. The latter
 isolates the `unsafe` to a specific trait. This RFC proposes supporting both,
 but we could choose to only support the latter instead.
 
+We could use a different syntax for invoking unsafe derives, such as
+`derive(unsafe Trait)`. However, that would be inconsistent with unsafe
+attributes (which use parentheses), *and* it has the potential to look like a
+modifier to `Trait` (e.g. an unsafe version of `Trait`).
+
 # Prior art
 [prior-art]: #prior-art
 
