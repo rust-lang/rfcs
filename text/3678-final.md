@@ -101,6 +101,15 @@ As with any language feature, this adds more surface area to the language.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+Instead of or in addition to this, we could allow inherent `impl` blocks for a
+`Trait` (e.g. `impl Trait { ... }` without `for Type`). People today already
+occasionally write `impl dyn Trait` blocks, since `dyn Trait` is a type and
+supports inherent impl blocks; this change would allow generalizing such blocks
+by deleting the `dyn`. This has the potential for conceptual complexity or
+confusion for new users, as well as potentially affecting the quality of
+diagnostics. However, it would provide orthogonality, and an interesting
+conceptual model.
+
 Rather than using `#[inherent]`, we could use the `impl(visibility)` syntax
 from [RFC 3323](https://rust-lang.github.io/rfcs/3323-restrictions.html). This
 would allow more flexibility (such as overriding a method within the crate but
@@ -128,8 +137,27 @@ base trait.
 
 This feature is similar to `final` methods in Java or C++.
 
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+We should consider this syntax and the inherent `impl Trait { ...
+}` syntax (without `for Trait`) mentioned in the
+alternatives/future-possibilities sections, and decide whether we
+want one or both of these. We should take into account the
+conceptual model we want to present to users, any effect on
+diagnostic quality, whether the two approaches differ in
+implementation complexity, and how much we want the benefit of
+allowing `impl dyn Trait` blocks to be generalized by deleting the
+`dyn`.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+As mentioned in the alternatives section, we could allow inherent `impl` blocks
+for a `Trait` (e.g. `impl Trait { ... }` without `for Type`). People today
+already occasionally write `impl dyn Trait` blocks, since `dyn Trait` is a type
+and supports inherent impl blocks; this change would allow generalizing such
+blocks by deleting the `dyn`.
 
 We could add additional flexibility using the restriction mechanism defined in
 [RFC 3323](https://rust-lang.github.io/rfcs/3323-restrictions.html), using
