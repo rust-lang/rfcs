@@ -228,7 +228,7 @@ An alternative interface could use `dyn` instead of generics, as follows:
 
 ```rust
 pub fn add_spawn_hook<F, G>(
-    hook: Box<dyn Fn(&Thread) -> io::Result<Box<dyn FnOnce() + Send>> + Send + Sync>
+    hook: Box<dyn Send + Sync + Fn(&Thread) -> Box<dyn FnOnce() + Send>>
 );
 ```
 
