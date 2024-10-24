@@ -1,5 +1,5 @@
 <!-- Thank you for trying to improve Rust through the RFC process! -->
-<!-- Please add a short summary of your RFC below and add the link to the markdown file to the "Rendered" link below -->
+<!-- Please add a short summary of your RFC below -->
 
 > [!IMPORTANT]  
 > When responding to RFCs, try to use inline review comments instead of direct comments for normal comments
