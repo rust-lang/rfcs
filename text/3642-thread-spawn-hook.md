@@ -5,7 +5,7 @@
 
 # Summary
 
-Add `std::thread::add_spawn_hook` to register a hook that runs every time a thread spawns.
+Add `std::thread::add_spawn_hook` to register a hook that runs for newly spawned threads.
 This will effectively provide us with "inheriting thread locals", a much requested feature.
 
 ```rust
@@ -17,10 +17,8 @@ std::thread::add_spawn_hook(|_| {
     // Get the value of X in the spawning thread.
     let value = MY_THREAD_LOCAL.get();
 
-    Ok(move || {
-        // Set the value of X in the newly spawned thread.
-        MY_THREAD_LOCAL.set(value);
-    })
+    // Set the value of X in the newly spawned thread.
+    move || MY_THREAD_LOCAL.set(value)
 });
 ```
 
@@ -56,21 +54,21 @@ information to the user.
 
 # Public Interface
 
+For adding a hook:
+
 ```rust
 // In std::thread:
 
-/// Registers a function to run for every new thread spawned.
+/// Registers a function to run for every newly thread spawned.
 ///
 /// The hook is executed in the parent thread, and returns a function
 /// that will be executed in the new thread.
 ///
 /// The hook is called with the `Thread` handle for the new thread.
 ///
-/// If the hook returns an `Err`, thread spawning is aborted. In that case, the
-/// function used to spawn the thread (e.g. `std::thread::spawn`) will return
-/// the error returned by the hook.
-///
-/// Hooks can only be added, not removed.
+/// The hook will only be added for the current thread and is inherited by the threads it spawns.
+/// In other words, adding a hook has no effect on already running threads (other than the current
+/// thread) and the threads they might spawn in the future.
 ///
 /// The hooks will run in order, starting with the most recently added.
 ///
@@ -79,39 +77,62 @@ information to the user.
 /// ```
 /// std::thread::add_spawn_hook(|_| {
 ///     ..; // This will run in the parent (spawning) thread.
-///     Ok(move || {
+///     move || {
 ///         ..; // This will run it the child (spawned) thread.
-///     })
+///     }
 /// });
 /// ```
 ///
 /// # Example
 ///
+/// A spawn hook can be used to "inherit" a thread local from the parent thread:
+///
 /// ```
+/// use std::cell::Cell;
+///
 /// thread_local! {
-///     static MY_THREAD_LOCAL: Cell<u32> = Cell::new(0);
+///     static X: Cell<u32> = Cell::new(0);
 /// }
 ///
+/// // This needs to be done once in the main thread before spawning any threads.
 /// std::thread::add_spawn_hook(|_| {
 ///     // Get the value of X in the spawning thread.
-///     let value = MY_THREAD_LOCAL.get();
-///
-///     Ok(move || {
-///         // Set the value of X in the newly spawned thread.
-///         MY_THREAD_LOCAL.set(value);
-///     })
+///     let value = X.get();
+///     // Set the value of X in the newly spawned thread.
+///     move || X.set(value)
 /// });
+///
+/// X.set(123);
+///
+/// std::thread::spawn(|| {
+///     assert_eq!(X.get(), 123);
+/// }).join().unwrap();
 /// ```
 pub fn add_spawn_hook<F, G>(hook: F)
 where
-    F: 'static + Sync + Fn(&Thread) -> std::io::Result<G>,
+    F: 'static + Sync + Fn(&Thread) -> G,
     G: 'static + Send + FnOnce();
+```
+
+And for opting out when spawning a hook:
+
+```rust
+// In std::thread:
+
+impl Builder {
+    /// Disables running and inheriting [spawn hooks](add_spawn_hook).
+    ///
+    /// Use this if the parent thread is in no way relevant for the child thread.
+    /// For example, when lazily spawning threads for a thread pool.
+    pub fn no_hooks(mut self) -> Builder;
+}
 ```
 
 # Implementation
 
-The implementation could simply be a static `RwLock` with a `Vec` of
-(boxed/leaked) `dyn Fn`s, or a simple lock free linked list of hooks.
+The implementation is a *thread local* linked list of hooks, which is inherited by newly spawned threads.
+This means that adding a hook will only affect the current thread and all (direct and indirect) future child threads of the current thread.
+It will not globally affect all already running threads.
 
 Functions that spawn a thread, such as `std::thread::spawn` will eventually call
 `spawn_unchecked_`, which will call the hooks in the parent thread, after the
@@ -123,12 +144,12 @@ main function.
 # Downsides
 
 - The implementation requires allocation for each hook (to store them in the
-  global list of hooks), and an allocation each time a hook is spawned
+  list of hooks), and an allocation each time a hook is spawned
   (to store the resulting closure).
 
 - A library that wants to make use of inheriting thread locals will have to
-  register a global hook, and will need to keep track of whether its hook has
-  already been added (e.g. in a static `std::sync::Once`).
+  register a global hook (e.g. at the start of `main`),
+  and will need to keep track of whether its hook has already been added.
 
 - The hooks will not run if threads are spawned through e.g. pthread directly,
   bypassing the Rust standard library.
@@ -137,42 +158,36 @@ main function.
 
 # Rationale and alternatives
 
-## Use of `io::Result`.
-
-The hook returns an `io::Result` rather than the `FnOnce` directly.
-This can be useful for e.g. resource limiting or possible errors while
-registering new threads, but makes the signature more complicated.
-
-An alternative could be to simplify the signature by removing the `io::Result`,
-which is fine for most use cases.
-
 ## Global vs thread local effect
 
-`add_spawn_hook` has a global effect (similar to e.g. libc's `atexit()`),
-to keep things simple.
+Unlike e.g. libc's `atexit()`, which has a global effect, `add_spawn_hook` has a thread local effect.
 
-An alternative could be to store the list of spawn hooks per thread,
-that are inherited to by new threads from their parent thread.
-That way, a hook added by `add_spawn_hook` will only affect the current thread
-and all (direct and indirect) future child threads of the current thread,
-not other unrelated threads.
+This means that adding a hook will only affect the current thread and all (direct and indirect) future child threads of the current thread.
+In other words, adding a hook has no effect on already running threads (other than the current thread) and the threads they might spawn in the future.
+
+An alternative could be to have a global set of hooks that affects all newly spawned threads, on any existing and future thread.
 
 Both are relatively easy and efficient to implement (as long as removing hooks
 is not an option).
 
-However, the first (global) behavior is conceptually simpler and allows for more
-flexibility. Using a global hook, one can still implement the thread local
-behavior, but this is not possible the other way around.
+The global behavior was proposed in an earlier version of this RFC,
+but the library-api team expressed a preference for exploring a "more local" solution.
+
+Having a "lexicographically local" solution doesn't seem to be possible other than for scoped threads, however,
+since threads can outlive their parent thread and then spawn more threads.
+
+A thread local effect (affecting all future child threads) seems to be the most "local" behavior we can achieve here.
 
 ## Add but no remove
 
 Having only an `add_spawn_hook` but not a `remove_spawn_hook` keeps things
-simple, by 1) not needing a global (thread safe) data structure that allows
-removing items and 2) not needing a way to identify a specific hook (through a
+simple, by not needing a way to identify a specific hook (through a
 handle or a name).
 
 If a hook only needs to execute conditionally, one can make use of an
 `if` statement.
+
+If no hooks should be executed or inherited, one can use `Builder::no_hooks`.
 
 ## Requiring storage on spawning
 
