@@ -132,7 +132,7 @@ extensive design.
 Some examples of *possible* fields, to be evaluated in the future:
 - For `fn`, a field for the ABI. This could be a synthesized `"Rust"` for
   functions without a specified ABI.
-- For `fn`, a field for qualifiers such as `const` and `async`.
+- For `fn`, one or more fields for qualifiers such as `const` and `async`.
 - For `adt` and `fn`, fields for the generics and bounds. We may want to
   provide them exactly as specified, or we may want to combine the bounds from
   both generics and where clauses. (This would work well together with a macro
