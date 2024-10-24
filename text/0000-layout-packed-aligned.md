@@ -46,7 +46,7 @@ However, in most cases, the user would expect `#[repr(C)]` to produce a struct l
 
 ## `#[repr(C)]`
 When `align` and `packed` attributes exist on the same type, or when `packed` structs transitively contains `align` types,
-the resulting layout matches the current compilation target.
+the resulting layout matches the target toolchain ABI.
 
 For example, given:
 ```c
@@ -60,7 +60,7 @@ struct Bar(Foo);
 
 ## `#[repr(system)]`
 When `align` and `packed` attributes exist on the same type, or when `packed` structs transitively contains `align` types,
-the resulting layout matches the current compilation target.
+the resulting layout matches the target OS ABI.
 
 For example, given:
 ```c
