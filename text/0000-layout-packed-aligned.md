@@ -1,7 +1,7 @@
-- Feature Name: `c_layout_packed_aligned`
-- Start Date: 2024-10-24 s
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/100743)
+- Feature Name: `layout_packed_aligned`
+- Start Date: 2024-10-24
+- RFC PR: [rust-lang/rfcs#3718](https://github.com/rust-lang/rfcs/pull/3718)
+- Rust Issue: [rust-lang/rust#100743](https://github.com/rust-lang/rust/issues/100743)
 
 # Summary
 [summary]: #summary
