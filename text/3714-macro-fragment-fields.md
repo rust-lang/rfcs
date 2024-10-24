@@ -43,7 +43,7 @@ of the matched type with `${t.name}`:
 
 ```rust
 macro_rules! get_name {
-    ($t:adt) => { println!("{}", stringify!(${t.name})); }
+    ($t:adt) => { stringify!(${t.name}) }
 }
 
 fn main() {
