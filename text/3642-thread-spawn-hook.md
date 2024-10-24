@@ -1,6 +1,6 @@
 - Feature Name: `thread_spawn_hook`
 - Start Date: 2024-05-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3642](https://github.com/rust-lang/rfcs/pull/3642)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
