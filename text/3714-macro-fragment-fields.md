@@ -146,7 +146,9 @@ Some examples of *possible* fields, to be evaluated in the future:
 
 Some examples of *possible* additional fragment specifiers, to be evaluated in
 the future:
-- `param` for a single function parameter.
+- `param` for a single function parameter, with fields for the pattern and the
+  type. (This would also need to handle cases like `...` in variadic functions,
+  and cases like `self`, perhaps by acting as if it was `self: Self`.)
 - `field` for a single field of a `struct`, `union`, or struct-style enum
   variant.
 - `variant` for a single variant of an `enum`
