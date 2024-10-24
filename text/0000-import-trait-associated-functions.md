@@ -189,6 +189,21 @@ use some_module::Trait::func;
 
 The restriction on importing parent trait associated functions is a consequence of this desugaring, see https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=51bef9ba69ce1fc20248e987bf106bd4 for examples of the errors you get when you try to call parent trait associated functions through a child trait. We will likely want better error messages than this if a user tries to import a parent function.
 
+Note that trait generics are handled by this desugaring using type inference. As above, given `Trait<T>`,
+```rust
+use Trait::func as m;
+m(x, y, z);
+```
+desugars to
+```rust
+Trait::func(x, y, z);
+```
+which compiles if and only if `T` can be inferred from the function call. For example, if `func` was
+```
+fn func(a: T, b: i32, c: i32) {}
+```
+then `T` would be inferred to be the type of `x`, assuming `x` itself can be inferred.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
