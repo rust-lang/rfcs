@@ -85,6 +85,7 @@ This RFC introduces the following new fragment specifiers, with specified fields
   - `vis`: The visibility of the function, as a `vis` (may be empty).
 - `:adt`: An ADT (struct, union, or enum).
   - `name`: The name of the ADT, as an `ident`.
+  - `vis`: The visibility of the ADT, as a `vis` (may be empty).
 
 The tokens within fields have the spans of the corresponding tokens from the
 source. If a token has no corresponding source (e.g. the `()` in `return_type`
