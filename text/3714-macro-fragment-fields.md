@@ -115,6 +115,12 @@ Rather than using field syntax, we could use function-like syntax in the style
 of RFC 3086's macro metavariable expressions. However, field syntax seems like
 a more natural fit for this concept.
 
+Rather than synthesizing tokens for cases like `return_type`, we could make a
+rule that we *never* provide tokens that aren't in the original source.
+However, this would substantially limit usability of these fields in some
+cases, and make macros harder to write. This RFC proposes, in general, that we
+can synthesize tokens if necessary to provide useful values for fields.
+
 # Prior art
 [prior-art]: #prior-art
 
