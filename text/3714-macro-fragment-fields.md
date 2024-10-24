@@ -180,6 +180,17 @@ mechanism for conditionally handling fields that may not exist. The former
 would be less robust against future variations, while the latter would be more
 complex.
 
+We could handle conditionally available fields by presenting them as though
+they have a repetition of `?`, which would allow expansions within `$(...)?`;
+that would support simple conditional cases without much complexity.
+
+We could handle some other types of conditions by presenting "boolean"-like
+fields as fields that expand to no tokens but do so under a repetition of `?`,
+to allow writing conditionals like `$(${x.field} ...)?`. This would fit such
+conditionals within existing macro concepts, but it may suffer from an unwanted
+overabundance of cleverness, and may not be as easy to read as a dedicated
+conditional construct.
+
 If, in the future, we introduce fields whose values have fragment types that
 themselves have fields, we should support nested field syntax.
 
