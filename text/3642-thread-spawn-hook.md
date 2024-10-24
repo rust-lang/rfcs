@@ -110,7 +110,7 @@ For adding a hook:
 /// ```
 pub fn add_spawn_hook<F, G>(hook: F)
 where
-    F: 'static + Sync + Fn(&Thread) -> G,
+    F: 'static + Send + Sync + Fn(&Thread) -> G,
     G: 'static + Send + FnOnce();
 ```
 
@@ -228,7 +228,7 @@ An alternative interface could use `dyn` instead of generics, as follows:
 
 ```rust
 pub fn add_spawn_hook<F, G>(
-    hook: Box<dyn Fn(&Thread) -> io::Result<Box<dyn FnOnce() + Send>> + Sync>
+    hook: Box<dyn Fn(&Thread) -> io::Result<Box<dyn FnOnce() + Send>> + Send + Sync>
 );
 ```
 
