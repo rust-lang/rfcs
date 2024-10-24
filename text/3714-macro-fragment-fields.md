@@ -98,6 +98,9 @@ repetition.
 This extends the grammar of macro metavariable expressions to allow using a dot
 and identifier to access a field.
 
+Note that future versions of Rust can add new fields to an existing matcher;
+doing so is a compatible change.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
