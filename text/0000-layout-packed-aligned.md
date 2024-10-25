@@ -64,9 +64,9 @@ the resulting layout matches the target OS ABI.
 
 For example, given:
 ```c
-#[repr(C, align(4))]
+#[repr(system, align(4))]
 struct Foo(u8);
-#[repr(C, packed(1))]
+#[repr(system, packed(1))]
 struct Bar(Foo);
 ```
 `align_of::<Bar>()` would be 4 for `*-pc-windows-msvc` and `*-pc-windows-gnu`. It would be 1 for everything else.
