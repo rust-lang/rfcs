@@ -26,7 +26,7 @@ Currently, crates.io only supports user-created API tokens used for either manua
 
 These tokens have some security flaws:
 
-1. By default, they are long-lived and do not expire.
+1. They can have no expiration (as of Sept 12 2024, they default to 90 days).
 2. They can be used from any source without restriction.
     - For example, the same token can be used from a GitHub Actions workflow or from a personal workstation.
 3. When using the tokens in automated workflows, they must be created in advance and copied by a human -- increasing the risk of accidental exposure.
@@ -168,7 +168,7 @@ sequenceDiagram
 Prior to publishing a crate through a GitHub Actions workflow, the crate author will need to create a _Trusted Publisher Configuration_ via the crates.io web UI. This is a one-time configuration **required per crate**.
 
 > [!Note]
-> Initially, a _Trusted Publisher Configuration_ can only be created after an initial manual publishing of a crate.
+> A _Trusted Publisher Configuration_ can only be created after an initial manual publishing of a crate.
 > 
 > See [Future Possibilities](#future-possibilities) for future plans to alleviate this pain.
 
@@ -183,6 +183,10 @@ For GitHub Actions, the crate author will need to provide:
 3. (required) The workflow file name (must be located in `.github/workflows/`)
 4. (optional) The [GitHub Actions environment](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment) name
 
+> [!Note]
+> Supply chain compromises are still possible. As such, we are requiring the workflow file name to be defined in order to limit the attack surface. An attacker would need to compromise an action used specifically within the defined workflow file.
+>
+> It's recommended to thoroughly review any actions used in your release worfklow.
 
 ### Example GitHub Actions Workflow
 [example-gha-workflow]: #example-gha-workflow
@@ -216,6 +220,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # The step below is not strictly required as `cargo publish`
+    # will perform a build as well.
     - name: Install dependencies
       run: cargo build --release
 
@@ -261,7 +267,7 @@ The Trusted Publisher Configuration might look like the below, represented in JS
 }
 ```
 
-In addition to the above parameters, the configuration will be linked to a particular crates.io user or team to administer.
+A Trusted Publisher Configuration will be _owned_ by the associated crate. Any owners of the crate can create, delete, or edit these configurations.
 
 ## Drawbacks
 [drawbacks]: #drawbacks
@@ -335,9 +341,12 @@ Other package repositories have implemented similar support:
 ## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should crate owners be able to configure the allowed token scopes for a Trusted Publisher configuration?
-    - We could default to `publish-new` and `publish-update`, but maybe it's best to allow this to be configurable?
-- How long should an access token derived from the ID token exchange be valid for?
+
+- ~~Should crate owners be able to configure the allowed token scopes for a Trusted Publisher configuration?~~
+    - ~~We could default to `publish-new` and `publish-update`, but maybe it's best to allow this to be configurable?~~
+    - _Initially, all Trusted Publisher Configurations will default to `publish-update` with no option to change this. After some of the implementations in [Future Possibilities](#future-possibilities) are completed, this can be expanded to allow configuration of additional scopes._
+- ~~How long should an access token derived from the ID token exchange be valid for?~~
+    - _We will provide a long enough lifetime initially for access tokens. We may also allow this to be configured in the Trusted Publisher Configuration. Regardless of the lifetime, the action that performs the token exchange will issue a request to revoke the token at the end of the workflow.
 
 ### Out of Scope
 [out-of-scope]: #out-of-scope
@@ -345,6 +354,7 @@ Other package repositories have implemented similar support:
 - Provenance verification of published crates (e.g. sigstore or other signing mechanisms).
 - Discussion/debate of CI/CD providers to support next and their expected timelines.
 - Support in the GitHub Action used to perform the OIDC authentication with other Rust package registries.
+- Direct suppport and implementation of the token exchange flow within `cargo`.
 
 ### Items to Resolve Before General Availability
 [resolve-before-general-availability]: #resolve-before-general-availability
@@ -357,12 +367,14 @@ Other package repositories have implemented similar support:
 [future-possibilities]: #future-possibilities
 
 - Support creating _Trusted Publisher Configurations_ in a `PENDING` state, prior to the initial publishing of a crate.
+- Support for defining the maximum allowed scopes (e.g. `publish-update`, `publish-new`, `yank`, etc.) allowed for the Trusted Publisher Configuration.
 - Support for a `DEACTIVATED` state on the Trusted Publisher Configuration to allow toggling on/off the ability to publish crates from the corresponding trusted publisher.
 - Support providing a list of crate names in the crates.io UI to simplify configuration for monorepos that publish multiple crates.
 - Support for additional trusted publishers (i.e. GitLab, CircleCI).
 - Support for custom assertions on OIDC ID token claims.
     - [Additional claims supported by GitHub Actions OIDC ID tokens](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#understanding-the-oidc-token)
-
+- Implement support for the authentication and token exchange within `cargo` to minimize the necessary lifetime of the token.
+- Support for setting up Trusted Publisher Configurations via a machine-accessible API.
 
 
 [^1]: https://blog.trailofbits.com/2023/05/23/trusted-publishing-a-new-benchmark-for-packaging-security/
