@@ -374,6 +374,7 @@ Other package repositories have implemented similar support:
 - Support for custom assertions on OIDC ID token claims.
     - [Additional claims supported by GitHub Actions OIDC ID tokens](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#understanding-the-oidc-token)
 - Implement support for the authentication and token exchange within `cargo` to minimize the necessary lifetime of the token.
+    - Once implemented, the default lifetime of the token can be reduced significantly as it will not be dependent on the build time of the crate.
 - Support for setting up Trusted Publisher Configurations via a machine-accessible API.
 
 
