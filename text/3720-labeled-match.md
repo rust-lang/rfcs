@@ -851,17 +851,19 @@ In C and other languages, some modern interpreters make use of guaranteed tail c
 
 The [wasm3](https://github.com/wasm3/wasm3) webassembly interpreter is a well-known example. Their [design document](https://github.com/wasm3/wasm3/blob/main/docs/Interpreter.md#tightly-chained-operations) describes their approach and also mentions some further prior art.
 
+This feature request has a long history in rust, because the details are hard to get right. The current proposal is [Explicit Tail Calls](https://github.com/phi-go/rfcs/blob/guaranteed-tco/text/0000-explicit-tail-calls.md).
+
 This [zig issue](https://github.com/ziglang/zig/issues/8220) gives three good reasons for why guaranteed tail calls don't cover all cases:
 
 - on some targets, tail calls cannot be guaranteed (or at least LLVM currently won't)
 - logic must be organized into functions, this has potential performance implications, but also stylistic ones.
 - debugging of logic structured with tail calls is much more difficult than code that stays within a single stack frame
 
-Tail calls are a useful tool, and rust should have them, but there are still use cases for labeled match. 
+Tail calls are a useful tool, and rust should have them, but there are still use cases for labeled match.
 
 ### zlib-rs usage report
 
-We benchmarked an implementation using tail calls versus "loop + match" and our PoC labeled match implementation. The results are [here](https://gist.github.com/folkertdev/977183fb706b7693863bd7f358578292). We see significant (~15%) speedups of labeled match over tail calls in some benchmarks. 
+We benchmarked an implementation using tail calls versus "loop + match" and our PoC labeled match implementation. The results are [here](https://gist.github.com/folkertdev/977183fb706b7693863bd7f358578292). We see significant (~15%) speedups of labeled match over tail calls in some benchmarks.
 
 ```
 Benchmark 3 (80 runs): /tmp/labeled-match-len rs-chunked 4 silesia-small.tar.gz
@@ -977,7 +979,7 @@ macro_rules! dispatch() {
 }
 ```
 
-In the current PoC implementation each `continue` will duplicate the match, leading to the branch prediction behavior that makes computed goto attractive. However, it is not currently clear that this desugaring will be kept when the next branch is not compile-time known. 
+In the current PoC implementation each `continue` will duplicate the match, leading to the branch prediction behavior that makes computed goto attractive. However, it is not currently clear that this desugaring will be kept when the next branch is not compile-time known.
 
 ## improve MIR optimizations
 
@@ -1001,18 +1003,18 @@ So, labeled match is a solid way to make progress on better codegen. Improved op
 
 ## recognize "loop + match" and optimize
 
-In theory it is possible to internally recognize and rewrite a "loop + match" expression into a labeled match. With this approach, no changes to language syntax are needed. 
+In theory it is possible to internally recognize and rewrite a "loop + match" expression into a labeled match. With this approach, no changes to language syntax are needed.
 
 A fundamental problem with this approach is a change in drop order:
 
 ```rust
 let mut state = 0;
-'label: loop { 
+'label: loop {
     match state {
-        0 => { 
+        0 => {
             let x = vec![1,2,3];
             state = 1;
-            // drop of `x` gets inserted between state update and jump 
+            // drop of `x` gets inserted between state update and jump
             continue 'label;
         }
         _ => ...
@@ -1021,8 +1023,8 @@ let mut state = 0;
 
 // versus if you rewrite to labeled match
 
-'label: match 0 { 
-    0 => { 
+'label: match 0 {
+    0 => {
         let x = vec![1,2,3];
         // drop of `x` happens before the state update
         continue 'label 1;
@@ -1031,7 +1033,7 @@ let mut state = 0;
 }
 ```
 
-Beyond that, the analysis for recognizing "loop + match" will likely be complex and fragile. Part of the appeal of labeled match is that the desugaring rules are simple and deterministic. Using a labeled match signals that something subtle is going on: for readers and future reviewers it is clear that the labeled match desugaring is desired and potentially crucial for the code to perform well. 
+Beyond that, the analysis for recognizing "loop + match" will likely be complex and fragile. Part of the appeal of labeled match is that the desugaring rules are simple and deterministic. Using a labeled match signals that something subtle is going on: for readers and future reviewers it is clear that the labeled match desugaring is desired and potentially crucial for the code to perform well.
 
 ## Why Labeled match is the best solution
 
@@ -1048,7 +1050,7 @@ The codegen characteristics provided by labeled match are essential in real-worl
 # Prior art
 [prior-art]: #prior-art
 
-This idea is taken fairly directly from zig. 
+This idea is taken fairly directly from zig.
 
 The idea was first introduced in [this issue](https://github.com/ziglang/zig/issues/8220) which has a fair amount of background on how LLVM is not able to optimize certain cases, reasoning about not having a general `goto` in zig, and why tail calls do not cover all cases.
 
