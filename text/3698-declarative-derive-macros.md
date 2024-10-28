@@ -149,6 +149,10 @@ The `macro_derive` attribute and its `attributes` syntax are based on the
 [existing `proc_macro_derive` attribute for proc
 macros](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros).
 
+Some crates in the ecosystem already implement the equivalent of derives using
+declarative macros; for instance, see
+[merde](https://github.com/bearcove/merde).
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
