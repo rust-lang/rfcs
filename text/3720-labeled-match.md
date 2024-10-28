@@ -173,15 +173,15 @@ While this is a natural way to express a state machine, it is well-known that wh
 - The match is an unpredictable branch, causing many branch misses. Reducing the number of branch misses is crucial for good performance on modern hardware.
 - The "loop + match" approach contains control flow paths (so, sequences of branches) that will never be taken in practice. The stack can be smaller if the control flow paths are known more precisely.
 
-By providing the compiler with more knowlege about what state transitions actually exists (i.e. what other states can follow a particular state), we get major performance improvements. A proof of concept implementation of labeled match shows considerable performance gains versus current recommended workarounds in real-world scenarios:
+By providing the compiler with more knowlege about what state transitions actually exists (i.e. what other states can follow a particular state), we get major performance improvements. A proof of concept implementation of labeled match shows considerable performance gains versus current recommended workarounds in real-world scenarios ([all results](https://gist.github.com/folkertdev/977183fb706b7693863bd7f358578292):
 
 ```
-Benchmark 2 (77 runs): target/release/examples/blogpost-uncompress rs-chunked 4 silesia-small.tar.gz
+Benchmark 3 (80 runs): /tmp/labeled-match-len rs-chunked 4 silesia-small.tar.gz
   measurement          mean ± σ            min … max           outliers         delta
-  wall_time          65.6ms ± 1.11ms    64.1ms … 72.8ms          1 ( 1%)        ⚡- 15.9% ±  0.5%
-  peak_rss           24.2MB ± 63.3KB    24.0MB … 24.2MB          0 ( 0%)         +  0.1% ±  0.1%
-  cpu_cycles          258M  ± 3.67M      256M  …  287M           7 ( 9%)        ⚡- 16.6% ±  0.4%
-  instructions        710M  ±  301       710M  …  710M           0 ( 0%)        ⚡- 22.5% ±  0.0%
+  wall_time          62.6ms ±  555us    61.7ms … 66.1ms          2 ( 3%)        ⚡- 14.0% ±  1.4%
+  peak_rss           24.1MB ± 77.9KB    23.9MB … 24.1MB          0 ( 0%)          -  0.1% ±  0.1%
+  cpu_cycles          249M  ± 1.87M      248M  …  263M           5 ( 6%)        ⚡- 15.4% ±  1.3%
+  instructions        686M  ±  267       686M  …  686M           0 ( 0%)        ⚡- 24.9% ±  0.0%
 ```
 
 The specific proposal in this RFC is that lowering `continue 'label value` from HIR to MIR inserts an unconditional branch (`goto`) when the target is known. Hence, the programmer can structure their program so that this improved lowering kicks in. Of course later MIR passes and the codegen backend are free to optimize from that point as they see fit. Therefore no guarantees can be made about the exact shape of the final MIR and assembly.
