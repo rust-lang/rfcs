@@ -92,7 +92,7 @@ unsafe.
 
 This grammar addition is backwards compatible: previously, a _MacroRule_ could
 only start with `(`, `[`, or `{`, so the parser can easily distinguish rules
-that start with `attr` or `unsafe.
+that start with `attr` or `unsafe`.
 
 Attribute macros declared using `macro_rules!` are
 [active](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
