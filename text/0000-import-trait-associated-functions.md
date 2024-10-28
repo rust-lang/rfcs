@@ -198,11 +198,11 @@ desugars to
 ```rust
 Trait::func(x, y, z);
 ```
-which compiles if and only if `T` can be inferred from the function call. For example, if `func` was
+which compiles if and only if `T` and `Self` can be inferred from the function call. For example, if `func` was
 ```
 fn func(self, b: T, c: i32) {}
 ```
-then `T` would be inferred to be the type of `y`, assuming `y` itself can be inferred.
+then `Trait<T>` would be inferred to be `<typeof(x) as Trait<typeof(y)>`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
