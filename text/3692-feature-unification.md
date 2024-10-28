@@ -103,14 +103,13 @@ Specify which packages participate in [feature unification](https://doc.rust-lan
 
 This increases entropy within Cargo and the universe at large.
 
-If someone enables mutually exclusive features in different packages, then `workspace` unification will fail.
-Officially, features are supposed to be additive, making mutually exclusive features officially unsupported.
-Instead, effort should be put towards [official mutually exclusive globals](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
-
-Some features cannot be enabled in some packages, like a `no_std` package not wanting `std` features.
-These workspaces will not be able to use `workspace` unification.
-For now, unifying for the `"workspace"` is primarily targeted at single-application workspaces.
-The other config fields can always be used instead.
+As `workspace` unifcation builds dependencies the same way as `--workspace`, it has the same drawbacks as `--workspace`, including
+- If a build would fail with `--workspace`, then it will fail with `workspace` unification as well.
+  - For example, if two packages in a workspace enable mutually exclusive features, builds will fail with both `--workspace` and `workspace` unification.
+    Officially, features are supposed to be additive, making mutually exclusive features officially unsupported.
+    Instead, effort should be put towards [official mutually exclusive globals](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
+- If `--workspace` would produce an invalid binary for your requirements, then it will do so with `workspace` unification as well.
+  - For example, if you have regular packages and a `no_std` package in the same workspace, the `no_std` package may end up with dependnencies built with `std` features.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
