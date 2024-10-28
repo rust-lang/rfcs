@@ -777,7 +777,7 @@ The labeled match proposal has two major advantages over fallthrough:
 - there is no need to list branches in a particular order
 - more than one next state can be reached with a direct jump
 
-It turns out that labeled match is fairly expressive, and can in fact express Durr's device:
+It turns out that labeled match is fairly expressive, and can in fact express Duff's device:
 
 ```rust
 // originally written by Ralf Jung on zullip
