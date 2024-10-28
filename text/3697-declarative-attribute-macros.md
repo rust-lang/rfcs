@@ -172,6 +172,11 @@ demonstrating a demand for this. This feature would allow defining such
 attributes without requiring proc macros at all, and would support the same
 invocation syntax as a proc macro.
 
+Some macros in the ecosystem already implement the equivalent of attribute
+using declarative macros; for instance, see
+[smol-macros](https://crates.io/crates/smol-macros), which provides a `main!`
+macro and recommends using it with `macro_rules_attribute::apply`.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
