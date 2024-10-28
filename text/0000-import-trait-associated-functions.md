@@ -200,9 +200,9 @@ Trait::func(x, y, z);
 ```
 which compiles if and only if `T` can be inferred from the function call. For example, if `func` was
 ```
-fn func(a: T, b: i32, c: i32) {}
+fn func(self, b: T, c: i32) {}
 ```
-then `T` would be inferred to be the type of `x`, assuming `x` itself can be inferred.
+then `T` would be inferred to be the type of `y`, assuming `y` itself can be inferred.
 
 # Drawbacks
 [drawbacks]: #drawbacks
