@@ -74,8 +74,8 @@ struct Bar(Foo);
 
 ## `#[repr(Rust)]`
 When `align(N)` and `packed(M)` attributes exist on the same type, or when `packed` structs contain `aligned` fields,
-the type will have a base alignment of `N`, while the struct fields will be laid out as if their alignment was
-decreased to `M`. However, in general Rust is free to reorder
+the type will have their base alignment increased to `N`, while the struct fields will be laid out as if their
+alignments were decreased to `M`. However, in general Rust is free to reorder
 these fields for optimization purposes, and the only guarantee is that the fields will maintain a minimum alignment of `M`.
 
 # Reference-level explanation
