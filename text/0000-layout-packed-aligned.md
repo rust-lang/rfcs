@@ -38,8 +38,9 @@ struct  __attribute__((packed, aligned(4))) MyStruct {
 };
 ```
 
-Currently `#[repr(packed(_))]` structs cannot transitively contain #[repr(align(_))] structs due to differing behavior between msvc and gcc/clang.
-However, in most cases, the user would expect `#[repr(C)]` to produce a struct layout matching the same type as defined by the current target. 
+Currently, `#[repr(packed(_))]` structs cannot be `#[repr(align(_))]` or transitively contain `#[repr(align(_))]` types. Attempting to do so results in a [hard error](https://doc.rust-lang.org/nightly/error_codes/E0588.html).
+
+This behavior was added in the [original implementation](https://github.com/rust-lang/rust/issues/33158) of `#[repr(packed)]` due to concerns over differing behavior between msvc and gcc/clang. This makes it cumbersome or even impossible to produce C-compatible struct layouts in Rust when the corresponding C types were annotated with both `packed` and `aligned`.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -71,7 +72,11 @@ struct Bar(Foo);
 ```
 `align_of::<Bar>()` would be 4 for `*-pc-windows-msvc` and `*-pc-windows-gnu`. It would be 1 for everything else.
 
-
+## `#[repr(Rust)]`
+When `align(N)` and `packed(M)` attributes exist on the same type, or when `packed` structs contain `aligned` fields,
+the type will have a base alignment of `N`, while the struct fields will be laid out as if their alignment was
+decreased to `M`. However, in general Rust is free to reorder
+these fields for optimization purposes, and the only guarantee is that the fields will maintain a minimum alignment of `M`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -101,8 +106,9 @@ When the align and packed modifiers are applied on the same type as `#[repr(alig
 the alignment of the struct fields are decreased to be M. Then, the base alignment of the type is
 increased to be N.
 
-When a `#[repr(packed(M))]` struct transitively contains a field with `#[repr(align(N))]` type,
-- The field is first `pad_to_align`. Then, the field is added to the struct with alignment decreased to M. The packing requirement overrides the alignment requirement. (GCC, `#[repr(Rust)]`, `#[repr(C)]` on gnu targets, `#[repr(system)]` on non-windows targets)
+When a `#[repr(packed(M))]` struct transitively contains a field with `#[repr(align(N))]` type, depending on the
+target triplet, either:
+- The field is first `pad_to_align`. Then, the field is added to the struct with alignment decreased to M. The packing requirement overrides the alignment requirement. (GCC, `#[repr(Rust)]`, `#[repr(C)]` on gnu targets, `#[repr(system)]` on non-windows targets), or
 - The field is added to the struct with alignment increased to N. The alignment requirement overrides the packing requirement. (MSVC, `#[repr(C)]` on msvc targets, `#[repr(system)]` on windows targets)
 
 # Drawbacks
