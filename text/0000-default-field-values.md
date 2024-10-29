@@ -1047,8 +1047,8 @@ There are many reasons for this restriction:
 
 As an alternative to the proposed design is either explicitly writing out
 `..Default::default()` or extending the language such that `Foo { .. }` becomes
-sugar for `Foo { ..Default::default() }`. While the latter idea does not satisfy
-any of the [motivation] set out, the former does to a small extent.
+sugar for `Foo { ..Default::default() }`. While the former idea does not satisfy
+any of the [motivation] set out, the latter does to a small extent.
 
 In particular, `Foo { .. }` as sugar slightly improves ergonomics.
 However, it has some notable problems:
