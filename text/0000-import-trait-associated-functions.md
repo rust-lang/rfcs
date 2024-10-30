@@ -202,7 +202,7 @@ which compiles if and only if `T` and `Self` can be inferred from the function c
 ```
 fn func(self, b: T, c: i32) {}
 ```
-then `Trait<T>` would be inferred to be `<typeof(x) as Trait<typeof(y)>`.
+then `Trait<T>` would be inferred to be `<typeof(x) as Trait<typeof(y)>`. Generics on `Trait` are not directly specifiable when a function is called in this way. To call a function with explicit types specified you must use the usual fully qualified syntax.
 
 # Drawbacks
 [drawbacks]: #drawbacks
