@@ -23,10 +23,10 @@ feature.
 [background]: #background
 
 Rust has the [`Sized`][api_sized] marker trait which indicates that a type's size
-is statically known at compilation time. `Sized` is an trait which is
-automatically implemented by the compiler on any type that has a statically known
-size. All type parameters have a default bound of `Sized` and `?Sized` syntax can
-be used to remove this bound.
+is statically known at compilation time. `Sized` is a trait which is automatically
+implemented by the compiler on any type that has a statically known size. All type
+parameters have a default bound of `Sized` and `?Sized` syntax can be used to remove
+this bound.
 
 There are two functions in the standard library which can be used to get a size,
 [`std::mem::size_of`][api_size_of] and [`std::mem::size_of_val`][api_size_of_val]:
@@ -155,11 +155,12 @@ example:
 - [`std::mem::size_of_val`][api_size_of_val] computes the size of a value,
   and thus cannot accept extern types which have no size, and this should
   be prevented by the type system.
-- Rust allows dynamically-sized types to be used as struct fields, but the
-  alignment of the type must be known, which is not the case for extern types.
+- Rust allows dynamically-sized types to be used as the final field in a struct,
+  but the alignment of the type must be known, which is not the case for extern
+  types.
 - Allocation and deallocation of an object with `Box` requires knowledge of
   its size and alignment, which extern types do not have.
-- For a value type to be allocated on the stack, it needs to have statically
+- For a value type to be allocated on the stack, it needs to have constant
   known size, which dynamically-sized and unsized types do not have (but 
   sized and "runtime sized" types do).
 
@@ -248,20 +249,26 @@ Introduce a new marker trait, `DynSized`, adding it to a trait hierarchy with th
 traits `const`:
 
 ```
-    ┌────────────────┐
-    │ const Sized    │
-    │ {type, target} │
-    └────────────────┘
-            │
-┌───────────┴───────────┐
-│ const DynSized        │
-│ {type, target, value} │
-└───────────────────────┘
-            │
-    ┌───────┴───────┐
-    │ const Pointee │
-    │ {*}           │
-    └───────────────┘
+    ┌────────────────┐                  ┌─────────────────────────────┐
+    │ const Sized    │ ───────────────→ │ Sized                       │
+    │ {type, target} │     implies      │ {type, target, runtime env} │
+    └────────────────┘                  └─────────────────────────────┘
+            │                                          │
+         implies                                    implies
+            │                                          │
+            ↓                                          ↓
+┌───────────────────────┐             ┌────────────────────────────────────┐
+│ const DynSized        │ ──────────→ │ DynSized                           │
+│ {type, target, value} │   implies   │ {type, target, runtime env, value} │
+└───────────────────────┘             └────────────────────────────────────┘
+            │                                          │
+         implies                                    implies
+            │                                          │
+            ↓                                          ↓
+    ┌───────────────┐                         ┌──────────────────┐
+    │ const Pointee │ ──────────────────────→ │ Pointee          │
+    │ {*}           │         implies         │ {runtime env, *} │
+    └───────────────┘                         └──────────────────┘
 ```
 
 Or, in Rust syntax:
@@ -375,7 +382,7 @@ a trait's associated type[^4] for the proposed traits.
       fn size_of_val<T: ?Sized + Foo>(x: val) { /* .. */ } // `Foo` bound is new!
       ```
 
-      ...then user could would break:
+      ...then user code would break:
 
       ```rust
       fn do_stuff(value: Box<dyn Display>) { size_of_val(value) }
