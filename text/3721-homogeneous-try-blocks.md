@@ -507,6 +507,26 @@ Maybe we want an `anyhow::Result<_>`, maybe we want our own `Result<_, crate::Cu
 Thus if they commonly need a type annotation anyway, we can consider in the future (see below for more)
 an annotated version of `try` blocks that allow heterogeneity, while leaving the short thing for the simple case.
 
+## Manual error conversion is always possible
+
+Even inside a homogeneous `try` block, you could always *manually* add a call to convert an error.
+
+For example, you could do something like
+```rust
+try {
+    foo()?;
+    bar().map_err(Into::into)?;
+    qux()?;
+}
+```
+
+if you need to convert the error type from `bar` to the one used by `foo` and `qux`.
+
+We could always add a specific method to express that intent, though this RFC does not propose one.
+Spelling it as `.map_err(into)` might be pretty good already, which would be possible with [RFC#3591].
+
+[RFC#3591]: https://github.com/rust-lang/rfcs/pull/3591
+
 ## Other merging approaches
 
 There's a variety of other things we could do if the `?`s don't all match.
