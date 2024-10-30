@@ -1,6 +1,6 @@
 - Feature Name: `static_function_argument_unpacking`
 - Start Date: 2024-10-30
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3723](https://github.com/rust-lang/rfcs/pull/3723)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
