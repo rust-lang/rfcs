@@ -1,7 +1,7 @@
 - Feature Name: Rust Release & Crate Signing using TUF
 - Start Date: 2024-10-31
 - Authors: Josh Triplett, Walter Pearce
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3724](https://github.com/rust-lang/rfcs/pull/3724)
 
 # Summary
 [summary]: #summary
