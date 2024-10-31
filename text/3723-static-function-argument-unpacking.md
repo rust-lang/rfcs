@@ -137,7 +137,7 @@ As long as there are parameter slots remaining unfilled by arguments, filling th
 Assume the following definitions:
 ```rust
 // Function `takes_five` has five parameter slots p0–p4.
-fn takes_five(p0: u8, p1: u8, p2: u8, p3: u8: p4: u8) {}
+fn takes_five(p0: u8, p1: u8, p2: u8, p3: u8, p4: u8) {}
 
 fn main() {
     let tup1 = (2,);
