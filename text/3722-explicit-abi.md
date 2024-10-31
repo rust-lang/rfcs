@@ -74,8 +74,10 @@ It was later closed because it'd be a backwards incompatible change, and edition
 
 # Unresolved questions
 
-- In which edition do we make this change? It's a bit late to add things to the 2024 edition, but the change is tiny and the migration and impact is trivial.
-- Do we warn about `extern` without an explicit ABI in previous editions?
+- ~~In which edition do we make this change?~~
+  - It's too late for the 2024 edition: https://github.com/rust-lang/rfcs/pull/3722#issuecomment-2447333966
+- ~~Do we warn about `extern` without an explicit ABI in previous editions?~~
+   - Yes, with separate FCP: https://github.com/rust-lang/rfcs/pull/3722#issuecomment-2447719047
 
 # Future possibilities
 
