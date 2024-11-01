@@ -13,7 +13,7 @@
 - Online and offline verification of files from the repository and the index itself
 - Future ability for verified and out-of-band mirroring
 
-We propose the creation two TUF repositories utilized for the distribution of signed content by the Rust Project, `rust-lang/tuf-root` and `rust-lang/tuf-crates` respectively. Given the disparity in the cadence of changes to each distribution channel, and the different chains of trust in each, we propose two distinct but related repositories. Finally, because metadata for all artifacts in the repository exist within a given TUF instance, we considered it best to separate these two sets of release files into their own metadata repositories. 
+We propose the creation two TUF repositories utilized for the distribution of signed content by the Rust Project, `rust-lang/tuf-root` and `rust-lang/tuf-crates` respectively. Given the disparity in the cadence of changes to each distribution channel, and the different chains of trust in each, we propose two distinct but related repositories. Finally, because metadata for all artifacts in the repository exist within a given TUF instance, we considered it best to separate these two sets of release files into their own metadata repositories.
 
 These shall provide:
 
@@ -22,7 +22,7 @@ These shall provide:
 - Rust Nightly Releases
 - Rustup Releases
 - Crates.io root role, to create a chain of trust
-`rust-lang/tuf-crates` 
+`rust-lang/tuf-crates`
 - Crates.io crate index
 
 # Motivation
@@ -39,13 +39,13 @@ Finally, supply chain security is a growing concern, particularly among corporat
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-For an understanding of terms utilized in this section, please see the [TUF reference](https://theupdateframework.github.io/specification/latest/). 
+For an understanding of terms utilized in this section, please see the [TUF reference](https://theupdateframework.github.io/specification/latest/).
 
 #### What is TUF?
 
 [The Update Framework](https://theupdateframework.io/) (TUF) is a software framework designed to protect software update repositories that automatically identify and download updates to software. TUF uses a series of roles and keys to provide a means to retain security, even when some keys or servers are compromised. It does this with a stated goal of requiring minimal changes and effort from repository administrators, software developers, and end users. ([Wikipedia](https://en.wikipedia.org/wiki/The_Update_Framework))
 
-TUF provides a methodology and framework for managing and verifying a modern chain of trust between what it terms "roles", stemming from a root and allowing for a further delegation of roles for different functions and paths within the repository. 
+TUF provides a methodology and framework for managing and verifying a modern chain of trust between what it terms "roles", stemming from a root and allowing for a further delegation of roles for different functions and paths within the repository.
 
 At the simplest level, TUF is a collection of signing key quorums which verify its own integrity, and establishes trust between the quorums and files within a repository.
 
@@ -63,13 +63,13 @@ We propose the creation of two distinct TUF repositories for signing of Rust Pro
 
 ### `rust-lang/tuf-root`
 
-tuf-root shall be used for signing Rust releases, rustup releases, and an independent and updated version of the tuf-crates root role metadata file (root.json). 
+tuf-root shall be used for signing Rust releases, rustup releases, and an independent and updated version of the tuf-crates root role metadata file (root.json).
 
 #### Roles
 
 ##### Root Role
 
-The root role of the tuf-root shall be a TUF role consisting of 9 members with a 5 member threshold for signing (5-of-9); please reference the Root Qourum Model section below for details on how this role should be managed and its members selected. The sole purpose of this role shall be delegating authority to the other roles within the tuf-root repository (when members of these roles change). Finally, this role shall also be used for signing the tuf-crates root.json - thus protecting the chain of trust between tuf-root and tuf-crates. 
+The root role of the tuf-root shall be a TUF role consisting of 9 members with a 5 member threshold for signing (5-of-9); please reference the Root Qourum Model section below for details on how this role should be managed and its members selected. The sole purpose of this role shall be delegating authority to the other roles within the tuf-root repository (when members of these roles change). Finally, this role shall also be used for signing the tuf-crates root.json - thus protecting the chain of trust between tuf-root and tuf-crates.
 
 ##### Targets Role
 
@@ -77,29 +77,29 @@ The repository shall have a top-level Targets role, as specified by TUF, which t
 
 ##### Release (Stable/Beta) Role
 
-The Release role shall have the authority to only sign stable rust releases. We propose this role also consist of a quorum model, consisting of all members of the release team. This role should have a 3 member threshold, and always consist of all members of the release team. At the time a new stable release is being compiled and shipped, a signing quorum must be conducted for this release. 
+The Release role shall have the authority to only sign stable rust releases. We propose this role also consist of a quorum model, consisting of all members of the release team. This role should have a 3 member threshold, and always consist of all members of the release team. At the time a new stable release is being compiled and shipped, a signing quorum must be conducted for this release.
 
 ###### Nightly Role
 
-Nightly releases shall be conducted by a single signing key, trusted for only signing nightly releases of the Rust Compiler. This will allow for nightly releases to remain automated and not require the active participation of any rust members. 
+Nightly releases shall be conducted by a single signing key, trusted for only signing nightly releases of the Rust Compiler. This will allow for nightly releases to remain automated and not require the active participation of any rust members.
 
-###### Rustup Role 
+###### Rustup Role
 
 This shall be a quorum based role, consisting of all members of the Rustup & Infrastructure team members. We recommend having at least a 3-member threshold. We have decided to have this roles quorum be broader to allow for emergency updates and releases of Rustup; we may want to increase the threshold when these teams have more members.
 
 ###### Snapshots & Timestamps Role
 
-These roles shall be a single-member role with a key utilized for automation. 
+These roles shall be a single-member role with a key utilized for automation.
 
 ### `rust-lang/tuf-crates`
 
-The actual target for tuf-crates shall be the crates index and not the artifacts themselves. This means that the TUF repository for crates.io is performed on much smaller payloads, which still provides us with cryptographic security due to the fact the index contains SHA-256 hashes of the crate file artifacts.  Given the index already consists of SHA-512 signatures of all files, we are then utilizing TUF to validate the index, which in turn is utilized to validate the actual downloaded artifacts. This allows us to perform validation on index updates and not on final downloads, also reducing the overhead of performing multiple hashing and validation procedures on the larger crate artifact files. 
+The actual target for tuf-crates shall be the crates index and not the artifacts themselves. This means that the TUF repository for crates.io is performed on much smaller payloads, which still provides us with cryptographic security due to the fact the index contains SHA-256 hashes of the crate file artifacts.  Given the index already consists of SHA-512 signatures of all files, we are then utilizing TUF to validate the index, which in turn is utilized to validate the actual downloaded artifacts. This allows us to perform validation on index updates and not on final downloads, also reducing the overhead of performing multiple hashing and validation procedures on the larger crate artifact files.
 
 #### Roles
 
 ##### Root Role
 
-The root role of the tuf-crates repository shall consist of all members of the crates.io rust team with a threshold of 3. As a special case, updating this role shall also require a resigning by the root role of the tuf-root repository (sign a metadata entry existing within tuf-root). This means any changes to the membership of the crates.io team will also require a signing ceremony via github by the root quorum. 
+The root role of the tuf-crates repository shall consist of all members of the crates.io rust team with a threshold of 3. As a special case, updating this role shall also require a resigning by the root role of the tuf-root repository (sign a metadata entry existing within tuf-root). This means any changes to the membership of the crates.io team will also require a signing ceremony via github by the root quorum.
 
 ##### Targets Role
 
@@ -107,11 +107,11 @@ The repository shall have a top-level Targets role which is utilized directly fo
 
 ###### Snapshots & Timestamps Roles
 
-These roles shall each be a single-member role with a key utilized for automation. 
+These roles shall each be a single-member role with a key utilized for automation.
 
 ## TUF Management
 
-We propose the adaptation and implementation of TUF-on-CI (https://github.com/theupdateframework/tuf-on-ci) to manage roots and signing events via GitHub CI. This provides a GitHub-centric workflow for performing signing ceremonies via Pull Requests directly on the TUF repositories of in question. 
+We propose the adaptation and implementation of TUF-on-CI (https://github.com/theupdateframework/tuf-on-ci) to manage roots and signing events via GitHub CI. This provides a GitHub-centric workflow for performing signing ceremonies via Pull Requests directly on the TUF repositories of in question.
 
 Online signing needs shall be implemented with AWS KMS.
 
@@ -172,7 +172,7 @@ tuf-on-ci is a set of CI tools which are integrated with GitHub Actions for prov
 
 ## (cargo-tuf-lib) Standard TUF Implementation
 
-We propose creating a new crate, `cargo-tuf-lib`, which shall be used by both Cargo and Rustup for doing TUF synchronization and update procedures. This library shall be a shim wrapper around the `rust-tuf` crate (https://github.com/rustfoundation/rust-tuf), providing a simplified and shared interface for doing synchronization and verification of the TUF repositories and their files. 
+We propose creating a new crate, `cargo-tuf-lib`, which shall be used by both Cargo and Rustup for doing TUF synchronization and update procedures. This library shall be a shim wrapper around the `rust-tuf` crate (https://github.com/rustfoundation/rust-tuf), providing a simplified and shared interface for doing synchronization and verification of the TUF repositories and their files.
 
 The API surface of this crate is to be determined upon implementation in Cargo and Rustup. However, because both tools will need to perform synchronization and validation against the tuf-root repository, they shall used this shared interface to guarantee compatibility.
 
@@ -208,7 +208,7 @@ This RFC does not specify how to handle non-`crates.io` repositories. Cargo can 
 
 ## Crates.io changes
 
-- Prior to updating the index, crates.io shall perform the online signing of the index entry to update the targets and sign the index entry, saving this as a like-pathed artifact in the TUF repository. 
+- Prior to updating the index, crates.io shall perform the online signing of the index entry to update the targets and sign the index entry, saving this as a like-pathed artifact in the TUF repository.
 
 ## Infra Changes
 
@@ -272,7 +272,7 @@ People's understanding of PKI often starts and ends with single root CA certific
   **Addressed**: All signatures are independent of TLS, so the compromised/MITMed connection cannot tamper with the indexes (see threats in previous section). The `Crates Role` provided by crates.io chains up to the Rust root role, so the compromised/MITMed connection cannot present a different `Crates Role`.
 - **Threat**: Presentation of an old/revoked/expired `tuf-crates` signature
   **Addressed**: TUF implements quorum history in a way that cargo will identify that it is not the latest quorum. The `Timestamp Role` will also mitigate the usage of an old signature by limiting the attack period to N-hours, as configured by crates.io.
-  
+
 ## Artifact Signing (`tuf-crates`)
 
 Instead of signing the index entries and transitively inferring security via those signatures, we could alternatively or additionally have the TUF repository include direct signatures of the artifacts. However, omitting signing of the index entries would allow various threats (see "Threat Model"), and signing the individual crate files does not provide added security above and beyond signing index files that include cryptographic hashes of the individual crate files.
@@ -334,7 +334,7 @@ We may want to consider other mechanisms for automatic mirror discovery that sup
 
 ## Crate, Organization or Namespace-level Trusted Authors
 
-TUF delegation allows us to specify new roles for paths within the tree of the `tuf-root` index. In the future, we may create further nested quorums and roles and allow them to be crated and configurable via crates.io. This could, in theory, allow for managing quorums, namespaces, groups and distinct authors across crates.io and automatically provide us with cryptographic guarantees for those different levels of organization. 
+TUF delegation allows us to specify new roles for paths within the tree of the `tuf-root` index. In the future, we may create further nested quorums and roles and allow them to be crated and configurable via crates.io. This could, in theory, allow for managing quorums, namespaces, groups and distinct authors across crates.io and automatically provide us with cryptographic guarantees for those different levels of organization.
 
 ## Support signed private registries
 
