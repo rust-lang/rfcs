@@ -69,7 +69,7 @@ tuf-root shall be used for signing Rust releases, rustup releases, and an indepe
 
 ##### Root Role
 
-The root role of the tuf-root shall be a TUF role consisting of 9 members with a 5 member threshold for signing (5-of-9); please reference the Root Qourum Model section below for details on how this role should be managed and its members selected. The sole purpose of this role shall be delegating authority to the other roles within the tuf-root repository (when members of these roles change). Finally, this role shall also be used for signing the tuf-crates root.json - thus protecting the chain of trust between tuf-root and tuf-crates.
+The root role of the tuf-root shall be a TUF role consisting of 9 members with a 5 member threshold for signing (5-of-9); please reference the Root Quorum Model section below for details on how this role should be managed and its members selected. The sole purpose of this role shall be delegating authority to the other roles within the tuf-root repository (when members of these roles change). Finally, this role shall also be used for signing the tuf-crates root.json - thus protecting the chain of trust between tuf-root and tuf-crates.
 
 ##### Targets Role
 
@@ -111,7 +111,7 @@ These roles shall each be a single-member role with a key utilized for automatio
 
 ## TUF Management
 
-We propose the adaptation and implementation of TUF-on-CI (https://github.com/theupdateframework/tuf-on-ci) to manage roots and signing events via GitHub CI. This provides a GitHub-centric workflow for performing signing ceremonies via Pull Requests directly on the TUF repositories of in question.
+We propose the adaptation and implementation of TUF-on-CI (https://github.com/theupdateframework/tuf-on-ci) to manage roots and signing events via GitHub CI. This provides a GitHub-centric workflow for performing signing ceremonies via Pull Requests directly on the TUF repositories in question.
 
 Online signing needs shall be implemented with AWS KMS.
 
@@ -225,7 +225,7 @@ The infrastructure team.
 This proposal has a reliance on GitHub and GitHub actions, due to the usage of `tuf-on-ci` and implementing a PR-based workflow for signing events. We consider this an acceptable decision given that the majority of the projects workflows exist here already; and under duress, the actions and process can be migrated to other providers who support similar CI workflows.
 
 ## Additional Synchronization & Storage Overhead
-We will need to synchronization two more sources of data locally on systems with Rustup and Cargo - the TUF repositories. This has a storage and network cost for users, although it is considered minimal. We point to other repositories who have implemented this solution (PyPy, NPM) as examples that the overhead is acceptable at much larger scales.
+We will need to synchronization two more sources of data locally on systems with Rustup and Cargo - the TUF repositories. This has a storage and network cost for users, although it is considered minimal. We point to other repositories who have implemented this solution (PyPI, NPM) as examples that the overhead is acceptable at much larger scales.
 
 ## Legacy PKI Understanding
 People's understanding of PKI often starts and ends with single root CA certificates, and the idea of a quorum model may seem excessively innovative rather than being a safe and well-established choice. We will need to carefully communicate that quorum models based on thresholds of geographically distributed individuals have a well-established history for a variety of purposes (and that TUF is an industry-leading implementation of such a model, used by PyPI and npm). We will need to provide clear documentation and announcement materials for a variety of audiences, including both developers and business leaders.
