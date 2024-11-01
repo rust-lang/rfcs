@@ -124,9 +124,11 @@ A mechanism to define attribute macros would let people write attributes like
 `#[derive_mytrait]`, but that would not provide compatibility with existing
 derive syntax.
 
-We could allow `macro_rules!` derive macros to emit a replacement token stream;
-however, that would be inconsistent with the restriction preventing proc macros
-from doing the same.
+We could allow `macro_rules!` derive macros to emit a replacement token stream.
+That would be inconsistent with the restriction preventing proc macros from
+doing the same, but it would give macros more capabilities, and simplify some
+use cases. Notably, that would make it easy for derive macros to re-emit a
+structure with another `derive` attached to it.
 
 We could allow directly invoking a `macro_rules!` derive macro as a
 function-like macro. This has the potential for confusion, given the
