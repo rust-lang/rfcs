@@ -115,7 +115,7 @@ We propose the adaptation and implementation of TUF-on-CI (https://github.com/th
 
 Online signing needs shall be implemented with AWS KMS.
 
-Hardware keys shall be provided by the Rust Foundation to all members of all signing quorums within the Rust Project and crates.io Teams.
+All members of all signing quorums within the Rust Project will require hardware keys, the expenses for which will be covered by the Rust Foundation.
 
 ## Root Quorum Model
 
