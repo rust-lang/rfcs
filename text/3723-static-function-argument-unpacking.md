@@ -363,17 +363,17 @@ Some programming languages (e.g. Python and Ruby) use the asterisk `*` character
 
 Table 1. Operator symbol alternatives.
 
-|  Place | Operator | Notes                                                                                                         |
-|  :---: |   :---:  | ------------------------------------------------------------------------------------------------------------- |
+|  Place | Operator | Notes                                                                                                |
+|  :---: |   :---:  | ---------------------------------------------------------------------------------------------------- |
 | Prefix | `...`    | **The proposed syntax.** Used already for [C-variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html). [Used](https://github.com/rust-lang/rfcs/pull/1192) in place of `..=` for inclusive ranges [previously](https://github.com/rust-lang/rust/issues/28237). Used in JavaScript and PHP for argument unpacking. |
-| Suffix | `...`    | Used in Julia for argument unpacking.                                                                         |
-| Prefix | `...?`   | Used in Dart as null-aware spread operator.                                                                   |
-| Prefix | `..`     | Used already for *Functional Record Updates*. Clashes with `RangeTo<T>`.                                      |
-| Prefix | `*`      | Used in Python and Ruby for argument unpacking, in Kotlin for spreading. Clashes with dereferencing.          |
-| Prefix | `**`     | Used in Python for unpacking dictionaries into named keyword parameters.                                      |
-| Prefix | `@`      | At. Emphasis on _where_ the arguments come from. Used in PowerShell for splatting.                            |
-| Prefix | `^`      | Connotation of "up and out". Used for `XOR` in binary contexts.                                               |
-| Prefix | `~`      | Connotation of "inverting the collection inside-out", or C++ destructors.                                     |
+| Suffix | `...`    | Used in Julia for argument unpacking.                                                                |
+| Prefix | `...?`   | Used in Dart as null-aware spread operator.                                                          |
+| Prefix | `..`     | Used already for *Functional Record Updates*. Clashes with `RangeTo<T>`.                             |
+| Prefix | `*`      | Used in Python and Ruby for argument unpacking, in Kotlin for spreading. Clashes with dereferencing. |
+| Prefix | `**`     | Used in Python for unpacking dictionaries into named keyword parameters.                             |
+| Prefix | `@`      | At. Emphasis on _where_ the arguments come from. Used in PowerShell for splatting.                   |
+| Prefix | `^`      | Connotation of "up and out". Used for `XOR` in binary contexts.                                      |
+| Prefix | `~`      | Connotation of "inverting the collection inside-out", or C++ destructors.                            |
 
 It is worth mentioning, that *variadic functions*, i.e. functions having a variable number of parameters, is a kind of mirror image of *argument unpacking* in the sense that it works on the opposite side of the function call: at the function definition. Often, programming languages that have both of these features also use the same symbol for both.
 
