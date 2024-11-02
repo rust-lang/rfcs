@@ -502,7 +502,7 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 | Language   | Term               | Syntax of Argument Unpacking   | Source(s)                                    |
 | ---------- | ------------------ | ------------------------------ | -------------------------------------------- |
 | Crystal    | Splatting          | `sum_four *nums`               | [Language reference][crystal]                |
-| Dart       | Spread collections | N/A^1^                         | [Feature specification][dart]                |
+| Dart       | Spread collections | N/A¹                           | [Feature specification][dart]                |
 | JavaScript | Spread syntax      | `sum_four(...nums)`            | [MDN JavaScript Reference][js]               |
 | Julia      | Splat              | `sum_four(nums...)`            | [Manual][julia]                              |
 | Kotlin     | Spread operator    | `sum_four(*nums)`              | [Documentation][kotlin]                      |
@@ -513,7 +513,7 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 | Python     | Argument unpacking | `sum_four(*nums)`              | [Tutorial][py-tut], [reference][py-ref]      |
 | Ruby       | Splat operator     | `sum_four(*nums)`              | [Syntax documentation][ruby]                 |
 
-^1^ Dart uses the feature for inserting multiple elements into a collection.
+¹ Dart uses the feature for inserting multiple elements into a collection.
 
 [crystal]: <https://crystal-lang.org/reference/1.14/syntax_and_semantics/splats_and_tuples.html#splatting-a-tuple> "Crystal Language Formal Specification: Splatting a Tuple"
 [dart]: <https://github.com/dart-lang/language/blob/9dc3737010f3ccac5ef54bf63b402d8e86b9115c/accepted/2.3/spread-collections/feature-specification.md> "Dart Feature Specification for Spread Collections"
