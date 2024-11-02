@@ -125,8 +125,6 @@ Nevertheless, some corollaries follow:
 4. All of the items inside the collection are unpacked.
     - For example, attempting to unpack a thousand-element array just to pass the first two elements as arguments to a function taking two parameters seems like a mistake that should be explicitly prevented.
     - Consequently, there must be at least as many unfilled parameter slots left in the function call as there are items inside the collection being unpacked. If there are *N* items in the collection being unpacked, the immediately next *N* parameter slots in the function call are filled with the collection's items as the arguments.
-5. Minimum of one element/field is required in the collection being unpacked.
-    - Attempting to unpack a unit tuple struct, the unit type, or an empty array is disallowed and an error is emitted. Unpacking them wouldn't make sense since there are no arguments to unpack. Attempting that would also violate the rule of thumb of argument unpacking being a sugared alternative for valid field access expressions, since none exist for an empty collection.
 
 ## Examples
 
@@ -189,6 +187,12 @@ takes_five(0, tup3.0, tup3.1, tup3.2, 4);
 ## Non-Trivial Cases
 
 If, inside the call parentheses, the collection's fields can currently be accessed manually, in order, with `.idx`/`[idx]`, entering each as arguments to consecutive parameter slots, unpacking is valid.
+
+### Empty Collections
+
+When unpacking a unit tuple struct, the unit type, or an empty array, desugaring simply emits no field accesses. Essentially, the result is the same as if no arguments were passed at the point where a zero-length collection was unpacked.
+
+Since this is dead code, a lint is emitted.
 
 ### Generic Parameters
 
@@ -264,9 +268,6 @@ fn main() {
 
 ## Diagnostics
 
-- Error: Attempt to unpack an expression that has zero items.
-    - Note that collections with no items can't be unpacked.
-
 - Error: Attempt to pass the expression itself as an argument without unpacking it, if and only if the conditions that would allow argument unpacking are fulfilled.
     - Suggest refactor: Did you mean (same but with the unpacking syntax)?
 
@@ -282,14 +283,18 @@ fn main() {
 - Error: Attempt to unpack any other unpackable type.
     - Note that unpacking this type is not supported.
 
+- Lint: When unnecessarily unpacking a collection that has zero items.
+    - Note that unpacking collections with no items is dead code.
+    - Suggest refactor: Remove the code.
+
+- Lint: When unnecessarily unpacking a collection that has one item.
+    - Suggest refactor: Pass the only value in the collection using the more explicit `.0`/`[0]` instead.
+
 - Lint: When directly unpacking arguments from an expression could be done instead of exhaustively using temporary variables that are not used elsewhere or accessing the elements/fields by hand.
     - Suggest refactor: Use unpacking instead.
 
 - Lint: When unnecessarily building a collection and unpacking that, e.g. passing `...(1, 2, 3)` instead of `1, 2, 3`.
     - Suggest refactor: Pass the arguments one by one instead of unpacking.
-
-- Lint: When unnecessarily unpacking a collection that has one item.
-    - Suggest refactor: Pass the only value in the collection using the more explicit `.0`/`[0]` instead.
 
 ## Guide/Documentation Changes
 
@@ -410,6 +415,25 @@ Limiting function calls to have either use of conventional arguments or argument
 ### Limit to Unpacking into Variadic Parameter Slots
 
 In other programming languages, limiting unpacking to only work with variadic parameter slots may be a natural or accidental consequence of a more variadic parameter centric approach, with less thought put into argument unpacking.
+
+## Disallowing Unpacking Empty Collections
+
+Disallowing unpacking of empty collections altogether could be argued for. In trivial cases it seems like an obvious mistake, for example when writing code such as:
+```rust
+fn foo(p: u8) {}
+
+fn main() {
+    let empty = ();
+    foo(1, ...empty);
+}
+```
+
+However, disallowing would also cause bad interactions with *const generics* and possible future implementations of *variadic generics*. For example, unpacking the output of function `f` below as the arguments for a variadic function with `0..n` parameters would unnecessarily cause an error, if unpacking of empty collections was disallowed:
+```rust
+const fn f<const S: usize>() -> [u8; S] {
+    [0; S]
+}
+```
 
 ## General-Purpose Unpacking Operator
 
@@ -630,6 +654,9 @@ Rust Internals:
     // callee_fn(...tup); desugars into:
     callee_fn(tup.0, tup.1, tup.2);
     ```
+
+- What happens when unpacking an empty collection as the "arguments" for a function that doesn't define parameters?
+    - Probably nothing, at least if functions without parameters are not special-cased. Experimenting with this will be easier with a proof-of-concept implementation.
 
 # Future Possibilities
 [future-possibilities]: #future-possibilities
