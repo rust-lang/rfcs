@@ -1,6 +1,7 @@
 - Feature Name: `feature-unification`
 - Start Date: 2024-09-11
 - RFC PR: [rust-lang/rfcs#3692](https://github.com/rust-lang/rfcs/pull/3692)
+- Tracking Issue: [rust-lang/cargo#14774](https://github.com/rust-lang/cargo/issues/14774)
 
 # Summary
 [summary]: #summary
