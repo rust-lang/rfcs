@@ -32,7 +32,7 @@ The collection types that can be unpacked as arguments this way are *tuples*, *t
 
 The types of the elements in the collection being unpacked, in the order in which they are in the collection, must be compatible with the next of the remaining function parameters being filled, i.e. function parameters that don't have an argument yet. The number of the elements may not exceed the number of the remaining unfilled parameter slots.
 
-**As a rule of thumb: Argument unpacking would be valid, if, for a collection with length *n*, inside a function call's parentheses, all of the collection's fields could currently be accessed manually, in order, with `.0`, `.1`, …, `.(n-1)` for tuples and tuple structs or with `[0]`, `[1]`, …, `[n-1]` for fixed-size arrays, entering each of the fields/elements using that syntax as arguments to consecutive parameter slots.**
+**As a rule of thumb: Argument unpacking would be valid, if, for a collection with length *n*, inside a function call's parentheses, all the collection's fields could currently be accessed manually, in order, with `.0`, `.1`, …, `.(n-1)` for tuples and tuple structs or with `[0]`, `[1]`, …, `[n-1]` for fixed-size arrays, entering each of the fields/elements using that syntax as arguments to consecutive parameter slots.**
 
 Consider code with the following functions defined:
 ```rust
@@ -83,7 +83,7 @@ Syntactic sugar commonly known as argument unpacking is a zero-cost abstraction 
 
 Argument unpacking works when calling **any** functions, methods, and closures that accept arguments. This is in contrast to some other programming languages that only allow unpacking arguments when the parameters of the function being called are named, variadic, positioned at the end of parameter list, or have default values. As tuple struct and tuple-like enum variant instantiations use the call expression, argument unpacking works on them too.
 
-The scope of argument unpacking, for now, is restricted to compile-time context during which the number, types, and order of appearance of the unpacked arguments are known. To all intents and purposes, the proposed form of argument unpacking is infallible at run time. Infallibility is not a part of the specification – rather, it's a consequence from the restricted scope of this proposal; errors are prevented by the compiler rejecting scenarios that would not work.
+The scope of argument unpacking, for now, is restricted to compile-time context during which the number, types, and order of appearance of the unpacked arguments are known. To all intents and purposes, the proposed form of argument unpacking is infallible at run time. Infallibility is not a part of the specification – rather, it's a consequence of the restricted scope of this proposal; errors are prevented by the compiler rejecting scenarios that would not work.
 
 This version of argument unpacking only affects:
 
@@ -335,7 +335,7 @@ Guiding principles in this design are:
 - Familiarity of syntax.
 - Compatibility with other features.
 - Zero-cost – this is just syntactic sugar for passing the arguments by hand.
-- Intuitiveness of use and the principle of least astonisment.
+- Intuitiveness of use and the principle of least astonishment.
 - Avoiding ambiguity with simple rules and by requiring explicit control by the user (developer).
 
 Some programming languages such as JavaScript and PHP use an ellipsis prefix, `...`, as the syntax for a similar feature. Using this same syntax benefits inter-language consistency and familiarity for new users of Rust. There's an ongoing effort on [variadic generics](https://internals.rust-lang.org/t/variadic-generics-design-sketch/18974) proposing a `...` operator for unpacking in a compatible but wider setting than in this RFC.
@@ -344,7 +344,7 @@ Commonly, in other programming languages, the order in which the tokens appear i
 
 ## Other Terms
 
-Of the known term alternatives, *argument unpacking* can be hypothesized as being a strong contender in intuitiviness for general programmer audience: the name makes it clear that the feature relates to *arguments*, and *unpacking* seems a somewhat typical operation that can be performed on a collection in a neat and orderly fashion.
+Of the known term alternatives, *argument unpacking* can be hypothesized as being a strong contender in intuitiveness for general programmer audience: the name makes it clear that the feature relates to *arguments*, and *unpacking* seems a somewhat typical operation that can be performed on a collection in a neat and orderly fashion.
 
 Several names amongst programming languages and programmer lingo refer to argument unpacking or to a similar feature. Various terms include, in alphabetical order:
 - *deconstruction*,
@@ -364,7 +364,7 @@ It is also worth pointing out that many Rust users have a non-English background
 
 ## Different Syntax
 
-Some programming languages (e.g. Python and Ruby) use the asterisk `*` character in place of the proposed `...`. In Rust, such syntax would be confusing, since it's already used for dereferencing. Table 1. collects alternatives for the symbol and its place in the syntax.
+Some programming languages (e.g. Python and Ruby) use the asterisk `*` character in place of the proposed `...`. In Rust, such syntax would be confusing, since it's already used for dereferencing. Table 1 collects alternatives for the symbol and its place in the syntax.
 
 Table 1. Operator symbol alternatives.
 
@@ -414,7 +414,7 @@ Limiting function calls to have either use of conventional arguments or argument
 
 ### Limit to Unpacking into Variadic Parameter Slots
 
-In other programming languages, limiting unpacking to only work with variadic parameter slots may be a natural or accidental consequence of a more variadic parameter centric approach, with less thought put into argument unpacking.
+In other programming languages, limiting unpacking to only work with variadic parameter slots may be a natural or incidental consequence of a more variadic parameter centric approach, with less thought put into argument unpacking.
 
 ## Disallowing Unpacking Empty Collections
 
@@ -517,7 +517,7 @@ if __name__ == "__main__":
 
 A related Python feature, packing of the parameters, is unrelated to this proposal and connected to the distinct concept of *variadic functions*. However, as it uses the same syntax in different context (function definition) as it uses for argument unpacking, it's worth mentioning as an example of how different programming languages may reuse the same syntax with argument unpacking and variadic functions.
 
-Table 2. below summarizes argument unpacking in some other programming languages. Assume that in the examples of the syntax column, following that language's conventions:
+Table 2 below summarizes argument unpacking in some other programming languages. Assume that in the examples of the syntax column, following that language's conventions:
 - `sum_four` is a function accepting **four** distinct integer parameters to return their sum, and
 - `nums` is a list- or tuple-like collection that contains **four** integer numbers.
 
@@ -573,7 +573,7 @@ The proposed feature in this RFC is different, only allowing unpacking when it i
 
 ### Ellipsis in Rust
 
-The three ASCII dots syntax is already for [C-variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html).
+The three ASCII dots syntax is already used for [C-variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html).
 
 [Previously](https://github.com/rust-lang/rust/issues/28237), ellipsis [was](https://github.com/rust-lang/rfcs/pull/1192) used as syntax for inclusive ranges, i.e. in place of `..=`.
 
@@ -616,7 +616,7 @@ Rust Internals:
 - [Exploding structs](https://internals.rust-lang.org/t/exploding-structs/13884)
 
 Rust Users Forum:
-- [Unpacking struct members simultenously](https://users.rust-lang.org/t/unpacking-struct-members-simultenously/8736)
+- [Unpacking struct members simultaneously](https://users.rust-lang.org/t/unpacking-struct-members-simultenously/8736)
 
 ### Other Related
 
@@ -632,7 +632,7 @@ Rust Internals:
 # Unresolved Questions
 [unresolved-questions]: #unresolved-questions
 
-- Should argument unpacking be desugar into Alternative A or Alternative B below, or does it make any difference?
+- Should argument unpacking desugar into Alternative A or Alternative B below, or does it make any difference?
     
     Alternative A:
     ```rust
@@ -717,7 +717,7 @@ Another aspect to consider could be introducing a `#[derive]`able trait for stru
 
 ### Sketch of Unpacking Structs
 
-It may be important to give this some thought before accepting any argument unpacking rules whatsover. The reason is that *if* the unpacking of structs is seen as an actual future possibility, we wouldn't want to introduce rules that are incompatible. Importantly, the design space has some notable overlap with another future possibility described below: [fallible run-time unpacking](#dynamic-context-and-fallible-unpacking) of, e.g. `HashMap`s.
+It may be important to give this some thought before accepting any argument unpacking rules whatsoever. The reason is that *if* the unpacking of structs is seen as an actual future possibility, we wouldn't want to introduce rules that are incompatible. Importantly, the design space has some notable overlap with another future possibility described below: [fallible run-time unpacking](#fallible-runtime-unpacking-of-dynamic-collections) of, e.g. `HashMap`s.
 
 The basic idea in unpacking structs could be to match the struct's field names with the called function's parameter names. Some rules can already be thought of:
 - If unpacking a struct with the exactly named fields, the order of the struct's fields vis-à-vis the arguments doesn't matter. Just pass the struct fields as the correspondingly named parameters.
@@ -735,7 +735,7 @@ However, several unresolved questions when unpacking structs would need to be co
 
 ## Fallible Runtime Unpacking of Dynamic Collections
 
-The scope of argument unpacking could be expanded to dynamic contexts as well. Runtime unpacking of `dyn Trait` trait objects, slices, `Vec`s, `HashMap`s, iterators in general etc. would be fallible, since the existance of a correct number, order, typing and naming of items to match the parameters can't be guaranteed at compile time. A syntax such as `...expr?` or `...?expr` could be considered to improve ergonomics of argument passing for those cases as well, but that would definitely merit a separate RFC.
+The scope of argument unpacking could be expanded to dynamic contexts as well. Runtime unpacking of `dyn Trait` trait objects, slices, `Vec`s, `HashMap`s, iterators in general etc. would be fallible, since the existence of a correct number, order, typing and naming of items to match the parameters can't be guaranteed at compile time. A syntax such as `...expr?` or `...?expr` could be considered to improve ergonomics of argument passing for those cases as well, but that would definitely merit a separate RFC.
 
 Possibly, this would involve an stdlib trait, e.g. `TryArgUnpack`, whose implementation the language would use to get the arguments. This would enable unpacking custom collections as well.
 
