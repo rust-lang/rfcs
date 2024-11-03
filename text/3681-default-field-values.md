@@ -1,7 +1,7 @@
 - Feature Name: `default_field_values`
 - Start Date: 2024-08-22
-- RFC PR: https://github.com/rust-lang/rfcs/pull/3681
-- Rust Issue:
+- RFC PR: [rust-lang/rfcs#3681](https://github.com/rust-lang/rfcs/pull/3681)
+- Tracking Issue: [rust-lang/rust#132162](https://github.com/rust-lang/rust/issues/132162)
 
 # Summary
 [summary]: #summary
