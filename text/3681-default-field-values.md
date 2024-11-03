@@ -492,7 +492,7 @@ provide a default value `field: Type = value`, the given `value` must be a
 Therefore, you cannot write something like (10):
 
 ```rust
-fn launch_missilies() -> Result<(), LaunchFailure> {
+fn launch_missiles() -> Result<(), LaunchFailure> {
     authenticate()?;
     begin_launch_sequence()?;
     ignite()?;
@@ -501,7 +501,7 @@ fn launch_missilies() -> Result<(), LaunchFailure> {
 
 struct BadFoo {
     bad_field: u8 = {
-        launch_missilies().unwrap();
+        launch_missiles().unwrap();
         42
     },
 }
