@@ -106,10 +106,11 @@ modifiers will be the solution for some of these flags.
 The Rust compiler has many flags that affect how source code is turned into
 machine code. Some flags can be turned on and off for each CU (compilation
 unit) in your project separately, and other flags must be applied to the entire
-application as a whole. Usually flags are in the latter category because they
-change some aspect of the ABI. For example, `-Zreg-struct-return` changes how
-to return a struct from a function call, and both the caller and callee must
-agree on how to do that even if they are in different CUs.
+application as a whole. The typical reason for flags to be in the latter
+category is that change some aspect of the ABI. For example,
+`-Zreg-struct-return` changes how to return a struct from a function call, and
+both the caller and callee must agree on how to do that even if they are in
+different CUs.
 
 The Rust compiler will detect if you incorrectly use a flag that must be
 applied to the application as a whole. For example, if you compile the standard
@@ -230,7 +231,9 @@ This RFC does not propose this solution because:
 
 Because the `target.json` feature is perma-unstable, and this RFC primarily
 concerns itself with unblocking the _stabilization_ of these flags. Adding
-target modifiers as unstable flags is already happening today.
+target modifiers as unstable flags is already happening today. (However, if
+this RFC gets accepted, it becomes a soundness bug to add such unstable flags
+without wiring them up with the target modifier machinery.)
 
 One possible alternative would be to stabilize a subset of `target.json`.
 However, I don't think there's much benefit to this. It just means that you now
