@@ -683,6 +683,14 @@ Notably, tuple structs can already be built with the adoption of argument unpack
 
 Prior work on designing such feature exists at least in the Rust Internals thread [Pre-RFC: Array expansion syntax](https://internals.rust-lang.org/t/pre-rfc-array-expansion-syntax/13490).
 
+## Unpacking Arguments for Macro Invocations
+
+Macros, callable with the `macro_name!(…)`, `macro_name![…]`, or `macro_name!{…}` syntax have been omitted from the scope of this proposal. The reason for omission is the time concerns related to doing the due diligence researching the design. For example, some macros (e.g. `println!`) accept an indefinite number of arguments.
+
+Unpacking tuples, tuple structs, and fixed-size arrays when invoking macros would probably make sense – after all, argument unpacking is only syntactic sugar for something that can be done already in the desugared form. For example, allowing unpacking within `vec![…]`'s brackets would, from a language user's perspective, add a missing piece to the work in [Unpacking in Fixed-Size Array and Tuple Literals](#unpacking-in-fixed-size-array-and-tuple-literals).
+
+Further design, meriting a separate RFC amending this one, is needed.
+
 ## Assigning Automatic Reference Status or Mutability
 
 Technically, during argument unpacking, it's possible to automatically assign varying degrees of (de)reference status or mutability such that code compiles. The following trivial code could most likely be inferred by the compiler in a way that it would compile successfully, for example:
@@ -705,10 +713,6 @@ fn main() {
 ```
 
 Further specification of automatically fitting argument unpacking to the reference or mutability status of the parameters in the function being called would merit a separate RFC.
-
-## Unpacking Arguments for Macro Invocations
-
-Macros, callable with the `macro_name!(...)` syntax have been omitted from the scope of this proposal. The only reason for omission is the time concerns related to doing the due diligence researching the differences in design. For example, some macros (e.g. `println!`) accept an indefinite number of arguments. Unpacking tuples, tuple structs, and fixed-size arrays probably would make sense – after all, argument unpacking is only syntactic sugar for something that can be done already in the desugared form. Further design, meriting a separate RFC amending this one, is needed.
 
 ## Unpacking Structs with Named Fields as Arguments
 
