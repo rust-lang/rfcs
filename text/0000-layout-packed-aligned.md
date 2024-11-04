@@ -108,8 +108,8 @@ increased to be N.
 
 When a `#[repr(packed(M))]` struct transitively contains a field with `#[repr(align(N))]` type, depending on the
 target triplet, either:
-- The field is first `pad_to_align`. Then, the field is added to the struct with alignment decreased to M. The packing requirement overrides the alignment requirement. (GCC, `#[repr(Rust)]`, `#[repr(C)]` on gnu targets, `#[repr(system)]` on non-windows targets), or
-- The field is added to the struct with alignment increased to N. The alignment requirement overrides the packing requirement. (MSVC, `#[repr(C)]` on msvc targets, `#[repr(system)]` on windows targets)
+- The field is added to the struct with alignment decreased to M. The packing requirement overrides the alignment requirement. (This is the case for GCC, `#[repr(Rust)]`, `#[repr(C)]` on gnu targets, and `#[repr(system)]` on non-windows targets.)
+- The field is added to the struct with alignment decreased to M and then increased to N. The alignment requirement overrides the packing requirement. (This is the case for MSVC, `#[repr(C)]` on msvc targets, `#[repr(system)]` on windows targets.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
