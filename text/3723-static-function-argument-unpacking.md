@@ -530,7 +530,7 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 | JavaScript | Spread syntax      | `sum_four(...nums)`            | [MDN JavaScript Reference][js]               |
 | Julia      | Splat              | `sum_four(nums...)`            | [Manual][julia]                              |
 | Kotlin     | Spread operator    | `sum_four(*nums)`              | [Documentation][kotlin]                      |
-| Lisp       | `apply`            | `(apply 'sum_four nums)`       | Docs: [Clojure], [Elisp], [Racket], [Scheme] |
+| Lisp       | `apply`            | `(apply 'sum_four nums)`       | [Clojure], [Common Lisp][com-lisp], [Elisp], [Racket], [Scheme] |
 | Lua        | `table.unpack`     | `sum_four(table.unpack(nums))` | [Manual][lua]                                |
 | PHP        | Argument unpacking | `sum_four(...$nums)`           | [RFC][php-rfc], [mailing list][php-mail]     |
 | PowerShell | Splatting          | `sum_four @nums`               | [Reference][powershell]                      |
@@ -545,6 +545,7 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 [julia]: <https://docs.julialang.org/en/v1/manual/functions/#Varargs-Functions> "Julia Manual: Varargs Functions"
 [kotlin]: <https://kotlinlang.org/docs/functions.html#variable-number-of-arguments-varargs> "Kotlin Documentation: Functions, Variable Number of Arguments (varargs)"
 [Clojure]: <https://clojuredocs.org/clojure.core/apply> "Clojure Documentation: apply - clojure.core"
+[com-lisp]: <https://lisp-docs.github.io/cl-language-reference/chap-5/f-d-dictionary/apply_function> "Common Lisp Docs - apply"
 [Elisp]: <https://www.gnu.org/software/emacs/manual/html_node/elisp/Calling-Functions.html#index-apply> "GNU Emacs Lisp Reference Manual: Calling Functions - apply"
 [Racket]: <https://docs.racket-lang.org/guide/application.html#%28part._apply%29> "The Racket Guide: Function Calls - The apply Function"
 [Scheme]: <https://docs.scheme.org/schintro/schintro_69.html)> "An Introduction to Scheme and its Implementation - apply"
