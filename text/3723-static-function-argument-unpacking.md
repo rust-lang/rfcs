@@ -611,6 +611,8 @@ Rust Zulip t-lang:
 Rust Users Forum:
 - [Why can’t we map tuples on arguments in Rust?](https://users.rust-lang.org/t/why-cant-we-map-tuples-on-arguments-in-rust/15628)
 
+Swift, prior to version 2.2, had a tuple splat syntax, which allowed passing the tuple as-is to the function being called. Swift [deprecated](https://www.swift.org/blog/swift-2.2-new-features/#tuple-splat-syntax-is-deprecated) it, citing its rare usage and, from Swift point of view, unidiomatic style.
+
 ### Unpacking Structs
 
 Rust Internals:
