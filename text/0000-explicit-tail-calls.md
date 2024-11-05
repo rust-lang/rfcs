@@ -422,7 +422,7 @@ Additionally, any closure that has captures would need special handling, since t
 ## Variadic functions using `c_variadic`
 
 Tail calling [variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html) _and_ tail calling _from_ variadic functions is **not** allowed.
-As support for variadic function is stabilized on a per target level, support for tail-calls regarding variadic functions would need to follow a similar approach. To avoid this complexity and to minimize implementation effort for backends, this interaction is currently not allowed but supported can be added with a future RFC.
+As support for variadic function is stabilized on a per target level, support for tail-calls regarding variadic functions would need to follow a similar approach. To avoid this complexity and to minimize implementation effort for backends, this interaction is currently not allowed but support can be added with a future RFC.
 
 ## Generators
 
