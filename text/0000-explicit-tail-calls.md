@@ -742,7 +742,7 @@ https://github.com/carbon-language/carbon-lang/issues/1761#issuecomment-11986720
 ## Resolved Questions
 
 - Can generic functions be supported?
-  - As Rust uses Monomophization, generic functions are not a problem.
+  - As Rust uses Monomorphization, generic functions are not a problem.
 - Can dynamic function calls be supported?
   - Dynamic function calls are supported ([confirmation](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1191600480)).
 - Can functions outside the current crate be supported, functions from dynamically loaded libraries?
