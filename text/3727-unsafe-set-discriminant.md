@@ -1,6 +1,6 @@
 - Feature Name: unsafe_set_discriminant
 - Start Date: 2024-11-08
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3727](https://github.com/rust-lang/rfcs/pull/3727)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
