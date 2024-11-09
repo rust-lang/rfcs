@@ -1063,7 +1063,7 @@ However, it has some notable problems:
 + It provides zero improvements to the ergonomics of *specifying* defaults,
   only for using them. Arguably, the most important aspect of this RFC is
   not the syntax `Foo { .. }` but rather the ability to provide default values
-  for field.
+  for fields.
 
 + By extension, the improvement to documentation clarity is lost.
 
