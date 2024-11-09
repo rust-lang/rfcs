@@ -328,12 +328,10 @@ The ellipsis symbol composed from three consecutive ASCII dot characters is used
 # Rationale and Alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The supported use cases are limited to avoid problems that come with large scope; however, to help avoid metaphorical cul-de-sacs, i.e. incompatibilities with future features, some out-of-scope expansions are laid out under [Future Possibilities](future-possibilities).
-
 Guiding principles in this design are:
 
 - Familiarity of syntax.
-- Compatibility with other features.
+- Expandability, and compatibility both with existing and foreseeable future features.
 - Zero-cost – this is just syntactic sugar for passing the arguments by hand.
 - Intuitiveness of use and the principle of least astonishment.
 - Avoiding ambiguity with simple rules and by requiring explicit control by the user (developer).
@@ -341,6 +339,14 @@ Guiding principles in this design are:
 Some programming languages such as JavaScript and PHP use an ellipsis prefix, `...`, as the syntax for a similar feature. Using this same syntax benefits inter-language consistency and familiarity for new users of Rust. There's an ongoing effort on [variadic generics](https://internals.rust-lang.org/t/variadic-generics-design-sketch/18974) proposing a `...` operator for unpacking in a compatible but wider setting than in this RFC.
 
 Commonly, in other programming languages, the order in which the tokens appear is that inside the parentheses of a function call syntax, the collection to unpack the arguments from is **prefixed** by the symbol that is used for unpacking (e.g. `...` or `*`). Thus, the same prefix order has been selected in this RFC. One notable exception to this is Julia, in which argument unpacking – known as [splatting](https://docs.julialang.org/en/v1/manual/functions/#Varargs-Functions) – is performed with `f(args...)`.
+
+## Omissions
+
+The supported use cases are limited to avoid problems that come with large scope. To help avoid metaphorical cul-de-sacs, i.e. incompatibilities with future features, some out-of-scope expansions are laid out with some attention to detail under [Future Possibilities](#future-possibilities).
+
+Specifically, this RFC focuses on bringing argument unpacking only to call expressions while allowing for building on its design and findings. For example, using unpacking of collections to define other collections is left out of scope (but suggested under Future Possibilities). Likewise, users would probably expect to be able to use argument unpacking in standard library macros such as `println!`, but designing and implementing that has been deferred as well.
+
+Even though leaving some of the natural-seeming consequences of argument unpacking out of scope reduces its usefulness at first, it is not generally unprecedented: For example, features such as *const generics* have been successfully introduced into the language in chunks, as an [MVP](https://blog.rust-lang.org/2021/02/26/const-generics-mvp-beta.html). Furthermore, the future RFCs adding the remaining pieces would likely be quite lightweight in comparison, since some of the work – such as bikeshedding the most important parts of the syntax – has already been carried out in the context of this RFC.
 
 ## Other Terms
 
