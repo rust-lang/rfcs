@@ -526,7 +526,6 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 | Language   | Term               | Syntax of Argument Unpacking   | Source(s)                                    |
 | ---------- | ------------------ | ------------------------------ | -------------------------------------------- |
 | Crystal    | Splatting          | `sum_four *nums`               | [Language reference][crystal]                |
-| Dart       | Spread collections | N/A¹                           | [Feature specification][dart]                |
 | JavaScript | Spread syntax      | `sum_four(...nums)`            | [MDN JavaScript Reference][js]               |
 | Julia      | Splat              | `sum_four(nums...)`            | [Manual][julia]                              |
 | Kotlin     | Spread operator    | `sum_four(*nums)`              | [Documentation][kotlin]                      |
@@ -537,10 +536,7 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 | Python     | Argument unpacking | `sum_four(*nums)`              | [Tutorial][py-tut], [reference][py-ref]      |
 | Ruby       | Splat operator     | `sum_four(*nums)`              | [Syntax documentation][ruby]                 |
 
-¹ Dart uses the feature for inserting multiple elements into a collection.
-
 [crystal]: <https://crystal-lang.org/reference/1.14/syntax_and_semantics/splats_and_tuples.html#splatting-a-tuple> "Crystal Language Formal Specification: Splatting a Tuple"
-[dart]: <https://github.com/dart-lang/language/blob/9dc3737010f3ccac5ef54bf63b402d8e86b9115c/accepted/2.3/spread-collections/feature-specification.md> "Dart Feature Specification for Spread Collections"
 [js]: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax> "MDN JavaScript Reference: Spread Syntax (...)"
 [julia]: <https://docs.julialang.org/en/v1/manual/functions/#Varargs-Functions> "Julia Manual: Varargs Functions"
 [kotlin]: <https://kotlinlang.org/docs/functions.html#variable-number-of-arguments-varargs> "Kotlin Documentation: Functions, Variable Number of Arguments (varargs)"
@@ -595,10 +591,20 @@ Stack Overflow questions:
 - [Is it possible to unpack a tuple into function arguments?](https://stackoverflow.com/questions/39878382/is-it-possible-to-unpack-a-tuple-into-function-arguments)
 - [Is it possible to unpack a tuple into method arguments?](https://stackoverflow.com/questions/60381690/is-it-possible-to-unpack-a-tuple-into-method-arguments)
 
-### Unpacking Arrays
+### Unpacking into Arrays and Other Collections
 
 Rust Internals:
+
 - [Pre-RFC: Array expansion syntax](https://internals.rust-lang.org/t/pre-rfc-array-expansion-syntax/13490)
+
+Dart has a feature called spread collections, which allows unpacking into collections: [accepted proposal][dart-prop], [documentation][dart-doc].
+
+JavaScript allows using its [spread syntax](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax) for unpacking elements into array literals.
+
+Python allows unpacking inside tuple, list, set, and dictionary displays, as proposed in [PEP 448](https://peps.python.org/pep-0448/).
+
+[dart-prop]: <https://github.com/dart-lang/language/blob/9dc3737010f3ccac5ef54bf63b402d8e86b9115c/accepted/2.3/spread-collections/feature-specification.md> "Accepted Dart Feature Specification for Spread Collections"
+[dart-doc]: <https://dart.dev/language/collections#spread-operators> "Dart Documentation - Spread Operators"
 
 ### Using Tuples in Place of Argument Lists
 
@@ -668,7 +674,10 @@ Future RFCs should freely venture outside the scope of this RFC and complement o
 
 ## Unpacking in Fixed-Size Array and Tuple Literals
 
-The same ellipsis syntax with a very similar meaning could be adopted to defining fixed-size arrays and tuple literals as well. For example:
+Tuple structs can already be built with the adoption of *argument* unpacking, since their constructors use the call expression that is modified by this RFC. It would make sense to support unpacking when building some other collections as well.
+
+The same `...expr` syntax could be adopted as syntactic sugar for defining, at the time of compilation, fixed-size arrays and tuple literals as well. For example:
+
 ```rust
 const CDE: [char; 3] = ['C', 'D', 'E'];
 const ABCDEFG1: [char; 7] = ['A', 'B', ...CDE, 'F', 'G'];
@@ -677,11 +686,32 @@ const ABCDEFG2: [char; 7] = ['A', 'B', CDE[0], CDE[1], CDE[2], 'F', 'G'];
 assert_eq(ABCDEFG1, ABCDEFG2);
 ```
 
-At least Python and JavaScript have this feature.
+or
 
-Notably, tuple structs can already be built with the adoption of argument unpacking in general, since their constructors use the call expression that is modified by the addition of argument unpacking.
+```rust
+const HELLO_C: [u8; 14] = [...*b"Hello, world!", b'\0'];
+```
 
-Prior work on designing such feature exists at least in the Rust Internals thread [Pre-RFC: Array expansion syntax](https://internals.rust-lang.org/t/pre-rfc-array-expansion-syntax/13490).
+or
+
+```rust
+const A: (u8, u8, u8) = (1, 2, 3);
+const B: (u8, u8, u8) = (4, 5, 6);
+const C_CURRENT: (u8, u8, u8, u8, u8, u8) = (A.0, A.1, A.2, B.0, B.1, B.2);
+const C_UNPACK: (u8, u8, u8, u8, u8, u8) = (...A, ...B);
+
+assert_eq(C_UNPACK, C_CURRENT);
+```
+
+Prior work on designing such feature exists at least in the Rust Internals thread [Pre-RFC: Array expansion syntax](https://internals.rust-lang.org/t/pre-rfc-array-expansion-syntax/13490). Adapting it to use `...` as the symbol for the operator for unpacking would solve its biggest admitted and discussed drawback and also be in line with argument unpacking, syntax-wise.
+
+Example programming languages that allow unpacking into collection types:
+
+- Dart, with its [spread operator](https://dart.dev/language/collections#spread-operators).
+- JavaScript, as described in the same [Spread syntax (...)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax) documentation with argument unpacking.
+- Python, as of [PEP 448](https://peps.python.org/pep-0448/).
+
+This feature could be further expanded to allow its use, for example, with `vec![…]` (see [Unpacking Arguments for Macro Invocations](#unpacking-arguments-for-macro-invocations) below).
 
 ## Unpacking Arguments for Macro Invocations
 
