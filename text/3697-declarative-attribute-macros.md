@@ -56,9 +56,9 @@ invocations can only match the `attr` rules, and non-attribute invocations can
 only match the non-`attr` rules. This allows adding `attr` rules to an existing
 macro without breaking backwards compatibility.
 
-For simplicity, no special syntax is given to allow an attribute macro to
-recursively invoke its `attr` rules; to recurse, invoke a non-`attr` rule or
-another macro.
+An attribute macro may emit code containing another attribute, including one
+provided by an attribute macro. An attribute macro may use this to recursively
+invoke itself.
 
 An `attr` rule may be prefixed with `unsafe`. Invoking an attribute macro in a
 way that makes use of a rule declared with `unsafe attr` requires the unsafe
