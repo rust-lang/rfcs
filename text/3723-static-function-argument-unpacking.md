@@ -384,6 +384,7 @@ Table 1. Operator symbol alternatives.
 | Prefix | `**`     | Used in Python for unpacking dictionaries into named keyword parameters.                             |
 | Prefix | `{*}`    | Used in Tcl for argument expansion.                                                                  |
 | Suffix | `: _*`   | Used in Scala for sequence arguments.                                                                |
+| Suffix | `@ ..`   | Used already for [Rest patterns](https://doc.rust-lang.org/reference/patterns.html#rest-patterns).   |
 | Prefix | `@`      | At. Emphasis on _where_ the arguments come from. Used in PowerShell for splatting.                   |
 | Prefix | `^`      | Connotation of "up and out". Used for `XOR` in binary contexts.                                      |
 | Prefix | `~`      | Connotation of "inverting the collection inside-out", or C++ destructors.                            |
