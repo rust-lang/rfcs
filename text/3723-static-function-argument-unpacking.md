@@ -585,17 +585,17 @@ TypeError: print_rgb() takes 3 positional arguments but 4 were given
 
 The proposed feature in this RFC is different, only allowing unpacking when it is proven to succeed during compilation, marking it static. Consequently, it also makes the feature infallible.
 
-### Ellipsis in Rust
-
-The three ASCII dots syntax is already used for [C-variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html).
-
-[Previously](https://github.com/rust-lang/rust/issues/28237), ellipsis [was](https://github.com/rust-lang/rfcs/pull/1192) used as syntax for inclusive ranges, i.e. in place of `..=`.
-
 ### Use of Ellipsis in Different Programming Languages
 
 The ellipsis syntax is also used for features other than argument unpacking. E.g., C++ uses ellipsis suffix for [Pack expansion](https://en.cppreference.com/w/cpp/language/parameter_pack#Pack_expansion).
 
 ## Existing Rust Work on Subject
+
+### Ellipsis in Rust
+
+The three ASCII dots syntax is already used for [C-variadic functions](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html).
+
+[Previously](https://github.com/rust-lang/rust/issues/28237), ellipsis [was](https://github.com/rust-lang/rfcs/pull/1192) used as syntax for inclusive ranges, i.e. in place of `..=`.
 
 ### Specifically on Argument Unpacking
 
