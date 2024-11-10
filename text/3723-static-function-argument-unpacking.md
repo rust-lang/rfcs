@@ -478,19 +478,11 @@ A somewhat different design, allowing the use of bare `...` as a shorthand for p
 
 ## Workarounds If RFC Is Not Implemented
 
-### Unpack Tuples into Arguments with `fn_traits`
-
-Instead of changing the language to include the syntactic sugar, a standard library method from the [`fn_traits`](https://doc.rust-lang.org/beta/unstable-book/library-features/fn-traits.html) feature could be used. A slightly more verbose example:
-```rust
-fn main() {
-    std::ops::Fn::call(&print_rgb, hex2rgb("#123456"));
-}
-```
-One downside of this is that the syntax diverges from a normal function call, i.e. superficially, the code seems to be calling `call`, with the actual function to be called being just one of the arguments. Given the verbosity and unfamiliar syntax compared to argument unpacking in other programming languages, this option also doesn't increase ergonomics that much. Relying on this might also confuse language servers when trying to locate uses of the called function. Directly unpacking tuple structs or fixed-size arrays isn't supported either, although `.into()` can be called on the latter. This does not work directly with methods either – extra work is required to call the *associated function* using fully qualified syntax and add `&self` to the beginning of the tuple, which is impractical if the tuple comes from a return value as in the provided example.
+Some workarounds already exist in stable Rust as of today, or in unstable features, that allow a developer to work around *argument unpacking* not being available. Argument unpacking solves the limitations that have been pointed out below.
 
 ### Refactor the Callee
 
-Another simple way to avoid the verbosity of having to pass the arguments in a collection by hand is to change the type signature of the function being called to accept the tuple/tuple struct/array instead. In some cases, defining the [function parameters as patterns](https://doc.rust-lang.org/stable/book/ch18-01-all-the-places-for-patterns.html#function-parameters) can be useful. For example, the callee can be refactored to accept a tuple instead:
+Arguably the simplest way to avoid the verbosity of having to pass the arguments in a collection by hand is to change the type signature of the function being called to accept the tuple/tuple struct/array instead. In some cases, defining the [function parameters as patterns](https://doc.rust-lang.org/stable/book/ch18-01-all-the-places-for-patterns.html#function-parameters) can be useful. For example, the callee can be refactored to accept a tuple instead:
 ```rust
 fn print_rgb((r, g, b): (u8, u8, u8)) {
     println!("r: {r}, g: {g}, b: {b}");
@@ -501,6 +493,16 @@ and calling it simply becomes:
 print_rgb(hex2rgb("#123456"));
 ```
 There is no flexibility in accepting arguments one by one, but instead, a tuple must be constructed at the call site if passing single arguments is needed. Refactoring also is not always possible, for example if the function is in a 3rd party crate. In these cases it's possible to manually implement a wrapper for the 3rd party function.
+
+### Unpack Tuples into Arguments with `fn_traits`
+
+Instead of changing the language to include the syntactic sugar, a standard library method from the [`fn_traits`](https://doc.rust-lang.org/beta/unstable-book/library-features/fn-traits.html) feature could be used. A slightly more verbose example:
+```rust
+fn main() {
+    std::ops::Fn::call(&print_rgb, hex2rgb("#123456"));
+}
+```
+One downside of this is that the syntax diverges from a normal function call, i.e. superficially, the code seems to be calling `call`, with the actual function to be called being just one of the arguments. Given the verbosity and unfamiliar syntax compared to argument unpacking in other programming languages, this option also doesn't increase ergonomics that much. Relying on this might also confuse language servers when trying to locate uses of the called function. Directly unpacking tuple structs or fixed-size arrays isn't supported either, although `.into()` can be called on the latter. This does not work directly with methods either – extra work is required to call the *associated function* using fully qualified syntax and add `&self` to the beginning of the tuple, which is impractical if the tuple comes from a return value as in the provided example.
 
 # Prior Art
 [prior-art]: #prior-art
