@@ -382,6 +382,7 @@ Table 1. Operator symbol alternatives.
 | Prefix | `..`     | Used already for *Functional Record Updates*. Clashes with `RangeTo<T>`.                             |
 | Prefix | `*`      | Used in Python and Ruby for argument unpacking, in Kotlin for spreading. Clashes with dereferencing. |
 | Prefix | `**`     | Used in Python for unpacking dictionaries into named keyword parameters.                             |
+| Prefix | `{*}`    | Used in Tcl for argument expansion.                                                                  |
 | Prefix | `@`      | At. Emphasis on _where_ the arguments come from. Used in PowerShell for splatting.                   |
 | Prefix | `^`      | Connotation of "up and out". Used for `XOR` in binary contexts.                                      |
 | Prefix | `~`      | Connotation of "inverting the collection inside-out", or C++ destructors.                            |
@@ -541,6 +542,7 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 | PowerShell | Splatting          | `sum_four @nums`               | [Reference][powershell]                      |
 | Python     | Argument unpacking | `sum_four(*nums)`              | [Tutorial][py-tut], [reference][py-ref]      |
 | Ruby       | Splat operator     | `sum_four(*nums)`              | [Syntax documentation][ruby]                 |
+| Tcl        | Argument expansion | `[sum_four {*}$nums]`          | [TIP 293][tip-293], [TIP 157][tip-157], [Wiki][tcl-wiki] |
 
 [crystal]: <https://crystal-lang.org/reference/1.14/syntax_and_semantics/splats_and_tuples.html#splatting-a-tuple> "Crystal Language Formal Specification: Splatting a Tuple"
 [js]: <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax> "MDN JavaScript Reference: Spread Syntax (...)"
@@ -558,6 +560,9 @@ Table 2. Non-exhaustive summary of argument unpacking in different programming l
 [py-tut]: <https://docs.python.org/3.13/tutorial/controlflow.html#unpacking-argument-lists> "The Python Tutorial: Unpacking Argument Lists"
 [py-ref]: <https://docs.python.org/3.13/reference/expressions.html#calls> "The Python Language Reference: Expressions - Calls"
 [ruby]: <https://docs.ruby-lang.org/en/3.3/syntax/calling_methods_rdoc.html#label-Array+to+Arguments+Conversion> "Ruby Syntax Documentation: Calling Methods - Array to Argument Conversion"
+[tip-293]: <https://core.tcl-lang.org/tips/doc/trunk/tip/293.md> "Tcl Improvement Proposal 293 - Argument Expansion with Leading {*}"
+[tip-157]: <https://core.tcl-lang.org/tips/doc/trunk/tip/157.md> "Tcl Improvement Proposal 157 - Argument Expansion with Leading {expand}"
+[tcl-wiki]: <https://wiki.tcl-lang.org/page/%7B%2A%7D> "Tcl Wiki - {*}"
 
 Haskell has no separate syntactic sugar for argument unpacking, but various `uncurryN` functions can be implemented, where `N` is the number of items in a tuple, e.g.:
 ```haskell
