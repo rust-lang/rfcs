@@ -505,6 +505,13 @@ Tail calls can be implemented without backend support if only static calls are s
 
 There are some designs that either can not achieve the same performance or functionality as the chosen approach. Though most other designs evolve around how to mark what should be a tail-call or marking what functions can be tail called. There is also the possibility of providing support for a custom backend (e.g. LLVM) or MIR pass.
 
+### Rust Built-in Functionality
+
+For simple tail recursion on an iterable (successors)[https://doc.rust-lang.org/stable/core/iter/fn.successors.html] can be used to compute a result for each element.
+Nearly equivalently, a (combinator)[https://users.rust-lang.org/t/when-will-rust-have-tco-tce/20790/3] can be used to express a tail recursive function, however, allowing more flexibility regarding the returned result.
+
+These approaches do not provide a way to express general tail calls, so do not fulfill a basic requirement we would like to achieve.
+
 ### Trampoline based Approach
 There could be a trampoline-based approach
 ([comment](https://github.com/rust-lang/rfcs/pull/1888#issuecomment-326952763)) that can fulfill the semantic guarantee
@@ -515,7 +522,7 @@ Similarly, as mentioned [here](https://github.com/rust-lang/rfcs/pull/3407#discu
 
 ### Principled Local Goto
 One alternative would be to support some kind of local goto natively, indeed there exists a
-[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)). This design should be able to achieve the same performance and stack usage, though it seems to be quite difficult to implement and does not seem to be as flexible as the chosen design, especially regarding indirect calls and external functions.
+[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)) or another (LLVM specific idea)[https://internals.rust-lang.org/t/idea-for-safe-computed-goto-using-enums/21787?u=programmerjake]. These designs should be able to achieve the targeted performance and stack usage, though they seems to be quite difficult to implement or are backend specific. Also they do not seem to be as flexible as the chosen design, especially implementing tail calls to indirect or external functions do not seem to be feasible.
 
 ### Attribute on Function Declaration
 [attribute-on-function-declaration]: #attribute-on-function-declaration
