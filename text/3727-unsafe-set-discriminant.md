@@ -21,7 +21,7 @@ In-place construction is useful for a number of niche applications, including in
 
 **Composite data types** (structs, tuples) can also be created with `MaybeUninit::uninit`, and `offset_of!` can be used to initialize each of the subcomponents.
 
-With [this feature][feature_offset_of_enum] (currently in FCP with disposition merge at the time of writing), it is possible to also use `offset_of!` to **initialize the variant** of an enum in-place, as with structs.
+With [this feature][feature_offset_of_enum] (currently proposed for FCP merge at the time of writing), it is possible to also use `offset_of!` to **initialize the variant** of an enum in-place, as with structs.
 
 However, there is no stable way to set the discriminant of an enum, without fully creating the variant and writing it by-value to the destination. This means that any enum value must first be created on the stack, and written through to the final destination, even if the potentially large enum variant could be initialized in place.
 
