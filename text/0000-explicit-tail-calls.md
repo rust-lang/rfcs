@@ -522,7 +522,7 @@ Similarly, as mentioned [here](https://github.com/rust-lang/rfcs/pull/3407#discu
 
 ### Principled Local Goto
 One alternative would be to support some kind of local goto natively, indeed there exists a
-[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)) or another (LLVM specific idea)[https://internals.rust-lang.org/t/idea-for-safe-computed-goto-using-enums/21787?u=programmerjake]. These designs should be able to achieve the targeted performance and stack usage, though they seems to be quite difficult to implement or are backend specific. Also they do not seem to be as flexible as the chosen design, especially implementing tail calls to indirect or external functions do not seem to be feasible.
+[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)) or another (LLVM specific idea)[https://internals.rust-lang.org/t/idea-for-safe-computed-goto-using-enums/21787?u=programmerjake]. These designs should be able to achieve the targeted performance and stack usage, though they seem to be quite difficult to implement or are backend specific. Also they do not seem to be as flexible as the chosen design, especially implementing tail calls to indirect or external functions do not seem to be feasible.
 
 ### Attribute on Function Declaration
 [attribute-on-function-declaration]: #attribute-on-function-declaration
