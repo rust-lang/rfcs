@@ -361,8 +361,21 @@ modifier functionality.
 
 ## Problems with mixing non-target-modifiers
 
-It's rather common to want a flag to be applied everywhere, even if it is not
-ABI breaking. This section discusses some of these cases.
+I discussed this proposal with people from other communities (mainly kernel and
+C folks), and they shared several other cases where mixing flags are a problem.
+They pointed out that there are some flags where mixing them is really bad and
+should be detected, but which are not ABI issues or unsound per se. The most
+common example of this is exploit mitigations, where mixing the flags will
+silently lead to a vulnerable binary. On the other hand, ABI mismatches usually
+fail in a loud way, so they were not as concerned about those.
+
+The sections below describe several such cases. They are intended to provide
+additional context for the reader to better understand the problem space. We
+will likely want to use the same infrastructure for detecting some of the
+mismatches mentioned below, but the precise list is out of scope of this RFC.
+
+Since the cases below are not unsound, the flag for overriding them should not
+include the word "unsafe".
 
 ### Exploit mitigations
 
@@ -430,13 +443,6 @@ Mixing CUs with different options for `-Cforce-unwind-tables`,
 `-Zdwarf-version`, or `-Zdebuginfo-compression` may result in a binary that you
 consider to be invalid as you may be unable to read the debugging information.
 But it would not be an ABI issue.
-
-### Detection for non-target-modifiers
-
-We will most likely want some way to detect mismatches of some of the cases
-above; especially the exploit mitigations. However, as these cases are not ABI
-breaking, the flag for silencing the error/warning should not include the word
-"unsafe".
 
 # Prior art
 [prior-art]: #prior-art
