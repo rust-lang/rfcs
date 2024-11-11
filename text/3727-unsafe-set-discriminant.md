@@ -95,7 +95,7 @@ pub unsafe fn set_discriminant<T: ?Sized>(
 ); 
 ```
 
-This function MUST be called AT LEAST ONCE, AFTER fully initializing the values of the variant associated with this discriminant, and MUST be called BEFORE calling `assume_init` on the `MaybeUninit<T>` enum.
+This function MUST be called AFTER fully initializing the values of the variant associated with this discriminant, and when called, MUST be called BEFORE calling `assume_init` on the `MaybeUninit<T>` enum.
 
 This could be used as follows:
 
@@ -177,9 +177,9 @@ This function takes an `*mut T` and has multiple requirements necessary for safe
 
 * The pointer `*mut T` must be non-null
 * The enum `T` and the selected variant's fields must be well-aligned for reading and writing
-* This function is allowed to write and read-back both the discriminant and body (whether they each exist or not, and whether the discriminant and body are separate or not). This function also may do this in an unsynchronized manner (not requiring locks or atomic operations), which means an exclusive access is required
+* This function is allowed to write and read-back both the discriminant and body (whether they each exist or not, and whether the discriminant and body are separate or not). This function also may do this in an unsynchronized manner (not requiring locks or atomic operations), which means exclusive access is required
 
-If the `T` used for `*mut T` or `Discriminant<T>` when calling this function is NOT an enum, then this function is specified as a no-op. This is not undefined behavior, but later calls to `assume_init` may be undefined behavior if the `T` was not properly initialized. This is also allowed (but not required) to cause a debug assertion failure to aid in testing (implementor's choice).
+If the `T` used for `*mut T` or `Discriminant<T>` when calling this function is NOT an enum, then this function is specified as a no-op. This is not undefined behavior, but later calls to `assume_init` or usage of the value `T` may be undefined behavior if the `T` was not properly initialized. This is also allowed (but not required) to cause a debug assertion failure to aid in testing (implementor's choice).
 
 When this function is called, it MUST be called AFTER fully initializing the variant of the enum completely, as in some cases it may be necessary to read back these values. This is discussed more in the next section.
 
@@ -187,7 +187,7 @@ Semantically, `set_discriminant` is specified to optionally write the discrimina
 
 ### Alternate forms of `set_discriminant`
 
-This RFC only specifies one form of `set_discriminant`, which takes an `*mut T` to the enum. It is expected that additional versions of this function will also be added for convenience in the future, for example taking other pointer types like:
+This RFC only specifies one form of `set_discriminant`, which takes an `*mut T` to the enum `T`. It is expected that additional versions of this function will also be added for convenience in the future, for example taking other pointer types like:
 
 * `unsafe fn set_discriminant_mu(&mut MaybeUninit<T>, Discriminant<T>);`
 * `unsafe fn set_discriminant_nn(NonNull<T>, Discriminant<T>);`
@@ -244,7 +244,7 @@ This RFC does not invalidate any currently-accepted ways of initializing enums m
 
 When specific types with these qualities are used, it is not required, but still allowed, to use the `set_discriminant` function to set the discriminant.
 
-However, when authoring generic or macro code, which may potentially accept types that do not have these qualities, it is required to call `set_discriminant` to fully initialize the enum in the general case.
+However, when authoring generic or macro code, which may potentially accept types that do not have these qualities, it is necessary to call `set_discriminant` to fully initialize the enum in the general case.
 
 For example, if a macro was used to populate an `Option<U>` value, and users could chose `U: u32` (which does not have a niche repr), OR `U: &u32` (which does have a niche repr), then the author of the macro should call `set_discriminant` to soundly initialize the `Option<U>` in all cases.
 
