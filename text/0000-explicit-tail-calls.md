@@ -507,7 +507,7 @@ There are some designs that either can not achieve the same performance or funct
 
 ### Rust Built-in Functionality
 
-For simple tail recursion on an iterable (successors)[https://doc.rust-lang.org/stable/core/iter/fn.successors.html] can be used to compute a result for each element.
+For simple tail recursion on an iterable, [`successors`](https://doc.rust-lang.org/stable/core/iter/fn.successors.html) can be used to compute a result for each element.
 Nearly equivalently, a (combinator)[https://users.rust-lang.org/t/when-will-rust-have-tco-tce/20790/3] can be used to express a tail recursive function, however, allowing more flexibility regarding the returned result.
 
 These approaches do not provide a way to express general tail calls, so do not fulfill a basic requirement we would like to achieve.
