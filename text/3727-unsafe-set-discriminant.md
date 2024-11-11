@@ -314,3 +314,5 @@ Should we allow this in the future?
 If the user is writing to a packed format, they could potentially want the ability to set the discriminant in cases where the enum discriminant or fields are not well-aligned.
 
 This could require the creation of a `set_discriminant_unaligned` function, that relaxes the well-aligned safety requirements of the proposed `set_discriminant`.
+
+There is also currently no way to read the discriminant of an unaligned enum, so it may also be necessary to add unaligned versions of the `discriminant()` function as well.
