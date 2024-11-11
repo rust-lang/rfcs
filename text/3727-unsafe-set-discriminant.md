@@ -95,7 +95,7 @@ pub unsafe fn set_discriminant<T: ?Sized>(
 ); 
 ```
 
-This function MUST be called AFTER fully initializing the values of the variant associated with this discriminant, and when called, MUST be called BEFORE calling `assume_init` on the `MaybeUninit<T>` enum.
+This function MUST be called AFTER fully initializing the values of the variant associated with this discriminant, and when called, MUST be called BEFORE use of the enum, for example calling `assume_init` on a `MaybeUninit<T>` or creation of a reference from a pointer to the uninitialized enum.
 
 This could be used as follows:
 
@@ -118,8 +118,10 @@ if let Some(val) = init_some {
             item_ptr.add(i).write(val);
         }
     }
-    // Set the discriminant
+    // Obtain the discriminant
     let discrim = discriminant_of!(Option<[u32; 1024]>, Some);
+    // Set the discriminant
+    //
     // SAFETY: We have initialized all fields for this variant, and
     // this discriminant is correct for the type we are writing to.
     unsafe {
