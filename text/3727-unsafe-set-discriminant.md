@@ -23,7 +23,7 @@ In-place construction is useful for a number of niche applications, including in
 
 With [this feature][feature_offset_of_enum] (currently proposed for FCP merge at the time of writing), it is possible to also use `offset_of!` to **initialize the variant** of an enum in-place, as with structs.
 
-However, there is no stable way to set the discriminant of an enum, without fully creating the variant and writing it by-value to the destination. This means that any enum value must first be created on the stack, and written through to the final destination, even if the potentially large enum variant could be initialized in place.
+However, there is no stable way to set the discriminant of an enum in the general case, without fully creating the variant and writing it by-value to the destination. This means that any enum value must first be created on the stack, and written through to the final destination, even if the potentially large enum variant could be initialized in place.
 
 For example, TODAY if we had the type `Option<[u8; 1024 * 1024]>`, and would like to initialize it as `Some([0u8; 1024 * 1024])`, this would require creation of the 1MiB array on the stack, before it is written to its destination. Although there are various workarounds to *hopefully* have the compiler elide this copy, they are not guaranteed.
 
@@ -74,7 +74,7 @@ Compiler errors could look like this:
 
 ```sh
 discriminant_of!(u32, Some);
-                 ^^^ -> ERROR: type is not an enum
+                 ^^^ -> ERROR: "u32" is not an enum
 
 discriminant_of!(Option<u32>, Ok);
                               ^^ -> ERROR: type Option<u32> does not contain
@@ -89,10 +89,9 @@ discriminant_of!(Option<u32>, Ok);
 This function is used for setting the discriminant of an enum, and has the following signature:
 
 ```rust
-// likely in std/core::mem
 pub unsafe fn set_discriminant<T: ?Sized>(
-    &mut MaybeUninit<T>, // The enum being constructed
-    Discriminant<T>,     // The discriminant being set
+    *mut T,             // The enum being constructed
+    Discriminant<T>,    // The discriminant being set
 ); 
 ```
 
@@ -124,7 +123,7 @@ if let Some(val) = init_some {
     // SAFETY: We have initialized all fields for this variant, and
     // this discriminant is correct for the type we are writing to.
     unsafe {
-        set_discriminant(&mut out, discrim);
+        set_discriminant(out.as_mut_ptr(), discrim);
     }
 } else {
     // No value to write, just set the discriminant, leaving the
@@ -136,7 +135,7 @@ if let Some(val) = init_some {
     unsafe {
         // We can also use discriminant_of! without binding it
         set_discriminant(
-            &mut out,
+            out.as_mut_ptr(),
             discriminant_of!(Option<[u32; 1024]>, None),
         );
     }
@@ -167,30 +166,41 @@ This RFC does not propose allowing obtaining the discriminant of "nested" fields
 
 ```rust
 discriminant_of!(Option<Option<u32>>, Some);        // Allowed
-discriminant_of!(Option<Option<u32>>, Some.0.Some); // Not Allowed (yet)
+discriminant_of!(Option<Option<u32>>, Some.0.Some); // Not Allowed
 ```
 
 ## The `set_discriminant` function
 
 This function must be unsafe, as setting an incorrect discriminant could lead to undefined behavior by allowing safe code to observe incorrectly or incompletely initialized values.
 
-This function takes an `&mut MaybeUninit<T>` as it fulfills multiple requirements necessary for safety:
+This function takes an `*mut T` and has multiple requirements necessary for safety:
 
-* The enum and the selected variant's fields must be well-aligned for reading and writing
-* The enum is not fully initialized, as its discriminant may not have been set prior to calling this function
-* This function is allowed to write and read-back both the discriminant and body (whether they each exist or not, and whether the discriminant and body are separate or not). This function also may do this in an unsynchronized manner (not requiring locks or atomic operations), which means an exclusive `&mut` is appropriate
+* The pointer `*mut T` must be non-null
+* The enum `T` and the selected variant's fields must be well-aligned for reading and writing
+* This function is allowed to write and read-back both the discriminant and body (whether they each exist or not, and whether the discriminant and body are separate or not). This function also may do this in an unsynchronized manner (not requiring locks or atomic operations), which means an exclusive access is required
 
-If the `T` used for `&mut MaybeUninit<T>` or `Discriminant<T>` when calling this function is NOT an enum, then this function is specified as a no-op. This is not undefined behavior, but later calls to `assume_init` may be undefined behavior if the `T` was not properly initialized. This is also allowed (but not required) to cause a debug assertion failure to aid in testing (implementor's choice).
+If the `T` used for `*mut T` or `Discriminant<T>` when calling this function is NOT an enum, then this function is specified as a no-op. This is not undefined behavior, but later calls to `assume_init` may be undefined behavior if the `T` was not properly initialized. This is also allowed (but not required) to cause a debug assertion failure to aid in testing (implementor's choice).
 
-This function MUST be called AFTER fully initializing the variant of the enum completely, as in some cases it may be necessary to read these values. This is discussed more in the next section.
+When this function is called, it MUST be called AFTER fully initializing the variant of the enum completely, as in some cases it may be necessary to read back these values. This is discussed more in the next section.
+
+Semantically, `set_discriminant` is specified to optionally write the discriminant (when necessary), and read-back the discriminant. If the read-back discriminant does not match the expected value, then the behavior is undefined.
+
+### Alternate forms of `set_discriminant`
+
+This RFC only specifies one form of `set_discriminant`, which takes an `*mut T` to the enum. It is expected that additional versions of this function will also be added for convenience in the future, for example taking other pointer types like:
+
+* `unsafe fn set_discriminant_mu(&mut MaybeUninit<T>, Discriminant<T>);`
+* `unsafe fn set_discriminant_nn(NonNull<T>, Discriminant<T>);`
+
+These forms are not specified as part of this RFC, and can be added without an additional RFC in the future. Alternate forms are expected to match the semantics of the pointer-based version of `set_discriminant`.
 
 ## Interactions with niche-packed types
 
 This RFC is intended to work with ANY enum types, including those with niche representations. This includes types like `Option<&u32>` or `Option<NonZeroUsize>`, where excluded values (like `null`) are used for the `None` variant.
 
-In these cases, the discriminant and variant body are fully overlapping, rather than being independant memory locations.
+In these cases, the discriminant and variant body are fully overlapping, rather than being independent memory locations.
 
-This RFC STILL requires users to explicitly call `set_discriminant`, even if the act of setting the value also sets the discriminant implicitly, for example by writing `null` to the body of `Option<&u32>` via pointer methods or casting.
+This RFC recommends users to explicitly call `set_discriminant`, even if the act of setting the value also sets the discriminant implicitly, for example by writing `null` to the body of `Option<&u32>` via pointer methods or casting.
 
 ```rust
 let refr: &u32 = &123u32;
@@ -204,9 +214,9 @@ let val_ptr: *mut &u32 = opt_ptr.byte_add(val_offset).cast();
 unsafe {
     // Sets the value of the body
     val_ptr.write(refr);
-    // Technically does nothing, but is still required
+    // Does not affect the contents of `out`
     set_discriminant(
-        &mut out,
+        out.as_mut_ptr(),
         discriminant_of!(Option<&u32>, Some),
     );
 }
@@ -214,19 +224,32 @@ let out: Option<&u32> = unsafe { out.assume_init() };
 assert_eq!(out, Some(refr));
 ```
 
-In these cases, `set_discriminant` would be responsible for also initializing the whole body of the variant. For example, this would be sufficient initialization:
+In the case of the niche variant, `set_discriminant` would be responsible for also initializing the whole body of the variant. For example, this would be sufficient initialization:
 
 ```rust
 let mut out: MaybeUninit<Option<&u32>> = MaybeUninit::uninit();
 unsafe {
     set_discriminant(
-        &mut out,
+        out.as_mut_ptr(),
         discriminant_of!(Option<&u32>, None),
     );
 }
 let out: Option<&u32> = unsafe { out.assume_init() };
 assert_eq!(out, None);
 ```
+
+## Specifically known types vs unknown types
+
+This RFC does not invalidate any currently-accepted ways of initializing enums manually without these new functions. For example, enums with a [primitive representation], or niche represented enums with [discriminant elision], can be soundly created today.
+
+When specific types with these qualities are used, it is not required, but still allowed, to use the `set_discriminant` function to set the discriminant.
+
+However, when authoring generic or macro code, which may potentially accept types that do not have these qualities, it is required to call `set_discriminant` to fully initialize the enum in the general case.
+
+For example, if a macro was used to populate an `Option<U>` value, and users could chose `U: u32` (which does not have a niche repr), OR `U: &u32` (which does have a niche repr), then the author of the macro should call `set_discriminant` to soundly initialize the `Option<U>` in all cases.
+
+[primitive representation]: https://doc.rust-lang.org/reference/items/enumerations.html#pointer-casting
+[discriminant elision]: https://rust-lang.github.io/unsafe-code-guidelines/layout/enums.html#discriminant-elision-on-option-like-enums
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -243,7 +266,7 @@ This RFC is necessary to "complete" the ability to soundly create enums in-place
 
 Without this capability, downstream library authors are required to make a choice between:
 
-* Suboptimal stack usage and performance, in the case of by-value initializations
+* Suboptimal stack usage and performance, in the case of by-value initialization
 * Restriction of functionality to a subset of enum reprs, or bespoke proxy types that emulate enums to allow for in-place construction
 
 This is necessary to be part of the language and/or standard library as enum representations (at least for the default `repr(Rust)`) are unspecified, and particularly with concepts like niche-packed enums, it is not possible to soundly handle this in the general case of user defined enum types.
@@ -253,7 +276,7 @@ I am not aware of any other proposed designs for this functionality.
 # Prior art
 [prior-art]: #prior-art
 
-The `rkyv` crate defines [proxy enums] with explict `#[repr(N)]` (where N is an unsigned integer) types.
+The `rkyv` crate defines [proxy enums] with explict `#[repr(N)]` (where N is an unsigned integer) types, in order to allow in-place construction and access
 
 [proxy enums]: https://rkyv.org/format.html
 
@@ -262,7 +285,7 @@ Syntax for `discriminant_of!` is inspired by the in-progress [offset_of_enum fea
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Should we use `&mut MaybeUninit<T>` for `set_discriminant`?
+## Should we provide alternate forms of `set_discriminant`?
 
 There was some discussion when writing this RFC what the type of the first argument to `set_discriminant` should be:
 
@@ -270,13 +293,7 @@ There was some discussion when writing this RFC what the type of the first argum
 * `NonNull<T>`
 * `*mut T`
 
-From the perspective of "making expectations clear", I think `&mut MaybeUninit<T>` is the best choice, as it makes the requirements around alignment, exclusive access, etc. enumerated above explicit.
-
-However, it is possible that when constructing multiple nested types in-place, the user could be creating the pointers to the enum using `offset_of!` or `addr_of_mut!`, which would require the user to do some casting to turn their `*mut ()` (or any other `void*` analog) into a maybeuninit just to create an exclusive reference to it.
-
-We could use a "weaker" pointer type like `NonNull<T>` or `*mut T` instead, and cover the requirements in the "SAFETY" comment blocks, rather than "inheriting" these requirements from `&mut MaybeUninit<T>`.
-
-We could also have multiple versions of `set_discriminant`, like `set_discriminant_nonnull` or `set_discriminant_ptr` for these.
+`*mut T` was chosen as the most general option, however it is likely desirable to accept other forms as well for convenience.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -287,7 +304,7 @@ Discussed above, we said this was not allowed:
 
 ```rust
 discriminant_of!(Option<Option<u32>>, Some);        // Allowed
-discriminant_of!(Option<Option<u32>>, Some.0.Some); // Not Allowed (yet)
+discriminant_of!(Option<Option<u32>>, Some.0.Some); // Not Allowed
 ```
 
 Should we allow this in the future?
