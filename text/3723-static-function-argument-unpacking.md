@@ -19,6 +19,8 @@ Argument unpacking reduces the verbosity and increases the ergonomics of Rust, i
 - Is intuitive for developers accustomed to argument unpacking from other programming languages.
 - Adds a missing piece to the family of certain kind of syntactic sugar already in Rust, with features such as *struct update syntax* and *destructuring assignment*.
 
+Developers often use APIs they have limited to no direct control over, for example, code in publicly available crates. Since [refactoring the called function](#refactor-the-callee) to accept its parameters in the format available at the call site is more difficult in such cases, these crate boundaries are likely to benefit the most from the increased flexibility resulting from argument unpacking. Use of functions, whose type signatures the developer **can** change at will, that are called from several different locations, may also gain from the added options on how to call them.
+
 Furthermore, argument unpacking provides groundwork for both the syntax and its intended use for possible next steps and related proposals: As long as compatibility is sufficiently considered, the proposed feature could also reduce the workload and scope of more general and ambitious initiatives, e.g. *variadic generics*, by iterating towards them in smaller steps. This may be a double-edged sword, however, as argued under [Drawbacks](#drawbacks).
 
 # Guide-Level Explanation
