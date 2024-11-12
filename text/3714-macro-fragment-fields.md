@@ -199,6 +199,13 @@ specific attributes (e.g. derive helper attributes) attached to it. For
 instance, a derive macro applied to a struct may want to get the fields that
 have a specific helper attribute attached.
 
+We could have macro metavariable expressions that return structures values with
+fields.
+
+We could allow macros to define new macro metavariable functions that can
+return structured values. (This has high potential for complexity and would
+need to be handled with care.)
+
 If, in the future, we have a robust mechanism for compilation-time execution of
 Rust or some subset of Rust, without requiring separately compiled proc macro
 crates, we may want to use and extend that mechanism in preference to any
