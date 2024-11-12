@@ -124,7 +124,7 @@ can synthesize tokens if necessary to provide useful values for fields.
 # Prior art
 [prior-art]: #prior-art
 
-RFC 3086, for macro metavariable expressions, introduced a similar mechanism to
+[RFC 3086](https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html), for macro metavariable expressions, introduced a similar mechanism to
 add helpers for macros to more easily process the contents of fragments.
 
 # Future possibilities
