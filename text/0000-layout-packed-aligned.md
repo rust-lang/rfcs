@@ -114,7 +114,9 @@ target triplet, either:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Historically the meaning of `#[repr(C)]` has been somewhat ambiguous. When someone puts `#[repr(C)]` on their struct, their intention could be one of three things:
+Although [https://doc.rust-lang.org/reference/type-layout.html#the-c-representation](the Rust reference) documents the meaning
+of repr(C) quite clearly (types are laid out linearly, according to a fixed algorithm.), when you see `#[repr(C)]` in code,
+its meaning can be somewhat ambiguous. When someone puts `#[repr(C)]` on their struct, their intention could be one of three things:
 1. Having a target-independent and stable representation of the data structure for storage or transmission.
 2. FFI with C and C++ libraries compiled for the same target.
 3. Interoperability with operating system APIs.
@@ -124,6 +126,19 @@ that there exists some C layouts that cannot be specified using `#[repr(C)]`.
 
 This RFC addresses use case 2 with `#[repr(C)]` and use case 3 with `#[repr(system)]`. For use case 1, people will have to seek alternative solutions such as `crABI` or
 protobuf. However, it could be a footgun if people continue to use `#[repr(C)]` for use case 1.
+
+It's worthy to note that while this RFC does require people to stop treating `repr(C)` as a linear layout but rather as an
+ABI compatiblity layout, our intention is not proposing a breaking change: `packed` structs are previously banned from
+transitively containing `aligned` fields, so in most cases existing `repr(C)` structs will be laid out in exactly the same
+way as it did before. However, due to an oversight in the current implementation of the Rust compiler, the restriction
+can actuall be
+[circumvented](https://github.com/rust-lang/rust/issues/100743#issuecomment-1229343705) using generics. Applications
+using this pattern to circumvent the restriction will see a change in the struct layout on MSVC targets.
+
+This RFC alone still doesn't make `repr(C)` fully match the target (MSVC) toolchain in all cases; the known other
+divergences are enums with overflowing discriminant and how a field of type [T; 0] is handled. So while this does
+improve parity, the reality is that there are still edge cases to keep track of for now. These cases shall be addressed
+in future RFCs.
 
 
 
