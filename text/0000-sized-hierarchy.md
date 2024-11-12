@@ -79,7 +79,6 @@ Throughout the RFC, the following terminology will be used:
 - The bounds on the generic parameters of a function may be referred to simply
   as the bounds on the function (e.g. "the caller's bounds").
 
-
 # Motivation
 [motivation]: #motivation
 
@@ -1146,6 +1145,78 @@ None currently.
 - Consider allowing associated type bounds to be relaxed over an edition.
     - i.e. `type Output: if_rust_2021(Sized) + NewAutoTrait` or something like that,
       out of scope for this RFC.
+
+## externref
+[externref]: #externref
+
+Another compelling feature that requires extensions to Rust's sizedness traits to
+fully support is wasm's `externref`. `externref` types are opaque types that cannot
+be put in memory [^7]. `externref`s are used as abstract handles to resources in the
+host environment of the wasm program, such as a JavaScript object. Similarly, when
+targetting some GPU IRs (such as SPIR-V), there are types which are opaque handles
+to resources (such as textures) and these types, like wasm's `externref`, cannot
+be put in memory.
+
+[^7]: When Rust is compiled to wasm, we can think of the memory of the Rust program
+as being backed by something like a `[u8]`, `externref`s exist outside of that `[u8]`
+and there is no way to put an `externref` into this memory, so it is impossible to have
+a reference or pointer to a `externref`. `wasm-bindgen` currently supports `externref`
+by creating a array of the items which would be referenced by an `externref` on the
+host side and passes indices into this array across the wasm-host boundary in lieu
+of `externref`s. It isn't possible to support opaque types from some GPU targets using
+this technique.
+
+`externref` are similar to `Pointee` in that the type's size is not known, but unlike
+`Pointee` cannot be used behind a pointer. This RFC's proposed hierarchy of traits could
+support this by adding another supertrait, `Value`:
+
+```
+    ┌────────────────┐                  ┌─────────────────────────────┐
+    │ const Sized    │ ───────────────→ │ Sized                       │
+    │ {type, target} │     implies      │ {type, target, runtime env} │
+    └────────────────┘                  └─────────────────────────────┘
+            │                                          │
+         implies                                    implies
+            │                                          │
+            ↓                                          ↓
+┌───────────────────────┐             ┌────────────────────────────────────┐
+│ const DynSized        │ ──────────→ │ DynSized                           │
+│ {type, target, value} │   implies   │ {type, target, runtime env, value} │
+└───────────────────────┘             └────────────────────────────────────┘
+            │                                          │
+         implies                                    implies
+            │                                          │
+            ↓                                          ↓
+    ┌───────────────┐                         ┌──────────────────┐
+    │ const Pointee │ ──────────────────────→ │ Pointee          │
+    │ {*}           │         implies         │ {runtime env, *} │
+    └───────────────┘                         └──────────────────┘
+            │                                          │
+         implies                                    implies
+            │                                          │
+            ↓                                          ↓
+     ┌─────────────┐                          ┌──────────────────┐
+     │ const Value │ ───────────────────────→ │ Value            │
+     │ {*}         │         implies          │ {runtime env, *} │
+     └─────────────┘                          └──────────────────┘
+```
+
+`Pointee` is still defined as being implemented for any type that can be used
+behind a pointer and may not be sized at all, this would be implemented for
+effectively every type except wasm's `externref` (or similar opaque types from
+some GPU targets). `Value` is defined as being implemented for any type that can
+be used as a value, which is all types, and also may not be sized at all.
+
+Earlier in this RFC, `extern type`s have previously been described as not being
+able to be used as a value, but it could instead be permitted to write functions
+which use extern types as values (e.g. such as taking an extern type as an argument),
+and instead rely on it being impossible to get a extern type that is not behind a
+pointer or a reference. This also implies that `DynSized` types can be used as values,
+which would remain prohibited behind the `unsized_locals` and `unsized_fn_params`
+features until these are stabilised.
+
+With these changes to the RFC, it would be possible to support wasm's `externref` and
+opaque types from some GPU targets.
 
 ## Alignment
 [alignment]: #alignment
