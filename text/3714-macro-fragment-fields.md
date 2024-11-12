@@ -112,8 +112,9 @@ ecosystem.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Rather than using field syntax, we could use function-like syntax in the style
-of RFC 3086's macro metavariable expressions. However, field syntax seems like
-a more natural fit for this concept.
+of [RFC 3086](https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html)
+macro metavariable expressions. However, field syntax seems like a more natural
+fit for this concept.
 
 Rather than synthesizing tokens for cases like `return_type`, we could make a
 rule that we *never* provide tokens that aren't in the original source.
