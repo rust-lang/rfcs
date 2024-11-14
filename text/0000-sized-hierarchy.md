@@ -619,9 +619,13 @@ could be made to the standard library:
 
 - [`std::boxed::Box`][api_box]
     - `T: ?Sized` becomes `T: ValueSized`
-    - As before, this is not a breaking change and prevents types only
-      implementing `Pointee` from being used with `Box`, as these types do
-      not have the necessary size and alignment for allocation/deallocation.
+    - It is not a breaking change to relax this bound and it prevents types
+      only implementing `Pointee` from being used with `Box`, as these types
+      do not have the necessary size and alignment for allocation/deallocation.
+- [`std::marker::PhantomData`][api_phantomdata]
+    - `T: ?Sized` becomes `T: Pointee`
+    - It is not a breaking change to relax this bound and there's no reason why
+      any type should not be able to be used with `PhantomData`.
 
 As part of the implementation of this RFC, each `Sized`/`?Sized` bound in
 the standard library would need to be reviewed and updated as appropriate.
@@ -1310,12 +1314,13 @@ written here only to illustrate.
 [api_align_of]: https://doc.rust-lang.org/std/mem/fn.align_of.html
 [api_align_of_val]: https://doc.rust-lang.org/std/mem/fn.align_of_val.html
 [api_box]: https://doc.rust-lang.org/std/boxed/struct.Box.html
-[api_copy]: https://doc.rust-lang.org/std/marker/trait.Copy.html
 [api_clone]: https://doc.rust-lang.org/std/clone/trait.Clone.html
+[api_copy]: https://doc.rust-lang.org/std/marker/trait.Copy.html
+[api_phantomdata]: https://doc.rust-lang.org/std/marker/struct.PhantomData.html
 [api_pointee]: https://doc.rust-lang.org/std/ptr/trait.Pointee.html
-[api_sized]: https://doc.rust-lang.org/std/marker/trait.Sized.html
 [api_size_of]: https://doc.rust-lang.org/std/mem/fn.size_of.html
 [api_size_of_val]: https://doc.rust-lang.org/std/mem/fn.size_of_val.html
+[api_sized]: https://doc.rust-lang.org/std/marker/trait.Sized.html
 [author_aturon]: https://github.com/aturon
 [author_cad97]: https://github.com/CAD97
 [author_canndrew]: https://github.com/canndrew
@@ -1354,8 +1359,8 @@ written here only to illustrate.
 [pre_erfc_fix_dsts]: https://internals.rust-lang.org/t/pre-erfc-lets-fix-dsts/6663
 [prerfc_custom_dst]: https://internals.rust-lang.org/t/pre-rfc-custom-dsts/8777
 [rfc_aligned]: https://github.com/rust-lang/rfcs/pull/3319
-[rfc_custom_dst_electric_boogaloo]: https://github.com/rust-lang/rfcs/pull/2594
 [rfc_custom_dst]: https://github.com/rust-lang/rfcs/pull/1524
+[rfc_custom_dst_electric_boogaloo]: https://github.com/rust-lang/rfcs/pull/2594
 [rfc_dynsized_without_dynsized]: https://github.com/rust-lang/rfcs/pull/2310
 [rfc_extern_types]: https://rust-lang.github.io/rfcs/1861-extern-types.html
 [rfc_extern_types_v2]: https://github.com/rust-lang/rfcs/pull/3396
