@@ -464,8 +464,12 @@ the current implicit `Sized` bound to an `const Sized` bound as every type which
 exists currently will implement `const Sized`.
 
 **Edition change:** In the current edition, all existing `Sized` bounds will be
-sugar for `const Sized`. In the next edition, existing `Sized` bounds will be rewritten
-to `const Sized` bounds and new bare `Sized` bounds will be non-const.
+syntatic sugar for `const Sized` (both explicitly written and implicit). In the next
+edition, existing `Sized` bounds will be rewritten to `const Sized` bounds and new
+bare `Sized` bounds will be non-const. `Sized` supertraits (such as that on `Clone`
+or `Default`) will not be sugar for `const Sized`, these will remain bare `Sized`.
+If traits with a `Sized` supertrait are later made const, then their supertrait
+would be made `~const Sized`.
 
 An implicit `const ValueSized` bound is added to the `Self` type of traits. Like
 implicit `const Sized` bounds, this is omitted if an explicit `const Sized`, `Sized`,
@@ -497,17 +501,21 @@ This has the potential to break existing code like `uses_size_of` in the below
 example. However, due to the changes described in [`Sized` bounds][sized-bounds]
 (changing the implicit `T: Sized` to `T: const Sized`, and treating explicit
 `T: Sized` bounds as `T: const Sized` in the current edition), this code would
-not break.
+not break:
 
 ```rust=
 fn uses_size_of<T: Sized>() -> usize {
     const { std::mem::size_of<T>() }
 }
+
+fn another_use_of_size_of<T: Sized>() -> [u8; size_of::<T>()] {
+    std::array::repeat(0)
+}
 ```
 
-[`size_of_val`][api_size_of_val] is currently const-unstable, so its bound can be
-changed from `?Sized` to `~const ValueSized` without any backwards compatibility
-issues.
+[`size_of_val`][api_size_of_val] is also const-stable, so like `size_of` above,
+its bound should be changed to `T: ~const Sized` and this would not result in any
+breakage due to the previously described edition migration.
 
 ```rust=
 pub const fn size_of_val<T>(val: &T) -> usize
