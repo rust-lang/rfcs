@@ -168,7 +168,7 @@ example:
   its size and alignment, which extern types do not have.
 - For a value type to be allocated on the stack, it needs to have constant
   known size, which dynamically-sized and unsized types do not have (but 
-  sized and "runtime sized" types do).
+  sized and "runtime-sized" types do).
 
 Rust uses marker traits to indicate the necessary knowledge required to know
 the size of a type, if it can be known. There are three traits related to the size
@@ -228,9 +228,9 @@ to know the size of a `svint8_t`.
 `Pointee` is implemented by any type that can be used behind a pointer, which is
 to say, every type (put otherwise, these types may or may not be sized at all).
 For example, `Pointee` is therefore implemented on a `u32` which is trivially
-sized, a `[usize]` which is dynamically sized, a `svint8_t` which is runtime
-sized and an `extern type` (from [rfcs#1861][rfc_extern_types]) which has no
-known size.
+sized, a `[usize]` which is dynamically sized, a `svint8_t` which is
+runtime-sized and an `extern type` (from [rfcs#1861][rfc_extern_types]) which has
+no known size.
 
 All type parameters have an implicit bound of `const Sized` which will be
 automatically removed if a `Sized`, `const ValueSized`, `ValueSized` or
@@ -735,6 +735,28 @@ runtime-sized types.
       around the issues with constness, but this would have been unsound,
       and ultimately the inability to relax `Clone`'s supertrait made it
       infeasible anyway.
+
+## Why change `size_of` and `size_of_val`?
+[why-change-size_of-and-size_of_val]: #why-change-size_of-and-size_of_val
+
+It is theoretically possible for `size_of` and `size_of_val` to accept
+runtime-sized types in a const context and use the runtime environment of the host
+when computing the size of the types. This has some advantages, if implementable
+within the compiler's interpreter, it could enable accelerated execution of
+const code. However, there are multiple downsides to allowing this:
+
+Runtime-sized types are often platform specific and could require optional
+target features, which would necessitate use of `cfg`s and `target_feature`
+with const functions, adding a lot of complexity to const code.
+
+More importantly, the size of a runtime-sized type could differ between
+the host and the target and if the size from a const context were to be used
+at runtime with runtime-sized types, then that could result in incorrect
+code. It is unintuitive that `const { size_of::<svint8_t>() }` would not
+be equal to `size_of::<svint8_t>()`.
+
+Changing `size_of` and `size_of_val` to `~const Sized` bounds ensures that
+`const { size_of:<svint8_t>() }` is not possible.
 
 ## Alternatives to this accepting this RFC
 [alternatives-to-this-rfc]: #alternatives-to-this-rfc
