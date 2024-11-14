@@ -513,6 +513,10 @@ One downside of this is that the syntax diverges from a normal function call, i.
 # Prior Art
 [prior-art]: #prior-art
 
+Argument unpacking is an old idea, and the feature is available in several other programming languages.
+
+In general, programming languages tend to have a plethora of syntactic sugar in the "expand the stuff in here" domain to increase ergonomics. In that category, Rust already has *Functional Record Updates*. There have been past initiatives, at least on the draft level, for adding other such features in Rust.
+
 ## Argument Unpacking in Different Programming Languages
 
 Python has [*argument unpacking*](https://docs.python.org/3.13/tutorial/controlflow.html#unpacking-argument-lists), (also see [subchapter Calls under Expressions](https://docs.python.org/3.13/reference/expressions.html#calls) in Python Language Reference) which allows using the `*` or `**` operators at call site to, respectively, extract values from tuples or dictionaries into distinct arguments.
@@ -534,11 +538,11 @@ if __name__ == "__main__":
 
 A related Python feature, packing of the parameters, is unrelated to this proposal and connected to the distinct concept of *variadic functions*. However, as it uses the same syntax in different context (function definition) as it uses for argument unpacking, it's worth mentioning as an example of how different programming languages may reuse the same syntax with argument unpacking and variadic functions.
 
-Table 2 below summarizes argument unpacking in some other programming languages. Assume that in the examples of the syntax column, following that language's conventions:
-- `sum_four` is a function accepting **four** distinct integer parameters to return their sum, and
+Table 2 below showcases argument unpacking in some other programming languages with a somewhat contrived but easy to follow example. Assume that in the code samples under the syntax column, following each language's conventions:
+- `sum_four` has been defined as a function accepting **four** distinct integer parameters to return their sum, and
 - `nums` is a list- or tuple-like collection that contains **four** integer numbers.
 
-Table 2. Non-exhaustive summary of argument unpacking in different programming languages.
+Table 2. Non-exhaustive catalogue of argument unpacking in different programming languages.
 
 | Language   | Term               | Syntax of Argument Unpacking   | Source(s)                                    |
 | ---------- | ------------------ | ------------------------------ | -------------------------------------------- |
