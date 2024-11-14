@@ -808,6 +808,8 @@ The scope of argument unpacking could be expanded to dynamic contexts as well. R
 
 Possibly, this would involve an stdlib trait, e.g. `TryArgUnpack`, whose implementation the language would use to get the arguments. This would enable unpacking custom collections as well.
 
+Infinite iterators, e.g. `std::iter::repeat`, would possibly have unwanted consequences when unpacked into variadic functions accepting infinite arguments.
+
 ## Syntax Change for Functional Record Updates
 
 Adopting the `...expr` syntax for argument unpacking means that it is now part of the general "take stuff from here and expand it" family of syntactic sugar. As Rust already uses the `..` syntax for *Functional Record Updates*, changing that to use an ellipsis instead would be congruent.
