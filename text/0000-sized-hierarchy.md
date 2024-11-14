@@ -79,6 +79,18 @@ Throughout the RFC, the following terminology will be used:
 - The bounds on the generic parameters of a function may be referred to simply
   as the bounds on the function (e.g. "the caller's bounds").
 
+## Acknowledgements
+[acknowledgements]: #acknowledgements
+
+This RFC wouldn't have been possible without the reviews and feedback of
+[@JamieCunliffe][author_jamiecunliffe], [@JacobBramley][ack_jacobbramley],
+[@nikomatsakis][author_nikomatsakis] and [@scottmcm][author_scottmcm];
+[@eddyb][ack_eddyb] for the `externref` future possibility; the expertise
+of [@compiler-errors][ack_compiler_errors] on the type system and suggesting
+the use of const traits; [@fee1-dead][ack_fee1dead] for reviewing the usage
+of const traits and fixing the ASCII diagrams; and the authors of all of the
+prior art for influencing these ideas.
+
 # Motivation
 [motivation]: #motivation
 
@@ -1290,6 +1302,11 @@ written here only to illustrate.
 - Introduce intrinsics which enable creation of pointers with metadata and for
   accessing the metadata of a pointer.
 
+[ack_compiler_errors]: https://github.com/compiler-errors
+[ack_eddyb]: https://github.com/eddyb
+[ack_fee1dead]: https://github.com/fee1-dead
+[ack_jacobbramley]: https://github.com/jacobbramley
+[ack_scottmcm]: https://github.com/scottmcm
 [api_align_of]: https://doc.rust-lang.org/std/mem/fn.align_of.html
 [api_align_of_val]: https://doc.rust-lang.org/std/mem/fn.align_of_val.html
 [api_box]: https://doc.rust-lang.org/std/boxed/struct.Box.html
