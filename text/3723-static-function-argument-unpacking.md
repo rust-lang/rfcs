@@ -303,12 +303,16 @@ fn main() {
 The Rust Reference:
 
 - The likely place to document argument unpacking would be under its own subheading in [Call expressions](https://doc.rust-lang.org/reference/expressions/call-expr.html). (For the reference, the similar [Functional update syntax](https://doc.rust-lang.org/reference/expressions/struct-expr.html#functional-update-syntax) is documented under *Struct expressions*.)
+- Under [Patterns](https://doc.rust-lang.org/reference/patterns.html#range-patterns), `...` is referred to as *ObsoleteRangePattern*, and it is noted as being as the alternative way to write `..=` before the 2021 edition. The use of this syntax, instead, for *argument unpacking* could be mentioned as being available from the 2024 edition.
+- Use of the `...` symbol with the DotDotDot name should have *argument unpacking* added to the Usage column.
 
 Standard library documentation that may benefit from mentioning the new syntax:
 
 - Tuple structs: [stdlib struct keyword](https://doc.rust-lang.org/std/keyword.struct.html).
 - Tuples: [stdlib tuple primitive](https://doc.rust-lang.org/std/primitive.tuple.html).
 - Arrays: [stdlib array primitive](https://doc.rust-lang.org/std/primitive.array.html).
+
+As developers sometimes find solutions to their programming problems on StackOverflow, the questions linked to in this RFC could have new answers added.
 
 Various Rust books may want to mention or teach the feature. For example, The Rust Programming Language book's [Appendix B: Operators and Symbols](https://doc.rust-lang.org/book/appendix-02-operators.html) could include the syntax.
 
