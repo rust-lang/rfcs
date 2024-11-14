@@ -69,9 +69,9 @@ implement `Sized` in the same sense as "unsized" is colloquially used.
 Throughout the RFC, the following terminology will be used:
 
 - "`Trait` types" will be used to refer to those types which implement `Trait`
-  and all of its supertraits but none of its subtraits. For example, a `DynSized`
-  type would be a type which implements `DynSized`, and `Pointee`, but not
-  `Sized`. `[usize]` would be referred to as a "`DynSized` type".
+  and all of its supertraits but none of its subtraits. For example, a `ValueSized`
+  type would be a type which implements `ValueSized`, and `Pointee`, but not
+  `Sized`. `[usize]` would be referred to as a "`ValueSized` type".
 - "Runtime-sized" types will be used those types whose size is statically known
   but only at runtime. These would include the scalable vector types mentioned
   in the motivation below, or those that implement `Sized` but not `const Sized`
@@ -165,13 +165,13 @@ example:
 
 Rust uses marker traits to indicate the necessary knowledge required to know
 the size of a type, if it can be known. There are three traits related to the size
-of a type in Rust: `Sized`, `DynSized`, and the existing unstable
+of a type in Rust: `Sized`, `ValueSized`, and the existing unstable
 `std::ptr::Pointee`. Each of these traits can be implemented as `const` when the
 size is knowable at compilation time.
 
-`Sized` is a supertrait of `DynSized`, so every type which implements `Sized`
-also implements `DynSized`. Likewise, `DynSized` is a supertrait of `Pointee`.
-`Sized` is `const` if-and-only-if `DynSized` is `const`, and `DynSized` is
+`Sized` is a supertrait of `ValueSized`, so every type which implements `Sized`
+also implements `ValueSized`. Likewise, `ValueSized` is a supertrait of `Pointee`.
+`Sized` is `const` if-and-only-if `ValueSized` is `const`, and `ValueSized` is
 `const` if-and-only-if `Pointee` is `const`.
 
 ```
@@ -186,7 +186,7 @@ also implements `DynSized`. Likewise, `DynSized` is a supertrait of `Pointee`.
 │ │ ┃ │ ┃ ┗━━━━━━━━━━━━━━━━━━━┛ ┃   ┃                                  │ │ │
 │ │ ┃ └─╂───────────────────────╂───╂──────────────────────────────────┘ │ │
 │ │ ┃   ┃                       ┃   ┃                                    │ │
-│ │ ┃   ┃ const DynSized        ┃   ┃ DynSized                           │ │
+│ │ ┃   ┃ const ValueSized      ┃   ┃ ValueSized                         │ │
 │ │ ┃   ┃ {type, target, value} ┃   ┃ {type, target, runtime env, value} │ │
 │ │ ┃   ┗━━━━━━━━━━━━━━━━━━━━━━━┛   ┃                                    │ │
 │ └─╂───────────────────────────────╂────────────────────────────────────┘ │
@@ -210,13 +210,13 @@ not `const`). For example, `svint8_t` is a scalable vector type (from
 implementation of the target (i.e. it may be 128 bits on one processor and
 256 bits on another).
 
-`const DynSized` requires more knowledge than `const Sized` to compute the size:
+`const ValueSized` requires more knowledge than `const Sized` to compute the size:
 it may additionally require a value  (therefore `size_of` is not implemented for
-`DynSized`, only `size_of_val`). For example, `[usize]` implements
-`const DynSized` as knowing the type and target is not sufficient, the number of
+`ValueSized`, only `size_of_val`). For example, `[usize]` implements
+`const ValueSized` as knowing the type and target is not sufficient, the number of
 elements in the slice must also be known, which requires having the value.
 
-As `Sized` is to `const Sized`, `DynSized` is to `const DynSized`: `DynSized`
+As `Sized` is to `const Sized`, `ValueSized` is to `const ValueSized`: `ValueSized`
 requires a value, knowledge of the type and target platform, and can only be
 computed at runtime. For example, `[svint8_t]` requires a value to know how
 many elements there are, and then information from the runtime environment
@@ -232,18 +232,18 @@ environment is not required (e.g. `const Pointee` for `u32` and `[usize]` but
 bare `Pointee` for `svint8_t` or `[svint8_t]`).
 
 All type parameters have an implicit bound of `const Sized` which will be
-automatically removed if a `Sized`, `const DynSized`, `DynSized`, `const Pointee`
-or `Pointee` bound is present instead.
+automatically removed if a `Sized`, `const ValueSized`, `ValueSized`,
+`const Pointee` or `Pointee` bound is present instead.
 
-Prior to the introduction of `DynSized` and `Pointee`, `Sized`'s implicit bound
+Prior to the introduction of `ValueSized` and `Pointee`, `Sized`'s implicit bound
 (now a `const Sized` implicit bound) could be removed using the `?Sized` syntax,
-which is now equivalent to a `DynSized` bound in non-`const fn`s and
-`~const DynSized` in `const fn`s and will be deprecated in the next edition.
+which is now equivalent to a `ValueSized` bound in non-`const fn`s and
+`~const ValueSized` in `const fn`s and will be deprecated in the next edition.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Introduce a new marker trait, `DynSized`, adding it to a trait hierarchy with the
+Introduce a new marker trait, `ValueSized`, adding it to a trait hierarchy with the
 [`Sized`][api_sized] and [`Pointee`][api_pointee] traits, and make all sizedness
 traits `const`:
 
@@ -257,7 +257,7 @@ traits `const`:
             │                                          │
             ↓                                          ↓
 ┌───────────────────────┐             ┌────────────────────────────────────┐
-│ const DynSized        │ ──────────→ │ DynSized                           │
+│ const ValueSized      │ ──────────→ │ ValueSized                         │
 │ {type, target, value} │   implies   │ {type, target, runtime env, value} │
 └───────────────────────┘             └────────────────────────────────────┘
             │                                          │
@@ -273,9 +273,9 @@ traits `const`:
 Or, in Rust syntax:
 
 ```rust=
-const trait Sized: ~const DynSized {}
+const trait Sized: ~const ValueSized {}
 
-const trait DynSized: ~const std::ptr::Pointee {}
+const trait ValueSized: ~const std::ptr::Pointee {}
 ```
 
 `Pointee` was specified in [rfcs#2580][rfc_pointer_metadata_vtable] and is
@@ -292,35 +292,35 @@ the compiler and cannot be implemented manually:
     - Types that which can be used from behind a pointer (they may or may
       not have a size).
     - `Pointee` will be implemented for:
-        - `DynSized` types
+        - `ValueSized` types
         - compound types where every element is `Pointee`
     - `const Pointee` will be implemented for:
-        - `const DynSized` types
+        - `const ValueSized` types
         - `extern type`s from [rfcs#1861][rfc_extern_types]
         - compound types where every element is `const Pointee`
     - In practice, every type will implement `Pointee` (as in
       [rfcs#2580][rfc_pointer_metadata_vtable]).
-- `DynSized`
+- `ValueSized`
     - Types whose size is computable given a value, and knowledge of the
       type, target platform and runtime environment.
-      - `const DynSized` does not require knowledge of the runtime
+      - `const ValueSized` does not require knowledge of the runtime
         environment
-    - `DynSized` is a subtrait of `Pointee`
-    - `DynSized` will be implemented for:
+    - `ValueSized` is a subtrait of `Pointee`
+    - `ValueSized` will be implemented for:
         - `Sized` types
-        - slices `[T]` where every element is `DynSized`
-        - compound types where every element is `DynSized`
-    - `const DynSized` will be implemented for:
+        - slices `[T]` where every element is `ValueSized`
+        - compound types where every element is `ValueSized`
+    - `const ValueSized` will be implemented for:
         - `const Sized` types
         - slices `[T]` where every element is `const Sized`
         - string slice `str`
         - trait objects `dyn Trait`
-        - compound types where every element is `const DynSized`
+        - compound types where every element is `const ValueSized`
 - `Sized`
     - Types whose size is computable given knowledge of the type, target
       platform and runtime environment.
       - `const Sized` does not require knowledge of the runtime environment
-    - `Sized` is a subtrait of `DynSized`.
+    - `Sized` is a subtrait of `ValueSized`.
     - `Sized` will be implemented for:
         - scalable vectors from [rfcs#3268][rfc_scalable_vectors]
         - compound types where every element is `Sized`
@@ -339,9 +339,9 @@ Introducing new automatically implemented traits is backwards-incompatible,
 at least if you try to add it as a bound to an existing function[^1][^2] (and
 new auto traits that which go unused aren't that useful), but due to being
 supertraits of `Sized` and `Sized` being a default bound, these
-backwards-incompatibilities are avoided for `DynSized` and `Pointee`.
+backwards-incompatibilities are avoided for `ValueSized` and `Pointee`.
 
-Relaxing a bound from `Sized` to `DynSized` or `Pointee` is non-breaking as
+Relaxing a bound from `Sized` to `ValueSized` or `Pointee` is non-breaking as
 the calling bound must have either `T: Sized` or `T: ?Sized`, both of which
 would satisfy any relaxed bound[^3].
 
@@ -392,22 +392,22 @@ a trait's associated type[^4] for the proposed traits.
       | Before ed. migration              | After ed. migration |
       | --------------------------------- | ------------------- |
       | `T: Sized` (implicit or explicit) | `T: const Sized`    |
-      | `T: ?Sized`                       | `T: const DynSized` |
+      | `T: ?Sized`                       | `T: const ValueSized` |
 
       Any existing function in the standard library with a `T: Sized` bound
       could be changed to one of the following bounds and remain compatible with
       any callers that currently exist (as per the above table):
 
-      |                | `const Sized` | `Sized` | `const DynSized` | `DynSized` | `const Pointee` | `Pointee`
-      | -------------- | ------------- | ------- | ---------------- | ---------- | --------------- | ---------
-      | `const Sized`  | ✔             | ✔       | ✔                | ✔          | ✔               | ✔
+      |                | `const Sized` | `Sized` | `const ValueSized` | `ValueSized` | `const Pointee` | `Pointee`
+      | -------------- | ------------- | ------- | ------------------ | ------------ | --------------- | ---------
+      | `const Sized`  | ✔             | ✔       | ✔                  | ✔            | ✔               | ✔
 
       Likewise with a `T: ?Sized` bound:
 
-      |                  | `const DynSized` | `DynSized` | `const Pointee` | `Pointee`
-      | ---------------- | ---------------- | ---------- | --------------- | ---------
-      | `const Sized`    | ✔                | ✔          | ✔               | ✔
-      | `const DynSized` | ✔                | ✔          | ✔               | ✔
+      |                    | `const ValueSized` | `ValueSized` | `const Pointee` | `Pointee`
+      | ------------------ | ------------------ | ------------ | --------------- | ---------
+      | `const Sized`      | ✔                  | ✔            | ✔               | ✔
+      | `const ValueSized` | ✔                  | ✔            | ✔               | ✔
 [^4]: Associated types of traits have default `Sized` bounds which cannot be
       relaxed. For example, relaxing a `Sized` bound on `Add::Output` breaks
       a function which takes a `T: Add` and passes `<T as Add>::Output` to
@@ -419,7 +419,7 @@ a trait's associated type[^4] for the proposed traits.
 
       ```rust=
       trait Add<Rhs = Self> {
-          type Output: DynSized;
+          type Output: ValueSized;
       }
       ```
 
@@ -436,23 +436,23 @@ a trait's associated type[^4] for the proposed traits.
 ## `Sized` bounds
 [sized-bounds]: #sized-bounds
 
-`?Sized` would be made syntactic sugar for a `const DynSized` bound. A
-`const DynSized` bound is equivalent to a `?Sized` bound as all values in Rust
+`?Sized` would be made syntactic sugar for a `const ValueSized` bound. A
+`const ValueSized` bound is equivalent to a `?Sized` bound as all values in Rust
 today whose types do not implement `Sized` are valid arguments to
 [`std::mem::size_of_val`][api_size_of_val] and as such have a size which can be
 computed given a value and knowledge of the type and target platform, and
-therefore will implement `const DynSized`. As there are currently no
-extern types or other types which would not implement `const DynSized`,
+therefore will implement `const ValueSized`. As there are currently no
+extern types or other types which would not implement `const ValueSized`,
 every type in Rust today which would satisfy a `?Sized` bound would satisfy
-a `const DynSized` bound.
+a `const ValueSized` bound.
 
 **Edition change:** In the current edition,`?Sized` will be syntatic sugar for
-a `const DynSized` bound. In the next edition, use of `?Sized` syntax will be prohibited
-over an edition and all uses of it will be rewritten to a `const DynSized` bound.
+a `const ValueSized` bound. In the next edition, use of `?Sized` syntax will be prohibited
+over an edition and all uses of it will be rewritten to a `const ValueSized` bound.
 
 A default implicit bound of `const Sized` is added by the compiler to every type
-parameter `T` that does not have an explicit `Sized`, `?Sized`, `const DynSized`,
-`DynSized`, `const Pointee` or `Pointee` bound. It is backwards compatible to change
+parameter `T` that does not have an explicit `Sized`, `?Sized`, `const ValueSized`,
+`ValueSized`, `const Pointee` or `Pointee` bound. It is backwards compatible to change
 the current implicit `Sized` bound to an `const Sized` bound as every type which
 exists currently will implement `const Sized`.
 
@@ -460,11 +460,11 @@ exists currently will implement `const Sized`.
 sugar for `const Sized`. In the next edition, existing `Sized` bounds will be rewritten
 to `const Sized` bounds and new bare `Sized` bounds will be non-const.
 
-An implicit `const DynSized` bound is added to the `Self` type of traits. Like
+An implicit `const ValueSized` bound is added to the `Self` type of traits. Like
 implicit `const Sized` bounds, this is omitted if an explicit `const Sized`, `Sized`,
-`DynSized` or `Pointee` bound is present.
+`ValueSized` or `Pointee` bound is present.
 
-As`DynSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
+As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
 
 ## `size_of` and `size_of_val`
@@ -499,19 +499,19 @@ fn uses_size_of<T: Sized>() -> usize {
 ```
 
 [`size_of_val`][api_size_of_val] is currently const-unstable, so its bound can be
-changed from `?Sized` to `~const DynSized` without any backwards compatibility
+changed from `?Sized` to `~const ValueSized` without any backwards compatibility
 issues.
 
 ```rust=
 pub const fn size_of_val<T>(val: &T) -> usize
 where
-    T: ~const DynSized,
+    T: ~const ValueSized,
 {
     /* .. */
 }
 ```
 
-While `DynSized` is equivalent to the current `?Sized` bound it replaces, it
+While `ValueSized` is equivalent to the current `?Sized` bound it replaces, it
 excludes extern types (which `?Sized` by definition cannot), which prevents
 `size_of_val` from being called with extern types from
 [rfcs#1861][rfc_extern_types].
@@ -535,7 +535,7 @@ implement `Clone` and `Copy`.
 `Pointee` types cannot be used in non-`#[repr(transparent)]` compound types
 as the alignment of these types would need to be known in order to calculate field
 offsets. `const Sized` types can be used in compound types with no restrictions.
-`Sized`, `const DynSized` and `DynSized` types can be used in compound types, but
+`Sized`, `const ValueSized` and `ValueSized` types can be used in compound types, but
 only as the last element.
 
 ## Compiler performance implications
@@ -557,12 +557,12 @@ automatically imply the proposed trait in any bounds where the trait is
 used, e.g.
 
 ```rust
-trait NewTrait: DynSized {}
+trait NewTrait: ValueSized {}
 
 struct NewRc<T: NewTrait> {} // equiv to `T: NewTrait + Sized` as today
 ```
 
-If the user wanted `T: DynSized` then it would need to be written explicitly.
+If the user wanted `T: ValueSized` then it would need to be written explicitly.
 This is forward compatible with trait bounds which have sizedness supertraits
 implying the removal of the default `const Sized` bound.
 
@@ -579,7 +579,7 @@ implementation of this RFC, but bounds in third-party crates need not be.
 As runtime-sized types will primarily be used for localised performance optimisation,
 and `Pointee` types will primarily be used for localised FFI, neither is expected
 to be so pervasive throughout Rust codebases to the extent that all existing
-`const Sized`, `~const DynSized` or `DynSized` bounds (after edition migration) would
+`const Sized`, `~const ValueSized` or `ValueSized` bounds (after edition migration) would
 need to be immediately reconsidered in light of their addition, even if in many cases
 these could be relaxed.
 
@@ -599,7 +599,7 @@ can be made while preserving backwards compatibility, the following changes
 could be made to the standard library:
 
 - [`std::boxed::Box`][api_box]
-    - `T: ?Sized` becomes `T: DynSized`
+    - `T: ?Sized` becomes `T: ValueSized`
     - As before, this is not a breaking change and prevents types only
       implementing `Pointee` from being used with `Box`, as these types do
       not have the necessary size and alignment for allocation/deallocation.
@@ -612,8 +612,8 @@ the standard library would need to be reviewed and updated as appropriate.
 
 - This is a fairly significant change to the `Sized` trait, which has been in
   the language since 1.0 and is now well-understood.
-- This RFC's proposal that adding a bound of `const Sized`, `const DynSized`,
-  `DynSized`, `const Pointee` or `Pointee` would remove the default `Sized`
+- This RFC's proposal that adding a bound of `const Sized`, `const ValueSized`,
+  `ValueSized`, `const Pointee` or `Pointee` would remove the default `Sized`
   bound is somewhat unintuitive. Typically adding a trait bound does not
   remove another trait bound, however it's debatable whether this is more or
   less confusing than existing `?Sized` bounds.
@@ -637,13 +637,13 @@ There are various points of difference to the [prior art](#prior-art) related to
   [rust#46108][pr_dynsized_rebase],  [rfcs#2984][rfc_pointee_dynsized] and
   [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
   none of the traits proposed in this RFC are default bounds and therefore do not
-  need to support being relaxed bounds (i.e. no `?DynSized`), which avoids
+  need to support being relaxed bounds (i.e. no `?ValueSized`), which avoids
   additional language complexity and backwards compatibility hazards related to
   relaxed bounds and associated types.
 - In contrast to [rfcs#1524][rfc_custom_dst], [rfc#1993][rfc_opaque_data_structs],
   [Pre-eRFC: Let's fix DSTs][pre_erfc_fix_dsts], [Pre-RFC: Custom DSTs][prerfc_custom_dst]
   and [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
-  `DynSized` does not have `size_of_val`/`align_of_val` methods to support 
+  `ValueSized` does not have `size_of_val`/`align_of_val` methods to support 
   custom DSTs as this would add to the complexity of this proposal and custom DSTs
   are not this RFC's focus, see the [Custom DSTs][custom-dsts] section later.
 
@@ -653,12 +653,12 @@ There are various points of difference to the [prior art](#prior-art) related to
 It may seem that re-using the `Pointee` trait at the bottom of the trait hierarchy
 is unnecessary as this is equivalent to the absense of any bounds whatsoever, but
 having an `Pointee` trait is necessary to enable the meaning of `?Sized` to be re-defined
-to be equivalent to `const DynSized` and avoid complicated behaviour change over an edition.
+to be equivalent to `const ValueSized` and avoid complicated behaviour change over an edition.
 
 Without `Pointee`, if a user wanted to remove all sizedness bounds from a generic
 parameter then they would have two options:
 
-1. Introduce new relaxed bounds (i.e. `?DynSized`), which has been found
+1. Introduce new relaxed bounds (i.e. `?ValueSized`), which has been found
    unacceptable in previous RFCs ([rfcs#2255][issue_more_implicit_bounds]
    summarizes these discussions)
 2. Keep `?Sized`'s existing meaning of removing the implicit `Sized` bound
@@ -666,12 +666,12 @@ parameter then they would have two options:
    This is the only viable option, but this would complicate changing
    `size_of_val`'s existing `?Sized` bound:
 
-   Without `Pointee`, `?Sized` would be equivalent to `const DynSized` until
+   Without `Pointee`, `?Sized` would be equivalent to `const ValueSized` until
    extern types are stabilised (e.g. a `?Sized` bound would accept exactly the
-   same types as a `const DynSized` bound, but after extern types are introduced,
-   `?Sized` bounds would accept extern types and `const DynSized` bounds would not).
+   same types as a `const ValueSized` bound, but after extern types are introduced,
+   `?Sized` bounds would accept extern types and `const ValueSized` bounds would not).
    extern types would need to be introduced over an edition and all existing `?Sized`
-   bounds rewritten to `?Sized + const DynSized`. This is the same mechanism described
+   bounds rewritten to `?Sized + const ValueSized`. This is the same mechanism described
    in [rfcs#3396][rfc_extern_types_v2] to introduce its `MetaSized` trait.
 
 ## Why use const traits?
@@ -686,19 +686,19 @@ runtime-sized types.
 [^5]: In previous iterations, the proposed linear trait hierarchy was:
 
       ```
-      ┌─────────────────────────────────────────────────┐
-      │ ┌─────────────────────────────────────┐         │
-      │ │ ┌────────────────────────┐          │         │
-      │ │ │ ┌───────┐              │          │         │
-      │ │ │ │ Sized │ RuntimeSized │ DynSized │ Pointee │
-      │ │ │ └───────┘              │          │         │
-      │ │ └────────────────────────┘          │         │
-      │ └─────────────────────────────────────┘         │
-      └─────────────────────────────────────────────────┘
+      ┌───────────────────────────────────────────────────┐
+      │ ┌───────────────────────────────────────┐         │
+      │ │ ┌────────────────────────┐            │         │
+      │ │ │ ┌───────┐              │            │         │
+      │ │ │ │ Sized │ RuntimeSized │ ValueSized │ Pointee │
+      │ │ │ └───────┘              │            │         │
+      │ │ └────────────────────────┘            │         │
+      │ └───────────────────────────────────────┘         │
+      └───────────────────────────────────────────────────┘
       ```
 
       This approach was scrapped once it became clear that a `const`-stable
-      `size_of_val` would need to be able to be instantiated with `DynSized`
+      `size_of_val` would need to be able to be instantiated with `ValueSized`
       types and not `RuntimeSized` types, and that this could not be
       represented.
 [^6]: In previous iterations, the proposed non-linear trait hierarchy was:
@@ -711,7 +711,7 @@ runtime-sized types.
       │ │ │ │ Sized                                             │ │ │ │
       │ │ │ │ {type, target}                                    │ │ │ │
       │ │ │ └────────────────────────────┬┬─────────────────────┘ │ │ │
-      │ │ │ RuntimeSized                 ││ DynSized              │ │ │
+      │ │ │ RuntimeSized                 ││ ValueSized            │ │ │
       │ │ │ {type, target, runtime env}  ││ {type, target, value} │ │ │
       │ │ └──────────────────────────────┘└───────────────────────┘ │ │
       │ │ DynRuntimeSized                                           │ │
@@ -724,7 +724,7 @@ runtime-sized types.
 
       This approach proposed modifying the bounds on the `size_of` function
       from `RuntimeSized` to `Sized` when used in a const context (and from
-      `DynRuntimeSized` to `DynSized` for `size_of_val`) to try and work
+      `DynRuntimeSized` to `ValueSized` for `size_of_val`) to try and work
       around the issues with constness, but this would have been unsound,
       and ultimately the inability to relax `Clone`'s supertrait made it
       infeasible anyway.
@@ -763,7 +763,8 @@ ultimately need to be decided but aren't the important part of the RFC.
 
 There have been many previous proposals and discussions attempting to resolve
 the `size_of_val` and `align_of_val` for extern types through modifications to
-the `Sized` trait, summarised below:
+the `Sized` trait. Many of these proposals include a `DynSized` trait, of which
+this RFC's `ValueSized` trait is inspired, just renamed.
 
 - [rfcs#709: truly unsized types][rfc_truly_unsized_types], [mzabaluev][author_mzabaluev], Jan 2015
     - Earliest attempt to opt-out of `Sized`.
@@ -914,17 +915,17 @@ the `Sized` trait, summarised below:
         - Adding new implicit bounds which can be relaxed has backwards
           compatibility hazards, see [rfcs#2255][issue_more_implicit_bounds].
     - The proposed `DynSized` trait in [rfcs#2310][rfc_dynsized_without_dynsized]
-      is really quite similar to the trait proposed by this RFC except:
+      is really quite similar to the `ValueSized` trait proposed by this RFC except:
         - It includes an `#[assume_dyn_sized]` attribute to be added to
-          `T: ?Sized` bounds instead of replacing them with `T: const DynSized`,
-          which would warn instead of error when a non-`constage DynSized` type is
+          `T: ?Sized` bounds instead of replacing them with `T: const ValueSized`,
+          which would warn instead of error when a non-`const ValueSized` type is
           substituted into `T`.
             - This is to avoid a backwards compatibility break for uses of
               `size_of_val` and `align_of_val` with extern types, but it is
               unclear why this is necessary given that extern types are
               unstable.
         - It does not include `Pointee` or any of the const traits.
-        - Adding an explicit bound for `DynSized` does not remove the implicit
+        - Adding an explicit bound for `ValueSized` would not remove the implicit
           bound for `Sized`.
 - [rust#49708: `extern type` cannot support `size_of_val` and `align_of_val`][issue_extern_types_align_size], [joshtriplett][author_joshtriplett], Apr 2018
     - Primary issue for the `size_of_val`/`align_of_val` extern types
@@ -1047,6 +1048,7 @@ the `Sized` trait, summarised below:
       like in this RFC and proposes deprecating `T: ?Sized` in place of `T: Unsized`
       and sometimes `T: DynSized`. Adding a bound for any of `DynSized` or `Unsized`
       removes the default `Sized` bound.
+      - `DynSized` is the same as this RFC's `ValueSized`
       - `Unsized` is the same as this RFC's `Pointee`
     - As described below it is the closest inspiration for this RFC.
 
@@ -1071,7 +1073,7 @@ is relatively newer and less well known:
 
 To summarise the above exhaustive listing of prior art:
 
-- No previous works have proposed an equivalent of the const size traits.,
+- No previous works have proposed an equivalent of the const size traits.
 - One proposal proposed adding a marker type that as a field would result in the
   containing type no longer implementing `Sized`.
 - Often proposals focused at Custom DSTs preferred to combine the
@@ -1103,7 +1105,7 @@ this proposal:
   removing `Sized` bounds when a bound for another sized trait (only `DynSized`
   in that pre-eRFC's case) was present, which makes reasoning simpler by avoiding
   relaxed bounds.
-    - However, this proposal had `size_of_val` methods its `DynSized` and
+    - However, this proposal had `size_of_val` methods in its `DynSized` trait and
       proposed a bunch of other things necessary for Custom DSTs.
 - [rfcs#2310: DynSized without ?DynSized][rfc_dynsized_without_dynsized] was
   proposed at a similar time and was similarly focused only on making `Sized` more
@@ -1133,7 +1135,7 @@ None currently.
   other delineations in sized-ness that make sense to be drawn (subject to
   avoiding backwards-incompatibilities when changing APIs).
     - e.g. `MetaSized` from [rfcs#3396][rfc_extern_types_v2] could be added between
-      `Sized` and `DynSized`
+      `Sized` and `ValueSized`
 - The requirement that users cannot implement any of these traits could be
   relaxed in future if required.
 - Depending on a trait which has one of the proposed traits as a supertrait could
@@ -1180,7 +1182,7 @@ support this by adding another supertrait, `Value`:
             │                                          │
             ↓                                          ↓
 ┌───────────────────────┐             ┌────────────────────────────────────┐
-│ const DynSized        │ ──────────→ │ DynSized                           │
+│ const ValueSized      │ ──────────→ │ ValueSized                         │
 │ {type, target, value} │   implies   │ {type, target, runtime env, value} │
 └───────────────────────┘             └────────────────────────────────────┘
             │                                          │
@@ -1211,7 +1213,7 @@ Earlier in this RFC, `extern type`s have previously been described as not being
 able to be used as a value, but it could instead be permitted to write functions
 which use extern types as values (e.g. such as taking an extern type as an argument),
 and instead rely on it being impossible to get a extern type that is not behind a
-pointer or a reference. This also implies that `DynSized` types can be used as values,
+pointer or a reference. This also implies that `ValueSized` types can be used as values,
 which would remain prohibited behind the `unsized_locals` and `unsized_fn_params`
 features until these are stabilised.
 
@@ -1233,9 +1235,9 @@ used in `rustc` with the [`OpaqueListContents` type][rustc_opaquelistcontents] t
 implement a custom DST. This use case would break with this RFC as written, as
 the alignment of an extern type would correctly be undefined.
 
-An `Aligned` trait could be added to this proposal between `DynSized` and `Pointee`
+An `Aligned` trait could be added to this proposal between `ValueSized` and `Pointee`
 in the trait hierarchy which would be implemented automatically by the compiler for
-all `DynSized` and `Sized` types, but could be implemented for extern types by
+all `ValueSized` and `Sized` types, but could be implemented for extern types by
 users when the alignment of an extern type is known. Any type implementing `Aligned`
 could be used as the last element in a compound type.
 
@@ -1253,7 +1255,7 @@ written here only to illustrate.
 - Allow `Pointee` to be implemented manually on user types, which would replace 
   the compiler's implementation.
 - Introduce a trait like [rfcs#2594][rfc_custom_dst_electric_boogaloo]'s `Contiguous`
-  which users can implement on their custom DSTs, or add methods to `DynSized` and
+  which users can implement on their custom DSTs, or add methods to `ValueSized` and
   allow it to be implemented by users.
 - Introduce intrinsics which enable creation of pointers with metadata and for
   accessing the metadata of a pointer.
