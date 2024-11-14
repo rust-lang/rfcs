@@ -608,7 +608,7 @@ Rust Internals:
 - [Pre-RFC: Static Function Argument Unpacking](https://internals.rust-lang.org/t/pre-rfc-static-function-argument-unpacking/20770), an older version of the above Pre-RFC.
 - [Tuple Unpacking](https://internals.rust-lang.org/t/tuple-unpacking/14688)
 
-Stack Overflow questions:
+Stack Overflow:
 - [Is it possible to unpack a tuple into function arguments?](https://stackoverflow.com/questions/39878382/is-it-possible-to-unpack-a-tuple-into-function-arguments)
 - [Is it possible to unpack a tuple into method arguments?](https://stackoverflow.com/questions/60381690/is-it-possible-to-unpack-a-tuple-into-method-arguments)
 
@@ -637,6 +637,9 @@ Rust Zulip t-lang:
 
 Rust Users Forum:
 - [Why can’t we map tuples on arguments in Rust?](https://users.rust-lang.org/t/why-cant-we-map-tuples-on-arguments-in-rust/15628)
+
+Stack Overflow:
+- [Tuple splat / apply in Rust](https://stackoverflow.com/questions/37564138/tuple-splat-apply-in-rust)
 
 Swift, prior to version 2.2, had a tuple splat syntax, which allowed passing the tuple as-is to the function being called. Swift [deprecated](https://www.swift.org/blog/swift-2.2-new-features/#tuple-splat-syntax-is-deprecated) it, citing its rare usage and, from Swift point of view, unidiomatic style.
 
