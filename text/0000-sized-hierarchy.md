@@ -359,6 +359,10 @@ would satisfy any relaxed bound[^3].
 However, it would still be backwards-incompatible to relax the `Sized` bound on
 a trait's associated type[^4] for the proposed traits.
 
+It is possible further extend this hierarchy in future by adding new traits between
+those proposed in this RFC or after the traits proposed in this RFC without breaking
+backwards compatibility, depending on the bounds that would be introduced[^5].
+
 [^1]: Adding a new automatically implemented trait and adding it as a bound to
       an existing function is backwards-incompatible with generic functions. Even
       though all types could implement the trait, existing generic functions will be
@@ -443,6 +447,35 @@ a trait's associated type[^4] for the proposed traits.
 
       Relaxing the bounds of an associated type is in effect giving existing
       parameters a less restrictive bound which is not backwards compatible.
+[^5]: If it was desirable to add a new trait to this RFC's proposed hierarchy
+      then there are four possibilities:
+
+      - Before `Sized`
+        - i.e. `NewSized: Sized: ValueSized: Pointee`
+        - Adding bounds on a new trait before `Sized` is not
+          backwards-compatible as described above in [Implementing
+          `Sized`][implementing-sized].
+      - Between `Sized` and `ValueSized`
+        - i.e. `Sized: NewSized: ValueSized: Pointee`
+        - Adding bounds on a new trait between `Sized` and `ValueSized` is
+          backwards compatible for some functions (except for on a trait's
+          associated type). An existing function with a `Sized` bound could
+          be relaxed to the new trait without breaking existing code.
+          Existing functions with a `ValueSized` or `Pointee` bound could not.
+      - Between `ValueSized` and `Pointee`
+        - i.e. `Sized: ValueSized: NewSized: Pointee`
+        - Adding bounds on a new trait between `ValueSized` and `Pointee` is
+          backwards compatible for some functions (except for on a trait's
+          associated type). An existing function with a `Sized` or `ValueSized`
+          bound could be relaxed to the new trait without breaking existing code.
+          Existing functions with a `Pointee` bound could not.
+      - After `Pointee`
+        - i.e. `Sized: ValueSized: Pointee: NewSized`
+        - For the same reasons as the traits proposed in this RFC, adding bounds
+          on a new trait after `Pointee` is backwards compatible (except for on a
+          trait's associated type). Any existing function will have stricter
+          bounds than the new trait and so could be relaxed to the new trait
+          without breaking existing code.
 
 ## `Sized` bounds
 [sized-bounds]: #sized-bounds
@@ -700,13 +733,13 @@ parameter then they would have two options:
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
 
-Previous iterations of this RFC had both linear[^5] and non-linear[^6] trait hierarchies
+Previous iterations of this RFC had both linear[^6] and non-linear[^7] trait hierarchies
 which included a `RuntimeSized` trait and did not use const traits. However, both of
 these were found to be backwards-incompatible due to being unable to relax the
 supertrait of `Clone`. Without const traits, it is not possible to represent
 runtime-sized types.
 
-[^5]: In previous iterations, the proposed linear trait hierarchy was:
+[^6]: In previous iterations, the proposed linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────┐
@@ -724,7 +757,7 @@ runtime-sized types.
       `size_of_val` would need to be able to be instantiated with `ValueSized`
       types and not `RuntimeSized` types, and that this could not be
       represented.
-[^6]: In previous iterations, the proposed non-linear trait hierarchy was:
+[^7]: In previous iterations, the proposed non-linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────────────────┐
@@ -1198,13 +1231,13 @@ None currently.
 
 Another compelling feature that requires extensions to Rust's sizedness traits to
 fully support is wasm's `externref`. `externref` types are opaque types that cannot
-be put in memory [^7]. `externref`s are used as abstract handles to resources in the
+be put in memory [^8]. `externref`s are used as abstract handles to resources in the
 host environment of the wasm program, such as a JavaScript object. Similarly, when
 targetting some GPU IRs (such as SPIR-V), there are types which are opaque handles
 to resources (such as textures) and these types, like wasm's `externref`, cannot
 be put in memory.
 
-[^7]: When Rust is compiled to wasm, we can think of the memory of the Rust program
+[^8]: When Rust is compiled to wasm, we can think of the memory of the Rust program
 as being backed by something like a `[u8]`, `externref`s exist outside of that `[u8]`
 and there is no way to put an `externref` into this memory, so it is impossible to have
 a reference or pointer to a `externref`. `wasm-bindgen` currently supports `externref`
