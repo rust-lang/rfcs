@@ -173,35 +173,31 @@ example:
 Rust uses marker traits to indicate the necessary knowledge required to know
 the size of a type, if it can be known. There are three traits related to the size
 of a type in Rust: `Sized`, `ValueSized`, and the existing unstable
-`std::ptr::Pointee`. Each of these traits can be implemented as `const` when the
-size is knowable at compilation time.
+`std::ptr::Pointee`. `Sized` and `ValueSized` can be implemented as `const` when
+the size is knowable at compilation time.
 
 `Sized` is a supertrait of `ValueSized`, so every type which implements `Sized`
 also implements `ValueSized`. Likewise, `ValueSized` is a supertrait of `Pointee`.
-`Sized` is `const` if-and-only-if `ValueSized` is `const`, and `ValueSized` is
-`const` if-and-only-if `Pointee` is `const`.
+`Sized` is `const` if-and-only-if `ValueSized` is `const`.
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ ┌──────────────────────────────────────────────────────────────────────┐ │
-│ │ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                    │ │
-│ │ ┃ ┌─────────────────────────────╂──────────────────────────────────┐ │ │
-│ │ ┃ │ ┏━━━━━━━━━━━━━━━━━━━━━━━┓   ┃                                  │ │ │
-│ │ ┃ │ ┃ ┏━━━━━━━━━━━━━━━━━━━┓ ┃   ┃                                  │ │ │
-│ │ ┃ │ ┃ ┃ const Sized       ┃ ┃   ┃ Sized                            │ │ │
-│ │ ┃ │ ┃ ┃ {type, target}    ┃ ┃   ┃ {type, target, runtime env}      │ │ │
-│ │ ┃ │ ┃ ┗━━━━━━━━━━━━━━━━━━━┛ ┃   ┃                                  │ │ │
-│ │ ┃ └─╂───────────────────────╂───╂──────────────────────────────────┘ │ │
-│ │ ┃   ┃                       ┃   ┃                                    │ │
-│ │ ┃   ┃ const ValueSized      ┃   ┃ ValueSized                         │ │
-│ │ ┃   ┃ {type, target, value} ┃   ┃ {type, target, runtime env, value} │ │
-│ │ ┃   ┗━━━━━━━━━━━━━━━━━━━━━━━┛   ┃                                    │ │
-│ └─╂───────────────────────────────╂────────────────────────────────────┘ │
-│   ┃                               ┃                                      │
-│   ┃ const Pointee                 ┃ Pointee                              │
-│   ┃ {*}                           ┃ {*, runtime env}                     │
-│   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                      │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│ ┌────────────────────────────────────────────────────────────────┐ │
+│ │ ┌────────────────────────────────────────────────────────────┐ │ │
+│ │ │ ┏━━━━━━━━━━━━━━━━━━━━━━━┓                                  │ │ │
+│ │ │ ┃ ┏━━━━━━━━━━━━━━━━━━━┓ ┃                                  │ │ │
+│ │ │ ┃ ┃ const Sized       ┃ ┃ Sized                            │ │ │
+│ │ │ ┃ ┃ {type, target}    ┃ ┃ {type, target, runtime env}      │ │ │
+│ │ │ ┃ ┗━━━━━━━━━━━━━━━━━━━┛ ┃                                  │ │ │
+│ │ └─╂───────────────────────╂──────────────────────────────────┘ │ │
+│ │   ┃                       ┃                                    │ │
+│ │   ┃ const ValueSized      ┃ ValueSized                         │ │
+│ │   ┃ {type, target, value} ┃ {type, target, runtime env, value} │ │
+│ │   ┗━━━━━━━━━━━━━━━━━━━━━━━┛                                    │ │
+│ └────────────────────────────────────────────────────────────────┘ │
+│  Pointee                                                           │
+│  {*}                                                               │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 `const Sized` is implemented on types which require knowledge of only the
@@ -234,13 +230,11 @@ to say, every type (put otherwise, these types may or may not be sized at all).
 For example, `Pointee` is therefore implemented on a `u32` which is trivially
 sized, a `[usize]` which is dynamically sized, a `svint8_t` which is runtime
 sized and an `extern type` (from [rfcs#1861][rfc_extern_types]) which has no
-known size. `Pointee` is implemented as `const` when knowledge of the runtime
-environment is not required (e.g. `const Pointee` for `u32` and `[usize]` but
-bare `Pointee` for `svint8_t` or `[svint8_t]`).
+known size.
 
 All type parameters have an implicit bound of `const Sized` which will be
-automatically removed if a `Sized`, `const ValueSized`, `ValueSized`,
-`const Pointee` or `Pointee` bound is present instead.
+automatically removed if a `Sized`, `const ValueSized`, `ValueSized` or
+`Pointee` bound is present instead.
 
 Prior to the introduction of `ValueSized` and `Pointee`, `Sized`'s implicit bound
 (now a `const Sized` implicit bound) could be removed using the `?Sized` syntax,
@@ -251,7 +245,7 @@ which is now equivalent to a `ValueSized` bound in non-`const fn`s and
 [reference-level-explanation]: #reference-level-explanation
 
 Introduce a new marker trait, `ValueSized`, adding it to a trait hierarchy with the
-[`Sized`][api_sized] and [`Pointee`][api_pointee] traits, and make all sizedness
+[`Sized`][api_sized] and [`Pointee`][api_pointee] traits, and make `Sized` and `ValueSized`
 traits `const`:
 
 ```
@@ -267,14 +261,15 @@ traits `const`:
 │ const ValueSized      │ ──────────→ │ ValueSized                         │
 │ {type, target, value} │   implies   │ {type, target, runtime env, value} │
 └───────────────────────┘             └────────────────────────────────────┘
-            │                                          │
-         implies                                    implies
-            │                                          │
-            ↓                                          ↓
-    ┌───────────────┐                         ┌──────────────────┐
-    │ const Pointee │ ──────────────────────→ │ Pointee          │
-    │ {*}           │         implies         │ {runtime env, *} │
-    └───────────────┘                         └──────────────────┘
+                                                       │
+                                                    implies
+                                                       │
+                               ┌───────────────────────┘
+                               ↓
+                     ┌──────────────────┐
+                     │ Pointee          │
+                     │ {runtime env, *} │
+                     └──────────────────┘
 ```
 
 Or, in Rust syntax:
@@ -282,12 +277,12 @@ Or, in Rust syntax:
 ```rust=
 const trait Sized: ~const ValueSized {}
 
-const trait ValueSized: ~const std::ptr::Pointee {}
+const trait ValueSized: std::ptr::Pointee {}
 ```
 
 `Pointee` was specified in [rfcs#2580][rfc_pointer_metadata_vtable] and is
-currently unstable. `Pointee` would become a `const` trait. It could be moved
-to `std::marker` alongside the other sizedness traits or kept in `std::ptr`.
+currently unstable. It could be moved to `std::marker` alongside the other
+sizedness traits or kept in `std::ptr`.
 
 ## Implementing `Sized`
 [implementing-sized]: #implementing-sized
@@ -299,12 +294,9 @@ the compiler and cannot be implemented manually:
     - Types that which can be used from behind a pointer (they may or may
       not have a size).
     - `Pointee` will be implemented for:
-        - `ValueSized` types
-        - compound types where every element is `Pointee`
-    - `const Pointee` will be implemented for:
-        - `const ValueSized` types
+        - `ValueSized` and `const ValueSized` types
         - `extern type`s from [rfcs#1861][rfc_extern_types]
-        - compound types where every element is `const Pointee`
+        - compound types where every element is `Pointee`
     - In practice, every type will implement `Pointee` (as in
       [rfcs#2580][rfc_pointer_metadata_vtable]).
 - `ValueSized`
@@ -405,16 +397,16 @@ a trait's associated type[^4] for the proposed traits.
       could be changed to one of the following bounds and remain compatible with
       any callers that currently exist (as per the above table):
 
-      |                | `const Sized` | `Sized` | `const ValueSized` | `ValueSized` | `const Pointee` | `Pointee`
-      | -------------- | ------------- | ------- | ------------------ | ------------ | --------------- | ---------
-      | `const Sized`  | ✔             | ✔       | ✔                  | ✔            | ✔               | ✔
+      |                | `const Sized` | `Sized` | `const ValueSized` | `ValueSized` | `Pointee`
+      | -------------- | ------------- | ------- | ------------------ | ------------ | ---------
+      | `const Sized`  | ✔             | ✔       | ✔                  | ✔            | ✔
 
       Likewise with a `T: ?Sized` bound:
 
-      |                    | `const ValueSized` | `ValueSized` | `const Pointee` | `Pointee`
-      | ------------------ | ------------------ | ------------ | --------------- | ---------
-      | `const Sized`      | ✔                  | ✔            | ✔               | ✔
-      | `const ValueSized` | ✔                  | ✔            | ✔               | ✔
+      |                    | `const ValueSized` | `ValueSized` | `Pointee`
+      | ------------------ | ------------------ | ------------ | ---------
+      | `const Sized`      | ✔                  | ✔            | ✔
+      | `const ValueSized` | ✔                  | ✔            | ✔
 [^4]: Associated types of traits have default `Sized` bounds which cannot be
       relaxed. For example, relaxing a `Sized` bound on `Add::Output` breaks
       a function which takes a `T: Add` and passes `<T as Add>::Output` to
@@ -459,7 +451,7 @@ over an edition and all uses of it will be rewritten to a `const ValueSized` bou
 
 A default implicit bound of `const Sized` is added by the compiler to every type
 parameter `T` that does not have an explicit `Sized`, `?Sized`, `const ValueSized`,
-`ValueSized`, `const Pointee` or `Pointee` bound. It is backwards compatible to change
+`ValueSized` or `Pointee` bound. It is backwards compatible to change
 the current implicit `Sized` bound to an `const Sized` bound as every type which
 exists currently will implement `const Sized`.
 
@@ -628,10 +620,10 @@ the standard library would need to be reviewed and updated as appropriate.
 - This is a fairly significant change to the `Sized` trait, which has been in
   the language since 1.0 and is now well-understood.
 - This RFC's proposal that adding a bound of `const Sized`, `const ValueSized`,
-  `ValueSized`, `const Pointee` or `Pointee` would remove the default `Sized`
-  bound is somewhat unintuitive. Typically adding a trait bound does not
-  remove another trait bound, however it's debatable whether this is more or
-  less confusing than existing `?Sized` bounds.
+  `ValueSized` or `Pointee` would remove the default `Sized` bound is somewhat
+  unintuitive. Typically adding a trait bound does not remove another trait bound,
+  however it's debatable whether this is more or less confusing than existing
+  `?Sized` bounds.
 - As this RFC depends on `const Trait`, it inherits all of the drawbacks of
   `const Trait`.
 
@@ -1200,22 +1192,23 @@ support this by adding another supertrait, `Value`:
 │ const ValueSized      │ ──────────→ │ ValueSized                         │
 │ {type, target, value} │   implies   │ {type, target, runtime env, value} │
 └───────────────────────┘             └────────────────────────────────────┘
-            │                                          │
-         implies                                    implies
-            │                                          │
-            ↓                                          ↓
-    ┌───────────────┐                         ┌──────────────────┐
-    │ const Pointee │ ──────────────────────→ │ Pointee          │
-    │ {*}           │         implies         │ {runtime env, *} │
-    └───────────────┘                         └──────────────────┘
-            │                                          │
-         implies                                    implies
-            │                                          │
-            ↓                                          ↓
-     ┌─────────────┐                          ┌──────────────────┐
-     │ const Value │ ───────────────────────→ │ Value            │
-     │ {*}         │         implies          │ {runtime env, *} │
-     └─────────────┘                          └──────────────────┘
+                                                       │
+                                                    implies
+                                                       │
+                               ┌───────────────────────┘
+                               ↓
+                     ┌──────────────────┐
+                     │ Pointee          │
+                     │ {runtime env, *} │
+                     └──────────────────┘
+                               │
+                            implies
+                               │
+                               ↓
+                     ┌──────────────────┐
+                     │ Value            │
+                     │ {runtime env, *} │
+                     └──────────────────┘
 ```
 
 `Pointee` is still defined as being implemented for any type that can be used
