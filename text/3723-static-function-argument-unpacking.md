@@ -89,7 +89,7 @@ The scope of argument unpacking, for now, is restricted to compile-time context 
 
 This version of argument unpacking only affects:
 
-- **Functions.** Only function, method, and closure calls are affected. Tuple struct and tuple-like enum variant instantiations are counted amongst them. Macro invocations are out of scope.
+- **Functions.** Only function, method, and closure calls are affected. Tuple struct and tuple-like enum variant instantiations are counted amongst them. Macro invocations and unpacking into collections are out of scope.
 - **Call-site.** The feature is only about *argument* unpacking, not *parameter* packing or variadic functions.
 - **Compile-time context.** Hence the word static in the RFC name. The feature is not about run-time behavior.
 - **Provably successful situations.** The collection types usable for the feature are selected to make the use of the proposed feature infallible.
