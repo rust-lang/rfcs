@@ -97,16 +97,23 @@ with AVX-512, and Arm introduced 128-bit SIMD registers with Neon.
 
 As an alternative to releasing SIMD extensions with greater bit widths, Arm and
 RISC-V have vector extensions (SVE/Scalable Vector Extension and the "V" Vector
-Extension respectively) where the bit width of vector registers depends on the
+Extension/RVV respectively) where the bit width of vector registers depends on the
 CPU implementation, and the instructions which operate these registers are bit
 width-agnostic.
 
 As a consequence, these types are not `Sized` in the Rust sense, as the size of
 a scalable vector cannot be known during compilation, but is a runtime constant.
-However, these are value types which should implement `Copy` and can be
-returned from functions, can be variables on the stack, etc. These types should
-implement `Copy` but given that `Copy` is a supertrait of `Sized`, they cannot
-be `Copy` without being `Sized`, and aren't `Sized`.
+For example, the size of these types could be determined by inspecting the value
+in a register - this is not available at compilation time and the value may
+differ between any given CPU implementation. Both SVE and RVV have mechanisms to
+change the system's vector length (up to the maximum supported by the CPU
+implementations) but this is not supported by the proposed ABI for these types.
+
+However, despite not implementing `Sized`, these are value types which should
+implement `Copy` and can be returned from functions, can be variables on the
+stack, etc. These types should implement `Copy` but given that `Copy` is a
+supertrait of `Sized`, they cannot be `Copy` without being `Sized`, and
+they aren't `Sized`.
 
 Introducing a `const Sized` trait will enable `Copy` to be implemented for
 those types whose size is a runtime constant to function correctly without
