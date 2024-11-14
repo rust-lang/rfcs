@@ -372,7 +372,7 @@ Probably, developers experienced in a specific programming language are most fam
 
 People sometimes mistakenly conflate arguments and parameters. Selecting a term that is unlikely to feed into that confusion is a plus.
 
-It is also worth pointing out that many Rust users have a non-English background. Thus, consulting the dictionary entries for the term alternatives before committing to a specific selection may be prudent, if an understandability of the term is a priority.
+It is also worth pointing out that many Rust users have a non-English background. Thus, consulting the dictionary entries for the term alternatives before committing to a specific selection may be prudent, if understandability of the term is a priority.
 
 ## Different Syntax
 
