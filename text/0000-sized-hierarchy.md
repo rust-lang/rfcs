@@ -7,10 +7,10 @@
 [summary]: #summary
 
 All of Rust's types are either *sized*, which implement the `Sized` trait and
-have a statically computable size during compilation, or *unsized*, which do not
+have a statically known size during compilation, or *unsized*, which do not
 implement the `Sized` trait and are assumed to have a size which can be computed
 at runtime. However, this dichotomy misses two categories of type - types whose
-size is unknown during compilation but statically known at runtime, and types
+size is unknown during compilation but is a runtime constant, and types
 whose size can never be known. Supporting the former is a prerequisite to stable
 scalable vector types and supporting the latter is a prerequisite to unblocking
 extern types.
@@ -72,10 +72,10 @@ Throughout the RFC, the following terminology will be used:
   and all of its supertraits but none of its subtraits. For example, a `ValueSized`
   type would be a type which implements `ValueSized`, and `Pointee`, but not
   `Sized`. `[usize]` would be referred to as a "`ValueSized` type".
-- "Runtime-sized" types will be used those types whose size is statically known
-  but only at runtime. These would include the scalable vector types mentioned
-  in the motivation below, or those that implement `Sized` but not `const Sized`
-  in the RFC.
+- "Runtime-sized" types will be used those types whose size is a runtime constant
+  and unknown at compilation time. These would include the scalable vector types
+  mentioned in the motivation below, or those that implement `Sized` but not
+  `const Sized` in the RFC.
 - The bounds on the generic parameters of a function may be referred to simply
   as the bounds on the function (e.g. "the caller's bounds").
 
@@ -102,15 +102,15 @@ CPU implementation, and the instructions which operate these registers are bit
 width-agnostic.
 
 As a consequence, these types are not `Sized` in the Rust sense, as the size of
-a scalable vector cannot be known during compilation, but is statically known at
-runtime. However, these are value types which should implement `Copy` and can be
+a scalable vector cannot be known during compilation, but is a runtime constant.
+However, these are value types which should implement `Copy` and can be
 returned from functions, can be variables on the stack, etc. These types should
 implement `Copy` but given that `Copy` is a supertrait of `Sized`, they cannot
 be `Copy` without being `Sized`, and aren't `Sized`.
 
 Introducing a `const Sized` trait will enable `Copy` to be implemented for
-those types whose size is known statically only at runtime, function correctly
-without special cases in the type system. See
+those types whose size is a runtime constant to function correctly without
+special cases in the type system. See
 [rfcs#3268: Scalable Vectors][rfc_scalable_vectors].
 
 ## Unsized types and extern types
@@ -145,8 +145,8 @@ Most types in Rust have a size known at compilation time, such as `u32` or
 
 For example, slices have an unknown length while compiling and are
 known as *dynamically-sized types*, their size must be computed at runtime.
-There are also types with a statically known size but only at runtime, and
-*unsized types* with no size whatsoever.
+There are also types with a runtime constant size (but unknown at compile time),
+and *unsized types* with no size whatsoever.
 
 Various parts of Rust depend on knowledge of the size of a type to work, for
 example:
