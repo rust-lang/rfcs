@@ -123,8 +123,8 @@ implementations) but this is not supported by the proposed ABI for these types.
 
 However, despite not implementing `Sized`, these are value types which should
 implement `Copy` and can be returned from functions, can be variables on the
-stack, etc. These types should implement `Copy` but given that `Copy` is a
-supertrait of `Sized`, they cannot be `Copy` without being `Sized`, and
+stack, etc. These types should implement `Copy` but given that `Sized` is a
+supertrait of `Copy`, they cannot be `Copy` without being `Sized`, and
 they aren't `Sized`.
 
 Introducing a `const Sized` trait will enable `Copy` to be implemented for
