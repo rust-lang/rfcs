@@ -249,8 +249,8 @@ runtime-sized and an `extern type` (from [rfcs#1861][rfc_extern_types]) which ha
 no known size.
 
 All type parameters have an implicit bound of `const Sized` which will be
-automatically removed if a `Sized`, `const ValueSized`, `ValueSized` or
-`Pointee` bound is present instead.
+automatically removed if a `~const Sized`, `Sized`, `const ValueSized`,
+`~const ValueSized`, `ValueSized` or `Pointee` bound is present instead.
 
 Prior to the introduction of `ValueSized` and `Pointee`, `Sized`'s implicit bound
 (now a `const Sized` implicit bound) could be removed using the `?Sized` syntax,
@@ -501,10 +501,10 @@ a `const ValueSized` bound. In the next edition, use of `?Sized` syntax will be 
 over an edition and all uses of it will be rewritten to a `const ValueSized` bound.
 
 A default implicit bound of `const Sized` is added by the compiler to every type
-parameter `T` that does not have an explicit `Sized`, `?Sized`, `const ValueSized`,
-`ValueSized` or `Pointee` bound. It is backwards compatible to change
-the current implicit `Sized` bound to an `const Sized` bound as every type which
-exists currently will implement `const Sized`.
+parameter `T` that does not have an explicit `~const Sized`, `Sized`, `?Sized`,
+`const ValueSized`, `~const ValueSized`, `ValueSized` or `Pointee` bound. It is
+backwards compatible to change the current implicit `Sized` bound to an `const Sized`
+bound as every type which exists currently will implement `const Sized`.
 
 **Edition change:** In the current edition, all existing `Sized` bounds will be
 syntatic sugar for `const Sized` (both explicitly written and implicit). In the next
