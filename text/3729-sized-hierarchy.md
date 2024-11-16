@@ -188,8 +188,8 @@ of a type in Rust: `Sized`, `ValueSized`, and the existing unstable
 `std::ptr::Pointee`. `Sized` and `ValueSized` can be implemented as `const` when
 the size is knowable at compilation time.
 
-`Sized` is a supertrait of `ValueSized`, so every type which implements `Sized`
-also implements `ValueSized`. Likewise, `ValueSized` is a supertrait of `Pointee`.
+`Sized` is a subtrait of `ValueSized`, so every type which implements `Sized`
+also implements `ValueSized`. Likewise, `ValueSized` is a subtrait of `Pointee`.
 `Sized` is `const` if-and-only-if `ValueSized` is `const`.
 
 ```
