@@ -291,9 +291,11 @@ traits `const`:
 Or, in Rust syntax:
 
 ```rust
-const trait Sized: ~const ValueSized {}
+#![feature(const_trait_impl)]
 
-const trait ValueSized: std::ptr::Pointee {}
+#[const_trait] trait Sized: ~const ValueSized {}
+
+#[const_trait] trait ValueSized: std::ptr::Pointee {}
 ```
 
 `Pointee` was specified in [rfcs#2580][rfc_pointer_metadata_vtable] and is
