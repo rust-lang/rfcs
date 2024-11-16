@@ -557,8 +557,8 @@ fn another_use_of_size_of<T: Sized>() -> [u8; size_of::<T>()] {
 ```
 
 [`size_of_val`][api_size_of_val] is also const-stable, so like `size_of` above,
-its bound should be changed to `T: ~const Sized` and this would not result in any
-breakage due to the previously described edition migration.
+its bound should be changed to `T: ~const ValueSized` and this would not result in
+any breakage due to the previously described edition migration.
 
 ```rust
 pub const fn size_of_val<T>(val: &T) -> usize
