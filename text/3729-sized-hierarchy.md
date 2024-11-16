@@ -147,10 +147,10 @@ the current implementation. Ideally `size_of_val` and `align_of_val` would error
 if called with an extern type, but this cannot be expressed in the bounds of
 `size_of_val` and `align_of_val` and this remains a blocker for extern types.
 
-Furthermore, unsized types cannot be members of structs as their alignment is
-unknown and this is necessary to calculate field offsets. Extern types also
-cannot be used in `Box` as `Box` requires size and alignment for both allocation
-and deallocation.
+Furthermore, unsized types can only be the final member of structs as their
+alignment is unknown and this is necessary to calculate the offsets of later fields.
+Extern types also cannot be used in `Box` as `Box` requires size and alignment
+for both allocation and deallocation.
 
 Introducing a hierarchy of `Sized` traits will enable the backwards-compatible
 introduction of a trait which only extern types do not implement and will
