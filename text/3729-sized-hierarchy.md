@@ -31,7 +31,7 @@ this bound.
 There are two functions in the standard library which can be used to get a size,
 [`std::mem::size_of`][api_size_of] and [`std::mem::size_of_val`][api_size_of_val]:
 
-```rust=
+```rust
 pub const fn size_of<T>() -> usize {
     /* .. */
 }
@@ -286,7 +286,7 @@ traits `const`:
 
 Or, in Rust syntax:
 
-```rust=
+```rust
 const trait Sized: ~const ValueSized {}
 
 const trait ValueSized: std::ptr::Pointee {}
@@ -372,7 +372,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
       type, and it was added as a bound to `size_of` (or any other generic
       parameter)..
 
-      ```rust=
+      ```rust
       auto trait Foo;
 
       fn size_of<T: Sized + Foo>() { /* .. */ } // `Foo` bound is new!
@@ -380,7 +380,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
 
       ...then user code would break:
 
-      ```rust=
+      ```rust
       fn do_stuff<T>(value: T) { size_of(value) }
       // error! the trait bound `T: Foo` is not satisfied
       ```
@@ -390,7 +390,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
       type, and it was added as a bound to `size_of_val` (or any other generic
       parameter)..
 
-      ```rust=
+      ```rust
       auto trait Foo;
 
       fn size_of_val<T: ?Sized + Foo>(x: val) { /* .. */ } // `Foo` bound is new!
@@ -432,7 +432,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
       If a default `Sized` bound on an associated trait, such as
       `Add::Output`, were relaxed in the standard library...
 
-      ```rust=
+      ```rust
       trait Add<Rhs = Self> {
           type Output: ValueSized;
       }
@@ -528,7 +528,7 @@ could accept a runtime-sized type. It is therefore necessary to modify the bound
 `size_of` to accept a `T: ~const Sized`, so that `size_of` is a const function
 if-and-only-if `Sized` has a `const` implementation.
 
-```rust=
+```rust
 pub const fn size_of<T: ~const Sized>() -> usize {
     /* .. */
 }
@@ -540,7 +540,7 @@ example. However, due to the changes described in [`Sized` bounds][sized-bounds]
 `T: Sized` bounds as `T: const Sized` in the current edition), this code would
 not break:
 
-```rust=
+```rust
 fn uses_size_of<T: Sized>() -> usize {
     const { std::mem::size_of<T>() }
 }
@@ -554,7 +554,7 @@ fn another_use_of_size_of<T: Sized>() -> [u8; size_of::<T>()] {
 its bound should be changed to `T: ~const Sized` and this would not result in any
 breakage due to the previously described edition migration.
 
-```rust=
+```rust
 pub const fn size_of_val<T>(val: &T) -> usize
 where
     T: ~const ValueSized,
