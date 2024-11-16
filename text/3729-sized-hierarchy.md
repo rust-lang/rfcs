@@ -379,7 +379,7 @@ backwards compatibility, depending on the bounds that would be introduced[^6].
       parameter)..
 
       ```rust
-      auto trait Foo;
+      auto trait Foo {}
 
       fn size_of<T: Sized + Foo>() { /* .. */ } // `Foo` bound is new!
       ```
@@ -397,7 +397,7 @@ backwards compatibility, depending on the bounds that would be introduced[^6].
       parameter)..
 
       ```rust
-      auto trait Foo;
+      auto trait Foo {}
 
       fn size_of_val<T: ?Sized + Foo>(x: val) { /* .. */ } // `Foo` bound is new!
       ```
