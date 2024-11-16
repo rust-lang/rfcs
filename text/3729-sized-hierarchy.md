@@ -497,8 +497,11 @@ every type in Rust today which would satisfy a `?Sized` bound would satisfy
 a `const ValueSized` bound.
 
 **Edition change:** In the current edition,`?Sized` will be syntatic sugar for
-a `const ValueSized` bound. In the next edition, use of `?Sized` syntax will be prohibited
-over an edition and all uses of it will be rewritten to a `const ValueSized` bound.
+a `const ValueSized` bound. As the `?Trait` syntax is currently accepted for any trait
+but ignored for every trait except `Sized`, `?ValueSized` and `?Pointee` bounds would
+be ignored. In the next edition, any uses of `?Sized` syntax will be rewritten to
+a `const ValueSized` bound. Any other uses of the `?Trait` syntax will be removed as
+part of the migration and the `?Trait` syntax will be prohibited.
 
 A default implicit bound of `const Sized` is added by the compiler to every type
 parameter `T` that does not have an explicit `~const Sized`, `Sized`, `?Sized`,
