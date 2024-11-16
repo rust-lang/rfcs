@@ -179,8 +179,12 @@ example:
 - Allocation and deallocation of an object with `Box` requires knowledge of
   its size and alignment, which extern types do not have.
 - For a value type to be allocated on the stack, it needs to have constant
-  known size, which dynamically-sized and unsized types do not have (but 
+  known size[^1], which dynamically-sized and unsized types do not have (but 
   sized and "runtime-sized" types do).
+
+[^1]: Dynamic stack allocation does exist, such as in C's Variable Length Arrays
+      (VLA), but not in Rust (without incomplete features like `unsized_locals`
+      and `unsized_fn_params`).
 
 Rust uses marker traits to indicate the necessary knowledge required to know
 the size of a type, if it can be known. There are three traits related to the size
@@ -347,23 +351,23 @@ the compiler and cannot be implemented manually:
         - anything else which currently implements `Sized`
 
 Introducing new automatically implemented traits is backwards-incompatible,
-at least if you try to add it as a bound to an existing function[^1][^2] (and
+at least if you try to add it as a bound to an existing function[^2][^3] (and
 new auto traits that which go unused aren't that useful), but due to being
 supertraits of `Sized` and `Sized` being a default bound, these
 backwards-incompatibilities are avoided for `ValueSized` and `Pointee`.
 
 Relaxing a bound from `Sized` to `ValueSized` or `Pointee` is non-breaking as
 the calling bound must have either `T: Sized` or `T: ?Sized`, both of which
-would satisfy any relaxed bound[^3].
+would satisfy any relaxed bound[^4].
 
 However, it would still be backwards-incompatible to relax the `Sized` bound on
-a trait's associated type[^4] for the proposed traits.
+a trait's associated type[^5] for the proposed traits.
 
 It is possible further extend this hierarchy in future by adding new traits between
 those proposed in this RFC or after the traits proposed in this RFC without breaking
-backwards compatibility, depending on the bounds that would be introduced[^5].
+backwards compatibility, depending on the bounds that would be introduced[^6].
 
-[^1]: Adding a new automatically implemented trait and adding it as a bound to
+[^2]: Adding a new automatically implemented trait and adding it as a bound to
       an existing function is backwards-incompatible with generic functions. Even
       though all types could implement the trait, existing generic functions will be
       missing the bound.
@@ -384,7 +388,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
       fn do_stuff<T>(value: T) { size_of(value) }
       // error! the trait bound `T: Foo` is not satisfied
       ```
-[^2]: Trait objects passed by callers would not imply the new trait.
+[^3]: Trait objects passed by callers would not imply the new trait.
 
       If `Foo` were introduced to the standard library and implemented on every
       type, and it was added as a bound to `size_of_val` (or any other generic
@@ -402,7 +406,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
       fn do_stuff(value: Box<dyn Display>) { size_of_val(value) }
       // error! the trait bound `dyn Display: Foo` is not satisfied in `Box<dyn Display>`
       ```
-[^3]: Callers of existing APIs will have one of the following `Sized` bounds:
+[^4]: Callers of existing APIs will have one of the following `Sized` bounds:
 
       | Before ed. migration              | After ed. migration |
       | --------------------------------- | ------------------- |
@@ -423,7 +427,7 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
       | ------------------ | ------------------ | ------------ | ---------
       | `const Sized`      | ✔                  | ✔            | ✔
       | `const ValueSized` | ✔                  | ✔            | ✔
-[^4]: Associated types of traits have default `Sized` bounds which cannot be
+[^5]: Associated types of traits have default `Sized` bounds which cannot be
       relaxed. For example, relaxing a `Sized` bound on `Add::Output` breaks
       a function which takes a `T: Add` and passes `<T as Add>::Output` to
       `size_of` as not all types which implement the relaxed bound will
@@ -440,14 +444,14 @@ backwards compatibility, depending on the bounds that would be introduced[^5].
 
       ...then user code would break:
 
-      ```rust=
+      ```rust
       fn do_stuff<T: Add>() -> usize { std::mem::size_of::<<T as Add>::Output>() }
       //~^ error! the trait bound `<T as Add>::Output: Sized` is not satisfied
       ```
 
       Relaxing the bounds of an associated type is in effect giving existing
       parameters a less restrictive bound which is not backwards compatible.
-[^5]: If it was desirable to add a new trait to this RFC's proposed hierarchy
+[^6]: If it was desirable to add a new trait to this RFC's proposed hierarchy
       then there are four possibilities:
 
       - Before `Sized`
@@ -733,13 +737,13 @@ parameter then they would have two options:
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
 
-Previous iterations of this RFC had both linear[^6] and non-linear[^7] trait hierarchies
+Previous iterations of this RFC had both linear[^7] and non-linear[^8] trait hierarchies
 which included a `RuntimeSized` trait and did not use const traits. However, both of
 these were found to be backwards-incompatible due to being unable to relax the
 supertrait of `Clone`. Without const traits, it is not possible to represent
 runtime-sized types.
 
-[^6]: In previous iterations, the proposed linear trait hierarchy was:
+[^7]: In previous iterations, the proposed linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────┐
@@ -757,7 +761,7 @@ runtime-sized types.
       `size_of_val` would need to be able to be instantiated with `ValueSized`
       types and not `RuntimeSized` types, and that this could not be
       represented.
-[^7]: In previous iterations, the proposed non-linear trait hierarchy was:
+[^8]: In previous iterations, the proposed non-linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────────────────┐
@@ -1231,13 +1235,13 @@ None currently.
 
 Another compelling feature that requires extensions to Rust's sizedness traits to
 fully support is wasm's `externref`. `externref` types are opaque types that cannot
-be put in memory [^8]. `externref`s are used as abstract handles to resources in the
+be put in memory [^9]. `externref`s are used as abstract handles to resources in the
 host environment of the wasm program, such as a JavaScript object. Similarly, when
 targetting some GPU IRs (such as SPIR-V), there are types which are opaque handles
 to resources (such as textures) and these types, like wasm's `externref`, cannot
 be put in memory.
 
-[^8]: When Rust is compiled to wasm, we can think of the memory of the Rust program
+[^9]: When Rust is compiled to wasm, we can think of the memory of the Rust program
 as being backed by something like a `[u8]`, `externref`s exist outside of that `[u8]`
 and there is no way to put an `externref` into this memory, so it is impossible to have
 a reference or pointer to a `externref`. `wasm-bindgen` currently supports `externref`
