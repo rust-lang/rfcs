@@ -127,7 +127,7 @@ stack, etc. These types should implement `Copy` but given that `Sized` is a
 supertrait of `Copy`, they cannot be `Copy` without being `Sized`, and
 they aren't `Sized`.
 
-Introducing a `const Sized` trait will enable `Copy` to be implemented for
+Making `Sized` a const trait will enable `Copy` to be implemented for
 those types whose size is a runtime constant to function correctly without
 special cases in the type system. See
 [rfcs#3268: Scalable Vectors][rfc_scalable_vectors].
