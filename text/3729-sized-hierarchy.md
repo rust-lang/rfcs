@@ -142,7 +142,7 @@ RFC #1861 defined that `std::mem::size_of_val` and `std::mem::align_of_val`
 should not be defined for extern types but not how this should be achieved, and
 suggested an initial implementation could panic when called with extern types,
 but this is always wrong, and not desirable behavior in keeping with Rust's
-values. `size_of_val` returns 0 and `align_of_val` returns 1 for extern types in
+values. `size_of_val` and `align_of_val` both panic for extern types in
 the current implementation. Ideally `size_of_val` and `align_of_val` would error
 if called with an extern type, but this cannot be expressed in the bounds of
 `size_of_val` and `align_of_val` and this remains a blocker for extern types.
@@ -1337,11 +1337,6 @@ are examples of `Aligned` traits being added in the ecosystem:
 - `rustc` has [its own `Aligned` trait][rustc_aligned] to support pointer tagging.
 - [`unsized-vec`][crate_unsized_vec] implements a `Vec` that depends on knowing
   whether a type has an alignment or not.
-
-Furthermore, the existing incorrect behaviour of `align_of_val` returning one is
-used in `rustc` with the [`OpaqueListContents` type][rustc_opaquelistcontents] to
-implement a custom DST. This use case would break with this RFC as written, as
-the alignment of an extern type would correctly be undefined.
 
 An `Aligned` trait could be added to this proposal between `ValueSized` and `Pointee`
 in the trait hierarchy which would be implemented automatically by the compiler for
