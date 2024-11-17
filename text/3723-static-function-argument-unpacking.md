@@ -30,7 +30,7 @@ Instead of first taking items out of a collection and then immediately passing t
 
 Consider ellipsis, i.e. the three dots, `...`, as a machine-readable shorthand for telling the compiler where to get the rest of the stuff from. The *where* part – written immediately after the ellipsis operator – is an expression that has a collection type with a size known during program compilation. This `...expr` is used within the parentheses of a function call to enter the items in the collection as arguments to the function being called.
 
-The collection types that can be unpacked as arguments this way are *tuples*, *tuple structs*, and *fixed-size arrays*. Argument unpacking works on function, method, and closure calls, but not on macro invocations.
+The collection types that can be unpacked as arguments this way are *tuples*, *tuple structs*, and *fixed-size arrays*. Argument unpacking works on function, method, and closure calls, but not on standard library macro invocations.
 
 The types of the elements in the collection being unpacked, in the order in which they are in the collection, must be compatible with the next of the remaining function parameters being filled, i.e. function parameters that don't have an argument yet. The number of the elements may not exceed the number of the remaining unfilled parameter slots.
 
@@ -350,7 +350,7 @@ Commonly, in other programming languages, the order in which the tokens appear i
 
 The supported use cases are limited to avoid problems that come with large scope. To help avoid metaphorical cul-de-sacs, i.e. incompatibilities with future features, some out-of-scope expansions are laid out with some attention to detail under [Future Possibilities](#future-possibilities).
 
-Specifically, this RFC focuses on bringing argument unpacking only to call expressions while allowing for building on its design and findings. For example, using unpacking of collections to define other collections is left out of scope (but suggested under Future Possibilities). Likewise, users would probably expect to be able to use argument unpacking in standard library macros such as `println!`, but designing and implementing that has been deferred as well.
+Specifically, this RFC focuses on bringing argument unpacking only to call expressions while allowing for building on its design and findings. For example, using unpacking of collections to define other collections is left out of scope (but suggested under Future Possibilities). Likewise, some users would probably expect to be able to use argument unpacking in standard library macros such as `println!`, but designing and implementing that has been deferred as well.
 
 Even though leaving some of the natural-seeming consequences of argument unpacking out of scope reduces its usefulness at first, it is not generally unprecedented: For example, features such as *const generics* have been successfully introduced into the language in chunks, as an [MVP](https://blog.rust-lang.org/2021/02/26/const-generics-mvp-beta.html). Furthermore, the future RFCs adding the remaining pieces would likely be quite lightweight in comparison, since some of the work – such as bikeshedding the most important parts of the syntax – has already been carried out in the context of this RFC.
 
@@ -747,11 +747,16 @@ This feature could be further expanded to allow its use, for example, with `vec!
 
 ## Unpacking Arguments for Macro Invocations
 
-Macros, callable with the `macro_name!(…)`, `macro_name![…]`, or `macro_name!{…}` syntax have been omitted from the scope of this proposal. The reason for omission is the time concerns related to doing the due diligence researching the design. For example, some macros (e.g. `println!`) accept an indefinite number of arguments.
+Macros, callable with the `macro_name!(…)`, `macro_name![…]`, or `macro_name!{…}` syntax have been omitted from the scope of this proposal. The reason for omission is the time concerns related to doing the due diligence researching the design, such as deciding which standard library macros would need updating. Possible interactions would need to be investigated as well. For example, some macros (e.g. `println!`) accept an indefinite number of arguments. This work would likely proceed with co-operation and under the supervision of the library and/or the library API teams.
 
-Unpacking tuples, tuple structs, and fixed-size arrays when invoking macros would probably make sense – after all, argument unpacking is only syntactic sugar for something that can be done already in the desugared form. For example, allowing unpacking within `vec![…]`'s brackets would, from a language user's perspective, add a missing piece to the work in [Unpacking in Fixed-Size Array and Tuple Literals](#unpacking-in-fixed-size-array-and-tuple-literals).
+Unpacking tuples, tuple structs, and fixed-size arrays when invoking macros **does** seem like a logical continuation for the work in this RFC – after all, so far argument unpacking is merely syntactic sugar for something that can be done already in the desugared form. For example:
 
-Further design, meriting a separate RFC amending this one, is needed.
+- Some users may expect unpacking for `println!(…)` to work already after argument unpacking from this RFC has been implemented, because of its close resemblance to a function call.
+- Allowing unpacking within `vec![…]`'s brackets would, from a language user's perspective, add a missing piece to the work in [Unpacking in Fixed-Size Array and Tuple Literals](#unpacking-in-fixed-size-array-and-tuple-literals).
+
+The ellipsis, or `...` [token](https://doc.rust-lang.org/reference/tokens.html#punctuation) (DotDotDot) is already singled out in declarative macro `TokenTree`s, which may be of help but which could also be a cause of surprises in the design work.
+
+A dutifylly investigated design in the form of a separate RFC amending this one is needed.
 
 ## Assigning Automatic Reference Status or Mutability
 
