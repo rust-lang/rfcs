@@ -521,8 +521,35 @@ implicit `const Sized` bounds, this is omitted if an explicit `const Sized`, `Si
 As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
 
+### Summary of bounds changes
+[summary-of-bounds-changes]: #summary-of-bounds-changes
+
+To summarise, in the current edition, the following bounds will be treated as
+equivalent to:
+
+| Written            | Interpretation     | Notes                                                                                |
+| ------------------ | ------------------ | ------------------------------------------------------------------------------------ |
+| `const Sized`      | `const Sized`      |                                                                                      |
+| `Sized`            | `const Sized`      | Necessary for backwards compatibility, later rewritten to `const Sized` by `rustfix` |
+| `?Sized`           | `const ValueSized` | Necessary for backwards compatibility, later prohibited                              |
+| `const ValueSized` | `const ValueSized` |                                                                                      |
+| `ValueSized`       | `ValueSized`       |                                                                                      |
+| `Pointee`          | `Pointee`          |                                                                                      |
+
+After the aforementioned edition migration, the following bounds will be
+treated as equivalent to:
+
+| Written            | Interpretation     |
+| ------------------ | ------------------ |
+| `const Sized`      | `const Sized`      |
+| `Sized`            | `Sized`            |
+| `?Sized`           | Prohibited         |
+| `const ValueSized` | `const ValueSized` |
+| `ValueSized`       | `ValueSized`       |
+| `Pointee`          | `Pointee`          |
+
 ## `size_of` and `size_of_val`
-[size-of-and-size-of-val]: #size-of-and-size-of-val
+[size-of-and-size-of-val]: #size_of-and-size_of_val
 
 Runtime-sized types should be able to be passed to both `size_of` and `size_of_val`,
 but only at runtime, which requires ensuring these functions are only const if their
@@ -571,8 +598,10 @@ where
 
 While `ValueSized` is equivalent to the current `?Sized` bound it replaces, it
 excludes extern types (which `?Sized` by definition cannot), which prevents
-`size_of_val` from being called with extern types from
-[rfcs#1861][rfc_extern_types].
+`size_of_val` from being called with extern types from [rfcs#1861][rfc_extern_types].
+Due to the changes described in [`Sized` bounds][sized-bounds] (migrating
+`T: ?Sized` to `T: const ValueSized`), changing the bound of `size_of_val` will
+not break any existing callers.
 
 These same changes apply to `align_of` and `align_of_val`.
 
@@ -717,16 +746,14 @@ is unnecessary as this is equivalent to the absense of any bounds whatsoever, bu
 having an `Pointee` trait is necessary to enable the meaning of `?Sized` to be re-defined
 to be equivalent to `const ValueSized` and avoid complicated behaviour change over an edition.
 
-Without `Pointee`, if a user wanted to remove all sizedness bounds from a generic
-parameter then they would have two options:
+Without introducing `Pointee`, if a user wanted to remove all sizedness bounds from a
+generic parameter then they would have two options:
 
-1. Introduce new relaxed bounds (i.e. `?ValueSized`), which has been found
-   unacceptable in previous RFCs ([rfcs#2255][issue_more_implicit_bounds]
-   summarizes these discussions)
-2. Keep `?Sized`'s existing meaning of removing the implicit `Sized` bound
-      
-   This is the only viable option, but this would complicate changing
-   `size_of_val`'s existing `?Sized` bound:
+1. Introduce a `?ValueSized` relaxed bound (a user could write `Sized`, `ValueSized` or
+   `?ValueSized`) which has been found unacceptable in previous RFCs
+   ([rfcs#2255][issue_more_implicit_bounds] summarizes these discussions).
+2. Keep `?Sized`'s existing meaning of removing the implicit `Sized` bound, which would
+   complicate changing `size_of_val`'s existing `?Sized` bound:
 
    Without `Pointee`, `?Sized` would be equivalent to `const ValueSized` until
    extern types are stabilised (e.g. a `?Sized` bound would accept exactly the
@@ -735,6 +762,50 @@ parameter then they would have two options:
    extern types would need to be introduced over an edition and all existing `?Sized`
    bounds rewritten to `?Sized + const ValueSized`. This is the same mechanism described
    in [rfcs#3396][rfc_extern_types_v2] to introduce its `MetaSized` trait.
+
+## Why migrate away from `?Sized`?
+[why-migrate-away-from-sized]: #why-migrate-away-from-sized
+
+`?Sized` is frequently regarded as confusing for new users and came up frequently in
+the [prior art][prior-art] as a reason why new `?Trait` bounds were not seen as desirable
+(see [rfcs#2255][issue_more_implicit_bounds]).
+
+This RFC's proposal to migrate from `?Sized` is based on ideas from an [earlier
+pre-eRFC][pre_erfc_fix_dsts] and then a [blog post][blog_dynsized_unsized] which developed
+on those ideas, and the feedback to this RFC's prior art, but is not a load-bearing part
+of this RFC.
+
+To preserve backwards compatibility, `Sized` bounds must be migrated to `const Sized` (see
+[the `size_of` and `size_of_val` section][size_of-and-size_of_val] for rationale), but
+`?Sized` bounds could retain their existing behaviour of removing the default `Sized` bound:
+
+In the current edition, `?Sized` would need to be equivalent to `?Sized + const ValueSized` to
+maintain backwards compatibility (see [the `size_of` and `size_of_val`
+section][size_of-and-size_of_val] for rationale). In the next edition, `?Sized` would be
+rewritten to `?Sized + const ValueSized`.
+
+Prior to the edition migration, the default bound is `Sized`, which could be changed using
+the following syntax:
+
+| With "implicit relaxation" | Keeping `?Sized`            |
+| -------------------------- | --------------------------- |
+| `const Sized`              | `?Sized + const Sized`      |
+| `const ValueSized`         | `?Sized + const ValueSized` |
+| `ValueSized`               | `?Sized + ValueSized`       |
+| `Pointee`                  | `?Sized`                    |
+
+After the edition migration, the default bound is `const Sized`, which could be changed
+using the following syntax:
+
+| With "implicit relaxation" | Keeping `?Sized`                                                    |
+| -------------------------- | ------------------------------------------------------------------- |
+| `Sized`                    | `?Sized + Sized` (maybe `?const Sized + Sized`?)                    |
+| `const ValueSized`         | `?Sized + const ValueSized` (or `?const Sized + const ValueSized`?) |
+| `ValueSized`               | `?Sized + ValueSized` (or `?const Sized + ValueSized`?)             |
+| `Pointee`                  | `?Sized` (or `?const Sized`?)                                       |
+
+"Implicit relaxation" is used to refer to the behaviour that this RFC proposes where adding
+any other sizedness bound removes the default bound.
 
 # Why not re-use `std::ptr::Pointee`?
 [why-not-re-use-stdptrpointee]: #why-not-re-use-stdptrpointee
