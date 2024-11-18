@@ -100,6 +100,10 @@ just like those declared using proc macros.
 
 Adding `attr` rules to an existing macro is a semver-compatible change.
 
+If a user invokes a macro as an attribute and that macro does not have any
+`attr` rules, the compiler should give a clear error stating that the macro is
+not usable as an attribute because it does not have any `attr` rules.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
