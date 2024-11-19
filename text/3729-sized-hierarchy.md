@@ -728,9 +728,9 @@ There are various points of difference to the [prior art](#prior-art) related to
   [rust#46108][pr_dynsized_rebase],  [rfcs#2984][rfc_pointee_dynsized] and
   [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
   none of the traits proposed in this RFC are default bounds and therefore do not
-  need to support being relaxed bounds (i.e. no `?ValueSized`), which avoids
-  additional language complexity and backwards compatibility hazards related to
-  relaxed bounds and associated types.
+  require additional relaxed bounds be accepted (i.e. no `?ValueSized`), which has
+  had mixed reception in previous RFCs ([rfcs#2255][issue_more_implicit_bounds]
+  summarizes these discussions).
 - In contrast to [rfcs#1524][rfc_custom_dst], [rfc#1993][rfc_opaque_data_structs],
   [Pre-eRFC: Let's fix DSTs][pre_erfc_fix_dsts], [Pre-RFC: Custom DSTs][prerfc_custom_dst]
   and [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
@@ -750,7 +750,7 @@ Without introducing `Pointee`, if a user wanted to remove all sizedness bounds f
 generic parameter then they would have two options:
 
 1. Introduce a `?ValueSized` relaxed bound (a user could write `Sized`, `ValueSized` or
-   `?ValueSized`) which has been found unacceptable in previous RFCs
+   `?ValueSized`) which has had mixed reception in previous RFCs
    ([rfcs#2255][issue_more_implicit_bounds] summarizes these discussions).
 2. Keep `?Sized`'s existing meaning of removing the implicit `Sized` bound, which would
    complicate changing `size_of_val`'s existing `?Sized` bound:
@@ -766,9 +766,10 @@ generic parameter then they would have two options:
 ## Why migrate away from `?Sized`?
 [why-migrate-away-from-sized]: #why-migrate-away-from-sized
 
-`?Sized` is frequently regarded as confusing for new users and came up frequently in
-the [prior art][prior-art] as a reason why new `?Trait` bounds were not seen as desirable
-(see [rfcs#2255][issue_more_implicit_bounds]).
+`?Sized` is frequently regarded as confusing for new users and came up in the
+[prior art][prior-art] as a reason why new `?Trait` bounds were not seen as desirable
+(see [rfcs#2255][issue_more_implicit_bounds]). Furthermore, it isn't clear that `?Sized`
+scales well to opting out of default bounds that have constness or hierarchies.
 
 This RFC's proposal to migrate from `?Sized` is based on ideas from an [earlier
 pre-eRFC][pre_erfc_fix_dsts] and then a [blog post][blog_dynsized_unsized] which developed
@@ -1066,11 +1067,12 @@ this RFC's `ValueSized` trait is inspired, just renamed.
     - There have been various attempts to introduce new auto traits with
       implicit bounds, such as `DynSized`, `Move`, `Leak`, etc. Often rejected due to
       the ergonomic cost of relaxed bounds.
-        - `?Trait` being a negative feature confuses users.
-        - Downstream crates need to re-evaluate every API to determine if adding
-          `?Trait` makes sense, for each `?Trait` added.
-        - `?Trait` isn't actually backwards compatible like everyone thought due
-          to interactions with associated types.
+        - `?Trait` being a negative feature can be confusing to users.
+        - Depending on the specific trait being added as a default bound, downstream crates
+          need to re-evaluate every API to determine if adding `?Trait` makes sense, for
+          each `?Trait` added.
+        - `?Trait` isn't actually fully backwards compatible due to interactions with
+          associated types.
     - This thread was largely motivated by the `Move` trait and that was
       replaced by the `Pin` type, but there was an emerging consensus that `DynSized`
       may be more feasible due to its relationship with `Sized`.
@@ -1287,8 +1289,7 @@ this proposal:
 
 - [Pre-eRFC: Let's fix DSTs][pre_erfc_fix_dsts] was the only other proposal
   removing `Sized` bounds when a bound for another sized trait (only `DynSized`
-  in that pre-eRFC's case) was present, which makes reasoning simpler by avoiding
-  relaxed bounds.
+  in that pre-eRFC's case) was present.
     - However, this proposal had `size_of_val` methods in its `DynSized` trait and
       proposed a bunch of other things necessary for Custom DSTs.
 - [rfcs#2310: DynSized without ?DynSized][rfc_dynsized_without_dynsized] was
