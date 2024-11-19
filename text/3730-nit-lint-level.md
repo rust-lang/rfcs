@@ -210,6 +210,18 @@ the author's determination to ignore it.
 
 For future PRs, Github should not report this as it should recognize that the report is for existing code.
 
+## Integrating with CI
+
+The above potential experience is dependent on being able to integrate linting with CI to report only "new lints" or "lints for changed code".
+
+For Github users, you can use [`clippy-sarif`](https://crates.io/crates/clippy-sarif) to report lints as SARIF alerts.
+Github [tracks these alerts across runs](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning#providing-data-to-track-code-scanning-alerts-across-runs).
+
+These can also be implemented manually with any setup.
+For example, in a large, corporate, legacy C++ code base that [epage](https://github.com/epage/)
+worked with, a linter used a similar database to track what lints were "new" and reported those back to
+[ReviewBoard](https://www.reviewboard.org/).
+
 ## Choosing lint levels
 
 When creating a lint or overriding a default lint level,
