@@ -26,6 +26,10 @@ this new lint level.
 By its name and literal usage, the `warn` level is non-blocking.
 However, most projects treat `warn` as a soft-error.
 It doesn't block for local development but CI blocks it from being merged.
+This is an attempt to balance final correctness with rapid prototyping.
+Requiring "warnings clean" code also avoids warnings fatigue where warnings
+make it hard to see "relevant' compiler output and
+act as proverbial [broken windows](https://en.wikipedia.org/wiki/Broken_windows_theory).
 This convention is not new with the Rust community; many C++ projects have take
 this approach before Rust came to be with "warnings clean" being a goal for
 correctness.
