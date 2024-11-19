@@ -84,7 +84,7 @@ Throughout the RFC, the following terminology will be used:
 
 This RFC wouldn't have been possible without the reviews and feedback of
 [@JamieCunliffe][author_jamiecunliffe], [@JacobBramley][ack_jacobbramley],
-[@nikomatsakis][author_nikomatsakis] and [@scottmcm][author_scottmcm];
+[@nikomatsakis][author_nikomatsakis] and [@scottmcm][ack_scottmcm];
 [@eddyb][ack_eddyb] for the `externref` future possibility; the expertise
 of [@compiler-errors][ack_compiler_errors] on the type system and suggesting
 the use of const traits; [@fee1-dead][ack_fee1dead] for reviewing the usage
@@ -704,10 +704,11 @@ the standard library would need to be reviewed and updated as appropriate.
 - This is a fairly significant change to the `Sized` trait, which has been in
   the language since 1.0 and is now well-understood.
 - This RFC's proposal that adding a bound of `const Sized`, `const ValueSized`,
-  `ValueSized` or `Pointee` would remove the default `Sized` bound is somewhat
-  unintuitive. Typically adding a trait bound does not remove another trait bound,
-  however it's debatable whether this is more or less confusing than existing
-  `?Sized` bounds.
+  `ValueSized` or `Pointee` would remove the default `Sized` bound is a significant
+  change from the current `?Sized` mechanism.
+    - Typically adding a trait bound does not remove another trait bound, however
+      this RFC argues that this behaviour scales better to hierarchies of traits
+      with default bounds and constness.
 - As this RFC depends on `const Trait`, it inherits all of the drawbacks of
   `const Trait`.
 
