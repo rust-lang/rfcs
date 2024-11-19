@@ -327,6 +327,11 @@ with the following diagnostic tags:
 - Unnecessary
 - Deprecated
 
+Github/Sarif support the following [severities](https://docs.github.com/en/code-security/code-scanning/managing-code-scanning-alerts/about-code-scanning-alerts#about-alert-severity-and-security-severity-levels)
+- Error
+- Warning
+- Note
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
