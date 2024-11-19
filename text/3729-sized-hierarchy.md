@@ -1406,8 +1406,8 @@ pointer or a reference. This also implies that `ValueSized` types can be used as
 which would remain prohibited behind the `unsized_locals` and `unsized_fn_params`
 features until these are stabilised.
 
-With these changes to the RFC, it would be possible to support wasm's `externref` and
-opaque types from some GPU targets.
+With these changes to the RFC and possibility additional changes to the language, it
+could be possible to support wasm's `externref` and opaque types from some GPU targets.
 
 ## Alignment
 [alignment]: #alignment
