@@ -1,6 +1,6 @@
 - Feature Name: `nit-lint-level`
 - Start Date: 2024-11-15
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3730](https://github.com/rust-lang/rfcs/pull/3730)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
