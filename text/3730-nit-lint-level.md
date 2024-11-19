@@ -354,6 +354,8 @@ Options
   - "note the let-and-return in this code"
 - `#[notice]` / `--notice` / `-N` / `-Wnotices`
   - "notice the let-and-return in this code"
+- `#[mention]` / `--mention` / `-M` / `-Wmentions`
+  - "mention the let-and-return in this code"
 - `#[consider]` / `--consider` / ~~`-C` (taken)~~ / `-Wconsiderations` (IntelliJ)
   - "consider the let-and-return in this code"
   - Verb and noun have a larger divergence
