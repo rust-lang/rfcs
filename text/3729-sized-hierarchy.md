@@ -137,6 +137,8 @@ special cases in the type system. See
 
 [Extern types][rfc_extern_types] has long been blocked on these types being
 neither `Sized` nor `?Sized` ([relevant issue][issue_extern_types_align_size]).
+Extern types are listed as a "nice to have" feature in [Rust for Linux's requests
+of the Rust project][rfl_want].
 
 RFC #1861 defined that `std::mem::size_of_val` and `std::mem::align_of_val`
 should not be defined for extern types but not how this should be achieved, and
@@ -1510,6 +1512,7 @@ written here only to illustrate.
 [rfc_truly_unsized_types]: https://github.com/rust-lang/rfcs/pull/709
 [rfc_unsized_types]: https://github.com/japaric/rfcs/blob/unsized2/text/0000-unsized-types.md
 [rfc_virtual_structs]: https://github.com/rust-lang/rfcs/pull/5
+[rfl_want]: https://github.com/Rust-for-Linux/linux/issues/354
 [rustc_aligned]: https://github.com/rust-lang/rust/blob/a76ec181fba25f9fe64999ec2ae84bdc393560f2/compiler/rustc_data_structures/src/aligned.rs#L22-L25
 [rustc_opaquelistcontents]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/list/foreigntype.OpaqueListContents.html
 [zulip_issue_regions_too_simplistic]: https://rust-lang.zulipchat.com/#narrow/channel/144729-t-types/topic/.2321984.20.2B.20implicit.20supertraits.20-.20still.20relevant.3F/near/477630998
