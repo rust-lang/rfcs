@@ -779,9 +779,18 @@ pre-eRFC][pre_erfc_fix_dsts] and then a [blog post][blog_dynsized_unsized] which
 on those ideas, and the feedback to this RFC's prior art, but is not a load-bearing part
 of this RFC.
 
+In the following tables, "implicit relaxation" is used to refer to the behaviour that
+this RFC proposes where adding any other sizedness bound removes the default bound.
+
 To preserve backwards compatibility, `Sized` bounds must be migrated to `const Sized` (see
 [the `size_of` and `size_of_val` section][size_of-and-size_of_val] for rationale), but
 `?Sized` bounds could retain their existing behaviour of removing the default `Sized` bound:
+
+### Keeping only `?Sized`
+[keeping-only-sized]: #keeping-only-sized
+
+Without adding any additional default bounds or relaxed forms, keeping `?Sized` could be
+compatible with this proposal as follows:
 
 In the current edition, `?Sized` would need to be equivalent to `?Sized + const ValueSized` to
 maintain backwards compatibility (see [the `size_of` and `size_of_val`
@@ -792,30 +801,52 @@ bound) and bare `?Sized` would only remove the `Sized` default bound.
 Prior to the edition migration, the default bound is `Sized`, which could be changed using
 the following syntax:
 
-| With "implicit relaxation" | Keeping `?Sized`       | Notes                                                                                            |
-| -------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------ |
-| `const Sized`              | `?Sized + const Sized` |                                                                                                  |
-| `const ValueSized`         | `?Sized`               | `?Sized` is equivalent to `const ValueSized` for backwards compatibility                         |
-| `ValueSized`               | N/A                    | Not possible to write this, `?Sized` would remove the default `Sized` but add `const ValueSized` |
-| `Pointee`                  | N/A                    | Not possible to write this, `?Sized` would remove the default `Sized` but add `const ValueSized` |
+| With "implicit relaxation" | Keeping `?Sized` |
+| -------------------------- | ---------------- |
+| `const Sized`              | `const Sized`    |
+| `Sized`                    | `Sized`          |
+| `const ValueSized`         | `?Sized`         |
+| `ValueSized`               | Not possible     |
+| `Pointee`                  | Not possible     |
 
 After the edition migration, the default bound is `const Sized`, which could be changed
 using the following syntax:
 
-| With "implicit relaxation" | Keeping `?Sized`                                                    | Notes                                                                                |
-| -------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `Sized`                    | `?Sized + Sized` (maybe `?const Sized + Sized`?)                    | It isn't obvious how `?Sized` syntax should be used to remove the constness modifier |
-| `const ValueSized`         | `?Sized + const ValueSized` (or `?const Sized + const ValueSized`?) |                                                                                      |
-| `ValueSized`               | `?Sized + ValueSized` (or `?const Sized + ValueSized`?)             |                                                                                      |
-| `Pointee`                  | `?Sized` (or `?const Sized`?)                                       |                                                                                      |
+| With "implicit relaxation" | Keeping `?Sized`                  |
+| -------------------------- | --------------------------------- |
+| `const Sized`              | `const Sized`                     |
+| `Sized`                    | `?const Sized + Sized`            |
+| `const ValueSized`         | `?const Sized + const ValueSized` |
+| `ValueSized`               | `?const Sized + ValueSized`       |
+| `Pointee`                  | `?const Sized`                    |
 
-"Implicit relaxation" is used to refer to the behaviour that this RFC proposes where adding
-any other sizedness bound removes the default bound.
+### Adding `?ValueSized`
+[adding-valuesized]: #adding-valuesized
 
-Another alternative to "implicit relaxation" and `?Sized` could be to introduce new relaxed bounds
-for `ValueSized` (i.e. `?ValueSized`), but this would only make sense if `ValueSized` were a default
-bound (i.e. `T: Sized + ValueSized` was the default, rather than `T: Sized` which only implies
-`T: Sized + ValueSized`).
+Another alternative is to make `ValueSized` a default bound in addition to `Sized` and establish
+that relaxing a supertrait bound also implies relaxing subtrait bounds:
+
+Prior to the edition migration, the default bound is `ValueSized + const ValueSized + Sized`,
+which could be changed using:
+
+| With "implicit relaxation" | Adding `?ValueSized`             |
+|----------------------------|----------------------------------|
+| `const Sized`              | `const Sized`                    |
+| `Sized`                    | `Sized`                          |
+| `const ValueSized`         | `?Sized`                         |
+| `ValueSized`               | `?const ValueSized`              |
+| `Pointee`                  | `?ValueSized`                    |
+
+After the edition migration, the default bound is
+`ValueSized + const ValueSized + Sized + const Sized`, which could be changed using:
+
+| With "implicit relaxation" | Adding `?ValueSized`             |
+|----------------------------|----------------------------------|
+| `const Sized`              | `const Sized`                    |
+| `Sized`                    | `?const Sized`                   |
+| `const ValueSized`         | `?Sized`                         |
+| `ValueSized`               | `?const ValueSized`              |
+| `Pointee`                  | `?ValueSized`                    |
 
 # Why not re-use `std::ptr::Pointee`?
 [why-not-re-use-stdptrpointee]: #why-not-re-use-stdptrpointee
