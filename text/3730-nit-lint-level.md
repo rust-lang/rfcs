@@ -66,6 +66,11 @@ It can take effort to sift through all of the
 [default-`allow`ed lints](https://rust-lang.github.io/rust-clippy/master/index.html?levels=allow)
 for which ones a maintainer may want to turn into a soft or hard error.
 
+Another secondary benefit is that this could provide a smoother path for linter
+teams to migrate `allow`s to `warn`s by having a period of time in a
+non-blocking lint level so people can benefit immediately while having more
+flexibility on when they pay the cost for turning the lint into a soft-error.
+
 ## Example: `clap`
 
 Each lint below from `clap`s `Cargo.toml` represents a lint that could be useful but not worthwhile enough to `allow`:
