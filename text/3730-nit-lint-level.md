@@ -29,8 +29,9 @@ However, most projects treat `warn` as a soft-error.
 It doesn't block for local development but CI blocks it from being merged.
 This is an attempt to balance final correctness with rapid prototyping.
 Requiring "warnings clean" code also avoids warnings fatigue where warnings
-make it hard to see "relevant' compiler output and
-act as proverbial [broken windows](https://en.wikipedia.org/wiki/Broken_windows_theory).
+make it hard to see "relevant" compiler output, and make a codebase feel
+lower-quality in a way that does not inspire people or invite people to
+help solve the problem.
 This convention is not new with the Rust community; many C++ projects have take
 this approach before Rust came to be with "warnings clean" being a goal for
 correctness.
