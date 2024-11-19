@@ -348,6 +348,8 @@ The noun form is used for:
 - Dynamic lint group
 
 Options
+- `#[nit]` / `--nit` / `-N` / `-Wnits`
+  - Unsure how to word this as a sentence
 - `#[note]` / `--note` / `-N` / `-Wnotes`
   - "note the let-and-return in this code"
 - `#[notice]` / `--notice` / `-N` / `-Wnotices`
