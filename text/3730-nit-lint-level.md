@@ -241,7 +241,8 @@ $ rustc --nit deprecated ...
 $ rustc -Ndeprecated ...
 ```
 
-This will be rendered like a `note:`.
+These will be rendered like other lint levels with a diagnostic level and coloring that conveys the non-blocking, helpful nature.
+For example, this could be rendered like a `note:` or `help:` diagnostic level.
 
 Rustc will have a dynamic lint group of all `nit`s, much like `warnings` is all lints at level `warn` at the time of processing, `-Anits`.
 
