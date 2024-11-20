@@ -135,6 +135,20 @@ function-like macro. This has the potential for confusion, given the
 append-only nature of derive macros versus the behavior of normal function-like
 macros. It might potentially be useful for code reuse, however.
 
+## Syntax alternatives
+
+Rather than using `#[macro_derive]`, we could have `macro_rules!` macros
+provide `derive(...)` rules, similar to the `attr(...)` rules proposed by RFC
+3697.
+
+It seems less important to allow a single macro to be both a derive and
+non-derive macro, not least of which because of the different naming
+conventions (`MyTrait` vs `my_macro`).
+
+However, using `derive(...)` syntax would make it easier to add parameterized
+derives in the future (e.g. `derive(MyTrait(params))`). `derive(...)` syntax
+would also be more consistent with the proposed declarative attribute macros.
+
 # Prior art
 [prior-art]: #prior-art
 
