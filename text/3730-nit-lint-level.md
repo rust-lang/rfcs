@@ -321,6 +321,17 @@ them will be present unless `RUSTFLAGS=-Anits` is applied by the user.
 - `nits` lint group is created to give rustc-only or third-party build tools a built-in way to control these besides ignoring them like Cargo
 - Cargo could print a message that `nit`s are present to help raise awareness of how to show them but they will likely always be present, so this is noise to experienced users.
 
+## `clippy::pedantic`
+
+In purpose, this has a lot of overlap with
+[`clippy::pedantic`](https://rust-lang.github.io/rust-clippy/master/index.html?groups=pedantic#/print_stderr)
+in that these are "too noisy" of lints.
+A mechanism could be devised for hiding/showing this group within Cargo.
+
+However,
+- This is clippy specific.  The conversation would instead shift to getting an agreed-to convention for this group.
+- The group is linter-defined and users can't override it, lints into or out of `pedantic` and `allow` or `warn`.
+
 # Prior art
 [prior-art]: #prior-art
 
