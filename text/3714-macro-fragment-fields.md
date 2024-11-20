@@ -211,6 +211,12 @@ We should establish and document a pattern for how to start out by parsing
 the case where `$t` is an `enum`. This would benefit from having better
 conditional syntax.
 
+We may want to have a fragment specifier or fields that allow treating a struct
+or an enum variant uniformly, not caring whether it is tuple-style or
+struct-style. This is another case study in needing synthesized tokens, since
+we could present a tuple struct as though it were a struct with fields named
+`0`, `1`, etc.
+
 We may want to provide a macro metavariable function to extract syntax that has
 specific attributes (e.g. derive helper attributes) attached to it. For
 instance, a derive macro applied to a struct may want to get the fields that
