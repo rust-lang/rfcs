@@ -196,6 +196,11 @@ conditional construct.
 If, in the future, we introduce fields whose values have fragment types that
 themselves have fields, we should support nested field syntax.
 
+We should establish and document a pattern for how to start out by parsing
+`$t:adt`, get `${t.name}`, and then handle the case where `$t` is a `struct` vs
+the case where `$t` is an `enum`. This would benefit from having better
+conditional syntax.
+
 We may want to provide a macro metavariable function to extract syntax that has
 specific attributes (e.g. derive helper attributes) attached to it. For
 instance, a derive macro applied to a struct may want to get the fields that
