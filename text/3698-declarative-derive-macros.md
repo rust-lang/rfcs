@@ -229,6 +229,10 @@ We could support passing parameters to derive macros (e.g.
 having `derive(...)` rules inside the `macro_rules!` macro declaration, similar
 to the `attr(...)` rules proposed in RFC 3697.
 
+In the future, if we support something like `const Trait` or similar trait
+modifiers, we'll want to support `derive(const Trait)`, and define how a
+`macro_rules!` derive handles that.
+
 We should provide a way for `macro_rules!` macros to provide better error
 reporting, with spans, rather than just pointing to the macro.
 
