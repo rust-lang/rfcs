@@ -400,3 +400,16 @@ Options
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## First-class SARIF support
+
+Like wanting [JUnit support for libtest](https://github.com/rust-lang/rust/issues/85563),
+having SARIF support in first-party Rust linters (rustc, rustdoc, rust-clippy, or their Cargo wrappers)
+would help in integrating Rust with third-party systems without needing a third-party tool like
+[`clippy-sarif`](https://crates.io/crates/clippy-sarif).
+See also [rust-clippy#8121](https://github.com/rust-lang/rust-clippy/issues/8121).
+
+In moving forward with this, we'd need to figure out
+- What layer this should be supported in
+- The semantics for output teeing (specifying the location, separate output format from teed format, etc)
+- Versioning or flavors of these documents
