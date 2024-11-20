@@ -269,6 +269,24 @@ For example, this could be rendered like a `note:` or `help:` diagnostic level.
 
 Rustc will have a dynamic lint group of all `nit`s, much like `warnings` is all lints at level `warn` at the time of processing, `-Anits`.
 
+## Clippy
+
+Like Rustc, Clippy would focus on the mechanism.
+Add support for the new lint:
+```rust
+#![nit(deprecated)]
+```
+```console
+$ rustc --nit clippy::pedantic ...
+```
+```console
+$ rustc -Nclippy::pedantic ...
+```
+
+These will be rendered like Rustc.
+
+These will be part of Rustc's dynamic lint group, much like `warnings`.
+
 ## Cargo
 
 Cargo implements the semantics for this to be a first-class non-blocking lint level.
