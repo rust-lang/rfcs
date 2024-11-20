@@ -192,6 +192,26 @@ recommending against pressuring crate maintainers to adopt this feature
 rapidly, and encourage crate maintainers to link to that guidance if such
 requests arise.
 
+## Helper attribute namespacing and hygiene
+
+Should we have a namespacing and hygiene mechanism for helper attributes?
+Adding new helper attributes is currently a compatibility hazard, because
+they're not namespaced and can conflict.
+
+For instance, could we have `pub macro_helper_attr! skip` in the standard
+library, namespaced under `core::derives` or similar? Could we let macros parse
+that in a way that matches it in a namespaced fashion, so that:
+- If you write `#[core::derives::skip]`, the macro matches it
+- If you `use core::derives::skip;` and `write #[skip]`, the macro matches it
+- If you `use elsewhere::skip` (or no import at all) and write `#[skip]`, the
+  macro *doesn't* match it.
+
+We already have *some* interaction between macros and name resolution, in order
+to have namespaced `macro_rules!` macros. Would something like this be feasible?
+
+(We would still need to specify the exact mechanism by which macros match these
+helper attributes.)
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
