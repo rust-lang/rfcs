@@ -190,7 +190,9 @@ We should provide a means to perform a `derive` on a struct without being
 directly attached to that struct.
 
 We could support passing parameters to derive macros (e.g.
-`#[derive(Trait(params), OtherTrait(other, params))]`).
+`#[derive(Trait(params), OtherTrait(other, params))]`). This may benefit from
+having `derive(...)` rules inside the `macro_rules!` macro declaration, similar
+to the `attr(...)` rules proposed in RFC 3697.
 
 We should provide a way for `macro_rules!` macros to provide better error
 reporting, with spans, rather than just pointing to the macro.
