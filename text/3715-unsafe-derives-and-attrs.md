@@ -81,6 +81,14 @@ modifier to `Trait` (e.g. an unsafe version of `Trait`).
 RFC 3325 defined unsafe attributes. This RFC provides a natural extension of
 that mechanism to derives.
 
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+This RFC proposes accepting both `#[unsafe(derive(MyTrait))]` and
+`#[derive(unsafe(MyTrait))]`, among other reasons to make it easy to write
+`#[derive(SafeTrait, unsafe(MyTrait))]`. Should we allow both, or only allow
+the former?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
