@@ -224,3 +224,7 @@ both do all the parsing regardless of which got invoked first, likely by
 invoking a common helper. We should consider if we consider that mechanism
 sufficient, or if we should provide another mechanism for a set of related
 attribute macros to appear in any order.
+
+If it turns out many users of attribute macros want to emit new tokens but
+leave the tokens they were applied to unmodified, we may want to have a
+convenient mechanism for that.
