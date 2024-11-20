@@ -129,6 +129,16 @@ can synthesize tokens if necessary to provide useful values for fields.
 macro metavariable expressions, introduced a similar mechanism to add helpers
 for macros to more easily process the contents of fragments.
 
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+Should we synthesize an `()` for `return_type`, or should we treat it as an
+optional field?
+
+We could also provide both (e.g. `.return_type` and `.opt_return_type`), or
+provide a subfield of `.return_type` that contains only the type as written and
+not any synthesized `()`.
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
