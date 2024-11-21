@@ -171,26 +171,6 @@ recommending against pressuring crate maintainers to adopt this feature
 rapidly, and encourage crate maintainers to link to that guidance if such
 requests arise.
 
-## Helper attribute namespacing and hygiene
-
-Should we have a namespacing and hygiene mechanism for helper attributes?
-Adding new helper attributes is currently a compatibility hazard, because
-they're not namespaced and can conflict.
-
-For instance, could we have `pub macro_helper_attr! skip` in the standard
-library, namespaced under `core::derives` or similar? Could we let macros parse
-that in a way that matches it in a namespaced fashion, so that:
-- If you write `#[core::derives::skip]`, the macro matches it
-- If you `use core::derives::skip;` and `write #[skip]`, the macro matches it
-- If you `use elsewhere::skip` (or no import at all) and write `#[skip]`, the
-  macro *doesn't* match it.
-
-We already have *some* interaction between macros and name resolution, in order
-to have namespaced `macro_rules!` macros. Would something like this be feasible?
-
-(We would still need to specify the exact mechanism by which macros match these
-helper attributes.)
-
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -223,10 +203,6 @@ As people test this feature and run into limitations of `macro_rules!` parsing,
 we should consider additional features to make this easier to use for various
 use cases.
 
-We may want to provide a means to namespace helper attributes or detect
-collisions between them. This would apply to both proc macros and
-`macro_rules!` macros.
-
 We could provide a macro matcher to match an entire struct field, along with
 syntax (based on macro metavariable expressions) to extract the field name or
 type (e.g. `${f.name}`). This would simplify many common cases by leveraging
@@ -236,3 +212,27 @@ We could do the same for various other high-level constructs.
 
 We may want to provide simple helpers for generating/propagating `where`
 bounds, which would otherwise be complex to do in a `macro_rules!` macro.
+
+## Helper attribute namespacing and hygiene
+
+We should provide a way for derive macros to define helper attributes ([inert
+attributes](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes)
+that exist for the derive macro to parse and act upon). Such attributes are
+supported by proc macro derives; however, such attributes have no namespacing,
+and thus currently represent compatibility hazards because they can conflict.
+We should provide a namespaced, hygienic mechanism for defining and using
+helper attributes.
+
+For instance, could we have `pub macro_helper_attr! skip` in the standard
+library, namespaced under `core::derives` or similar? Could we let macros parse
+that in a way that matches it in a namespaced fashion, so that:
+- If you write `#[core::derives::skip]`, the macro matches it
+- If you `use core::derives::skip;` and `write #[skip]`, the macro matches it
+- If you `use elsewhere::skip` (or no import at all) and write `#[skip]`, the
+  macro *doesn't* match it.
+
+We already have *some* interaction between macros and name resolution, in order
+to have namespaced `macro_rules!` macros. Would something like this be feasible?
+
+(We would still need to specify the exact mechanism by which macros match these
+helper attributes.)
