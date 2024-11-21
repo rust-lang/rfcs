@@ -82,6 +82,40 @@ syntax without an unsafe derive will trigger an "unused unsafe"
 lint. (RFC 3715 defines the equivalent mechanism for proc macro
 derives.)
 
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+The grammar for macros is extended as follows:
+
+> _MacroRule_ :\
+> &nbsp;&nbsp; ( `unsafe`<sup>?</sup> `derive` `(` `)` )<sup>?</sup>  _MacroMatcher_ `=>` _MacroTranscriber_
+
+The _MacroMatcher_ matches the entire construct the attribute was
+applied to, receiving precisely what a proc-macro-based attribute
+would in the same place.
+
+(The empty parentheses after `derive` reserve future syntax space
+for derives accepting arguments, at which time they'll be replaced
+by a second _MacroMatcher_ that matches the arguments.)
+
+A derive invocation that uses an `unsafe derive` rule will produce
+an error if invoked without using the `unsafe` derive syntax. A
+derive invocation that uses an `derive` rule (without `unsafe`)
+will trigger the "unused unsafe" lint if invoked using the `unsafe`
+derive syntax. A single derive macro may have both `derive` and
+`unsafe derive` rules, such as if only some invocations are unsafe.
+
+This grammar addition is backwards compatible: previously, a _MacroRule_ could
+only start with `(`, `[`, or `{`, so the parser can easily distinguish rules
+that start with `derive` or `unsafe`.
+
+Adding `derive` rules to an existing macro is a semver-compatible change,
+though in practice, it will likely be uncommon.
+
+If a user invokes a macro as a derive and that macro does not have any `derive`
+rules, the compiler should give a clear error stating that the macro is not
+usable as a derive because it does not have any `derive` rules.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
