@@ -213,6 +213,10 @@ We could do the same for various other high-level constructs.
 We may want to provide simple helpers for generating/propagating `where`
 bounds, which would otherwise be complex to do in a `macro_rules!` macro.
 
+We may want to add a lint for macro names, encouraging macros with derive rules
+to use `CamelCase` names, and encouraging macros without derive rules to use
+`snake_case` names.
+
 ## Helper attribute namespacing and hygiene
 
 We should provide a way for derive macros to define helper attributes ([inert
