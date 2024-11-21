@@ -85,6 +85,15 @@ This is being included for completeness of different workflows of lints and in
 case it inspires an alternative design that can better encompass cases like
 this.
 
+A linting workflow that this RFC intentionally does not try to support is for soft-errors that block on release,
+in addition to soft-errors that block CI.
+Historically, the software industry has had separate development and hardening phases.
+The more recent trend has focused on always being in a releasable state through
+the aid of code review and automated testing in CI.
+While there are still times for more explicit hardening phases (gated features, human acceptance testing),
+we don't see enough benefit for deferrings lints to a hardening phase to outweigh the costs of
+smoothing out this workflow being misapplied.
+
 ## Example: `clap`
 
 Each lint below from `clap`s `Cargo.toml` represents a lint that could be useful but not worthwhile enough to `allow`:
