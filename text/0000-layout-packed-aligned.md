@@ -114,8 +114,8 @@ target triplet, either:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Although [https://doc.rust-lang.org/reference/type-layout.html#the-c-representation](the Rust reference) documents the meaning
-of repr(C) quite clearly (types are laid out linearly, according to a fixed algorithm.), when you see `#[repr(C)]` in code,
+Although [The Rust reference](https://doc.rust-lang.org/reference/type-layout.html#the-c-representation) documents the meaning
+of repr(C) quite clearly (types are laid out linearly, according to a fixed algorithm), when you see `#[repr(C)]` in code,
 its meaning can be somewhat ambiguous. When someone puts `#[repr(C)]` on their struct, their intention could be one of three things:
 1. Having a target-independent and stable representation of the data structure for storage or transmission.
 2. FFI with C and C++ libraries compiled for the same target.
