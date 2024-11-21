@@ -71,6 +71,20 @@ teams to migrate `allow`s to `warn`s by having a period of time in a
 non-blocking lint level so people can benefit immediately while having more
 flexibility on when they pay the cost for turning the lint into a soft-error.
 
+One area worth exploring for how lints are structured that we will not be
+addressing is when they become `allow`ed under alternative circumstances.
+These range from
+[`avoid-breaking-exported-api`](https://doc.rust-lang.org/clippy/lint_configuration.html#avoid-breaking-exported-api)
+which would be of interest to know about when developing new APIs
+to
+[`allow-dbg-in-tests`](https://doc.rust-lang.org/clippy/lint_configuration.html#allow-dbg-in-tests)
+which the developer may not care to have called out.
+As default lint levels are being left to the teams,
+the handling of these cases are also being left to the relevant teams.
+This is being included for completeness of different workflows of lints and in
+case it inspires an alternative design that can better encompass cases like
+this.
+
 ## Example: `clap`
 
 Each lint below from `clap`s `Cargo.toml` represents a lint that could be useful but not worthwhile enough to `allow`:
