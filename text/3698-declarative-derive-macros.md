@@ -26,19 +26,18 @@ feature.
 [guide-level-explanation]: #guide-level-explanation
 
 You can define a macro to implement `derive(MyTrait)` by defining a
-`macro_rules!` macro with the `#[macro_derive]` attribute. Such a macro can
-create new items based on a struct, enum, or union. Note that the macro can
-only append new items; it cannot modify the item it was applied to.
+`macro_rules!` macro with one or more `derive()` rules. Such a macro can create
+new items based on a struct, enum, or union. Note that the macro can only
+append new items; it cannot modify the item it was applied to.
 
 For example:
 
 ```rust
 trait Answer { fn answer(&self) -> u32; }
 
-#[macro_derive]
 macro_rules! Answer {
     // Simplified for this example
-    (struct $n:ident $_:tt) => {
+    derive() (struct $n:ident $_:tt) => {
         impl Answer for $n {
             fn answer(&self) -> u32 { 42 }
         }
@@ -61,18 +60,6 @@ A derive macro may share the same path as a trait of the same name. For
 instance, the name `mycrate::MyTrait` can refer to both the `MyTrait` trait and
 the macro for `derive(MyTrait)`. This is consistent with existing derive
 macros.
-
-A derive macro may also define *helper attributes*. These attributes are
-[inert](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes),
-and exist for the derive macro to parse and act upon. Note that
-they're visible to *all* macros, not just the one that defined them; macros
-should ignore any attributes not meant for them.
-
-To define helper attributes, put an attributes key in the `macro_derive`
-attribute, with a comma-separated list of identifiers for helper attributes:
-`#[macro_derive(attributes(helper))]`. The derive macro can process the
-`#[helper]` attribute, along with any arguments to it, as part of the item the
-derive macro was applied to.
 
 If a derive macro emits a trait impl for the type, it may want to add the
 [`#[automatically_derived]`](https://doc.rust-lang.org/reference/attributes/derive.html#the-automatically_derived-attribute)
@@ -137,17 +124,13 @@ macros. It might potentially be useful for code reuse, however.
 
 ## Syntax alternatives
 
-Rather than using `#[macro_derive]`, we could have `macro_rules!` macros
-provide `derive(...)` rules, similar to the `attr(...)` rules proposed by RFC
-3697.
+Rather than using `derive()` rules, we could have `macro_rules!` macros use a
+`#[macro_derive]` attribute, similar to the `#[proc_macro_derive]` attribute
+used for proc macros.
 
-It seems less important to allow a single macro to be both a derive and
-non-derive macro, not least of which because of the different naming
-conventions (`MyTrait` vs `my_macro`).
-
-However, using `derive(...)` syntax would make it easier to add parameterized
-derives in the future (e.g. `derive(MyTrait(params))`). `derive(...)` syntax
-would also be more consistent with the proposed declarative attribute macros.
+However, this would be inconsistent with `attr()` rules as defined in RFC 3697.
+This would also make it harder to add parameterized derives in the future (e.g.
+`derive(MyTrait(params))`).
 
 # Prior art
 [prior-art]: #prior-art
@@ -160,10 +143,6 @@ crate defines proc macros that allow invoking declarative macros as derives,
 demonstrating a demand for this. This feature would allow defining such derives
 without requiring proc macros at all, and would support the same invocation
 syntax as a proc macro.
-
-The `macro_derive` attribute and its `attributes` syntax are based on the
-[existing `proc_macro_derive` attribute for proc
-macros](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros).
 
 Some crates in the ecosystem already implement the equivalent of derives using
 declarative macros; for instance, see
