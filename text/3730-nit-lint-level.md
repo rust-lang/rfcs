@@ -352,6 +352,15 @@ them will be present unless `RUSTFLAGS=-Anits` is applied by the user.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+Overall, this solution benefits from
+- Users have adopted `[lints]` for controlling their project lint semantics, so this fits right in.
+  - In particular, `[lints]` design is optimized for setting only `level`.
+- The `CARGO_BUILD_WARNINGS=deny` work for further cements the relationship of lint levels with the semantic levels discusse
+- Users or tooling that request to see `nits` through Cargo can do so without
+  recompilation because Rusts always repors `nits`, Cargo records this and
+  replays it on cache hits, and the choice to display is made after this.
+
+For some specifics
 - `CARGO_BUILD_NITS=allow` is the default to avoid "warning fatigue"
 - The default level for lints is left unchanged by this RFC to keep the scope of what is designed and reviewed to the minimum
 - Rustc shows `nit`s by default, rather than hide them and require a separate opt-in mechanism for Cargo to see them
