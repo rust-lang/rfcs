@@ -359,6 +359,7 @@ Overall, this solution benefits from
 - Users or tooling that request to see `nits` through Cargo can do so without
   recompilation because Rusts always repors `nits`, Cargo records this and
   replays it on cache hits, and the choice to display is made after this.
+- LSPs, Sarif, etc being able to report soft-errors and nits differently to the user
 
 For some specifics
 - `CARGO_BUILD_NITS=allow` is the default to avoid "warning fatigue"
