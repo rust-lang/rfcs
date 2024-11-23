@@ -1340,6 +1340,39 @@ The usage of `const` provides a specific place to document the conditions and be
 
 The original proposal was `static continue`, which is fine but `const continue` gives a better intuition for what the operand should be.
 
+### Using a macro to defer syntax choices
+
+Another option is to defer the question on what the right syntax is by using macros. A similar approach has been taken with `addr_of!(x)` → `&raw x` and `matches!(x, p)` → `x is p`. For instance:
+
+```rust
+finite_state_machine! {
+    goto dyn count % 4;
+    0 => {
+        one();
+        goto 3;
+    }
+    3 => {
+        one();
+        goto 2;
+    }
+    2 => {
+        one();
+        goto 1;
+    }
+    1 => {
+        one();
+        n -= 1;
+        match n {
+            0 => break,
+            _ => goto 0,
+        }
+    }
+    _ => unreachable!(),
+};
+```
+
+Such a macro needs serious compiler support: it needs all the backend features (lowering to a MIR `goto`, validating that the value of a non-dyn `goto` is static promotable), and likely also some custom error messages around the `goto` "keyword", or just the syntax of this macro in general.
+
 ## Why `loop match` is the best solution
 
 In summary, `loop match`:
