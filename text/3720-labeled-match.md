@@ -1018,7 +1018,7 @@ loop match count % 4 {
   0 => { one(); const continue 3 }
   3 => { one(); const continue 2 }
   2 => { one(); const continue 1 }
-  1 => { one(); n -= 1; if n > 0 { continue count % 4; } }
+  1 => { one(); n -= 1; if n > 0 { const continue 0; } else { break; } }
   _ => unreachable(),
 }
 ```
