@@ -1474,11 +1474,10 @@ are examples of `Aligned` traits being added in the ecosystem:
 - [`unsized-vec`][crate_unsized_vec] implements a `Vec` that depends on knowing
   whether a type has an alignment or not.
 
-An `Aligned` trait could be added to this proposal between `ValueSized` and `Pointee`
-in the trait hierarchy which would be implemented automatically by the compiler for
-all `ValueSized` and `Sized` types, but could be implemented for extern types by
-users when the alignment of an extern type is known. Any type implementing `Aligned`
-could be used as the last element in a compound type.
+An `Aligned` trait hierarchy could be introduced alongside this proposal. It wouldn't
+viable to introduce `Aligned` within this hierarchy, as `dyn Trait` which is `ValueSized`
+would not be aligned, but some extern types could be `Aligned`, so there isn't an obvious
+place that an `Aligned` trait could be included in this hierarchy.
 
 ## Custom DSTs
 [custom-dsts]: #custom-dsts
