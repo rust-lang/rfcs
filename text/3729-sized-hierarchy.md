@@ -539,9 +539,31 @@ or `Default`) will not be sugar for `const Sized`, these will remain bare `Sized
 If traits with a `Sized` supertrait are later made const, then their supertrait
 would be made `~const Sized`.
 
-An implicit `const ValueSized` bound is added to the `Self` type of traits. Like
-implicit `const Sized` bounds, this is omitted if an explicit `const Sized`, `Sized`,
-`ValueSized` or `Pointee` bound is present.
+An implicit `const ValueSized` bound is added to the `Self` type of traits to
+avoid backwards incompatibility[^8]. Like implicit `const Sized` bounds, this is
+omitted if an explicit `const Sized`, `Sized`, `ValueSized` or `Pointee` bound is
+present.
+
+[^8]: If a user defines a subtrait of an existing trait, which has a method calling
+      a function with a `?Sized` bound (later a `const ValueSized` bound) instantiated
+      with `Self` then having no implicit `const ValueSized` bound on `Self` or
+      relaxing the implicit `const ValueSized` bound on `Self` could be a breaking
+      change.
+
+      For example, if `std::io::Read` had no implicit `const ValueSized` bound on `Self` or
+      was relaxed to a `Pointee` bound on `Self`, then the following example would fail
+      to compile:
+
+      ```rust
+      trait Sub: std::io::Read {
+          // Assume `std::mem::needs_drop<T: ?Sized>`'s parameter remains `T: ?Sized`
+          // (or `const ValueSized`).
+          fn example() -> bool { std::mem::needs_drop::<Self>() } // breaks!
+      }
+      ```
+
+      Therefore, it is necessary that a default implicit `const ValueSized` supertrait
+      is added.
 
 As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
@@ -894,13 +916,13 @@ to with fully-qualified syntax.
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
 
-Previous iterations of this RFC had both linear[^8] and non-linear[^9] trait hierarchies
+Previous iterations of this RFC had both linear[^9] and non-linear[^10] trait hierarchies
 which included a `RuntimeSized` trait and did not use const traits. However, both of
 these were found to be backwards-incompatible due to being unable to relax the
 supertrait of `Clone`. Without const traits, it is not possible to represent
 runtime-sized types.
 
-[^8]: In previous iterations, the proposed linear trait hierarchy was:
+[^9]: In previous iterations, the proposed linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────┐
@@ -918,7 +940,7 @@ runtime-sized types.
       `size_of_val` would need to be able to be instantiated with `ValueSized`
       types and not `RuntimeSized` types, and that this could not be
       represented.
-[^9]: In previous iterations, the proposed non-linear trait hierarchy was:
+[^10]: In previous iterations, the proposed non-linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────────────────┐
@@ -1396,13 +1418,13 @@ None currently.
 
 Another compelling feature that requires extensions to Rust's sizedness traits to
 fully support is wasm's `externref`. `externref` types are opaque types that cannot
-be put in memory [^10]. `externref`s are used as abstract handles to resources in the
+be put in memory [^11]. `externref`s are used as abstract handles to resources in the
 host environment of the wasm program, such as a JavaScript object. Similarly, when
 targetting some GPU IRs (such as SPIR-V), there are types which are opaque handles
 to resources (such as textures) and these types, like wasm's `externref`, cannot
 be put in memory.
 
-[^10]: When Rust is compiled to wasm, we can think of the memory of the Rust program
+[^11]: When Rust is compiled to wasm, we can think of the memory of the Rust program
 as being backed by something like a `[u8]`, `externref`s exist outside of that `[u8]`
 and there is no way to put an `externref` into this memory, so it is impossible to have
 a reference or pointer to a `externref`. `wasm-bindgen` currently supports `externref`
