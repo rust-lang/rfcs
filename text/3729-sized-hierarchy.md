@@ -359,14 +359,15 @@ backwards-incompatibilities are avoided for `ValueSized` and `Pointee`.
 
 Relaxing a bound from `Sized` to `ValueSized` or `Pointee` is non-breaking as
 the calling bound must have either `T: Sized` or `T: ?Sized`, both of which
-would satisfy any relaxed bound[^4].
+would satisfy any relaxed bound[^4]. 
 
-However, it would still be backwards-incompatible to relax the `Sized` bound on
-a trait's associated type[^5] for the proposed traits.
+However, it is not backwards compatible to relax the bounds of trait methods[^5]
+and it would still be backwards-incompatible to relax the `Sized` bound on
+a trait's associated type[^6] for the proposed traits.
 
 It is possible further extend this hierarchy in future by adding new traits between
 those proposed in this RFC or after the traits proposed in this RFC without breaking
-backwards compatibility, depending on the bounds that would be introduced[^6].
+backwards compatibility, depending on the bounds that would be introduced[^7].
 
 [^2]: Adding a new automatically implemented trait and adding it as a bound to
       an existing function is backwards-incompatible with generic functions. Even
@@ -414,7 +415,7 @@ backwards compatibility, depending on the bounds that would be introduced[^6].
       | `T: Sized` (implicit or explicit) | `T: const Sized`    |
       | `T: ?Sized`                       | `T: const ValueSized` |
 
-      Any existing function in the standard library with a `T: Sized` bound
+      Any existing free function in the standard library with a `T: Sized` bound
       could be changed to one of the following bounds and remain compatible with
       any callers that currently exist (as per the above table):
 
@@ -428,7 +429,29 @@ backwards compatibility, depending on the bounds that would be introduced[^6].
       | ------------------ | ------------------ | ------------ | ---------
       | `const Sized`      | ✔                  | ✔            | ✔
       | `const ValueSized` | ✔                  | ✔            | ✔
-[^5]: Associated types of traits have default `Sized` bounds which cannot be
+[^5]: In a crate defining a trait which has method with sizedness bounds, such
+      as...
+
+      ```rust
+      trait Foo {
+        fn bar<T: Sized>(t: T) -> usize;
+        fn baz<T: ?Sized>(t: T) -> usize;
+      }
+      ```
+
+      ..then an implementor of `Foo` may rely on the existing bound and
+      these implementors of `Foo` would break if the bounds of `bar` or
+      `baz` were relaxed.
+
+      ```rust
+      struct Qux;
+
+      impl Foo for Qux {
+        fn bar<T: Sized>(_: T) -> usize { std::mem::size_of<T> }
+        fn baz<T: ?Sized>(t: T) -> usize { std::mem::size_of_val(t) }
+      }
+      ```
+[^6]: Associated types of traits have default `Sized` bounds which cannot be
       relaxed. For example, relaxing a `Sized` bound on `Add::Output` breaks
       a function which takes a `T: Add` and passes `<T as Add>::Output` to
       `size_of` as not all types which implement the relaxed bound will
@@ -452,7 +475,7 @@ backwards compatibility, depending on the bounds that would be introduced[^6].
 
       Relaxing the bounds of an associated type is in effect giving existing
       parameters a less restrictive bound which is not backwards compatible.
-[^6]: If it was desirable to add a new trait to this RFC's proposed hierarchy
+[^7]: If it was desirable to add a new trait to this RFC's proposed hierarchy
       then there are four possibilities:
 
       - Before `Sized`
@@ -871,13 +894,13 @@ to with fully-qualified syntax.
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
 
-Previous iterations of this RFC had both linear[^7] and non-linear[^8] trait hierarchies
+Previous iterations of this RFC had both linear[^8] and non-linear[^9] trait hierarchies
 which included a `RuntimeSized` trait and did not use const traits. However, both of
 these were found to be backwards-incompatible due to being unable to relax the
 supertrait of `Clone`. Without const traits, it is not possible to represent
 runtime-sized types.
 
-[^7]: In previous iterations, the proposed linear trait hierarchy was:
+[^8]: In previous iterations, the proposed linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────┐
@@ -895,7 +918,7 @@ runtime-sized types.
       `size_of_val` would need to be able to be instantiated with `ValueSized`
       types and not `RuntimeSized` types, and that this could not be
       represented.
-[^8]: In previous iterations, the proposed non-linear trait hierarchy was:
+[^9]: In previous iterations, the proposed non-linear trait hierarchy was:
 
       ```
       ┌───────────────────────────────────────────────────────────────┐
@@ -1363,19 +1386,23 @@ None currently.
 - Consider allowing associated type bounds to be relaxed over an edition.
     - i.e. `type Output: if_rust_2021(Sized) + NewAutoTrait` or something like that,
       out of scope for this RFC.
+- Consider allowing traits to relax their bounds and having their implementor have
+  stricter bounds - this would enable traits and implementations to migrate towards
+  more relaxed bounds.
+    - This would be unintuitive to callers but would not break existing code.
 
 ## externref
 [externref]: #externref
 
 Another compelling feature that requires extensions to Rust's sizedness traits to
 fully support is wasm's `externref`. `externref` types are opaque types that cannot
-be put in memory [^9]. `externref`s are used as abstract handles to resources in the
+be put in memory [^10]. `externref`s are used as abstract handles to resources in the
 host environment of the wasm program, such as a JavaScript object. Similarly, when
 targetting some GPU IRs (such as SPIR-V), there are types which are opaque handles
 to resources (such as textures) and these types, like wasm's `externref`, cannot
 be put in memory.
 
-[^9]: When Rust is compiled to wasm, we can think of the memory of the Rust program
+[^10]: When Rust is compiled to wasm, we can think of the memory of the Rust program
 as being backed by something like a `[u8]`, `externref`s exist outside of that `[u8]`
 and there is no way to put an `externref` into this memory, so it is impossible to have
 a reference or pointer to a `externref`. `wasm-bindgen` currently supports `externref`
