@@ -104,7 +104,7 @@ Structs with named fields also have a size known at compile time, but instead of
 
 Argument unpacking is syntactic sugar, causing it to expand to comma-separated field accesses exhaustively for the collection being unpacked. The order in which a function call's argument unpackings are desugared does not matter, since the same result follows from unpacking in any order.
 
-Unary prefix ellipsis `...` symbol, i.e. three consecutive ASCII dot characters, followed by an expression is selected as the syntax for argument unpacking. The unpacking operator `...` has a high precedence, forcing the developer to explicitly use parentheses or braces with any complicated expressions following it. The syntax is limited to be used only within the function call parentheses.
+Unary prefix ellipsis `...` symbol, i.e. three consecutive ASCII dot characters without any whitespace allowed between them, followed by an expression is selected as the syntax for argument unpacking. The unpacking operator `...` has a high precedence, forcing the developer to explicitly use parentheses or braces with any complicated expressions following it. The syntax is limited to be used only within the function call parentheses.
 
 In the function call, argument unpacking can occur at any comma-separated location in place of a conventional argument and the arguments coming after that until the collection has been completely unpacked. Argument unpacking can occur arbitrarily many times as well, as long as there are corresponding valid parameter slots left to pass the next arguments into.
 
@@ -113,7 +113,15 @@ For example, if a function is defined with three parameters and it is called wit
 ### Implementation of the Syntax Change
 
 The function call syntax is modified to allow a comma-separated list of (argument unpacking OR expression) choices instead of expressions. Specifically, *CallParams* in the [call expressions](https://doc.rust-lang.org/reference/expressions/call-expr.html) and the [method-call expressions](https://doc.rust-lang.org/reference/expressions/method-call-expr.html) are changed in the following way:
-- *CallParams* is defined as: *(Expression | `...`Expression) (`,` (Expression | `...`Expression))\*`,`?*.
+
+> _CallParams_ :\
+> &nbsp;&nbsp; (_Expression_ | `...`_Expression_) (`,` (_Expression_ | `...`_Expression_))<sup>\*</sup> `,`<sup>?</sup>
+
+### Formatting
+
+Argument unpacking is customarily formatted such that the unary ellipsis prefix is attached to the expression being unpacked, i.e., there is no whitespace between `...` and `expr`. In the context where argument unpacking is used – between the parentheses of a call expression – each occurrence of an `...expr` in the comma-separated list of arguments is formatted the same way as if it was a conventional argument.
+
+`rustfmt` formats uses of argument unpacking in the way described above.
 
 ## Unpacking Rules
 
