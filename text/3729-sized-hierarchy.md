@@ -1073,6 +1073,34 @@ be equal to `size_of::<svint8_t>()`.
 Changing `size_of` and `size_of_val` to `~const Sized` bounds ensures that
 `const { size_of:<svint8_t>() }` is not possible.
 
+## What about `MetaSized` instead of or in addition to `ValueSized`?
+[what-about-metasized-instead-of-or-in-addition-to-valuesized]: #what-about-metasized-instead-of-or-in-addition-to-valuesized
+
+`ValueSized` is defined as requiring a value of a type in order to compute
+its size. An alternative or complement to `ValueSized` is `MetaSized`, first
+proposed in [rfcs#3396][rfc_extern_types_v2], which requires inspecting
+pointer metadata to compute the size.
+
+`ValueSized` has a downside that its interaction with mutexes introduces
+the opportunity for deadlocks which are unintuitive:
+
+Consider a version of the `CStr` type which is a dynamically sized and
+computes its size by counting the characters before the null byte (this
+is different from the existing `std::ffi::CStr` which uses pointer metadata
+like `MetaSized`). `CStr` would implement `ValueSized`. If this type were
+used in a `Mutex<T>` then the mutex would also implement `ValueSized` and
+require locking itself to compute the size of the `CStr` that it guards,
+which could result in unexpected deadlocks:
+
+```rust
+let mutex = Mutex::new(CStr::from_str("foo"));
+let _guard = mutex.lock().unwrap();
+size_of_val(&mutex); // deadlock!
+```
+
+`MetaSized` would avoid this hazard by keeping the size of dynamically sized
+types in pointer metadata, which can be accessed without locking a mutex.
+
 ## Alternatives to this accepting this RFC
 [alternatives-to-this-rfc]: #alternatives-to-this-rfc
 
@@ -1478,8 +1506,6 @@ None currently.
 - Additional size traits could be added as supertraits of `Sized` if there are
   other delineations in sized-ness that make sense to be drawn (subject to
   avoiding backwards-incompatibilities when changing APIs).
-    - e.g. `MetaSized` from [rfcs#3396][rfc_extern_types_v2] could be added between
-      `Sized` and `ValueSized`
 - The requirement that users cannot implement any of these traits could be
   relaxed in future if required.
 - Depending on a trait which has one of the proposed traits as a supertrait could
