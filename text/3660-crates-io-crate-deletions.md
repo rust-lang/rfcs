@@ -8,7 +8,7 @@ This RFC proposes a mechanism for crate authors to delete their crates from crat
 
 # Motivation
 
-There are a variety of reasons why a crate author might want to delete a crate or version from crates.io:
+There are a variety of reasons why a crate author might want to delete a crate from crates.io:
 
 * You published something accidentally.
 * You wanted to test crates.io.
@@ -34,14 +34,9 @@ We propose to allow crate authors to delete their **crates** from crates.io unde
   * The crate is not depended upon by any other crate on crates.io (i.e. it has no reverse dependencies),
   * The crate has been downloaded less than 100 times for each month it has been published.
 
-We also propose to allow crate authors to delete **versions** of their crates from crates.io under the following conditions:
+This crate owner action will be enabled by a new API endpoint:
 
-* The version has been published for less than 72 hours.
-
-These crate owner actions will be enabled by two new API endpoints:
-
-- `DELETE /api/v1/crates/:crate_id` to delete a crate
-- `DELETE /api/v1/crates/:crate_id/:version` to delete a version
+- `DELETE /api/v1/crates/:crate_id`
 
 
 # Drawbacks
@@ -52,15 +47,12 @@ The main drawback of this proposal is that it makes the crates.io registry less 
 This could lead to confusion if a crate is deleted that is depended on by other projects that are not published on crates.io themselves.
 However, we believe that the conditions we propose are strict enough to prevent this from happening in practice due to the additional download threshold.
 
-Another potential drawback is that it can create confusion on when it would be better to yank a version instead of deleting it.
-We plan to address this by adding a note to the usage policy that explains the difference between yanking and deleting a version, and when to use which action based on the list in the [Motivation](#motivation) section above.
-
 
 # Rationale and alternatives
 
 > Why is this design the best in the space of possible designs?
 
-The proposed design is based on the current informal rules that the crates.io team uses to decide whether to delete a crate or version.
+The proposed design is based on the current informal rules that the crates.io team uses to decide whether to delete a crate.
 These rules have been derived from the npm registry, which has a similar policy (see below).
 We believe that the proposed conditions are strict enough to prevent accidental deletions while still allowing crate authors to delete their crates in the cases where it makes sense.
 
@@ -108,19 +100,6 @@ Due to the restrictions on the number of downloads and reverse dependencies, thi
 The advantage of allowing others to re-use such names is that it allows name-squatted/placeholder crates to be released back to the community without the crates.io team having to manually intervene.
 
 The npm registry blocks re-use of deleted package names for 24 hours.
-
-
-## Should deleted versions be blocked from being re-uploaded?
-
-Since version deletions would also be possible for widely used crates, it might make sense to block re-uploads of deleted versions to prevent security issues.
-However, this would make it impossible to fix a mistakenly published new major version, for example.
-
-The npm registry blocks re-uploads of deleted versions indefinitely.
-
-
-## Should we keep and mark deleted versions in the index?
-
-The cargo team has expressed interest in potentially keeping deleted versions in the index and marking them as deleted, so that this information can be used to improve dependency resolution messages. It will have to be researched if this can be accomplished without breaking older cargo versions that expect a certain index format. It might be possible to only add these markers to the sparse index, which is only used by newer cargo versions.
 
 
 # Future possibilities
