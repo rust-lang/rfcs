@@ -29,9 +29,9 @@ The end goal being to provide this information automatically so that the documen
 
 This RFC proposes to add the following attributes:
 
-  * `#![doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
+  * `#[doc(auto_cfg)]`/`#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
 
-    When this is turned on (with `doc(auto_cfg = true)`, `#[cfg]` attributes are shown in documentation just like `#[doc(cfg)]` attributes are. By default, `auto_cfg` will be enabled.
+    When this is turned on (with `doc(auto_cfg)` or `doc(auto_cfg = true)`), `#[cfg]` attributes are shown in documentation just like `#[doc(cfg)]` attributes are. By default, `auto_cfg` will be enabled.
 
   * `#[doc(cfg(...))]`
 
@@ -43,7 +43,7 @@ This RFC proposes to add the following attributes:
 
     These attributes suppress or un-suppress the `auto_cfg` behavior for a particular configuration predicate.
 
-    For example, `#[doc(auto_cfg(hide(windows)))]` could be used in newer versions of the [`windows` crate] to prevent the "this is supported on **windows** only" tag from being shown on every single item.
+    For example, `#[doc(auto_cfg(hide(windows)))]` could be used in newer versions of the [`windows` crate] to prevent the "this is supported on **windows** only" tag from being shown on every single item. Using these attributes will also re-enable `doc(auto_cfg)` if it was disabled at this location.
 
 [cfg attribute]: https://doc.rust-lang.org/reference/conditional-compilation.html
 [`windows` crate]: https://docs.rs/windows/latest/windows/
@@ -55,7 +55,7 @@ All of these attributes can be added to a module or to the crate root, and they 
 
 ## The attributes
 
-### `#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
+### `#[doc(auto_cfg)`/`#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
 
 By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
 
@@ -71,6 +71,8 @@ pub mod futures {}
 There's no need to "duplicate" the `cfg` into a `doc(cfg())` to make Rustdoc display it.
 
 In some situations, the detailed conditional compilation rules used to implement the feature might not serve as good documentation (for example, the list of supported platforms might be very long, and it might be better to document them in one place). To turn it off, add the `#[doc(auto_cfg = false)]` attribute on the item.
+
+If no argument is specified (ie `#[doc(auto_cfg)]`), it's the same as writing `#[doc(auto_cfg = true)]`.
 
 ### `#[doc(cfg(...))]`
 
@@ -151,6 +153,14 @@ If `cfg_auto(show(...))` and `cfg_auto(hide(...))` are used to show/hide a same 
 pub fn foo() {}
 ```
 
+Using this attribute will re-enable `auto_cfg` if it was disabled at this location:
+
+```rust
+#[doc(auto_cfg = false)] // Disabling `auto_cfg`
+#[doc(auto_cfg(hide(unix)))] // `auto_cfg` is re-enabled.
+pub fn foo() {}
+```
+
 ### `#[doc(auto_cfg(show(...)))]`
 
 This attribute does the opposite of `#[doc(auto_cfg(hide(...)))]`: if you used `#[doc(auto_cfg(hide(...)))]` and want to revert its effect on an item and its descendants, you can use `#[doc(auto_cfg(show(...)))]`.
@@ -186,8 +196,16 @@ But you cannot write:
 If `auto_cfg(show(...))` and `auto_cfg(hide(...))` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
 
 ```rust
-#[doc(auto_cfg(hide(unix)))]
-#[doc(auto_cfg(show(unix)))] // Error!
+#[doc(auto_cfg(show(unix)))]
+#[doc(auto_cfg(hide(unix)))] // Error!
+pub fn foo() {}
+```
+
+Using this attribute will re-enable `auto_cfg` if it was disabled at this location:
+
+```rust
+#[doc(auto_cfg = false)] // Disabling `auto_cfg`
+#[doc(auto_cfg(show(unix)))] // `auto_cfg` is re-enabled.
 pub fn foo() {}
 ```
 
