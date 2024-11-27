@@ -259,6 +259,8 @@ Prior to the introduction of `ValueSized` and `Pointee`, `Sized`'s implicit boun
 which is now equivalent to a `ValueSized` bound in non-`const fn`s and
 `~const ValueSized` in `const fn`s and will be deprecated in the next edition.
 
+Traits now have an implicit default bound on `Self` of `const ValueSized`.
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -539,117 +541,150 @@ or `Default`) will not be sugar for `const Sized`, these will remain bare `Sized
 If traits with a `Sized` supertrait are later made const, then their supertrait
 would be made `~const Sized`.
 
-An implicit `const ValueSized` supertrait to avoid backwards incompatibility[^8].
-Like implicit `const Sized` bounds, this is omitted if an explicit `const Sized`,
-`Sized`, `ValueSized` or `Pointee` bound is present.
-
-[^8]: If a user defines a subtrait of an existing trait, which has a method calling
-      a function with a `?Sized` bound (later a `const ValueSized` bound) instantiated
-      with `Self` then having no implicit `const ValueSized` supertrait or relaxing
-      the implicit `const ValueSized` supertrait could be a breaking change.
-
-      For example, if `std::io::Read` had no implicit `const ValueSized` supertrait or
-      was relaxed to a `Pointee` supertrait, then the following example would fail
-      to compile:
-
-      ```rust
-      trait Sub: std::io::Read {
-          // Assume `std::mem::needs_drop<T: ?Sized>`'s parameter remains `T: ?Sized`
-          // (or `const ValueSized`).
-          fn example() -> bool { std::mem::needs_drop::<Self>() } // breaks!
-      }
-      ```
-
-      Therefore, it is necessary that a default implicit `const ValueSized` supertrait
-      is added. This is the only circumstance which is a breaking change when no implicit
-      supertrait is added:
-
-      If a `Sized` supertrait was added to any existing trait which is currently
-      without one, it would be a breaking change as that trait could be being
-      implemented on a trait which does not implement `Sized` - this is true
-      regardless of whether this RFC is accepted and this RFC's proposals have no
-      impact on this.
-
-      As above, if a `const ValueSized` supertrait was added to an existing trait or
-      made the implicit supertrait then this would be equivalent to the existing
-      behaviour and not be a breaking change.
-
-      If a `ValueSized` or `Pointee` supertrait were added to an existing trait or
-      made the implicit supertrait then this would not break any existing callers
-      using this trait - any parameters bound by this trait must also have either a
-      `?Sized`/`const ValueSized` bound or a `Sized` bound which would ensure any
-      existing uses of `size_of_val` (or other functions taking
-      `?Sized`/`const ValueSized`) continue to compile.
-
-      In the below example, if an existing trait `Foo` continued to have no
-      supertrait, or had an `Pointee`, `ValueSized` or `const ValueSized` supertrait
-      added, then its uses would continue to compile:
-
-      ```rust
-      trait Foo {}
-      // trait Foo: Pointee {}
-      // trait Foo: ValueSized {}
-      // trait Foo: const ValueSized {}
-
-      // before migration..
-      fn foo<T: Foo>(t: &T) -> usize { size_of_val(t) }
-      fn foo_unsized<T: ?Sized + Foo>(t: &T) -> usize { size_of_val(t) }
-
-      // after migration..
-      fn foo<T: Foo>(t: &T) -> usize { size_of_val(t) }
-      fn foo_unsized<T: const ValueSized + Foo>(t: &T) -> usize { size_of_val(t) }
-      ```
-
-      After the proposed migration with a implicit `const ValueSized` supertrait, users
-      can write the following function, which would break if a supertrait were relaxed
-      to a `ValueSized` or `Pointee` supertrait, but no such function exists currently:
-
-      ```rust
-      fn foo<T: Pointee + Foo>(t: &T) -> usize { size_of_val(t) }
-      ```
-
-      Implementors of traits in downstream crates would also not be broken - any
-      implementation of a trait with a newly added or relaxed supertrait on a downstream
-      type will require that the type implement `const ValueSized`, `ValueSized` or
-      `Pointee`, which it is guaranteed to do (as no types not implementing these traits
-      currently exist).
-
-      ```rust
-      struct Local;
-      impl Foo for Local {} // not broken!
-      ```
-
-      Later, when types which do not implement `const ValueSized` or `ValueSized`
-      are available, then adding a supertrait to an existing trait could be a
-      breaking change.
-
-      With the orphan rule, there can be no blanket impls of foreign traits, therefore
-      any implementation of a foreign trait will be on a local type. In this
-      circumstance, `Self` will refer to the concrete local type, which will implement
-      either `const Sized` or `const ValueSized` (as no other types currently exist),
-      and so any uses of `Self` which depend on it implementing a sizedness trait
-      will continue to compile even if the supertrait of the trait being implemented is
-      relaxed or there is no implicit supertrait.
-      
-      In a defining crate, a blanket impl on `T: ?Sized` would also not be broken as
-      the `?Sized` bound which would be migrated to `const ValueSized`.
-
-      ```rust
-      trait Foo {
-          fn example(t: &Self) -> usize;
-      }
-
-      impl<T: ?Sized> Foo for T {
-          fn example(t: &Self) -> usize { std::mem::size_of_val(t) }
-      }
-      ```
-
-      In many of the cases above, relaxation of the supertrait is only guaranteed
-      to be backwards compatible in third party crates while there is no user code using
-      the new traits this proposal introduces.
-
 As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
+
+### Implicit `const ValueSized` supertraits
+[implicit-const-valuesized-supertrait]: #implicit-const-valuesized-supertrait
+
+It is necessary to introduce a implicit default bound of `const ValueSized` on a trait's
+`Self` type in order to maintain backwards compatibility (referred to as an implicit
+supertrait hereafter for brevity). Like implicit `const Sized` bounds, this is omitted
+if an explicit `const Sized`, `Sized`, `ValueSized` or `Pointee` bound is present.
+
+Without this implicit supertrait, the below example would no longer compile: `needs_drop`'s
+`T: ?Sized` would be migrated to a `const ValueSized` bound which is not guaranteed to
+be implemented by `Foo`.
+
+```rust
+trait Foo {
+    fn implementor_needs_dropped() -> bool {
+        // `fn needs_drop<T: ?Sized>() -> bool`
+        std::mem::needs_drop::<Self>() // error! `Self: const ValueSized` is not satisfied
+    }
+}
+```
+
+With the implicit supertrait, the above example would be equivalent to the following
+example, which would compile successfully.
+
+```rust
+trait Foo: const ValueSized {
+    fn implementor_needs_dropped() -> bool {
+        // `fn needs_drop<T: ?Sized>() -> bool`
+        std::mem::needs_drop::<Self>() // ok!
+    }
+}
+```
+
+For the same reasons that `?Sized` is equivalent to `const ValueSized`, adding
+a `const ValueSized` implicit supertrait will not break any existing implementations
+of traits as every existing type already implements `const ValueSized`.
+
+This implicit supertrait could be relaxed without breaking changes within the standard
+library and in third party crates.
+
+If the implicit supertrait was strengthened to a `Sized` supertrait, it would be a
+breaking change as that trait could be being implemented on a type which does not
+implement `Sized` - this is true regardless of whether there is an implicit supertrait
+and adding a `Sized` supertrait to a trait without one would be a breaking change today.
+
+If the implicit supertrait was weakened to a `ValueSized` or `Pointee` supertrait
+then this would not break any existing callers using this trait as a bound - any
+parameters bound by this trait must also have either a `?Sized`/`const ValueSized` bound
+or a `Sized` bound which would ensure any existing uses of `size_of_val` (or other
+functions taking `?Sized`/`const ValueSized`) continue to compile.
+
+In the below example, if an existing trait `Foo`'s implicit `const ValueSized`
+supertrait was relaxed to `Pointee` or `ValueSized` then its uses would continue
+to compile:
+
+```rust
+trait Foo: Pointee {} // or `ValueSized`
+//         ^^^^^^^ new!
+
+fn foo<T: Foo>(t: &T) -> usize { size_of_val(t) }
+fn foo_unsized<T: const ValueSized + Foo>(t: &T) -> usize { size_of_val(t) }
+```
+
+Once users can write `Pointee` or `ValueSized` bounds and then it is possible for users
+to write functions which would no longer compile if the function was relying on the
+implicit supertrait of another bounded trait which was then relaxed:
+
+```rust
+// This only compiled because `Foo: const ValueSized`, but if that bound were relaxed
+// then it would fail to compile.
+fn foo<T: Pointee + Foo>(t: &T) -> usize { size_of_val(t) }
+```
+
+Implementations of traits in would also not be broken when an implicit supertrait
+is relaxed.
+
+Any existing implementation of a trait will be on a type which implement at least
+`const ValueSized`, therefore a relaxation of the implicit supertrait to `ValueSized`
+or `Pointee` will be trivially satisfied by any existing implementor.
+
+```rust
+struct Local;
+
+impl Foo for Local {} // not broken!
+```
+
+In the bodies of trait implementations, the only circumstance in which there
+could be a backwards incompatibility due to relaxation of the implicit supertrait
+is when the sizedness traits implemented by `Self` can be observed - there are
+three cases which must be considered: in trait implementations, trait definitions
+and subtraits.
+
+In trait implementations, `Self` refers to the specific implementing type, this
+could be a concrete type like `u32` or it could be a generic parameter in a
+blanket impl. In either case, the type is guaranteed to implement `const Sized`
+or `const ValueSized` as no types which do not implement one of these two traits
+currently exist.
+
+```rust
+impl Foo for u32 {
+    fn example(t: &Self) -> usize { std::mem::size_of_val(t) }
+    // `Self` = `u32`, even if `Foo`'s implicit supertrait is relaxed, `u32` still
+    // implements `const ValueSized`
+}
+
+impl<T> Foo for T {
+    fn example(t: &Self) -> usize { std::mem::size_of_val(t) }
+    // `Self` = `T`, even if `Foo`'s implicit supertrait is relaxed, `T` still
+    // implements `Sized` because of the default bound
+}
+
+impl<T: ?Sized> Foo for T {
+    fn example(t: &Self) -> usize { std::mem::size_of_val(t) }
+    // `Self` = `T`, even if `Foo`'s implicit supertrait is relaxed, `T` still
+    // implements `const ValueSized` because of the default bound
+}
+```
+
+Trait definitions are unlike trait implementations in that `Self` in their bodies
+always refers to any possible implementor and the only known bounds on that `Self`
+are the supertraits of the trait. A default body of a method can test whether `Self`
+implements any given sizedness trait (e.g. by calling `needs_drop::<Self>()` as in the
+examples at the start of this section). However, trait definitions can be updated when
+an implicit supertrait is relaxed so do not pose any risk of breakage.
+
+Like with trait definitions above, a subtrait defined in a downstream crate can
+observe the sizedness traits implemented by `Self` in default bodies. However,
+subtraits will also have an implicit `const ValueSized` supertrait which would
+guarantee that their bodies continue to compile if a supertraits relaxed its implicit
+supertrait:
+
+```rust
+trait Sub: Foo { // equiv to `Sub: Foo + const ValueSized`
+    // `fn needs_drop<T: ?Sized>() -> bool`
+    fn example() -> bool { std::mem::needs_drop::<Self>() } // ok!
+}
+```
+
+In many of the cases above, relaxation of the supertrait is only guaranteed
+to be backwards compatible in third party crates while there is no user code using
+the new traits this proposal introduces.
 
 ### Summary of bounds changes
 [summary-of-bounds-changes]: #summary-of-bounds-changes
