@@ -39,16 +39,16 @@ This RFC proposes to add the following attributes:
 
     The syntax of this attribute is the same as the syntax of the [`#[cfg()]` attribute][cfg attribute] used for conditional compilation.
 
-  * `#![doc(cfg_hide(...))]` / `#[doc(cfg_show(...))]`
+  * `#![doc(auto_cfg(hide(...)))]` / `#[doc(auto_cfg(show(...)))]`
 
     These attributes suppress or un-suppress the `auto_cfg` behavior for a particular configuration predicate.
 
-    For example, `#[doc(cfg_hide(windows))]` could be used in newer versions of the [`windows` crate] to prevent the "this is supported on **windows** only" tag from being shown on every single item.
+    For example, `#[doc(auto_cfg(hide(windows)))]` could be used in newer versions of the [`windows` crate] to prevent the "this is supported on **windows** only" tag from being shown on every single item.
 
 [cfg attribute]: https://doc.rust-lang.org/reference/conditional-compilation.html
 [`windows` crate]: https://docs.rs/windows/latest/windows/
 
-All of these attributes can be added to a module or to the crate root, and they will be inherited by the child items unless another attribute overrides it. This is why "opposite" attributes like `cfg_hide` and `cfg_show` are provided: they allow a child item to override its parent.
+All of these attributes can be added to a module or to the crate root, and they will be inherited by the child items unless another attribute overrides it. This is why "opposite" attributes like `auto_cfg(hide(...))` and `auto_cfg(show(...))` are provided: they allow a child item to override its parent.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -101,7 +101,7 @@ This attribute has the same syntax as conditional compilation, but it only cause
 
 This attribute works on modules and on items.
 
-### `#[doc(cfg_hide(...))]`
+### `#[doc(auto_cfg(hide(...)))]`
 
 This attribute is used to prevent some `cfg` to be generated in the visual markers. It only applies to `#[doc(auto_cfg = true)]`, not to `#[doc(cfg(...))]`. So in the previous example:
 
@@ -113,13 +113,13 @@ pub mod futures {}
 It currently displays both `unix` and `feature = "futures-io"` into the documentation, which is not great. To prevent the `unix` cfg to ever be displayed, you can use this attribute at the crate root level:
 
 ```rust
-#![doc(cfg_hide(unix))]
+#![doc(auto_cfg(hide(unix)))]
 ```
 
 Or directly on a given item/module as it covers any of the item's descendants:
 
 ```rust
-#[doc(cfg_hide(unix))]
+#[doc(auto_cfg(hide(unix)))]
 #[cfg(any(unix, feature = "futures-io"))]
 pub mod futures {
     // `futures` and all its descendants won't display "unix" in their cfgs.
@@ -133,37 +133,37 @@ Rustdoc currently hides `doc` and `doctest` attributes by default and reserves t
 The attribute accepts only a list of identifiers or key/value items. So you can write:
 
 ```rust
-#[doc(cfg_hide(unix, doctest, feature = "something"))]
-#[doc(cfg_hide())]
+#[doc(auto_cfg(hide(unix, doctest, feature = "something")))]
+#[doc(auto_cfg(hide()))]
 ```
 
 But you cannot write:
 
 ```rust
-#[doc(cfg_hide(not(unix)))]
+#[doc(auto_cfg(hide(not(unix))))]
 ```
 
-If `cfg_show` and `cfg_hide` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
+If `cfg_auto(show(...))` and `cfg_auto(hide(...))` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
 
 ```rust
-#[doc(cfg_hide(unix))]
-#[doc(cfg_show(unix))] // Error!
+#[doc(auto_cfg(hide(unix)))]
+#[doc(auto_cfg(show(unix)))] // Error!
 pub fn foo() {}
 ```
 
-### `#[doc(cfg_show(...))]`
+### `#[doc(auto_cfg(show(...)))]`
 
-This attribute does the opposite of `#[doc(cfg_hide(...))]`: if you used `#[doc(cfg_hide(...))]` and want to revert its effect on an item and its descendants, you can use `#[doc(cfg_show(...))]`.
+This attribute does the opposite of `#[doc(auto_cfg(hide(...)))]`: if you used `#[doc(auto_cfg(hide(...)))]` and want to revert its effect on an item and its descendants, you can use `#[doc(auto_cfg(show(...)))]`.
 It only applies to `#[doc(auto_cfg = true)]`, not to `#[doc(cfg(...))]`.
 
 For example:
 
 ```rust
-#[doc(cfg_hide(unix))]
+#[doc(auto_cfg(hide(unix)))]
 #[cfg(any(unix, feature = "futures-io"))]
 pub mod futures {
     // `futures` and all its descendants won't display "unix" in their cfgs.
-    #[doc(cfg_show(unix))]
+    #[doc(auto_cfg(show(unix)))]
     pub mod child {
         // `child` and all its descendants will display "unix" in their cfgs.
     }
@@ -173,21 +173,21 @@ pub mod futures {
 The attribute accepts only a list of identifiers or key/value items. So you can write:
 
 ```rust
-#[doc(cfg_show(unix, doctest, feature = "something"))]
-#[doc(cfg_show())]
+#[doc(auto_cfg(show(unix, doctest, feature = "something")))]
+#[doc(auto_cfg(show()))]
 ```
 
 But you cannot write:
 
 ```rust
-#[doc(cfg_show(not(unix)))]
+#[doc(auto_cfg(show(not(unix))))]
 ```
 
-If `cfg_show` and `cfg_hide` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
+If `auto_cfg(show(...))` and `auto_cfg(hide(...))` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
 
 ```rust
-#[doc(cfg_hide(unix))]
-#[doc(cfg_show(unix))] // Error!
+#[doc(auto_cfg(hide(unix)))]
+#[doc(auto_cfg(show(unix)))] // Error!
 pub fn foo() {}
 ```
 
