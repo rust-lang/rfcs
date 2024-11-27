@@ -13,7 +13,7 @@ This RFC aims at providing rustdoc users the possibility to add visual markers t
 
 It does not aim to allow having a same item with different `cfg`s to appear more than once in the generated documentation.
 
-It does not aim to document items which are *inactive* under the current configuration (i.e., “`cfg`'ed out”).
+It does not aim to document items which are *inactive* under the current configuration (i.e., “`cfg`ed out”). More details in the [Unresolved questions section](#unresolved-questions).
 
 # Motivation
 [motivation]: #motivation
@@ -288,6 +288,25 @@ When re-exporting items with different cfgs there are two things that can happen
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## `cfg`ed out items
+
+Rustdoc doesn't take into account `cfg`ed out items. The reason for this limitation is that Rustdoc has only access to rustc's information: `cfg`ed out items, although still present, don't have enough information to be useful to rustdoc when generating documentation, hence why they are not treated.
+
+So for the following crate, `function` wouldn't show up in the generated docs unless you actually passed `--cfg special` to Rustdoc:
+
+```rust
+#[cfg(special)]
+pub fn function() {}
+```
+
+Therefore, the common and offical workaround is the use of the semi-special cfg `doc`:
+
+```rust
+#[cfg(any(doc, special))]
+pub fn function() {}
+```
+
+There are a few leads on how Rustdoc could solve this issue, but they all come with big drawbacks, so this problem is not addressed in this RFC but will (hopefully) be in the future.
 
 # Future possibilities
 [future possibilities]: #future-possibilities
