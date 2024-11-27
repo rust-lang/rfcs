@@ -1008,7 +1008,7 @@ After the edition migration, the default bound is
 | `ValueSized`         | `?const ValueSized`              |
 | `Pointee`            | `?ValueSized`                    |
 
-# Why not re-use `std::ptr::Pointee`?
+## Why not re-use `std::ptr::Pointee`?
 [why-not-re-use-stdptrpointee]: #why-not-re-use-stdptrpointee
 
 `Pointee` is distinct from the existing unstable trait [`std::ptr::Pointee`][api_pointee]
