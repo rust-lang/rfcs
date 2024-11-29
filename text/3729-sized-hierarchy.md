@@ -361,7 +361,9 @@ backwards-incompatibilities are avoided for `ValueSized` and `Pointee`.
 
 Relaxing a bound from `Sized` to `ValueSized` or `Pointee` is non-breaking as
 the calling bound must have either `T: Sized` or `T: ?Sized`, both of which
-would satisfy any relaxed bound[^4]. 
+would satisfy any relaxed bound[^4]. A parameter bounded by `Sized` and used
+as the return type of a function could not be relaxed as function return types
+would still need to implement `Sized`.
 
 However, it is not backwards compatible to relax the bounds of trait methods[^5]
 and it would still be backwards-incompatible to relax the `Sized` bound on
