@@ -279,7 +279,7 @@ traits `const`:
             ↓                                          ↓
 ┌───────────────────────┐             ┌────────────────────────────────────┐
 │ const ValueSized      │ ──────────→ │ ValueSized                         │
-│ {type, target, value} │   implies   │ {type, target, runtime env, value} │
+│ {type, target, value} │   implies   │ {type, target, value, runtime env} │
 └───────────────────────┘             └────────────────────────────────────┘
                                                        │
                                                     implies
@@ -1116,6 +1116,58 @@ its size. An alternative or complement to `ValueSized` is `MetaSized`, first
 proposed in [rfcs#3396][rfc_extern_types_v2], which requires inspecting
 pointer metadata to compute the size.
 
+```
+           ┌────────────────┐                                 ┌─────────────────────────────┐
+           │ const Sized    │ ──────────────────────────────→ │ Sized                       │
+           │ {type, target} │             implies             │ {type, target, runtime env} │
+           └────────────────┘                                 └─────────────────────────────┘
+                   │                                                         │
+                implies                                                   implies
+                   │                                                         │
+                   ↓                                                         ↓
+    ┌──────────────────────────────┐                   ┌───────────────────────────────────────────┐
+    │ const MetaSized              │ ────────────────→ │ MetaSized                                 │
+    │ {type, target, ptr metadata} │      implies      │ {type, target, ptr metadata, runtime env} │
+    └──────────────────────────────┘                   └───────────────────────────────────────────┘
+                   │                                                         │
+                implies                                                   implies
+                   │                                                         │
+                   ↓                                                         ↓
+┌─────────────────────────────────────┐             ┌──────────────────────────────────────────────────┐
+│ const ValueSized                    │ ──────────→ │ ValueSized                                       │
+│ {type, target, ptr metadata, value} │   implies   │ {type, target, ptr metadata, value, runtime env} │
+└─────────────────────────────────────┘             └──────────────────────────────────────────────────┘
+                                                                             │
+                                                                          implies
+                                                                             │
+                                             ┌───────────────────────────────┘
+                                             ↓
+                                   ┌──────────────────┐
+                                   │ Pointee          │
+                                   │ {runtime env, *} │
+                                   └──────────────────┘
+```
+
+In contrast to `ValueSized` and `size_of_val`, `MetaSized` would only require
+the pointer metadata, which is illustrated by the `size_of_val_from_ptr` function
+in the below example:
+
+```rust
+pub const fn size_of_val_from_ptr<T>(val: <T as ptr::Pointee>::Metadata) -> usize
+where
+    T: ~const MetaSized,
+{
+    /* .. */
+}
+
+pub const fn size_of_val<T>(val: &T) -> usize
+where
+    T: ~const ValueSized,
+{
+    /* .. */
+}
+```
+
 `ValueSized` has a downside that its interaction with mutexes introduces
 the opportunity for deadlocks which are unintuitive:
 
@@ -1135,6 +1187,41 @@ size_of_val(&mutex); // deadlock!
 
 `MetaSized` would avoid this hazard by keeping the size of dynamically sized
 types in pointer metadata, which can be accessed without locking a mutex.
+
+In addition, `MetaSized` would be required to support `UnsafeCell`
+implementing `ValueSized` with [Custom DSTs](#custom-dsts) when users
+are writing their own implementations of `size_of_val`. `UnsafeCell` would
+be required to implement `ValueSized` in order to maintain backwards
+compatibility.
+
+With only `ValueSized`, the implementation of `const ValueSized` would look
+something like the following:
+
+```rust
+// the size of a value of `UnsafeCell<T>` can be known from a reference (of type `&UnsafeCell<T>`)...
+impl<T> const ValueSized for UnsafeCell<T>
+  // ...if the size of a value of `T` can be known from a reference (of type `&T`)
+  where T: ~const ValueSized
+{
+}
+```
+
+However, the size of `UnsafeCell<T>` cannot be determined by a reference
+to `UnsafeCell<T>` when computing the size of `&T` requires running user
+code, as this would require a safe way to obtain a reference to the
+inner type, which isn't possible.
+
+Introducing `MetaSized` allows expression of the necessary constraint on `&T`,
+that only the pointer metadata can be accessed safely:
+
+```rust
+// the size of a value of `UnsafeCell<T>` can be known from a reference (of type `&UnsafeCell<T>`)...
+impl<T> const ValueSized for UnsafeCell<T>
+  // ...if the size of a value of `T` can be known from the metadata (of type `<T as ptr::Pointee>::Metadata`)
+  where T: ~const MetaSized
+{
+}
+```
 
 ## Alternatives to this accepting this RFC
 [alternatives-to-this-rfc]: #alternatives-to-this-rfc
@@ -1592,7 +1679,7 @@ support this by adding another supertrait, `Value`:
             ↓                                          ↓
 ┌───────────────────────┐             ┌────────────────────────────────────┐
 │ const ValueSized      │ ──────────→ │ ValueSized                         │
-│ {type, target, value} │   implies   │ {type, target, runtime env, value} │
+│ {type, target, value} │   implies   │ {type, target, value, runtime env} │
 └───────────────────────┘             └────────────────────────────────────┘
                                                        │
                                                     implies
