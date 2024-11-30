@@ -320,6 +320,8 @@ Add support for the new lint:
 deprecated = "nit"
 ```
 
+`cargo fix` will not fix these lints by default.
+
 A new config field will be added to mirror `build.warnings`:
 
 ### `build.nits`
