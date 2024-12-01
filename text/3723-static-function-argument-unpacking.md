@@ -100,6 +100,10 @@ Tuples, tuple structs, and fixed-size arrays can be unpacked. These collection t
 
 Structs with named fields also have a size known at compile time, but instead of an unambiguous order, they have unambiguously named fields. A design allowing unpacking of structs that, for example, matches these field names with parameter names is left under [Future Possibilities](#future-possibilities) due to difficult to solve questions.
 
+Types implementing the [`std::ops::Index`](https://doc.rust-lang.org/std/ops/trait.Index.html) trait not amongst the specifically allowed collection types listed above[^1] are out of the scope.
+
+[^1]: `Index` and `IndexMut` are [implemented for arrays](https://github.com/rust-lang/rust/pull/74989) since version 1.50.0.
+
 ## Syntax
 
 Argument unpacking is syntactic sugar, causing it to expand to comma-separated field accesses exhaustively for the collection being unpacked. The order in which a function call's argument unpackings are desugared does not matter, since the same result follows from unpacking in any order.
@@ -194,9 +198,9 @@ takes_five(0, tup3.0, tup3.1, tup3.2, 4);
 }
 ```
 
-## Non-Trivial Cases
+## Non-Trivial Cases and Interactions
 
-If, inside the call parentheses, the collection's fields can currently be accessed manually, in order, with `.idx`/`[idx]`, entering each as arguments to consecutive parameter slots, unpacking is valid.
+Basically, argument unpacking an expression of one of the allowed collection types desugars into the exhaustive consecutive field accesses in the order the elements would be accessed with `.idx`/`[idx]`, starting from `idx`' value `0`. The subchapters below discuss cases where this rule of thumb alone is insufficient.
 
 ### Empty Collections
 
@@ -259,11 +263,11 @@ fn main() {
 
 Explicitly indicating varying degrees of (de)reference status or mutability on arguments being unpacked does not follow from the proposed syntax in any straightforward way. Thus, although it limits the usefulness of the feature, the design for such possibility is left out of the scope of this proposal. Consequently, the code will only compile if passing the arguments one by one with the corresponding field access expressions would compile.
 
-### Type Coercions of Collections
+### Type Coercions and Conversions of Collections
 
-If the collection being unpacked is a reference for the collection type, whether argument unpacking works, depends on if accessing it directly with the field access expression (`.idx`, or `[idx]`) would work at compile time. If it does, then argument unpacking works. (For the reference, see [`std::ops::Deref`](https://doc.rust-lang.org/std/ops/trait.Deref.html) and [type coercions](https://doc.rust-lang.org/reference/type-coercions.html).)
+If the expression being unpacked is a reference to one of the allowed collection types (tuple, tuple struct, or fixed-size array), whether argument unpacking compiles depends on if accessing **all** its fields manually with the field access expression (`.idx`, or `[idx]`) would work at compile time. If it does, then argument unpacking works. (For the reference, see [`std::ops::Deref`](https://doc.rust-lang.org/std/ops/trait.Deref.html) and [type coercions](https://doc.rust-lang.org/reference/type-coercions.html).) Attempts to access nonexistent fields of tuples and fixed-size arrays or references thereof, using indices past the types' ranges, lead to compilation errors. With argument unpacking, only the fields known of during program compilation are unpacked.
 
-For example, the following will work, since the alternative works:
+For example, the following compiles, since the alternative compiles:
 ```rust
 fn consume(a: u8, b: u8, c: u8) {
     println!("{a}, {b}, {c}");
@@ -273,6 +277,28 @@ fn main() {
     let tup = &(1, 2, 3);
     consume(...tup);
     // Alternative: consume(tup.0, tup.1, tup.2);
+}
+```
+
+If the expression being unpacked is of a type that can be converted into one of the collection types allowed for unpacking, the developer explicitly assumes the responsibility for correct behaviour. In the example below, a type that cannot be normally used for unpacking – a slice – is converted into a fixed-size array. `good_slice` has three elements, allowing it to be used successfully. For the code to compile, `bad_slice` with only two elements needs to also be converted into a fixed-size array of three elements; otherwise, wrong number of arguments would cause a compilation error. The program panics runtime due to the conversion failing because of the mismatch between the slice and the target array lengths.
+
+```rust
+fn consume(a: u8, b: u8, c: u8) {
+    println!("{a}, {b}, {c}");
+}
+
+fn main() {
+    let good_slice: &[u8] = &[1, 2, 3]; // has three elements
+    let bad_slice: &[u8] = &[100, 200]; // only two elements
+
+    consume(...<[u8; 3]>::try_from(good_slice).unwrap()); // works
+    consume(...<[u8; 3]>::try_from(bad_slice).unwrap()); // unwrap panics runtime
+
+    // Alternative:
+    //let good_array = <[u8; 3]>::try_from(good_slice).unwrap();
+    //consume(good_array[0], good_array[1], good_array[2]); // works
+    //let bad_array = <[u8; 3]>::try_from(bad_slice).unwrap(); // unwrap panics runtime
+    //consume(bad_array[0], bad_array[1], bad_array[2]); // compiles but unreachable
 }
 ```
 
@@ -820,6 +846,8 @@ However, several unresolved questions when unpacking structs would need to be co
 The scope of argument unpacking could be expanded to dynamic contexts as well. Runtime unpacking of `dyn Trait` trait objects, slices, `Vec`s, `HashMap`s, iterators in general etc. would be fallible, since the existence of a correct number, order, typing and naming of items to match the parameters can't be guaranteed at compile time. A syntax such as `...expr?` or `...?expr` could be considered to improve ergonomics of argument passing for those cases as well, but that would definitely merit a separate RFC.
 
 Possibly, this would involve an stdlib trait, e.g. `TryArgUnpack`, whose implementation the language would use to get the arguments. This would enable unpacking custom collections as well.
+
+Interactions with or relation to the [`std::ops::Index`](https://doc.rust-lang.org/std/ops/trait.Index.html) and [`std::ops::IndexMut`](https://doc.rust-lang.org/std/ops/trait.IndexMut.html) traits would need to be mapped. Crucially, argument unpacking relies on a deterministic order for element access, which arbitrary implementations of `Index` cannot guarantee, suggesting of possible necessity of a deeper relation with `Iterator`.
 
 Infinite iterators, e.g. `std::iter::repeat`, would possibly have unwanted consequences when unpacked into variadic functions accepting infinite arguments.
 
