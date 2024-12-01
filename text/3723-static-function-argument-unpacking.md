@@ -486,7 +486,14 @@ const fn f<const S: usize>() -> [u8; S] {
 
 ## General-Purpose Unpacking Operator
 
-Instead of changing call expressions to accept choices of expressions OR `...`expressions, the operator `...` could be implemented generally, such that `...expr` as a whole becomes an expression. This could have more far-reaching consequences and interactions with other features, but could also help implement some future possibilities, such as unpacking in fixed-size arrays and tuple definitions.
+Instead of changing call expressions to accept choices of expressions OR `...`expressions, the operator `...` could be implemented generally, such that `...expr` as a whole becomes an expression. This could have more far-reaching consequences and interactions with other features, but could also help implement some future possibilities, such as unpacking in fixed-size arrays and tuple definitions. Syntax-wise, the RFC's proposal could be considered being a subset of this more general approach.
+
+Example:
+
+```rust
+let unpacked_args = ...function_returning_tuple();
+function_with_individual_params(unpacked_args);
+```
 
 ## Give Macros More Control over Arguments
 
