@@ -661,6 +661,9 @@ Stack Overflow:
 - [Is it possible to unpack a tuple into function arguments?](https://stackoverflow.com/questions/39878382/is-it-possible-to-unpack-a-tuple-into-function-arguments)
 - [Is it possible to unpack a tuple into method arguments?](https://stackoverflow.com/questions/60381690/is-it-possible-to-unpack-a-tuple-into-method-arguments)
 
+Rust GitHub:
+- [Unpack an array as function arguments](https://github.com/rust-lang/rfcs/issues/1753)
+
 ### Unpacking into Arrays and Other Collections
 
 Rust Internals:
