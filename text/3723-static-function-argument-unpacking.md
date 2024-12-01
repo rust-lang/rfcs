@@ -302,6 +302,18 @@ fn main() {
 }
 ```
 
+### Argument Unpacking in `const` Contexts
+
+Arguments can be unpacked in `const` contexts. For example, the following works:
+
+```rust
+const ARR: [i16; 4] = [-2, -1, 1, 2];
+const fn double(x1: i16, x2: i16, x3: i16, x4: i16) -> (i16, i16, i16, i16) {
+    (2 * x1, 2 * x2, 2 * x3, 2 * x4)
+}
+const TUP: (i16, i16, i16, i16) = double(...ARR);
+```
+
 ## Diagnostics
 
 - Error: Attempt to pass the expression itself as an argument without unpacking it, if and only if the conditions that would allow argument unpacking are fulfilled.
