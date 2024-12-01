@@ -511,7 +511,7 @@ function_with_individual_params(unpacked_args);
 
 Empowering macros with new features might avoid new syntax.
 
-Argument unpacking would follow naturally as a part of a more ambitious initiative of treating function argument places as distinct tokens accessible by macros. In Lisps, `apply`, and in Lua, the function `table.unpack` seem to superficially lead to the same result. An example of how this might look like in Rust:
+Argument unpacking would follow naturally as a part of a more ambitious initiative of treating function argument places as distinct tokens accessible by macros. At the minimum, macros should have the ability to expand into multiple separate arguments. In Lisps, `apply`, and in Lua, the function `table.unpack` seem to superficially lead to the same result. An example of how this might look like in Rust:
 ```rust
 fn main() {
     // Turns (u8, u8, u8) into three u8 arguments in the function call
