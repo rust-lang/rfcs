@@ -338,7 +338,7 @@ The Rust Reference:
 
 - The likely place to document argument unpacking would be under its own subheading in [Call expressions](https://doc.rust-lang.org/reference/expressions/call-expr.html). (For the reference, the similar [Functional update syntax](https://doc.rust-lang.org/reference/expressions/struct-expr.html#functional-update-syntax) is documented under *Struct expressions*.)
 - Under [Patterns](https://doc.rust-lang.org/reference/patterns.html#range-patterns), `...` is referred to as *ObsoleteRangePattern*, and it is noted as being as the alternative way to write `..=` before the 2021 edition. The use of this syntax, instead, for *argument unpacking* could be mentioned as being available from the 2024 edition.
-- Use of the `...` symbol with the DotDotDot name should have *argument unpacking* added to the Usage column.
+- Under [Tokens](https://doc.rust-lang.org/reference/tokens.html#punctuation), use of the `...` symbol with the DotDotDot name should have *argument unpacking* added to the Usage column in the table under the Punctuation subchapter.
 
 Standard library documentation that may benefit from mentioning the new syntax:
 
@@ -742,6 +742,8 @@ Rust Internals:
 
 - What happens when unpacking an empty collection as the "arguments" for a function that doesn't define parameters?
     - Probably nothing, at least if functions without parameters are not special-cased. Experimenting with this will be easier with a proof-of-concept implementation.
+
+- Guide/Documentation change: Should precedence be listed in the table under [Expression precedence](https://doc.rust-lang.org/reference/expressions.html#expression-precedence)?
 
 # Future Possibilities
 [future-possibilities]: #future-possibilities
