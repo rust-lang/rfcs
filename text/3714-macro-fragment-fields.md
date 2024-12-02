@@ -80,8 +80,8 @@ This RFC introduces the following new fragment specifiers, with specified fields
   - `return_type`: The return type of the function, as a `ty`. If the function
     has no explicitly specified return type, this will be `()`, with a span of
     the closing parenthesis for the function arguments.
-  - `body`: The body of the function, as a block (including the
-    surrounding braces).
+  - `body`: The body of the function, as a `block` (including the surrounding
+    braces).
   - `vis`: The visibility of the function, as a `vis` (may be empty).
 - `:adt`: An ADT (struct, union, or enum).
   - `name`: The name of the ADT, as an `ident`.
