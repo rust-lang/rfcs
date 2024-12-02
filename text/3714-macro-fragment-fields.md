@@ -139,7 +139,7 @@ We could also provide both (e.g. `.return_type` and `.opt_return_type`), or
 provide a subfield of `.return_type` that contains only the type as written and
 not any synthesized `()`.
 
-Should we develop a lighter-weight process for approving further macro
+Should we develop a lighter-weight process/policy for approving further macro
 fragments or fragment fields? Should we delegate it to another team, such as
 wg-macros?
 
