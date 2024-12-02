@@ -1663,7 +1663,8 @@ longer relevant][zulip_issue_regions_too_simplistic].
   - Alternatively, described in [*Adding `?ValueSized`*][adding-valuesized], existing
     relaxed bounds syntax could be used, where a desired bound is written as opting out
     of the next strictest.
-- Should `MetaSized` be introduced?
+- Should `MetaSized` be introduced? If so, in addition to `ValueSized` or as an alternative
+  to `ValueSized`?
   - All existing types currently determine their size based on metadata, so this
     matches existing semantics.
   - Motivations for `MetaSized` are described in the [*What about `MetaSized` instead
