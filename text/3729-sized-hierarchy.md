@@ -961,27 +961,28 @@ section][size_of-and-size_of_val] for rationale). In the next edition, `?Sized` 
 rewritten to `?Sized + const ValueSized` (remove the `Sized` default and add a `const ValueSized`
 bound) and bare `?Sized` would only remove the `Sized` default bound.
 
-Prior to the edition migration, the default bound is `Sized`, which could be changed using
+Prior to the edition migration, with positive bounds and keeping `?Sized`, the default bound is
+`Sized` (interpreted as `const Sized` for backwards compatibility), which could be changed using
 the following syntax:
 
-| With positive bounds | Keeping `?Sized` |
-| -------------------- | ---------------- |
-| `const Sized`        | `const Sized`    |
-| `Sized`              | `Sized`          |
-| `const ValueSized`   | `?Sized`         |
-| `ValueSized`         | Not possible     |
-| `Pointee`            | Not possible     |
+| Canonically        | Syntax with positive bounds          | Syntax keeping `?Sized`              |
+| ------------------ | ------------------------------------ | ------------------------------------ |
+| `const Sized`      | `T: const Sized`, `T: Sized`, or `T` | `T: const Sized`, `T: Sized`, or `T` |
+| `Sized`            | Not possible                         | Not possible                         |
+| `const ValueSized` | `T: const ValueSized`                | `T: ?Sized`                          |
+| `ValueSized`       | `T: ValueSized`                      | Not possible                         |
+| `Pointee`          | `T: Pointee`                         | Not possible                         |
 
-After the edition migration, the default bound is `const Sized`, which could be changed
-using the following syntax:
+After the edition migration, with positive bounds and keeping `?Sized`, the default bound is
+`const Sized`, which could be changed using the following syntax:
 
-| With positive bounds  | Keeping `?Sized`                  |
-| --------------------- | --------------------------------- |
-| `const Sized`         | `const Sized`                     |
-| `Sized`               | `?const Sized + Sized`            |
-| `const ValueSized`    | `?const Sized + const ValueSized` |
-| `ValueSized`          | `?const Sized + ValueSized`       |
-| `Pointee`             | `?const Sized`                    |
+| Canonically        | Syntax with positive bounds | Syntax keeping `?Sized`              |
+| ------------------ | --------------------------- | ------------------------------------ |
+| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`              |
+| `Sized`            | `T: Sized`                  | `T: ?const Sized + Sized`            |
+| `const ValueSized` | `T: const ValueSized`       | `T: ?const Sized + const ValueSized` |
+| `ValueSized`       | `T: ValueSized`             | `T: ?const Sized + ValueSized`       |
+| `Pointee`          | `T: Pointee`                | `T: ?const Sized`                    |
 
 ### Adding `?ValueSized`
 [adding-valuesized]: #adding-valuesized
@@ -989,27 +990,27 @@ using the following syntax:
 Another alternative is to make `ValueSized` a default bound in addition to `Sized` and establish
 that relaxing a supertrait bound also implies relaxing subtrait bounds:
 
-Prior to the edition migration, the default bound is `ValueSized + const ValueSized + Sized`,
-which could be changed using:
-
-| With positive bounds  | Adding `?ValueSized`             |
-| --------------------- | -------------------------------- |
-| `const Sized`         | `const Sized`                    |
-| `Sized`               | `Sized`                          |
-| `const ValueSized`    | `?Sized`                         |
-| `ValueSized`          | `?const ValueSized`              |
-| `Pointee`             | `?ValueSized`                    |
-
-After the edition migration, the default bound is
+Prior to the edition migration, when adding `?ValueSized`, the default bound is
 `ValueSized + const ValueSized + Sized + const Sized`, which could be changed using:
 
-| With positive bounds | Adding `?ValueSized`             |
-| -------------------- | -------------------------------- |
-| `const Sized`        | `const Sized`                    |
-| `Sized`              | `?const Sized`                   |
-| `const ValueSized`   | `?Sized`                         |
-| `ValueSized`         | `?const ValueSized`              |
-| `Pointee`            | `?ValueSized`                    |
+| Canonically        | Syntax with positive bounds         | Syntax adding `?ValueSized`         |
+| ------------------ | ----------------------------------- | ----------------------------------- |
+| `const Sized`      | `T: const Sized`, `T: Sized` or `T` | `T: const Sized`, `T: Sized` or `T` |
+| `Sized`            | Not possible                        | Not possible                        |
+| `const ValueSized` | `T: const ValueSized`               | `T: ?const Sized` or `T: ?Sized`    |
+| `ValueSized`       | `T: ValueSized`                     | `T: ?const ValueSized`              |
+| `Pointee`          | `T: Pointee`                        | `T: ?ValueSized`                    |
+
+After the edition migration, when adding `?ValueSized`, the default bound remains
+`ValueSized + const ValueSized + Sized + const Sized`, which could be changed using:
+
+| Canonically        | Syntax with positive bounds | Syntax adding `?ValueSized` |
+| ------------------ | --------------------------- | --------------------------- |
+| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`     |
+| `Sized`            | `T: Sized`                  | `T: ?const Sized`           |
+| `const ValueSized` | `T: const ValueSized`       | `T: ?Sized`                 |
+| `ValueSized`       | `T: ValueSized`             | `T: ?const ValueSized`      |
+| `Pointee`          | `T: Pointee`                | `T: ?ValueSized`            |
 
 ## Why not re-use `std::ptr::Pointee`?
 [why-not-re-use-stdptrpointee]: #why-not-re-use-stdptrpointee
