@@ -1136,8 +1136,9 @@ with const functions, adding a lot of complexity to const code.
 More importantly, the size of a runtime-sized type could differ between
 the host and the target and if the size from a const context were to be used
 at runtime with runtime-sized types, then that could result in incorrect
-code. It is unintuitive that `const { size_of::<svint8_t>() }` would not
-be equal to `size_of::<svint8_t>()`.
+code. Not only is it unintuitive that `const { size_of::<svint8_t>() }` would
+not be equal to `size_of::<svint8_t>()`, but the layout of types could differ
+between const and runtime contexts which would be unsound.
 
 Changing `size_of` and `size_of_val` to `~const Sized` bounds ensures that
 `const { size_of:<svint8_t>() }` is not possible.
