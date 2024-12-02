@@ -1746,8 +1746,8 @@ There are various future changes to these traits which could be used to support
 custom DSTs on top of this RFC. None of these have been considered thoroughly, and are
 written here only to illustrate.
 
-- Allow `Pointee` to be implemented manually on user types, which would replace 
-  the compiler's implementation.
+- Allow `std::ptr::Pointee` to be implemented manually on user types, which would
+  replace the compiler's implementation.
 - Introduce a trait like [rfcs#2594][rfc_custom_dst_electric_boogaloo]'s `Contiguous`
   which users can implement on their custom DSTs, or add methods to `ValueSized` and
   allow it to be implemented by users.
