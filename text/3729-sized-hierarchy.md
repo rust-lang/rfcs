@@ -541,7 +541,8 @@ edition, existing `Sized` bounds will be rewritten to `const Sized` bounds and n
 bare `Sized` bounds will be non-const. `Sized` supertraits (such as that on `Clone`
 or `Default`) will not be sugar for `const Sized`, these will remain bare `Sized`.
 If traits with a `Sized` supertrait are later made const, then their supertrait
-would be made `~const Sized`.
+would be made `~const Sized`. In the current edition, due to this proposed migration, there
+is no syntax for referring to non-const `Sized`.
 
 As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
