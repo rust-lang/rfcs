@@ -548,7 +548,7 @@ As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to 
 for these traits.
 
 ### Implicit `const ValueSized` supertraits
-[implicit-const-valuesized-supertrait]: #implicit-const-valuesized-supertrait
+[implicit-const-valuesized-supertraits]: #implicit-const-valuesized-supertraits
 
 It is necessary to introduce a implicit default bound of `const ValueSized` on a trait's
 `Self` type in order to maintain backwards compatibility (referred to as an implicit
@@ -866,6 +866,29 @@ could be made to the standard library:
 As part of the implementation of this RFC, each `Sized`/`?Sized` bound in
 the standard library would need to be reviewed and updated as appropriate.
 
+## Summary of backwards (in)compatibilities
+[summary-of-backwards-incompatibilities]: #summary-of-backwards-incompatibilities
+
+In the above sections, this proposal argues that..
+
+- ..adding bounds of new automatically implemented supertraits of a default bound..
+  - see [*Implementing `Sized`*][implementing-sized].
+- ..relaxing a sizedness bound in a free function..
+  - see [*Implementing `Sized`*][implementing-sized].
+- ..relaxing implicit sizedness supertraits..
+  - see [*Implicit `const ValueSized` supertraits*][implicit-const-valuesized-supertraits].
+
+..is backwards compatible and that..
+
+- ..relaxing a sizedness bound for a generic parameter used as a return type..
+  - see [*Implementing `Sized`*][implementing-sized].
+- ..relaxing a sizedness bound in a trait method..
+  - see [*Implementing `Sized`*][implementing-sized].
+- ..relaxing the bound on an associated type..
+  - see [*Implementing `Sized`*][implementing-sized].
+
+..is backwards incompatible.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -873,7 +896,7 @@ the standard library would need to be reviewed and updated as appropriate.
   the language since 1.0 and is now well-understood.
 - This RFC's proposal that adding a bound of `const Sized`, `const ValueSized`,
   `ValueSized` or `Pointee` would remove the default `Sized` bound is a significant
-  change from the current `?Sized` mechanism.
+  change from the current `?Sized` mechanism and can be considered confusing.
     - Typically adding a trait bound does not remove another trait bound, however
       this RFC argues that this behaviour scales better to hierarchies of traits
       with default bounds and constness.
@@ -976,19 +999,23 @@ the following syntax:
 After the edition migration, with positive bounds and keeping `?Sized`, the default bound is
 `const Sized`, which could be changed using the following syntax:
 
-| Canonically        | Syntax with positive bounds | Syntax keeping `?Sized`              |
-| ------------------ | --------------------------- | ------------------------------------ |
-| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`              |
-| `Sized`            | `T: Sized`                  | `T: ?const Sized + Sized`            |
-| `const ValueSized` | `T: const ValueSized`       | `T: ?const Sized + const ValueSized` |
-| `ValueSized`       | `T: ValueSized`             | `T: ?const Sized + ValueSized`       |
-| `Pointee`          | `T: Pointee`                | `T: ?const Sized`                    |
+| Canonically        | Syntax with positive bounds | Syntax keeping `?Sized`                |
+| ------------------ | --------------------------- | -------------------------------------- |
+| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`                |
+| `Sized`            | `T: Sized`                  | `T: ?(const Sized) + Sized`            |
+| `const ValueSized` | `T: const ValueSized`       | `T: ?(const Sized) + const ValueSized` |
+| `ValueSized`       | `T: ValueSized`             | `T: ?(const Sized) + ValueSized`       |
+| `Pointee`          | `T: Pointee`                | `T: ?(const Sized)`                    |
+
+In other words, `?(const Sized)` fully opts out of all default bounds and then one has to
+explicitly opt back in.
 
 ### Adding `?ValueSized`
 [adding-valuesized]: #adding-valuesized
 
 Another alternative is to make `ValueSized` a default bound in addition to `Sized` and establish
-that relaxing a supertrait bound also implies relaxing subtrait bounds:
+that relaxing a supertrait bound also implies relaxing subtrait bounds (but that relaxing a
+subtrait bound does not imply relaxing supertrait bounds):
 
 Prior to the edition migration, when adding `?ValueSized`, the default bound is
 `ValueSized + const ValueSized + Sized + const Sized`, which could be changed using:
@@ -997,8 +1024,8 @@ Prior to the edition migration, when adding `?ValueSized`, the default bound is
 | ------------------ | ----------------------------------- | ----------------------------------- |
 | `const Sized`      | `T: const Sized`, `T: Sized` or `T` | `T: const Sized`, `T: Sized` or `T` |
 | `Sized`            | Not possible                        | Not possible                        |
-| `const ValueSized` | `T: const ValueSized`               | `T: ?const Sized` or `T: ?Sized`    |
-| `ValueSized`       | `T: ValueSized`                     | `T: ?const ValueSized`              |
+| `const ValueSized` | `T: const ValueSized`               | `T: ?(const Sized)` or `T: ?Sized`  |
+| `ValueSized`       | `T: ValueSized`                     | `T: ?(const ValueSized)`            |
 | `Pointee`          | `T: Pointee`                        | `T: ?ValueSized`                    |
 
 After the edition migration, when adding `?ValueSized`, the default bound remains
@@ -1007,10 +1034,13 @@ After the edition migration, when adding `?ValueSized`, the default bound remain
 | Canonically        | Syntax with positive bounds | Syntax adding `?ValueSized` |
 | ------------------ | --------------------------- | --------------------------- |
 | `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`     |
-| `Sized`            | `T: Sized`                  | `T: ?const Sized`           |
+| `Sized`            | `T: Sized`                  | `T: ?(const Sized)`         |
 | `const ValueSized` | `T: const ValueSized`       | `T: ?Sized`                 |
-| `ValueSized`       | `T: ValueSized`             | `T: ?const ValueSized`      |
+| `ValueSized`       | `T: ValueSized`             | `T: ?(const ValueSized)`    |
 | `Pointee`          | `T: Pointee`                | `T: ?ValueSized`            |
+
+In other words, when a less strict bound is desirable, it is achieved by opting out of the
+next strictest bound.
 
 ## Why not re-use `std::ptr::Pointee`?
 [why-not-re-use-stdptrpointee]: #why-not-re-use-stdptrpointee
@@ -1381,11 +1411,13 @@ this RFC's `ValueSized` trait is inspired, just renamed.
       implicit bounds, such as `DynSized`, `Move`, `Leak`, etc. Often rejected due to
       the ergonomic cost of relaxed bounds.
         - `?Trait` being a negative feature can be confusing to users.
-        - Depending on the specific trait being added as a default bound, downstream crates
-          need to re-evaluate every API to determine if adding `?Trait` makes sense, for
-          each `?Trait` added.
-        - `?Trait` isn't actually fully backwards compatible due to interactions with
-          associated types.
+        - Downstream crates need to re-evaluate every API to determine if adding `?Trait`
+          makes sense, for each `?Trait` added.
+          - This is also true of the traits added in this proposal, regardless of whether a
+            relaxed bound or positive bound syntax is used. However, this proposal argues
+            that adding supertraits of an existing default bound significantly lessens this
+            disadvantage (and moreso given the niche use cases of these particular
+            supertraits).
     - This thread was largely motivated by the `Move` trait and that was
       replaced by the `Pin` type, but there was an emerging consensus that `DynSized`
       may be more feasible due to its relationship with `Sized`.
@@ -1411,8 +1443,6 @@ this RFC's `ValueSized` trait is inspired, just renamed.
       [rfcs#1993][rfc_opaque_data_structs]/[rust#44469][pr_dynsized] but without
       being an implicit bound and being able to be a relaxed bound (i.e. no
       `?DynSized`).
-        - Adding new implicit bounds which can be relaxed has backwards
-          compatibility hazards, see [rfcs#2255][issue_more_implicit_bounds].
     - The proposed `DynSized` trait in [rfcs#2310][rfc_dynsized_without_dynsized]
       is really quite similar to the `ValueSized` trait proposed by this RFC except:
         - It includes an `#[assume_dyn_sized]` attribute to be added to
@@ -1624,7 +1654,22 @@ longer relevant][zulip_issue_regions_too_simplistic].
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None currently.
+- Which syntax should be used for opting out of a default bound with const traits and
+  a trait hierarchy?
+  - This RFC is primarily written proposing the "positive bounds" approach, where
+    introducing a positive bound for a supertrait of the default bound will remove
+    the default bound.
+  - Alternatively, described in [*Adding `?ValueSized`*][adding-valuesized], existing
+    relaxed bounds syntax could be used, where a desired bound is written as opting out
+    of the next strictest.
+- Should `MetaSized` be introduced?
+  - All existing types currently determine their size based on metadata, so this
+    matches existing semantics.
+  - Motivations for `MetaSized` are described in the [*What about `MetaSized` instead
+    of or in addition to `ValueSized`?*][what-about-metasized-instead-of-or-in-addition-to-valuesized].
+- What is the precedence for `?const Trait` - `(?const) Trait` or `?(const Trait)`?
+  - This isn't a question for this RFC to resolve but this RFC takes a conserative
+    approach and always adds explicit parentheses.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -1640,13 +1685,16 @@ None currently.
     `trait Clone: Sized` and `T: Clone` is used as a bound of a function
     and `Sized` is relied on in that function, then the supertrait of
     `Clone` could no longer be relaxed as it can today. 
-- Consider allowing associated type bounds to be relaxed over an edition.
-    - i.e. `type Output: if_rust_2021(Sized) + NewAutoTrait` or something like that,
-      out of scope for this RFC.
+- All existing associated types will have at least a `const ValueSized` bound
+  and relaxing these bounds is a semver-breaking change. It could be worth considering
+  introducing mechanisms to make this relaxation non-breaking and apply that
+  automatically over an edition.
+  - i.e. `type Output: if_rust_2021(Sized) + NewAutoTrait` or something like that,
+    out of scope for this RFC.
 - Consider allowing traits to relax their bounds and having their implementor have
   stricter bounds - this would enable traits and implementations to migrate towards
   more relaxed bounds.
-    - This would be unintuitive to callers but would not break existing code.
+  - This would be unintuitive to callers but would not break existing code.
 
 ## externref
 [externref]: #externref
