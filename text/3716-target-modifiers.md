@@ -517,7 +517,7 @@ modifier is stabilized.
 [future-possibilities]: #future-possibilities
 
 A possible future extension could be to detect inconsistencies between the ABI
-of C code an Rust code. This would be an interesting extension, but it is not
+of C code and Rust code. This would be an interesting extension, but it is not
 critical for target modifiers as calling into C is inherently unsafe to start
 with. Similarly, another possible future extension could be to catch ABI
 mismatches when using dynamic linking.
