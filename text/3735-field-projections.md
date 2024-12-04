@@ -1083,11 +1083,11 @@ where
 And `Cow` would be implemented like this:
 
 ```rust
-impl<'a, T: ?Sized> Projectable for Cow<'a, T> {
+impl<'a, T: ?Sized + ToOwned<Owned = T>> Projectable for Cow<'a, T> {
     type Inner = T;
 }
 
-impl<'a, T: ?Sized, F> Project<F> for Cow<'a, T>
+impl<'a, T: ?Sized + ToOwned<Owned = T>, F> Project<F> for Cow<'a, T>
 where
     F: Field<Base = T>,
     F::Type: Sized,
