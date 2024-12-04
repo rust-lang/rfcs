@@ -1254,7 +1254,7 @@ pointer-like types, but also permits all sorts of operations generic over fields
 
 Not adding this feature will result in the proliferation of `*mut T` over more suitable pointer
 types that better express the invariants of the pointer. The ergonomic cost of
-`unsafe {  MyPtr::new_unchecked(&raw mut (*my_ptr.as_ptr()).field) }` is just to great to be useful
+`unsafe {  MyPtr::new_unchecked(&raw mut (*my_ptr.as_ptr()).field) }` is just too great to be useful
 in practice.
 
 While [pin projections] can be addressed via a library or a separate feature, not having them in the
