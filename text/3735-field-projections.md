@@ -1267,6 +1267,11 @@ they provide a big increase in readability of the code, expressing the concept o
 concisely. The compiler changes are rather manageable, reusing several already existing systems,
 thus increasing the maintenance burden only slightly if at all.
 
+We could consider other operators rather than `->`. `->` has associations in C/C++ with performing a
+dereference, while field projection doesn't necessarily perform a dereference. However, in C++ the
+operator is also overloadable, so it isn't always a dereference. As an alternative to `->`, we could
+consider `~` instead.
+
 # Prior art
 [prior-art]: #prior-art
 
