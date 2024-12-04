@@ -1244,6 +1244,7 @@ There are several crates implementing projections for different types.
 
 ## Blog Posts and Discussions
 
+- [Design Meeting Field Projection](https://hackmd.io/@y86-dev/SkkfRkzWh)
 - [Safe Cell field projection in
   Rust](https://www.abubalay.com/blog/2020/01/05/cell-field-projection)
 - [Field projdection for `Rc` and
