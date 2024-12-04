@@ -260,7 +260,7 @@ adapted the code):
 > let userptr: UserSlice;
 > let params: Untrusted<IoctlParams>;
 > 
-> userptr.read(params));
+> userptr.read(params);
 > 
 > // validate params, do something interesting with it params.input
 > 
@@ -344,11 +344,11 @@ In Rust, we will of course use a guard for the RCU read lock, so we have:
 
 ```rust
 mod rcu {
-    pub struct Guard(/* ... */);
+    pub struct RcuGuard(/* ... */);
 
-    impl Drop for Guard { /* ... */ }
+    impl Drop for RcuGuard { /* ... */ }
 
-    pub fn read_lock() -> Guard;
+    pub fn read_lock() -> RcuGuard;
 }
 ```
 
