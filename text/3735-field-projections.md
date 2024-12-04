@@ -1424,3 +1424,112 @@ are rarely used directly, this probably isn't important.
 Types that might be good candidates for [`#[projecting]`](#projecting-attribute):
 
 - `ManuallyDrop<T>`
+
+### `ArcRef<T>` for Stdlib
+
+Using field projections, we can implement an `Arc` reference type, a pointer that owns a refcount on
+an `Arc`, but points not at the entire struct in the `Arc`, but rather a field of that struct.
+
+```rust
+pub struct ArcRef<T: ?Sized> {
+    ptr: NonNull<T>,
+    count: NonNull<AtomicUsize>,
+}
+
+impl Drop for ArcRef<T: ?Sized> {
+    fn drop(&mut self) {
+        todo!()
+        // decrement the refcount
+    }
+}
+
+impl<T: ?Sized> Deref for ArcRef<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        unsafe { self.ptr.as_ref() }
+    }
+}
+```
+
+We can then make it have field projections:
+
+```rust
+impl<T: ?Sized> Projectable for ArcRef<T> {
+    type Inner = T;
+}
+
+impl<T: ?Sized, F> Project<F> for ArcRef<T>
+where
+    F: Field<Base = T>
+{
+    type Output = ArcRef<F::Type>;
+
+    fn project(self) -> Self::Output {
+        // We give the refcount to the output, so we have to forget `self`.
+        let this = ManuallyDrop::new(self);
+        ArcRef {
+            ptr: NonNull::project(this.ptr),
+            count: this.count
+        }
+    }
+}
+```
+
+And to get an `ArcRef` from an `Arc`, we can also use field projections:
+
+```rust
+impl<T: ?Sized> Projectable for Arc<T> {
+    type Inner = T;
+}
+
+impl<T: ?Sized, F> Project<F> for Arc<T>
+where
+    F: Field<Base = T>
+{
+    type Output = ArcRef<F::Type>;
+
+    fn project(self) -> Self::Output {
+        ArcRef::project(self.into_arc_ref())
+    }
+}
+```
+
+Where `into_arc_ref` is implemented like this:
+
+```rust
+impl<T: ?Sized> Arc<T> {
+    fn into_arc_ref(self) -> ArcRef<T> {
+        let this = ManuallyDrop::new(self);
+        let ptr = Arc::as_ptr(&*this);
+        ArcRef {
+            ptr,
+            count: /* get ptr to strong refcount */
+        }
+    }
+}
+```
+
+Maybe, the count ptr should also point to the weak count.
+
+Now one can use it like this:
+
+```rust
+struct DataContainer {
+    one: Data,
+    two: Data,
+}
+
+struct Data {
+    flags: u32,
+    buf: [u8; 1024 * 1024],
+}
+
+let x = Arc::<DataContainer>::new_zeroed();
+let x: Arc<DataContainer> = unsafe { x.assume_init() };
+
+let one: ArcRef<Data> = x.clone()->one;
+let two: ArcRef<Data> = x->two;
+
+let flags: ArcRef<u32> = one->flags;
+```
