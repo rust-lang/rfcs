@@ -1324,6 +1324,10 @@ match_proj x {
 }
 ```
 
+I got this idea from reading the [Pinned places](https://without.boats/blog/pinned-places/) blog
+post from boats. There, enum projections for pinned references (i.e. just pin projections) are
+discussed.
+
 Here `match_proj` would need to be a new keyword. I dislike the name and syntax, but haven't come up
 with something better.
 
