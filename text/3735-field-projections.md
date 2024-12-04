@@ -785,6 +785,8 @@ The compiler generates a compiler-internal type for every field of every struct.
 only be named via the `field_of!` macro that has the same syntax as `offset_of!`. Only fields
 accessible to the current scope can be projected. These types are called *field types*.
 
+Field types are not generated for fields of `#[repr(packed)]` structs that are misaligned.
+
 Field types implement the `Field` trait:
 
 ```rust
