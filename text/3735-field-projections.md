@@ -1068,14 +1068,22 @@ In order to provide [pin projections], a new derive macro `PinProject` and a tra
 required:
 
 ```rust
+/// # Safety
+///
+/// - `Self::Projected` is set to either `&'a mut Self::Type` or `Pin<&'a mut Self::Type>`,
+/// - `from_pinned_ref` must either be the identity function, or return the argument wrapped in
+///   `Pin` (either with `Pin::new_unchecked` or `Pin::new`)
 pub unsafe trait PinField: Field {
     type Projected<'a>;
 
-    fn from_pinned_ref<'a>(r: &'a mut Self::Type) -> Self::Projected<'a>;
+    /// # Safety
+    ///
+    /// `r` must point at a field of the struct `Self::Base`. That struct value must be pinned.
+    unsafe fn from_pinned_ref<'a>(r: &'a mut Self::Type) -> Self::Projected<'a>;
 }
 ```
 
-The trait is `unsafe`, because it must only be implemented by the `PinProject` derive marco.
+An example use is:
 
 ```rust
 #[derive(PinProject)]
