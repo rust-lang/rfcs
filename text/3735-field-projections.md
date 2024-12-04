@@ -1055,6 +1055,70 @@ projections for any field and perform the obvious offset operation.
 - `NonNull<T>`
 - `Cow<'_, T>`
 
+For example, `&T` would be implemented like this:
+
+```rust
+impl<'a, T: ?Sized> Projectable for &'a T {
+    type Inner = T;
+}
+
+impl<'a, T: ?Sized, F> Project<F> for &'a T
+where
+    F: Field<Base = T>,
+    // Needed to be able to `.cast` below
+    F::Type: Sized,
+{
+    type Output = &'a F::Type;
+
+    fn project(self) -> Self::Output {
+        let ptr: *const T = self;
+        let ptr = ptr.cast::<u8>();
+        let ptr = unsafe { ptr.add(F::OFFSET) };
+        let ptr = ptr.cast::<F::Type>();
+        unsafe { &*ptr }
+    }
+}
+```
+
+And `Cow` would be implemented like this:
+
+```rust
+impl<'a, T: ?Sized> Projectable for Cow<'a, T> {
+    type Inner = T;
+}
+
+impl<'a, T: ?Sized, F> Project<F> for Cow<'a, T>
+where
+    F: Field<Base = T>,
+    F::Type: Sized,
+{
+    type Output = Cow<'a, F::Type>;
+
+    fn project(self) -> Self::Output {
+        match self {
+            Cow::Borrowed(this) => Cow::Borrowed(<&T as Project::<F>>::project(this)),
+            Cow::Owned(this) => Cow::Owned(project_value::<T, F>(this)),
+        }
+    }
+}
+```
+
+Where `project_value` is defined as:
+
+```rust
+fn project_value<T, F>(value: T) -> F::Type
+where
+    F: Field<Base = T>,
+    F::Type: Sized,
+{
+    let r = &value;
+    let r = <&T as Project<F>>::project(r);
+    let res = std::ptr::read(r);
+    std::mem::forget(value);
+    res
+}
+```
+
 The following types get annotated with [`#[projecting]`](#projecting-attribute):
 
 - `MaybeUninit<T>`
