@@ -788,7 +788,11 @@ accessible to the current scope can be projected. These types are called *field 
 Field types implement the `Field` trait:
 
 ```rust
-pub trait Field {
+/// # Safety
+///
+/// In any well-aligned instance of the type `Self::Base`, at byte offset `Self::OFFSET`, there
+/// exists a well-aligned field of type `Self::Type`.
+pub unsafe trait Field {
     type Base: ?Sized;
     type Type: ?Sized;
 
