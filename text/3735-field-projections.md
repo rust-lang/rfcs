@@ -804,8 +804,8 @@ In the implementation of this trait, `Base` is set to the struct that the field 
 `Type` is set to the type of the field. `OFFSET` is set to the offset in bytes of the field in
 the struct (i.e. `OFFSET = offset_of!(Base, ident)`).
 
-For aligned fields (such as all fields of non-`#[repr(packed)]` structs), their field types also implement the 
-`Field` trait:
+For aligned fields (such as all fields of non-`#[repr(packed)]` structs), their field types also
+implement the `Field` trait:
 
 ```rust
 /// # Safety
