@@ -951,9 +951,10 @@ pub mod bar {
 
 #### `#[projecting]` Attribute
 
-The `#[projecting]` attribute can be put on a struct or union declaration. It requires that the
-type is `#[repr(transparent)]` and that there is a unique field that has non-zero size in general.
-It results in fields of the single non-zero sized type being considered fields of the outer type.
+The `#[projecting]` attribute can be put on a struct or union declaration. It requires that the type
+has at least one generic type parameter, here we call this parameter `T`. Additionally, the type
+must be `#[repr(transparent)]` and either always zero-sized or there must be a unique non-zero-sized
+field of type `T` (or a type that is `#[projecting]` over `T`).
 
 So for example:
 
@@ -974,17 +975,22 @@ Now `Container<Foo>` has a [field type] associated with `bar` implementing `Fiel
 - `Type = Container<i32>`
 - `OFFSET = offset_of!(Foo, bar)`
 
-The same is true for the non-generic case:
+Some more examples:
 
 ```rust
+// This type is always zero-sized, but "contains" a field.
 #[projecting]
 #[repr(transparent)]
-pub struct Container {
-    inner: Foo,
+pub struct Container2<T> {
+    _phantom: PhantomData<T>,
 }
 
-struct Foo {
-    bar: i32,
+#[projecting]
+#[repr(transparent)]
+pub struct Container3<T> {
+    // nesting multiple containers is fine as long as all of them are `#[projecting]` over the same
+    // generic.
+    ctr: Container<Container2<T>>,
 }
 ```
 
@@ -1002,12 +1008,11 @@ pub struct Container<T> {
 #[repr(transparent)]
 pub struct Container {}
 
-// ERROR: no field to project onto found, all fields are always zero-sized
+// ERROR: no generic type parameter found
 #[projecting]
 #[repr(transparent)]
-pub struct Container<T> {
-    phantom1: PhantomData<fn() -> T>,
-    phantom2: PhantomData<fn(T)>,
+pub struct Container {
+    foo: Foo,
 }
 ```
 
