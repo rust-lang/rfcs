@@ -760,7 +760,7 @@ In order to facilitate field projections, several interlinked concepts have to b
 concepts are:
 
 - [field types],
-  - `Field` trait,
+  - `Field` traits,
   - `field_of!` macro,
   - [`#[projecting]`](#projecting-attribute) attribute
 - projection operator `->`,
@@ -771,8 +771,8 @@ To ease understanding, here is a short explanation of the interactions between t
 following subsections explain them in more detail, so refer to them in cases of ambiguity. The
 projection operator `->` is governed by the `Project` trait that has `Projectable` as a super trait.
 `Projectable` helps to select the struct whose fields are used for projection. Field types store
-information about a field (such as the base struct and the field type) via the `Field` trait and the
-`field_of!` macro makes it possible to name the [field types]. Finally, the
+information about a field (such as the base struct and the field type) via the `UnalignedField`
+trait and the `field_of!` macro makes it possible to name the [field types]. Finally, the
 [`#[projecting]`](#projecting-attribute) attribute allows `repr(transparent)` structs to be ignored
 when looking for fields for projection.
 
@@ -784,16 +784,14 @@ The compiler generates a compiler-internal type for every field of every struct.
 only be named via the `field_of!` macro that has the same syntax as `offset_of!`. Only fields
 accessible to the current scope can be projected. These types are called *field types*.
 
-Field types are not generated for fields of `#[repr(packed)]` structs that are misaligned.
-
-Field types implement the `Field` trait:
+Field types implement the `UnalignedField` trait:
 
 ```rust
 /// # Safety
 ///
-/// In any well-aligned instance of the type `Self::Base`, at byte offset `Self::OFFSET`, there
-/// exists a well-aligned field of type `Self::Type`.
-pub unsafe trait Field {
+/// In any instance of the type `Self::Base`, at byte offset `Self::OFFSET`, there exists a
+/// (possibly misaligned) field of type `Self::Type`.
+pub unsafe trait UnalignedField {
     type Base: ?Sized;
     type Type: ?Sized;
 
@@ -804,6 +802,17 @@ pub unsafe trait Field {
 In the implementation of this trait, `Base` is set to the struct that the field is part of and
 `Type` is set to the type of the field. `OFFSET` is set to the offset in bytes of the field in
 the struct (i.e. `OFFSET = offset_of!(Base, ident)`).
+
+For aligned fields (such as all fields of non-`#[repr(packed)]` structs), their field types also implement the 
+`Field` trait:
+
+```rust
+/// # Safety
+///
+/// In any well-aligned instance of the type `Self::Base`, at byte offset `Self::OFFSET`, there
+/// exists a well-aligned field of type `Self::Type`.
+pub unsafe trait Field: UnalignedField {}
+```
 
 In addition to all fields of all structs, field types are generated for transparent,
 [`#[projecting]`](#projecting-attribute) container types as follows: given a transparent, generic type annotated with
@@ -831,7 +840,7 @@ let x: Container<Foo>;
 let _: &Container<i32> = project::<field_of!(Container<Foo>, bar)>(&x);
 ```
 
-The implementation of the `Field` trait sets the associated types and constant like this:
+The implementation of the `UnalignedField` trait sets the associated types and constant like this:
 - `Base = Container<Foo>`
 - `Type = Container<i32>`
 - `OFFSET = offset_of!(Foo, bar)`
@@ -856,8 +865,8 @@ struct Baz {
 
 // this refers to the field `inner` of `Baz`.
 type Y = field_of!(Container<Baz>, inner);
-// it has the following implementation of `Field`:
-impl Field for Y {
+// it has the following implementation of `UnalignedField`:
+impl UnalignedField for Y {
     type Base = Container<Baz>;
     type Type = Container<Foo>;
 
@@ -865,17 +874,27 @@ impl Field for Y {
 }
 ```
 
-#### `Field` Trait
+#### `Field` Traits
 
-The field trait is added to `core::marker` and cannot be implemented manually.
+The fields trait are added to `core::marker` and cannot be implemented manually.
 
 ```rust
-pub trait Field {
+/// # Safety
+///
+/// In any instance of the type `Self::Base`, at byte offset `Self::OFFSET`, there exists a
+/// (possibly misaligned) field of type `Self::Type`.
+pub unsafe trait UnalignedField {
     type Base: ?Sized;
     type Type: ?Sized;
 
     const OFFSET: usize;
 }
+
+/// # Safety
+///
+/// In any well-aligned instance of the type `Self::Base`, at byte offset `Self::OFFSET`, there
+/// exists a well-aligned field of type `Self::Type`.
+pub unsafe trait Field: UnalignedField {}
 ```
 
 The compiler automatically implements it for all [field types]. Users of the trait are allowed to rely
@@ -890,8 +909,8 @@ where
 {
     let ptr: *const Base = base;
     let ptr: *const u8 = base.cast::<u8>();
-    // SAFETY: `ptr` is derived from a reference and the `Field` trait is guaranteed to contain
-    // correct values. So `F::OFFSET` is still within the `F::Base` type.
+    // SAFETY: `ptr` is derived from a reference and the `UnalignedField` trait is guaranteed to
+    // contain correct values. So `F::OFFSET` is still within the `F::Base` type.
     let ptr: *const u8 = unsafe { ptr.add(F::OFFSET) };
     let ptr: *const F::Type = ptr.cast::<F::Type>();
     // SAFETY: The `Field` trait guarantees that at `F::OFFSET` we find a field of type `F::Type`.
@@ -1053,11 +1072,14 @@ implementations detailed below.
 The following pointer types get an implementation for `Projectable` with `Inner = T`. They support
 projections for any field and perform the obvious offset operation.
 
-- `&mut T`
-- `&T`
 - `*mut T`
 - `*const T`
 - `NonNull<T>`
+
+The same is true for the following types, except that they only allow projecting aligned fields:
+
+- `&mut T`
+- `&T`
 
 For example, `&T` would be implemented like this:
 
@@ -1068,7 +1090,7 @@ impl<'a, T: ?Sized> Projectable for &'a T {
 
 impl<'a, T: ?Sized, F> Project<F> for &'a T
 where
-    F: Field<Base = T>,
+    F: UnalignedField<Base = T> + Field,
     // Needed to be able to `.cast` below
     F::Type: Sized,
 {
@@ -1169,7 +1191,7 @@ impl<'a, T: ?Sized> Projectable for Pin<&'a mut T> {
 
 impl<'a, T, F> Project<F> for Pin<&'a mut T>
 where
-    F: Field<Base = T> + PinField,
+    F: UnalignedField<Base = T> + PinField,
 {
     type Output = <F as PinField>::Projected<'a>;
 
