@@ -88,7 +88,6 @@ There are a lot of types that can benefit from this operation:
 - `&Cell<T>`, `&UnsafeCell<T>`
 - `&mut MaybeUninit<T>`, `*mut MaybeUninit<T>`
 - `cell::Ref<'_, T>`, `cell::RefMut<'_, T>`
-- `Cow<'_, T>`
 
 ## Pin Projections
 
@@ -1059,7 +1058,6 @@ projections for any field and perform the obvious offset operation.
 - `*mut T`
 - `*const T`
 - `NonNull<T>`
-- `Cow<'_, T>`
 
 For example, `&T` would be implemented like this:
 
@@ -1083,45 +1081,6 @@ where
         let ptr = ptr.cast::<F::Type>();
         unsafe { &*ptr }
     }
-}
-```
-
-And `Cow` would be implemented like this:
-
-```rust
-impl<'a, T: ?Sized + ToOwned<Owned = T>> Projectable for Cow<'a, T> {
-    type Inner = T;
-}
-
-impl<'a, T: ?Sized + ToOwned<Owned = T>, F> Project<F> for Cow<'a, T>
-where
-    F: Field<Base = T>,
-    F::Type: Sized,
-{
-    type Output = Cow<'a, F::Type>;
-
-    fn project(self) -> Self::Output {
-        match self {
-            Cow::Borrowed(this) => Cow::Borrowed(<&T as Project::<F>>::project(this)),
-            Cow::Owned(this) => Cow::Owned(project_value::<T, F>(this)),
-        }
-    }
-}
-```
-
-Where `project_value` is defined as:
-
-```rust
-fn project_value<T, F>(value: T) -> F::Type
-where
-    F: Field<Base = T>,
-    F::Type: Sized,
-{
-    let r = &value;
-    let r = <&T as Project<F>>::project(r);
-    let res = std::ptr::read(r);
-    std::mem::forget(value);
-    res
 }
 ```
 
@@ -1538,4 +1497,39 @@ let one: ArcRef<Data> = x.clone()->one;
 let two: ArcRef<Data> = x->two;
 
 let flags: ArcRef<u32> = one->flags;
+```
+
+### `Cow<'_, T>`
+
+For `Cow<'_, T>`, we need a new property for field types:
+
+```rust
+pub unsafe trait MoveableField: Field {
+    fn move_out(base: Self::Base) -> Self::Type;
+}
+```
+
+The `move_out` function is implemented by just moving out the field in question. Using this, we can
+now implement field projections for `Cow<'_, T>`:
+
+```rust
+impl<'a, T: ?Sized + ToOwned<Owned = T>> Projectable for Cow<'a, T> {
+    type Inner = T;
+}
+
+impl<'a, T: ?Sized + ToOwned<Owned = T>, F> Project<F> for Cow<'a, T>
+where
+    F: Field<Base = T>,
+    F: MoveableField,
+    F::Type: Sized,
+{
+    type Output = Cow<'a, F::Type>;
+
+    fn project(self) -> Self::Output {
+        match self {
+            Cow::Borrowed(this) => Cow::Borrowed(<&T as Project::<F>>::project(this)),
+            Cow::Owned(this) => Cow::Owned(F::move_out(this)),
+        }
+    }
+}
 ```
