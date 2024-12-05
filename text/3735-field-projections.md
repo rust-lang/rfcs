@@ -991,6 +991,8 @@ pub struct Container3<T> {
     // nesting multiple containers is fine as long as all of them are `#[projecting]` over the same
     // generic.
     ctr: Container<Container2<T>>,
+    // other zero-sized fields still are allowed:
+    _variance: PhantomData<fn(T)>,
 }
 ```
 
