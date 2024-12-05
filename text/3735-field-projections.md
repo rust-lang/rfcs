@@ -908,8 +908,8 @@ where
     F::Type: Sized,
     F::Base: Sized,
 {
-    let ptr: *const Base = base;
-    let ptr: *const u8 = base.cast::<u8>();
+    let ptr: *const F::Base = base;
+    let ptr: *const u8 = ptr.cast::<u8>();
     // SAFETY: `ptr` is derived from a reference and the `UnalignedField` trait is guaranteed to
     // contain correct values. So `F::OFFSET` is still within the `F::Base` type.
     let ptr: *const u8 = unsafe { ptr.add(F::OFFSET) };
@@ -1095,7 +1095,7 @@ impl<'a, T: ?Sized, F> Project<F> for &'a T
 where
     F: UnalignedField<Base = T> + Field,
     // Needed to be able to `.cast` below
-    F::Type: Sized,
+    F::Type: Sized + 'a,
 {
     type Output = &'a F::Type;
 
