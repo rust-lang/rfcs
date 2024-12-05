@@ -781,9 +781,13 @@ when looking for fields for projection.
 [field type]: #field-types
 [field types]: #field-types
 
-The compiler generates a compiler-internal type for every field of every struct. These types can
-only be named via the `field_of!` macro that has the same syntax as `offset_of!`. Only fields
+The compiler generates a compiler-internal type for every sized[^2] field of every struct. These types
+can only be named via the `field_of!` macro that has the same syntax as `offset_of!`. Only fields
 accessible to the current scope can be projected. These types are called *field types*.
+
+[^2]: This restriction can be lifted in the future to include unsized types with statically known
+    alignment, but that would have to be done in unison with adding support for those fields in
+    `offset_of!`.
 
 Field types implement the `UnalignedField` trait:
 
