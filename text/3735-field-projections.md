@@ -1335,11 +1335,17 @@ Alternatives:
 
 ## `Field` trait stability
 
-Should we allow user implementations of the `Field` trait and have user-visible internals for it, or should we make it more opaque and sealed to reserve the possibility of supporting enums or similar?
+Should we allow user implementations of the `Field` trait and have user-visible internals for it, or
+should we make it more opaque and sealed to reserve the possibility of supporting enums or similar?
 
 ## Generalized enum projection
 
-Is there a generalization of enum projection that allows for runtime-conditional projection, for structures that sometimes-but-not-always have a given field? This could guarantee the type and identity of the field, but require a projection to be validated against a runtime instance of the value before confirming that the field exists and providing the projected field type. This would allow enums, as well as runtime equivalents such as C-style unions with discriminants or similar mechanisms for identifying variants at runtime.
+Is there a generalization of enum projection that allows for runtime-conditional projection, for
+structures that sometimes-but-not-always have a given field? This could guarantee the type and
+identity of the field, but require a projection to be validated against a runtime instance of the
+value before confirming that the field exists and providing the projected field type. This would
+allow enums, as well as runtime equivalents such as C-style unions with discriminants or similar
+mechanisms for identifying variants at runtime.
 
 ## Other
 
