@@ -1388,6 +1388,12 @@ discussed.
 Here `match_proj` would need to be a new keyword. I dislike the name and syntax, but haven't come up
 with something better.
 
+A similar issue comes up in the design of [deref patterns]. Since the types `Pin` and `MyEnum` are
+distinct, they can be used to differentiate the kind of `match` the user wants to make. Thus making
+it possible to only have the `match` operator and not a separate `match_proj` operator.
+
+[deref patterns]: https://hackmd.io/4qDDMcvyQ-GDB089IPcHGg
+
 ## Arrays
 
 Arrays can be thought of structs/tuples where each index is a field. Supporting them would simply
