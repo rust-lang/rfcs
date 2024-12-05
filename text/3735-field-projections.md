@@ -88,6 +88,7 @@ There are a lot of types that can benefit from this operation:
 - `&Cell<T>`, `&UnsafeCell<T>`
 - `&mut MaybeUninit<T>`, `*mut MaybeUninit<T>`
 - `cell::Ref<'_, T>`, `cell::RefMut<'_, T>`
+- `MappedMutexGuard<T>`, `MappedRwLockReadGuard<T>` and `MappedRwLockWriteGuard<T>`
 
 ## Pin Projections
 
@@ -1078,8 +1079,10 @@ projections for any field and perform the obvious offset operation.
 
 The same is true for the following types, except that they only allow projecting aligned fields:
 
-- `&mut T`
-- `&T`
+- `&T`, `&mut T`
+- `cell::Ref<T>`, `cell::RefMut<T>`
+- `MappedMutexGuard<T>`, `MappedRwLockReadGuard<T>` and `MappedRwLockWriteGuard<T>`
+
 
 For example, `&T` would be implemented like this:
 
