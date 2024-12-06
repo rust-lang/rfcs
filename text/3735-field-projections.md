@@ -792,8 +792,7 @@ The actual projection operation is governed by `Project<F>`:
 ```rust
 impl<'a, T, F> Project<F> for DoubleRef<'a, T>
 where
-    // Since we want to project both of our references, we want the field to be aligned.
-    F: UnalignedField<Base = T> + Field,
+    F: Field<Base = T>,
 {
     type Output = DoubleRef<'a, F::Type>;
 
@@ -1260,7 +1259,7 @@ impl<'a, T: ?Sized> Projectable for &'a T {
 
 impl<'a, T: ?Sized, F> Project<F> for &'a T
 where
-    F: UnalignedField<Base = T> + Field,
+    F: Field<Base = T>,
     // Needed to be able to `.cast` below
     F::Type: Sized + 'a,
 {
