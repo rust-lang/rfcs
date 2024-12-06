@@ -742,6 +742,162 @@ impl<F1: Future, F2: Future<Output = F1::Output>> Future for FairRaceFuture<F1, 
 }
 ```
 
+### Implementing Custom Field Projections
+
+There are two different ways to implement projections for a custom type:
+- implementing the `Projectable` and `Project<F>` traits, or
+- annotating it with `#[projecting]`.
+
+They are used for pointers and container types respectively.
+
+#### Pointer-Like
+
+Pointer-like types can be projected using `Projectable` and `Project<F>`. For example, if we create
+a custom reference type that simultaneously points at two instances of the same type.
+
+```rust
+pub struct DoubleRef<'a, T> {
+    first: &'a T,
+    second: &'a T,
+}
+
+impl<'a, T> DoubleRef<'a, T> {
+    pub fn new(first: &'a T, second: &'a T) -> Self {
+        Self { first, second }
+    }
+
+    pub fn read(&self) -> (T, T)
+    where
+        T: Copy
+    {
+        (*self.first, *self.second)
+    }
+}
+```
+
+We can now allow its users to use field projection by implementing the above mentioned traits:
+
+```rust
+impl<'a, T> Projectable for DoubleRef<'a, T> {
+    type Inner = T;
+}
+```
+
+The `Projectable` trait is what tells the compiler which types' fields to consider for projecting.
+When you write `a->b`, then `a` has to implement `Projectable` in order for the compiler to know
+which type to look up the field `b` for.
+
+The actual projection operation is governed by `Project<F>`:
+
+```rust
+impl<'a, T, F> Project<F> for DoubleRef<'a, T>
+where
+    // Since we want to project both of our references, we want the field to be aligned.
+    F: UnalignedField<Base = T> + Field,
+{
+    type Output = DoubleRef<'a, F::Type>;
+
+    fn project(self) -> Self::Output {
+        DoubleRef {
+            first: self.first.project(),
+            second: self.second.project(),
+        }
+    }
+}
+```
+
+The `Project<F>` trait governs projections for fields represented by the field type `F`. These field
+types are generated for all[^3] fields of all structs. A field type always implements the
+`UnalignedField` trait:
+
+[^3]: Almost all, fields that don't have a size, are not included.
+
+```rust
+pub unsafe trait UnalignedField {
+    type Base: ?Sized;
+    type Type: ?Sized;
+    const OFFSET: usize;
+}
+```
+
+`Base` is set to the parent struct containing the field, `Type` is set to the type of the field
+itself and `OFFSET` is the offset in bytes as returned by `offset_of!`.
+
+
+With the above projections in place, users can write the following code:
+
+```rust
+struct Foo {
+    bar: i32,
+    baz: u32,
+}
+
+let x: &Foo = &Foo { bar: 42, baz: 43 };
+let y: &Foo = &Foo { bar: 24, baz: 25 };
+let d: DoubleRef<'_, Foo> = DoubleRef::new(x, y);
+let bars: DoubleRef<'_, i32> = d->bar;
+assert_eq!((42, 24), bars.read());
+```
+
+#### Containers
+
+The other kind of projections are that of *containers*, for example `UnsafeCell<T>` or
+`MaybeUninit<T>`. They are governed by the `#[projecting]` attribute.
+
+If we want to combine the two containers from the previous sections, we can do it in the following
+way:
+
+```rust
+#[projecting]
+#[repr(transparent)]
+pub struct Opaque<T> {
+    inner: UnsafeCell<MaybeUninit<T>>,
+}
+
+impl<T> Opaque<T> {
+    pub fn new(value: T) -> Self {
+        Self { inner: UnsafeCell::new(MaybeUninit::new(value)) }
+    }
+
+    pub fn uninit() -> Self {
+        Self { inner: UnsafeCell::new(MaybeUninit::uninit()) }
+    }
+
+    pub fn write(&mut self, value: T) {
+        self.inner.get_mut().write(value);
+    }
+}
+```
+
+Now `&Opaque<T>` can represent a reference that points at data from other languages, such as C.
+
+The `#[projecting]` attribute changes the way the field types are generated for this type. Instead
+of having a field type representing the `inner` field, this type will "project" through to the type
+`T`, inheriting all fields that `T` has. So if we consider the type `Foo` from above:
+
+```rust
+struct Foo {
+    bar: i32,
+    baz: u32,
+}
+```
+
+Then there are two field types for `Opaque<Foo>`:
+- one representing `bar` with `Base = Opaque<Foo>` and `Type = Opaque<i32>`
+- the other representing `baz` with `Base = Opaque<Foo>` and `Type = Opaque<u32>`
+
+So the both the base type and the type of the fields are wrapped with the container. Now users can
+write:
+
+```rust
+fn init(foo: &mut Opaque<Foo>) {
+    let bar: &mut Opaque<i32> = foo->bar;
+    bar.write(42);
+    foo->baz.write(24);
+}
+```
+
+
 ## Impact of this Feature
 
 Overall this feature improves readability of code, because it replaces more complex to parse syntax
