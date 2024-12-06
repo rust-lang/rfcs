@@ -1520,9 +1520,6 @@ Alternatives:
 Current favorite: [`#[projecting]`](#projecting-attribute) attribute.
 
 Alternatives:
-- extend the `repr` attribute with
-  - `projecting`
-  - `flatten`
 - use `#[flatten]` instead.
 
 ## `Field` trait stability
