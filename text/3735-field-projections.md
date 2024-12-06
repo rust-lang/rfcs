@@ -1476,6 +1476,7 @@ There are several crates implementing projections for different types.
 - [Field projdection for `Rc` and
   `Arc`](https://internals.rust-lang.org/t/field-projection-for-rc-and-arc/15827)
 - [Generic Field Projection](https://internals.rust-lang.org/t/generic-field-projection/16204)
+- [Field Projection Use Cases](https://hackmd.io/@y86-dev/SkSB48hCR)
 
 Blog posts about pin (projections):
 - [Pinned places](https://without.boats/blog/pinned-places/)
