@@ -21,14 +21,14 @@ Partial Types extension gives to Product Types (`PT = T1 and T2 and T3 and ..`),
 ```rust
 struct StructABC { a: u32, b: i64, c: f32, }
 
-// function with partial parameter Struct
+// function with partial parameter
 fn ref_a (s : & StructABC.{a}) -> &u32 {
     &s.a
 }
 
 let s = StructABC {a: 4, b: 7, c: 0.0};
 
-// partial expression at argument
+// partial expression, partial reference and partial argument
 let sa = ref_a(& s.{a});
 ```
 
@@ -45,7 +45,7 @@ But the same time fields that are forbidden to read and write it is totally Ok t
 
 ## Partial Structs and Tuples
 
-For Product Types `PT = T1 and T2 and T3 and ..`), for structs, tuples we need not only partiality of a type, but also "partial access" expression: `Expr .{fld1, fld2, fld3}`, where `fld1`, `fld2`, .. are permitted fields of this type, the rest of fields are forbidden.
+For Product Types `PT = T1 and T2 and T3 and ..`), for structs, tuples we need not only partiality of a type, but also **"partial access" expression**: `Expr .{fld1, fld2, fld3}`, where `fld1`, `fld2`, .. are permitted fields of this type, the rest of fields are forbidden.
 
 One step to partial borrows Structs and Tuples.
 ```rust
@@ -81,6 +81,9 @@ impl Point {
 let ref_p1x = p1.ref_x();
 let refmut_p1y = p1.refmut_y();
 ```
+Here, since the methods' `self` types are partial references, only the needed fields are borrowed, so the call to `refmut_y` doesn't invalidate `ref_p1x`.
+
+
 It is expected, that `self` is **always** cut partiality of argument by same partiality as self-parameter by partial expression before use (even if implicit rules are off)!
 
 Pseudo-rust:
@@ -166,8 +169,27 @@ Second, but still important - syntax.
 Minimal Partiality we could write:
 ```
 Partiality:      .{ PartialFields* }
-PartialFields:   PermittedField (, PermittedField )* ,?
+PartialFields:   PartialField (, PartialField )* ,?
+PartialField:    PermittedField
 PermittedField:  IDENTIFIER | TUPLE_INDEX
+```
+
+If we wish to describe partial structs with partial structs inside, we must have a bit more complex Partiality:
+
+```
+PartialField:    PermittedField Partiality?
+```
+
+Example:
+```rust
+struct Foo { a: i32, bar: Bar, }
+
+struct Bar { b: f32, c: String, }
+
+impl Foo {
+    fn baz(&self.{a, bar.c}) {
+    }
+}
 ```
 
 ### Partial Struct syntax
@@ -219,6 +241,9 @@ Then:
 (3) If `var_prtlty.is_subset(full_prtlty)` it compiles, otherwise Error.
 
 (4) If `type_prtlty.is_empty()` or `var_prtlty.is_empty()` (if they are explicitly written as '`.{}`') then Error
+
+Maybe (4) is too strong limitation and it is handy to check just the address for comparison and wasn't allowed to read/write any fields.
+Then, (4) is a part of "Unresolved questions"
 
 ### Partial Struct and Tuples Logic Scheme
 
