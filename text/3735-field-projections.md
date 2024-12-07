@@ -936,9 +936,9 @@ when looking for fields for projection.
 [field type]: #field-types
 [field types]: #field-types
 
-The compiler generates a compiler-internal type for every sized[^2] field of every struct. These types
-can only be named via the `field_of!` macro that has the same syntax as `offset_of!`. Only fields
-accessible to the current scope can be projected. These types are called *field types*.
+The compiler generates a compiler-internal type for every sized[^2] field of every struct and tuple.
+These types can only be named via the `field_of!` macro that has the same syntax as `offset_of!`.
+Only fields accessible to the current scope can be projected. These types are called *field types*.
 
 [^2]: This restriction can be lifted in the future to include unsized types with statically known
     alignment, but that would have to be done in unison with adding support for those fields in
@@ -974,9 +974,9 @@ implement the `Field` trait:
 pub unsafe trait Field: UnalignedField {}
 ```
 
-In addition to all fields of all structs, field types are generated for transparent,
-[`#[projecting]`](#projecting-attribute) container types as follows: given a transparent, generic type annotated with
-[`#[projecting]`](#projecting-attribute) and a struct contained in it:
+In addition to all fields of all structs and tuples, field types are generated for transparent,
+[`#[projecting]`](#projecting-attribute) container types as follows: given a transparent, generic
+type annotated with [`#[projecting]`](#projecting-attribute) and a struct contained in it:
 
 ```rust
 #[projecting]
@@ -1088,8 +1088,9 @@ pub macro field_of($Container:ty, $($fields:expr)+ $(,)?) {
 }
 ```
 
-It has the same syntax as the `offset_of!` macro and returns the respective [field type]. It emits an
-error in the following cases:
+It has the same syntax as the `offset_of!` macro also supporting tuples. `field_of!` returns the
+[field type] of the field `$fields` of the `$Container` struct or tuple type. It emits an error in
+the following cases:
 
 ```rust
 pub mod foo {
