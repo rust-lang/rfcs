@@ -1743,3 +1743,47 @@ where
     }
 }
 ```
+
+### `Option<T>`
+
+`Option<T>` is a bit of an interesting case, as it cannot be annotated with `#[projecting]`, since
+it is not a transparent wrapper type. If we again consider an example struct:
+
+```rust
+struct Foo {
+    bar: i32,
+    baz: u32,
+}
+```
+
+Then `Option<Foo>` does not have a field of type `Option<i32>`, since `Option` adds an additional
+bit of information that needs to be represented in the raw bits of the type.
+
+However, we can implement field projections for `Option<T>` when `T` has field projections
+available. In the `None` case, we just project to `None` and in the `Some` case, we can use `T`'s
+projection:
+
+```rust
+impl<T: Projectable> Projectable for Option<T> {
+    type Inner = <T as Projectable>::Inner;
+}
+
+impl<T, F> Project<F> for Option<T>
+where
+    T: Project<F>,
+    F: Field<Base = Self::Inner>,
+    F::Type: Sized,
+{
+    type Output = Option<F::Type>;
+    
+    fn project(self) -> Self::Output {
+        match self {
+            Some(v) => Some(v.project())
+            None => None
+        }
+    }
+}
+```
+
+Now we are able to project for example `Option<&mut MaybeUninit<Foo>` to
+`Option<&mut MaybeUninit<i32>>`.
