@@ -45,7 +45,7 @@ When used on a type, `#[must_use = false]` is equivelent to not having any `#[mu
 The `must_use` attribute is used to control when the `unused_must_use` lint is emitted.
 
 It has three forms:
-1. the plain `#[must_use]` form, equivelent to `#[must_use = true]`.
+1. the plain `#[must_use]` form, equivalent to `#[must_use = true]`.
 2. the boolean form, `#[must_use = BOOLEAN]`, where `BOOLEAN` is either `true` or `false`.
 3. the string form, `#[must_use = "MESSAGE"]`, where `MESSAGE` is a help message to emmitted alongside the `unused_must_use` lint.
 
