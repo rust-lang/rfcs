@@ -178,7 +178,7 @@ Now with `destructure!`:
 ```rust
 pub fn into_parts(self) -> (W, Result<Vec<u8>, WriterPanicked>) {
     destructure!(let Self { buf, inner, panicked } = self);
-    let buf = if !this.panicked { Ok(buf) } else { Err(WriterPanicked { buf }) };
+    let buf = if !panicked { Ok(buf) } else { Err(WriterPanicked { buf }) };
 
     (inner, buf)
 }
