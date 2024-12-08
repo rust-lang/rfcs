@@ -50,9 +50,9 @@ It has three forms:
 3. the string form, `#[must_use = "MESSAGE"]`, where `MESSAGE` is a help message to emmitted alongside the `unused_must_use` lint.
 
 For the purposes of calculating whether to emit `unused_must_use` for an expression, every function and type item is in one of the following `must_use` states:
-1. a positive state, corrosponding to any `must_use` attribute besides `must_use = false`.
-2. a neutral state, corrosponding to no `must_use` attribute
-3. a negative state, corrosponding to `must_use = false`.
+1. a positive state, corresponding to any `must_use` attribute besides `must_use = false`.
+2. a neutral state, corresponding to no `must_use` attribute
+3. a negative state, corresponding to `must_use = false`.
 
 For each
 [expression statement](https://doc.rust-lang.org/reference/statements.html#expression-statements),
