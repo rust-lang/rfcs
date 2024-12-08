@@ -274,6 +274,55 @@ Where both `Baz` and `Bar` implement `Drop`.
 As a final note on this, making `destructure!()` expand to a pattern on its own is possible, and even refutability is possible if we only allow "one level" of refutability (`Some(_)`, but not `Some(1)`). However, we simply do not think there are many good uses for this. 
 The one scenario we could imagine is that might be useful for `destructure!()` on `enum`s, but we also think that even using `destructure!()` on `enum`s will be very uncommon (as types implementing `Drop` are almost always `struct`s) and might not outweigh the increased implementation complexity and the fact that we need to communicate this one level matching rule to users.
 
+## Macro expression and Magic type
+
+Instead of having a macro be a statement or pattern, we could make it an expression returning a type (say `Destructure<T>`) with magic similar to that of a `Box` and `ManuallyDrop`. Specifically, it would:
+1. Allow moving `T`'s fields out of `Destructure<T>` even if `T: Drop`
+2. Not drop `T` when `Destructure<T>` is dropped
+3. But drop all fields of `T` when `Destructure<T>` is dropped (except the moved-out ones)
+4. Be able to be matched directly with a pattern that would match `T`
+
+Note that having a macro produce `Destructure<T>`, as opposed to a function is still required, since we still want to check that `T` is constructable in the current context.
+
+This would allow writing the `BufWriter::into_parts` example from [Motivation](#motivation) like this:
+
+```rust
+pub fn into_parts(self) -> (W, Result<Vec<u8>, WriterPanicked>) {
+    let Self { buf, inner, panicked } = destructure!(self);
+    let buf = if !panicked { Ok(buf) } else { Err(WriterPanicked { buf }) };
+
+    (inner, buf)
+}
+```
+
+Or closer to the original code:
+
+```rust
+pub fn into_parts(self) -> (W, Result<Vec<u8>, WriterPanicked>) {
+    let this = destructure!(self);
+    let buf = this.buf;
+    let buf = if !this.panicked { Ok(buf) } else { Err(WriterPanicked { buf }) };
+
+    (this.inner, buf)
+}
+```
+
+The upside of this is that `Destructure` type can be used as input into functions which are expected to not drop `T`, such as potential `DropOwned`:
+
+```rust
+struct X(Vec<u8>);
+
+// This is explicitly *not* proposed as part of this RFC,
+// but is a kind of pattern that could be allowed by `Destructure`.
+impl DropOwned for X {
+    fn drop(self: Destructure<Self>) {
+        drop(self.0); // ownership!
+    }
+}
+```
+
+The downside of this approach is that it is significantly harder to specify, implement, and teach.
+
 # Prior art
 [prior-art]: #prior-art
 
