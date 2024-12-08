@@ -211,15 +211,6 @@ The semantic of this macro is equivalent to the following:
 2. Copying **all** fields of `$e` (for enums all fields of the active variant)
 3. If the `let` token is present in the macro invocation, fields that are listed in `$pat` are binded to their respective bindings or patterns. Otherwise, they are assigned similarly to destructuring assignment
 4. If `..` is present in `$pat`, all fields that are not mentioned in it are dropped in the order of definition (simialrly to how [normal `let`/destructuring assignment works](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=3abd3aebd3378690ff3d2006e12d4120))
----
-
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -332,22 +323,6 @@ This polyfill has multiple downsides, such as:
 - It does not support ommiting fields with `..` (this is not possible to support in the polyfill, as you are unable to prove that an expression is owned, without specifying its full type)
 - It doesn't work with enums with multiple variants, even if you could specify an irrefutable pattern (this theoretically can be supported, but is quite complicated)
 - It does not work with tuple struct syntax (impossible to support arbitrary number of fields, hard to support a set number)
-
----
-
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
