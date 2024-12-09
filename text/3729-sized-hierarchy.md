@@ -549,6 +549,9 @@ is no syntax for referring to non-const `Sized`.
 As `MetaSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
 
+**Edition change:** In the current edition, new marker traits would not be added
+to the prelude.
+
 ### Implicit `const MetaSized` supertraits
 [implicit-const-metasized-supertraits]: #implicit-const-metasized-supertraits
 
@@ -1051,21 +1054,44 @@ next strictest bound.
 from [rfcs#2580][rfc_pointer_metadata_vtable] as adding a trait with an associated item
 to this hierarchy of traits would be backwards incompatible, breaking the example below
 as it would be ambigious whether `T::Metadata` refers to `Pointee::Metadata` or
-`HasMetadataAssocType::Metadata` and it is unambigious today.
+`HasAssocType::Metadata` and it is unambigious today.
 
 ```rust
-trait HasMetadataAssocType {
+trait HasAssocType {
     type Metadata;
 }
 
-fn foo<T: HasMetadataAssocType>() -> T::Metadata {
+fn foo<T: HasAssocType>() -> T::Metadata { // error! ambigious
     todo!()
 }
 ```
 
+This backwards incompatibility also also exists when adding methods to any of the
+proposed marker traits. For example, assume methods `x` and `y` were added to `MetaSized`,
+then existing calls to methods with the same names would be broken:
+
+```rust
+trait HasMethods {
+    fn x() {}
+    fn y(&self) {}
+}
+
+fn foo<T: HasMethods>(t: &T)
+    T::x(); // error! ambigious
+    t.y(); // error! ambigious
+}
+```
+
+Due to `Sized` being a default bound, the new marker traits being supertraits, and the
+edition migration (so that breakages could happen even with `?Sized`), this backwards
+incompatibility would occur immediately when associated types or methods are added.
+
 Instead of introducing a new marker trait, `std::ptr::Pointee` could be re-used if
-there were some mechanism to indicate that `Pointee::Metadata` can only be referred
-to with fully-qualified syntax.
+there were some mechanism to indicate that associated types or methods could only be
+referred to with fully-qualified syntax. Alternatively, it would be possible to
+introduce forward-compatibility lints in current edition, the new traits were
+introduced in the next edition and the edition migration previously described
+in the next next edition.
 
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
