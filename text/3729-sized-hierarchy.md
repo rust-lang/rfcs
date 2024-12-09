@@ -440,8 +440,8 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
 
       ```rust
       trait Foo {
-        fn bar<T: Sized>(t: T) -> usize;
-        fn baz<T: ?Sized>(t: T) -> usize;
+          fn bar<T: Sized>(t: T) -> usize;
+          fn baz<T: ?Sized>(t: T) -> usize;
       }
       ```
 
@@ -453,8 +453,8 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
       struct Qux;
 
       impl Foo for Qux {
-        fn bar<T: Sized>(_: T) -> usize { std::mem::size_of<T> }
-        fn baz<T: ?Sized>(t: T) -> usize { std::mem::size_of_val(t) }
+          fn bar<T: Sized>(_: T) -> usize { std::mem::size_of<T> }
+          fn baz<T: ?Sized>(t: T) -> usize { std::mem::size_of_val(t) }
       }
       ```
 [^6]: Associated types of traits have default `Sized` bounds which cannot be
