@@ -69,9 +69,9 @@ implement `Sized` in the same sense as "unsized" is colloquially used.
 Throughout the RFC, the following terminology will be used:
 
 - "`Trait` types" will be used to refer to those types which implement `Trait`
-  and all of its supertraits but none of its subtraits. For example, a `ValueSized`
-  type would be a type which implements `ValueSized`, and `Pointee`, but not
-  `Sized`. `[usize]` would be referred to as a "`ValueSized` type".
+  and all of its supertraits but none of its subtraits. For example, a `MetaSized`
+  type would be a type which implements `MetaSized`, and `Pointee`, but not
+  `Sized`. `[usize]` would be referred to as a "`MetaSized` type".
 - "Runtime-sized" types will be used those types whose size is a runtime constant
   and unknown at compilation time. These would include the scalable vector types
   mentioned in the motivation below, or those that implement `Sized` but not
@@ -190,32 +190,32 @@ example:
 
 Rust uses marker traits to indicate the necessary knowledge required to know
 the size of a type, if it can be known. There are three traits related to the size
-of a type in Rust: `Sized`, `ValueSized`, and `Pointee`. `Sized` and
-`ValueSized` can be implemented as `const` when the size is knowable at compilation
+of a type in Rust: `Sized`, `MetaSized`, and `Pointee`. `Sized` and
+`MetaSized` can be implemented as `const` when the size is knowable at compilation
 time.
 
-`Sized` is a subtrait of `ValueSized`, so every type which implements `Sized`
-also implements `ValueSized`. Likewise, `ValueSized` is a subtrait of `Pointee`.
-`Sized` is `const` if-and-only-if `ValueSized` is `const`.
+`Sized` is a subtrait of `MetaSized`, so every type which implements `Sized`
+also implements `MetaSized`. Likewise, `MetaSized` is a subtrait of `Pointee`.
+`Sized` is `const` if-and-only-if `MetaSized` is `const`.
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│ ┌────────────────────────────────────────────────────────────────┐ │
-│ │ ┌────────────────────────────────────────────────────────────┐ │ │
-│ │ │ ┏━━━━━━━━━━━━━━━━━━━━━━━┓                                  │ │ │
-│ │ │ ┃ ┏━━━━━━━━━━━━━━━━━━━┓ ┃                                  │ │ │
-│ │ │ ┃ ┃ const Sized       ┃ ┃ Sized                            │ │ │
-│ │ │ ┃ ┃ {type, target}    ┃ ┃ {type, target, runtime env}      │ │ │
-│ │ │ ┃ ┗━━━━━━━━━━━━━━━━━━━┛ ┃                                  │ │ │
-│ │ └─╂───────────────────────╂──────────────────────────────────┘ │ │
-│ │   ┃                       ┃                                    │ │
-│ │   ┃ const ValueSized      ┃ ValueSized                         │ │
-│ │   ┃ {type, target, value} ┃ {type, target, runtime env, value} │ │
-│ │   ┗━━━━━━━━━━━━━━━━━━━━━━━┛                                    │ │
-│ └────────────────────────────────────────────────────────────────┘ │
-│  Pointee                                                           │
-│  {*}                                                               │
-└────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ ┌──────────────────────────────────────────────────────────────────────────────┐ │
+│ │ ┌──────────────────────────────────────────────────────────────────────────┐ │ │
+│ │ │ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                         │ │ │
+│ │ │ ┃ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃                                         │ │ │
+│ │ │ ┃ ┃ const Sized              ┃ ┃ Sized                                   │ │ │
+│ │ │ ┃ ┃ {type, target}           ┃ ┃ {type, target, runtime env}             │ │ │
+│ │ │ ┃ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛ ┃                                         │ │ │
+│ │ └─╂──────────────────────────────╂─────────────────────────────────────────┘ │ │
+│ │   ┃                              ┃                                           │ │
+│ │   ┃ const MetaSized              ┃ MetaSized                                 │ │
+│ │   ┃ {type, target, ptr metadata} ┃ {type, target, ptr metadata, runtime env} │ │
+│ │   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                           │ │
+│ └──────────────────────────────────────────────────────────────────────────────┘ │
+│  Pointee                                                                         │
+│  {*}                                                                             │
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 `const Sized` is implemented on types which require knowledge of only the
@@ -231,17 +231,19 @@ not `const`). For example, `svint8_t` is a scalable vector type (from
 implementation of the target (i.e. it may be 128 bits on one processor and
 256 bits on another).
 
-`const ValueSized` requires more knowledge than `const Sized` to compute the size:
-it may additionally require a value  (therefore `size_of` is not implemented for
-`ValueSized`, only `size_of_val`). For example, `[usize]` implements
-`const ValueSized` as knowing the type and target is not sufficient, the number of
-elements in the slice must also be known, which requires having the value.
+`const MetaSized` requires more knowledge than `const Sized` to compute the size:
+it may additionally require pointer metadata (therefore `size_of` is not implemented
+for `MetaSized`, only `size_of_val`). For example, `[usize]` implements
+`const MetaSized` as knowing the type and target is not sufficient, the number of
+elements in the slice must also be known, which requires reading the pointer
+metadata.
 
-As `Sized` is to `const Sized`, `ValueSized` is to `const ValueSized`: `ValueSized`
-requires a value, knowledge of the type and target platform, and can only be
-computed at runtime. For example, `[svint8_t]` requires a value to know how
-many elements there are, and then information from the runtime environment
-to know the size of a `svint8_t`.
+As `Sized` is to `const Sized`, `MetaSized` is to `const MetaSized`: `MetaSized`
+requires pointer metadata, knowledge of the type and target platform, and can
+only be computed at runtime. For example, the size of `[svint8_t]` is the number of
+elements multiplied by the size of an element - pointer metadata is required to know
+how many elements there are, and then information from the runtime environment to
+know the size of a `svint8_t` element.
 
 `Pointee` is implemented by any type that can be used behind a pointer, which is
 to say, every type (put otherwise, these types may or may not be sized at all).
@@ -251,45 +253,45 @@ runtime-sized and an `extern type` (from [rfcs#1861][rfc_extern_types]) which ha
 no known size.
 
 All type parameters have an implicit bound of `const Sized` which will be
-automatically removed if a `~const Sized`, `Sized`, `const ValueSized`,
-`~const ValueSized`, `ValueSized` or `Pointee` bound is present instead.
+automatically removed if a `~const Sized`, `Sized`, `const MetaSized`,
+`~const MetaSized`, `MetaSized` or `Pointee` bound is present instead.
 
-Prior to the introduction of `ValueSized` and `Pointee`, `Sized`'s implicit bound
+Prior to the introduction of `MetaSized` and `Pointee`, `Sized`'s implicit bound
 (now a `const Sized` implicit bound) could be removed using the `?Sized` syntax,
-which is now equivalent to a `ValueSized` bound in non-`const fn`s and
-`~const ValueSized` in `const fn`s and will be deprecated in the next edition.
+which is now equivalent to a `MetaSized` bound in non-`const fn`s and
+`~const MetaSized` in `const fn`s and will be deprecated in the next edition.
 
-Traits now have an implicit default bound on `Self` of `const ValueSized`.
+Traits now have an implicit default bound on `Self` of `const MetaSized`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Introduce new marker traits, `ValueSized` and `Pointee`, adding it to a trait
-hierarchy with the [`Sized`][api_sized] trait, and make `Sized` and `ValueSized`
+Introduce new marker traits, `MetaSized` and `Pointee`, adding it to a trait
+hierarchy with the [`Sized`][api_sized] trait, and make `Sized` and `MetaSized`
 traits `const`:
 
 ```
-    ┌────────────────┐                  ┌─────────────────────────────┐
-    │ const Sized    │ ───────────────→ │ Sized                       │
-    │ {type, target} │     implies      │ {type, target, runtime env} │
-    └────────────────┘                  └─────────────────────────────┘
-            │                                          │
-         implies                                    implies
-            │                                          │
-            ↓                                          ↓
-┌───────────────────────┐             ┌────────────────────────────────────┐
-│ const ValueSized      │ ──────────→ │ ValueSized                         │
-│ {type, target, value} │   implies   │ {type, target, value, runtime env} │
-└───────────────────────┘             └────────────────────────────────────┘
-                                                       │
-                                                    implies
-                                                       │
-                               ┌───────────────────────┘
-                               ↓
-                     ┌──────────────────┐
-                     │ Pointee          │
-                     │ {runtime env, *} │
-                     └──────────────────┘
+       ┌────────────────┐                          ┌─────────────────────────────┐
+       │ const Sized    │ ───────────────────────→ │ Sized                       │
+       │ {type, target} │         implies          │ {type, target, runtime env} │
+       └────────────────┘                          └─────────────────────────────┘
+               │                                                  │
+            implies                                            implies
+               │                                                  │
+               ↓                                                  ↓
+┌──────────────────────────────┐             ┌───────────────────────────────────────────┐
+│ const MetaSized              │ ──────────→ │ MetaSized                                 │
+│ {type, target, ptr metadata} │   implies   │ {type, target, ptr metadata, runtime env} │
+└──────────────────────────────┘             └───────────────────────────────────────────┘
+                                                                  │
+                                                               implies
+                                                                  │
+                                      ┌───────────────────────────┘
+                                      ↓
+                            ┌──────────────────┐
+                            │ Pointee          │
+                            │ {runtime env, *} │
+                            └──────────────────┘
 ```
 
 Or, in Rust syntax:
@@ -297,9 +299,9 @@ Or, in Rust syntax:
 ```rust
 #![feature(const_trait_impl)]
 
-#[const_trait] trait Sized: ~const ValueSized {}
+#[const_trait] trait Sized: ~const MetaSized {}
 
-#[const_trait] trait ValueSized: Pointee {}
+#[const_trait] trait MetaSized: Pointee {}
 
 trait Pointee {}
 ```
@@ -314,31 +316,31 @@ the compiler and cannot be implemented manually:
     - Types that which can be used from behind a pointer (they may or may
       not have a size).
     - `Pointee` will be implemented for:
-        - `ValueSized` and `const ValueSized` types
+        - `MetaSized` and `const MetaSized` types
         - `extern type`s from [rfcs#1861][rfc_extern_types]
         - compound types where every element is `Pointee`
     - In practice, every type will implement `Pointee`.
-- `ValueSized`
-    - Types whose size is computable given a value, and knowledge of the
-      type, target platform and runtime environment.
-      - `const ValueSized` does not require knowledge of the runtime
+- `MetaSized`
+    - Types whose size is computable given pointer metadata, and knowledge of
+      the type, target platform and runtime environment.
+      - `const MetaSized` does not require knowledge of the runtime
         environment
-    - `ValueSized` is a subtrait of `Pointee`
-    - `ValueSized` will be implemented for:
+    - `MetaSized` is a subtrait of `Pointee`
+    - `MetaSized` will be implemented for:
         - `Sized` types
-        - slices `[T]` where every element is `ValueSized`
-        - compound types where every element is `ValueSized`
-    - `const ValueSized` will be implemented for:
+        - slices `[T]` where every element is `MetaSized`
+        - compound types where every element is `MetaSized`
+    - `const MetaSized` will be implemented for:
         - `const Sized` types
         - slices `[T]` where every element is `const Sized`
         - string slice `str`
         - trait objects `dyn Trait`
-        - compound types where every element is `const ValueSized`
+        - compound types where every element is `const MetaSized`
 - `Sized`
     - Types whose size is computable given knowledge of the type, target
       platform and runtime environment.
       - `const Sized` does not require knowledge of the runtime environment
-    - `Sized` is a subtrait of `ValueSized`.
+    - `Sized` is a subtrait of `MetaSized`.
     - `Sized` will be implemented for:
         - scalable vectors from [rfcs#3268][rfc_scalable_vectors]
         - compound types where every element is `Sized`
@@ -357,9 +359,9 @@ Introducing new automatically implemented traits is backwards-incompatible,
 at least if you try to add it as a bound to an existing function[^2][^3] (and
 new auto traits that which go unused aren't that useful), but due to being
 supertraits of `Sized` and `Sized` being a default bound, these
-backwards-incompatibilities are avoided for `ValueSized` and `Pointee`.
+backwards-incompatibilities are avoided for `MetaSized` and `Pointee`.
 
-Relaxing a bound from `Sized` to `ValueSized` or `Pointee` is non-breaking as
+Relaxing a bound from `Sized` to `MetaSized` or `Pointee` is non-breaking as
 the calling bound must have either `T: Sized` or `T: ?Sized`, both of which
 would satisfy any relaxed bound[^4]. A parameter bounded by `Sized` and used
 as the return type of a function could not be relaxed as function return types
@@ -414,25 +416,25 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
       ```
 [^4]: Callers of existing APIs will have one of the following `Sized` bounds:
 
-      | Before ed. migration              | After ed. migration |
-      | --------------------------------- | ------------------- |
-      | `T: Sized` (implicit or explicit) | `T: const Sized`    |
-      | `T: ?Sized`                       | `T: const ValueSized` |
+      | Before ed. migration              | After ed. migration  |
+      | --------------------------------- | -------------------- |
+      | `T: Sized` (implicit or explicit) | `T: const Sized`     |
+      | `T: ?Sized`                       | `T: const MetaSized` |
 
       Any existing free function in the standard library with a `T: Sized` bound
       could be changed to one of the following bounds and remain compatible with
       any callers that currently exist (as per the above table):
 
-      |                | `const Sized` | `Sized` | `const ValueSized` | `ValueSized` | `Pointee`
-      | -------------- | ------------- | ------- | ------------------ | ------------ | ---------
-      | `const Sized`  | ✔             | ✔       | ✔                  | ✔            | ✔
+      |                | `const Sized` | `Sized` | `const MetaSized` | `MetaSized` | `Pointee`
+      | -------------- | ------------- | ------- | ----------------- | ----------- | ---------
+      | `const Sized`  | ✔             | ✔       | ✔                 | ✔           | ✔
 
       Likewise with a `T: ?Sized` bound:
 
-      |                    | `const ValueSized` | `ValueSized` | `Pointee`
-      | ------------------ | ------------------ | ------------ | ---------
-      | `const Sized`      | ✔                  | ✔            | ✔
-      | `const ValueSized` | ✔                  | ✔            | ✔
+      |                   | `const MetaSized` | `MetaSized` | `Pointee`
+      | ----------------- | ----------------- | ----------- | ---------
+      | `const Sized`     | ✔                 | ✔           | ✔
+      | `const MetaSized` | ✔                 | ✔           | ✔
 [^5]: In a crate defining a trait which has method with sizedness bounds, such
       as...
 
@@ -466,7 +468,7 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
 
       ```rust
       trait Add<Rhs = Self> {
-          type Output: ValueSized;
+          type Output: MetaSized;
       }
       ```
 
@@ -483,26 +485,26 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
       then there are four possibilities:
 
       - Before `Sized`
-        - i.e. `NewSized: Sized: ValueSized: Pointee`
+        - i.e. `NewSized: Sized: MetaSized: Pointee`
         - Adding bounds on a new trait before `Sized` is not
           backwards-compatible as described above in [Implementing
           `Sized`][implementing-sized].
-      - Between `Sized` and `ValueSized`
-        - i.e. `Sized: NewSized: ValueSized: Pointee`
-        - Adding bounds on a new trait between `Sized` and `ValueSized` is
+      - Between `Sized` and `MetaSized`
+        - i.e. `Sized: NewSized: MetaSized: Pointee`
+        - Adding bounds on a new trait between `Sized` and `MetaSized` is
           backwards compatible for some functions (except for on a trait's
           associated type). An existing function with a `Sized` bound could
           be relaxed to the new trait without breaking existing code.
-          Existing functions with a `ValueSized` or `Pointee` bound could not.
-      - Between `ValueSized` and `Pointee`
-        - i.e. `Sized: ValueSized: NewSized: Pointee`
-        - Adding bounds on a new trait between `ValueSized` and `Pointee` is
+          Existing functions with a `MetaSized` or `Pointee` bound could not.
+      - Between `MetaSized` and `Pointee`
+        - i.e. `Sized: MetaSized: NewSized: Pointee`
+        - Adding bounds on a new trait between `MetaSized` and `Pointee` is
           backwards compatible for some functions (except for on a trait's
-          associated type). An existing function with a `Sized` or `ValueSized`
+          associated type). An existing function with a `Sized` or `MetaSized`
           bound could be relaxed to the new trait without breaking existing code.
           Existing functions with a `Pointee` bound could not.
       - After `Pointee`
-        - i.e. `Sized: ValueSized: Pointee: NewSized`
+        - i.e. `Sized: MetaSized: Pointee: NewSized`
         - For the same reasons as the traits proposed in this RFC, adding bounds
           on a new trait after `Pointee` is backwards compatible (except for on a
           trait's associated type). Any existing function will have stricter
@@ -512,26 +514,26 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
 ## `Sized` bounds
 [sized-bounds]: #sized-bounds
 
-`?Sized` would be made syntactic sugar for a `const ValueSized` bound. A
-`const ValueSized` bound is equivalent to a `?Sized` bound as all values in Rust
+`?Sized` would be made syntactic sugar for a `const MetaSized` bound. A
+`const MetaSized` bound is equivalent to a `?Sized` bound as all values in Rust
 today whose types do not implement `Sized` are valid arguments to
 [`std::mem::size_of_val`][api_size_of_val] and as such have a size which can be
-computed given a value and knowledge of the type and target platform, and
-therefore will implement `const ValueSized`. As there are currently no
-extern types or other types which would not implement `const ValueSized`,
+computed given pointer metadata and knowledge of the type and target platform, and
+therefore will implement `const MetaSized`. As there are currently no
+extern types or other types which would not implement `const MetaSized`,
 every type in Rust today which would satisfy a `?Sized` bound would satisfy
-a `const ValueSized` bound.
+a `const MetaSized` bound.
 
 **Edition change:** In the current edition,`?Sized` will be syntatic sugar for
-a `const ValueSized` bound. As the `?Trait` syntax is currently accepted for any trait
-but ignored for every trait except `Sized`, `?ValueSized` and `?Pointee` bounds would
+a `const MetaSized` bound. As the `?Trait` syntax is currently accepted for any trait
+but ignored for every trait except `Sized`, `?MetaSized` and `?Pointee` bounds would
 be ignored. In the next edition, any uses of `?Sized` syntax will be rewritten to
-a `const ValueSized` bound. Any other uses of the `?Trait` syntax will be removed as
+a `const MetaSized` bound. Any other uses of the `?Trait` syntax will be removed as
 part of the migration and the `?Trait` syntax will be prohibited.
 
 A default implicit bound of `const Sized` is added by the compiler to every type
 parameter `T` that does not have an explicit `~const Sized`, `Sized`, `?Sized`,
-`const ValueSized`, `~const ValueSized`, `ValueSized` or `Pointee` bound. It is
+`const MetaSized`, `~const MetaSized`, `MetaSized` or `Pointee` bound. It is
 backwards compatible to change the current implicit `Sized` bound to an `const Sized`
 bound as every type which exists currently will implement `const Sized`.
 
@@ -544,26 +546,26 @@ If traits with a `Sized` supertrait are later made const, then their supertrait
 would be made `~const Sized`. In the current edition, due to this proposed migration, there
 is no syntax for referring to non-const `Sized`.
 
-As `ValueSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
+As `MetaSized` and `Pointee` are not default bounds, there is no equivalent to `?Sized`
 for these traits.
 
-### Implicit `const ValueSized` supertraits
-[implicit-const-valuesized-supertraits]: #implicit-const-valuesized-supertraits
+### Implicit `const MetaSized` supertraits
+[implicit-const-metasized-supertraits]: #implicit-const-metasized-supertraits
 
-It is necessary to introduce a implicit default bound of `const ValueSized` on a trait's
+It is necessary to introduce a implicit default bound of `const MetaSized` on a trait's
 `Self` type in order to maintain backwards compatibility (referred to as an implicit
 supertrait hereafter for brevity). Like implicit `const Sized` bounds, this is omitted
-if an explicit `const Sized`, `Sized`, `ValueSized` or `Pointee` bound is present.
+if an explicit `const Sized`, `Sized`, `MetaSized` or `Pointee` bound is present.
 
 Without this implicit supertrait, the below example would no longer compile: `needs_drop`'s
-`T: ?Sized` would be migrated to a `const ValueSized` bound which is not guaranteed to
+`T: ?Sized` would be migrated to a `const MetaSized` bound which is not guaranteed to
 be implemented by `Foo`.
 
 ```rust
 trait Foo {
     fn implementor_needs_dropped() -> bool {
         // `fn needs_drop<T: ?Sized>() -> bool`
-        std::mem::needs_drop::<Self>() // error! `Self: const ValueSized` is not satisfied
+        std::mem::needs_drop::<Self>() // error! `Self: const MetaSized` is not satisfied
     }
 }
 ```
@@ -572,7 +574,7 @@ With the implicit supertrait, the above example would be equivalent to the follo
 example, which would compile successfully.
 
 ```rust
-trait Foo: const ValueSized {
+trait Foo: const MetaSized {
     fn implementor_needs_dropped() -> bool {
         // `fn needs_drop<T: ?Sized>() -> bool`
         std::mem::needs_drop::<Self>() // ok!
@@ -580,9 +582,9 @@ trait Foo: const ValueSized {
 }
 ```
 
-For the same reasons that `?Sized` is equivalent to `const ValueSized`, adding
-a `const ValueSized` implicit supertrait will not break any existing implementations
-of traits as every existing type already implements `const ValueSized`.
+For the same reasons that `?Sized` is equivalent to `const MetaSized`, adding
+a `const MetaSized` implicit supertrait will not break any existing implementations
+of traits as every existing type already implements `const MetaSized`.
 
 This implicit supertrait could be relaxed without breaking changes within the standard
 library and in third party crates.
@@ -592,30 +594,30 @@ breaking change as that trait could be being implemented on a type which does no
 implement `Sized` - this is true regardless of whether there is an implicit supertrait
 and adding a `Sized` supertrait to a trait without one would be a breaking change today.
 
-If the implicit supertrait was weakened to a `ValueSized` or `Pointee` supertrait
+If the implicit supertrait was weakened to a `MetaSized` or `Pointee` supertrait
 then this would not break any existing callers using this trait as a bound - any
-parameters bound by this trait must also have either a `?Sized`/`const ValueSized` bound
+parameters bound by this trait must also have either a `?Sized`/`const MetaSized` bound
 or a `Sized` bound which would ensure any existing uses of `size_of_val` (or other
-functions taking `?Sized`/`const ValueSized`) continue to compile.
+functions taking `?Sized`/`const MetaSized`) continue to compile.
 
-In the below example, if an existing trait `Foo`'s implicit `const ValueSized`
-supertrait was relaxed to `Pointee` or `ValueSized` then its uses would continue
+In the below example, if an existing trait `Foo`'s implicit `const MetaSized`
+supertrait was relaxed to `Pointee` or `MetaSized` then its uses would continue
 to compile:
 
 ```rust
-trait Foo: Pointee {} // or `ValueSized`
+trait Foo: Pointee {} // or `MetaSized`
 //         ^^^^^^^ new!
 
 fn foo<T: Foo>(t: &T) -> usize { size_of_val(t) }
-fn foo_unsized<T: const ValueSized + Foo>(t: &T) -> usize { size_of_val(t) }
+fn foo_unsized<T: const MetaSized + Foo>(t: &T) -> usize { size_of_val(t) }
 ```
 
-Once users can write `Pointee` or `ValueSized` bounds and then it is possible for users
+Once users can write `Pointee` or `MetaSized` bounds and then it is possible for users
 to write functions which would no longer compile if the function was relying on the
 implicit supertrait of another bounded trait which was then relaxed:
 
 ```rust
-// This only compiled because `Foo: const ValueSized`, but if that bound were relaxed
+// This only compiled because `Foo: const MetaSized`, but if that bound were relaxed
 // then it would fail to compile.
 fn foo<T: Pointee + Foo>(t: &T) -> usize { size_of_val(t) }
 ```
@@ -624,7 +626,7 @@ Implementations of traits in would also not be broken when an implicit supertrai
 is relaxed.
 
 Any existing implementation of a trait will be on a type which implement at least
-`const ValueSized`, therefore a relaxation of the implicit supertrait to `ValueSized`
+`const MetaSized`, therefore a relaxation of the implicit supertrait to `MetaSized`
 or `Pointee` will be trivially satisfied by any existing implementor.
 
 ```rust
@@ -642,14 +644,14 @@ and subtraits.
 In trait implementations, `Self` refers to the specific implementing type, this
 could be a concrete type like `u32` or it could be a generic parameter in a
 blanket impl. In either case, the type is guaranteed to implement `const Sized`
-or `const ValueSized` as no types which do not implement one of these two traits
+or `const MetaSized` as no types which do not implement one of these two traits
 currently exist.
 
 ```rust
 impl Foo for u32 {
     fn example(t: &Self) -> usize { std::mem::size_of_val(t) }
     // `Self` = `u32`, even if `Foo`'s implicit supertrait is relaxed, `u32` still
-    // implements `const ValueSized`
+    // implements `const MetaSized`
 }
 
 impl<T> Foo for T {
@@ -661,7 +663,7 @@ impl<T> Foo for T {
 impl<T: ?Sized> Foo for T {
     fn example(t: &Self) -> usize { std::mem::size_of_val(t) }
     // `Self` = `T`, even if `Foo`'s implicit supertrait is relaxed, `T` still
-    // implements `const ValueSized` because of the default bound
+    // implements `const MetaSized` because of the default bound
 }
 ```
 
@@ -674,12 +676,12 @@ an implicit supertrait is relaxed so do not pose any risk of breakage.
 
 Like with trait definitions above, a subtrait defined in a downstream crate can
 observe the sizedness traits implemented by `Self` in default bodies. However,
-subtraits will also have an implicit `const ValueSized` supertrait which would
+subtraits will also have an implicit `const MetaSized` supertrait which would
 guarantee that their bodies continue to compile if a supertraits relaxed its implicit
 supertrait:
 
 ```rust
-trait Sub: Foo { // equiv to `Sub: Foo + const ValueSized`
+trait Sub: Foo { // equiv to `Sub: Foo + const MetaSized`
     // `fn needs_drop<T: ?Sized>() -> bool`
     fn example() -> bool { std::mem::needs_drop::<Self>() } // ok!
 }
@@ -695,26 +697,26 @@ the new traits this proposal introduces.
 To summarise, in the current edition, the following bounds will be treated as
 equivalent to:
 
-| Written            | Interpretation     | Notes                                                                                |
-| ------------------ | ------------------ | ------------------------------------------------------------------------------------ |
-| `const Sized`      | `const Sized`      |                                                                                      |
-| `Sized`            | `const Sized`      | Necessary for backwards compatibility, later rewritten to `const Sized` by `rustfix` |
-| `?Sized`           | `const ValueSized` | Necessary for backwards compatibility, later prohibited                              |
-| `const ValueSized` | `const ValueSized` |                                                                                      |
-| `ValueSized`       | `ValueSized`       |                                                                                      |
-| `Pointee`          | `Pointee`          |                                                                                      |
+| Written           | Interpretation    | Notes                                                                                |
+| ----------------- | ----------------- | ------------------------------------------------------------------------------------ |
+| `const Sized`     | `const Sized`     |                                                                                      |
+| `Sized`           | `const Sized`     | Necessary for backwards compatibility, later rewritten to `const Sized` by `rustfix` |
+| `?Sized`          | `const MetaSized` | Necessary for backwards compatibility, later prohibited                              |
+| `const MetaSized` | `const MetaSized` |                                                                                      |
+| `MetaSized`       | `MetaSized`       |                                                                                      |
+| `Pointee`         | `Pointee`         |                                                                                      |
 
 After the aforementioned edition migration, the following bounds will be
 treated as equivalent to:
 
-| Written            | Interpretation     |
-| ------------------ | ------------------ |
-| `const Sized`      | `const Sized`      |
-| `Sized`            | `Sized`            |
-| `?Sized`           | Prohibited         |
-| `const ValueSized` | `const ValueSized` |
-| `ValueSized`       | `ValueSized`       |
-| `Pointee`          | `Pointee`          |
+| Written           | Interpretation    |
+| ----------------- | ----------------- |
+| `const Sized`     | `const Sized`     |
+| `Sized`           | `Sized`           |
+| `?Sized`          | Prohibited        |
+| `const MetaSized` | `const MetaSized` |
+| `MetaSized`       | `MetaSized`       |
+| `Pointee`         | `Pointee`         |
 
 ## `size_of` and `size_of_val`
 [size-of-and-size-of-val]: #size_of-and-size_of_val
@@ -752,23 +754,23 @@ fn another_use_of_size_of<T: Sized>() -> [u8; size_of::<T>()] {
 ```
 
 [`size_of_val`][api_size_of_val] is also const-stable, so like `size_of` above,
-its bound should be changed to `T: ~const ValueSized` and this would not result in
+its bound should be changed to `T: ~const MetaSized` and this would not result in
 any breakage due to the previously described edition migration.
 
 ```rust
 pub const fn size_of_val<T>(val: &T) -> usize
 where
-    T: ~const ValueSized,
+    T: ~const MetaSized,
 {
     /* .. */
 }
 ```
 
-While `ValueSized` is equivalent to the current `?Sized` bound it replaces, it
+While `MetaSized` is equivalent to the current `?Sized` bound it replaces, it
 excludes extern types (which `?Sized` by definition cannot), which prevents
 `size_of_val` from being called with extern types from [rfcs#1861][rfc_extern_types].
 Due to the changes described in [`Sized` bounds][sized-bounds] (migrating
-`T: ?Sized` to `T: const ValueSized`), changing the bound of `size_of_val` will
+`T: ?Sized` to `T: const MetaSized`), changing the bound of `size_of_val` will
 not break any existing callers.
 
 These same changes apply to `align_of` and `align_of_val`.
@@ -790,7 +792,7 @@ implement `Clone` and `Copy`.
 `Pointee` types cannot be used in non-`#[repr(transparent)]` compound types
 as the alignment of these types would need to be known in order to calculate field
 offsets. `const Sized` types can be used in compound types with no restrictions.
-`Sized`, `const ValueSized` and `ValueSized` types can be used in compound types, but
+`Sized`, `const MetaSized` and `MetaSized` types can be used in compound types, but
 only as the last element.
 
 ## Compiler performance implications
@@ -812,12 +814,12 @@ automatically imply the proposed trait in any bounds where the trait is
 used, e.g.
 
 ```rust
-trait NewTrait: ValueSized {}
+trait NewTrait: MetaSized {}
 
 struct NewRc<T: NewTrait> {} // equiv to `T: NewTrait + Sized` as today
 ```
 
-If the user wanted `T: ValueSized` then it would need to be written explicitly.
+If the user wanted `T: MetaSized` then it would need to be written explicitly.
 This is forward compatible with trait bounds which have sizedness supertraits
 implying the removal of the default `const Sized` bound.
 
@@ -834,7 +836,7 @@ implementation of this RFC, but bounds in third-party crates need not be.
 As runtime-sized types will primarily be used for localised performance optimisation,
 and `Pointee` types will primarily be used for localised FFI, neither is expected
 to be so pervasive throughout Rust codebases to the extent that all existing
-`const Sized`, `~const ValueSized` or `ValueSized` bounds (after edition migration) would
+`const Sized`, `~const MetaSized` or `MetaSized` bounds (after edition migration) would
 need to be immediately reconsidered in light of their addition, even if in many cases
 these could be relaxed.
 
@@ -854,7 +856,7 @@ can be made while preserving backwards compatibility, the following changes
 could be made to the standard library:
 
 - [`std::boxed::Box`][api_box]
-    - `T: ?Sized` becomes `T: ValueSized`
+    - `T: ?Sized` becomes `T: MetaSized`
     - It is not a breaking change to relax this bound and it prevents types
       only implementing `Pointee` from being used with `Box`, as these types
       do not have the necessary size and alignment for allocation/deallocation.
@@ -876,7 +878,7 @@ In the above sections, this proposal argues that..
 - ..relaxing a sizedness bound in a free function..
   - see [*Implementing `Sized`*][implementing-sized].
 - ..relaxing implicit sizedness supertraits..
-  - see [*Implicit `const ValueSized` supertraits*][implicit-const-valuesized-supertraits].
+  - see [*Implicit `const MetaSized` supertraits*][implicit-const-metasized-supertraits].
 
 ..is backwards compatible and that..
 
@@ -894,8 +896,8 @@ In the above sections, this proposal argues that..
 
 - This is a fairly significant change to the `Sized` trait, which has been in
   the language since 1.0 and is now well-understood.
-- This RFC's proposal that adding a bound of `const Sized`, `const ValueSized`,
-  `ValueSized` or `Pointee` would remove the default `Sized` bound is a significant
+- This RFC's proposal that adding a bound of `const Sized`, `const MetaSized`,
+  `MetaSized` or `Pointee` would remove the default `Sized` bound is a significant
   change from the current `?Sized` mechanism and can be considered confusing.
     - Typically adding a trait bound does not remove another trait bound, however
       this RFC argues that this behaviour scales better to hierarchies of traits
@@ -920,13 +922,13 @@ There are various points of difference to the [prior art](#prior-art) related to
   [rust#46108][pr_dynsized_rebase],  [rfcs#2984][rfc_pointee_dynsized] and
   [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
   none of the traits proposed in this RFC are default bounds and therefore do not
-  require additional relaxed bounds be accepted (i.e. no `?ValueSized`), which has
+  require additional relaxed bounds be accepted (i.e. no `?MetaSized`), which has
   had mixed reception in previous RFCs ([rfcs#2255][issue_more_implicit_bounds]
   summarizes these discussions).
 - In contrast to [rfcs#1524][rfc_custom_dst], [rfc#1993][rfc_opaque_data_structs],
   [Pre-eRFC: Let's fix DSTs][pre_erfc_fix_dsts], [Pre-RFC: Custom DSTs][prerfc_custom_dst]
   and [eRFC: Minimal Custom DSTs via Extern Type (DynSized)][erfc_minimal_custom_dsts_via_extern_type],
-  `ValueSized` does not have `size_of_val`/`align_of_val` methods to support 
+  `MetaSized` does not have `size_of_val`/`align_of_val` methods to support 
   custom DSTs as this would add to the complexity of this proposal and custom DSTs
   are not this RFC's focus, see the [Custom DSTs][custom-dsts] section later.
 
@@ -936,23 +938,23 @@ There are various points of difference to the [prior art](#prior-art) related to
 It may seem that introducing the `Pointee` trait at the bottom of the trait hierarchy
 is unnecessary as this is equivalent to the absense of any bounds whatsoever, but
 having an `Pointee` trait is necessary to enable the meaning of `?Sized` to be re-defined
-to be equivalent to `const ValueSized` and avoid complicated behaviour change over an edition.
+to be equivalent to `const MetaSized` and avoid complicated behaviour change over an edition.
 
 Without introducing `Pointee`, if a user wanted to remove all sizedness bounds from a
 generic parameter then they would have two options:
 
-1. Introduce a `?ValueSized` relaxed bound (a user could write `Sized`, `ValueSized` or
-   `?ValueSized`) which has had mixed reception in previous RFCs
+1. Introduce a `?MetaSized` relaxed bound (a user could write `Sized`, `MetaSized` or
+   `?MetaSized`) which has had mixed reception in previous RFCs
    ([rfcs#2255][issue_more_implicit_bounds] summarizes these discussions).
 2. Keep `?Sized`'s existing meaning of removing the implicit `Sized` bound, which would
    complicate changing `size_of_val`'s existing `?Sized` bound:
 
-   Without `Pointee`, `?Sized` would be equivalent to `const ValueSized` until
+   Without `Pointee`, `?Sized` would be equivalent to `const MetaSized` until
    extern types are stabilised (e.g. a `?Sized` bound would accept exactly the
-   same types as a `const ValueSized` bound, but after extern types are introduced,
-   `?Sized` bounds would accept extern types and `const ValueSized` bounds would not).
+   same types as a `const MetaSized` bound, but after extern types are introduced,
+   `?Sized` bounds would accept extern types and `const MetaSized` bounds would not).
    extern types would need to be introduced over an edition and all existing `?Sized`
-   bounds rewritten to `?Sized + const ValueSized`. This is the same mechanism described
+   bounds rewritten to `?Sized + const MetaSized`. This is the same mechanism described
    in [rfcs#3396][rfc_extern_types_v2] to introduce its `MetaSized` trait.
 
 ## Why migrate away from `?Sized`?
@@ -978,66 +980,66 @@ To preserve backwards compatibility, `Sized` bounds must be migrated to `const S
 Without adding any additional default bounds or relaxed forms, keeping `?Sized` could be
 compatible with this proposal as follows:
 
-In the current edition, `?Sized` would need to be equivalent to `?Sized + const ValueSized` to
+In the current edition, `?Sized` would need to be equivalent to `?Sized + const MetaSized` to
 maintain backwards compatibility (see [the `size_of` and `size_of_val`
 section][size_of-and-size_of_val] for rationale). In the next edition, `?Sized` would be
-rewritten to `?Sized + const ValueSized` (remove the `Sized` default and add a `const ValueSized`
+rewritten to `?Sized + const MetaSized` (remove the `Sized` default and add a `const MetaSized`
 bound) and bare `?Sized` would only remove the `Sized` default bound.
 
 Prior to the edition migration, with positive bounds and keeping `?Sized`, the default bound is
 `Sized` (interpreted as `const Sized` for backwards compatibility), which could be changed using
 the following syntax:
 
-| Canonically        | Syntax with positive bounds          | Syntax keeping `?Sized`              |
-| ------------------ | ------------------------------------ | ------------------------------------ |
-| `const Sized`      | `T: const Sized`, `T: Sized`, or `T` | `T: const Sized`, `T: Sized`, or `T` |
-| `Sized`            | Not possible                         | Not possible                         |
-| `const ValueSized` | `T: const ValueSized`                | `T: ?Sized`                          |
-| `ValueSized`       | `T: ValueSized`                      | Not possible                         |
-| `Pointee`          | `T: Pointee`                         | Not possible                         |
+| Canonically       | Syntax with positive bounds          | Syntax keeping `?Sized`              |
+| ----------------- | ------------------------------------ | ------------------------------------ |
+| `const Sized`     | `T: const Sized`, `T: Sized`, or `T` | `T: const Sized`, `T: Sized`, or `T` |
+| `Sized`           | Not possible                         | Not possible                         |
+| `const MetaSized` | `T: const MetaSized`                 | `T: ?Sized`                          |
+| `MetaSized`       | `T: MetaSized`                       | Not possible                         |
+| `Pointee`         | `T: Pointee`                         | Not possible                         |
 
 After the edition migration, with positive bounds and keeping `?Sized`, the default bound is
 `const Sized`, which could be changed using the following syntax:
 
-| Canonically        | Syntax with positive bounds | Syntax keeping `?Sized`                |
-| ------------------ | --------------------------- | -------------------------------------- |
-| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`                |
-| `Sized`            | `T: Sized`                  | `T: ?(const Sized) + Sized`            |
-| `const ValueSized` | `T: const ValueSized`       | `T: ?(const Sized) + const ValueSized` |
-| `ValueSized`       | `T: ValueSized`             | `T: ?(const Sized) + ValueSized`       |
-| `Pointee`          | `T: Pointee`                | `T: ?(const Sized)`                    |
+| Canonically        | Syntax with positive bounds | Syntax keeping `?Sized`               |
+| ------------------ | --------------------------- | ------------------------------------- |
+| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`               |
+| `Sized`            | `T: Sized`                  | `T: ?(const Sized) + Sized`           |
+| `const MetaSized`  | `T: const MetaSized`        | `T: ?(const Sized) + const MetaSized` |
+| `MetaSized`        | `T: MetaSized`              | `T: ?(const Sized) + MetaSized`       |
+| `Pointee`          | `T: Pointee`                | `T: ?(const Sized)`                   |
 
 In other words, `?(const Sized)` fully opts out of all default bounds and then one has to
 explicitly opt back in.
 
-### Adding `?ValueSized`
-[adding-valuesized]: #adding-valuesized
+### Adding `?MetaSized`
+[adding-metasized]: #adding-metasized
 
-Another alternative is to make `ValueSized` a default bound in addition to `Sized` and establish
+Another alternative is to make `MetaSized` a default bound in addition to `Sized` and establish
 that relaxing a supertrait bound also implies relaxing subtrait bounds (but that relaxing a
 subtrait bound does not imply relaxing supertrait bounds):
 
-Prior to the edition migration, when adding `?ValueSized`, the default bound is
-`ValueSized + const ValueSized + Sized + const Sized`, which could be changed using:
+Prior to the edition migration, when adding `?MetaSized`, the default bound is
+`MetaSized + const MetaSized + Sized + const Sized`, which could be changed using:
 
-| Canonically        | Syntax with positive bounds         | Syntax adding `?ValueSized`         |
-| ------------------ | ----------------------------------- | ----------------------------------- |
-| `const Sized`      | `T: const Sized`, `T: Sized` or `T` | `T: const Sized`, `T: Sized` or `T` |
-| `Sized`            | Not possible                        | Not possible                        |
-| `const ValueSized` | `T: const ValueSized`               | `T: ?(const Sized)` or `T: ?Sized`  |
-| `ValueSized`       | `T: ValueSized`                     | `T: ?(const ValueSized)`            |
-| `Pointee`          | `T: Pointee`                        | `T: ?ValueSized`                    |
+| Canonically       | Syntax with positive bounds         | Syntax adding `?MetaSized`          |
+| ----------------- | ----------------------------------- | ----------------------------------- |
+| `const Sized`     | `T: const Sized`, `T: Sized` or `T` | `T: const Sized`, `T: Sized` or `T` |
+| `Sized`           | Not possible                        | Not possible                        |
+| `const MetaSized` | `T: const MetaSized`                | `T: ?(const Sized)` or `T: ?Sized`  |
+| `MetaSized`       | `T: MetaSized`                      | `T: ?(const MetaSized)`             |
+| `Pointee`         | `T: Pointee`                        | `T: ?MetaSized`                     |
 
-After the edition migration, when adding `?ValueSized`, the default bound remains
-`ValueSized + const ValueSized + Sized + const Sized`, which could be changed using:
+After the edition migration, when adding `?MetaSized`, the default bound remains
+`MetaSized + const MetaSized + Sized + const Sized`, which could be changed using:
 
-| Canonically        | Syntax with positive bounds | Syntax adding `?ValueSized` |
-| ------------------ | --------------------------- | --------------------------- |
-| `const Sized`      | `T: const Sized` or `T`     | `T: const Sized` or `T`     |
-| `Sized`            | `T: Sized`                  | `T: ?(const Sized)`         |
-| `const ValueSized` | `T: const ValueSized`       | `T: ?Sized`                 |
-| `ValueSized`       | `T: ValueSized`             | `T: ?(const ValueSized)`    |
-| `Pointee`          | `T: Pointee`                | `T: ?ValueSized`            |
+| Canonically       | Syntax with positive bounds | Syntax adding `?MetaSized` |
+| ----------------- | --------------------------- | -------------------------- |
+| `const Sized`     | `T: const Sized` or `T`     | `T: const Sized` or `T`    |
+| `Sized`           | `T: Sized`                  | `T: ?(const Sized)`        |
+| `const MetaSized` | `T: const MetaSized`        | `T: ?Sized`                |
+| `MetaSized`       | `T: MetaSized`              | `T: ?(const MetaSized)`    |
+| `Pointee`         | `T: Pointee`                | `T: ?MetaSized`            |
 
 In other words, when a less strict bound is desirable, it is achieved by opting out of the
 next strictest bound.
@@ -1091,7 +1093,8 @@ runtime-sized types.
       This approach was scrapped once it became clear that a `const`-stable
       `size_of_val` would need to be able to be instantiated with `ValueSized`
       types and not `RuntimeSized` types, and that this could not be
-      represented.
+      represented. `ValueSized` was replaced with `MetaSized` in later versions
+      of the proposal.
 [^10]: In previous iterations, the proposed non-linear trait hierarchy was:
 
       ```
@@ -1118,7 +1121,8 @@ runtime-sized types.
       `DynRuntimeSized` to `ValueSized` for `size_of_val`) to try and work
       around the issues with constness, but this would have been unsound,
       and ultimately the inability to relax `Clone`'s supertrait made it
-      infeasible anyway.
+      infeasible anyway. `ValueSized` was replaced with `MetaSized` in later
+      versions of the proposal.
 
 ## Why change `size_of` and `size_of_val`?
 [why-change-size_of-and-size_of_val]: #why-change-size_of-and-size_of_val
@@ -1143,13 +1147,39 @@ between const and runtime contexts which would be unsound.
 Changing `size_of` and `size_of_val` to `~const Sized` bounds ensures that
 `const { size_of:<svint8_t>() }` is not possible.
 
-## What about `MetaSized` instead of or in addition to `ValueSized`?
-[what-about-metasized-instead-of-or-in-addition-to-valuesized]: #what-about-metasized-instead-of-or-in-addition-to-valuesized
+## Why `MetaSized` instead of `ValueSized`?
+[why-metasized-instead-of-valuesized]: #why-metasized-instead-of-valuesized
 
-`ValueSized` is defined as requiring a value of a type in order to compute
-its size. An alternative or complement to `ValueSized` is `MetaSized`, first
-proposed in [rfcs#3396][rfc_extern_types_v2], which requires inspecting
-pointer metadata to compute the size.
+`MetaSized` is defined as inspecting pointer metadata to compute the size,
+which is how the size of all existing non-`Sized` types is determined. An
+alternative to `MetaSized` is `ValueSized`, which would have a more general
+definition of requiring a reference to a value to compute its size.
+
+`ValueSized` has a broader definition than `MetaSized` which does not match
+the current behaviour of `?Sized` exactly. `ValueSized` has a downside that
+its interaction with mutexes introduces the opportunity for deadlocks which
+are unintuitive:
+
+Consider a version of the `CStr` type which is a dynamically sized and
+computes its size by counting the characters before the null byte (this
+is different from the existing `std::ffi::CStr` which is `MetaSized`).
+`CStr` would implement `ValueSized`. If this type were used in a `Mutex<T>`
+then the mutex would also implement `ValueSized` and require locking itself
+to compute the size of the `CStr` that it guards, which could result in
+unexpected deadlocks:
+
+```rust
+let mutex = Mutex::new(CStr::from_str("foo"));
+let _guard = mutex.lock().unwrap();
+size_of_val(&mutex); // deadlock!
+```
+
+`MetaSized` avoids this hazard by keeping the size of dynamically sized
+types in pointer metadata, which can be accessed without locking a mutex.
+
+`ValueSized` could be introduced as a complement to `MetaSized`, if there are
+types whose size cannot be stored in pointer metadata (or where this is not
+desirable):
 
 ```
            ┌────────────────┐                                 ┌─────────────────────────────┐
@@ -1181,81 +1211,6 @@ pointer metadata to compute the size.
                                    │ Pointee          │
                                    │ {runtime env, *} │
                                    └──────────────────┘
-```
-
-In contrast to `ValueSized` and `size_of_val`, `MetaSized` would only require
-the pointer metadata, which is illustrated by the `size_of_val_from_ptr` function
-in the below example:
-
-```rust
-pub const fn size_of_val_from_ptr<T>(val: <T as ptr::Pointee>::Metadata) -> usize
-where
-    T: ~const MetaSized,
-{
-    /* .. */
-}
-
-pub const fn size_of_val<T>(val: &T) -> usize
-where
-    T: ~const ValueSized,
-{
-    /* .. */
-}
-```
-
-`ValueSized` has a downside that its interaction with mutexes introduces
-the opportunity for deadlocks which are unintuitive:
-
-Consider a version of the `CStr` type which is a dynamically sized and
-computes its size by counting the characters before the null byte (this
-is different from the existing `std::ffi::CStr` which uses pointer metadata
-like `MetaSized`). `CStr` would implement `ValueSized`. If this type were
-used in a `Mutex<T>` then the mutex would also implement `ValueSized` and
-require locking itself to compute the size of the `CStr` that it guards,
-which could result in unexpected deadlocks:
-
-```rust
-let mutex = Mutex::new(CStr::from_str("foo"));
-let _guard = mutex.lock().unwrap();
-size_of_val(&mutex); // deadlock!
-```
-
-`MetaSized` would avoid this hazard by keeping the size of dynamically sized
-types in pointer metadata, which can be accessed without locking a mutex.
-
-In addition, `MetaSized` would be required to support `UnsafeCell`
-implementing `ValueSized` with [Custom DSTs](#custom-dsts) when users
-are writing their own implementations of `size_of_val`. `UnsafeCell` would
-be required to implement `ValueSized` in order to maintain backwards
-compatibility.
-
-With only `ValueSized`, the implementation of `const ValueSized` would look
-something like the following:
-
-```rust
-// the size of a value of `UnsafeCell<T>` can be known from a reference (of type `&UnsafeCell<T>`)...
-impl<T> const ValueSized for UnsafeCell<T>
-  // ...if the size of a value of `T` can be known from a reference (of type `&T`)
-  where T: ~const ValueSized
-{
-}
-```
-
-However, the size of `UnsafeCell<T>` cannot be determined by a reference
-to `UnsafeCell<T>` when computing the size of `&T` requires running user
-code, as this would require a safe way to obtain a reference to the
-inner type, which isn't possible.
-
-Introducing `MetaSized` allows expression of the necessary constraint on `&T`,
-that only the pointer metadata can be accessed safely:
-
-```rust
-// the size of a value of `UnsafeCell<T>` can be known from a reference (of type `&UnsafeCell<T>`)...
-impl<T> const ValueSized for UnsafeCell<T>
-  // ...if the size of a value of `T` can be known from the metadata (of type `<T as ptr::Pointee>::Metadata`)
-  where T: ~const MetaSized
-{
-}
 ```
 
 ## Alternatives to this accepting this RFC
@@ -1293,7 +1248,7 @@ ultimately need to be decided but aren't the important part of the RFC.
 There have been many previous proposals and discussions attempting to resolve
 the `size_of_val` and `align_of_val` for extern types through modifications to
 the `Sized` trait. Many of these proposals include a `DynSized` trait, of which
-this RFC's `ValueSized` trait is inspired, just renamed.
+this RFC's `MetaSized` trait is inspired.
 
 - [rfcs#709: truly unsized types][rfc_truly_unsized_types], [mzabaluev][author_mzabaluev], Jan 2015
     - Earliest attempt to opt-out of `Sized`.
@@ -1445,17 +1400,17 @@ this RFC's `ValueSized` trait is inspired, just renamed.
       being an implicit bound and being able to be a relaxed bound (i.e. no
       `?DynSized`).
     - The proposed `DynSized` trait in [rfcs#2310][rfc_dynsized_without_dynsized]
-      is really quite similar to the `ValueSized` trait proposed by this RFC except:
+      is really quite similar to the `MetaSized` trait proposed by this RFC except:
         - It includes an `#[assume_dyn_sized]` attribute to be added to
-          `T: ?Sized` bounds instead of replacing them with `T: const ValueSized`,
-          which would warn instead of error when a non-`const ValueSized` type is
+          `T: ?Sized` bounds instead of replacing them with `T: const MetaSized`,
+          which would warn instead of error when a non-`const MetaSized` type is
           substituted into `T`.
             - This is to avoid a backwards compatibility break for uses of
               `size_of_val` and `align_of_val` with extern types, but it is
               unclear why this is necessary given that extern types are
               unstable.
         - It does not include `Pointee` or any of the const traits.
-        - Adding an explicit bound for `ValueSized` would not remove the implicit
+        - Adding an explicit bound for `MetaSized` would not remove the implicit
           bound for `Sized`.
 - [rust#49708: `extern type` cannot support `size_of_val` and `align_of_val`][issue_extern_types_align_size], [joshtriplett][author_joshtriplett], Apr 2018
     - Primary issue for the `size_of_val`/`align_of_val` extern types
@@ -1551,15 +1506,7 @@ this RFC's `ValueSized` trait is inspired, just renamed.
       pointer or inspect the pointer's address.
         - Under this proposal, `[T]` is `MetaSized` as the pointer metadata
           knows the size, rather than `DynSized`.
-        - `MetaSized` is automatically implemented for all types except extern
-          types.
-        - `MetaSized` types can be the last field of a struct as the offset can
-          be determined from the pointer metadata alone.
-        - `Sized` is not a supertrait or subtrait of `MetaSized`.
-            - This may make the proposal subject to backwards
-              incompatibilities described in [Auto traits and backwards
-              compatibility][auto-traits-and-backwards-compatibility].
-        - `size_of_val`'s bound would be changed to `T: ?Sized + MetaSized`.
+        - Basically identical to this RFC's `MetaSized`.
     - Attempts to sidestep backwards compatibility issues with introducing a
       default bound via changing what `?Sized` means across an edition boundary.
         - This [may be backwards incompatible](https://github.com/rust-lang/rfcs/pull/3396#issuecomment-1728509626).
@@ -1578,7 +1525,7 @@ this RFC's `ValueSized` trait is inspired, just renamed.
       like in this RFC and proposes deprecating `T: ?Sized` in place of `T: Unsized`
       and sometimes `T: DynSized`. Adding a bound for any of `DynSized` or `Unsized`
       removes the default `Sized` bound.
-      - `DynSized` is the same as this RFC's `ValueSized`
+      - `DynSized` is very similar to this RFC's `MetaSized`
       - `Unsized` is the same as this RFC's `Pointee`
     - As described below it is the closest inspiration for this RFC.
 
@@ -1620,8 +1567,7 @@ To summarise the above exhaustive listing of prior art:
       adding new relaxed bounds and tried to avoid this.
 - Backwards compatibility concerns were the overriding reason for the rejection
   of previous `DynSized` proposals.
-    - These can be sidestepped by avoiding having a relaxed form and by relying
-      on being a supertrait of `Sized`.
+    - These can be sidestepped by by relying on being a supertrait of `Sized`.
 
 The [Rationale and Alternatives](#rationale-and-alternatives) section provides
 rationale for some of the decisions made in this RFC and references the prior
@@ -1643,6 +1589,9 @@ this proposal:
   `DynSized` a default bound and avoided having a relaxed form of it.
     - However, this proposal didn't suggest removing default `Sized` bounds in
       the presence of other size trait bounds.
+- [rfcs#3396: Extern types v2][rfc_extern_types_v2] identified that `MetaSized` 
+  specifically was necessary moreso than `DynSized` or `ValueSized` and serves
+  as the inspiration for this RFC's `MetaSized`.
 - [Sized, DynSized, and Unsized][blog_dynsized_unsized] is very similar and a
   major inspiration for this proposal. It has everything this proposal has except
   for the const size traits and all the additional context an RFC needs.
@@ -1660,15 +1609,9 @@ longer relevant][zulip_issue_regions_too_simplistic].
   - This RFC is primarily written proposing the "positive bounds" approach, where
     introducing a positive bound for a supertrait of the default bound will remove
     the default bound.
-  - Alternatively, described in [*Adding `?ValueSized`*][adding-valuesized], existing
+  - Alternatively, described in [*Adding `?MetaSized`*][adding-metasized], existing
     relaxed bounds syntax could be used, where a desired bound is written as opting out
     of the next strictest.
-- Should `MetaSized` be introduced? If so, in addition to `ValueSized` or as an alternative
-  to `ValueSized`?
-  - All existing types currently determine their size based on metadata, so this
-    matches existing semantics.
-  - Motivations for `MetaSized` are described in the [*What about `MetaSized` instead
-    of or in addition to `ValueSized`?*][what-about-metasized-instead-of-or-in-addition-to-valuesized].
 - What is the precedence for `?const Trait` - `(?const) Trait` or `?(const Trait)`?
   - This isn't a question for this RFC to resolve but this RFC takes a conserative
     approach and always adds explicit parentheses.
@@ -1687,7 +1630,7 @@ longer relevant][zulip_issue_regions_too_simplistic].
     `trait Clone: Sized` and `T: Clone` is used as a bound of a function
     and `Sized` is relied on in that function, then the supertrait of
     `Clone` could no longer be relaxed as it can today. 
-- All existing associated types will have at least a `const ValueSized` bound
+- All existing associated types will have at least a `const MetaSized` bound
   and relaxing these bounds is a semver-breaking change. It could be worth considering
   introducing mechanisms to make this relaxation non-breaking and apply that
   automatically over an edition.
@@ -1723,35 +1666,35 @@ this technique.
 support this by adding another supertrait, `Value`:
 
 ```
-    ┌────────────────┐                  ┌─────────────────────────────┐
-    │ const Sized    │ ───────────────→ │ Sized                       │
-    │ {type, target} │     implies      │ {type, target, runtime env} │
-    └────────────────┘                  └─────────────────────────────┘
-            │                                          │
-         implies                                    implies
-            │                                          │
-            ↓                                          ↓
-┌───────────────────────┐             ┌────────────────────────────────────┐
-│ const ValueSized      │ ──────────→ │ ValueSized                         │
-│ {type, target, value} │   implies   │ {type, target, value, runtime env} │
-└───────────────────────┘             └────────────────────────────────────┘
-                                                       │
-                                                    implies
-                                                       │
-                               ┌───────────────────────┘
-                               ↓
-                     ┌──────────────────┐
-                     │ Pointee          │
-                     │ {runtime env, *} │
-                     └──────────────────┘
-                               │
-                            implies
-                               │
-                               ↓
-                     ┌──────────────────┐
-                     │ Value            │
-                     │ {runtime env, *} │
-                     └──────────────────┘
+       ┌────────────────┐                          ┌─────────────────────────────┐
+       │ const Sized    │ ───────────────────────→ │ Sized                       │
+       │ {type, target} │         implies          │ {type, target, runtime env} │
+       └────────────────┘                          └─────────────────────────────┘
+               │                                                  │
+            implies                                            implies
+               │                                                  │
+               ↓                                                  ↓
+┌──────────────────────────────┐             ┌───────────────────────────────────────────┐
+│ const MetaSized              │ ──────────→ │ MetaSized                                 │
+│ {type, target, ptr metadata} │   implies   │ {type, target, ptr metadata, runtime env} │
+└──────────────────────────────┘             └───────────────────────────────────────────┘
+                                                                  │
+                                                               implies
+                                                                  │
+                                      ┌───────────────────────────┘
+                                      ↓
+                            ┌──────────────────┐
+                            │ Pointee          │
+                            │ {runtime env, *} │
+                            └──────────────────┘
+                                      │
+                                   implies
+                                      │
+                                      ↓
+                            ┌──────────────────┐
+                            │ Value            │
+                            │ {runtime env, *} │
+                            └──────────────────┘
 ```
 
 `Pointee` is still defined as being implemented for any type that can be used
@@ -1764,7 +1707,7 @@ Earlier in this RFC, `extern type`s have previously been described as not being
 able to be used as a value, but it could instead be permitted to write functions
 which use extern types as values (e.g. such as taking an extern type as an argument),
 and instead rely on it being impossible to get a extern type that is not behind a
-pointer or a reference. This also implies that `ValueSized` types can be used as values,
+pointer or a reference. This also implies that `MetaSized` types can be used as values,
 which would remain prohibited behind the `unsized_locals` and `unsized_fn_params`
 features until these are stabilised.
 
@@ -1782,7 +1725,7 @@ are examples of `Aligned` traits being added in the ecosystem:
   whether a type has an alignment or not.
 
 An `Aligned` trait hierarchy could be introduced alongside this proposal. It wouldn't
-viable to introduce `Aligned` within this hierarchy, as `dyn Trait` which is `ValueSized`
+viable to introduce `Aligned` within this hierarchy, as `dyn Trait` which is `MetaSized`
 would not be aligned, but some extern types could be `Aligned`, so there isn't an obvious
 place that an `Aligned` trait could be included in this hierarchy.
 
@@ -1800,7 +1743,7 @@ written here only to illustrate.
 - Allow `std::ptr::Pointee` to be implemented manually on user types, which would
   replace the compiler's implementation.
 - Introduce a trait like [rfcs#2594][rfc_custom_dst_electric_boogaloo]'s `Contiguous`
-  which users can implement on their custom DSTs, or add methods to `ValueSized` and
+  which users can implement on their custom DSTs, or add methods to `MetaSized` and
   allow it to be implemented by users.
 - Introduce intrinsics which enable creation of pointers with metadata and for
   accessing the metadata of a pointer.
