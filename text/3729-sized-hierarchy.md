@@ -1097,10 +1097,22 @@ in the next next edition.
 [why-use-const-traits]: #why-use-const-traits
 
 Previous iterations of this RFC had both linear[^9] and non-linear[^10] trait hierarchies
-which included a `RuntimeSized` trait and did not use const traits. However, both of
-these were found to be backwards-incompatible due to being unable to relax the
-supertrait of `Clone`. Without const traits, it is not possible to represent
-runtime-sized types.
+which included a `RuntimeSized` trait and did not use const traits.
+
+However, both of these were found to be backwards-incompatible due to being unable
+to relax the supertrait of `Clone`. In the example below, `Foo::uses_supertrait_bound`'s
+call to `requires_sized` relies on `Clone` having a `Sized` supertrait and would no
+longer compile if `Clone`'s supertrait was relaxed:
+
+```rust
+trait Foo: Clone {
+    fn uses_supertrait_bound() { requires_sized::<Self>() }
+}
+
+fn requires_sized<T: Sized>() { /* ... */ }
+```
+
+Therefore, without const traits it is not possible to represent runtime-sized types.
 
 [^9]: In previous iterations, the proposed linear trait hierarchy was:
 
