@@ -318,7 +318,7 @@ the compiler and cannot be implemented manually:
     - `Pointee` will be implemented for:
         - `MetaSized` and `const MetaSized` types
         - `extern type`s from [rfcs#1861][rfc_extern_types]
-        - compound types where every element is `Pointee`
+        - compound types where any element is `Pointee`
     - In practice, every type will implement `Pointee`.
 - `MetaSized`
     - Types whose size is computable given pointer metadata, and knowledge of
@@ -328,14 +328,14 @@ the compiler and cannot be implemented manually:
     - `MetaSized` is a subtrait of `Pointee`
     - `MetaSized` will be implemented for:
         - `Sized` types
-        - slices `[T]` where every element is `MetaSized`
-        - compound types where every element is `MetaSized`
+        - slices `[T]` where `T` is `Sized`
+        - compound types where any element is `MetaSized`
     - `const MetaSized` will be implemented for:
         - `const Sized` types
-        - slices `[T]` where every element is `const Sized`
+        - slices `[T]` where `T` is `const Sized`
         - string slice `str`
         - trait objects `dyn Trait`
-        - compound types where every element is `const MetaSized`
+        - compound types where any element is `const MetaSized`
 - `Sized`
     - Types whose size is computable given knowledge of the type, target
       platform and runtime environment.
