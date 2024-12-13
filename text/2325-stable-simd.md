@@ -181,7 +181,7 @@ let and4bits = _mm_set1_epi8(0xf);
 
 As it turns out though, these are all Intel SIMD intrinsics! For example
 [`_mm_set1_epi8`] is defined as creating an instance of `__m128i`, a 128-bit
-integer register. The intrinsic specificall sets all bytes to the first
+integer register. The intrinsic specifically sets all bytes to the first
 argument.
 
 These functions are all imported through `std::arch::*` at the top of the
