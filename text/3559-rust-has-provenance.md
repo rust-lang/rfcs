@@ -78,6 +78,8 @@ Since `p1_ptr` and `p2_ptr` are equal, assuming "pointers are just integers" (i.
 However, from the perspective of alias analysis, we want this program to have UB: looking at `p2` and all pointers to it (which is only `p2_ptr`), we can see that none of them are ever written to, so `p2` will always contain its initial value 42.
 Therefore, alias analysis would like to conclude that if this program prints anything, it must print 42, and replace `println!("{}", p2)` by `println!("{}", 42)`.
 After this transformation, the program might now print nothing or print 42, even though the original program would never print 42.
+The Rust compiler does not perform this transformation on the exact program given above (instead, it optimizes away the entire `if`), but [this variant](https://godbolt.org/z/ce4bjqjbM) does indeed print 42.
+
 Changing program behavior in this way is a violation of the "as-if" rule that governs what the compiler may do.
 The only way to make that transformation legal is to say that the given program has UB.
 The only way to make the given program have UB, while keeping the alternative program (that writes to `p2_ptr`) allowed, is to say that `p1_ptr` and `p2_ptr` are somehow different, and writing through one of these pointers is *not* like writing through the other.
