@@ -348,8 +348,11 @@ Most languages don't have such strict rules for references and links as Rust, so
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-Not found yet.
-
+It would be wonderfull to have some pseudo-field, which meant "all not public(private) fields". Maybe `!pub` is Ok.
+```rust
+let fprivs = &foo.{!pub};
+//  fprivs : Foo.{privfld1, privfld2, privfld3, privfld4, privfld5,}
+```
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
