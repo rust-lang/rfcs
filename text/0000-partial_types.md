@@ -39,13 +39,39 @@ This extension is not only fully backward-compatible, but is fully forward-compa
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Partiality of type (or partial type access) is written as `Path.{fld1, fld2, fld3}` after Path (Type name), where `fld1`, `fld2`, .. are only permitted read (and maybe to write if variable is `mut`) fields of this type, the rest of fields are forbidden to read and write and unset.
+Partiality of type (or partial type access) is written as `Path.{fld1, fld2, fld3}` after Path (Type name), where `fld1`, `fld2`, .. are only permitted to read (and maybe to write if variable is `mut`) fields of this type regardless of visibility, the rest of fields are forbidden to read and write and unset.
+
+Inverse partiality of type (or partial type access) is written as `Path.{off fld1, fld2, fld3}` after Path (Type name), where `off` is a new keyword and `fld1`, `fld2`, .. are only forbidden to read fields of this type regardless of visibility, the rest of fields are permitted to read (and maybe write) and unset.
 
 But the same time fields that are forbidden to read and write it is totally Ok to borrow, re-borrow, move, re-move, without any consequences - because the Compiler guarantee that in safe mode it is impossible to use such fields. It is a compile error if someone try to access it.
 
 ## Partial Structs and Tuples
 
-For Product Types `PT = T1 and T2 and T3 and ..`), for structs, tuples we need not only partiality of a type, but also **"partial access" expression**: `Expr .{fld1, fld2, fld3}`, where `fld1`, `fld2`, .. are permitted fields of this type, the rest of fields are forbidden.
+For Product Types `PT = T1 and T2 and T3 and ..`), for structs, tuples we need not only partiality of a type, but also **"partial access" expression**: `Expr .{fld1, fld2, fld3}`, where `fld1`, `fld2`, .. are permitted fields of this type regardless of visibility, the rest of fields are forbidden.
+
+Alternative expression is `Expr .{off fld1, fld2, fld3}`, where `fld1`, `fld2`, .. are forbidden fields of this type regardless of visibility, the rest of fields are permitted. Alternative syntax is useful to avoid of using private fields and if a list of permitted fields is much longer then list of forbidden fields.
+
+Advantages of using inverse partiality: for better ergonomics and avoid using private fields names directly
+```rust
+//  // For better ergonomics
+let t1 = s10.{fld1, fld2, fld3, fld4, fld5, fld6, fld7, fld8};
+//  just "allowed" fields
+//  t1 : S10.{fld1, fld2, fld3, fld4, fld5, fld6, fld7, fld8}
+
+let t2 = s10.{off fld9, fld10};
+//  just "forbidden" fields
+//  t2 : S10.{fld1, fld2, fld3, fld4, fld5, fld6, fld7, fld8}
+
+
+//  // For avoid using private fields names directly
+let fpubs  = &foo.{pubfld1, pubfld2, pubfld3,};
+//  just "allowed" fields
+//  fpubs : Foo.{pubfld1, pubfld2, pubfld3,}
+
+let fprivs = &foo.{off pubfld1, pubfld2, pubfld3,};
+//  just "forbidden" fields
+//  fprivs : Foo.{privfld1, privfld2, privfld3, privfld4, privfld5,}
+```
 
 One step to partial borrows Structs and Tuples.
 ```rust
@@ -169,28 +195,30 @@ Second, but still important - syntax.
 Minimal Partiality we could write:
 ```
 Partiality:      .{ PartialFields* }
-PartialFields:   PartialField (, PartialField )* ,?
+PartialFields:   PartialField1 (, PartialField )* ,?
+PartialField1:   off? PartialField
 PartialField:    PermittedField
 PermittedField:  IDENTIFIER | TUPLE_INDEX
 ```
 
-If we wish to describe partial structs with partial structs inside, we must have a bit more complex Partiality:
+If we wish to describe nested partial structs, we must have a bit more complex Partiality:
 
 ```
 PartialField:    PermittedField Partiality?
 ```
 
-Example:
+Example of using nested partiality:
 ```rust
 struct Foo { a: i32, bar: Bar, }
 
 struct Bar { b: f32, c: String, }
 
 impl Foo {
-    fn baz(&self.{a, bar.c}) {
+    fn baz(&self.{a, bar.{c}}) {
     }
 }
 ```
+`off` (or we could choose another name) is a local keyword for syntax of inverse partiality.
 
 ### Partial Struct syntax
 
@@ -320,17 +348,7 @@ Most languages don't have such strict rules for references and links as Rust, so
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-It is better to have 2 ways to write partiality:  a list with just "allowed" fields and just "forbidden" fields for better ergonomics
-
-```rust
-let t1 = s10.{fld1, fld2, fld3, fld4, fld5, fld6, fld7, fld8};
-//  just "allowed" fields
-//  t1 : S10.{fld1, fld2, fld3, fld4, fld5, fld6, fld7, fld8}
-
-let t2 = S10.{off fld9, fld10};
-//  just "forbidden" fields
-//  t2 : S10.{fld1, fld2, fld3, fld4, fld5, fld6, fld7, fld8}
-```
+Not found yet.
 
 
 # Future possibilities
