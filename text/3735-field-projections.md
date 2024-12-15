@@ -72,7 +72,7 @@ However, the other pointer-like types such as `NonNull<T>`, `&mut MaybeUninit<T>
 ```rust
 unsafe fn project(foo: NonNull<Foo>) -> NonNull<i32> {
     let foo = foo.as_ptr();
-    unsafe { NonNull::new_unchecked(&raw (*foo).bar) }
+    unsafe { NonNull::new_unchecked(&raw mut (*foo).bar) }
 }
 ```
 
@@ -253,7 +253,7 @@ adapted the code):
 > ```
 > 
 > The thing is that ioctl that use the struct approach like drm does, use the same struct if there's
-> both input and output paramterers, and furthermore we are not allowed to overwrite the entire
+> both input and output parameters, and furthermore we are not allowed to overwrite the entire
 > struct because that breaks ioctl restarting. So the flow is roughly
 > 
 > ```rust
