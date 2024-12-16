@@ -241,7 +241,7 @@ those discussions are very similar to the points raised here.
     - `missing_mut`
        - proposed in the IRLO thread
        - suggests that `mut` can be added to fix, which isn't always true
-    - `umarked_variable_mutation`
+    - `unmarked_variable_mutation`
        - Avoids mentioning the `mut` keyword directly to avoid confusion
 
 # Future possibilities
