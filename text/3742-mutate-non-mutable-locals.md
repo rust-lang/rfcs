@@ -241,22 +241,12 @@ those discussions are very similar to the points raised here.
     - `missing_mut`
        - proposed in the IRLO thread
        - suggests that `mut` can be added to fix, which isn't always true
+    - `umarked_variable_mutation`
+       - Avoids mentioning the `mut` keyword directly to avoid confusion
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-There exist other candidates for "lintification," but they usually fall into one of
+There exist other candidates for conversion from hard-errors to lints, but they usually fall into one of
 two categories: either they don't cause enough friction to be worth changing, or successfully
-compiling the "error" case would require extra code generation.  For example:
-
-```rs
-if condition {
-    value // rejected due to missing semicolon: probably not worth changing.
-}
-```
-
-```rs
-fn maybe_thing(i: i32) -> Option<i32> {
-    i // rejected due to missing `Some`: Would require code generation to convert to a lint.
-}
-```
+compiling the "error" case would require extra code generation.
