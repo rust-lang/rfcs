@@ -51,9 +51,10 @@ hard error adds its rules to the language sematics (and worse: conflates them wi
  - But that loophole _doesn't_ work for `move` closures, which ostensibly do the same thing:
    ```rs
    let not_mutable = vec![1, 2, 3];
-   (move || { 
+   let mut f = move || { 
       not_mutable.push(4);
-   })();
+   };
+   f();
    ```
 
 The IRLO and Zulip threads include more examples of inconsistency, and also some examples of people
