@@ -100,6 +100,14 @@ fn get_num() -> i32 {
 }
 ```
 
+`mut` annotations may be applied to other forms of bindings as well, and the same rules apply:
+```rs
+fn do_something(mut arg: Option<i32>){ // Function parameter with `mut`
+    let (mut a, b) = (12, 13);         // Irrefutable pattern with `mut`
+    if let Some(mut val) = arg {}      // Refutable pattern with `mut`
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
