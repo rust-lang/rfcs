@@ -129,6 +129,8 @@ let ref mut x = 12;
 x = x; // Also a hard error currently, would also become lint.
 ```
 
+Note: [Upcoming changes to match ergonomics](https://github.com/rust-lang/rust/issues/123076) also enable this.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -158,8 +160,9 @@ One alernative is for people inconvenienced by `mut_non_mut` is to err on
 the side of using `mut` everywhere, since `unused_mut` is a lint already and not a hard
 error.  There are problems with this strategy, though:
  - There are a _lot_ of places where you'd have to add `mut`, including function
-   arguments and patterns, and there are even places where syntax doesn't _exist_ to declare
-   bindings mutable.
+   arguments and patterns, ~~and there are even places where syntax doesn't _exist_ to declare
+   bindings mutable~~. (Note: this is no longer true with
+   [Upcoming changes to match ergonomics](https://github.com/rust-lang/rust/issues/123076))
  - If we assume the goal is to eventually remove
    the unnecessary `mut`s, then that's a lot more `mut`s to be removed than the compiler
    would have requested you to add if you had left them all off.  You would 
