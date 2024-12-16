@@ -156,7 +156,7 @@ Alternatives have been proposed to independently address the friction and langua
 
 ## Addressing Friction
 
-One alernative is for people inconvenienced by `mut_non_mut` is to err on
+One alternative is for people inconvenienced by `mut_non_mut` is to err on
 the side of using `mut` everywhere, since `unused_mut` is a lint already and not a hard
 error.  There are problems with this strategy, though:
  - There are a _lot_ of places where you'd have to add `mut`, including function
