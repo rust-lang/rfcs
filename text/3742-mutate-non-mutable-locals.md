@@ -18,6 +18,8 @@ This RFC proposes that the re-assignment or creation of a `&mut` to a local vari
 marked with `mut` be changed from a hard error to a deny-by-default lint diagnostic (called
 `mut_non_mut` for the sake of discussion).
 
+This will allow users, if they wish, to `allow(mut_non_mut)` or `warn(mut_non_mut)`.
+
 # Motivation
 [motivation]: #motivation
 
