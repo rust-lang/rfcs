@@ -31,10 +31,9 @@ This idea has been discussed previously:
 
 One benefit of this change is reduced friction: adding and removing of the need for `mut` on a given local
 can happen frequently when refactoring, similar to how variables and functions may change from used to unused
-and back.  In this context, a fatal error for `mut_non_mut` can be a flow interruption.  Yes, adding
-`mut` in all the right places is ideally something you should do _eventually_, just as you should
-delete any unused variables/functions, but it's not something that needs to prevent you from running
-the program.
+and back.  In this context, a fatal error for `mut_non_mut` can be a flow interruption.  While adding `mut`
+in all the right places is something you may want to do _eventually_, just as you may want to
+delete unused variables/functions, it's not something that needs to prevent you from running the program.
 
 Another benefit is towards language consistency/explainability: having `mut_non_mut` be a configurable lint
 makes it reasonable that it will sometimes have false positives/negatives.  On the other hand, making it a
