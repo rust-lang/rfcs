@@ -756,6 +756,14 @@ fn another_use_of_size_of<T: Sized>() -> [u8; size_of::<T>()] {
 }
 ```
 
+It could make sense to delay relaxation of `size_of`'s bound from `T: const Sized`
+(post-migration) to `T: ~const Sized`: the only non-const `Sized` types which
+this relaxation would impact are architecture-specific scalable vectors. Unless these
+types were behind `cfg` attributes (which limits their use when target features are
+dynamically detected) then they could be used with `size_of` on unsupported targets.
+Delaying this relaxation would have no impact on existing code and `size_of_val`
+could still be used for scalable vectors when introduced.
+
 [`size_of_val`][api_size_of_val] is also const-stable, so like `size_of` above,
 its bound should be changed to `T: ~const MetaSized` and this would not result in
 any breakage due to the previously described edition migration.
