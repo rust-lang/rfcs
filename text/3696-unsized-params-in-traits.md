@@ -1,6 +1,6 @@
 - Feature Name: `unsized_params_in_traits`
 - Start Date: 2024-12-19
-- RFC PR: [rust-lang/rfcs#3747](https://github.com/rust-lang/rfcs/pull/3747)
+- RFC PR: [rust-lang/rfcs#3745](https://github.com/rust-lang/rfcs/pull/3745)
 - Rust Issue: [rust-lang/rust#134475](https://github.com/rust-lang/rust/issues/134475)
 
 # Summary
