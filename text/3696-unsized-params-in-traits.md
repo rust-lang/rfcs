@@ -6,7 +6,9 @@
 # Summary
 [summary]: #summary
 
-A future-compatibility lint which will detect unsized parameter types in required trait methods
+A lint which will detect unsized parameter types in required trait methods
+
+it will be removed once feature `unsized_fn_params` is stabilized
 
 # Motivation
 [motivation]: #motivation
@@ -63,8 +65,8 @@ this section contains data about the lint itself
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This lint may clash with the `unsized_fn_params` feature (though it is internal), as the entire point of this feature is to allow what 
-this lint detects.
+This lint may clash with the `unsized_fn_params` feature (though it is internal), as the entire point of 
+this feature is to allow what this lint detects.
 
 look at the first example:
 ```rust
@@ -82,7 +84,7 @@ if there is someway to disable this lint by default when `unsized_fn_params` is 
 The above is pretty much only a minor inconvenience, but if the user has many nested crates (like rust itself for example, having std, proc-macro, etc. all as different crates) it may be harder than just one lint.
 
 ## `dyn` compatibility
-When dealing with `receiver` the user **may** have meant to have an unsized receiver for `dyn` compatibility[^1]
+When dealing with a `receiver` the user **may** have meant to have an unsized receiver for `dyn` compatibility[^1]
 
 While it is confusing, it is still something that is intentional; look at the last example:
 ```rust
@@ -99,20 +101,20 @@ in the above code, `Foo` has the bound `Self: Sized` which makes it `dyn` incomp
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- It may be breaking but it is a future compatibility lint
+- It may be breaking but it is a a lint that will be removed
 - `dyn` compatibility of some traits (mentioned above)
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This design is best as it is a `future-compatibility` lint
+This design is best as it is a lint, which will be removed when what it detects is stabilized
 
 Not doing this would cause confusion, possible soft locking and (possibly) an `ICE`
 
 Here are some other considered designs:
 - For the dyn compatibility issues, creating a `separate lint` for receivers in specific
 
-There aren't really that much relevant designs as all of them would either not fix the  issue or not give enough time for the user to migrate their code
+There aren't really that much relevant designs as all of them would either not fix the issue or not give enough time for the user to migrate their code
 
 # Prior art
 [prior-art]: #prior-art
