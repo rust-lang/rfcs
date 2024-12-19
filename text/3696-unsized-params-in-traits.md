@@ -57,18 +57,11 @@ trait Foo: Sized // remember this `Self: Sized` bound
 this section contains data about the lint itself
 
 `Default Level`: `Deny`
+
 `Feature`: `unsized_params_in_traits` (if any, see the unanswered questions)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 
 This lint may clash with the `unsized_fn_params` feature (though it is internal), as the entire point of this feature is to allow what 
 this lint detects.
@@ -111,11 +104,6 @@ in the above code, `Foo` has the bound `Self: Sized` which makes it `dyn` incomp
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
-
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
 
 This design is best as it is a `future-compatibility` lint
 
