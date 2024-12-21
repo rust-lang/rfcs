@@ -32,7 +32,7 @@ fn main() {
     generate_rust_bindings();
 
     // Only compile external code when not type checking
-    if std::env::var("CARGO_CHECK").unwrap() != "true" {
+    if std::env::var("CARGO_CHECK").is_ok() {
         compile_cpp_code();
     }
 }
