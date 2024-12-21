@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Add a new environment variable `CARGO_CHECK` that is set to `true` when running `cargo check` or similar type-checking operations so build scripts can skip expensive compilation steps that are unnecessary for Rust type checking, such as compiling external C++ code in cxx based projects.
+Add a new environment variable `CARGO_CHECK` that is set to `1` when running `cargo check` or similar type-checking operations so build scripts can skip expensive compilation steps that are unnecessary for Rust type checking, such as compiling external C++ code in cxx based projects.
 
 # Motivation
 [motivation]: #motivation
@@ -45,9 +45,9 @@ This feature primarily benefits library authors who maintain build scripts, espe
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Cargo will set the `CARGO_CHECK` environment variable to `true` when running `cargo check`
+Cargo will set the `CARGO_CHECK` environment variable to `1` when running `cargo check`
 
-The environment variable will not be set (or will be set to `false`) for commands that require full compilation:
+The environment variable will not be set for commands that require full compilation:
 - `cargo build`
 - `cargo run`
 - `cargo test`
