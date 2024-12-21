@@ -18,7 +18,7 @@ Rust development heavily relies on IDE tooling like rust-analyzer, which frequen
 - Projects using Protocol Buffers generate Rust code from .proto files
 - bindgen generates Rust bindings from C/C++ headers
 
-Currently, every time rust-analyzer runs `cargo check`, the build script in the changed crate must execute its full build process, including steps like compiling C++ code that are only needed for linking but not for type checking. This significantly impacts IDE responsiveness, especially in projects with complex build scripts.
+Currently, every time rust-analyzer runs `cargo check`, the build script in the changed crate must execute its full build process, including steps like compiling C++ code that are only needed for linking but not for type checking. Normally the build script would only be run when a file added by `cargo::rerun-if-changed` is changed, which generally doesn't include the Rust source code. However, when using `cxx` to create bridges between C++ and Rust, the build script must be run for every change in the Rust bridges. Usually `cxx` bindings are rarely changed but in projects like `cxx-qt` that interface between Rust and Qt types, they receive signficantly more changes. This impacts IDE responsiveness, especially in projects with complex build scripts.
 
 This is particularly important for projects using cxx-qt and similar frameworks where the build scripts perform extensive code generation and compilation.
 
