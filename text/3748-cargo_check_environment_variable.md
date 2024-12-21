@@ -1,12 +1,12 @@
 - Feature Name: `cargo_check_environment_variable`
 - Start Date: 2024-12-20
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3748](https://github.com/rust-lang/rfcs/pull/3748)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-Add a new environment variable `CARGO_CHECK` that is set to `true` when running `cargo check` or similar type-checking operations so build scripts can skip expensive compilation steps that are unnecessary for Rust type checking, such as compiling external C++ code in cxx-based projects.
+Add a new environment variable `CARGO_CHECK` that is set to `true` when running `cargo check` or similar type-checking operations so build scripts can skip expensive compilation steps that are unnecessary for Rust type checking, such as compiling external C++ code in cxx based projects.
 
 # Motivation
 [motivation]: #motivation
