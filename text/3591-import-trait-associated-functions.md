@@ -1,7 +1,7 @@
 - Feature Name: `import-trait-associated-functions`
 - Start Date: 2024-03-19
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3591](https://github.com/rust-lang/rfcs/pull/3591)
+- Rust Issue: [rust-lang/rust#134691](https://github.com/rust-lang/rust/issues/134691)
 
 # Summary
 [summary]: #summary
