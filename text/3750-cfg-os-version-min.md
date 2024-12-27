@@ -1,6 +1,6 @@
 - Feature Name: `cfg_os_version_min`
 - Start Date: 2024-12-27
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3750](https://github.com/rust-lang/rfcs/pull/3750)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
