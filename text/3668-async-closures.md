@@ -143,7 +143,7 @@ let hr = async |x: &str| { do_something(x).await };
 
 // They can capture values by move:
 let s = String::from("hello, world");
-let c = async move || do_something(&s).await };
+let c = async move || { do_something(&s).await };
 ```
 
 When called, they return an anonymous future type corresponding to the (not-yet-executed) body of the closure. These can be awaited like any other future.
