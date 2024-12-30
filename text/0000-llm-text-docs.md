@@ -1,4 +1,4 @@
-# Feature Name: rustdoc_ai_format
+# Feature Name: rustdoc_text_format
 
 Start Date: 2024-12-30
 RFC PR: (leave this empty)
