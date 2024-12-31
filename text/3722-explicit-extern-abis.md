@@ -1,7 +1,7 @@
-- Feature Name: `explicit_abi`
+- Feature Name: `explicit_extern_abis`
 - Start Date: 2024-10-30
 - RFC PR: [rust-lang/rfcs#3722](https://github.com/rust-lang/rfcs/pull/3722)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#134986](https://github.com/rust-lang/rust/issues/134986)
 
 # Summary
 
