@@ -1,6 +1,6 @@
 - Feature Name: `rest_pattern_matches_non_struct`
 - Start Date: 2024-12-31
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3753](https://github.com/rust-lang/rfcs/pull/3753)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
