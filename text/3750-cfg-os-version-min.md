@@ -37,8 +37,8 @@ However, inferring the API version from the target name isn't ideal especially a
 Instead you use the `os_version_min` predicates to specify the minimum API levels of various parts of the operating system.  For example:
 
 * `os_version_min(“windows”, <string>)` would test the [minimum build version](https://gaijin.at/en/infos/windows-version-numbers) of Windows.
-* `os_version_min(“libc”, <string>)` would test the version of libc in use.
-* `os_version_min(“kernel”, <string>)` would test the version of the kernel in use.
+* `os_version_min(“libc”, <string>)` would test the version of libc.
+* `os_version_min(“kernel”, <string>)` would test the version of the kernel.
 
 Let’s use `os_version_min(“windows”, …)` as an example.  It should be clear how this example would be extended to the other `cfg` predicates. The predicate allows you to conditionally compile code based on the set minimum API version. For example an implementation of mutex locking on Windows might look like this:
 
