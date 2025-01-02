@@ -128,7 +128,7 @@ different type.
 
 * How much code in the wild currently uses patterns like `Foo { .. }` ?
 * What was the original reason that the pattern `Foo { .. }` matches all
-  structs, and not just tuple-like structs?
+  structs, and including tuple-like structs?
 * Are there any other ways in the language (other than the `Foo { .. }` pattern)
   for client code to depend on a type being specifically a struct?
 
