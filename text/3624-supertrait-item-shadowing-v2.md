@@ -1,7 +1,7 @@
 - Feature Name: `supertrait_item_shadowing`
 - Start Date: 2024-05-04
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3624](https://github.com/rust-lang/rfcs/pull/3624)
+- Tracking Issue: [rust-lang/rust#89151](https://github.com/rust-lang/rust/issues/89151)
 
 # Summary
 [summary]: #summary
