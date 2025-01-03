@@ -6,11 +6,10 @@
 # Summary
 [summary]: #summary
 
-When name resolution encounters an ambiguity between 2 trait methods when both traits are in scope, if one trait is a sub-trait of the other then select that method instead of reporting an ambiguity error.
+When name resolution encounters an ambiguity between two trait methods when both traits are in scope, if one trait is a subtrait of the other then select that method instead of reporting an ambiguity error.
 
 # Motivation
 [motivation]: #motivation
-
 
 The libs-api team would like to stabilize `Iterator::intersperse` but has a problem. The `itertools` crate already has:
 
@@ -34,7 +33,7 @@ fn foo() -> impl Iterator<Item = &'static str> {
 }
 ```
 
-This code actually works today because `intersperse` is an unstable API, which works because the compiler already has [logic](https://github.com/rust-lang/rust/pull/48552) to prefer stable methods over unstable methods when an ambiguity occurs.
+This code actually works today because `intersperse` is an unstable API, and the compiler already has [logic](https://github.com/rust-lang/rust/pull/48552) to prefer stable methods over unstable methods when an ambiguity occurs.
 
 Attempts to stabilize `intersperse` have failed with a large number of regressions [reported by crater](https://github.com/rust-lang/rust/issues/88967) which affect many popular crates. Even if these were to be manually corrected (since ambiguity is considered allowed breakage) we would have to go through this whole process again every time a method from `itertools` is uplifted to the standard library.
 
@@ -42,10 +41,11 @@ Attempts to stabilize `intersperse` have failed with a large number of regressio
 [proposed-solution]: #proposed-solution
 
 This RFC proposes to change name resolution to resolve the ambiguity in the following specific circumstances:
-- All method candidates are trait methods. (Inherent methods are already prioritized over trait methods)
-- One trait is transitively a sub-trait of all other traits in the candidate list.
 
-When this happens, the sub-trait method is selected instead of reporting an ambiguity error.
+- All method candidates are trait methods (inherent methods are already prioritized over trait methods).
+- One trait is transitively a subtrait of all other traits in the candidate list.
+
+When this happens, the subtrait method is selected instead of reporting an ambiguity error.
 
 Note that this only happens when *both* traits are in scope since this is required for the ambiguity to occur in the first place.
 
@@ -68,7 +68,7 @@ fn main() {
 }
 ```
 
-Today that example will give an ambiguity error because `method` is provided by multiple traits in scope. With this RFC, it will instead always resolve to the sub-trait method and then compilation will fail because `Vec` does not implement the `Copy` trait required by `Bar::method`.
+Today that example will give an ambiguity error because `method` is provided by multiple traits in scope. With this RFC, it will instead always resolve to the subtrait method and then compilation will fail because `Vec` does not implement the `Copy` trait required by `Bar::method`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -84,17 +84,17 @@ If we choose not to accept this RFC then there doesn't seem to be a reasonable p
 
 One possible alternative to a general change to the name resolution rules would be to only do so on a case-by-case basis for specific methods in standard library traits. This could be done by using a perma-unstable `#[shadowable]` attribute specifically on methods like `Iterator::intersperse`.
 
-There are both advantages and inconvenients to this approach. While it allows most Rust users to avoid having to think about this issue for most traits, it does make the `Iterator` trait more "magical" in that it doesn't follow the same rules as the rest of the language. Having a consistent rule for how name resolution works is easier to teach people.
+There are both advantages and inconveniences to this approach. While it allows most Rust users to avoid having to think about this issue for most traits, it does make the `Iterator` trait more "magical" in that it doesn't follow the same rules as the rest of the language. Having a consistent rule for how name resolution works is easier to teach people.
 
 ## Preferring the supertrait method instead
 
-In cases of ambiguity between a subtrait method and a supertrait method, there are 2 ways of resolving the ambiguity. This RFC proposes to resolve in favor of the subtrait since this is most likely to avoid breaking changes in practice.
+In cases of ambiguity between a subtrait method and a supertrait method, there are two ways of resolving the ambiguity. This RFC proposes to resolve in favor of the subtrait since this is most likely to avoid breaking changes in practice.
 
 Consider this situation:
 
-- library A has trait `Foo`
-- crate B, depending on A, has trait `FooExt` with `Foo` as a supertrait
-- A adds a new method to `Foo`, but it has a default implementation so it's not breaking. B has a pre-existing method with the same name.
+- Library A has trait `Foo`.
+- Crate B, depending on A, has trait `FooExt` with `Foo` as a supertrait.
+- A adds a new method to `Foo`, but it has a default implementation so it's not breaking. B has a preexisting method with the same name.
 
 In this general case, the reason this cannot be resolved in favor of the supertrait is that the method signatures are not necessarily compatible.
 
@@ -130,7 +130,7 @@ fn main() {
 }
 ```
 
-Resolving in favor of `a` is a breaking change; in favor of `b` is not. The only other option is the status quo: not compiling. `a` simply cannot happen lest we violate backwards compatibility and the status quo is not ideal.
+Resolving in favor of `a` is a breaking change; resolving in favor of `b` is not. The only other option is the status quo -- not compiling. Resolving to `a` simply cannot happen lest we violate backwards compatibility, and the status quo is not ideal.
 
 # Prior art
 [prior-art]: #prior-art
@@ -138,6 +138,7 @@ Resolving in favor of `a` is a breaking change; in favor of `b` is not. The only
 ### RFC 2845
 
 RFC 2845 was a previous attempt to address this problem, but it has several drawbacks:
+
 - It doesn't fully address the problem since it only changes name resolution when trait methods are resolved due to generic bounds. In practice, most of the ambiguity from stabilizing `intersperse` comes from non-generic code.
 - It adds a lot of complexity because name resolution depends on the specific trait bounds that have been brought into scope.
 
@@ -145,8 +146,3 @@ RFC 2845 was a previous attempt to address this problem, but it has several draw
 [unresolved-questions]: #unresolved-questions
 
 - Should we have a warn-by-default lint that fires at the definition-site of a subtrait that shadows a supertrait item?
-
-# Future possibilities
-[future-possibilities]: #future-possibilities
-
-None
