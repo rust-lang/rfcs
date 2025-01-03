@@ -49,7 +49,7 @@ When this happens, the sub-trait method is selected instead of reporting an ambi
 
 Note that this only happens when *both* traits are in scope since this is required for the ambiguity to occur in the first place.
 
-When an ambiguity is resolved in this way, a lint warning is also emitted to warn the user about the potential ambiguity. The aim of this lint is to discourage reliance on this mechanism in normal code usage: it should only be used for backwards-compatibilty and the lint can be silenced by having users change their code. We can always later change this lint to be allowed by default if we consider that there are valid use cases for this feature other than backwards-compatiblity.
+We will provide an allow-by-default lint to let users opt in to being notified when an ambiguity is resolved in this way.
 
 ### Type inference
 
@@ -73,7 +73,7 @@ Today that example will give an ambiguity error because `method` is provided by 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This behavior can be surprising: adding a method to a sub-trait can change which function is called in unrelated code. This is mitigated by the lint which warns users about the potential ambiguity.
+This behavior might be surprising as adding a method to a subtrait can change which function is called in unrelated code. This is somewhat mitigated by the opt-in lint which, when enabled, warns users about the potential ambiguity.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -144,7 +144,7 @@ RFC 2845 was a previous attempt to address this problem, but it has several draw
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None
+- Should we have a warn-by-default lint that fires at the definition-site of a subtrait that shadows a supertrait item?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
