@@ -30,11 +30,11 @@ use itertools::Itertools as _;
 
 fn foo() -> impl Iterator<Item = &'static str> {
     "1,2,3".split(",").intersperse("|")
-    // ^ This is ambiguious: it could refer to Iterator::intersperse or Itertools::intersperse
+    // ^ This is ambiguous: it could refer to Iterator::intersperse or Itertools::intersperse
 }
 ```
 
-This code actually works today because `intersperse` is an unstable API, which works because the compiler already has [logic](https://github.com/rust-lang/rust/pull/48552) to prefer stable methods over unstable methods when an amiguity occurs.
+This code actually works today because `intersperse` is an unstable API, which works because the compiler already has [logic](https://github.com/rust-lang/rust/pull/48552) to prefer stable methods over unstable methods when an ambiguity occurs.
 
 Attempts to stabilize `intersperse` have failed with a large number of regressions [reported by crater](https://github.com/rust-lang/rust/issues/88967) which affect many popular crates. Even if these were to be manually corrected (since ambiguity is considered allowed breakage) we would have to go through this whole process again every time a method from `itertools` is uplifted to the standard library.
 
@@ -73,7 +73,7 @@ Today that example will give an ambiguity error because `method` is provided by 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This behavior can be surprising: adding a method to a sub-trait can change which function is called in unrelated code. This is mitigated by the which warns users about the potential ambiguity.
+This behavior can be surprising: adding a method to a sub-trait can change which function is called in unrelated code. This is mitigated by the lint which warns users about the potential ambiguity.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -138,7 +138,7 @@ Resolving in favor of `a` is a breaking change; in favor of `b` is not. The only
 ### RFC 2845
 
 RFC 2845 was a previous attempt to address this problem, but it has several drawbacks:
-- It doesn't fully address the problem since it only changes name resolution when trait methods are resolved due to generic bounds. In practice, most of the amiguity from stabilizing `intersperse` comes from non-generic code.
+- It doesn't fully address the problem since it only changes name resolution when trait methods are resolved due to generic bounds. In practice, most of the ambiguity from stabilizing `intersperse` comes from non-generic code.
 - It adds a lot of complexity because name resolution depends on the specific trait bounds that have been brought into scope.
 
 # Unresolved questions
