@@ -51,25 +51,6 @@ Note that this only happens when *both* traits are in scope since this is requir
 
 We will provide an allow-by-default lint to let users opt in to being notified when an ambiguity is resolved in this way.
 
-### Type inference
-
-This change happens during name resolution and specifically doesn't interact with type inference. Consider this example:
-
-```rust
-trait Foo { fn method(&self) {} }
-trait Bar: Foo { fn method(&self) {} }
-impl<T> Foo for Vec<T> { }
-impl<T: Copy> Bar for Vec<T> { }
-
-fn main() {
-    let x = vec![];
-    x.method(); // which to call?
-    x.push(Box::new(22)); // oh, looks like `Foo`
-}
-```
-
-Today that example will give an ambiguity error because `method` is provided by multiple traits in scope. With this RFC, it will instead always resolve to the subtrait method and then compilation will fail because `Vec` does not implement the `Copy` trait required by `Bar::method`.
-
 # Drawbacks
 [drawbacks]: #drawbacks
 
