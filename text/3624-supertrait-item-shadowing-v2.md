@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-When method selection encounters an ambiguity between two trait methods when both traits are in scope, if one trait is a subtrait of the other then select that method instead of reporting an ambiguity error.
+When method selection encounters an ambiguity between two trait methods when both traits are in scope, if one trait is a subtrait of the other then select the method from the subtrait instead of reporting an ambiguity error.
 
 # Motivation
 [motivation]: #motivation
