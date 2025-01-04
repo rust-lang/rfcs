@@ -97,7 +97,7 @@ A mechanism which tries to bridge cross-platform differences under one `min_targ
 
 The Swift package manager has a way to [specify the supported platforms for a given package](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#supportedplatform).
 
-This RFC is largely a version of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3036) more narrowly scoped to just the most minimal lang changes.
+This RFC is largely a version of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3379) more narrowly scoped to just the most minimal lang changes.
 That RFC was in turn an updated version of [this RFC draft](https://github.com/rust-lang/rfcs/pull/3036), with the changes reflecting conversations from the draft review process and [further Zulip discussion](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/CFG.20OS.20Redux.20.28migrated.29/near/294738760).
 
 # Unresolved questions
