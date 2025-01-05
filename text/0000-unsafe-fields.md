@@ -27,24 +27,120 @@ accompanying safety documentation.
 
 # Motivation
 
-Emphasis on safety is a key strength of Rust. A major point here is that any code path that can
-result in undefined behavior must be explicitly marked with the `unsafe` keyword. However, the
-current system is insufficient. While Rust provides the `unsafe` keyword at the function level,
-there is currently no mechanism to mark fields as `unsafe`.
+Safety hygiene is the practice of denoting and documenting where memory safety obligations arise
+and where they are discharged. Rust provides some tooling support for this practice. For example,
+if a function has safety obligations that must be discharged by its callers, that function *should*
+be marked `unsafe` and documentation about its invariants *should* be provided (this is optionally
+enforced by Clippy via the [`missing_safety_doc`] lint). Consumers, then, *must* use the `unsafe`
+keyword to call it (this is enforced by rustc), and *should* explain why its safety obligations are
+discharged (again, optionally enforced by Clippy).
 
-For a real-world example, consider the `Vec` type in the standard library. It has a `len` field that
-is used to store the number of elements present. Setting this field is exposed publicly in the
-`Vec::set_len` method, which has safety requirements:
+Functions are often marked `unsafe` because they concern the safety invariants of fields. For
+example, [`Vec::set_len`] is `unsafe`, because it directly manipulates its `Vec`'s length field,
+which carries the invariants that it is less than the capacity of the `Vec` and that all elements
+in the `Vec<T>` between 0 and `len` are valid `T`. It is critical that these invariants are upheld;
+if they are violated, invoking most of `Vec`'s other methods will induce undefined behavior.
 
-- `new_len` must be less than or equal to `capacity()`.
-- The elements at `old_len..new_len` must be initialized.
+[`Vec::set_len`]: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.set_len
 
-This field is safe to read, but unsafe to mutate or initialize due to the invariants. These
-invariants cannot be expressed in the type system, so they must be enforced manually. Failure to do
-so may result in undefined behavior elsewhere in `Vec`.
+To help ensure such invariants are upheld, programmers may apply safety hygiene techniques to
+fields, denoting when they carry invariants and documenting why their uses satisfy their
+invariants. For example, the `zerocopy` crate maintains the policy that fields with safety
+invariants have `# Safety` documentation, and that uses of those fields occur in the lexical
+context of an `unsafe` block with a suitable `// SAFETY` comment.
 
-By introducing unsafe fields, Rust can improve the situation where a field that is otherwise safe is
-used as a safety invariant.
+Unfortunately, Rust does not yet provide tooling support for field safety hygiene. Since the
+`unsafe` keyword cannot be applied to field definitions, Rust cannot enforce that
+potentially-invalidating uses of fields occur in the context of `unsafe` blocks, and Clippy cannot
+enforce that safety comments are present either at definition or use sites. This RFC is motivated
+by the benefits of closing this tooling gap.
+
+### Benefit: Improving Field Safety Hygiene
+
+The absence of tooling support for field safety hygiene makes its practice entirely a matter of
+programmer discipline, and, consequently, rare in the Rust ecosystem. Field safety invariants
+within the standard library are sparingly and inconsistently documented; for example, at the time
+of writing, `Vec`'s capacity invariant is internally documented, but its length invariant is not.
+
+The practice of using `unsafe` blocks to denote dangerous uses of fields with safety invariants is
+exceedingly rare, since Rust actively lints against the practice with the `unused_unsafe` lint.
+
+Alternatively, Rust's visibility mechanisms can be (ab)used to help enforce that dangerous uses
+occur in `unsafe` blocks, by wrapping type definitions in an enclosing `def` module that mediates
+construction and access through `unsafe` functions; e.g.:
+
+```rust
+/// Used to mediate access to `UnalignedRef`'s conceptually-unsafe fields.
+///
+/// No additional items should be placed in this module. Impl's outside of this module should
+/// construct and destruct `UnalignedRef` solely through `from_raw` and `into_raw`.
+mod def {
+    pub struct UnalignedRef<'a, T> {
+        /// # Safety
+        /// 
+        /// `ptr` is a shared reference to a valid-but-unaligned instance of `T`.
+        pub(self) unsafe ptr: *const T,
+        pub(self) _lifetime: PhantomData<&'a T>,
+    }
+
+    impl<'a, T> UnalignedRef<'a, T> {
+        /// # Safety
+        ///
+        /// `ptr` is a shared reference to a valid-but-unaligned instance of `T`.
+        pub(super) unsafe fn from_raw(ptr: *const T) -> Self {
+            Self { ptr, _lifetime: PhantomData }
+        }
+
+        pub(super) fn into_raw(self) -> *const T {
+            self.ptr
+        }
+    }
+}
+
+pub use def::UnalignedRef;
+```
+
+This technique poses significant linguistic friction and may be untenable when split borrows are
+required. Consequently, this approach is uncommon in the Rust ecosystem.
+
+We hope that tooling that supports and rewards good field safety hygiene will make the practice
+more common in the Rust ecosystem.
+
+### Benefit: Improving Function Safety Hygiene
+
+Rust's safety tooling ensures that `unsafe` operations may only occur in the lexical context of an
+`unsafe` block or `unsafe` function. When the safety obligations of an operation cannot be
+discharged entirely prior to entering the `unsafe` block, the surrounding function must, itself, be
+`unsafe`. This tooling cue nudges programmers towards good function safety hygiene.
+
+The absence of tooling for field safety hygiene undermines this cue. The [`Vec::set_len`] method
+*must* be marked `unsafe` because it delegates the responsibility of maintaining `Vec`'s safety
+invariants  to its callers. However, the implementation of [`Vec::set_len`] does not contain any
+explicitly `unsafe` operations. Consequently, there is no tooling cue that suggests this function
+should be unsafe — doing so is entirely a matter of programmer discipline.
+
+Providing tooling support for field safety hygiene will close this gap in the tooling for function
+safety hygiene.
+
+### Benefit: Making Unsafe Rust Easier to Audit
+
+As a consequence of improving function and field safety hygiene, the process of auditing internally
+`unsafe` abstractions will be made easier in at least two ways. First, as previously discussed, we
+anticipate that tooling support for field safety hygiene will encourage programmers to document
+when their fields carry safety invariants.
+
+Second, we anticipate that good field safety hygiene will narrow the scope of safety audits.
+Presently, to evaluate the soundness of an `unsafe` block, it is not enough for reviewers to *only*
+examine `unsafe` code; the invariants upon which `unsafe` code depends may also be violated in safe
+code. If `unsafe` code depends upon field safety invariants, those invariants may presently be
+violated in any safe (or unsafe) context in which those fields are visible. So long as Rust permits
+safety invariants to be violated at-a-distance in safe code, audits of unsafe code must necessarily
+consider distant safe code. (See [*The Scope of Unsafe*].)
+
+[*The Scope of Unsafe*]: https://www.ralfj.de/blog/2016/01/09/the-scope-of-unsafe.html
+
+For crates that practice good safety hygiene, reviewers will mostly be able to limit their review
+of distant routines to only `unsafe` code.
 
 # Guide-level explanation
 
