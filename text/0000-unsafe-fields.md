@@ -231,6 +231,88 @@ use" are not stated here.
 - Additional syntax for macros to handle
 - More syntax to learn
 
+# Rationale and Alternatives
+
+The design of this proposal is primarily guided by three tenets:
+
+1. [**Unsafe Fields Denote Safety Invariants**](#tenet-unsafe-fields-denote-safety-invariants)   
+   A field *should* be marked `unsafe` if it carries arbitrary library safety invariants with
+   respect to its enclosing type.
+2. [**Unsafe Usage is Always Unsafe**](#tenet-unsafe-usage-is-always-unsafe)   
+   Uses of `unsafe` fields which could violate their invariants *must* occur in the scope of an
+   `unsafe` block.
+3. [**Safe Usage is Usually Safe**](#tenet-safe-usage-is-usually-safe)   
+   Uses of `unsafe` fields which cannot violate their invariants *should not* require an unsafe
+   block.
+
+## Tenet: Unsafe Fields Denote Safety Invariants
+
+> A field *should* be marked `unsafe` if it carries library safety invariants with respect to its
+> enclosing type.
+
+We adopt this tenet because it is consistent with the purpose of the `unsafe` keyword in other
+declaration positions, where it signals to consumers of the `unsafe` item that their use is
+conditional on upholding safety invariants; for example:
+
+- An `unsafe` trait denotes that it carries safety invariants which must be upheld by implementors.
+- An `unsafe` function denotes that it carries safety invariants which must be upheld by callers.
+
+## Tenet: Unsafe Usage is Always Unsafe
+
+> Uses of `unsafe` fields which could violate their invariants *must* occur in the scope of an
+> `unsafe` block.
+
+We adopt this tenet because it is consistent with the requirements imposed by the `unsafe` keyword
+imposes when applied to other declarations;  for example:
+
+- An `unsafe` trait may only be implemented with an `unsafe impl`.
+- An `unsafe` function is only callable in the scope of an `unsafe` block.
+
+## Tenet: Safe Usage is Usually Safe
+
+> Uses of `unsafe` fields which cannot violate their invariants *should not* require an unsafe block.
+
+Good safety hygiene is a social contract and adherence to that contract will depend on the user
+experience of practicing it. We adopt this tenet as a forcing function between designs that satisfy
+our first two tenets. All else being equal, we give priority to designs that minimize the needless
+use of `unsafe`.
+
+## Alternatives
+
+These tenets effectively constrain the design space of tooling for field safety hygiene; the
+alternatives we have considered conflict with one or more of these tenets.
+
+### Unsafe Variants
+
+We propose that the `unsafe` keyword be applicable on a per-field basis. Alternatively, we can
+imagine it being applied on a per-constructor basis; e.g.:
+
+```rust
+// SAFETY: ...
+unsafe struct Example {
+    foo: X,
+    bar: Y,
+    baz: Z,
+}
+
+enum Example {
+    Foo,
+    // SAFETY: ...
+    unsafe Bar(baz)
+}
+```
+
+For structs and enum variants with multiple unsafe fields, this alternative has a syntactic
+advantage: the `unsafe` keyword need only be typed once per enum variant or struct with safety
+invariant.
+
+However, in structs and enum variants with mixed safe and unsafe fields, this alternative denies
+programmers a mechanism for distinguishing between conceptually safe and unsafe fields.
+Consequently, any safety tooling built upon this mechanism must presume that *all* fields of such
+variants are conceptually unsafe, requiring the programmer to use `unsafe` even for the consumption
+of 'safe' fields. This violates [*Tenet: Safe Usage is Usually
+Safe*](#tenet-safe-usage-is-usually-safe).
+
 # Prior art
 
 Some items in the Rust standard library have `#[rustc_layout_scalar_valid_range_start]`,
