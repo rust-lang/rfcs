@@ -89,8 +89,14 @@ Each supported platform will need to implement version string parsing logic (or 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The overall mechanism proposed here builds on other well established primitives in Rust such as `cfg`.
-
 A mechanism which tries to bridge cross-platform differences under one `min_target_api_version` predicate [was suggested](https://github.com/rust-lang/rfcs/blob/b0f94000a3ddbd159013e100e48cd887ba2a0b54/text/0000-min-target-api-version.md) but was rejected due to different platforms having divergent needs.
+
+For many platforms, the `target_os` name and the `os_version_min` name will be identical.
+Even platforms that have multiple possible `versions` relevant to the OS will still have one primary version.
+E.g. for `linux` the primary version would refer to the kernel with `libc` being a secondary OS library version.
+Therefore it would be possible to simplify the syntax for the primary target OS version.
+E.g.: `cfg(target_os("macos", min_version = "..."))` or by having `os_version_min("macos", "...")` imply `#[cfg(target_os = "macos")]`.
+This means we'd need a more general syntax for `libc` and potentially other versioned libraries where the target OS is ambiguous.
 
 # Prior art
 [prior-art]: #prior-art
@@ -105,6 +111,9 @@ That RFC was in turn an updated version of [this RFC draft](https://github.com/r
 
 Custom targets usually specify their configurations in JSON files.
 It is unclear how the target maintainers would add functions, types, and version compatibility information to these files.
+
+What exactly should the syntax be?
+Should we draw a distinction between cases where the `os_version_min` directly implies a specific `target_os` and cases where it doesn't (see alternatives)?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
