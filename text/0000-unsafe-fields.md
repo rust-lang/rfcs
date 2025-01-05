@@ -5,9 +5,25 @@
 
 # Summary
 
-Fields may be declared `unsafe`. Unsafe fields may only be mutated (excluding interior mutability)
-or initialized in an unsafe context. Reading the value of an unsafe field may occur in either safe
-or unsafe contexts. An unsafe field may be relied upon as a safety invariant in other unsafe code.
+This RFC proposes extending Rust's tooling support for safety hygiene to named fields that carry
+library safety invariants. Consequently, Rust programmers will be able to use the `unsafe` keyword
+to denote when a named field carries a library safety invariant; e.g.:
+
+```rust
+struct UnalignedRef<'a, T> {
+    /// # Safety
+    /// 
+    /// `ptr` is a shared reference to a valid-but-unaligned instance of `T`.
+    unsafe ptr: *const T,
+    _lifetime: PhantomData<&'a T>,
+}
+```
+
+Rust will enforce that potentially-invalidating uses of `unsafe` fields only occur in the context
+of an `unsafe` block, and Clippy's [`missing_safety_doc`] lint will check that `unsafe` fields have
+accompanying safety documentation.
+
+[`missing_safety_doc`]: https://rust-lang.github.io/rust-clippy/master/index.html#missing_safety_doc
 
 # Motivation
 
