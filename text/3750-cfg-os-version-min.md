@@ -101,7 +101,15 @@ This means we'd need a more general syntax for `libc` and potentially other vers
 # Prior art
 [prior-art]: #prior-art
 
-The Swift package manager has a way to [specify the supported platforms for a given package](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#supportedplatform).
+In C it's common to be able to target different versions based on a preprocessor macro.
+For example, on Windows `WINVER` can be used:
+
+```c
+// If the minimum version is at least Windows 10
+#if (WINVER >= _WIN32_WINNT_WIN10)
+// ...
+#endif
+```
 
 This RFC is largely a version of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3379) more narrowly scoped to just the most minimal lang changes.
 That RFC was in turn an updated version of [this RFC draft](https://github.com/rust-lang/rfcs/pull/3036), with the changes reflecting conversations from the draft review process and [further Zulip discussion](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/CFG.20OS.20Redux.20.28migrated.29/near/294738760).
