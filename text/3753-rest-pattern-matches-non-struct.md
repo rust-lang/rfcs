@@ -118,17 +118,27 @@ This adds a complication to Rust.
 # Prior art
 [prior-art]: #prior-art
 
-`cargo-semver-checks` has [a
+* `cargo-semver-checks` has [a
 lint](https://github.com/obi1kenobi/cargo-semver-checks/issues/954) that checks
 specifically if a struct containing only private fields is changed to a
 different type.
+* [RFC 1506](https://rust-lang.github.io/rfcs/1506-adt-kinds.html) previously
+  made the braced-struct patterns match against any struct, including tuple-like
+  structs:
+  > Permit using tuple structs and tuple variants in braced struct patterns and
+  > expressions requiring naming their fields - `TS{0: expr}`/`TS{0: pat}`/etc.
+  > While this change is important for consistency, there's not much motivation
+  > for it in hand-written code besides shortening patterns like `ItemFn(_, _,
+  > unsafety, _, _, _)` into something like `ItemFn{2: unsafety, ..}` and
+  > ability to match/construct tuple structs using their type aliases.
+  > 
+  > However, automatic code generators (e.g. syntax extensions) can get more
+  > benefits from the ability to generate uniform code for all structure kinds.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * How much code in the wild currently uses patterns like `Foo { .. }` ?
-* What was the original reason that the pattern `Foo { .. }` matches all
-  structs, and including tuple-like structs?
 * Are there any other ways in the language (other than the `Foo { .. }` pattern)
   for client code to depend on a type being specifically a struct?
 
