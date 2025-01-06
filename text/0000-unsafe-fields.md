@@ -144,51 +144,171 @@ of distant routines to only `unsafe` code.
 
 # Guide-level explanation
 
-Fields may be declared `unsafe`. Unsafe fields may only be initialized or accessed mutably in an
-unsafe context. Reading the value of an unsafe field may occur in either safe or unsafe contexts. An
-unsafe field may be relied upon as a safety invariant in other unsafe code.
+A safety invariant is any boolean statement about the computer at a time *t*, which should remain
+true or else undefined behavior may arise. Language safety invariants are imposed by the language
+itself and must never be violated; e.g., a `NonZeroU8` must *never* be 0.
 
-Here is an example to illustrate usage:
+Library safety invariants, by contrast, are imposed by an API. For example, `str` encapsulates
+valid UTF-8 bytes, and much of its API assumes this to be true. This invariant may be temporarily
+violated, so long as no code that assumes this safety invariant holds is invoked.
+
+Safety hygiene is the practice of denoting and documenting where memory safety obligations arise
+and where they are discharged. To denote that a field carries a library safety invariant, use the
+`unsafe` keyword in its declaration and document its invariant; e.g.:
 
 ```rust
-struct Foo {
-    safe_field: u32,
-    /// Safety: Value must be an odd number.
-    unsafe unsafe_field: u32,
+pub struct UnalignedRef<'a, T> {
+    /// # Safety
+    /// 
+    /// `ptr` is a shared reference to a valid-but-unaligned instance of `T`.
+    unsafe ptr: *const T,
+    _lifetime: PhantomData<&'a T>,
 }
+```
 
-// Unsafe field initialization requires an `unsafe` block.
-// Safety: `unsafe_field` is odd.
-let mut foo = unsafe {
-    Foo {
-        safe_field: 0,
-        unsafe_field: 1,
+(Note, the `unsafe` field modifier is only applicable to named fields. You should avoid attaching
+library safety invariants to unnamed fields.)
+
+Rust provides tooling to help you maintain good field safety hygiene. Clippy's
+[`missing_safety_doc`] lint checks that `unsafe` fields have accompanying safety documentation. The
+Rust compiler itself enforces that ues of `unsafe` fields that could violate its invariant — i.e.,
+initializations, writes, references, and reads — must occur within the context of an `unsafe`
+block.; e.g.:
+
+```rust
+impl<'a, T> UnalignedRef<'a, T> {
+    pub fn from_ref(ptr: &'a T) -> Self {
+        // SAFETY: By invariant on `&T`, `ptr` is a valid and well-aligned instance of `T`.
+        unsafe {
+            Self { ptr, _lifetime: PhantomData, }
+        }
     }
-};
-
-// Safe field: no unsafe block.
-foo.safe_field = 1;
-
-// Unsafe field with mutation: unsafe block is required.
-// Safety: The value is odd.
-unsafe { foo.unsafe_field = 3; }
-
-// Unsafe field without mutation: no unsafe block.
-println!("{}", foo.unsafe_field);
-```
-
-For a full description of where a mutable access is considered to have occurred (and why), see
-[RFC 3323]. Keep in mind that due to reborrowing, a mutable access of an unsafe field is not
-necessarily explicit.
-
-[RFC 3323]: https://rust-lang.github.io/rfcs/3323-restrictions.html#where-does-a-mutation-occur
-
-```rust
-fn change_unsafe_field(foo: &mut Foo) {
-    // Safety: An odd number plus two remains an odd number.
-    unsafe { foo.unsafe_field += 2; }
 }
 ```
+
+...and Clippy's [`undocumented_unsafe_blocks`] lint enforces that the `unsafe` block has a `//
+SAFETY` comment.
+
+[`undocumented_unsafe_blocks`]: https://rust-lang.github.io/rust-clippy/stable/index.html#undocumented_unsafe_blocks
+
+Using an `unsafe` field outside of the context of an `unsafe` block is an error; e.g., this:
+
+```rust
+struct MaybeInvalidStr<'a> {
+    /// SAFETY: `maybe_invalid` may not contain valid UTF-8. Nonetheless, it MUST always contain
+    /// initialized bytes (per language safety invariant on `str`).
+    pub unsafe maybe_invalid: &'a str
+}
+
+impl<'a> MaybeInvalidStr<'a> {
+    pub fn as_str(&self) -> &'a str {
+        self.maybe_invalid
+    }
+}
+```
+
+...produces this error message:
+
+```
+error[E0133]: use of unsafe field requires an unsafe block
+ --> src/main.rs:9:9
+  |
+9 |         self.maybe_invalid
+  |         ^^^^^^^^^^^^^^^^^^ use of unsafe field
+  |
+  = note: unsafe fields may carry library invariants
+```
+
+## When To Use Unsafe Fields
+
+You should use the `unsafe` keyword on any field declaration that carries (or relaxes) an invariant
+that is assumed to be true by `unsafe` code.
+
+### Example: Field with Local Invariant
+
+In the simplest case, a field's safety invariant is a restriction of the invariants imposed by the
+field type, and concern only the immediate value of the field; e.g.:
+
+```rust
+struct Alignment {
+    /// SAFETY: `pow` must be between 0 and 29.
+    pub unsafe pow: u8,
+}
+```
+
+### Example: Field with Referent Invariant
+
+A field might carry an invariant with respect to its referent; e.g.:
+
+```rust
+struct CacheArcCount<T> {
+    /// SAFETY: This `Arc`'s `ref_count` must equal the value of the `ref_count` field.
+    unsafe arc: Arc<T>,
+    /// SAFETY: See [`CacheArcCount::arc`].
+    unsafe ref_count: usize,
+}
+```
+
+### Example: Field with External Invariant
+
+A field might carry an invariant with respect to data outside of the Rust abstract machine; e.g.:
+
+```rust
+struct Zeroator {
+    /// SAFETY: The fd points to a uniquely-owned file, and the bytes from the start of the file to
+    /// the offset `cursor` (exclusive) are zero.
+    unsafe fd: OwnedFd,
+    /// SAFETY: See [`Zeroator::fd`].
+    unsafe cursor: usize,
+}
+```
+
+### Example: Field with Suspended Invariant
+
+A field safety invariant might also be a relaxation of the library safety invariants imposed by the
+field type. For example, a `str` is bound by both the language safety invariant that it is
+initialized bytes, and by the library safety invariant that it contains valid UTF-8. It is sound to
+temporarily violate the library invariant of `str`, so long as the invalid `str` is not safely
+exposed to code that assumes `str` validity.
+
+Below, `MaybeInvalidStr` encapsulates an initialized-but-potentially-invalid `str` as an unsafe
+field:
+
+```rust
+struct MaybeInvalidStr<'a> {
+    /// SAFETY: `maybe_invalid` may not contain valid UTF-8. Nonetheless, it MUST always contain
+    /// initialized bytes (per language safety invariant on `str`).
+    pub unsafe maybe_invalid: &'a str
+}
+```
+
+## When *Not* To Use Unsafe Fields
+
+You should only use the `unsafe` keyword to denote fields whose invariants are relevant to memory
+safety. In the below example, unsafe code may rely upon `alignment_pow`s invariant, but not
+`size`'s invariant:
+
+```rust
+struct Layout {
+    /// The size of a type.
+    ///
+    /// # Invariants
+    ///
+    /// For well-formed layouts, this value is less than `isize::MAX` and is a multiple of the alignment.
+    /// To accomodate incomplete layouts (i.e., those missing trailing padding), this is not a safety invariant.
+    pub size: usize,
+    /// The log₂(alignment) of a type.
+    ///
+    /// # Safety
+    ///
+    /// `alignment_pow` must be between 0 and 29.
+    pub unsafe alignment_pow: u8,
+}
+```
+
+We might also imagine a variant of the above example where `alignment_pow`, like `size` doesn't
+carry a safety invariant. Ultimately, whether or not it makes sense for a field to be `unsafe` is a
+function of programmer preference and API requirements.
 
 # Reference-level explanation
 
