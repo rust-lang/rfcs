@@ -144,7 +144,7 @@ Function signature, documentation and implementation:
 /// accessed through the newly created pointer. Any accesses through the original pointer
 /// (or any pointers derived from it) would be Undefined Behaviour.
 /// Additionally, this function is only designed for use with heap allocations. Trying to use it with
-/// a pointer to a stack-allocated variable will almost certainly result in Undefined Behaviour and
+/// a pointer to a stack-allocated variable will result in Undefined Behaviour and
 /// should not be done under any circumstances.
 #[inline(never)]
 #[unstable(feature = "ptr_assume_moved", issue = "none")]
