@@ -89,7 +89,9 @@ by the selected target.
 [reference-level-explanation]: #reference-level-explanation
 
 When `cargo` is run on a package, it checks that the selected target satisfies the `supported-targets`
-of the package. If it does not, an error is raised and the build fails.
+of the package. If it does not, an error is raised and the build fails. However, `supported-targets`
+is _not_ checked if the cargo command does not require compilation (`cargo doc`, `cargo fmt`, etc.).
+For example, `cargo doc` can be run on a host that the package does not support.
 
 ## Compatibility of `[dependencies]`
 
