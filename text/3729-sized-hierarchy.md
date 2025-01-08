@@ -946,27 +946,14 @@ There are various points of difference to the [prior art](#prior-art) related to
 ## Why have `Pointee`?
 [why-have-pointee]: #why-have-pointee
 
-It may seem that introducing the `Pointee` trait at the bottom of the trait hierarchy
-is unnecessary as this is equivalent to the absense of any bounds whatsoever, but
-having an `Pointee` trait is necessary to enable the meaning of `?Sized` to be re-defined
-to be equivalent to `const MetaSized` and avoid complicated behaviour change over an edition.
+`Pointee` exists at the bottom of the trait hierarchy as a consequence of migrating
+away from the `?Sized` syntax - enabling the meaning of `?Sized` to be re-defined
+to be equivalent to `const MetaSized` and avoid complicated behaviour change over an
+edition.
 
-Without introducing `Pointee`, if a user wanted to remove all sizedness bounds from a
-generic parameter then they would have two options:
-
-1. Introduce a `?MetaSized` relaxed bound (a user could write `Sized`, `MetaSized` or
-   `?MetaSized`) which has had mixed reception in previous RFCs
-   ([rfcs#2255][issue_more_implicit_bounds] summarizes these discussions).
-2. Keep `?Sized`'s existing meaning of removing the implicit `Sized` bound, which would
-   complicate changing `size_of_val`'s existing `?Sized` bound:
-
-   Without `Pointee`, `?Sized` would be equivalent to `const MetaSized` until
-   extern types are stabilised (e.g. a `?Sized` bound would accept exactly the
-   same types as a `const MetaSized` bound, but after extern types are introduced,
-   `?Sized` bounds would accept extern types and `const MetaSized` bounds would not).
-   extern types would need to be introduced over an edition and all existing `?Sized`
-   bounds rewritten to `?Sized + const MetaSized`. This is the same mechanism described
-   in [rfcs#3396][rfc_extern_types_v2] to introduce its `MetaSized` trait.
+If an alternative is adopted which keeps the `?Sized` syntax then the `Pointee`
+trait is not necessary, such as that described in
+[*Adding `?MetaSized`*][adding-metasized].
 
 ## Why migrate away from `?Sized`?
 [why-migrate-away-from-sized]: #why-migrate-away-from-sized
