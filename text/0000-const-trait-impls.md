@@ -83,7 +83,7 @@ It should be possible to write `default` in a way that allows it to be called in
 
 Similarly it should be possible to write `compile_time_default` in a way that also requires calls outside of const contexts to only pass generic parameters whose `Default::default` method satisifies the usual `const fn` rules. This is necessary in order to allow a const block (which can access generic parameters) in the function body to invoke methods on the generic parameter.
 
-So, we need some annotation that differentiates a `T: Default` bound from one that gives us the guarantees we're looking for. 
+So, we need some annotation that differentiates a `T: Default` bound from one that gives us the guarantees we're looking for.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -132,7 +132,7 @@ and a result of this RFC would be that we would remove the attribute and add the
 
 ### Const trait bounds
 
-Any item that can have trait bounds can also have `const Trait` bounds. 
+Any item that can have trait bounds can also have `const Trait` bounds.
 
 Examples:
 
