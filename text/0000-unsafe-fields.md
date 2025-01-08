@@ -247,6 +247,42 @@ help: wrap the field type in `ManuallyDrop<...>`
   |                     +++++++++++++++++++++++ +
 ```
 
+The `Copy` trait is unsafe to implement for types with unsafe fields; e.g. this:
+
+```rust
+struct UnalignedMut<'a, T> {
+    /// # Safety
+    ///
+    /// `ptr` is an exclusive reference to a valid-but-unaligned instance of `T`.
+    unsafe ptr: *mut T,
+    _lifetime: PhantomData<&'a T>,
+}
+
+impl<'a, T> Copy for UnalignedMut<'a, T> {}
+
+impl<'a, T> Clone for UnalignedMut<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+```
+
+...produces this error message:
+
+```rust
+error[E0200]: the trait `Copy` requires an `unsafe impl` declaration
+ --> src/lib.rs:9:1
+  |
+9 | impl<'a, T> Copy for UnalignedMut<'a, T> {}
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: the trait `Copy` cannot be safely implemented for `UnalignedMut<'a, T>` because it has unsafe fields. Review the invariants of those fields before adding an `unsafe impl`
+help: add `unsafe` to this trait implementation
+  |
+9 | unsafe impl<'a, T> Copy for UnalignedMut<'a, T> {}
+  | ++++++
+```
+
 ## When To Use Unsafe Fields
 
 You should use the `unsafe` keyword on any field declaration that carries (or relaxes) an invariant
@@ -481,6 +517,35 @@ Unsafe**](#tenet-unsafe-usage-is-always-unsafe).
 We adopt union's approach to this problem because it is a conservative, familiar solution that
 leaves open the possibility of [future
 alternatives](#fields-with-non-copy-or-non-manuallydrop-types).
+
+### Copy Is Safe To Implement
+
+We propose that `Copy` is conditionally unsafe to implement; i.e., that the `unsafe` modifier is
+required to implement `Copy` for types that have unsafe fields. Alternatively, we can imagine
+permitting retaining Rust's present behavior that `Copy` is unconditionally safe to implement for
+all types; e.g.:
+
+```rust
+struct UnalignedMut<'a, T> {
+    /// # Safety
+    ///
+    /// `ptr` is an exclusive reference to a valid-but-unaligned instance of `T`.
+    unsafe ptr: *mut T,
+    _lifetime: PhantomData<&'a T>,
+}
+
+impl<'a, T> Copy for UnalignedMut<'a, T> {}
+
+impl<'a, T> Clone for UnalignedMut<'a, T> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+```
+
+However, the `ptr` field introduces a declaration-site safety obligation that is not discharged
+with `unsafe` at any use site; this violates [**Tenet: Unsafe Usage is Always
+Unsafe**](#tenet-unsafe-usage-is-always-unsafe).
 
 # Prior art
 
