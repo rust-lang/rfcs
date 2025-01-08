@@ -1658,6 +1658,9 @@ longer relevant][zulip_issue_regions_too_simplistic].
   - Alternatively, described in [*Adding `?MetaSized`*][adding-metasized], existing
     relaxed bounds syntax could be used, where a desired bound is written as opting out
     of the next strictest.
+- Should `std::ptr::Pointee` be re-used instead of introducing a new marker trait?
+  - This would require an additional changes to avoid ambiguity, as described in
+    [*Why not re-use `str::ptr::Pointee`?*][why-not-re-use-stdptrpointee].
 - What is the precedence for `?const Trait` - `(?const) Trait` or `?(const Trait)`?
   - This isn't a question for this RFC to resolve but this RFC takes a conserative
     approach and always adds explicit parentheses.
