@@ -1,5 +1,6 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: `supported-targets`
+- Start Date: 2025-01-08
+- Pre-RFC: [Rust internals](https://internals.rust-lang.org/t/pre-rfc-allow-packages-to-specify-a-set-of-supported-targets/21979)
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -326,21 +327,22 @@ with the target preconditions of the dependency.
 
 The list of strings format was chosen because of its simplicity and expressiveness. Other formats can also be considered:
 
-- Using the `[target]` table, for example:
-    ```toml
-    [target.'cfg(target_os = "linux")']
-    supported = true
-    ```
-    If the list of supported targets is long (should it ever be?), then the `Cargo.toml` file becomes very verbose
-    as well.
-- A `[suppported]` table, with `arch = ["<arch>", ...]`, `os = ["<os>", ...]`, `target = ["<target>", ...]`, etc.
-    This is more verbose, complex to implement, learn, and remember. It is also not obvious how `not` and `all`
-    could be represented in this format. For example:
-    ```toml
-    [supported]
-    os = ["linux", "macos"]
-    arch = ["x86_64"]
-    ```
+Using the `[target]` table, for example:
+```toml
+[target.'cfg(target_os = "linux")']
+supported = true
+```
+If the list of supported targets is long (should it ever be?), then the `Cargo.toml` file becomes very verbose
+as well.
+
+A `[suppported]` table, with `arch = ["<arch>", ...]`, `os = ["<os>", ...]`, `target = ["<target>", ...]`, etc.
+This is more verbose, complex to implement, learn, and remember. It is also not obvious how `not` and `all`
+could be represented in this format. For example:
+```toml
+[supported]
+os = ["linux", "macos"]
+arch = ["x86_64"]
+```
 
 ## Naming
 
