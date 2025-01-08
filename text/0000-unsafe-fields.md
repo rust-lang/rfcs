@@ -219,6 +219,34 @@ error[E0133]: use of unsafe field requires an unsafe block
   = note: unsafe fields may carry library invariants
 ```
 
+Like union fields, `unsafe` struct and enum fields must have trivial destructors. Presently, this
+is enforced by requiring that `unsafe` field types are `ManuallyDrop` or implement `Copy`. For
+example, this:
+
+```rust
+struct MaybeInvalid<T> {
+    /// SAFETY: `val` may not uphold the library safety invariants of `T`. You must ensure that
+    /// uses of `val` do not assume it is a valid `T`.
+    pub unsafe val: T,
+}
+```
+
+...produces this error message:
+
+```
+error[E0740]: field must implement `Copy` or be wrapped in `ManuallyDrop<...>` to be unsafe
+ --> src/lib.rs:2:5
+  |
+2 |     pub unsafe val: T,
+  |     ^^^^^^^^^^^^^^^^^
+  |
+  = note: unsafe fields must not have drop side-effects, which is currently enforced via either `Copy` or `ManuallyDrop<...>`
+help: wrap the field type in `ManuallyDrop<...>`
+  |
+2 |     pub unsafe val: std::mem::ManuallyDrop<T>,
+  |                     +++++++++++++++++++++++ +
+```
+
 ## When To Use Unsafe Fields
 
 You should use the `unsafe` keyword on any field declaration that carries (or relaxes) an invariant
@@ -433,6 +461,27 @@ variants are conceptually unsafe, requiring the programmer to use `unsafe` even 
 of 'safe' fields. This violates [*Tenet: Safe Usage is Usually
 Safe*](#tenet-safe-usage-is-usually-safe).
 
+### Fields With Non-Trivial Destructors
+
+We propose that the types of `unsafe` fields should have trivial destructors. Alternatively, we
+can imagine permitting field types with non-trivial destructors; e.g.:
+
+```rust
+struct MaybeInvalid<T> {
+    /// SAFETY: `val` may not uphold the library safety invariants of `T`. You must ensure that
+    /// subsequent uses of `val` do not assume it is a valid `T`.
+    pub unsafe val: T,
+}
+```
+
+However, if `T`'s destructor is non-trivial and depends on `T`'s library invariants, then dropping
+`val` could induce undefined behavior; this violates [**Tenet: Unsafe Usage is Always
+Unsafe**](#tenet-unsafe-usage-is-always-unsafe).
+
+We adopt union's approach to this problem because it is a conservative, familiar solution that
+leaves open the possibility of [future
+alternatives](#fields-with-non-copy-or-non-manuallydrop-types).
+
 # Prior art
 
 Some items in the Rust standard library have `#[rustc_layout_scalar_valid_range_start]`,
@@ -448,4 +497,14 @@ be required to use unsafe fields, which would reduce special-casing of the stand
 
 # Future possibilities
 
-??
+## Fields With non-`Copy` or non-`ManuallyDrop` Types
+
+The conditions that require non-trivial destructors for union fields are not identical to those
+that impose the requirement on unsafe struct and enum fields: unions must contend with values that
+violate the language safety invariants of their field types; unsafe struct and enum fields contend
+merely with violates of library safety invariants. And, whereas unions admit some safe uses
+(initializations and writes), unsafe fields do not; this changes the SemVer constraints on the
+design space. It might be possible, for example, to permit *any* field type so long as it has a
+non-trivial destructor.
+
+This RFC is forwards-compatible with these possibilities; we leave their design to a future RFC.
