@@ -147,14 +147,15 @@ Here, it suffices for `foo` to support `cfg(all(target_os = "linux", target_poin
 
 If an artifact dependency has a `target` field, then the dependency is not checked against the
 package's `supported-targets`. However, the selected `target` for the dependency must be compatible with
-the dependency's `supported-targets`. If it does not have a `target` field, then
-it is checked against the package's `supported-targets`, like any other dependency.
+the dependency's `supported-targets`, or else an error is raised. If the artifact dependency does not have a
+`target` field, then it is checked against the package's `supported-targets`, like any other dependency.
 
 ## Comparing `supported-targets`
 
 When comparing two `supported-targets` lists, it is necessary to know if one is a _subset_ of the other,
 or if both are _mutually exclusive_. To proceed, both lists are flattened to
-the same representation, and they are then compared.
+the same representation, and they are then compared. This process is done internally, and does not
+affect the `Cargo.toml` file.
 
 ### Flattening `not`, `any`, and `all` in `cfg` specifications
 [flattening-cfg]: #flattening-not-any-and-all-in-cfg-specifications
@@ -162,8 +163,9 @@ the same representation, and they are then compared.
 Since `cfg` specifications can contain `not`, `any`, and `all` operators, these must be handled.
 This is done by flattening the `cfg` specification to a specific form.
 
-The `not` operator is "passed through" `any` and `all` operators using De Morgan's laws, until it
-reaches a single `cfg` specification. For example, `cfg(not(all(target_os = "linux", target_arch = "x86_64")))`
+The `not` operator is "passed through" `any` and `all` operators using
+[De Morgan's laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws), until it reaches a single `cfg`
+specification. For example, `cfg(not(all(target_os = "linux", target_arch = "x86_64")))`
 is equivalent to `cfg(any(not(target_os = "linux"), not(target_arch = "x86_64")))`.
 
 Top level `any` operators are separated into multiple `cfg` specifications. For example,
@@ -194,8 +196,8 @@ The result of these transformations on a `cfg` specification is a list of `cfg` 
 either contains a single specification, or an `all` operator with no nested operators.
 
 This procedure is run on all `cfg` elements of a `supported-targets` list. The resulting list
-can then be used to evaluate relations. To be clear, the flattened list can only contain
-explicit target-triples, `cfg(A)` containing a single `A`, or `cfg(all(A, B, ...))`, all
+can then be used to evaluate relations. In the end, the flattened representation can only contain
+explicit target-triples, `cfg(A)` containing a single `A`, or `cfg(all(A, B, ...))` with all
 `A, B, ...` being single elements.
 
 ### The subset relation
@@ -396,7 +398,29 @@ Every time a new target with the same attribute is added, the whole ecosystem wo
 # Prior art
 [prior-art]: #prior-art
 
-Has this feature been seen anywhere else before?
+Previously, crates have mainly used their documentation to specify which targets they support, or they would
+leave it up to the user to infer it. Some crates also made use of compile time errors to ensure that
+`cfg` requirements are met, for example:
+```rust
+#[cfg(not(any(…)))]
+compile_error!("unsupported target cfg");
+```
+
+Locally, users can already specify which targets they want to build for by default using the `target` field in
+`cargo`'s `config.toml` file. This setting is only a local configuration however, and does not affect
+packages published on `crates.io`. On nightly, the `per-package-target` feature defines the `default-target` field
+of the `[package]` table in `Cargo.toml` to specify the default target for a package. Both of these options
+can be overwritten by the `--target` flag, and only work for a single target-triple.
+
+The `per-package-target` feature also defines the `force-target` field, which is supposed to force the package
+to build for the specific target-triple. This does not interact well when used in dependencies, as one would expect a dependency
+to be built for the same target as the package. `supported-targets` supersedes `force-target` because instead of enforcing
+a single target, it enforces a set of targets.
+
+I am not aware of a package manager that solves this issue like in this RFC. In other system level languages,
+vendoring dependencies is a common practice, and the user would be responsible for ensuring that the dependencies
+are compatible with the target. For interpreted languages, this is a non-issue because any platform being able
+to run the interpreter can run the package.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -474,7 +498,11 @@ _Note:_ The contrapositive of these relations is also true.
 
 Also, `target_family` is currently defined as not having mutually exclusive elements. This is because `target_family = "wasm"`
 is not mutually exclusive with other target families. But, `target_family = "unix"` could be defined as mutually exclusive
-with `target_family = "windows"` to increase usability. 
+with `target_family = "windows"` to increase usability. By extension, `target_family = "windows"` would now be mutually exclusive
+with `target_os = "linux"`, for example.
+
+_Note:_ More relations could be defined, for example `target_feature = "neon"` ⊆ `target_arch = "arm"`. With this however,
+things start to get complicated.
 
 ## Misc
 
