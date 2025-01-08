@@ -1,7 +1,7 @@
 - Feature Name: `supported-targets`
 - Start Date: 2025-01-08
 - Pre-RFC: [Rust internals](https://internals.rust-lang.org/t/pre-rfc-allow-packages-to-specify-a-set-of-supported-targets/21979)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3759](https://github.com/rust-lang/rfcs/pull/3759)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 The word _target_ is extensively used in this document.
