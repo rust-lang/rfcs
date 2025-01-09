@@ -6,7 +6,7 @@
 
 The word _target_ is extensively used in this document.
 The [glossary](https://doc.rust-lang.org/cargo/appendix/glossary.html#target) defines its many meanings.
-Here, _target_ refers to the "Target Architeture" for which a package is built. Otherwise, the terms
+Here, _target_ refers to the "Target Architecture" for which a package is built. Otherwise, the terms
 "cargo-target" and "target-triple" are used in accordance with their definitions in the glossary.
 
 # Summary
