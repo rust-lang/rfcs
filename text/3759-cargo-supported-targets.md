@@ -358,7 +358,7 @@ Some other names for this field can be considered:
 ## Package scope vs. cargo-target scope
 
 The `supported-targets` field is placed at the package level, and not at the cargo-target
-level (i.e., under, `[lib]`, `[[bin]]`, etc.). A rationale is given for why the cargo-target level is not used.
+level (i.e., under, `[lib]`, `[[bin]]`, etc.)
 
 Dependencies are resolved at the package level, so even if one would have cargo-targets with different
 `supported-targets`, the dependencies would still be available to all cargo-targets. So, either
