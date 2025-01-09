@@ -30,7 +30,7 @@ targets cannot build the crate, and also makes build errors specific.
 This feature also enhances developer experience when working in workspaces containing packages designed for
 many different targets. Commands run on a workspace ignore packages that don't support the selected target.
 
-### Cross Compilation 
+### Dependency Management 
 
 Once it is known that a package will only ever build for a subset of targets, it opens
 the door for more advanced control over dependencies.
