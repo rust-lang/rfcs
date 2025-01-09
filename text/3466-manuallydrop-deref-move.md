@@ -42,6 +42,7 @@ It has also been discussed elsewhere:
 - [Pre‐RFC from 2019](https://internals.rust-lang.org/t/pre-rfc-destructuring-values-that-impl-drop/10450).
 - [Blog post from 2018](https://phaazon.net/blog/rust-no-drop) (recommends
   `mem::uninitialized` as a workaround!)
+- [RFC #1180](https://github.com/rust-lang/rfcs/pull/1180)
 - [Internals thread from 2014](https://internals.rust-lang.org/t/destructuring-structs-which-implement-drop/137)
 
 # Explanation
