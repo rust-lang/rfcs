@@ -378,10 +378,8 @@ function of programmer preference and API requirements.
 
 ## Syntax
 
-Using the syntax from [the reference for structs][struct syntax], the change needed to support
-unsafe fields is minimal.
-
-[struct syntax]: https://doc.rust-lang.org/stable/reference/items/structs.html#structs
+The [`StructField` syntax][struct syntax], used for the named fields of structs, enums, and unions,
+shall be updated to accommodate an optional `unsafe` keyword just before the field `IDENTIFIER`:
 
 ```diff
 StructField :
@@ -389,26 +387,12 @@ StructField :
    Visibility?
 +  unsafe?
    IDENTIFIER : Type
-
-TupleField :
-   OuterAttribute*
-   Visibility?
-+  unsafe?
-   Type
 ```
 
-## Behavior
+[struct syntax]: https://doc.rust-lang.org/stable/reference/items/structs.html#structs
 
-An unsafe field may only be mutated or initialized in an unsafe context. Failure to do so is a compile error.
-
-## "Mutable use" in the compiler
-
-The concept of a "mutable use" [already exists][mutating use] within the compiler. This catches all
-situations that are relevant here, including `ptr::addr_of_mut!`, `&mut`, and direct assignment to a
-field, while excluding interior mutability. As such, formal semantics of what constitutes a "mutable
-use" are not stated here.
-
-[mutating use]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/mir/visit/enum.PlaceContext.html#method.is_mutating_use
+The use of unsafe fields on unions shall remain forbidden while the [impact of this feature on
+unions](#safe-unions) is decided.
 
 # Drawbacks
 
@@ -573,3 +557,15 @@ design space. It might be possible, for example, to permit *any* field type so l
 non-trivial destructor.
 
 This RFC is forwards-compatible with these possibilities; we leave their design to a future RFC.
+
+## Safe Unions
+
+Unsafe struct and enum fields behave very similarly to union fields — unsafe fields differ only in
+that they additionally make initialization and mutation unsafe. Given this closeness, it may be
+viable to migrate — across an edition boundary — today's implicitly unsafe unions into *explicitly*
+unsafe unions that leverage the unsafe field syntax.
+
+For example, the 2027 edition could require that all unions leverage the `unsafe` keyword to define
+their fields. The 2024-to-2027 migration script would wrap existing initializations and mutations
+in `unsafe` blocks annotated with the comment `// SAFETY: No obligations`. In doing so, we would
+create syntactic space for *safe* unions in 2030.
