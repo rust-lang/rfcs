@@ -34,7 +34,7 @@ many different targets. Commands run on a workspace ignore packages that don't s
 
 Once it is known that a package will only ever build for a subset of targets, it opens
 the door for more advanced control over dependencies.
-For example, transient dependencies declared under a `[target.**.dependencies]` table are
+For example, transitive dependencies declared under a `[target.**.dependencies]` table could be
 excluded from `Cargo.lock` if the dependent's `supported-targets` is mutually exclusive with
 the target preconditions under which the dependencies are included.
 This is especially relevant to areas such as WebAssembly and embedded programming,
