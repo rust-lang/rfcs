@@ -269,7 +269,7 @@ impl<'a, T> Clone for UnalignedMut<'a, T> {
 
 ...produces this error message:
 
-```rust
+```
 error[E0200]: the trait `Copy` requires an `unsafe impl` declaration
  --> src/lib.rs:9:1
   |
@@ -394,11 +394,6 @@ StructField :
 The use of unsafe fields on unions shall remain forbidden while the [impact of this feature on
 unions](#safe-unions) is decided.
 
-# Drawbacks
-
-- Additional syntax for macros to handle
-- More syntax to learn
-
 # Rationale and Alternatives
 
 The design of this proposal is primarily guided by three tenets:
@@ -412,6 +407,10 @@ The design of this proposal is primarily guided by three tenets:
 3. [**Safe Usage is Usually Safe**](#tenet-safe-usage-is-usually-safe)   
    Uses of `unsafe` fields which cannot violate their invariants *should not* require an unsafe
    block.
+
+This RFC prioritizes the first two tenets before the third. We believe that the benefits doing so —
+broader utility, more consistent tooling, and a simplified safety hygiene story — outweigh its
+cost, [alarm fatigue](#alarm-fatigue). The third tenet implores us to weigh this cost.
 
 ## Tenet: Unsafe Fields Denote Safety Invariants
 
@@ -531,6 +530,66 @@ However, the `ptr` field introduces a declaration-site safety obligation that is
 with `unsafe` at any use site; this violates [**Tenet: Unsafe Usage is Always
 Unsafe**](#tenet-unsafe-usage-is-always-unsafe).
 
+### Suspended Invariants Are Not Supported
+
+Per [*Tenet: Unsafe Fields Denote Safety
+Invariants*](#tenet-unsafe-fields-denote-safety-invariants), this proposal aims to support [fields
+with suspended invariants](#example-field-with-suspended-invariant). To achieve this, per [**Tenet:
+Unsafe Usage is Always Unsafe**](#tenet-unsafe-usage-is-always-unsafe), reading or referencing
+unsafe fields is unsafe. Unsafe fields with suspended invariants are particularly useful for
+implementing builders, where the type-to-be-built can be embedded in its builder as an unsafe field
+with suspended invariants.
+
+Providing this support comes at the detriment of [**Tenet: Safe Usage is Usually
+Safe**](#tenet-safe-usage-is-usually-safe); even in cases where a field's safety invariant cannot
+be violated by a read or reference, the programmer will nonetheless need to enclose the operation
+in an `unsafe` block. Alternatively, we could elect to not support this kind of invariant and its
+attendant use-cases.
+
+Programmers working with suspended invariants could still mark those fields as `unsafe` and would
+need to continue to encapsulate those fields using Rust's visibility mechanisms. In turn, Rust's
+safety hygiene warn against some dangerous usage (e.g., initialization and references) but not
+reads.
+
+This alternative reduces the utility of unsafe fields, the reliability of its tooling, and
+complicates Rust's safety story. For these reasons, this proposal favors supporting suspended
+invariants. We believe that future, incremental progress can be made towards [**Tenet: Safe Usage
+is Usually Safe**](#tenet-safe-usage-is-usually-safe) via [type-directed
+analyses](#safe-reads-for-fields-with-local-non-suspended-invariants) or syntactic extensions.
+
+# Drawbacks
+
+## Alarm Fatigue
+
+Although the `unsafe` keyword gives Rust's safety hygiene tooling insight into whether a field
+carries safety invariants, it does not give Rust deeper insight into the semantics of those
+invariants. Consequently, Rust must err on the side caution, requiring `unsafe` for most uses of
+unsafe field — including uses that the programmer can see are conceptually harmless.
+
+In these cases, Rust's safety hygiene tooling will suggest that the harmless operation is wrapped
+in an `unsafe` block, and the programmer will either:
+
+- comply and provide a trivial safety proof, or
+- opt out of Rust's field safety tooling by removing the `unsafe` modifier from their field.
+
+The former is a private annoyance; the latter is a rebuttal of Rust's safety hygiene conventions
+and tooling. Such rebuttals are not unprecedented in the Rust ecosystem. Even among prominent
+projects, it is not rare to find a conceptually unsafe function that is not marked unsafe. The
+discovery of such functions by the broader Rust community has, occasionally, provoked controversy.
+
+This RFC takes care not to fuel such flames; e.g., [**Tenet: Unsafe Fields Denote Safety
+Invariants**](#tenet-unsafe-fields-denote-safety-invariants) admonishes that programmers *should* —
+but **not** *must* — denote field safety invariants with the `unsafe` keyword. It is neither a
+soundness nor security issue to continue to adhere to the convention of using visibility to enforce
+field safety invariants.
+
+This RFC does not, itself, attempt to address alarm fatigue. Instead, we propose a simple extension
+to Rust's safety tooling that is, by virtue of its simplicity, particularly amenable to future
+iterative refinement. We imagine empowering Rust to reason about safety invariants, either via
+[type-directed analyses](#safe-reads-for-fields-with-local-non-suspended-invariants), or via
+syntactic extensions. The design of these refinements will be guided by the valuable usage data
+produced by implementing this RFC.
+
 # Prior art
 
 Some items in the Rust standard library have `#[rustc_layout_scalar_valid_range_start]`,
@@ -557,6 +616,33 @@ design space. It might be possible, for example, to permit *any* field type so l
 non-trivial destructor.
 
 This RFC is forwards-compatible with these possibilities; we leave their design to a future RFC.
+
+## Safe Reads For Fields With Local, Non-Suspended Invariants
+
+To uphold [**Tenet: Safe Usage is Usually Safe**](#tenet-safe-usage-is-usually-safe) and reduce
+[alarm fatigue](#alarm-fatigue), future work should seek to empower Rust's to reason about safety
+field invariants. In doing so, operations which are obviously harmless to the programmer can also
+be made lexically safe.
+
+Fields with local, non-suspended invariants are, potentially, always safe to read. For example,
+reading the `pow` field from `Alignment` cannot possibly violate its invariants:
+
+```rust
+struct Alignment {
+    /// SAFETY: `pow` must be between 0 and 29.
+    pub unsafe pow: u8,
+}
+```
+
+Outside of the context of `Alignment`, `u8` has no special meaning. It has no library safety
+invariants (and thus no library safety invariants that might be suspended by the field `pow`), and
+it is not a pointer or handle to another resource.
+
+The set of safe-to-read types, $S$, includes (but is not limited to):
+- primitive numeric types
+- public, compound types with public constructors whose members are in $S$.
+
+A type-directed analysis could make reads of these field types safe.
 
 ## Safe Unions
 
