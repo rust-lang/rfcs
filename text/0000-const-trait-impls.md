@@ -138,8 +138,9 @@ Examples:
 
 * `T: const Trait`, requiring any type that `T` is instantiated with to have a const trait impl.
 * `dyn const Trait`, requiring any type that is unsized to this dyn trait to have a const trait impl.
-    * note that these are not part of this RFC, see [the Future Possibilities section](#future-possibilities), because they require `const fn` function pointers.
-* `impl const Trait` (in all positions), see above
+    * These are not part of this RFC because they require `const fn` function pointers. See [the Future Possibilities section](#future-possibilities).
+* `impl const Trait` (in all positions).
+    * These are not part of this RFC because they require `const fn` function pointers. See [the Future Possibilities section](#future-possibilities).
 * `trait Foo: const Bar {}`, requiring every type that has an impl for `Foo` (even a non-const one), to also have a const trait impl for `Bar`.
 
 Such an impl allows you to use the type that is bound within a const block or any other const context, because we know that the type has a const trait impl and thus
