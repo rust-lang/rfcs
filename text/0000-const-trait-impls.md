@@ -8,8 +8,8 @@
 
 Make trait methods callable in const contexts. This includes the following parts:
 
-* Allow marking `trait` declarations as const implementable
-* Allow marking `trait` impls as `const`
+* Allow marking `trait` declarations as const implementable.
+* Allow marking `trait` impls as `const`.
 * Allow marking trait bounds as `const` to make methods of them callable in const contexts.
 
 Fully contained example ([Playground of currently working example](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=2ab8d572c63bcf116b93c632705ddc1b)):
@@ -281,12 +281,12 @@ take do neither have a usual hierarchy nor a concrete single value we can compar
 * In contrast to other effect systems, we do not track the effect as a true generic parameter in the type system,
   but instead just ignore all `Maybe` bounds in host environments and treat them as `Const` in const environments.
 
-While this could be modelled with generic parameters in the type system, that
+While this could be modelled with generic parameters in the type system, that:
 
-* has been attempted and is really complex (fragile) on the impl side and on the reasoning about things side.
-* appears to permit more behaviours than are desirable (multiple such parameters, math on these parameters, ...), so they need to be prevented, adding more checks.
-* is not necessary unless we'd allow much more complex kinds of bounds. So it can be kept open as a future possibility, but for now there's no need
-* does not quite work in Rust due to the constness then being early bound instead of late bound, cause all kinds of problems around closures and function calls.
+* Has been attempted and is really complex (fragile) on the impl side and on the reasoning about things side.
+* Appears to permit more behaviours than are desirable (multiple such parameters, math on these parameters, ...), so they need to be prevented, adding more checks.
+* Is not necessary unless we'd allow much more complex kinds of bounds. So it can be kept open as a future possibility, but for now there's no need.
+* Does not quite work in Rust due to the constness then being early bound instead of late bound, cause all kinds of problems around closures and function calls.
 * Technically cause two entirely separate MIR bodies to be generated, one for where the effect is on and one where it is off. On top of that it then theoretically allows you to call the const MIR body from non-const code.
 
 Thus that approach was abandoned after proponents and opponents cooperated in trying to make the generic parameter approach work, resulting in all proponents becoming opponents, too.
@@ -446,10 +446,10 @@ There is no reason (and no coherent representation) of adding `~const` trait bou
 Our usual `Drop` rules enforce that an impl must have the same bounds as the type.
 `~const` modifiers are special here, because they are only needed in const contexts.
 While they cause exactly the divergence that we want to prevent with the `Drop` impl rules:
-a type can be declared, but not dropped, because bounds are unfulfilled, this is
+a type can be declared, but not dropped, because bounds are unfulfilled, this is:
 
-* already the case in const contexts, just for all types that aren't trivially free of `Drop` types
-* exactly the behaviour we want.
+* Already the case in const contexts, just for all types that aren't trivially free of `Drop` types.
+* Exactly the behaviour we want.
 
 Extraneous `~const Trait` bounds where `Trait` isn't a bound on the type at all are still rejected:
 
@@ -625,14 +625,14 @@ can't call methods on them. To get more capabilities, you add more syntax. Thus 
 # Prior art
 [prior-art]: #prior-art
 
-* I tried to stabilize this before under https://github.com/rust-lang/rfcs/pull/2632
-    * while that moved to [FCP](https://github.com/rust-lang/rfcs/pull/2632#issuecomment-481395097) it had concerns raised
-    * [T-lang discussed this](https://github.com/rust-lang/rfcs/pull/2632#issuecomment-567699174) and had the following open concerns
+* I tried to get this accepted before under https://github.com/rust-lang/rfcs/pull/2632.
+    * While that moved to [FCP](https://github.com/rust-lang/rfcs/pull/2632#issuecomment-481395097), it had concerns raised.
+    * [T-lang discussed this](https://github.com/rust-lang/rfcs/pull/2632#issuecomment-567699174) and had the following open concerns:
         * This design has far-reaching implications and we probably aren't going to be able to work them all out in advance. We probably need to start working through the implementation.
         * This seems like a great fit for the "const eval" project group, and we should schedule a dedicated meeting to talk over the scope of such a group in more detail.
         * Similarly, it would be worth scheduling a meeting to talk out this RFC in more detail and make sure the lang team is understanding it well.
         * We feel comfortable going forward with experimentation on nightly even in advance of this RFC being accepted, as long as that experimentation is gated.
-    * all of the above have happened in some form, so I believe it's time to have the T-lang meeting again
+    * All of the above have happened in some form, so I believe it's time to have the T-lang meeting again.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -640,26 +640,25 @@ can't call methods on them. To get more capabilities, you add more syntax. Thus 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
     * Whether to pick an alternative syntax (and which one in that case).
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-    * We've already handled this since the last RFC, there are no more implementation concerns
+    * We've already handled this since the last RFC, there are no more implementation concerns.
 - What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
-    * This RFC's syntax is entirely unrelated to discussions on `async Trait`
-        * `async Trait` can be written entirely in user code by creating a new trait `AsyncTrait`, there is no workaround for `const`.
-    * This RFC's syntax is entirely unrelated to discussions on effect syntax
-        * If we get an effect system, it may be desirable to allow expressing const traits with the effect syntax, this design is forward compatible to that
-        * If we get an effect system, we will still want this shorthand, just like we allow you to write
-            * `T: Iterator<Item = U>` and don't require `where T: Iterator, <T as Iterator>::Item = U`
-            * `T: Iterator<Item: Debug>` and don't require `where T: Iterator, <T as Iterator>::Item: Debug`
-    * RTN for per-method bounds: `T: Trait<some_fn(..): ~const Fn(A, B) -> C>` could supplement this feature in the future
-        * very verbose (need to specify arguments and return type)
-        * want short hand sugar anyway to make it trivial to change a normal function to a const function by just adding some minor annotations
-        * significantly would delay const trait stabilization
-        * usually requires editing the trait anyway, so there's no "can constify impls without trait author opt in" silver bullet
-    * new RTN-like per-method bounds: `T: Trait<some_fn(_): ~const>`
-        * unclear if soundly possible
-        * unclear if possible without incurring significant performance issues for all code (may need tracking new information for all functions out there)
-        * still requires editing traits
-        * still want the `~const Trait` sugar anyway
-
+    * This RFC's syntax is entirely unrelated to discussions on `async Trait`.
+        * `async Trait` can be written entirely in user code by creating a new trait `AsyncTrait`; there is no workaround for `const`.
+    * This RFC's syntax is entirely unrelated to discussions on effect syntax.
+        * If we get an effect system, it may be desirable to allow expressing const traits with the effect syntax, this design is forward compatible with that.
+        * If we get an effect system, we will still want this shorthand, just like we allow you to write:
+            * `T: Iterator<Item = U>` and don't require `where T: Iterator, <T as Iterator>::Item = U`.
+            * `T: Iterator<Item: Debug>` and don't require `where T: Iterator, <T as Iterator>::Item: Debug`.
+    * RTN for per-method bounds: `T: Trait<some_fn(..): ~const Fn(A, B) -> C>` could supplement this feature in the future.
+        * Very verbose (need to specify arguments and return type).
+        * Want short hand sugar anyway to make it trivial to change a normal function to a const function by just adding some minor annotations.
+        * Significantly would delay const trait stabilization.
+        * Usually requires editing the trait anyway, so there's no "can constify impls without trait author opt in" silver bullet.
+    * New RTN-like per-method bounds: `T: Trait<some_fn(_): ~const>`.
+        * Unclear if soundly possible.
+        * Unclear if possible without incurring significant performance issues for all code (may need tracking new information for all functions out there).
+        * Still requires editing traits.
+        * Still want the `~const Trait` sugar anyway.
 
 ## Should we start out by allowing only const trait declarations and const trait impls
 
