@@ -273,11 +273,11 @@ A much more detailed explanation can be found in https://hackmd.io/@compiler-err
 
 We generate a `ClauseKind::HostEffect` for every `const` or `~const` bound.
 To mirror how some effectful languages represent such effects,
-I'm going to use `<Type as Trait>::kw#host` to allow setting whether the `host` effect is "const" (disabled) or "maybe" (generic).
+I'm going to use `<Type as Trait>::k#host` to allow setting whether the `host` effect is "const" (disabled) or "maybe" (generic).
 This is not comparable with other associated bounds like type bounds or const bounds, as the values the associated host effect can
 take do neither have a usual hierarchy nor a concrete single value we can compare due to the following handling of those bounds:
 
-* There is no "always" (enabled), as that is just the lack of a host effect, meaning no `<Type as Trait>::kw#host` bound at all.
+* There is no "always" (enabled), as that is just the lack of a host effect, meaning no `<Type as Trait>::k#host` bound at all.
 * In contrast to other effect systems, we do not track the effect as a true generic parameter in the type system,
   but instead just ignore all `Maybe` bounds in host environments and treat them as `Const` in const environments.
 
@@ -305,7 +305,7 @@ desugars to
 fn compile_time_default<T>() -> T
 where
     T: Default,
-    <T as Default>::kw#host = Const,
+    <T as Default>::k#host = Const,
 {
     const { T::default() }
 }
@@ -325,7 +325,7 @@ desugars to
 const fn default<T>() -> T
 where
     T: Default,
-    <T as Default>::kw#host = Maybe,
+    <T as Default>::k#host = Maybe,
 {
     T::default()
 }
