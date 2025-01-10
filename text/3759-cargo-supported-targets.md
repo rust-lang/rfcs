@@ -85,6 +85,8 @@ and some others are tools that require a desktop OS, using `supported-targets` m
 `cargo <command>` ignore packages which have `supported-targets` that are not satisfied
 by the selected target.
 
+Cargo's documentation should give clear guidance for when to use this field, and should not suggest using it by default. In particular, we should steer users to use this when they have good reason to believe the crate will not compile or work as expected (e.g. because it uses target-specific APIs), and not use it merely for "I haven't personally tested this on other targets".
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
