@@ -591,7 +591,7 @@ const fn foo<T: Trait<bikeshed#effect = ~const> + OtherTrait<bikeshed#effect = c
 A full example how how things would look then
 
 ```rust
-const trait Foo: ?const Bar + Baz {}
+const trait Foo: Bar + ?const Baz {}
 
 impl const Foo for () {}
 
