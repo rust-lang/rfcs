@@ -619,7 +619,7 @@ const fn foo<T: Foo>() {
 compiles today, and allows all types that implement `Foo`, irrespective of the constness of the impl.
 With the opt-out scheme that would still compile, but suddenly require callers to provide a const impl.
 
-The safe default (and the one folk are used to for a few years now), is that trait bounds just work, you just
+The safe default (and the one folks are used to for a few years now), is that trait bounds just work, you just
 can't call methods on them. To get more capabilities, you add more syntax. Thus the opt-out approach was not taken.
 
 # Prior art
