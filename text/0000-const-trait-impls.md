@@ -260,7 +260,7 @@ enforce this, so you can't accidentally make a mistake, but it may still limit h
 extend your trait without having to do a major version bump.
 Most of the time it suffices to add `const` before the `trait` declaration. The compiler will
 guide you and suggest where to also add `~const` bounds for super trait bounds or trait bounds
-generic parameters of your trait or your methods.
+on generic parameters of your trait or your methods.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
