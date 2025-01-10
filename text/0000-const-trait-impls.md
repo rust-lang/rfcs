@@ -246,7 +246,7 @@ unblocked by this feature.
 
 ## Crate authors: Making your own custom types easier to use
 
-You can write const trait impls for many standard library traits for your own types.
+You can write const trait impls of many standard library traits for your own types.
 While it was often possible to write the same code in inherent methods, operators were
 covered by traits from `std::ops` and thus not avaiable for const contexts.
 Most of the time it suffices to add `const` before the trait name in the impl block.
