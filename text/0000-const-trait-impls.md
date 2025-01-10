@@ -362,7 +362,7 @@ Adding a new method with a default body would become a breaking change unless th
 would somehow be marked as `const`, too. So by marking the trait, you're opting into the requirement that all default bodies are const checked,
 and thus neither `impl const Trait for Type` items nor `impl Trait for Type` items will be affected if you add a new method with a default body.
 This scheme avoids adding a new kind of breaking change to the Rust language,
-and instead allows everyone managing a public trait in their crate from relying on the
+and instead allows everyone managing a public trait in their crate to continue relying on the
 previous rule "adding a new method is not a breaking change if it has a default body".
 
 ### `~const Destruct` super trait
