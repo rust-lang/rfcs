@@ -101,6 +101,8 @@ It will be displayed exactly the same as the previous code.
 
 This attribute has the same syntax as conditional compilation, but it only causes documentation to be added. This means `#[doc(cfg(not(windows)))]` will not cause your docs to be hidden on non-windows targets, even though `#[cfg(not(windows))]` does do that.
 
+If `doc(auto_cfg)` is enabled on the item, `doc(cfg)` will override it anyway so in the two previous examples, even if the `doc(auto_cfg)` feature was enabled, it would still display the same thing.
+
 This attribute works on modules and on items.
 
 ### `#[doc(auto_cfg(hide(...)))]`
