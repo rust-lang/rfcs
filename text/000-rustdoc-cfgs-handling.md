@@ -147,6 +147,20 @@ But you cannot write:
 #[doc(auto_cfg(hide(not(unix))))]
 ```
 
+So if we use `doc(auto_cfg(hide(unix)))`, it means it will hide all mentions of `unix`:
+
+```rust
+#[cfg(unix)] // nothing displayed
+#[cfg(any(unix))] // nothing displayed
+#[cfg(any(unix, windows))] // only `windows` displayed
+```
+
+However, it only impacts the `unix` cfg, not the feature:
+
+```rust
+#[cfg(feature = "unix")] // `feature = "unix"` is displayed
+```
+
 If `cfg_auto(show(...))` and `cfg_auto(hide(...))` are used to show/hide a same `cfg` on a same item, it'll emit an error. Example:
 
 ```rust
