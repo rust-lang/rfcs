@@ -524,7 +524,6 @@ things start to get complicated.
 ## Misc
 
 - Have `cargo add` check the `supported-targets` before adding a dependency.
-- Make this process part of the resolver.
 - Show which targets are supported on `docs.rs`.
 - Have search filters on `crates.io` for crates with support for specific targets.
 - Also add this field at the cargo-target level.
