@@ -330,7 +330,15 @@ with the target preconditions of the dependency.
 
 ## Format
 
-The list of strings format was chosen because of its simplicity and expressiveness. Other formats can also be considered:
+The list of strings format was chosen because of its simplicity and expressiveness. It can be unintuitive
+to understand however, as the list implies a union of all its elements, which is not immediately obvious.
+
+Other formats can be considered:
+
+Using a single `cfg` string, without explicit target-triples:
+```toml
+supported-targets = 'cfg(any(target_family = "unix", target_family = "wasm"))'
+```
 
 Using the `[target]` table, for example:
 ```toml
