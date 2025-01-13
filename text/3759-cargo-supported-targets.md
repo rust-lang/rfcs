@@ -305,7 +305,7 @@ name = "bar"
 baz = "0.1.0"
 ```
 Currently, `baz` is included in the dependency tree of `foo`, even though `foo` is never built for `macos`.
-With the addition of `supported-targets`, `baz` can be purged from the dependency tree of `foo`, since
+With the addition of `supported-targets`, `baz` can be pruned from the dependency tree of `foo`, since
 `target_os = "macos"` is mutually exclusive with `target_os = "linux"`.
 
 Formally, dependencies (and transitive dependencies) under `[target.**.dependencies]` tables are
@@ -394,13 +394,15 @@ require an annoyingly long list of wildcard patterns. Things like `target_pointe
 even harder to represent, and things like `target_feature = "avx"` are basically not representable.
 Also, this is new syntax not currently used by cargo.
 
-### Allowing only target triples
+### Allowing only target-triples
 
-This is an even stricter version of the above. Being even simpler to implement, this alternative
-may not be expressive enough for the common use case. Packages rarely support specific target triples,
-rather they support/require specific target attributes. What would likely happen is that packages
-would copy and paste the target triple list matching their requirements from somewhere or someone else.
-Every time a new target with the same attribute is added, the whole ecosystem would have to be updated.
+This is an even stricter version of the above. Set relations between `supported-targets` lists are exact,
+and the resolver can determine if a platform-specific dependency can be pruned from the dependency tree more easily,
+hence why the original proposal chose this format. Being even simpler to implement, this alternative may not be
+expressive enough for the common use case. Packages rarely support specific target triples, rather they
+support/require specific target attributes. What would likely happen is that packages would copy and paste
+the target triple list matching their requirements from somewhere or someone else. Every time a new target
+with the same attribute is added, the whole ecosystem would have to be updated.
 
 # Prior art
 [prior-art]: #prior-art
