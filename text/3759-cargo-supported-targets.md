@@ -90,10 +90,10 @@ Cargo's documentation should give clear guidance for when to use this field, and
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run on a package, it checks that
-the selected target satisfies the `supported-targets` of the package. If it does not, an error is raised
-and the build fails. However, `supported-targets` is _not_ checked if the cargo command does not require
-compilation (e.g., `cargo fmt`).
+When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run, it checks that
+the selected target satisfies the `supported-targets` of the package being built. If it does not, the package is
+skipped or an error is raised, depending on how [`cargo` was invoked](ignoring-builds). However, `supported-targets`
+are _not_ checked if the cargo command does not require compilation (e.g., `cargo fmt`).
 
 ## Compatibility of `[dependencies]`
 
@@ -274,6 +274,7 @@ same mechanism as for `[target.'cfg(..)']` is used (using
 [`cargo-platform`](https://docs.rs/cargo-platform/latest/cargo_platform/index.html)).
 
 ## Ignoring builds for unsupported targets
+[ignoring-builds]: #igonring-builds-for-unsupported-targets
 
 When the target used is not supported by the package being built, the package will either be
 skipped or an error will be raised, depending on how `cargo` was invoked. If cargo is invoked
