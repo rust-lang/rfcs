@@ -641,6 +641,45 @@ With the opt-out scheme that would still compile, but suddenly require callers t
 The safe default (and the one folks are used to for a few years now), is that trait bounds just work, you just
 can't call methods on them. To get more capabilities, you add more syntax. Thus the opt-out approach was not taken.
 
+## Per-method constness instead of per-trait
+
+We could require trait authors to declare which methods can be const:
+
+```rust
+trait Default {
+    const fn default() -> Self;
+}
+```
+
+This has two major advantages:
+
+* you can now have const and non-const methods in your trait without requiring an opt-out
+* you can add new methods with default bodies and don't have to worry about new kinds of breaking changes
+
+The specific syntax given here may be confusing though, as it looks like the function is always const, but
+implementations can use non-const impls and thus make the impl not usable for `T: ~const Trait` bounds.
+
+Though this means that changing a non-const fn in the trait to a const fn is a breaking change, as the user may
+have that previous-non-const fn as a non-const fn in the impl, causing the entire impl now to not be usable for
+`T: ~const Trait` anymore.
+
+See also: out of scope RTN notation in [Unresolved questions](#unresolved-questions)
+
+## Per-method and per-trait constness together:
+
+To get the advantages of the per-method constness alternative above, while avoiding the new kind of breaking change, we can require per-method and per-trait constness:
+
+A mixed version of the above could be
+
+```rust
+const trait Foo {
+    const fn foo();
+    fn bar();
+}
+```
+
+where you still need to annotate the trait, but also annotate the const methods.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -669,9 +708,10 @@ can't call methods on them. To get more capabilities, you add more syntax. Thus 
             * `T: Iterator<Item = U>` and don't require `where T: Iterator, <T as Iterator>::Item = U`.
             * `T: Iterator<Item: Debug>` and don't require `where T: Iterator, <T as Iterator>::Item: Debug`.
     * RTN for per-method bounds: `T: Trait<some_fn(..): ~const Fn(A, B) -> C>` could supplement this feature in the future.
+        * Alternatively `where <T as Trait>::some_fn(..): ~const` or `where <T as Trait>::some_fn \ {const}`.
         * Very verbose (need to specify arguments and return type).
         * Want short hand sugar anyway to make it trivial to change a normal function to a const function by just adding some minor annotations.
-        * Significantly would delay const trait stabilization.
+        * Significantly would delay const trait stabilization (by years).
         * Usually requires editing the trait anyway, so there's no "can constify impls without trait author opt in" silver bullet.
     * New RTN-like per-method bounds: `T: Trait<some_fn(_): ~const>`.
         * Unclear if soundly possible.
