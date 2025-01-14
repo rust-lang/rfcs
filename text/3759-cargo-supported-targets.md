@@ -166,7 +166,8 @@ affect the `Cargo.toml` file.
 [flattening-cfg]: #flattening-not-any-and-all-in-cfg-specifications
 
 Since `cfg` specifications can contain `not`, `any`, and `all` operators, these must be handled.
-This is done by flattening the `cfg` specification to a specific form.
+This is done by flattening the `cfg` specification to a specific form. This form is equivalent to
+[disjunctive normal form](https://en.wikipedia.org/wiki/Disjunctive_normal_form).
 
 The `not` operator is "passed through" `any` and `all` operators using
 [De Morgan's laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws), until it reaches a single `cfg`
