@@ -36,7 +36,7 @@ Rust now supports async fns and `-> impl Trait` in traits (acronymized as AFIT a
 
 ## The [send bound problem][sbp] blocks an interoperable async ecosystem
 
-To create an interoperable async ecosystem, we need the ability to write a single trait definition that can be used across all styles of async exectutors (workstealing, thread-per-core, single-threaded, embedded, etc). One example of such a trait is the `Service` trait found in the `tower` crate, which defines a generic "service" that can process a `Request` and yield some `Response`. The [current `Service` trait](https://docs.rs/tower/latest/tower/trait.Service.html) is defined with a custom `poll` method and explicit usage of `Pin`, but the goal is to be able to define `Service` like so:
+To create an interoperable async ecosystem, we need the ability to write a single trait definition that can be used across all styles of async executors (workstealing, thread-per-core, single-threaded, embedded, etc). One example of such a trait is the `Service` trait found in the `tower` crate, which defines a generic "service" that can process a `Request` and yield some `Response`. The [current `Service` trait](https://docs.rs/tower/latest/tower/trait.Service.html) is defined with a custom `poll` method and explicit usage of `Pin`, but the goal is to be able to define `Service` like so:
 
 ```rust
 trait Service<Request> {
