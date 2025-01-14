@@ -836,3 +836,13 @@ Just like `const fn foo(x: impl ~const Trait) { x.method() }` and `const fn foo(
 
 There is nothing design-wise blocking function pointers and calling them, they mainly require implementation work and extending the
 compiler's internal type system representation of a function signature to include constness.
+
+## `const` closures
+
+Closures need explicit opt-in to be callable in const contexts.
+You can already use closures in const contexts today to e.g. declare consts of function pointer type.
+So what we additionally need is some syntax like `const || {}` to declare a closure that implements
+`const Fn()`. See also [this tracking issue](https://github.com/rust-lang/project-const-traits/issues/10)
+While it may seem tempting to just automatically implement `const Fn()` (or `~const Fn()`) where applicable,
+it's not clear that this can be done, and there are definite situations where it can't be done.
+As further experimentation is needed here, const closures are not part of this RFC.
