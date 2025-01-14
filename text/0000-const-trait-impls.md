@@ -165,7 +165,7 @@ fn compile_time_default<T: const Default>() -> T {
 }
 ```
 
-### Maybe-const trait bounds
+### Conditionally-const trait bounds
 
 Many generic `const fn` and especially many const trait impls do not actually require a const trait impl for their generic parameters.
 As `const fn` can also be called at runtime, it would be too strict to require it to only be able to call things with const trait impls.
@@ -209,8 +209,8 @@ const fn default<T: ~const Default>() -> T {
 }
 ```
 
-`~const` is derived from "approximately", meaning "maybe" in this context, or specifically "const impl required if called in const context".
-It is the opposite of `?` (prexisting for `?Sized` bounds), which also means "maybe", but from the other direction: `?const` (not proposed here, see the alternatives section for why it was rejected) would mean "no const impl required, even if called in const context".
+`~const` is derived from "approximately", meaning "conditionally" in this context, or specifically "const impl required if called in const context".
+It is the opposite of `?` (prexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const` (not proposed here, see the alternatives section for why it was rejected) would mean "no const impl required, even if called in const context".
 
 ### `~const Destruct` trait
 
@@ -288,13 +288,13 @@ A much more detailed explanation can be found in https://hackmd.io/@compiler-err
 
 We generate a `ClauseKind::HostEffect` for every `const` or `~const` bound.
 To mirror how some effectful languages represent such effects,
-I'm going to use `<Type as Trait>::k#host` to allow setting whether the `host` effect is "const" (disabled) or "maybe" (generic).
+I'm going to use `<Type as Trait>::k#host` to allow setting whether the `host` effect is "const" (disabled) or "conditionally" (generic).
 This is not comparable with other associated bounds like type bounds or const bounds, as the values the associated host effect can
 take do neither have a usual hierarchy nor a concrete single value we can compare due to the following handling of those bounds:
 
 * There is no "always" (enabled), as that is just the lack of a host effect, meaning no `<Type as Trait>::k#host` bound at all.
 * In contrast to other effect systems, we do not track the effect as a true generic parameter in the type system,
-  but instead just ignore all `Maybe` bounds in host environments and treat them as `Const` in const environments.
+  but instead just ignore all `Conditionally` bounds in host environments and treat them as `Const` in const environments.
 
 While this could be modelled with generic parameters in the type system, that:
 
@@ -340,7 +340,7 @@ desugars to
 const fn default<T>() -> T
 where
     T: Default,
-    <T as Default>::k#host = Maybe,
+    <T as Default>::k#host = Conditionally,
 {
     T::default()
 }
@@ -550,7 +550,7 @@ Note that it may frequently be that such a trait should have been split even wit
 # Alternatives
 [alternatives]: #alternatives
 
-## use `const Trait` bounds for maybe-const, invent new syntax for always-const
+## use `const Trait` bounds for conditionally-const, invent new syntax for always-const
 
 It may seem tempting to use `const fn foo<T: const Trait>` to mean what in this RFC is `~const Trait`, and then add new syntax for bounds that allow using trait methods in const blocks.
 
