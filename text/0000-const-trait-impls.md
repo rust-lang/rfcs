@@ -132,6 +132,8 @@ Impls can now rely on the default methods being const, too, and don't need to ov
 We may add an attribute later to allow you to mark individual trait methods as not-const so that when creating a const trait, one can
 add (defaulted or not) methods that cannot be used in const contexts.
 
+It is possible to split up a trait into the const an non-const parts as discussed [here](#cant-have-const-methods-and-nonconst-methods-on-the-same-trait).
+
 All default method bodies of const trait declarations are [const contexts](https://doc.rust-lang.org/reference/const_eval.html#const-context).
 
 Note that on nightly the syntax is
@@ -211,6 +213,44 @@ const fn default<T: ~const Default>() -> T {
 
 `~const` is derived from "approximately", meaning "conditionally" in this context, or specifically "const impl required if called in const context".
 It is the opposite of `?` (prexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const` (not proposed here, see the alternatives section for why it was rejected) would mean "no const impl required, even if called in const context".
+See [this alternatives section](#make-all-const-fn-arguments-const-trait-by-default-and-require-an-opt-out-const-trait) for an explanation of why we do not use a `?const` scheme.
+
+### Const fn
+
+`const` fn have always been and will stay "always const" functions.
+
+It may appear that a function is suddenly "not a const fn" if it gets passed a type that doesn't satisfy
+the constness of the corresponding trait bound. E.g.
+
+```rust
+struct Foo;
+
+impl Clone for Foo {
+    fn clone(&self) -> Self {
+        Foo
+    }
+}
+
+const fn bar<T: ~const Clone>(t: &T) -> T { t.clone() }
+const BAR: Foo = bar(Foo); // ERROR: `Foo`'s `Clone` impl is not for `const Clone`.
+```
+
+But `bar` is still a `const` fn and you can call it from a const context, it will just fail some trait bounds. This is no different from 
+
+```rust
+const fn dup<T: Copy>(a: T) -> (T, T) {(a, a)}
+const FOO: (String, String) = dup(String::new());
+```
+
+Here `dup` is always const fn, you'll just get a trait bound failure if the type you pass isn't `Copy`.
+
+This may seem like language lawyering, but that's how the impl works and how we should be talking about it.
+
+It's actually important for inference and method resolution in the nonconst world today.
+You first figure out which method you're calling, then you check its bounds.
+Otherwise it would at least seem like we'd have to allow some SFINAE or method overloading style things,
+which we definitely do not support and have historically rejected over and over again.
+
 
 ### `~const Destruct` trait
 
@@ -236,6 +276,19 @@ The `Destruct` trait is a bound for whether a type has drop glue. This is trival
 
 `~const Destruct` trait bounds are satsifed only if the type has a `const Drop` impl or all of the types of its components
 are `~const Destruct`.
+
+While this means that it's a breaking change to add a type with a non-const `Drop` impl to a type,
+that's already true and nothing new:
+
+```rust
+pub struct S {
+    x: u8,
+    y: Box<()>, // adding this field breaks code.
+}
+
+const fn f(_: S) {}
+//~^ ERROR destructor of `S` cannot be evaluated at compile-time
+```
 
 ## Trivially enabled features
 
@@ -554,6 +607,14 @@ Note that it may frequently be that such a trait should have been split even wit
 
 It may seem tempting to use `const fn foo<T: const Trait>` to mean what in this RFC is `~const Trait`, and then add new syntax for bounds that allow using trait methods in const blocks.
 
+Examples of possible always const syntax:
+
+* `=const Trait`
+* `const const Trait` (lol)
+* `const(always) Trait` (`pub` like)
+* `const<true> Trait` (effect generic like)
+* `const! Trait`
+
 ## use `Trait<const>` or `Trait<bikeshed#effect: const>` instead of `const Trait`
 
 To avoid new syntax before paths referring to traits, we could treat the constness as a generic parameter or an associated type.
@@ -608,6 +669,8 @@ for when a trait bound is only used for its associated types and consts.
 This requires a new `~const fn` syntax (sigils or syntax bikesheddable), as the existing `const fn` already has trait bounds that
 do not require const trait impls even if used in const contexts.
 
+An example from libstd today is [the impl block of Vec::new](https://github.com/rust-lang/rust/blob/1ab85fbd7474e8ce84d5283548f21472860de3e2/library/alloc/src/vec/mod.rs#L406) which has an implicit `A: Allocator` bound from [the type definition](https://github.com/rust-lang/rust/blob/1ab85fbd7474e8ce84d5283548f21472860de3e2/library/alloc/src/vec/mod.rs#L397).
+
 A full example how how things would look then
 
 ```rust
@@ -638,8 +701,17 @@ const fn foo<T: Foo>() {
 compiles today, and allows all types that implement `Foo`, irrespective of the constness of the impl.
 With the opt-out scheme that would still compile, but suddenly require callers to provide a const impl.
 
-The safe default (and the one folks are used to for a few years now), is that trait bounds just work, you just
-can't call methods on them. To get more capabilities, you add more syntax. Thus the opt-out approach was not taken.
+The safe default (and the one folks are used to for a few years now on stable), is that trait bounds just work, you just
+can't call methods on them.
+This is both useful in
+
+* nudging function authors to using the minimal necessary bounds to get their function
+body to compile and thus requiring as little as possible from their callers,
+* ensuring our implementation is correct by default.
+
+The implementation correctness argument is partially due to our history with `?const` (see https://github.com/rust-lang/rust/issues/83452 for where we got it wrong and thus decided to stop using opt-out), and partially with our history with `?` bounds not being great either (https://github.com/rust-lang/rust/issues/135229, https://github.com/rust-lang/rust/pull/132209). An opt-in is much easier to make sound and keep sound.
+
+To get more capabilities, you add more syntax. Thus the opt-out approach was not taken.
 
 ## Per-method constness instead of per-trait
 
