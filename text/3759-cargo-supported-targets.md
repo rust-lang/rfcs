@@ -531,6 +531,12 @@ more fine-grained control over which targets a cargo-target supports. This would
 similarly to the `edition` field, which is available at both the package and the cargo-target level.
 The `supported-targets` of a cargo-target would most likely need to be a subset of the package's `supported-targets`.
 
+## Interaction with crate features
+
+Currently, crate `[features]` and `supported-targets` do not interact. It is possible however that
+a crate feature interacts with the set of `supported-targets`, either by restraining or expanding it.
+It could be possible to allow crate features to modify the `supported-targets` of a package.
+
 ## Misc
 
 - Have `cargo add` check the `supported-targets` before adding a dependency.
