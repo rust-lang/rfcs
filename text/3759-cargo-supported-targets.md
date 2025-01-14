@@ -521,9 +521,15 @@ with `target_os = "linux"`, for example.
 _Note:_ More relations could be defined, for example `target_feature = "neon"` ⊆ `target_arch = "arm"`. With this however,
 things start to get complicated.
 
+## `supported-targets` at the cargo-target level
+
+The `supported-targets` field could also be added at the cargo-target level to have
+more fine-grained control over which targets a cargo-target supports. This would function
+similarly to the `edition` field, which is available at both the package and the cargo-target level.
+The `supported-targets` of a cargo-target would most likely need to be a subset of the package's `supported-targets`.
+
 ## Misc
 
 - Have `cargo add` check the `supported-targets` before adding a dependency.
 - Show which targets are supported on `docs.rs`.
 - Have search filters on `crates.io` for crates with support for specific targets.
-- Also add this field at the cargo-target level.
