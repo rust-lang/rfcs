@@ -274,8 +274,8 @@ This situation seems no different from other trait bounds, except that types can
 
 The `Destruct` trait is a bound for whether a type has drop glue. This is trivally true for all types.
 
-`~const Destruct` trait bounds are satsifed only if the type has a `const Drop` impl or all of the types of its components
-are `~const Destruct`.
+`~const Destruct` trait bounds are satisfied only if the type's `Drop` impl (if any) is `const` and all of the types of
+its components are `~const Destruct`.
 
 While this means that it's a breaking change to add a type with a non-const `Drop` impl to a type,
 that's already true and nothing new:
