@@ -423,6 +423,8 @@ leave it up to the user to infer it. Some crates also made use of compile time e
 #[cfg(not(any(…)))]
 compile_error!("unsupported target cfg");
 ```
+[`getrandom`](https://github.com/rust-random/getrandom/blob/9fb4a9a2481018e4ab58d597ecd167a609033149/src/backends.rs#L156-L160)
+is an example of a crate utilizing this method.
 
 Locally, users can already specify which targets they want to build for by default using the `target` field in
 `cargo`'s `config.toml` file. This setting is only a local configuration however, and does not affect
