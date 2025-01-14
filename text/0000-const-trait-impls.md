@@ -752,6 +752,17 @@ const trait Foo {
 
 where you still need to annotate the trait, but also annotate the const methods.
 
+But it makes it much harder/more confusing to add
+
+```rust
+trait Tr {
+    const C: u8 = Self::f();
+    const fn f() -> u8;
+}
+```
+
+later, where even non-const traits can have const methods, that all impls must implement as a const fn.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -846,3 +857,46 @@ So what we additionally need is some syntax like `const || {}` to declare a clos
 While it may seem tempting to just automatically implement `const Fn()` (or `~const Fn()`) where applicable,
 it's not clear that this can be done, and there are definite situations where it can't be done.
 As further experimentation is needed here, const closures are not part of this RFC.
+
+## Allow impls to refine any trait's methods
+
+We could allow writing `const fn` in impls without the trait opting into it.
+This would not affect `T: Trait` bounds, but still allow non-generic calls.
+
+This is simialar to other refinings in impls, as the function still satisfies everything from the trait.
+
+Example: without adjusting `rand` for const trait support at all, users could write
+
+```rust
+struct CountingRng(u64);
+
+impl RngCore for CountingRng {
+    const fn next_u32(&mut self) -> u32 {
+        self.next_u64() as u32
+    }
+
+    const fn next_u64(&mut self) -> u64 {
+        self.0 += 1;
+        self.0
+    }
+
+    const fn fill_bytes(&mut self, dest: &mut [u8]) {
+        let mut left = dest;
+        while left.len() >= 8 {
+            let (l, r) = { left }.split_at_mut(8);
+            left = r;
+            let chunk: [u8; 8] = rng.next_u64().to_le_bytes();
+            l.copy_from_slice(&chunk);
+        }
+        let n = left.len();
+        let chunk: [u8; 8] = rng.next_u64().to_le_bytes();
+        left.copy_from_slice(&chunk[..n]);
+    }
+
+    const fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
+    }
+}
+```
+
+and use it in non-generic code.
