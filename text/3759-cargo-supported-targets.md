@@ -112,10 +112,7 @@ does not satisfy the `supported-targets` of the package, then an error is raised
 
 ## Format
 
-The list of strings format was chosen because of its simplicity and expressiveness. It can be
-unintuitive to understand however, as the list implies a union of all its elements, which is not
-immediately obvious.
-
+The `cfg` string format was chosen because of its simplicity and expressiveness.
 Other formats can be considered:
 
 Using a list of `cfg` strings, and also accepting explicit target-triples:
@@ -126,6 +123,8 @@ supported-targets = [
     "x86_64-pc-windows-gnu",
 ]
 ```
+This can be unintuitive to understand however, as the list implies a union of all its elements,
+which is not immediately obvious.
 
 Using the `[target]` table, for example:
 ```toml
@@ -158,14 +157,6 @@ Some other names for this field can be considered:
 
 The `supported-targets` field is placed at the package level, and not at the cargo-target level
 (i.e., under, `[lib]`, `[[bin]]`, etc.)
-
-Dependencies are resolved at the package level, so even if one would have cargo-targets with
-different `supported-targets`, the dependencies would still be available to all cargo-targets. So,
-either cargo-targets would have access to dependencies that they cannot use, or all dependencies
-would need to support the union of all `supported-targets` of all cargo-targets.
-
-Examples, tests and benchmarks also have access to the package's library and binaries, so they must
-have the same set of `supported-targets`.
 
 It is possible to allow cargo-targets to further restrict the `supported-targets` of the package,
 but this is left as a [future possibility](#future-possibilities).
@@ -205,14 +196,11 @@ added, the whole ecosystem would have to be updated.
 # Prior art
 [prior-art]: #prior-art
 
-Locally, users can already specify which targets they want to build for by default using the
-`target` field in `cargo`'s `config.toml` file. This setting does not affect packages published on
-`crates.io`. On nightly, the `per-package-target` feature defines the `package.default-target` field
-in `Cargo.toml` to specify the default target for a package. Both of these options can be
-overwritten by the `--target` flag, and only work for a single target-triple.
+Users can already select which packages they want to select in a workspace with the flags
+`--package` and `--exclude`.
 
-The `per-package-target` feature also defines the `force-target` field, which is supposed to force
-the package to build for the specific target-triple. This does not interact well when used in
+The `per-package-target` nightly feature defines the `force-target` field, which is supposed to
+force the package to build for a specific target-triple. This does not interact well when used in
 dependencies, as one would expect a dependency to be built for the same target as the package.
 `supported-targets` supersedes `force-target` because instead of enforcing a single target, it
 enforces a set of targets.
@@ -227,10 +215,10 @@ compile_error!("unsupported target cfg");
 [`getrandom`](https://github.com/rust-random/getrandom/blob/9fb4a9a2481018e4ab58d597ecd167a609033149/src/backends.rs#L156-L160)
 is an example of a crate utilizing this method.
 
-I am not aware of a package manager that solves this issue like in this RFC. In other system level
-languages, vendoring dependencies is a common practice, and the user would be responsible for
-ensuring that the dependencies are compatible with the target. For interpreted languages, this is a
-non-issue because any platform being able to run the interpreter can run the package.
+In other system level languages, vendoring dependencies is a common practice, and the user would be
+responsible for ensuring that the dependencies are compatible with the target. For interpreted
+languages, this is a non-issue because any platform being able to run the interpreter can run the
+package.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -388,8 +376,7 @@ supported-targets = 'cfg(all(target_os = "linux", any(target_arch = "x86_64", ta
 ```
 is transformed into
 ```toml
-supported-targets =
-    'cfg(any(all(target_os = "linux", target_arch = "x86_64"), all(target_os = "linux", target_arch = "arm")))'
+supported-targets = 'cfg(any(all(target_os = "linux", target_arch = "x86_64"), all(target_os = "linux", target_arch = "arm")))'
 ```
 If an `all` contains an `all`, the inner `all` is flattened into the outer `all`.
 
