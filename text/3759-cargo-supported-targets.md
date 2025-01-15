@@ -13,9 +13,9 @@ glossary.
 
 # Summary
 
-The addition of `supported-targets` to `Cargo.toml`. This field is an array of `target-triple`/`cfg`
-specifications that restricts the set of targets which a package supports. Packages can only be
-built for targets that satisfy their `supported-targets`.
+The addition of `supported-targets` to `Cargo.toml`. This field is a `cfg` string that restricts the
+set of targets which a package supports. Packages can only be built for targets that satisfy their
+`supported-targets`.
 
 # Motivation
 
@@ -24,7 +24,7 @@ specify which targets a package does, or does not support.
 
 This feature enhances developer experience when working in workspaces containing packages designed
 for many different targets. Commands run on a workspace ignore packages that don't support the
-    selected target.
+selected target.
 
 ## Long-term Motivations
 
@@ -53,13 +53,11 @@ way in the dependency tree, even though they may not actually be used.
 
 The `supported-targets` field can be added to `Cargo.toml` under the `[package]` table.
 
-This field consists of an array of strings, where each string is an explicit target-triple or a
-`cfg` specification (as for the `[target.'cfg(**)']` table). The supported `cfg` syntax is the same
-as the one for [platform-specific
+This field is a string containing a `cfg` specification (as for the `[target.'cfg(**)']` table). The
+supported `cfg` syntax is the same as the one for [platform-specific
 dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies)
 (i.e., `cfg(test)`, `cfg(debug_assertions)`, and `cfg(proc_macro)` are not supported). If a selected
-target satisfies any entry of the `supported-targets` list, then the package can be built for that
-target.
+target satisfies the `supported-targets`, then the package can be built for that target.
 
 __For example:__
 ```toml
@@ -67,16 +65,11 @@ __For example:__
 name = "hello_cargo"
 version = "0.1.0"
 edition = "2021"
-supported-targets = [
-    "wasm32-unknown-unknown",
-    'cfg(target_os = "linux")',
-    'cfg(target_os = "macos")'
-]
+supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 ```
-Here, only targets satisfying: the `wasm32-unknown-unknown` target, __or__ the `linux` OS, __or__
-the `macos` OS, are allowed to build the package. User experience is enhanced by raising an error
-that fails compilation when the supported targets of a package are not satisfied by the selected
-target.
+Here, only targets with the `linux` OS or the `macos` OS, are allowed to build the package. User
+experience is enhanced by raising an error that fails compilation when the supported targets of a
+package are not satisfied by the selected target.
 
 This feature should be used when a package clearly does not support all targets. For example:
 `io-uring` requires `cfg(target_os = "linux")`, `gloo` requires `cfg(target_family = "wasm")`, and
@@ -95,17 +88,6 @@ selected target satisfies the `supported-targets` of the package being built. If
 package is skipped or an error is raised, depending on how [`cargo` was invoked](ignoring-builds).
 However, `supported-targets` are _not_ checked if the cargo command does not require compilation
 (e.g., `cargo fmt`).
-
-## Behavior with unknown entries (and custom targets)
-
-Just as `[target.my-custom-target.dependencies]` is allowed by `cargo`, `supported-targets` can
-contain unknown entries. This is important because users may have different `rustc` versions, and
-the set of official `rustc` targets is unstable; Targets can change name or be removed. Also,
-developers may want to support their custom target.
-
-To determine if an entry in `supported-targets` is a target name or a `cfg` specification, the same
-mechanism as for `[target.'cfg(..)']` is used (using
-[`cargo-platform`](https://docs.rs/cargo-platform/latest/cargo_platform/index.html)).
 
 ## Ignoring builds for unsupported targets
 [ignoring-builds]: #igonring-builds-for-unsupported-targets
@@ -134,9 +116,13 @@ immediately obvious.
 
 Other formats can be considered:
 
-Using a single `cfg` string, without explicit target-triples:
+Using a list of `cfg` strings, and also accepting explicit target-triples:
 ```toml
-supported-targets = 'cfg(any(target_family = "unix", target_family = "wasm"))'
+supported-targets = [
+    'cfg(target_family = "unix")',
+    'cfg(target_family = "wasm")',
+    "x86_64-pc-windows-gnu",
+]
 ```
 
 Using the `[target]` table, for example:
@@ -247,8 +233,7 @@ non-issue because any platform being able to run the interpreter can run the pac
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What if one wants to exclude a single target-triple? Groups can be excluded with `cfg(not(..))`,
-  but there is currently no way of excluding specific targets (Would anyone ever require this?).
+- Should we strip the `cfg` prefix from the field e.g., `supported-targets = 'target_os = "linux"'`?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -311,7 +296,7 @@ declared under. For example:
 ```toml
 [package]
 # ...
-supported-targets = ['cfg(target_os = "linux")']
+supported-targets = 'cfg(target_os = "linux")'
 
 [target.'cfg(target_pointer_width = "64")'.dependencies]
 foo = "0.1.0"
@@ -320,7 +305,7 @@ Here, it would suffice for `foo` to support `cfg(all(target_os = "linux", target
 "64"))`.
 
 This would ensure that a package properly uses dependencies that are not available on all targets.
-Assuming that the crate `io-uring` has `supported-targets = ['cfg(target_os = "linux")']`, a crate
+Assuming that the crate `io-uring` has `supported-targets = 'cfg(target_os = "linux")'`, a crate
 could depend on it using:
 ```toml
 [package]
@@ -329,8 +314,8 @@ could depend on it using:
 [target.'cfg(target_os = "linux")'.dependencies]
 io-uring = "0.1.0"
 ```
-This would not be required if the package itself had `supported-targets = ['cfg(target_os =
-"linux")']`.
+This would not be required if the package itself had `supported-targets = 'cfg(target_os =
+"linux")'`, or an even stricter set.
 
 ### Artifact dependencies
 
@@ -352,7 +337,7 @@ Consider the following example:
 [package]
 name = "foo"
 # ...
-supported-targets = ['cfg(target_os = "linux")']
+supported-targets = 'cfg(target_os = "linux")'
 
 [dependencies]
 bar = "0.1.0"
@@ -375,13 +360,12 @@ mutually exclusive with the target preconditions of the dependency.
 ## Comparing `supported-targets`
 
 To prune the dependency tree, and to ensure proper use of dependencies, it becomes necessary to
-compare `supported-targets` lists. When comparing two `supported-targets` lists, it is necessary to
-know if one is a _subset_ of the other, or if both are _mutually exclusive_. To proceed, both lists
+compare `supported-targets`. When comparing two sets of `supported-targets`, it is necessary to
+know if one is a _subset_ of the other, or if both are _mutually exclusive_. To proceed, both
 are flattened to the same representation, and they are then compared. This process is done
 internally, and does not affect the `Cargo.toml` file.
 
-### Flattening `not`, `any`, and `all` in `cfg` specifications [flattening-cfg]:
-#flattening-not-any-and-all-in-cfg-specifications
+### Flattening `not`, `any`, and `all` in `cfg` specifications
 
 Since `cfg` specifications can contain `not`, `any`, and `all` operators, these must be handled.
 This is done by flattening the `cfg` specification to a specific form. This form is equivalent to
@@ -392,66 +376,46 @@ laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws), until it reaches a sing
 specification. For example, `cfg(not(all(target_os = "linux", target_arch = "x86_64")))` is
 equivalent to `cfg(any(not(target_os = "linux"), not(target_arch = "x86_64")))`.
 
-Top level `any` operators are separated into multiple `cfg` specifications. For example,
-```toml
-supported-targets = ['cfg(any(target_os = "linux", target_os = "macos"))']
-```
-is transformed into
-```toml
-supported-targets = ['cfg(target_os = "linux")', 'cfg(target_os = "macos")']
-```
+The `cfg` definition is transformed into `any` of `all` (top level union).
 
 Top level `all` operators are kept as is, as long as they do not contain nested `any`s or `all`s. If
 there is an `any` inside an `all`, the statement is split into multiple `all` statements. For
 example,
 ```toml
-supported-targets = ['cfg(all(target_os = "linux", any(target_arch = "x86_64", target_arch = "arm"))']
+supported-targets = 'cfg(all(target_os = "linux", any(target_arch = "x86_64", target_arch = "arm"))'
 ```
 is transformed into
 ```toml
-supported-targets = [
-    'cfg(all(target_os = "linux", target_arch = "x86_64"))',
-    'cfg(all(target_os = "linux", target_arch = "arm"))'
-]
+supported-targets =
+    'cfg(any(all(target_os = "linux", target_arch = "x86_64"), all(target_os = "linux", target_arch = "arm")))'
 ```
 If an `all` contains an `all`, the inner `all` is flattened into the outer `all`.
 
-The result of these transformations on a `cfg` specification is a list of `cfg` specifications that
+The result of these transformations on a `cfg` specification is a union of `cfg` specifications that
 either contains a single specification, or an `all` operator with no nested operators.
-
-This procedure is run on all `cfg` elements of a `supported-targets` list. The resulting list can
-then be used to evaluate relations. In the end, the flattened representation can only contain
-explicit target-triples, `cfg(A)` containing a single `A`, or `cfg(all(A, B, ...))` with all `A, B,
-...` being single elements.
 
 ### The subset relation
 
-To determine if a `supported-targets` list "A" is a subset of another such list "B", the standard
+To determine if the `supported-targets` set "A" is a subset of another such set "B", the standard
 mathematical definition of subset is used. That is, "A" is a subset of "B" if and only if each
 element of "A" is contained in "B".
 
-So each element of "A" is compared against each element of "B" using the following rules:
-- A `target-triple` is a subset of another `target-triple` if they are the same.
-- A `target-triple` is a subset of a `cfg(..)` if the `cfg(..)` is satisfied by the `target-triple`.
-- A `cfg(..)` is not a subset of a `target-triple`.
-- A `cfg(all(A, B, ...))` is a subset of a `cfg(all(C, D ...))`, if the list `C, D, ...` is a subset
-  of the list `A, B, ...`.
+So each element of the union forming "A" is compared against each element of the union forming "B".
+A `cfg(all(A, B, ...))` is a subset of a `cfg(all(C, D ...))`, if the list `C, D, ...` is a subset
+of the list `A, B, ...`.
 
-_Note_: All possible cases have been covered, since `cfg(A) == cfg(all(A))`.
+_Note_: `cfg(A) == cfg(all(A))`.
 
 ### Mutual exclusivity
 
-For a `supported-targets` list "A" to be mutually exclusive with another such list "B", each element
+For the `supported-targets` set "A" to be mutually exclusive with another such set "B", each element
 of "A" must be mutually exclusive with _all_ elements of "B" (The inverse is also true).
 
-So each element of "A" is compared against each element of "B" using the following rules:
-- A `target-triple` is mutually exclusive with another `target-triple` if they are different.
-- A `target-triple` is mutually exclusive with a `cfg(..)` if the `cfg(..)` is not satisfied by the
-  `target-triple`.
-- A `cfg(all(A, B, ...))` is mutually exclusive with a `cfg(all(C, D, ...))` if any element of the
-  list `A, B, ...` is mutually exclusive with any element of the list `C, D, ...`.
+So each element of "A" is compared against each element of "B". A `cfg(all(A, B, ...))` is mutually
+exclusive with a `cfg(all(C, D, ...))` if any element of the list `A, B, ...` is mutually exclusive
+with any element of the list `C, D, ...`.
 
-_Note_: All possible cases have been covered, since `cfg(A) == cfg(all(A))`.
+_Note_: `cfg(A) == cfg(all(A))`.
 
 Two `cfg` singletons are mutually exclusive under the following rules:
 - `cfg(A)` is mutually exclusive with `cfg(not(A))`.
@@ -482,13 +446,13 @@ Even more relations could be defined. Consider the following scenario:
 ```toml
 [package]
 name = "bar"
-supported-targets = ['cfg(target_family = "unix")']
+supported-targets = 'cfg(target_family = "unix")'
 # ...
 ```
 ```toml
 [package]
 name = "foo"
-supported-targets = ['cfg(target_os = "macos")']
+supported-targets = 'cfg(target_os = "macos")'
 
 [dependencies]
 bar = "0.1.0"
@@ -520,7 +484,7 @@ If a package has:
 [package]
 name = "example"
 # ...
-supported-targets = ['cfg(target_os = "linux")']
+supported-targets = 'cfg(target_os = "linux")'
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # ...
