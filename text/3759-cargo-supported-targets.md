@@ -26,8 +26,8 @@ When working on a project with packages that only build on certain platforms, us
 
 ## Long-term Motivations
 
-_These do not motivate the RFC itself, rather they motivate the [future
-possibilities](#future-possibilities) section._
+This RFC unblocks further work to improve platform-specific packages.  While these problems are important, solving them has been left to  [future
+possibilities](#future-possibilities) to deliver an MVP we can then build on.
 
 ### Developer Experience
 
