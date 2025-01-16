@@ -33,16 +33,13 @@ possibilities](#future-possibilities) to deliver an MVP we can then build on.
 
 The error message when a library has platform-specific features, like requiring atomics, is about parts of `std` missing which could be for one of several reasons. Some of these problems won't be found until you've built or tested your project on one of these platforms. Like with #2495, if library authors could provide this information to Cargo, developers can get an improved error message under any circumstance.
 
+### Include fewer packages with `cargo vendor`
+
+`Cargo.lock`, and by extension, `cargo vendor`, must assume that a package may be built on any platform that has or will exist.  This means that if a transitive dependency pulls in Windows-specific dependencies, `cargo vendor` will include them when run on a Linux-only application.  Being able to tell `cargo vendor` what platforms to care about can reduce the space used in a repo and reduce churn.
+
 ### Dependency Management 
 
-Once it is known that a package will only ever build for a subset of targets, it opens the door for
-more advanced control over dependencies. For example, transitive dependencies declared under a
-`[target.**.dependencies]` table could be excluded from `Cargo.lock` if the dependent's
-`supported-targets` are mutually exclusive with the target preconditions under which the
-dependencies are included. This is especially relevant to areas such as WebAssembly and embedded
-programming, where one usually supports only a few specific targets. Currently, auditing and
-vendoring is tedious because dependencies under `[target.**.dependencies]` tables always make their
-way in the dependency tree, even though they may not actually be used.
+Likewise, today users either need to audit dependencies irrelevant for the platforms they target or filter these out somehow.  By providing first-class support for specifying what platform features a package requires, audit tools can consolidate on that for narrowing down the list of what dependencies to audit.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
