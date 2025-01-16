@@ -19,8 +19,8 @@ set of targets which a package supports. Packages can only be built for targets 
 
 # Motivation
 
-Some packages do not support every possible `rustc` target. Currently, there is no way to formally
-specify which targets a package does, or does not support.
+Some packages rely on features or behavior that is not available on every platform `rustc` can target. Currently, there is no way to formally
+specify platform requirements of a package
 
 When working on a project with packages that only build on certain platforms, users cannot run Cargo commands across the entire workspace (e.g. `cargo test --workspace`) but must individually select packages that only work on the specific platform (e.g. `cargo test --workspace --exclude firmware`).  This extends to CI with people wanting to write matrix jobs but have to hand maintain the list of packages for each platform in the matrix.
 
