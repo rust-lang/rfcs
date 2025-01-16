@@ -29,11 +29,9 @@ When working on a project with packages that only build on certain platforms, us
 This RFC unblocks further work to improve platform-specific packages.  While these problems are important, solving them has been left to  [future
 possibilities](#future-possibilities) to deliver an MVP we can then build on.
 
-### Developer Experience
+### More specific error messages
 
-Trying to depend on a crate that does not support one's target often produces cryptic build errors,
-or worse, fails at runtime. Being able to specify which targets are supported ensures that
-unsupported targets cannot build the crate, and also makes build errors specific.
+The error message when a library has platform-specific features, like requiring atomics, is about parts of `std` missing which could be for one of several reasons. Some of these problems won't be found until you've built or tested your project on one of these platforms. Like with #2495, if library authors could provide this information to Cargo, developers can get an improved error message under any circumstance.
 
 ### Dependency Management 
 
