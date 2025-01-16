@@ -82,10 +82,10 @@ require a desktop OS, using `supported-targets` makes `cargo <command>` ignore p
 When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run, it checks that the
 selected target satisfies the `supported-targets` of the package being built. If it does not, the
 package is skipped or an error is raised, depending on how [`cargo` was invoked](ignoring-builds).
-However, `supported-targets` are _not_ checked if the cargo command does not require compilation
-(e.g., `cargo fmt`). This field is only for local development, and is removed from `Cargo.toml`
-when publishing a crate. It could be published to give more information to `docs.rs`, `crates.io`,
-and `cargo` itself, but this is left as a [future possibility](#future-possibilities).
+However, `supported-targets` is _only_ checked for commands that take a `--target` option and does not affect other commands (e.g., `cargo fmt`).
+
+As this field is limited to local development, `cargo package` / `cargo publish` will strip it from `Cargo.toml`.
+Including the field in the `.crate` file is left as a [future possibility](#future-possibilities) for now.
 
 ## Ignoring builds for unsupported targets
 [ignoring-builds]: #igonring-builds-for-unsupported-targets
