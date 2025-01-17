@@ -20,7 +20,7 @@ set of targets which a package supports. Packages can only be built for targets 
 # Motivation
 
 Some packages rely on features or behavior that is not available on every platform `rustc` can target. Currently, there is no way to formally
-specify platform requirements of a package
+specify platform requirements of a package.
 
 When working on a project with packages that only build on certain platforms, users cannot run Cargo commands across the entire workspace (e.g. `cargo test --workspace`) but must individually select packages that only work on the specific platform (e.g. `cargo test --workspace --exclude firmware`).  This extends to CI with people wanting to write matrix jobs but have to hand maintain the list of packages for each platform in the matrix.
 
@@ -39,7 +39,7 @@ Likewise, today users either need to audit dependencies irrelevant for the platf
 
 ### More specific error messages
 
-The error message when a library has platform-specific features, like requiring atomics, is about parts of `std` missing which could be for one of several reasons. Some of these problems won't be found until you've built or tested your project on one of these platforms. Like with #2495, if library authors could provide this information to Cargo, developers can get an improved error message under any circumstance.
+The error message when a library has platform-specific features, like requiring atomics, is about parts of `std` missing which could be for one of several reasons. Some of these problems won't be found until you've built or tested your project on one of these platforms. Like with [#2495](https://rust-lang.github.io/rfcs/2495-min-rust-version.html), if library authors could provide this information to Cargo, developers can get an improved error message under any circumstance.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
