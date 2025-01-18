@@ -173,9 +173,28 @@ Using this attribute will re-enable `auto_cfg` if it was disabled at this locati
 
 ```rust
 #[doc(auto_cfg = false)] // Disabling `auto_cfg`
-#[doc(auto_cfg(hide(unix)))] // `auto_cfg` is re-enabled.
 pub fn foo() {}
 ```
+
+And using `doc(auto_cfg)` will re-enable it:
+
+```rust
+#[doc(auto_cfg = false)] // Disabling `auto_cfg`
+pub mod module {
+    #[doc(auto_cfg(hide(unix)))] // `auto_cfg` is re-enabled.
+    pub fn foo() {}
+}
+```
+
+However, using `doc(auto_cfg = ...)` and `doc(auto_cfg(...))` on the same item will emit an error:
+
+```rust
+#[doc(auto_cfg = false)]
+#[doc(auto_cfg(hide(unix)))] // error
+pub fn foo() {}
+```
+
+The reason behind this is that `doc(auto_cfg = ...)` enables or disables the feature, whereas `doc(auto_cfg(...))` enables it unconditionally, making the first attribute to appear useless as it will be overidden by the next `doc(auto_cfg)` attribute.
 
 ### `#[doc(auto_cfg(show(...)))]`
 
