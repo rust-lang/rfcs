@@ -106,7 +106,7 @@ So, we need some annotation that differentiates a `T: Default` bound from one th
 ### Const trait impls
 
 It is now allowed to prefix a trait name in an impl block with `const`, marking that this `impl`'s type is now allowed to
-have methods of this `impl`'s trait to be called in const contexts (if all where bounds hold, like ususal, but more on this later).
+have methods of this `impl`'s trait to be called in const contexts (if all where bounds hold, like usual, but more on this later).
 
 An example looks as follows:
 
