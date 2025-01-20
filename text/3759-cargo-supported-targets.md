@@ -17,6 +17,12 @@ The addition of `supported-targets` to `Cargo.toml`. This field is a `cfg` strin
 set of targets which a package supports. Packages can only be built for targets that satisfy their
 `supported-targets`.
 
+```toml
+[package]
+name = "hello_cargo"
+supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+```
+
 # Motivation
 
 Some packages rely on features or behavior that is not available on every platform `rustc` can target. Currently, there is no way to formally
