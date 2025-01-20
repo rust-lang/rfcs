@@ -467,7 +467,7 @@ increase usability. By extension, `target_family = "windows"` would now be mutua
 _Note:_ More relations could be defined, for example `target_feature = "neon"` ⊆ `target_arch =
 "arm"`. With this however, things start to get complicated.
 
-## Lint against useless target-specific tables
+## Lint against unused target-specific tables
 
 If a package has:
 ```toml
@@ -478,8 +478,6 @@ supported-targets = 'cfg(target_os = "linux")'
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # ...
-```
-A lint could be added to highlight the fact that the `[target]` table is useless.
 
 ## `supported-targets` at the cargo-target level
 
