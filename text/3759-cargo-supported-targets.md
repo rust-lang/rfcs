@@ -373,7 +373,7 @@ Formally, dependencies (and transitive dependencies) under `[target.**.dependenc
 eliminated from the dependency tree of a package if the `supported-targets` of the package is
 mutually exclusive with the target preconditions of the dependency.
 
-## Comparing `supported-targets`
+### Comparing `supported-targets`
 
 To prune the dependency tree, and to ensure proper use of dependencies, it becomes necessary to
 compare `supported-targets`. When comparing two sets of `supported-targets`, it is necessary to
@@ -381,7 +381,7 @@ know if one is a _subset_ of the other, or if both are _mutually exclusive_. To 
 are flattened to the same representation, and they are then compared. This process is done
 internally, and does not affect the `Cargo.toml` file.
 
-### Flattening `not`, `any`, and `all` in `cfg` specifications
+#### Flattening `not`, `any`, and `all` in `cfg` specifications
 
 Since `cfg` specifications can contain `not`, `any`, and `all` operators, these must be handled.
 This is done by flattening the `cfg` specification to a specific form. This form is equivalent to
@@ -409,7 +409,7 @@ If an `all` contains an `all`, the inner `all` is flattened into the outer `all`
 The result of these transformations on a `cfg` specification is a union of `cfg` specifications that
 either contains a single specification, or an `all` operator with no nested operators.
 
-### The subset relation
+#### The subset relation
 
 To determine if the `supported-targets` set "A" is a subset of another such set "B", the standard
 mathematical definition of subset is used. That is, "A" is a subset of "B" if and only if each
@@ -421,7 +421,7 @@ of the list `A, B, ...`.
 
 _Note_: `cfg(A) == cfg(all(A))`.
 
-### Mutual exclusivity
+#### Mutual exclusivity
 
 For the `supported-targets` set "A" to be mutually exclusive with another such set "B", each element
 of "A" must be mutually exclusive with _all_ elements of "B" (The inverse is also true).
@@ -455,7 +455,7 @@ Those that do not:
 - `target_has_atomic`
 - `target_family`
 
-### More `cfg` relations
+#### More `cfg` relations
 
 Even more relations could be defined. Consider the following scenario:
 ```toml
