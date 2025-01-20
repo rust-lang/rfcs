@@ -515,6 +515,14 @@ the `edition` field, which is available at both the package and the cargo-target
 `supported-targets` of a cargo-target would most likely need to be a subset of the package's
 `supported-targets`.
 
+This could also allow for a cargo-target to be swapped out based on the selected target. For example,
+we could specify which binary should be used as `main` based on the selected target
+[#9208](https://github.com/rust-lang/cargo/issues/9208).
+.
+
+This could also help WebAssembly targets, as `wasm` executables need to be built as libraries to then
+be executed by a JavaScript environment [#12260](https://github.com/rust-lang/cargo/issues/12260).
+
 ## Interaction with crate features
 
 Currently, crate `[features]` and `supported-targets` do not interact. It is possible however that a
