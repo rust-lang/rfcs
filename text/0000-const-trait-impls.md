@@ -745,7 +745,21 @@ do not require const trait impls even if used in const contexts.
 
 An example from libstd today is [the impl block of Vec::new](https://github.com/rust-lang/rust/blob/1ab85fbd7474e8ce84d5283548f21472860de3e2/library/alloc/src/vec/mod.rs#L406) which has an implicit `A: Allocator` bound from [the type definition](https://github.com/rust-lang/rust/blob/1ab85fbd7474e8ce84d5283548f21472860de3e2/library/alloc/src/vec/mod.rs#L397).
 
-A full example how how things would look then
+A full example how how
+
+```rust
+const trait Foo: ~const Bar + Baz {}
+
+impl const Foo for () {}
+
+const fn foo<T: ~const Foo>() -> T {
+    // cannot call `Baz` methods
+    <T as Bar>::bar()
+}
+
+const _: () = foo();
+```
+
 
 ```rust
 const trait Foo: Bar + ?const Baz {}
