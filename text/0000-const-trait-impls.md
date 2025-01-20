@@ -155,7 +155,7 @@ Examples:
 * `dyn const Trait`, requiring any type that is unsized to this dyn trait to have a const trait impl for `Trait`.
     * These are not part of this RFC because they require `const` function pointers. See [the Future Possibilities section](#future-possibilities).
 * `impl const Trait` (in all positions).
-    * These are not part of this RFC because they require `const` function pointers. See [the Future Possibilities section](#future-possibilities).
+    * These are not part of this RFC.
 * `trait Foo: const Bar {}`, requiring every type that has an impl for `Foo` (even a non-const one), to also have a const trait impl for `Bar`.
 * `trait Foo { type Bar: const Trait; }`, requiring all the impls to provide a type for `Bar` that has a const trait impl for `Trait`
 
@@ -393,6 +393,17 @@ While this could be modelled with generic parameters in the type system, that:
 * Technically cause two entirely separate MIR bodies to be generated, one for where the effect is on and one where it is off. On top of that it then theoretically allows you to call the const MIR body from non-const code.
 
 Thus that approach was abandoned after proponents and opponents cooperated in trying to make the generic parameter approach work, resulting in all proponents becoming opponents, too.
+
+### Sites where `const Trait` bounds can be used
+
+Everywhere where non-const trait bounds can be written, but only for traits that are declared `const Trait`.
+
+### Sites where `~const Trait` bounds can be used
+
+* `const fn`
+* `impl const Trait for Type`
+* NOT in inherent impls, the individual `const fn` need to be annotated instead
+* associated types bounds of `const trait Trait` declarations
 
 ### `const` desugaring
 
@@ -729,7 +740,7 @@ const fn foo<T: Trait<bikeshed#effect = ~const> + OtherTrait<bikeshed#effect = c
 We could default to making all `T: Trait` bounds be const if the function is called from a const context, and require a `T: ?const Trait` opt out
 for when a trait bound is only used for its associated types and consts.
 
-This requires a new `~const fn` syntax (sigils or syntax bikesheddable), as the existing `const fn` already has trait bounds that
+This requires new syntax (demonstrated here with `#[next_const_fn]`), as the existing `const fn` already has trait bounds that
 do not require const trait impls even if used in const contexts.
 
 An example from libstd today is [the impl block of Vec::new](https://github.com/rust-lang/rust/blob/1ab85fbd7474e8ce84d5283548f21472860de3e2/library/alloc/src/vec/mod.rs#L406) which has an implicit `A: Allocator` bound from [the type definition](https://github.com/rust-lang/rust/blob/1ab85fbd7474e8ce84d5283548f21472860de3e2/library/alloc/src/vec/mod.rs#L397).
@@ -741,6 +752,7 @@ const trait Foo: Bar + ?const Baz {}
 
 impl const Foo for () {}
 
+#[next_const_fn]
 const fn foo<T: Foo>() -> T {
     // cannot call `Baz` methods
     <T as Bar>::bar()
@@ -921,6 +933,10 @@ These require changing the type system, making the constness of a function point
 This in turn implies that a `const fn()` function pointer, a `~const fn()` function pointer and a `fn()` function pointer could have
 different `TypeId`s, which is something that requires more design and consideration to clarify whether supporting downcasting with `Any`
 or just supporting `TypeId` equality checks detecting constness is desirable.
+
+Furthermore `const fn()` pointers introduce a new situation: you can transmute arbitrary values (e.g. null pointers, or just integers) to
+`const fn()` pointers, and the type system will not protect you. Instead the const evaluator will reject that when it actually
+evaluateds the code around the function pointer or even as late as when the function call happens.
 
 ## `const` closures
 
