@@ -516,7 +516,7 @@ the `edition` field, which is available at both the package and the cargo-target
 `supported-targets`.
 
 This could also allow for a cargo-target to be swapped out based on the selected target. For example,
-we could specify which binary should be used as `main` based on the selected target
+one could specify which binary should be used as `main` based on the selected target
 [#9208](https://github.com/rust-lang/cargo/issues/9208).
 .
 
