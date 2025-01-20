@@ -151,12 +151,13 @@ Any item that can have trait bounds can also have `const Trait` bounds.
 
 Examples:
 
-* `T: const Trait`, requiring any type that `T` is instantiated with to have a const trait impl.
-* `dyn const Trait`, requiring any type that is unsized to this dyn trait to have a const trait impl.
-    * These are not part of this RFC because they require `const fn` function pointers. See [the Future Possibilities section](#future-possibilities).
+* `T: const Trait`, requiring any type that `T` is instantiated with to have a const trait impl for `Trait`.
+* `dyn const Trait`, requiring any type that is unsized to this dyn trait to have a const trait impl for `Trait`.
+    * These are not part of this RFC because they require `const` function pointers. See [the Future Possibilities section](#future-possibilities).
 * `impl const Trait` (in all positions).
-    * These are not part of this RFC because they require `const fn` function pointers. See [the Future Possibilities section](#future-possibilities).
+    * These are not part of this RFC because they require `const` function pointers. See [the Future Possibilities section](#future-possibilities).
 * `trait Foo: const Bar {}`, requiring every type that has an impl for `Foo` (even a non-const one), to also have a const trait impl for `Bar`.
+* `trait Foo { type Bar: const Trait; }`, requiring all the impls to provide a type for `Bar` that has a const trait impl for `Trait`
 
 Such an impl allows you to use the type that is bound within a const block or any other const context, because we know that the type has a const trait impl and thus
 must be executable at compile time. The following function will invoke the `Default` impl of a type at compile time and store the result in a constant. Then it returns that constant instead of computing the value every time.
@@ -212,8 +213,9 @@ const fn default<T: ~const Default>() -> T {
 ```
 
 `~const` is derived from "approximately", meaning "conditionally" in this context, or specifically "const impl required if called in const context".
-It is the opposite of `?` (prexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const` (not proposed here, see the alternatives section for why it was rejected) would mean "no const impl required, even if called in const context".
-See [this alternatives section](#make-all-const-fn-arguments-const-trait-by-default-and-require-an-opt-out-const-trait) for an explanation of why we do not use a `?const` scheme.
+It is the opposite of `?` (prexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const`
+(not proposed here, see  [this alternatives section](#make-all-const-fn-arguments-const-trait-by-default-and-require-an-opt-out-const-trait) for why it was rejected)
+would mean "no const impl required, even if called in const context".
 
 ### Const fn
 
@@ -251,6 +253,33 @@ You first figure out which method you're calling, then you check its bounds.
 Otherwise it would at least seem like we'd have to allow some SFINAE or method overloading style things,
 which we definitely do not support and have historically rejected over and over again.
 
+### conditionally const trait impls
+
+`const` trait impls for generic types work similarly to generic `const fn`.
+Any `impl const Trait for Type` is allowed to have `~const` trait bounds.
+
+```rust
+struct MyStruct<T>(T);
+
+impl<T: ~const Add<Output = T>> const Add for MyStruct<T> {
+    type Output = MyStruct<T>;
+    fn add(self, other: MyStruct<T>) -> MyStruct<T> {
+        MyStruct(self.0 + other.0)
+    }
+}
+
+impl<T> const Add for &MyStruct<T>
+where
+    for<'a> &'a T: ~const Add<Output = T>,
+{
+    type Output = MyStruct<T>;
+    fn add(self, other: &MyStruct<T>) -> MyStruct<T> {
+        MyStruct(&self.0 + &other.0)
+    }
+}
+```
+
+See [this playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=313a38ef5c36b2ddf489f74167c1ac8a) for an example that works on nightly today.
 
 ### `~const Destruct` trait
 
@@ -339,15 +368,21 @@ These `const` or `~const` trait bounds desugar to normal trait bounds without mo
 
 A much more detailed explanation can be found in https://hackmd.io/@compiler-errors/r12zoixg1l#What-now
 
+
+In contrast to other keywords like `unsafe` or `async` (that give you raw pointer derefs or `await` calls respectively),
+the `const` keyword on functions or blocks restricts what you can do within those functions or blocks.
+Thus the compiler historically used `host` as the internal inverse representation of `const` and `~const` bounds.
+
 We generate a `ClauseKind::HostEffect` for every `const` or `~const` bound.
 To mirror how some effectful languages represent such effects,
-I'm going to use `<Type as Trait>::k#host` to allow setting whether the `host` effect is "const" (disabled) or "conditionally" (generic).
-This is not comparable with other associated bounds like type bounds or const bounds, as the values the associated host effect can
-take do neither have a usual hierarchy nor a concrete single value we can compare due to the following handling of those bounds:
+I'm going to use `<Type as Trait>::k#constness` to allow setting whether the `constness` effect is "const" (disabled) or "conditionally" (generic).
+This is not comparable with other associated bounds like type bounds or const bounds, as the values the associated constness effect can
+take do neither have a usual hierarchy of trait bounds or subtyping nor a concrete single value we can compare due to the following handling of those bounds:
 
-* There is no "always" (enabled), as that is just the lack of a host effect, meaning no `<Type as Trait>::k#host` bound at all.
+* There is no "disabled", as that is just the lack of a constness effect, meaning no `<Type as Trait>::k#constness` bound at all.
 * In contrast to other effect systems, we do not track the effect as a true generic parameter in the type system,
-  but instead just ignore all `Conditionally` bounds in host environments and treat them as `Const` in const environments.
+  but instead explicitly convert all requirements of `Conditionally` bounds in always-const environments to `Const`.
+  * in other words: calling a `const fn<T: ~const Trait>()` in a const item or const block requires proving that the type used for `T` is `const`, as `~const` can't refer to any conditionally const bound like it can within other const fns.
 
 While this could be modelled with generic parameters in the type system, that:
 
@@ -373,7 +408,7 @@ desugars to
 fn compile_time_default<T>() -> T
 where
     T: Default,
-    <T as Default>::k#host = Const,
+    <T as Default>::k#constness = Const,
 {
     const { T::default() }
 }
@@ -393,7 +428,7 @@ desugars to
 const fn default<T>() -> T
 where
     T: Default,
-    <T as Default>::k#host = Conditionally,
+    <T as Default>::k#constness = Conditionally,
 {
     T::default()
 }
@@ -441,6 +476,10 @@ previous rule "adding a new method is not a breaking change if it has a default 
 
 ### `~const Destruct` super trait
 
+The `Destruct` marker trait is used to name the previously unnameable drop glue that every type has.
+It has no methods, as drop glue is handled entirely by the compiler,
+but in theory drop glue could become something one can explicitly call without having to resort to extracting the drop glue function pointer from a `dyn Trait`.
+
 Traits that have `self` (by ownership) methods, will almost always drop the `self` in these methods' bodies unless they are simple wrappers that just forward to the generic parameters' bounds.
 
 The following never drops `T`, because it's the job of `<T as Add>` to handle dropping the values.
@@ -449,7 +488,7 @@ The following never drops `T`, because it's the job of `<T as Add>` to handle dr
 struct NewType<T>(T);
 
 impl<T: ~const Add<Output = T>> const Add for NewType<T> {
-    type Output = Self,
+    type Output = Self;
     fn add(self, other: Self) -> Self::Output {
         NewType(self.0 + other.0)
     }
@@ -599,6 +638,30 @@ Especially since we may later offer the ability to have const and nonconst metho
 the traits to be merged again. That's churn we'd like to avoid.
 
 Note that it may frequently be that such a trait should have been split even without constness being part of the picture.
+
+Similarly one may want an always-const method on a trait of otherwise non-const methods:
+
+```rust
+const trait InitFoo {
+    fn init(i: i32) -> Self;
+}
+trait Foo: const InitFoo {
+    const INIT: Self = Self::init(0);
+    fn do_stuff(&mut self);
+}
+```
+
+or even only offer `INIT` if `InitFoo` is `const`:
+
+```rust
+const trait InitFoo: Sized {
+    fn init(i: i32) -> Self;
+}
+trait Foo: InitFoo {
+    const INIT: Self = Self::init(0) where Self: const InitFoo;
+    fn do_stuff(&mut self);
+}
+```
 
 # Alternatives
 [alternatives]: #alternatives
@@ -809,14 +872,23 @@ We do not need to immediately allow using methods on generic parameters of const
 The following example could be made to work with just const traits and const trait impls.
 
 ```rust
+struct MyStruct(i32);
+
+impl const PartialEq for MyStruct {
+    fn eq(&self, other: &MyStruct) -> bool {
+        self.0 == other.0
+    }
+}
+
 const fn foo() {
-    let a = [1, 2, 3];
-    let b = [1, 2, 4];
+    let a = MyStruct(1);
+    let b = MyStruct(2);
     if a == b {}
 }
 ```
 
-Things like `Option::map` could not be made const without const trait bounds, as they need to actually call the generic `FnOnce` argument.
+Things like `Option::map` or `PartialEq` for arrays/tuples could not be made const without const trait bounds,
+as they need to actually call the generic `FnOnce` argument or nested `PartialEq` impls.
 
 
 # Future possibilities
@@ -843,10 +915,12 @@ just call all of these `const` and only separate the `~const Trait` bounds from 
 ## `const fn()` pointers
 
 Just like `const fn foo(x: impl ~const Trait) { x.method() }` and `const fn foo(x: &dyn ~const Trait) { x.method() }` we want to allow
-`const fn foo(f: const fn()) { f() }`.
+`const fn foo(f: ~const fn()) { f() }`.
 
-There is nothing design-wise blocking function pointers and calling them, they mainly require implementation work and extending the
-compiler's internal type system representation of a function signature to include constness.
+These require changing the type system, making the constness of a function pointer part of the type.
+This in turn implies that a `const fn()` function pointer, a `~const fn()` function pointer and a `fn()` function pointer could have
+different `TypeId`s, which is something that requires more design and consideration to clarify whether supporting downcasting with `Any`
+or just supporting `TypeId` equality checks detecting constness is desirable.
 
 ## `const` closures
 
