@@ -84,13 +84,30 @@ require a desktop OS, using `supported-targets` makes `cargo <command>` ignore p
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+The `supported-targets` field is an optional key that tells cargo which targets the package can be
+built for.
+```toml
+[package]
+# ...
+supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
+```
+The value of this field must respect the [`cfg` syntax](https://doc.rust-lang.org/reference/conditional-compilation.html),
+and does __not__ accept `cfg(test)`, `cfg(debug_assertions)`, nor `cfg(proc_macro)` as configuration options.
+A malformed `supported-targets` field will raise an error.
+
+If the `supported-targets` field is not present, then the package is assumed to support all targets. That is,
+the default value is `'cfg(all())'`.
+
 When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run, it checks that the
 selected target satisfies the `supported-targets` of the package being built. If it does not, the
 package is skipped or an error is raised, depending on how [`cargo` was invoked](ignoring-builds).
-However, `supported-targets` is _only_ checked for commands that take a `--target` option and does not affect other commands (e.g., `cargo fmt`).
+However, `supported-targets` is _only_ checked for commands that take a `--target` option and does
+not affect other commands (e.g., `cargo fmt`).
 
 As this field is limited to local development, `cargo package` / `cargo publish` will strip it from `Cargo.toml`.
 Including the field in the `.crate` file is left as a [future possibility](#future-possibilities) for now.
+
+This field is subject to [workspace inheritance](https://doc.rust-lang.org/cargo/reference/workspaces.html#the-package-table).
 
 ## Ignoring builds for unsupported targets
 [ignoring-builds]: #igonring-builds-for-unsupported-targets
