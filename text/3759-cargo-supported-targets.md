@@ -478,6 +478,9 @@ supported-targets = 'cfg(target_os = "linux")'
 
 [target.'cfg(target_os = "windows")'.dependencies]
 # ...
+```
+
+A lint could be added to highlight the fact that the `[target]` table is unused.
 
 ## `supported-targets` at the cargo-target level
 
