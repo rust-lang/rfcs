@@ -184,9 +184,9 @@ See also: [using a package vs. using a workspace](package-vs-workspace).
 [package-vs-workspace]:
 #https://blog.rust-lang.org/inside-rust/2024/02/13/this-development-cycle-in-cargo-1-77.html#when-to-use-packages-or-workspaces
 
-## Not using `cfg`
+## Field format 
 
-Using `cfg` complicates the implementation (and thus maintenance), and may require a substantial
+Using the `cfg` syntax complicates the implementation (and thus maintenance), and may require a substantial
 amount of calls to `rustc` to check target-`cfg` compatibility. Some alternatives are discussed here
 along with their drawbacks.
 
@@ -194,8 +194,9 @@ along with their drawbacks.
 
 The initial proposal allowed both the `cfg` syntax and whitelisting specific target-triples, to follow the behavior of [platform-specific
 dependency tables](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies).
-This was removed as it was deemed better to accept targets based on their _attributes_ than on their
+This was removed as it was deemed better to accept targets based on their _attributes_ rather than on their
 _name_. Indeed, `rustc` supported target-triples have changed names, and have been added or removed in the past.
+Target-triple names also do not encapsulate the semantics of the target.
 
 ### Using wildcards
 
