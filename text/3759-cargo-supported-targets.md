@@ -256,9 +256,26 @@ package.
 
 ## Ensuring proper use of dependencies
 
-By leveraging compilation errors, it would be possible to ensure that a package only uses
-dependencies that support the package's `supported-targets`. This would be done by comparing the
-`supported-targets` of the package with the `supported-targets` of the dependencies.
+Complicated errors caused by packages and dependencies that are incompatible with the selected
+target can be avoided by using the information in the `supported-targets` field. For example, a
+warning or an error could be raised if a package uses a dependency that does not accept the package's
+`supported-targets`:
+```toml
+[package]
+name = "bar"
+supported-targets = 'cfg(target_os = "windows")'
+```
+```toml
+[package]
+name = "foo"
+supported-targets = 'cfg(target_os = "linux")'
+
+[dependencies]
+bar = "0.1.0"
+```
+Here, a compilation error helps by showing which dependency is incompatible with the package's
+`supported-targets`, rather than a cryptic error message about missing parts of `std`, or runtime
+errors.
 
 Cargo's documentation should give clear guidance for when to use this field, and should not suggest
 using it by default. In particular, we should steer users to use this when they have good reason to
