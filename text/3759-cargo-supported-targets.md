@@ -96,7 +96,7 @@ and does __not__ accept `cfg(test)`, `cfg(debug_assertions)`, nor `cfg(proc_macr
 A malformed `supported-targets` field will raise an error.
 
 If the `supported-targets` field is not present, then the package is assumed to support all targets. That is,
-the default value is `'cfg(all())'`.
+the default value is `'cfg(all())'` (understood as `cfg(true)`).
 
 When a `cargo` build command (e.g. `check`, `build`, `run`, `clippy`) is run, it checks that the
 selected target satisfies the `supported-targets` of the package being built. If it does not, the
