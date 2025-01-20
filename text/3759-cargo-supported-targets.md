@@ -282,6 +282,15 @@ using it by default. In particular, we should steer users to use this when they 
 believe the crate will not compile or work as expected (e.g. because it uses target-specific APIs),
 and not use it merely for "I haven't personally tested this on other targets".
 
+Even then, crates may find themselves unnecessarily limiting their dependents and users. To alleviate this, 
+a flag like `--ignore-supported-targets` could be added to `cargo` to ignore the `supported-targets`
+of a package, and a field like
+```toml
+[dependencies]
+overrestrictive-dep = { version = "0.1.0", ignore-supported-targets = true }
+```
+could be added to ignore the `supported-targets` of a specific dependency.
+
 ### Compatibility of `[dependencies]`
 
 One could restrict the set of `supported-targets` of a package to be a subset of the
