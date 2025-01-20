@@ -25,6 +25,8 @@ supported-targets = 'cfg(any(target_os = "linux", target_os = "macos"))'
 
 # Motivation
 
+_For more background, see [rust-lang/cargo#6179](https://github.com/rust-lang/cargo/issues/6179)_
+
 Some packages rely on features or behavior that is not available on every platform `rustc` can target. Currently, there is no way to formally
 specify platform requirements of a package.
 
