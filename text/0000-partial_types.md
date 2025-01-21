@@ -15,6 +15,8 @@ Advantages: maximum type safety, maximum type control guarantee, no ambiguities,
 # Motivation
 [motivation]: #motivation
 
+A lot of rust code where I need a struct mutable borrowed and stored paralelly to other borrows of the same struct but different fields. And partial borrowing is a good solution for these problems and they are highly needed.
+
 Partial Types proposal is a generalization on "partial borrowing"-like proposals. Safe, Flexible controllable partial parameters for functions and partial consumption (including partial borrowing) are highly needed.
 
 Partial Types extension gives to Product Types (`PT = T1 and T2 and T3 and ..`), Structs and Tuples first of all, a good **mathematical guarantee** to borrow-checker that borrowing the whole variable with partial type and pretending to borrow just permitted fields is **fully safe** (without using `unsafe`).
@@ -39,7 +41,7 @@ This extension is not only fully backward-compatible, but is fully forward-compa
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Partiality of type (or partial type access) is written as `Path.{fld1, fld2, fld3}` after Path (Type name), where `fld1`, `fld2`, .. are only permitted to read (and maybe to write if variable is `mut`) fields of this type regardless of visibility, the rest of fields are forbidden to read and write and unset.
+Partiality of type (or partial type access) is written as `Path.{fld1, fld2, fld3}` after Path (Type name), where `fld1`, `fld2`, .. are only permitted to read (and to write if variable is `mut`) fields of this type regardless of visibility, the rest of fields are forbidden to read and write and unset.
 
 Inverse partiality of type (or partial type access) is written as `Path.{off fld1, fld2, fld3}` after Path (Type name), where `off` is a new keyword and `fld1`, `fld2`, .. are only forbidden to read fields of this type regardless of visibility, the rest of fields are permitted to read (and maybe write) and unset.
 
