@@ -299,7 +299,8 @@ One thing to keep in mind is that disabling the `supported-targets` check for a 
 removes the ability to prune the dependency tree of a package. That is because disabling the lint/error
 is equivalent to the package or the dependency supporting all targets. So, either the `--ignore-supported-targets`
 flag has the ability to change lockfile generation (this pattern is advised against), or dependencies are still
-pruned as if the package's `supported-targets` were respected, but the lint/error is ignored.
+pruned as if the package's `supported-targets` were respected, but the lint/error is ignored. The lockfile
+could also store the state which was used to generate it, but this currently is not implemented in `cargo`.
 
 ### Compatibility of `[dependencies]`
 
