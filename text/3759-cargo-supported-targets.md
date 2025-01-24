@@ -117,7 +117,7 @@ build-target, then `cargo` skips any package that does not support the selected 
 is specified using `--package` or if `cargo` is invoked on a single package, and the selected target
 does not satisfy the `supported-targets` of the package, then an error is raised. The intent is to mimic
 the behavior of `required-features` with package filtering based on targets. Hence, `required-targets`
-is proposed as an [alternative name](#Naming).
+is proposed as an [alternative name](#naming).
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -162,6 +162,7 @@ arch = ["x86_64"]
 ```
 
 ## Naming
+[naming]: #Naming
 
 Some other names for this field can be considered:
 
