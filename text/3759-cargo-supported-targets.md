@@ -280,25 +280,27 @@ using it by default. In particular, we should steer users to use this when they 
 believe the crate will not compile or work as expected (e.g. because it uses target-specific APIs),
 and not use it merely for "I haven't personally tested this on other targets".
 
-Even then, it will happen that crates unnecessarily limit their dependents and users, because of 
-over restrictive `supported-targets`. So, users must be able to remove the lint or error.
-To alleviate this, a flag like `--ignore-supported-targets` could be added to `cargo` to ignore the `supported-targets` of a
-package, and a field like
-```toml
-[dependencies]
-overrestrictive-dep = { version = "0.1.0", ignore-supported-targets = true }
-```
-could be added to ignore the `supported-targets` of a specific dependency. This functionality
-could otherwise be added to the [`[patch]` table](https://doc.rust-lang.org/cargo/reference/overriding-dependencies.html#the-patch-section),
-or be added as mutable metadata in package registries
-([related discussion](https://blog.rust-lang.org/inside-rust/2024/03/26/this-development-cycle-in-cargo-1.78.html#why-is-this-yanked)).
-
-One thing to keep in mind is that disabling the `supported-targets` check for a package or a dependency
-removes the ability to prune the dependency tree of a package. That is because disabling the lint/error
-is equivalent to the package or the dependency supporting all targets. So, either the `--ignore-supported-targets`
-flag has the ability to change lockfile generation (this pattern is advised against), or dependencies are still
-pruned as if the package's `supported-targets` were respected, but the lint/error is ignored. The lockfile
-could also store the state which was used to generate it, but this currently is not implemented in `cargo`.
+Even then, it will happen that crates unnecessarily limit their dependents and users because of 
+overly restrictive `supported-targets`.
+Some options for handling this include
+- Doing nothing, encouraging people to upstream patches
+- Encourage `[patch]`ing the dependency
+  - Requires managing a fork
+  - Every dependent of the package with a questionable `supported-targets` must do this
+- Encourage unidiff `[patch]`es
+  - Design has unresolved questions ([cargo#4648](https://github.com/rust-lang/cargo/issues/4648))
+  - Every dependent of the package with a questionable `supported-targets` must do this
+- A bespoke manifest override
+  - One-off feature that needs design work
+- A CLI override like `--ignore-rust-version`
+  - This precludes `Cargo.lock` trimming as the lockfile is meant to capture dependencies for every potential state a package may be run in
+  - This affects the entire dependency tree and not just the package with questionable `supported-targets`
+  - Every dependent of the package with a questionable `supported-targets` must do this
+- A lint like proposed for `package.rust-version`
+  - Blocked on [cargo#12235](https://github.com/rust-lang/cargo/issues/12235)
+  - See also CLI override
+- Allow a registry database to override `supported-targets`
+  - Blocked on a lot of design work ([related discussion](https://blog.rust-lang.org/inside-rust/2024/03/26/this-development-cycle-in-cargo-1.78.html#why-is-this-yanked))
 
 ### Compatibility of `[dependencies]`
 
