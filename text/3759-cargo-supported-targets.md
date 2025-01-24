@@ -226,7 +226,7 @@ added, the whole ecosystem would have to be updated.
 Users can already select which packages they want to select in a workspace with the flags
 `--package` and `--exclude`. Cargo features can also be used to restrict which cargo-target
 is built using the `required-features` field. However, `required-features` does not allow filtering
-packages at the workspace level, nor does it allow filtering out the library of a package.
+packages in a workspace, nor does it allow filtering out the library of a package.
 
 The `per-package-target` nightly feature defines the `force-target` field, which is supposed to
 force the package to build for a specific target-triple. This does not interact well when used in
