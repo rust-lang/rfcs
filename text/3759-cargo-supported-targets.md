@@ -115,7 +115,9 @@ This field is subject to [workspace inheritance](https://doc.rust-lang.org/cargo
 If cargo is invoked in a workspace or virtual workspace without specifying a package as
 build-target, then `cargo` skips any package that does not support the selected target. If a package
 is specified using `--package` or if `cargo` is invoked on a single package, and the selected target
-does not satisfy the `supported-targets` of the package, then an error is raised.
+does not satisfy the `supported-targets` of the package, then an error is raised. The intent is to mimic
+the behavior of `required-features` with package filtering based on targets. Hence, `required-targets`
+is proposed as an [alternative name](#Naming).
 
 # Drawbacks
 [drawbacks]: #drawbacks
