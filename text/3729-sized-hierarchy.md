@@ -15,9 +15,8 @@ whose size can never be known. Supporting the former is a prerequisite to stable
 scalable vector types and supporting the latter is a prerequisite to unblocking
 extern types.
 
-This RFC necessarily depends on the experimental feature
-[`const Trait`][goal_const_traits] and is written assuming familiarity with that
-feature.
+This RFC necessarily depends on the [const traits (RFC #3762)][rfc_const_traits]
+and is written assuming familiarity with that proposal.
 
 # Background
 [background]: #background
@@ -1826,7 +1825,6 @@ written here only to illustrate.
 [design_meeting]: https://hackmd.io/7r3_is6uTz-163fsOV8Vfg
 [design_notes_dynsized_constraints]: https://github.com/rust-lang/lang-team/blob/master/src/design_notes/dynsized_constraints.md
 [erfc_minimal_custom_dsts_via_extern_type]: https://internals.rust-lang.org/t/erfc-minimal-custom-dsts-via-extern-type-dynsized/16591?u=cad97
-[goal_const_traits]: https://rust-lang.github.io/rust-project-goals/2024h2/const-traits.html
 [issue_extern_types_align_size]: https://github.com/rust-lang/rust/issues/49708
 [issue_more_implicit_bounds]: https://github.com/rust-lang/rfcs/issues/2255
 [issue_regions_too_simplistic]: https://github.com/rust-lang/rust/issues/21974#issuecomment-331886186
@@ -1837,6 +1835,7 @@ written here only to illustrate.
 [pre_erfc_fix_dsts]: https://internals.rust-lang.org/t/pre-erfc-lets-fix-dsts/6663
 [prerfc_custom_dst]: https://internals.rust-lang.org/t/pre-rfc-custom-dsts/8777
 [rfc_aligned]: https://github.com/rust-lang/rfcs/pull/3319
+[rfc_const_traits]: https://github.com/rust-lang/rfcs/pull/3762
 [rfc_custom_dst]: https://github.com/rust-lang/rfcs/pull/1524
 [rfc_custom_dst_electric_boogaloo]: https://github.com/rust-lang/rfcs/pull/2594
 [rfc_dynsized_without_dynsized]: https://github.com/rust-lang/rfcs/pull/2310
