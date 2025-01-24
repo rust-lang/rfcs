@@ -120,8 +120,6 @@ does not satisfy the `supported-targets` of the package, then an error is raised
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Once implemented this does not yet solve the problem of dependency pruning in `Cargo.lock`, which
-  is a common use case for this feature.
 - This is the first step towards a target aware `cargo`, which may increase `cargo`'s complexity,
   and bring more feature requests along these lines.
 
