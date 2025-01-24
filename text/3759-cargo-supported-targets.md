@@ -8,7 +8,7 @@
 The word _target_ is extensively used in this document. The
 [glossary](https://doc.rust-lang.org/cargo/appendix/glossary.html#target) defines its many meanings.
 Here, _target_ refers to the "Target Architecture" for which a package is built. Otherwise, the
-terms "cargo-target" and "target-triple" are used in accordance with their definitions in the
+terms "cargo-target" and "target-tuple" are used in accordance with their definitions in the
 glossary.
 
 # Summary
@@ -133,7 +133,7 @@ is proposed as an [alternative name](#naming).
 The `cfg` string format was chosen because of its simplicity and expressiveness.
 Other formats can be considered:
 
-Using a list of `cfg` strings, and also accepting explicit target-triples:
+Using a list of `cfg` strings, and also accepting explicit target-tuples:
 ```toml
 supported-targets = [
     'cfg(target_family = "unix")',
@@ -191,32 +191,32 @@ Using the `cfg` syntax complicates the implementation (and thus maintenance), an
 amount of calls to `rustc` to check target-`cfg` compatibility. Some alternatives are discussed here
 along with their drawbacks.
 
-### Target-triples
+### Target-tuples
 
-The initial proposal allowed both the `cfg` syntax and whitelisting specific target-triples, to follow the behavior of [platform-specific
+The initial proposal allowed both the `cfg` syntax and whitelisting specific target-tuples, to follow the behavior of [platform-specific
 dependency tables](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#platform-specific-dependencies).
 This was removed as it was deemed better to accept targets based on their _attributes_ rather than on their
-_name_. Indeed, `rustc` supported target-triples have changed names, and have been added or removed in the past.
-Target-triple names also do not encapsulate the semantics of the target.
+_name_. Indeed, `rustc` supported target-tuples have changed names, and have been added or removed in the past.
+Target-tuple names also do not encapsulate the semantics of the target.
 
 ### Using wildcards
 
 Instead of using `cfg` specifications, one could use wildcards (e.g., `x86_64-*-linux-*`). This is
-much simpler to implement, target-triples are syntactically checked for a match instead of solving
+much simpler to implement, target-tuples are syntactically checked for a match instead of solving
 set relations for `cfg`. However, this is not as expressive as `cfg`, and does not correctly
-represent the semantics of target-triples. For example, supporting `target_family = "unix"` would
+represent the semantics of target-tuples. For example, supporting `target_family = "unix"` would
 require an annoyingly long list of wildcard patterns. Things like `target_pointer_width = "32"` are
 even harder to represent, and things like `target_feature = "avx"` are basically not representable.
 Also, this is new syntax not currently used by cargo.
 
-### Allowing only target-triples
+### Allowing only target-tuples
 
 This is an even stricter version of the above. Set relations between `supported-targets` lists are
 exact, and the resolver can determine if a platform-specific dependency can be pruned from the
 dependency tree more easily, hence why the original proposal chose this format. Being even simpler
 to implement, this alternative may not be expressive enough for the common use case. Packages rarely
-support specific target-triples, rather they support/require specific target attributes. What would
-likely happen is that packages would copy and paste the target-triple list matching their
+support specific target-tuples, rather they support/require specific target attributes. What would
+likely happen is that packages would copy and paste the target-tuple list matching their
 requirements from somewhere or someone else. Every time a new target with the same attribute is
 added, the whole ecosystem would have to be updated.
 
@@ -229,7 +229,7 @@ is built using the `required-features` field. However, `required-features` does 
 packages in a workspace, nor does it allow filtering out the library of a package.
 
 The `per-package-target` nightly feature defines the `force-target` field, which is supposed to
-force the package to build for a specific target-triple. This does not interact well when used in
+force the package to build for a specific target-tuple. This does not interact well when used in
 dependencies, as one would expect a dependency to be built for the same target as the package.
 `supported-targets` supersedes `force-target` because instead of enforcing a single target, it
 enforces a set of targets.
@@ -331,7 +331,7 @@ package's library and binaries, and so it must respect the `supported-targets` o
 What makes `[build-dependencies]` unique is that they are built for the host computer, and not the
 selected target. As such, they are not restrained by the `supported-targets` of the package. Hence,
 all dependencies are allowed in the `[build-dependencies]` table. However, a build error could be
-raised if one of the build dependencies does not support the _host_'s target-triple at build time.
+raised if one of the build dependencies does not support the _host-tuple_ at build time.
 
 A problem can arise if a crate's build script depends on a package that does not support `target_os
 = "windows"` for example. It would be possible to only allow dependencies supporting all targets in
@@ -480,7 +480,7 @@ Two `cfg` singletons are mutually exclusive under the following rules:
   different, and `<option>` has mutually exclusive elements.
 
 Some `cfg` options have mutually exclusive elements, while some do not. What is meant here is, for
-example, `target_arch = "x86_64"` and `target_arch = "arm"` are mutually exclusive (a target-triple
+example, `target_arch = "x86_64"` and `target_arch = "arm"` are mutually exclusive (a target-tuple
 cannot have both), while `target_feature = "avx"` and `target_feature = "rdrand"` are not.
 
 `cfg` options that have mutually exclusive elements:
