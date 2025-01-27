@@ -117,6 +117,11 @@ If a target doesn't support a key, then the `cfg` will always return `false`.
 
 Each target platform will set the minimum API versions it supports for each key.
 
+## The standard library
+
+Currently the standard library is pre-compiled meaning that only a single version of each API can be supported, which must be the minimum version.
+Third party crates can use a higher API level so long as it's compatible with the baseline API version.
+
 ## Versioning Schema
 
 Version strings can take on nearly any form and while there are some standard formats, such as semantic versioning or release dates, projects can change schemas or provide aliases for some or all of their releases.
