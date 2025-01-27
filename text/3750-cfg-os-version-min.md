@@ -157,8 +157,8 @@ A mechanism which tries to bridge cross-platform differences under one `min_targ
 For many platforms, the `target_os` name and the `os_version_min` name will be identical.
 Even platforms that have multiple possible `versions` relevant to the OS will still have one primary version.
 E.g. for `linux` the primary version would refer to the kernel with `libc` being a secondary OS library version.
-Therefore it would be possible to simplify the syntax for the primary target OS version.
-E.g.: `cfg(target_os("macos", min_version = "..."))` or by having `os_version_min("macos", "...")` imply `#[cfg(target_os = "macos")]`.
+Therefore it would make sense for the primary target OS version to be a property of `target_os`.
+E.g.: `cfg(target_os("macos", min_version = "..."))`.
 This means we'd need a more general syntax for `libc` and potentially other versioned libraries where the target OS is ambiguous.
 
 # Prior art
