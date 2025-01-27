@@ -110,9 +110,10 @@ if let Some(preadv) = preadv {
 [reference-level-explanation]: #reference-level-explanation
 
 The `os_version_min` predicate allows users to conditionally compile code based on the API version supported by the target platform using `cfg`.
-It requires a key and a version string. For example, `#[cfg("macos", "11.0")]` has the key `macos` and version string `11.0`.
+It requires a key and a version string.
 The key can be either a `target_os` string or else one of a set of target-defined strings.
-Version strings are always target defined (see [Versioning Schema](#versioning-schema)).
+Version strings are always target defined (see [Versioning Schema](#versioning-schema)) and will be compared against the target's supported version.
+For example, `#[cfg("macos", "11.0")]` has the key `macos` and the minimum version `11.0`, which will match any macos version greater than or equal to `11.0`.
 If a target doesn't support a key, then the `cfg` will always return `false`.
 
 Each target platform will set the minimum API versions it supports for each key.
