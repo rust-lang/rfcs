@@ -123,7 +123,7 @@ Each target platform will set the minimum API versions it supports for each key.
 
 Currently the standard library is pre-compiled meaning that only a single version of each API can be supported, which must be the minimum version.
 Third party crates can choose to use a higher API level so long as it's compatible with the baseline API version.
-However, there is currently no support (see [Future Possibilities][future-possibilities]).
+However, there is currently no support for setting a `os_version_min` version above the target's baseline (see [Future Possibilities][future-possibilities]).
 
 ## Versioning Schema
 [versioning-schema]: #versioning-schema
