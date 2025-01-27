@@ -107,12 +107,13 @@ if let Some(preadv) = preadv {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `os_version_min` predicate allows users to conditionally compile code based on the API version supported by the target platform.
-Each platform is responsible for defining a default key, a set of keys it supports, and functions that are able to compare the version strings they use.
-A set of comparison functions can be provided by `rustc` for common formats such as 2- and 3-part semantic versioning.
-When a platform detects a key it doesn’t support it will return `false` and emit a warning.
+The `os_version_min` predicate allows users to conditionally compile code based on the API version supported by the target platform using `cfg`.
+It requires a key and a version string. For example, `#[cfg("macos", "11.0")]` has the key `macos` and version string `11.0`.
+The key can be either a `target_os` string or else one of a set of target-defined strings.
+Version strings are always target defined (see [Versioning Schema](#versioning-schema)).
+If a target doesn't support a key, then the `cfg` will always return `false`.
 
-Each target platform will set the minimum API versions it supports.
+Each target platform will set the minimum API versions it supports for each key.
 
 ## Versioning Schema
 
@@ -121,7 +122,7 @@ Because of this diversity in version strings each platform will be responsible f
 
 ## Future Compatibility
 
-The functions for parsing and comparing version strings will need to be updated whenever a new API is added, when the version format changes, or when new aliases need to be added.
+The functions for parsing and comparing version strings may need to be updated whenever a new API is added, when the version format changes, or when new aliases need to be added.
 
 # Drawbacks
 [drawbacks]: #drawbacks
