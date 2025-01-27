@@ -12,13 +12,24 @@ E.g. `cfg!(os_version_min("windows", "6.1.7600"))` would match Windows version >
 # Motivation
 [motivation]: #motivation
 
-The target API version is the version number of the "API set" that a particular binary relies on in order to run properly.  An API set is the set of APIs that a host operating system makes available for use by binaries running on that platform.  Newer versions of a platform may either add or remove APIs from the API set.
+Operating systems and their libraries are continually advancing, adding and sometimes removing APIs or otherwise changing behaviour.
+Versioning of APIs is common so that developers can target the set of APIs they support.
+Crates including the standard library must account for various API version requirements for the crate to be able to run.
+Rust currently has no mechanism for crates to compile different code (or to gracefully fail to compile) depending on the minimum targeted API version.
+This leads to the following issues:
 
-Crates including the standard library must account for various API version requirements for the crate to be able to run.  Rust currently has no mechanism for crates to compile different code (or to gracefully fail to compile) depending on the minimum targeted API version. This leads to the following issues:
+* Relying on dynamic detection of API support has a runtime cost.
+The standard library often performs [dynamic API detection](https://github.com/rust-lang/rust/blob/f283d3f02cf3ed261a519afe05cde9e23d1d9278/library/std/src/sys/windows/compat.rs) falling back to older (and less ideal) APIs or forgoing entire features when a certain API is not available.
+For example, the [current `Mutex` impl](https://github.com/rust-lang/rust/blob/234099d1d12bef9d6e81a296222fbc272dc51d89/library/std/src/sys/windows/mutex.rs#L1-L20) has a Windows 7 fallback. Users who only ever intend to run their code on newer versions of Windows will still pay a runtime cost for this dynamic API detection.
+Providing a mechanism for specifying which minimum API version the user cares about, allows for statically specifying which APIs a binary can use.
+* Certain features cannot be dynamically detected and thus limit possible implementations.
+The libc crate must use [a raw syscalls on Android for `accept4`](https://github.com/rust-lang/libc/pull/1968), because this was only exposed in libc in version 21 of the Android API.
+Additionally libstd must dynamically load `signal` for all versions of Android despite it being required only for versions 19 and below.
+In the future there might be similar changes where there is no way to implement a solution for older versions.
+* Trying to compile code with an implicit dependency on a API version greater than what is supported by the target platform leads to linker errors.
+For example, the `x86_64-pc-windows-msvc` target's rustc implementation requires `SetThreadErrorMode` which was introduced in Windows 7.
+This means trying to build the compiler on older versions of Windows will fail with [a less than helpful linker error](https://github.com/rust-lang/rust/issues/35471).
 
-* Relying on dynamic detection of API support has a runtime cost. The standard library often performs [dynamic API detection](https://github.com/rust-lang/rust/blob/f283d3f02cf3ed261a519afe05cde9e23d1d9278/library/std/src/sys/windows/compat.rs) falling back to older (and less ideal) APIs or forgoing entire features when a certain API is not available. For example, the [current `Mutex` impl](https://github.com/rust-lang/rust/blob/234099d1d12bef9d6e81a296222fbc272dc51d89/library/std/src/sys/windows/mutex.rs#L1-L20) has a Windows XP fallback. Users who only ever intend to run their code on newer versions of Windows will still pay a runtime cost for this dynamic API detection. Providing a mechanism for specifying which minimum API version the user cares about, allows for statically specifying which APIs a binary can use.
-* Certain features cannot be dynamically detected and thus limit possible implementations. The libc crate must use [a raw syscalls on Android for `accept4`](https://github.com/rust-lang/libc/pull/1968), because this was only exposed in libc in version 21 of the Android API.  Additionally libstd must dynamically load `signal` for all versions of Android despite it being required only for versions 19 and below. In the future there might be similar changes where there is no way to implement a solution for older versions.
-* Trying to compile code with an implicit dependency on a API version greater than what is supported by the target platform leads to linker errors. For example, the `x86_64-pc-windows-msvc` target's rustc implementation requires `SetThreadErrorMode` which was introduced in Windows 7. This means trying to build the compiler on older versions of Windows will fail with [a less than helpful linker error](https://github.com/rust-lang/rust/issues/35471).
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -36,30 +47,62 @@ However, inferring the API version from the target name isn't ideal especially a
 
 Instead you use the `os_version_min` predicates to specify the minimum API levels of various parts of the operating system.  For example:
 
-* `os_version_min(“windows”, <string>)` would test the [minimum build version](https://gaijin.at/en/infos/windows-version-numbers) of Windows.
-* `os_version_min(“libc”, <string>)` would test the version of libc.
-* `os_version_min(“kernel”, <string>)` would test the version of the kernel.
+* `os_version_min("windows", <string>)` would test the [minimum build version](https://gaijin.at/en/infos/windows-version-numbers) of Windows.
+* `os_version_min("libc", <string>)` would test the version of libc.
+* `os_version_min("kernel", <string>)` would test the version of the kernel.
 
-Let’s use `os_version_min(“windows”, …)` as an example.  It should be clear how this example would be extended to the other `cfg` predicates. The predicate allows you to conditionally compile code based on the set minimum API version. For example an implementation of mutex locking on Windows might look like this:
+Let’s use `os_version_min("windows", …)` for a simple example.
 
 ```rust
-pub unsafe fn unlock(&self) {
-    *self.held.get() = false;
-    if cfg!(os_version_min(“windows”, "6.0.6000") { // API version greater than Vista
-        c::ReleaseSRWLockExclusive(raw(self)) // Use the optimized ReleaseSRWLockExclusive routine
+pub fn random_u64() -> u64 {
+    let mut rand = 0_u64.to_ne_bytes();
+    if cfg!(os_version_min("windows", "10.0.10240")) {
+        // For an API version greater or equal to Windows 10, we use `ProcessPrng`
+        unsafe { ProcessPrng(rand.as_mut_ptr(), rand.len()) };
     } else {
-        (*self.remutex()).unlock()  // Fall back to an alternative that works on older Windows versions
+        // Otherwise we fallback to `RtlGenRandom`
+        unsafe { RtlGenRandom(rand.as_mut_ptr().cast(), rand.len() as u32) };
     }
+    u64::from_ne_bytes(rand)
 }
 ```
 
-For targets where `os_version_min(“windows”, …)` does not make sense (i.e., non-Windows targets), the `cfg` predicate will return `false` and emit a warning saying that the particular `cfg` predicate is not supported on that target. Therefore, it's important to pair `os_version_min(“windows”, …)` with a `cfg(windows)` using the existing mechanisms for combining `cfg` predicates.
+A more involved example would be to attempt to dynamically load the symbol.
+On macOS we use weak linking to do this:
 
-The above example works exactly the same way with the other platform API `cfg` predicates just with different values and different target support.
+```rust
+// Always available under these conditions.
+#[any(
+    os_version_min("macos", "11.0"),
+    os_version_min("ios", "14.0"),
+    os_version_min("tvos", "14.0"),
+    os_version_min("watchos", "7.0"),
+    os_version_min("visionos", "1.0")
+)]
+let preadv = {
+    extern "C" {
+        fn preadv(libc::c_int, *const libc::iovec, libc::c_int, off64_t) -> isize;
+    }
+    Some(preadv)
+};
 
-These predicates do not assume any semantic versioning information. The specified predicates are simply listed in order. The only semantics that are assumed is that code compiled with the `cfg` predicates works for all versions greater than or equal to that version.
+// Otherwise `preadv` needs to be weakly linked.
+// We do that using a `weak!` macro, defined elsewhere.
+#[cfg(not(any(
+    os_version_min("macos", "11.0"),
+    os_version_min("ios", "14.0"),
+    os_version_min("tvos", "14.0"),
+    os_version_min("watchos", "7.0"),
+    os_version_min("visionos", "1.0")
+)))]
+weak!(fn preadv(libc::c_int, *const libc::iovec, libc::c_int, off64_t) -> isize);
 
-**Note:** Here it would be important to link to documentation showing the `cfg` predicates and the different version strings that are supported.
+if let Some(preadv) = preadv {
+    preadv(...) // Use preadv, it's available
+} else {
+    // ... fallback impl
+}
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -111,7 +154,7 @@ For example, on Windows `WINVER` can be used:
 #endif
 ```
 
-This RFC is largely a version of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3379) more narrowly scoped to just the most minimal lang changes.
+This RFC is a continuation of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3379) more narrowly scoped to just `os_version_min`.
 That RFC was in turn an updated version of [this RFC draft](https://github.com/rust-lang/rfcs/pull/3036), with the changes reflecting conversations from the draft review process and [further Zulip discussion](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/CFG.20OS.20Redux.20.28migrated.29/near/294738760).
 
 # Unresolved questions
