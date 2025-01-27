@@ -120,6 +120,12 @@ Each target platform will set the minimum API versions it supports for each key.
 Version strings can take on nearly any form and while there are some standard formats, such as semantic versioning or release dates, projects can change schemas or provide aliases for some or all of their releases.
 Because of this diversity in version strings each platform will be responsible for defining a type implementing `FromStr`, `Display`, and `Ord` for each key they support (or using one of the pre-defined types).
 
+## Linting
+
+By default `os_version_min` will be linted by `check_cfg` in a similar way to `target_os`.
+That is, all valid values for `target_os` will be accepted as valid keys for `os_version_min` on all platforms.
+Additionally the list of additional keys supported by the target will be consulted, which will then be allowed on a per-target basis.
+
 ## Future Compatibility
 
 The functions for parsing and comparing version strings may need to be updated whenever a new API is added, when the version format changes, or when new aliases need to be added.
