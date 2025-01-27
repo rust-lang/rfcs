@@ -29,7 +29,9 @@ In the future there might be similar changes where there is no way to implement 
 * Trying to compile code with an implicit dependency on a API version greater than what is supported by the target platform leads to linker errors.
 For example, the `x86_64-pc-windows-msvc` target's rustc implementation requires `SetThreadErrorMode` which was introduced in Windows 7.
 This means trying to build the compiler on older versions of Windows will fail with [a less than helpful linker error](https://github.com/rust-lang/rust/issues/35471).
-
+* Bumping the minimum supported version of a platform in Rust is a large endeavour.
+By adding this feature, we enable [rustc to more gradually raise the supported version](https://github.com/rust-lang/rust/pull/104385#issuecomment-1453520239) or to have more "levels" of version support.
+This would allow for having the "default" supported target be higher than the "minimum" supported target.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
