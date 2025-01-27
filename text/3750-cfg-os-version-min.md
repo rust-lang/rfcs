@@ -124,7 +124,7 @@ Because of this diversity in version strings each platform will be responsible f
 
 By default `os_version_min` will be linted by `check_cfg` in a similar way to `target_os`.
 That is, all valid values for `target_os` will be accepted as valid keys for `os_version_min` on all platforms.
-Additionally the list of additional keys supported by the target will be consulted, which will then be allowed on a per-target basis.
+The list of additional keys supported by the target will be consulted, which will then be allowed on a per-target basis.
 
 ## Future Compatibility
 
