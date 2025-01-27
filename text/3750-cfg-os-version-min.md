@@ -112,30 +112,34 @@ if let Some(preadv) = preadv {
 The `os_version_min` predicate allows users to conditionally compile code based on the API version supported by the target platform using `cfg`.
 It requires a key and a version string.
 The key can be either a `target_os` string or else one of a set of target-defined strings.
-Version strings are always target defined (see [Versioning Schema](#versioning-schema)) and will be compared against the target's supported version.
+Version strings are always target defined (see [Versioning Schema][versioning-schema]) and will be compared against the target's supported version.
 For example, `#[cfg("macos", "11.0")]` has the key `macos` and the minimum version `11.0`, which will match any macos version greater than or equal to `11.0`.
 If a target doesn't support a key, then the `cfg` will always return `false`.
 
 Each target platform will set the minimum API versions it supports for each key.
 
 ## The standard library
+[the-standard-library]: #the-standard-library
 
 Currently the standard library is pre-compiled meaning that only a single version of each API can be supported, which must be the minimum version.
 Third party crates can choose to use a higher API level so long as it's compatible with the baseline API version.
 However, there is currently no support (see [Future Possibilities][future-possibilities]).
 
 ## Versioning Schema
+[versioning-schema]: #versioning-schema
 
 Version strings can take on nearly any form and while there are some standard formats, such as semantic versioning or release dates, projects can change schemas or provide aliases for some or all of their releases.
 Because of this diversity in version strings each platform will be responsible for defining a type implementing `FromStr`, `Display`, and `Ord` for each key they support (or using one of the pre-defined types).
 
 ## Linting
+[linting]: #linting
 
 By default `os_version_min` will be linted by `check_cfg` in a similar way to `target_os`.
 That is, all valid values for `target_os` will be accepted as valid keys for `os_version_min` on all platforms.
 The list of additional keys supported by the target will be consulted, which will then be allowed on a per-target basis.
 
 ## Future Compatibility
+[future-compatibility]: #future-compatibility
 
 The functions for parsing and comparing version strings may need to be updated whenever a new API is added, when the version format changes, or when new aliases need to be added.
 
