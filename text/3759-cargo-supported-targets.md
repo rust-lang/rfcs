@@ -250,7 +250,8 @@ responsible for ensuring that the dependencies are compatible with the target.
 Some higher-level languages and build tools have the ability to specify which platforms are compatible.
 - Python has [platform compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-compatibility-tags).
     The reference explains how these are [used](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use)
-    by installers to determine which build of a package to install.
+    by installers to determine which build of a package to install. PyPI also has [classifiers](https://pypi.org/classifiers/)
+    which allows to add metadata (including which platforms are allowed) to a package.
 - `npm` allows specifying which [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and
     [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) a package supports. These generate an
     error when installing a package that does not support the platform used.
