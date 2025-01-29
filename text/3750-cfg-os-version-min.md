@@ -182,7 +182,7 @@ That RFC was in turn an updated version of [this RFC draft](https://github.com/r
 [unresolved-questions]: #unresolved-questions
 
 Custom targets usually specify their configurations in JSON files.
-It is unclear how the target maintainers would add functions, types, and version compatibility information to these files.
+It is unclear how the target maintainers would add version comparison information to these files.
 
 What exactly should the syntax be?
 Should we draw a distinction between cases where the `os_version_min` directly implies a specific `target_os` and cases where it doesn't (see alternatives)?
