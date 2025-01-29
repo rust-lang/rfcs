@@ -251,14 +251,14 @@ Some higher-level languages and build tools have the ability to specify which pl
 - Python has [platform compatibility tags](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#platform-compatibility-tags).
     The reference explains how these are [used](https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/#use)
     by installers to determine which build of a package to install.
-- `npm` allows specifying which [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and which
+- `npm` allows specifying which [`os`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#os) and
     [`cpu`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#cpu) a package supports. These generate an
     error when installing a package that does not support the platform used.
 - Swift has [`package.platforms`](https://developer.apple.com/documentation/packagedescription/package/platforms), which
     allows specifying which platforms and versions a package support (mostly for apple products e.g., `macOS`, `iOS`, `watchOS`, `tvOS`).
 - [Buck](https://buck2.build/docs/rule_authors/configurations/#target-platform-compatibility)
     and [Bazel](https://bazel.build/reference/be/common-definitions#common.target_compatible_with)
-    both have `target_compatible_with`.
+    both provide `target_compatible_with`.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
