@@ -259,6 +259,8 @@ Some higher-level languages and build tools have the ability to specify which pl
 - [Buck](https://buck2.build/docs/rule_authors/configurations/#target-platform-compatibility)
     and [Bazel](https://bazel.build/reference/be/common-definitions#common.target_compatible_with)
     both provide `target_compatible_with`.
+Some accept a string or list of strings representing the platforms, while `Buck` & `Bazel` seem to accept a
+form comparable to `cfg` in Rust.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
