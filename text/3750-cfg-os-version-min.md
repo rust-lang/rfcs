@@ -189,5 +189,5 @@ Should we draw a distinction between cases where the `os_version_min` directly i
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-The compiler could allow setting a higher minimum OS version than the target's default.
-With the `build-std` feature, each target could optionally support lowering the API version below the default.
+* The compiler could allow setting a higher minimum OS version than the target's default.
+* With the `build-std` feature, each target could optionally support lowering the API version below the default.
