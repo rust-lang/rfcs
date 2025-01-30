@@ -118,7 +118,7 @@ The full slate of project goals are as follows. These goals all have identified 
 | [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html)                                                    | [Oliver Scherer][]         | [compiler], [lang], [spec], [types]                 |
 | [Promoting Parallel Front End](https://rust-lang.github.io/rust-project-goals/2025h1/parallel-front-end.html)                                                       | [Sparrow Li][]      | [compiler]                                          |
 | [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-plumbing.html)                                       | ![Help Wanted][] | [cargo]                                             |
-| [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html)                                       | [Joel Marcey][]      | [release], [spec]                                   |
+| [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html)                                       | [Joel Marcey][]      | [bootstrap], [spec]                                 |
 | [Publish first version of StableMIR on crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/stable-mir.html)                                            | [Celina G. Val][]        | [compiler], [project-stable-mir]                    |
 | [Research: How to achieve safety when linking separately compiled code](https://rust-lang.github.io/rust-project-goals/2025h1/safe-linking.html)                    | [Mara Bos][]         | [compiler], [lang]                                  |
 | [Run the 2025H1 project goal program](https://rust-lang.github.io/rust-project-goals/2025h1/stabilize-project-goal-program.html)                                    | [Niko Matsakis][]    | [leadership-council]                                |
@@ -143,11 +143,12 @@ The "owner" in the column is the person expecting to do the design/implementatio
 
 ### bootstrap team
 | Goal                                                                                                                              | Point of contact | Notes                                                                                          |
-| ---                                                                                                                               | ---       | ---                                                                                            |
-| **Discussion and moral support**                                                                                                  |           |                                                                                                |
-| ↳ [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks)   | [Jieyou Xu][] | including consultations for desired test behaviors and testing infra consumers                 |
-| **Standard reviews**                                                                                                              |           |                                                                                                |
-| ↳ [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks)   | [Jieyou Xu][] | Probably mostly [bootstrap] or whoever is more interested in reviewing [`compiletest`] changes |
+| ---                                                                                                                               | ---         | ---                                                                                            |
+| **Discussion and moral support**                                                                                                  |             |                                                                                                |
+| ↳ [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks)   | [Jieyou Xu][]   | including consultations for desired test behaviors and testing infra consumers                 |
+| **Standard reviews**                                                                                                              |             |                                                                                                |
+| ↳ [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html#ownership-and-team-asks)                                   | [Joel Marcey][] | For any tooling integration                                                                    |
+| ↳ [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks)   | [Jieyou Xu][]   | Probably mostly [bootstrap] or whoever is more interested in reviewing [`compiletest`] changes |
 
 ### cargo team
 | Goal                                                                                                                           | Point of contact | Notes |
@@ -353,14 +354,6 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | **Standard reviews**                                                                         |           |  |
 | ↳ [Publish first version of StableMIR on crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/stable-mir.html#ownership-and-team-asks)   | [Celina G. Val][] |  |
 
-### release team
-| Goal                                                                                              | Point of contact | Notes                       |
-| ---                                                                                               | ---         | ---                         |
-| **Discussion and moral support**                                                                  |             |                             |
-| ↳ [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html#ownership-and-team-asks)   | [Joel Marcey][] |                             |
-| **Standard reviews**                                                                              |             |                             |
-| ↳ [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html#ownership-and-team-asks)   | [Joel Marcey][] | For the tooling integration |
-
 ### rustdoc team
 | Goal                                                                                                                              | Point of contact | Notes                                                                          |
 | ---                                                                                                                               | ---           | ---                                                                            |
@@ -382,8 +375,8 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | ↳ [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html#ownership-and-team-asks)     | [Joel Marcey][]   |               |
 | **Finalize specification text**                                                                     |               |               |
 | ↳ [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html#ownership-and-team-asks)                  | [Oliver Scherer][]      | [TC][]  |
-| ↳ [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                          | [Tyler Mandry][]      | nikomatsakis  |
-| ↳ [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html#ownership-and-team-asks)      | [Jacob Pratt][]      | [Niko Matsakis][] |
+| ↳ [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                          | [Tyler Mandry][]      | [Niko Matsakis][] |
+| ↳ [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html#ownership-and-team-asks)      | [Jacob Pratt][]      | [Joel Marcey][]   |
 | ↳ [`macro_rules!` attributes](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks)                        | [Josh Triplett][] | [Mara Bos][]      |
 | ↳ [`macro_rules!` derives](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks)                           | [Josh Triplett][] | [Mara Bos][]      |
 | ↳ [Design and iteration for macro fragment fields](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks)   | [Josh Triplett][] | [Mara Bos][]      |
@@ -408,11 +401,15 @@ The "owner" in the column is the person expecting to do the design/implementatio
 | **FCP decision(s)**                                                                                                |               |                                                                             |
 | ↳ [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2025h1/next-solver.html#ownership-and-team-asks)                                           | [lcnr][]         | for necessary refactorings                                                  |
 | **RFC decision**                                                                                                   |               |                                                                             |
+| ↳ [Unsafe binders](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                                               | [Tyler Mandry][]      | Stretch goal                                                                |
 | ↳ [Implementable trait aliases](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                                  | [Tyler Mandry][]      |                                                                             |
 | ↳ [Land nightly experiment for SVE types](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks)                                  | [David Wood][]    |                                                                             |
 | ↳ [Extending type system to support scalable vectors](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks)                      | [David Wood][]    |                                                                             |
 | **RFC secondary review**                                                                                           |               |                                                                             |
 | ↳ [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html#ownership-and-team-asks)                                 | [Oliver Scherer][]      | Types team needs to validate the approach                                   |
+| ↳ [Pin reborrowing](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                                              | [Tyler Mandry][]      |                                                                             |
+| **Stabilization decision**                                                                                         |               |                                                                             |
+| ↳ [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                                         | [Tyler Mandry][]      |                                                                             |
 | **Standard reviews**                                                                                               |               |                                                                             |
 | ↳ [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                                         | [Tyler Mandry][]      |                                                                             |
 | ↳ [Implementable trait aliases](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks)                                                  | [Tyler Mandry][]      |                                                                             |
@@ -549,6 +546,7 @@ Definitions for terms used above:
 [risc-v]: https://www.rust-lang.org/governance/teams
 [rust-analyzer]: https://github.com/rust-lang/rust-analyzer
 [rust-analyzer-contributors]: https://github.com/rust-lang/rust-analyzer
+[rust-by-example]: https://github.com/rust-lang/rust-by-example
 [rust-for-linux]: https://www.rust-lang.org/governance/teams
 [rustconf-emails]: https://www.rust-lang.org/governance/teams
 [rustdoc]: https://github.com/rust-lang/rust
@@ -566,6 +564,7 @@ Definitions for terms used above:
 [twir]: https://www.rust-lang.org/governance/teams
 [twir-reviewers]: https://www.rust-lang.org/governance/teams
 [types]: https://github.com/rust-lang/types-team
+[types-fcp]: https://www.rust-lang.org/governance/teams
 [vim]: https://www.rust-lang.org/governance/teams
 [wasi]: https://www.rust-lang.org/governance/teams
 [wasm]: https://www.rust-lang.org/governance/teams
@@ -607,7 +606,6 @@ Definitions for terms used above:
 [wg-polonius]: https://rust-lang.github.io/compiler-team/working-groups/polonius/
 [wg-polymorphization]: https://rust-lang.github.io/compiler-team/working-groups/polymorphization/
 [wg-prioritization]: https://rust-lang.github.io/compiler-team/working-groups/prioritization/
-[wg-rust-by-example]: https://github.com/rust-lang/rust-by-example
 [wg-rustc-dev-guide]: https://rust-lang.github.io/compiler-team/working-groups/rustc-dev-guide/
 [wg-rustc-reading-club]: https://rust-lang.github.io/rustc-reading-club/
 [wg-safe-transmute]: https://github.com/rust-lang/project-safe-transmute
