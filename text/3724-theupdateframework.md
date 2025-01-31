@@ -91,7 +91,7 @@ These roles shall be a single-member role with a key utilized for automation.
 
 ### `rust-lang/tuf-crates`
 
-The actual target for tuf-crates shall be the crates index and not the artifacts themselves. This means that the TUF repository for crates.io is performed on much smaller payloads, which still provides us with cryptographic security due to the fact the index contains SHA-256 hashes of the crate file artifacts.  Given the index already consists of SHA-512 signatures of all files, we are then utilizing TUF to validate the index, which in turn is utilized to validate the actual downloaded artifacts. This allows us to perform validation on index updates and not on final downloads, also reducing the overhead of performing multiple hashing and validation procedures on the larger crate artifact files.
+The actual target for tuf-crates shall be the crates index and not the artifacts themselves. This means that the TUF repository for crates.io is performed on much smaller payloads, which still provides us with cryptographic security due to the fact the index contains SHA-256 hashes of the crate file artifacts.  Given the index already consists of SHA-256 signatures of all files, we are then utilizing TUF to validate the index, which in turn is utilized to validate the actual downloaded artifacts. This allows us to perform validation on index updates and not on final downloads, also reducing the overhead of performing multiple hashing and validation procedures on the larger crate artifact files.
 
 #### Roles
 
