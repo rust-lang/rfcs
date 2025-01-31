@@ -2,6 +2,8 @@
 
 [Rust RFCs]: #rust-rfcs
 
+This book is a collection of all RFCs that have been accepted.
+
 The "RFC" (request for comments) process is intended to provide a consistent
 and controlled path for changes to Rust (such as new features) so that all
 stakeholders can be confident about the direction of the project.
