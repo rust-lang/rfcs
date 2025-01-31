@@ -22,6 +22,7 @@ These shall provide:
 - Rust Nightly Releases
 - Rustup Releases
 - Crates.io root role, to create a chain of trust
+
 `rust-lang/tuf-crates`
 - Crates.io crate index
 
