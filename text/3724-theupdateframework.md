@@ -52,7 +52,8 @@ At the simplest level, TUF is a collection of signing key quorums which verify i
 #### Terminology
 
 - `tuf`: The Update Framework and its specification
-- `targets`: The actual content and files distributed and to be signed
+- `artifacts`: The actual content and files distributed and to be signed
+- `targets role`: The role within TUF which can be N keys in a quorum or singular for signing artifacts.
 - `repository`: One of the two TUF repositories which is where metadata for artifacts exist. This metadata is the signatures of files, snapshots, and TUF keying information.
 - `root`: The top-level set of signers/keys which are used to validation the repository
 - `delegate`: Another set of signers/keys which are used for performing specified authority within the repository
@@ -75,17 +76,13 @@ The root role of the tuf-root shall be a TUF role consisting of 9 members with a
 
 The repository shall have a top-level Targets role, as specified by TUF, which then delegates authority to the following delegate target roles:
 
-##### Release (Stable/Beta) Role
+##### Release (Stable/Beta/Rustup) Role
 
-The Release role shall have the authority to only sign stable rust releases. We propose this role also consist of a quorum model, consisting of all members of the release team. This role should have a 3 member threshold, and always consist of all members of the release team. At the time a new stable release is being compiled and shipped, a signing quorum must be conducted for this release.
+The Release role shall have the authority to only sign official releases. We propose this role also consist of a quorum model, consisting of all members of the release team. This role should have a 3 member threshold, and always consist of all members of the release team. The release team shall be responsible for the creation, management and administration of delegate keys utilized for its various releases in which it has authority (stable, beta, rustup). We recommend that any delegate automation keys be stored in a secure keystore and have a regular update and rotation schedule which shall require a quorum of the release  team to conduct; a timeframe of 3-6 month rotations is recommended.
 
 ###### Nightly Role
 
-Nightly releases shall be conducted by a single signing key, trusted for only signing nightly releases of the Rust Compiler. This will allow for nightly releases to remain automated and not require the active participation of any rust members.
-
-###### Rustup Role
-
-This shall be a quorum based role, consisting of all members of the Rustup & Infrastructure team members. We recommend having at least a 3-member threshold. We have decided to have this roles quorum be broader to allow for emergency updates and releases of Rustup; we may want to increase the threshold when these teams have more members.
+Nightly releases shall be conducted by a single signing key, trusted for only signing nightly releases of the Rust Compiler. This will allow for nightly releases to remain automated and not require the active participation of any rust members. This key shall remain separate than the official signing key.
 
 ###### Snapshots & Timestamps Role
 
@@ -117,6 +114,8 @@ Online signing needs shall be implemented with AWS KMS.
 
 All members of all signing quorums within the Rust Project will require hardware keys, the expenses for which will be covered by the Rust Foundation.
 
+
+
 ## Root Quorum Model
 
 The root key shall follow a `5-of-9` authentication model for all operations. We consider this a reasonable middle ground of quorum to prevent malicious activity, while allowing for rapid response to an event requiring a quorum. These events are iterated below in [When the Quorum will be needed][when-the-quorum-will-be-needed].
@@ -145,13 +144,13 @@ These individuals should be available in the event quorum is needed for root key
 [reference-level-explanation]: #reference-level-explanation
 
 ## Repository Workflows
-[tuf-on-ci](https://github.com/theupdateframework/tuf-on-ci) shall be used for workflows on each repository.
+[tuf-on-ci](https://github.com/theupdateframework/tuf-on-ci) shall be used for workflows on each repository. This is a tried and tested implementation currently in use by GitHub to manage their attestations at scale.
 
 tuf-on-ci is a set of CI tools which are integrated with GitHub Actions for providing TUF quorum and hardware key support for managing TUF repositories via pull requests on GitHub. This is a ready made and production ready suite of CI that is used by the sigstore root signing for managing TUF quorums.
 
 ### (tuf-root) Rustup Release
 
-- A signing event will be triggered via pull request in the `tuf-root` repository, which is assigned to the `Rustup Role` quorum, who must sign the request.
+- A signing event will be triggered via pull request in the `tuf-root` repository, which is assigned to the `Release Role` quorum, who must sign the request.
 
 ### (tuf-root) Stable/Beta Release
 
@@ -168,15 +167,7 @@ tuf-on-ci is a set of CI tools which are integrated with GitHub Actions for prov
 ### (tuf-root + tuf-crates) Crates.io Membership Change
 
 - The crates.io team will update the root role in the `tuf-crates` repository, triggering a signing event that the existing crates.io team must sign via Pull Request.
-- An update to the tuf-crates-root.json file will occur in the `tuf-root` repository, which shall trigger a new singing event Pull Request, which the root quorum must perform.
-
-## (cargo-tuf-lib) Standard TUF Implementation
-
-We propose creating a new crate, `cargo-tuf-lib`, which shall be used by both Cargo and Rustup for doing TUF synchronization and update procedures. This library shall be a shim wrapper around the `rust-tuf` crate (https://github.com/rustfoundation/rust-tuf), providing a simplified and shared interface for doing synchronization and verification of the TUF repositories and their files.
-
-The API surface of this crate is to be determined upon implementation in Cargo and Rustup. However, because both tools will need to perform synchronization and validation against the tuf-root repository, they shall used this shared interface to guarantee compatibility.
-
-This API will include operations to sync the TUF repositories efficiently, and to perform a verified download of an object.
+- An update to the tuf-crates-root.json file will occur in the `tuf-root` repository, which shall trigger a new signing event Pull Request, which the root quorum must perform.
 
 ## TAP-16 Implementation
 
@@ -188,23 +179,23 @@ Creation of a new `~/.cargo/tuf` directory. (If Cargo stores its registry inform
 
 - `~/.cargo/tuf` The top-level directory of local copies of TUF repositories
 - `~/.cargo/tuf/root` a copy of the `tuf-root` repository locally synchronized
-- `~/.cargo/tuf/crates` a copy of the `tuf-crates` repository locally synchronized
+- `~/.cargo/tuf/crates/<repository>` a copy of the `tuf-crates` repository locally synchronized on a per-repository basis. (for example, `~/.cargo/tuf/crates/crates.io/`)
 
 ### Controlling enablement of TUF
 
 This RFC does not specify how to handle non-`crates.io` repositories. Cargo can choose to enable TUF for third-party repositories in the future, or may default to only using TUF for crates.io unless otherwise configured. Cargo might choose to use an environment variable (e.g. `CARGO_TUF_DISABLE`) to disable all usage of TUF on third-party repositories.
 
 ## Cargo changes
-- Addition of `cargo-tuf-lib` as a dependency
-- `cargo-tuf-lib::sync` attempted prior to an index update
-- `cargo-tuf-lib::verify_snapshot` called on an index update on the entire index
+- Feature addition which shall be used for doing TUF synchronization and update procedures. This code shall use the `rust-tuf` crate (https://github.com/rustfoundation/rust-tuf).
+- Utilize an implementation of `TAP-16` which will provide the following functions (these names being placeholders to show functionality):
+- `crate_tuf_update(repository, crate, version)` - Shall download the updated signing information for a given crate to the appropriate tuf crates folder.
+- `crate_tuf_verify(repository, crate, version)` - Shall verify the signing information for a given crate. This function must be performed separately from update on every use due the nature of signatures timing out and requiring an update (and a fresh call to `crate_tuf_update`)
 
-## Rustup Changes
-
-- Addition of `cargo-tuf-lib` as a dependency
-- `cargo-tuf-lib::sync` attempted on execution
-- `cargo-tuf-lib::verify_snapshot` called on an index update on the entire index
-- `cargo-tuf-lib::verify_file` called on the download of any release files (stable and nightly), or self-updates
+## Rustup changes
+- Feature addition which shall be used for doing TUF synchronization and update procedures. This code shall use the `rust-tuf` crate (https://github.com/rustfoundation/rust-tuf).
+- Utilize the default `rust-tuf` and TUF behavior for synchronization and performing snapshot validation for releases.
+- `release_sync()` - Shall download the updated signing information for the rust releases repository and verify the snapshot.
+- `release_verify(file)` - Shall verify the signing information for a given release file.
 
 ## Crates.io changes
 
@@ -225,10 +216,10 @@ The infrastructure team.
 This proposal has a reliance on GitHub and GitHub actions, due to the usage of `tuf-on-ci` and implementing a PR-based workflow for signing events. We consider this an acceptable decision given that the majority of the projects workflows exist here already; and under duress, the actions and process can be migrated to other providers who support similar CI workflows.
 
 ## Additional Synchronization & Storage Overhead
-We will need to synchronization two more sources of data locally on systems with Rustup and Cargo - the TUF repositories. This has a storage and network cost for users, although it is considered minimal. We point to other repositories who have implemented this solution (PyPI, NPM) as examples that the overhead is acceptable at much larger scales.
+We will need to synchronization two more sources of data locally on systems with Rustup and Cargo - the TUF repositories. This has a storage and network cost for users, although it is considered minimal. We point to other repositories who have implemented this solution (PyPi, NPM) as examples that the overhead is acceptable at much larger scales.
 
 ## Legacy PKI Understanding
-People's understanding of PKI often starts and ends with single root CA certificates, and the idea of a quorum model may seem excessively innovative rather than being a safe and well-established choice. We will need to carefully communicate that quorum models based on thresholds of geographically distributed individuals have a well-established history for a variety of purposes (and that TUF is an industry-leading implementation of such a model, used by PyPI and npm). We will need to provide clear documentation and announcement materials for a variety of audiences, including both developers and business leaders.
+People's understanding of PKI often starts and ends with single root CA certificates, and the idea of a quorum model may seem excessively innovative rather than being a safe and well-established choice. We will need to carefully communicate that quorum models based on thresholds of geographically distributed individuals have a well-established history for a variety of purposes (and that TUF is an industry-leading implementation of such a model, used by PyPi and npm). We will need to provide clear documentation and announcement materials for a variety of audiences, including both developers and business leaders.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -272,7 +263,7 @@ People's understanding of PKI often starts and ends with single root CA certific
   **Addressed**: All signatures are independent of TLS, so the compromised/MITMed connection cannot tamper with the indexes (see threats in previous section). The `Crates Role` provided by crates.io chains up to the Rust root role, so the compromised/MITMed connection cannot present a different `Crates Role`.
 - **Threat**: Presentation of an old/revoked/expired `tuf-crates` signature
   **Addressed**: TUF implements quorum history in a way that cargo will identify that it is not the latest quorum. The `Timestamp Role` will also mitigate the usage of an old signature by limiting the attack period to N-hours, as configured by crates.io.
-
+ 
 ## Artifact Signing (`tuf-crates`)
 
 Instead of signing the index entries and transitively inferring security via those signatures, we could alternatively or additionally have the TUF repository include direct signatures of the artifacts. However, omitting signing of the index entries would allow various threats (see "Threat Model"), and signing the individual crate files does not provide added security above and beyond signing index files that include cryptographic hashes of the individual crate files.
@@ -291,7 +282,7 @@ Relevant past RFCs:
 - [Trusted Publishing support for crates.io](https://github.com/rust-lang/rfcs/pull/3691)
 
 Other posts on TUF usage:
-- [Python PEP #458: Secure PyPI downloads with signed repository metadata](https://peps.python.org/pep-0458/)
+- [Python PEP #458: Secure PyPI downloads with signed repository metadata](https://peps.python.org/pep-0458/) (This was designed but not implemented)
 - [Square blog on securing RubyGems with TUF](https://developer.squareup.com/blog/securing-rubygems-with-tuf-part-1/)
   - [part 2](https://developer.squareup.com/blog/securing-rubygems-with-tuf-part-2/)
   - [part 3](https://developer.squareup.com/blog/securing-rubygems-with-tuf-part-3/)
