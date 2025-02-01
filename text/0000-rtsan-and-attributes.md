@@ -28,7 +28,7 @@ For example:
 
 > In aerospace guidance systems if your software doesn't update on a regular tick your simulation of what is happening may diverge from reality. Unfortunately this may also mean your rocket converges with the ground.
 
-Code in these environments must run in a deterministic amount of time. Allocations, locks, and other OS resource access are disallowed because they don't have bound upper execution time.
+Code in these environments must run in a deterministic amount of time. Allocations, locks, and other OS resource access are disallowed because they don't have an upper bound on their execution time.
 
 **Historically, it has been very difficult for programmers to detect these issues in their code. RealtimeSanitizer is one approach to detecting real-time safety issues before they run on end-users machines.**
 
