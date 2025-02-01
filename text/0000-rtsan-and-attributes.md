@@ -1,4 +1,4 @@
-- Feature Name: RealtimeSanitizer, `nonblocking` and `blocking` attributes
+- Feature Name: RealtimeSanitizer, `realtime(nonblocking)` and `realtime(blocking)` attributes
 - Start Date: 2025-01-30
 - RFC PR: 
 - Rust Issue: 
@@ -11,7 +11,7 @@ Many software projects that utilize Rust are subject to real-time constraints. S
 This RFC proposes that RealtimeSanitizer be integrated into the Rust ecosystem. To serve that end, we propose a few changes, outlined in this document:
 
 1. RealtimeSanitizer can be enabled in unstable mode - like the other sanitizers
-2. The introduction of `nonblocking` (marking a function as real-time constrained) and `blocking` (marking a function as inappropriate for use in a `nonblocking` context)
+2. The introduction of `realtime(nonblocking)` (marking a function as real-time constrained) and `realtime(blocking)` (marking a function as inappropriate for use in a `realtime(nonblocking)` context)
 3. The addition of the `rtsan_scoped_disabler!` macro
 4. Disabling rtsan for the `panic!` and `assert*!` macros
 
@@ -48,28 +48,28 @@ To disambiguate, when talking about non-deterministic calls this document will a
 
 [RealtimeSanitizer](https://clang.llvm.org/docs/RealtimeSanitizer.html) can detect and alert users to real-time safety issues when they occur. This new sanitizer has been integrated into LLVM 20. You can explore this tool using clang in Compiler Explorer using the `-fsanitize=realtime` flag. This proposal aims to mimic much of the behavior available in clang. 
 
-A function marked with the new attribute `nonblocking` is the real-time restricted execution context.  **In these `nonblocking` functions, two broad sets of actions are disallowed:**
+A function marked with the new attribute `realtime(nonblocking)` is the real-time restricted execution context.  **In these `realtime(nonblocking)` functions, two broad sets of actions are disallowed:**
 
 1. Intercepted calls into libc, such as `malloc`, `socket`, `write`, `pthread_mutex_*` and many more, representing a broad collection of allocations, locks and system calls.
 
-Each of these actions are known to have non-deterministic execution time. When these actions occur during a `nonblocking` function, or any function invoked by this function, they print the stack and abort.
+Each of these actions are known to have non-deterministic execution time. When these actions occur during a `realtime(nonblocking)` function, or any function invoked by this function, they print the stack and abort.
 
 [Example of this working in Compiler Explorer in C++](https://godbolt.org/z/sPTh63o67).
 
 The full list of intercepted functions can be found on [GitHub](https://github.com/llvm/llvm-project/blob/main/compiler-rt/lib/rtsan/rtsan_interceptors_posix.cpp), and is continually growing.
 
-2. User defined functions marked `blocking`
+2. User defined functions marked `realtime(blocking)`
 
-The new `blocking` attribute allows users to mark a function as having non-deterministic runtime, disallowing its use in functions marked `nonblocking`.
+The new `realtime(blocking)` attribute allows users to mark a function as having non-deterministic runtime, disallowing its use in functions marked `realtime(nonblocking)`.
 
 [Example of this working in Compiler Explorer in C++](https://godbolt.org/z/dErqE5nnM)
 
-One classic example of this is a spin-lock `lock` method. Spin locks do not call into a `pthread_mutex_lock`, so they cannot be intercepted. However they are still prone to spinning indefinitely, so they are disallowed in real-time contexts. The `blocking` attribute allows a user to document this behavior in their code.
+One classic example of this is a spin-lock `lock` method. Spin locks do not call into a `pthread_mutex_lock`, so they cannot be intercepted. However they are still prone to spinning indefinitely, so they are disallowed in real-time contexts. The `realtime(blocking)` attribute allows a user to document this behavior in their code.
 
-An example of an improper allocation being detected in a `nonblocking` function:
+An example of an improper allocation being detected in a `realtime(nonblocking)` function:
 ```rust
 > cat example/src/main.rs
-#[nonblocking]
+#[realtime(nonblocking)]
 pub fn process() {
     let audio = vec![1.0; 256]; // allocates memory
 }
@@ -117,24 +117,24 @@ This process to enable a sanitizer has been completed by many of the other LLVM 
 
 [PR adding support for lsan, tsan, msan, asan](https://github.com/rust-lang/rust/pull/38699)
 
-### The addition two new outer attributes to rust - `#[nonblocking]` `#[blocking]`
+### The addition two new outer attributes to rust - `#[realtime(nonblocking)]` `#[realtime(blocking)]`
 
-`#[nonblocking]` defines a scope as real-time constrained. During this scope, one cannot call any intercepted call (`malloc`, `socket` etc) or call any function marked `#[blocking]`. The rustc front-end will parse the `#[nonblocking]` attribute and add the LLVM attribute `llvm::Attribute::SanitizeRealtime`. This will leave most of the work to the already-implemented LLVM instrumentation pass.
+`#[realtime(nonblocking)]` defines a scope as real-time constrained. During this scope, one cannot call any intercepted call (`malloc`, `socket` etc) or call any function marked `#[realtime(blocking)]`. The rustc front-end will parse the `#[realtime(nonblocking)]` attribute and add the LLVM attribute `llvm::Attribute::SanitizeRealtime`. This will leave most of the work to the already-implemented LLVM instrumentation pass.
 
-`#[blocking]` defines a function as unfit for execution within a `#[nonblocking]` function. The rustc front-end will parse the `#[blocking]` attribute and add the LLVM attribute `llvm::Attribute::SanitizeRealtimeBlocking`.
+`#[realtime(blocking)]` defines a function as unfit for execution within a `#[realtime(nonblocking)]` function. The rustc front-end will parse the `#[realtime(blocking)]` attribute and add the LLVM attribute `llvm::Attribute::SanitizeRealtimeBlocking`.
 
 The example in the previous section shows that the interceptors written for the RealtimeSanitizer runtime are mostly shared across Rust and C/C++. Rust calls into libc `malloc` for basic allocation operations so it is automatically intercepted with no additional changes to the Rust version. A vast majority of the real-time-unsafe behavior that RTSan detects will be detected in this way.
 
-Users may also mark their own functions as unfit for a `nonblocking` context with the `#[blocking]` attribute, as seen below. This allows for detection of calls that do not result in a system call, but may be non-deterministically delayed.
+Users may also mark their own functions as unfit for a `realtime(nonblocking)` context with the `#[realtime(blocking)]` attribute, as seen below. This allows for detection of calls that do not result in a system call, but may be non-deterministically delayed.
 
 ```rust
-#[blocking]
+#[realtime(blocking)]
 fn spin() {
     loop {}
 }
 
 
-#[nonblocking]
+#[realtime(nonblocking)]
 fn process() {
     spin();
 }
@@ -171,7 +171,7 @@ It will be important to allow users to opt-out of rtsan detection for a specific
 
 We propose addition of the `rtsan_scoped_disabler!` macro:
 ```rust
-#[nonblocking]
+#[realtime(nonblocking)]
 fn process() {
   rtsan_scoped_disabler!({
         let audio = vec![1.0; 256]; // report is suppressed
@@ -205,7 +205,7 @@ If users rely on `panic!` or `assert!` while running under RealtimeSanitizer, th
 For example:
 
 ```rust
-#[nonblocking]
+#[realtime(nonblocking)]
 fn processor(buffer: &[f32]) {
     buffer[512]; // Oops, out of bounds!! should panic!
 }
@@ -237,12 +237,12 @@ RTSan may also inadvertently increase the number of "bug reports" the rust langu
 
 For instance, let's pretend the standard library exposes `foo::bar()`, which then gets used in real-time code, checked with RealtimeSanitizer, and is later changed to have an allocation. The end user detecting this change could file a bug against the standard library complaining about the new allocation and asking the new allocation to be reverted.
 
-In the opinion of the author, unless `foo::bar()` is annotated as `nonblocking` this should be closed as "Not A Bug", but dealing with this case still takes resources from the maintainers.
+In the opinion of the author, unless `foo::bar()` is annotated as `realtime(nonblocking)` this should be closed as "Not A Bug", but dealing with this case still takes resources from the maintainers.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-RealtimeSanitizer is a run-time approach to detecting real-time safety issues. The run-time approach has many positives, but also some drawbacks. As an alternative to this approach, we could do a compile time check that any `nonblocking` function can only call other `nonblocking` functions. This would be similar to LLVM's new [function effect analysis system](https://clang.llvm.org/docs/FunctionEffectAnalysis.html).
+RealtimeSanitizer is a run-time approach to detecting real-time safety issues. The run-time approach has many positives, but also some drawbacks. As an alternative to this approach, we could do a compile time check that any `realtime(nonblocking)` function can only call other `realtime(nonblocking)` functions. This would be similar to LLVM's new [function effect analysis system](https://clang.llvm.org/docs/FunctionEffectAnalysis.html).
 
 We designed RTSan hand-in-hand with the static functions effects system, and through that design process we came to the conclusion the compile-time and run-time approaches complement each other. It is our recommendation that if a static approach is considered, it is done **in addition** to rtsan, not **instead of**.
 
@@ -273,4 +273,4 @@ Overall, both approaches complement each other. Taking this proposal would allow
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-As stated above in Rationales and Alternatives, the addition of the `nonblocking` and `blocking` attributes allows for a future static analysis extension similar to clang's function effect analysis system.
+As stated above in Rationales and Alternatives, the addition of the `realtime(nonblocking)` and `realtime(blocking)` attributes allows for a future static analysis extension similar to clang's function effect analysis system.
