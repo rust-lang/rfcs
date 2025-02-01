@@ -37,6 +37,12 @@ A few resources that go into more depth on real-time programming:
 * http://www.rossbencina.com/code/real-time-audio-programming-101-time-waits-for-nothing
 * https://www.youtube.com/watch?v=ndeN983j_GQ
 
+## A note on terminology real-time unsafe
+
+This document uses the common parlance "real-time unsafe" to discuss calls which have no deterministic runtime. This is separate from the rust concept of memory or thread unsafety, typically indicated by the `unsafe` keyword.
+
+To disambiguate, when talking about non-deterministic calls this document will attempt to avoid ambiguous uses of the word "unsafe" and use the phrase "real-time-unsafe" when talking about non-deterministic time calls. Having real-time-unsafe code in your real-time contexts does not risk invoking any kind of UB.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -54,11 +60,11 @@ The full list of intercepted functions can be found on [GitHub](https://github.c
 
 2. User defined functions marked `blocking`
 
-The new `blocking` attribute allows users to mark a function as unsafe for real-time contexts. 
+The new `blocking` attribute allows users to mark a function as having non-deterministic runtime, disallowing its use in functions marked `nonblocking`.
 
 [Example of this working in Compiler Explorer in C++](https://godbolt.org/z/dErqE5nnM)
 
-One classic example of this is a spin-lock `lock` method. Spin locks do not call into a `pthread_mutex_lock`, so they cannot be intercepted. However they are still prone to spinning indefinitely, so they are unsafe in real-time contexts. The `blocking` attribute allows a user to document this behavior in their code.
+One classic example of this is a spin-lock `lock` method. Spin locks do not call into a `pthread_mutex_lock`, so they cannot be intercepted. However they are still prone to spinning indefinitely, so they are disallowed in real-time contexts. The `blocking` attribute allows a user to document this behavior in their code.
 
 An example of an improper allocation being detected in a `nonblocking` function:
 ```rust
@@ -117,7 +123,7 @@ This process to enable a sanitizer has been completed by many of the other LLVM 
 
 `#[blocking]` defines a function as unfit for execution within a `#[nonblocking]` function. The rustc front-end will parse the `#[blocking]` attribute and add the LLVM attribute `llvm::Attribute::SanitizeRealtimeBlocking`.
 
-The example in the previous section shows that the interceptors written for the RealtimeSanitizer runtime are mostly shared across Rust and C/C++. Rust calls into libc `malloc` for basic allocation operations so it is automatically intercepted with no additional changes to the Rust version. A vast majority of the unsafe behavior that RTSan detects will be detected in this way.
+The example in the previous section shows that the interceptors written for the RealtimeSanitizer runtime are mostly shared across Rust and C/C++. Rust calls into libc `malloc` for basic allocation operations so it is automatically intercepted with no additional changes to the Rust version. A vast majority of the real-time-unsafe behavior that RTSan detects will be detected in this way.
 
 Users may also mark their own functions as unfit for a `nonblocking` context with the `#[blocking]` attribute, as seen below. This allows for detection of calls that do not result in a system call, but may be non-deterministically delayed.
 
@@ -188,7 +194,7 @@ call-stack-contains:*spin*
 ```
 
 ### `no_sanitize`
-Another approach we could take is similar to the ASan and TSan `no_sanitize` attribute. We advocate for the scoped disabler macro, as it allows users to specify a more specific scope to disable the tool in. This means users will not have to extract real-time unsafe code into helper functions to disable them at the function level.
+Another approach we could take is similar to the ASan and TSan `no_sanitize` attribute. We advocate for the scoped disabler macro, as it allows users to specify a more specific scope to disable the tool in. This means users will not have to extract real-time-unsafe code into helper functions to disable them at the function level.
 
 To match the other sanitizers, adding in `no_sanitize` could be considered instead of/in addition to the macro, depending on input on this RFC.
 
