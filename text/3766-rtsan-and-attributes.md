@@ -1,6 +1,6 @@
 - Feature Name: RealtimeSanitizer, `realtime(nonblocking)` and `realtime(blocking)` attributes
 - Start Date: 2025-01-30
-- RFC PR: 
+- RFC PR: https://github.com/rust-lang/rfcs/pull/3766
 - Rust Issue: 
 
 # Summary
