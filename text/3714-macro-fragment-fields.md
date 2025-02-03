@@ -111,6 +111,13 @@ ecosystem.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+We could do nothing, and leave parsing to third-party crates in the ecosystem.
+This entails inherently less efficient re-parsing, requires duplicating a Rust
+AST/grammar into one or more third-party crates (and keeping it up to date),
+pushes people towards proc macros, increases the supply chains of many crates,
+and requires macros to update (or update their dependencies) when Rust adds new
+syntax.
+
 Rather than using field syntax, we could use function-like syntax in the style
 of [RFC 3086](https://rust-lang.github.io/rfcs/3086-macro-metavar-expr.html)
 macro metavariable expressions. However, field syntax seems like a more natural
