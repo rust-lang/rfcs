@@ -442,6 +442,9 @@ Github/Sarif support the following [severities](https://docs.github.com/en/code-
   - However, the frequency is swapped with `CARGO_BUILD_NITS=nit`
   - We may also want the terms to be consistent across the different level-control fields
   - Reminder: `CARGO_BUILD_WARNINGS` is unstable and we can still change it
+- How should this work in rust-analyzer?
+  - For Information or Hint, the rendering is left to the client
+  - VSCode shows them like warnings/errors but different color scheme while filtering them out from the problems view.
 
 ## Naming
 
