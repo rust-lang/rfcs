@@ -342,7 +342,7 @@ Controls how Cargo handles nits. Allowed values are:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-`CARGO_BUILD_NITS=nit`'s redundancy is awkard.
+`CARGO_BUILD_NITS=nit`'s redundancy is awkward.
 We were fine with `CARGO_BUILD_WARNINGS=warn` because that is the default case and
 people are unlikely to have to type it out,
 instead typing out `CARGO_BUILD_WARNINGS=allow`.
