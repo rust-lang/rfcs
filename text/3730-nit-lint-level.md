@@ -342,6 +342,11 @@ Controls how Cargo handles nits. Allowed values are:
 # Drawbacks
 [drawbacks]: #drawbacks
 
+`CARGO_BUILD_NITS=nit` is verbose and less obvious for people wanting to check these locally.
+This is also true for `CARGO_BUILD_WARNINGS`.
+CLI control could help but we deferred that for `CARGO_BUILD_WARNINGS` and the reasoning would also apply to `CARGO_BUILD_NITS`.
+See [this comment](https://github.com/rust-lang/cargo/issues/14802) for some of the concerns.
+
 Users running `CARGO_BUILD_NITS=nit cargo clippy` will have a hard time finding what lints are relevant for their change
 among the sea of all of the nits.
 If we had a way to filter lints by part of the API or by "whats new since run X",
