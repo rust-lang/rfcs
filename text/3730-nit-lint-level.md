@@ -16,7 +16,7 @@ There is no expectation that crates will be `nit`-free.
 
 *Note:* The name `nit` is being used for illustrative purposes and is assumed to not be the final choice.
 
-*Note:* This RFC leaves the determination of what lints will be `nit` by
+*Note:* This RFC leaves the determination of which lints will be `nit` by
 default to the respective teams. Any lints referenced in this document are
 for illustrating the intent of this feature and how teams could reason about
 this new lint level.
