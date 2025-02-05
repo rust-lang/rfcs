@@ -342,12 +342,6 @@ Controls how Cargo handles nits. Allowed values are:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-`CARGO_BUILD_NITS=nit`'s redundancy is awkward.
-We were fine with `CARGO_BUILD_WARNINGS=warn` because that is the default case and
-people are unlikely to have to type it out,
-instead typing out `CARGO_BUILD_WARNINGS=allow`.
-However, `CARGO_BUILD_NITS` is in the opposite situation.
-
 Users running `CARGO_BUILD_NITS=nit cargo clippy` will have a hard time finding what lints are relevant for their change
 among the sea of all of the nits.
 If we had a way to filter lints by part of the API or by "whats new since run X",
