@@ -463,6 +463,8 @@ The noun form is used for:
 Options
 - `#[nit]` / `--nit` / `-N` / `-Wnits`
   - Unsure how to word `nit(let_and_return)` as a sentence like the other lint levels
+- `#[nitpick]` / `--nitpick` / `-N` / `-Wnitpicks`
+  - "nitpick the let-and-return in this code"
 - `#[note]` / `--note` / `-N` / `-Wnotes`
   - "note the let-and-return in this code"
 - `#[notice]` / `--notice` / `-N` / `-Wnotices`
