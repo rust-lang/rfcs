@@ -393,6 +393,8 @@ For some specifics
 - Cargo could print a message that `nit`s are present to help raise awareness of how to show them but
   - they will likely always be present, so this is noise to experienced users.
   - this could nerd snipe users into resolving them, especially if we say how many there are
+- Cargo could print all nits if there are no other messages but
+  - they will likely always be present, so we'll flood the users screen on regular builds, likely nerd sniping people into fixing them
 
 ## `clippy::pedantic`
 
