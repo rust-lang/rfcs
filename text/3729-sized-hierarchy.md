@@ -968,7 +968,7 @@ on those ideas, and the feedback to this RFC's prior art, but is not a load-bear
 of this RFC.
 
 To preserve backwards compatibility, `Sized` bounds must be migrated to `const Sized` (see
-[the `size_of` and `size_of_val` section][size_of-and-size_of_val] for rationale), but
+[the `size_of` and `size_of_val` section][size-of-and-size-of-val] for rationale), but
 `?Sized` bounds could retain their existing behaviour of removing the default `Sized` bound:
 
 ### Keeping only `?Sized`
