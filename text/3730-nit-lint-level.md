@@ -10,7 +10,7 @@
 Add a new visible lint level below `warn` to allow linters to act like a pair-programmer / code-reviewer where feedback is evaluated on a case-by-case basis.
 - `cargo` does not display these lints by default, requiring an opt-in
 - This RFC assumes LSPs/IDEs will opt-in
-- CIs could opt-in and open issues in the code review to show nits introduced in the current PR but not block merge on them
+- CIs could opt-in and open issues in the code review to show nits introduced in the current PR without merging being blocked
 
 There is no expectation that crates will be `nit`-free.
 
