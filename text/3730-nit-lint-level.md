@@ -40,14 +40,14 @@ Cargo is looking to further cement this meaning by adding
 for CIs to set rather than `RUSTFLAGS=-Dwarnings`.
 
 This leaves a gap in the developer user experience for truly non-blocking lints.
-- Have maintainers `allow` a lint means they can't benefit from it
-- Have contributors `#[allow]`ing the lints to bless code,
+- If a maintainer `allow`s a lint
+  - They will never see it to benefit from it
+- If contributors are expected to `#[allow]` some lints where appropriate
+  - This requires judgement and/or communication on the bar for when to do this
   - The weight of `warn` may encourage contributors to do what it says, rather than `#[allow]` it
   - Sprinkling `#[allow]` in code can be noisy and the lint may not be worth it
-  - If CI is using `stable`, then new lints can break CI
-    - This is also true for lints changing behavior but that isn't a problem as often
-- Having maintainers `-W` or `-A` these lints through `RUSTFLAGS` in CI
-  - This makes it more difficult for users to reproduce this locally.
+- If a maintainer controls which lints don't block CI via `RUSTFLAGS=-A<lint>`
+  - This makes it more difficult for users to reproduce this locally (which are blocking or not?).
   - `RUSTFLAGS` also comes with its own set of problems and the Cargo team is interested in finding alternatives to maintainers setting `RUSTFLAGS`,
     see [cargo#12738](https://github.com/rust-lang/cargo/issues/12738), [cargo#12739](https://github.com/rust-lang/cargo/issues/12739)
 
@@ -55,19 +55,20 @@ Another problem is when adopting lints.
 This experience is more taken from legacy C++ code bases but the assumption is
 that this can become a problem in our future as the Rust code bases grow over
 time.
-A complaint that can happen when adopting a linter or lints is the time it takes to clean up the code base to be lint free
+A complaint that can happen when adopting lints or a whole linter is the time it takes to clean up the code base to be lint free
 because their only choice is to block on a lint or completely ignoring it.
 If we had a non-blocking lint level, a project could switch interested lints to
 that level and at least limit the introduction of new lint violations,
 either viewing that as good enough or while the existing violations are resolved in parallel.
 
-A secondary benefit of non-blocking lints is that more lints could move out of `allow`, raising their visibility.
-It can take effort to sift through all of the
+A secondary benefit of non-blocking lints is that more lints could move out of `allow` by default,
+raising their visibility.
+Currently, its left to each maintainer to sift through all of the
 [default-`allow`ed lints](https://rust-lang.github.io/rust-clippy/master/index.html?levels=allow)
-for which ones a maintainer may want to turn into a soft or hard error.
+for which they may want to turn into a soft or hard error.
 
-Another secondary benefit is that this could provide a smoother path for linter
-teams to migrate `allow`s to `warn`s by having a period of time in a
+Another secondary benefit is that this could provide a smoother path for linters
+to migrate `allow`s to `warn`s by having a period of time in a
 non-blocking lint level so people can benefit immediately while having more
 flexibility on when they pay the cost for turning the lint into a soft-error.
 
@@ -109,10 +110,9 @@ assigning_clones = "allow"
 blocks_in_conditions = "allow"
 ```
 
-Also, CI runs `clippy` with `-D warnings -A deprecated`
+Also, clap's CI runs `clippy` with `-D warnings -A deprecated`
 - Dependency upgrades should not be blocked on an API becoming deprecated
 - The maintainers want visibility into what is deprecated though
-- Combined with other circumstances, this also blocks [`clippy-sarif`](https://crates.io/crates/clippy-sarif) from opening issues in PRs for deprecated APIs.
 
 Part of this stems from `deprecated` having two purposes:
 - This API is broken and you should severely question any use of it
@@ -135,7 +135,7 @@ In 2021 ([cargo#9356](https://github.com/rust-lang/cargo/pull/9356)), the Cargo 
 #![warn(clippy::needless_borrow)]
 #![warn(clippy::redundant_clone)]
 ```
-due to false positives and the level of subjectivity of the improvements.
+due to false positives and the level of subjectivity of the changes suggested by clippy by default.
 This approach was first relaxed in 2024 ([cargo#11722](https://github.com/rust-lang/cargo/pull/11722)).
 
 Over time and with the addition of the `[lints]` table, this eventually led to ([cargo#12178](https://github.com/rust-lang/cargo/pull/12178)):
@@ -262,7 +262,7 @@ This should be reserved for when there is no point building or testing anything 
 Its non-blocking locally but will be blocked when the code is merged upstream.
 This should be used when eventual correctness or consistency is desired.
 
-`nit` is for coding suggestions for users that may or may not improve the code or may not need to be done yet.
+`nit` is for coding suggestions for users that may or may not improve the code or to reduce introduction of more nits on the path to making the lint a `warn`
 
 `allow` is for when there is no right answer (e.g. mutually exclusive lints), there are false positives, the lint is overly noisy, or the lint is of limited value.
 
@@ -295,6 +295,7 @@ Rustc will have a dynamic lint group of all `nit`s, much like `warnings` is all 
 ## Clippy
 
 Like Rustc, Clippy would focus on the mechanism.
+
 Add support for the new lint:
 ```rust
 #![nit(deprecated)]
@@ -316,9 +317,12 @@ Cargo implements the semantics for this to be a first-class non-blocking lint le
 
 Add support for the new lint:
 ```toml
-[workspace.lints.rust]
-deprecated = "nit"
+[lints.rust]
+let_and_return = "nit"
 ```
+
+Linting commands will hide these lints by default.
+There won't be a summary line that nits were present.
 
 `cargo fix` will not fix these lints by default.
 
@@ -338,43 +342,58 @@ Controls how Cargo handles nits. Allowed values are:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Rust-analyzer might be limited in what it can do through LSP to avoid overwhelming the user with `nit`s.
+`CARGO_BUILD_NITS=nit`'s redundancy is awkard.
+We were fine with `CARGO_BUILD_WARNINGS=warn` because that is the default case and
+people are unlikely to have to type it out,
+instead typing out `CARGO_BUILD_WARNINGS=allow`.
+However, `CARGO_BUILD_NITS` is in the opposite situation.
 
-This requires a non-standard CI setup to report these messages.
-
-Non-rust-analyzer users won't get feedback until CI runs and then will have to know to run their linter in a special way to reproduce CI's output locally.
-
-Users running `CARGO_BUILD_NITS=nit cargo clippy` will have a hard time finding what lints are relevant for their change.
+Users running `CARGO_BUILD_NITS=nit cargo clippy` will have a hard time finding what lints are relevant for their change
+among the sea of all of the nits.
 If we had a way to filter lints by part of the API or by "whats new since run X",
 then that could be resolved.
 
 As `nit`s will always be enabled in the linter, just silenced in Cargo, the performance hit of running
 them will be present unless `RUSTFLAGS=-Anits` is applied by the user.
 
+## Hidden from users
+
+By being hidden by default, there will be limits in how someone can see these:
+- Rust-analyzer might be limited in what it can do through LSP to avoid overwhelming the user with `nit`s.
+- This requires a non-standard CI setup to report these messages.
+- Non-rust-analyzer users won't get feedback until CI runs and then will have to know to run their linter in a special way to reproduce CI's output locally.
+
+That is similar to `allow` today but users except users can show these lints via `CARGO_BUILD_NITS=nit`.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Overall, this solution benefits from
-- Users have adopted `[lints]` for controlling their project lint semantics, so this fits right in.
+This solution builds on the following past work:
+- The move to statically, consolidated lint configuration via `[lints]`
   - In particular, `[lints]` design is optimized for setting only `level`.
-- The `CARGO_BUILD_WARNINGS=deny` work for further cements the relationship of lint levels with the semantic levels discusse
+  - This RFC works to centralize more lint configuration in a static way
+- Experiments with `CARGO_BUILD_WARNINGS=deny` which further cements the relationship of lint levels with the semantic levels discusse
+
+Benefits of the proposed solution:
 - Users or tooling that request to see `nits` through Cargo can do so without
   recompilation because Rusts always repors `nits`, Cargo records this and
   replays it on cache hits, and the choice to display is made after this.
 - LSPs, Sarif, etc being able to report soft-errors and nits differently to the user
 
 For some specifics
+- The default level for lints is left unchanged by this RFC to keep the scope of what is designed and reviewed to the minimum
 - `CARGO_BUILD_NITS=allow` is the default to avoid "warning fatigue"
   - Users should not have to feel the need to resolve these for the sake of satisfying the tool
   - Therefore, adding support for `CARGO_BUILD_NITS=deny` in the future would run counter to the goals and intents of this RFC.  The user might as well switch the `nits` to `warn`.
-- The default level for lints is left unchanged by this RFC to keep the scope of what is designed and reviewed to the minimum
 - Rustc shows `nit`s by default, rather than hide them and require a separate opt-in mechanism for Cargo to see them
   - Problem: People directly using rustc or using a third-party build tool may be inundated with these
   - Lint levels may change without breaking compatibility
   - If stabilize with no `nit`s or only downgrading `warn`s to `nit`s, then there will be no difference in the amount of output
   - We already have a mechanism, let's not invent a new one
 - `nits` lint group is created to give rustc-only or third-party build tools a built-in way to control these besides ignoring them like Cargo
-- Cargo could print a message that `nit`s are present to help raise awareness of how to show them but they will likely always be present, so this is noise to experienced users.
+- Cargo could print a message that `nit`s are present to help raise awareness of how to show them but
+  - they will likely always be present, so this is noise to experienced users.
+  - this could nerd snipe users into resolving them, especially if we say how many there are
 
 ## `clippy::pedantic`
 
