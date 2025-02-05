@@ -17,7 +17,7 @@ There is no expectation that crates will be `nit`-free.
 *Note:* The name `nit` is being used for illustrative purposes and is assumed to not be the final choice.
 
 *Note:* This RFC leaves the determination of what lints will be `nit` by
-default to the respective teams.  Any lints referenced in this document are
+default to the respective teams. Any lints referenced in this document are
 for illustrating the intent of this feature and how teams could reason about
 this new lint level.
 
@@ -403,7 +403,7 @@ in that these are "too noisy" of lints.
 A mechanism could be devised for hiding/showing this group within Cargo.
 
 However,
-- This is clippy specific.  The conversation would instead shift to getting an agreed-to convention for this group.
+- This is clippy specific. The conversation would instead shift to getting an agreed-to convention for this group.
 - The group is linter-defined and users can't override it, lints into or out of `pedantic` and `allow` or `warn`.
 
 # Prior art
