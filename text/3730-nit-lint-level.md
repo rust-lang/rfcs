@@ -14,7 +14,7 @@ Add a new visible lint level below `warn` to allow linters to act like a pair-pr
 
 There is no expectation that crates will be `nit`-free.
 
-*Note:* The name `nit` is being used for illustrative purposes and is assumed to not be the final choice
+*Note:* The name `nit` is being used for illustrative purposes and is assumed to not be the final choice.
 
 *Note:* This RFC leaves the determination of what lints will be `nit` by
 default to the respective teams.  Any lints referenced in this document are
