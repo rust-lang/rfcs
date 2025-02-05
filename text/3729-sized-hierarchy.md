@@ -1254,9 +1254,9 @@ scalable vectors:
 - Without this RFC, scalable vectors from [rfcs#3268][rfc_scalable_vectors]
   would remain blocked unless special-cased by the compiler in the type
   system.
-      - It is not possible to add these without const traits: relaxing the
-        supertrait of `Clone` is backwards-incompatible and const traits
-        are the only way to avoid that.
+    - It is not possible to add these without const traits: relaxing the
+      supertrait of `Clone` is backwards-incompatible and const traits
+      are the only way to avoid that.
 - Extern types from [rfcs#1861][rfc_extern_types] would remain blocked if no
   action was taken, unless:
     - The language team decided that having `size_of_val` and `align_of_val`
