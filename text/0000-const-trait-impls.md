@@ -545,6 +545,10 @@ In practice we have noticed that a large portion of APIs will have a `~const Des
 This bound has little value as an explicit bound that appears almost everywhere.
 Especially since it is a fairly straight forward assumption that a type that has const trait impls will also have a `const Drop` impl or only contain `const Destruct` types.
 
+In the future we will also want to support `dyn ~const Trait` bounds, which invariably will require the type to implement `~const Destruct` in order to fill in the function pointer for the `drop` slot in the vtable.
+While that can in generic contexts always be handled by adding more `~const Destruct` bounds, it would be more similar to how normal `dyn` safety
+works if there were implicit `~const Destruct` bounds for (most?) `~const Trait` bounds.
+
 Thus we give all `const trait`s a `~const Destruct` super trait to ensure users don't need to add `~const Destruct` bounds everywhere.
 We may offer an opt out of this behaviour in the future, if there are convincing real world use cases.
 
