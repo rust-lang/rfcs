@@ -900,6 +900,15 @@ In the above sections, this proposal argues that..
 
 ..is backwards incompatible.
 
+## Incremental stabilisation
+[incremental-stabilisation]: #incremental-stabilisation
+
+It is possible to stabilise these traits (or their constness) independently
+of each another.
+
+This would have the obvious implications of limiting which bounds a user
+can write, but there is no technical limitation on stabilisation.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -1074,6 +1083,14 @@ After the edition migration, when adding `?MetaSized`, the default bound remains
 
 In other words, when a less strict bound is desirable, it is achieved by opting out of the
 next strictest bound.
+
+### Relaxed bounds and incremental stabilisation
+[relaxed-bounds-and-incremental-stabilisation]: #relaxed-bounds-and-incremental-stabilisation
+
+With the above alternatives, the ability to [incrementally stabilise][incremental-stabilisation]
+new sizedness traits is made more challenging, as to express a `T: Pointee` bound, a
+`T: ?MetaSized` is written, so stability of a degree of sizedness is based not on the stability
+of its trait but rather by stability of being able to relax the next strictness trait.
 
 ## Why not re-use `std::ptr::Pointee`?
 [why-not-re-use-stdptrpointee]: #why-not-re-use-stdptrpointee
