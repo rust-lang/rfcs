@@ -341,6 +341,41 @@ will likely be tracked under a separate feature gate under the purview of T-libs
 Similarly other traits will be made `const` over time, but doing so will be
 unblocked by this feature.
 
+### `const Fn*` traits
+
+All `const fn` implement the corresponding `const Fn()` trait:
+
+```rust
+const fn foo<F: ~const Fn()>(f: F) {
+    f()
+}
+
+const fn bar() {
+    foo(baz)
+}
+
+const fn baz() {}
+```
+
+Arguments and the return type of such functions and bounds follow the same rules as
+their non-const equivalents, so you may have to add `~const` bounds to other generic
+parameters, too:
+
+
+```rust
+const fn foo<T: ~const Debug, F: ~const Fn(T)>(f: F, arg: T) {
+    f(arg)
+}
+
+const fn bar<T: ~const Debug>(arg: T) {
+    foo(baz, arg)
+}
+
+const fn baz<T: ~const Debug>() {}
+```
+
+For closures and them implementing the `Fn` traits, see the [Future possibilities](#future-possibilities) section.
+
 ## Crate authors: Making your own custom types easier to use
 
 You can write const trait impls of many standard library traits for your own types.
@@ -680,6 +715,62 @@ trait Foo: InitFoo {
 
 # Alternatives
 [alternatives]: #alternatives
+
+## What is the impact of not doing this?
+
+We would require everything that wants a const-equivalent to have duplicated traits and not
+use `const` fn at all, but use associated consts instead. Similarly this would likely forbid
+invoking builtin operators. This same concern had been brought up for the `const fn` stabilization
+[7 years ago](https://github.com/rust-lang/rust/issues/24111#issuecomment-385046163).
+
+Basically what we can do is create
+
+```rust
+trait ConstDefault {
+    const DEFAULT: Self;
+}
+```
+
+and require users to use
+
+```rust
+const FOO: Vec<u8> = ConstDefault::DEFAULT;
+```
+
+instead of
+
+```rust
+const fn FOO: Vec<u8> = Default::default();
+```
+
+This duplication is what this RFC is suggesting to avoid.
+
+Since it has already been possible to do all of this on stable Rust for years, and no major
+crates have popped and gotten used widely, I assume that is either because
+
+* it's too much duplication, or
+* everyone was waiting for the work (that this RFC wants to stabilize) to finish, or
+* both.
+
+So while it is entirely possible that rejecting this RFC and deciding not to go down this route
+will lead to an ecosystem for const operations to be created, it would result in duplication and
+inconsistencies that we'd rather like to avoid.
+
+Such an ecosystem would also make `const fn` obsolete, as every `const fn` can in theory be represented
+as a trait, it would just be very different to use from normal rust code and not really allow nice abstractions to be built.
+
+```rust
+const fn add(a: u32, b: u32) -> u32 { a + b }
+
+struct Add<const A: u32, const B: u32>;
+
+impl<const A: u32, const B:u32> Add<A, B> {
+    const RESULT: u32 = A + B;
+}
+
+const FOO: u32 = add(5, 6);
+const BAR: u32 = Add<5, 6>::RESULT;
+```
 
 ## use `const Trait` bounds for conditionally-const, invent new syntax for always-const
 
