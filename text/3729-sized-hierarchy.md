@@ -1131,12 +1131,17 @@ Due to `Sized` being a default bound, the new marker traits being supertraits, a
 edition migration (so that breakages could happen even with `?Sized`), this backwards
 incompatibility would occur immediately when associated types or methods are added.
 
-Instead of introducing a new marker trait, `std::ptr::Pointee` could be re-used if
-there were some mechanism to indicate that associated types or methods could only be
-referred to with fully-qualified syntax. Alternatively, it would be possible to
-introduce forward-compatibility lints in current edition, the new traits were
-introduced in the next edition and the edition migration previously described
-in the next next edition.
+Instead of introducing a new marker trait, there are three alternatives that would
+enable `std::ptr::Pointee` to be re-used:
+
+1. Introduce some mechanism to indicate that associated types or methods of a trait
+  could only be referred to with fully-qualified syntax.
+2. Introduce a behaviour where the associated types of subtraits take priority over
+  the associated types of supertraits. `Pointee` will effectively become a supertrait
+  of all traits so its associated types would never take predecence.
+  3. Introduce forward-compatibility lints in current edition, the new traits were
+  introduced in the next edition and the edition migration previously described
+  in the next next edition.
 
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
