@@ -370,9 +370,9 @@ However, it is not backwards compatible to relax the bounds of trait methods[^5]
 and it would still be backwards-incompatible to relax the `Sized` bound on
 a trait's associated type[^6] for the proposed traits.
 
-It is possible further extend this hierarchy in future by adding new traits between
-those proposed in this RFC or after the traits proposed in this RFC without breaking
-backwards compatibility, depending on the bounds that would be introduced[^7].
+It is possible further extend this hierarchy in future by adding new traits before,
+between, or after the traits proposed in this RFC without breaking backwards
+compatibility, depending on the bounds that would be introduced[^7].
 
 [^2]: Adding a new automatically implemented trait and adding it as a bound to
       an existing function is backwards-incompatible with generic functions. Even
@@ -485,9 +485,8 @@ backwards compatibility, depending on the bounds that would be introduced[^7].
 
       - Before `Sized`
         - i.e. `NewSized: Sized: MetaSized: Pointee`
-        - Adding bounds on a new trait before `Sized` is not
-          backwards-compatible as described above in [Implementing
-          `Sized`][implementing-sized].
+        - `NewSized` would need to replace `Sized` as a default bound over an
+          edition to avoid this being a breaking change.
       - Between `Sized` and `MetaSized`
         - i.e. `Sized: NewSized: MetaSized: Pointee`
         - Adding bounds on a new trait between `Sized` and `MetaSized` is
@@ -1106,7 +1105,11 @@ trait Foo: Clone {
 fn requires_sized<T: Sized>() { /* ... */ }
 ```
 
-Therefore, without const traits it is not possible to represent runtime-sized types.
+Once this interaction with constness was realised, this RFC's dependency on const
+traits was introduced. Due to const traits (at the time of writing this RFC) being
+only a proposal, other alternatives that would avoid const traits but leverage
+insights from this RFC's use of const traits, were considered[^11], but ultimately
+found to be insufficient.
 
 [^9]: In previous iterations, the proposed linear trait hierarchy was:
 
@@ -1155,6 +1158,62 @@ Therefore, without const traits it is not possible to represent runtime-sized ty
       and ultimately the inability to relax `Clone`'s supertrait made it
       infeasible anyway. `ValueSized` was replaced with `MetaSized` in later
       versions of the proposal.
+[^11]: Once the interactions with constness were realised, another possibility
+      was explored - adding a subtrait of `Sized` to emulate `const Sized`
+      without const traits proper. However, this also does not work:
+
+      A subtrait of `Sized`, `ConstSized` could be introduced. In order to
+      avoid this breaking a breaking change, as with introducing arbitrary
+      new automatically-implemented traits, the default `Sized` bound would
+      be migrated to a `ConstSized` bound over an edition (with `T` and
+      `T: Sized` being interpreted as `ConstSized` in the current edition).
+
+      ```
+      ┌────────────────────────────────────────────────┐
+      │ ┌────────────────────────────────────┐         │
+      │ │ ┌──────────────────────┐           │         │
+      │ │ │ ┌────────────┐       │           │         │
+      │ │ │ │ ConstSized │ Sized │ MetaSized │ Pointee │
+      │ │ │ └────────────┘       │           │         │
+      │ │ └──────────────────────┘           │         │
+      │ └────────────────────────────────────┘         │
+      └────────────────────────────────────────────────┘
+      ```
+
+      Under this variant, `Clone`'s supertrait does not need to be relaxed
+      and the previous example would continue to compile. Runtime-sized types
+      would implement `Sized` but not `ConstSized`, and all types which
+      currently implement `Sized` would implement `ConstSized`.
+
+      As `ConstSized` is a marker trait, it does not need to have any methods
+      usable in const contexts, so full-fledged const traits aren't strictly
+      necessary, it is sufficient that it can be used in bounds to prevent
+      runtime-sized types from being instantiated, such as with `size_of`:
+
+      ```rust
+      pub const fn size_of<T: ConstSized>() -> usize {
+          /* .. */
+      }
+      ```
+
+      However, the fatal limitation of this approach becomes clear when the
+      same is tried with `size_of_val`:
+
+      ```rust
+      pub const fn size_of_val<T: ConstSized>(v: &T) -> usize {
+          /* .. */
+      }
+      ```
+
+      If the bound on `size_of_val` is strengthened to `ConstSized`, then it
+      guarantees that runtime-sized types cannot call `size_of_val` in a const
+      context, as required. However, it also prevents `size_of_val` from being
+      used with `MetaSized` types, which is why the function exists.
+
+      This contradiction cannot be reconciled without const traits (which
+      inherently introduces a non-linear hierarchy) and `~const` bounds
+      (which "switches" to a different branch of that trait hierarchy
+      conditional on const context).
 
 ## Why change `size_of` and `size_of_val`?
 [why-change-size_of-and-size_of_val]: #why-change-size_of-and-size_of_val
