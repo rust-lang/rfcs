@@ -914,6 +914,41 @@ In the above sections, this proposal argues that..
 - As this RFC depends on `const Trait`, it inherits all of the drawbacks of
   `const Trait`.
 
+## Backwards Incompatibility
+[backwards-incompatibility]: #backwards-incompatibility
+
+While every effort has been made to avoid backwards incompatibilities in this
+proposal, there is one niche circumstance in which this could result in breakage:
+
+```rust
+const fn f<T: Clone + ?Sized>() {
+    let _ = size_of::<T>();
+}
+
+// or..
+
+fn f<T: Clone + ?Sized>() {
+    let _ = const { size_of::<T>() };
+}
+```
+
+In the above example, `f` opts-out of the default `Sized` bound but a `Sized`
+bound is implied by its `Clone` bound. As `Sized` supertraits are not
+interpreted as `const Sized` in the proposed migration (as bounds are),
+with `size_of`'s bound being changed to `const Sized` or `~const Sized`
+then this example would no longer compile.
+
+This is a niche case - it relies on code explicitly opting out of a `Sized`
+bound, but having a `Sized` implied by another bound, and then using that
+parameter somewhere with a `const Sized` requirement. It is hoped that
+this is sufficiently rare that it does not block this proposal, and that
+any such cases in the open source ecosystem could be identified with a crater
+run and addressed by a patch.
+
+It could be easily fixed by removing the unnecessary `?Sized` relaxation
+and using the implicit `T: const Sized` bound, or by adding an explicit
+`T: const Sized` bound.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
