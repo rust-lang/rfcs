@@ -1752,6 +1752,7 @@ longer relevant][zulip_issue_regions_too_simplistic].
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- What names should be used for the traits?
 - Which syntax should be used for opting out of a default bound with const traits and
   a trait hierarchy?
   - This RFC is primarily written proposing the "positive bounds" approach, where
@@ -1760,9 +1761,19 @@ longer relevant][zulip_issue_regions_too_simplistic].
   - Alternatively, described in [*Adding `?MetaSized`*][adding-metasized], existing
     relaxed bounds syntax could be used, where a desired bound is written as opting out
     of the next strictest.
+  - In a February 2025 design meeting with the language team, a **strong bias towards
+    the positive bounds alternative was expressed**, arguing that while a explicit sigil
+    indicating an opt-out is happening is valuable, both alternatives have unintuitive
+    aspects, but that "asking for what you want" (as in the positive bounds alternative)
+    is less confusing than "asking for the next strictest thing you don't need" (as in the
+    relaxed bounds alternative).
 - Should `std::ptr::Pointee` be re-used instead of introducing a new marker trait?
-  - This would require an additional changes to avoid ambiguity, as described in
-    [*Why not re-use `str::ptr::Pointee`?*][why-not-re-use-stdptrpointee].
+  - In a February 2025 design meeting with the language team, **no strong opinion was
+    expressed on this question**. There are open proposals to change
+    `std::ptr::Pointee` to no longer have an associated type, which would render this
+    unresolved question moot. A mild preference for the second alternative described in
+    [*Why not re-use `str::ptr::Pointee`?*][why-not-re-use-stdptrpointee] was also
+    shared.
 - What is the precedence for `?const Trait` - `(?const) Trait` or `?(const Trait)`?
   - This isn't a question for this RFC to resolve but this RFC takes a conserative
     approach and always adds explicit parentheses.
