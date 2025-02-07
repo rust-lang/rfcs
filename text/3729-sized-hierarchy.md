@@ -15,8 +15,21 @@ whose size can never be known. Supporting the former is a prerequisite to stable
 scalable vector types and supporting the latter is a prerequisite to unblocking
 extern types.
 
-This RFC necessarily depends on the [const traits (RFC #3762)][rfc_const_traits]
-and is written assuming familiarity with that proposal.
+## Dependencies
+[dependencies]: #dependencies
+
+This RFC is written assuming [const traits (RFC #3762)][rfc_const_traits] is
+accepted, but ultimately does not strictly depend on it. Almost everything
+proposed could be represented in a Rust without const traits - this is
+described in the [*Why use const traits?*][why-use-const-traits] section.
+
+However, const traits is a very natural way to express the concepts from this
+proposal and it is the opinion of the author that proposing/accepting a
+non-const traits version of this proposal when const traits are a likely
+addition to the language would be misguided.
+
+The [*Why use const traits?*][why-use-const-traits] section is included solely
+to demonstrate that this RFC does not strictly depend on const traits.
 
 # Background
 [background]: #background
@@ -1146,8 +1159,12 @@ enable `std::ptr::Pointee` to be re-used:
 ## Why use const traits?
 [why-use-const-traits]: #why-use-const-traits
 
-Previous iterations of this RFC had both linear[^9] and non-linear[^10] trait hierarchies
-which included a `RuntimeSized` trait and did not use const traits.
+While this RFC is written assuming [const traits (RFC #3762)][rfc_const_traits], it
+is not strictly necessary.
+
+Prior to recognising the interactions with constness, previous iterations of this RFC
+had both linear[^9] and non-linear[^10] trait hierarchies which included a `RuntimeSized`
+supertrait of `Sized`.
 
 However, both of these were found to be backwards-incompatible due to being unable
 to relax the supertrait of `Clone`. In the example below, `Foo::uses_supertrait_bound`'s
@@ -1165,8 +1182,66 @@ fn requires_sized<T: Sized>() { /* ... */ }
 Once this interaction with constness was realised, this RFC's dependency on const
 traits was introduced. Due to const traits (at the time of writing this RFC) being
 only a proposal, other alternatives that would avoid const traits but leverage
-insights from this RFC's use of const traits, were considered[^11], but ultimately
-found to be insufficient.
+insights from this RFC's use of const traits have been considered - adding a
+subtrait of `Sized` to emulate `const Sized` without const traits proper.
+
+Introduce a subtrait of `Sized`, `ConstSized`, and of `MetaSized`,
+`ConstMetaSized`. In order to avoid this breaking a breaking change, as with
+introducing arbitrary new automatically-implemented traits, the default `Sized`
+bound would be migrated to a `ConstSized` bound over an edition (with `T` and
+`T: Sized` being interpreted as `ConstSized` in the current edition). This
+hierarchy mirrors that which is created when using const traits.
+
+```rust
+trait ConstSized: Sized + ConstMetaSized {}
+
+trait Sized: MetaSized {}
+
+trait ConstMetaSized: MetaSized {}
+
+trait MetaSized: Pointee {}
+
+trait Pointee {}
+```
+
+Under this variant, `Clone`'s supertrait does not need to be relaxed and the
+previous example would continue to compile. Runtime-sized types would implement
+`Sized` but not `ConstSized`, and `MetaSized` but not `ConstMetaSized`. All
+types which currently implement `Sized` would implement `ConstSized` and
+all types which currently satisfy a `?Sized` bound would implement
+`ConstMetaSized`.
+
+As `ConstSized` is a marker trait, it does not need to have any methods usable
+in const contexts, so full-fledged const traits aren't strictly necessary, it
+is sufficient that it can be used in bounds to prevent runtime-sized types
+from being instantiated, such as with `size_of`:
+
+```rust
+pub const fn size_of<T: ConstSized>() -> usize {
+    /* .. */
+}
+```
+
+Likewise, `size_of_val`'s bound can be relaxed to `ConstMetaSized`
+
+```rust
+pub const fn size_of_val<T: ConstMetaSized>(v: &T) -> usize {
+    /* .. */
+}
+```
+
+In both functions, runtime-sized types are prevented from being valid generic
+arguments while all other appropriate types are accepted.
+
+Without const traits' const-conditional bounds (`~const`), it isn't possible
+to write a version of `size_of` or `size_of_val` which can be used with
+runtime-sized types at runtime but not in a const context.
+
+As this approach replicates the hierarchy which would be introduced by const
+traits and it is the view of this RFC's author that some form of const traits
+are likely to be adopted: this non-const trait variant is not the primary
+proposal of this RFC and instead is included only to demonstrate that such a
+dependency need not be considered a blocker.
 
 [^9]: In previous iterations, the proposed linear trait hierarchy was:
 
@@ -1215,62 +1290,6 @@ found to be insufficient.
       and ultimately the inability to relax `Clone`'s supertrait made it
       infeasible anyway. `ValueSized` was replaced with `MetaSized` in later
       versions of the proposal.
-[^11]: Once the interactions with constness were realised, another possibility
-      was explored - adding a subtrait of `Sized` to emulate `const Sized`
-      without const traits proper. However, this also does not work:
-
-      A subtrait of `Sized`, `ConstSized` could be introduced. In order to
-      avoid this breaking a breaking change, as with introducing arbitrary
-      new automatically-implemented traits, the default `Sized` bound would
-      be migrated to a `ConstSized` bound over an edition (with `T` and
-      `T: Sized` being interpreted as `ConstSized` in the current edition).
-
-      ```
-      ┌────────────────────────────────────────────────┐
-      │ ┌────────────────────────────────────┐         │
-      │ │ ┌──────────────────────┐           │         │
-      │ │ │ ┌────────────┐       │           │         │
-      │ │ │ │ ConstSized │ Sized │ MetaSized │ Pointee │
-      │ │ │ └────────────┘       │           │         │
-      │ │ └──────────────────────┘           │         │
-      │ └────────────────────────────────────┘         │
-      └────────────────────────────────────────────────┘
-      ```
-
-      Under this variant, `Clone`'s supertrait does not need to be relaxed
-      and the previous example would continue to compile. Runtime-sized types
-      would implement `Sized` but not `ConstSized`, and all types which
-      currently implement `Sized` would implement `ConstSized`.
-
-      As `ConstSized` is a marker trait, it does not need to have any methods
-      usable in const contexts, so full-fledged const traits aren't strictly
-      necessary, it is sufficient that it can be used in bounds to prevent
-      runtime-sized types from being instantiated, such as with `size_of`:
-
-      ```rust
-      pub const fn size_of<T: ConstSized>() -> usize {
-          /* .. */
-      }
-      ```
-
-      However, the fatal limitation of this approach becomes clear when the
-      same is tried with `size_of_val`:
-
-      ```rust
-      pub const fn size_of_val<T: ConstSized>(v: &T) -> usize {
-          /* .. */
-      }
-      ```
-
-      If the bound on `size_of_val` is strengthened to `ConstSized`, then it
-      guarantees that runtime-sized types cannot call `size_of_val` in a const
-      context, as required. However, it also prevents `size_of_val` from being
-      used with `MetaSized` types, which is why the function exists.
-
-      This contradiction cannot be reconciled without const traits (which
-      inherently introduces a non-linear hierarchy) and `~const` bounds
-      (which "switches" to a different branch of that trait hierarchy
-      conditional on const context).
 
 ## Why change `size_of` and `size_of_val`?
 [why-change-size_of-and-size_of_val]: #why-change-size_of-and-size_of_val
