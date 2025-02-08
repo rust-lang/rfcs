@@ -143,10 +143,10 @@ Teams often use these notes to indicate the person on the team signed up to do t
 
 
 ### bootstrap team
-| Goal                                                                                                                          | [Good vibes][valid_team_asks] | [r?][valid_team_asks] |
-| :--                                                                                                                           | :-- | :-- |
-| [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks) | \*2 | \*3 |
-| [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html#ownership-and-team-asks)                                 |     | \*1 |
+| Goal                                                                                                  | [Good vibes][valid_team_asks] | [r?][valid_team_asks] |
+| :--                                                                                                   | :-- | :-- |
+| [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html) | \*2 | \*3 |
+| [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html)                                 |     | \*1 |
 
 
 \*1: For any tooling integration ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html))
@@ -158,17 +158,17 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*3: Probably mostly [bootstrap] or whoever is more interested in reviewing [`compiletest`] changes ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html))
 
 ### cargo team
-| Goal                                                                                                                       | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [Ded. r?][valid_team_asks] | [Design mtg.][valid_team_asks] |
-| :--                                                                                                                        | :-- | :-- | :-- | :--     |
-| [build-std](https://rust-lang.github.io/rust-project-goals/2025h1/build-std.html#ownership-and-team-asks)                                                                          | ✅   | ✅   |     |         |
-| [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-semver-checks.html#ownership-and-team-asks) | ✅   |     |     |         |
-| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html#ownership-and-team-asks)                                               |     |     | \*3 | \*1 \*2 |
-| [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2025h1/pubgrub-in-cargo.html#ownership-and-team-asks)                       | ✅   |     |     |         |
-| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2025h1/libtest-json.html#ownership-and-team-asks)                                       | ✅   |     |     |         |
-| [Implement Open API Namespace Support](https://rust-lang.github.io/rust-project-goals/2025h1/open-namespaces.html#ownership-and-team-asks)                                         | ✅   |     |     |         |
-| [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-plumbing.html#ownership-and-team-asks)                              | ✅   |     |     |         |
-| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks)                                                                           | ✅   |     |     |         |
-| [Stabilize public/private dependencies](https://rust-lang.github.io/rust-project-goals/2025h1/pub-priv.html#ownership-and-team-asks)                                               | ✅   |     |     |         |
+| Goal                                                                                               | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [Ded. r?][valid_team_asks] | [Design mtg.][valid_team_asks] |
+| :--                                                                                                | :-- | :-- | :-- | :--     |
+| [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-semver-checks.html) | ✅   |     |     |         |
+| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html)                                               |     |     | \*3 | \*1 \*2 |
+| [Extend pubgrub to match cargo's dependency resolution](https://rust-lang.github.io/rust-project-goals/2025h1/pubgrub-in-cargo.html)                       | ✅   |     |     |         |
+| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2025h1/libtest-json.html)                                       | ✅   |     |     |         |
+| [Implement Open API Namespace Support](https://rust-lang.github.io/rust-project-goals/2025h1/open-namespaces.html)                                         | ✅   |     |     |         |
+| [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-plumbing.html)                              | ✅   |     |     |         |
+| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html)                                                                           | ✅   |     |     |         |
+| [Stabilize public/private dependencies](https://rust-lang.github.io/rust-project-goals/2025h1/pub-priv.html)                                               | ✅   |     |     |         |
+| [build-std](https://rust-lang.github.io/rust-project-goals/2025h1/build-std.html)                                                                          | ✅   | ✅   |     |         |
 
 
 \*1: 1 hour Overall Design and threat model ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html))
@@ -180,42 +180,46 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*3: 1 hour Design for novel incremental download mechanism for bandwidth conservation ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html))
 
 ### clippy team
-| Goal                                                                                      | [r?][valid_team_asks] | [Stabilize.][valid_team_asks] |
-| :--                                                                                       | :-- | :-- |
-| [Clippy configuration](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks) (part of [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html)) |     | ✅   |
-| [Optimizing Clippy & linting](https://rust-lang.github.io/rust-project-goals/2025h1/optimize-clippy-linting-2.html#ownership-and-team-asks)       | ✅   |     |
+| Goal                                                        | [r?][valid_team_asks] | [Stabilize.][valid_team_asks] |
+| :--                                                         | :-- | :-- |
+| [Optimizing Clippy & linting](https://rust-lang.github.io/rust-project-goals/2025h1/optimize-clippy-linting-2.html) | ✅   |     |
+| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html)                                    |     |     |
+| ↳ Clippy configuration                                      |     | ✅   |
 
 ### compiler team
-| Goal                                                                                                                                                                    | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [Ded. r?][valid_team_asks] | [Design mtg.][valid_team_asks] | [RFC][valid_team_asks] | [Stabilize.][valid_team_asks] | [Policy][valid_team_asks] |
-| :--                                                                                                                                                                     | :-- | :--       | :-- | :-- | :-- | :-- | :-- |
-| [ABI-modifying compiler flags](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks) (part of [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html))                                                                       |     | ✅         |     |     | \*1 | \*2 |     |
-| [Evaluate approaches for seamless interop between C++ and Rust](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html#ownership-and-team-asks)                                                           | ✅   |           |     | \*4 |     |     |     |
-| [Experimental Contract attributes](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html#ownership-and-team-asks) (part of [Instrument the Rust standard library with safety contracts](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html))   |     | ✅         |     | ✅   |     |     |     |
-| [Expose experimental LLVM features for GPU offloading](https://rust-lang.github.io/rust-project-goals/2025h1/GPU-Offload.html#ownership-and-team-asks)                                                                          |     | ✅         |     |     |     |     |     |
-| [Extending type system to support scalable vectors](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                          |     | ✅         |     |     |     |     |     |
-| [Externally Implementable Items](https://rust-lang.github.io/rust-project-goals/2025h1/eii.html#ownership-and-team-asks)                                                                                                        |     | ✅         |     |     |     |     |     |
-| [Extract dependency information, configure no-std externally](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks) (part of [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html))                                        |     | ✅         |     |     |     | ✅   |     |
-| [Implement Open API Namespace Support](https://rust-lang.github.io/rust-project-goals/2025h1/open-namespaces.html#ownership-and-team-asks)                                                                                      | ✅   |           |     |     |     |     |     |
-| [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html#ownership-and-team-asks)                                                                            |     | ✅         |     |     |     |     |     |
-| [Implementable trait aliases](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                             |     | ✅         |     |     |     |     |     |
-| [Improve state machine codegen](https://rust-lang.github.io/rust-project-goals/2025h1/improve-rustc-codegen.html#ownership-and-team-asks)                                                                                       | ✅   | ✅         |     |     |     |     |     |
-| [Investigate SME support](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                                                    | ✅   |           |     |     |     |     |     |
-| [Land nightly experiment for SVE types](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                                      |     | ✅         |     |     |     |     |     |
-| [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks)                                           | \*5 | \*6       |     |     |     |     |     |
-| [Metrics Initiative](https://rust-lang.github.io/rust-project-goals/2025h1/metrics-initiative.html#ownership-and-team-asks)                                                                                                     | ✅   | ✅         |     |     |     |     |     |
-| [Null and enum-discriminant runtime checks in debug builds](https://rust-lang.github.io/rust-project-goals/2025h1/null-enum-discriminant-debug-checks.html#ownership-and-team-asks)                                             |     | [Ben Kimock][] |     |     |     |     |     |
-| [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html#ownership-and-team-asks)                                                                                        |     | ✅         |     |     |     |     |     |
-| [Production use of annotate-snippets](https://rust-lang.github.io/rust-project-goals/2025h1/annotate-snippets.html#ownership-and-team-asks) (part of [Use annotate-snippets for rustc diagnostic output](https://rust-lang.github.io/rust-project-goals/2025h1/annotate-snippets.html)) |     |           | \*3 |     |     |     |     |
-| [Promoting Parallel Front End](https://rust-lang.github.io/rust-project-goals/2025h1/parallel-front-end.html#ownership-and-team-asks)                                                                                           | ✅   |           |     |     |     |     |     |
-| [Publish first version of StableMIR on crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/stable-mir.html#ownership-and-team-asks)                                                                                | ✅   |           |     |     |     |     |     |
-| [Research: How to achieve safety when linking separately compiled code](https://rust-lang.github.io/rust-project-goals/2025h1/safe-linking.html#ownership-and-team-asks)                                                        |     | ✅         |     |     |     |     |     |
-| [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                    |     | ✅         |     |     |     |     |     |
-| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks)                                                                                                                        | ✅   |           |     |     |     |     |     |
-| [rustc-perf improvements](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html#ownership-and-team-asks)                                                                                                 |     |           |     |     |     |     | \*7 |
-| [Stabilize public/private dependencies](https://rust-lang.github.io/rust-project-goals/2025h1/pub-priv.html#ownership-and-team-asks)                                                                                            | ✅   |           |     |     |     |     |     |
-| [Standard reviews](https://rust-lang.github.io/rust-project-goals/2025h1/annotate-snippets.html#ownership-and-team-asks) (part of [Use annotate-snippets for rustc diagnostic output](https://rust-lang.github.io/rust-project-goals/2025h1/annotate-snippets.html))                    |     | ✅         |     |     |     |     |     |
-| [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks)                                                                                                        | ✅   |           |     |     |     |     |     |
-| [Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2025h1/unsafe-fields.html#ownership-and-team-asks)                                                                                                               |     | ✅         |     |     |     |     |     |
+| Goal                                                                                                  | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [Ded. r?][valid_team_asks] | [Design mtg.][valid_team_asks] | [RFC][valid_team_asks] | [Stabilize.][valid_team_asks] | [Policy][valid_team_asks] |
+| :--                                                                                                   | :-- | :--       | :-- | :-- | :-- | :-- | :-- |
+| [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html)                                                                                     |     |           |     |     |     |     |     |
+| ↳ Implementable trait aliases                                                                         |     | ✅         |     |     |     |     |     |
+| ↳ Return type notation                                                                                |     | ✅         |     |     |     |     |     |
+| [Evaluate approaches for seamless interop between C++ and Rust](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html)                 | ✅   |           |     | \*4 |     |     |     |
+| [Expose experimental LLVM features for GPU offloading](https://rust-lang.github.io/rust-project-goals/2025h1/GPU-Offload.html)                                |     | ✅         |     |     |     |     |     |
+| [Externally Implementable Items](https://rust-lang.github.io/rust-project-goals/2025h1/eii.html)                                                              |     | ✅         |     |     |     |     |     |
+| [Implement Open API Namespace Support](https://rust-lang.github.io/rust-project-goals/2025h1/open-namespaces.html)                                            | ✅   |           |     |     |     |     |     |
+| [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html)                                  |     | ✅         |     |     |     |     |     |
+| [Improve state machine codegen](https://rust-lang.github.io/rust-project-goals/2025h1/improve-rustc-codegen.html)                                             | ✅   | ✅         |     |     |     |     |     |
+| [Instrument the Rust standard library with safety contracts](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html)                        |     |           |     |     |     |     |     |
+| ↳ Experimental Contract attributes                                                                    |     | ✅         |     | ✅   |     |     |     |
+| [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html) | \*5 | \*6       |     |     |     |     |     |
+| [Metrics Initiative](https://rust-lang.github.io/rust-project-goals/2025h1/metrics-initiative.html)                                                           | ✅   | ✅         |     |     |     |     |     |
+| [Null and enum-discriminant runtime checks in debug builds](https://rust-lang.github.io/rust-project-goals/2025h1/null-enum-discriminant-debug-checks.html)   |     | [Ben Kimock][] |     |     |     |     |     |
+| [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html)                                              |     | ✅         |     |     |     |     |     |
+| [Promoting Parallel Front End](https://rust-lang.github.io/rust-project-goals/2025h1/parallel-front-end.html)                                                 | ✅   |           |     |     |     |     |     |
+| [Publish first version of StableMIR on crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/stable-mir.html)                                      | ✅   |           |     |     |     |     |     |
+| [Research: How to achieve safety when linking separately compiled code](https://rust-lang.github.io/rust-project-goals/2025h1/safe-linking.html)              |     | ✅         |     |     |     |     |     |
+| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html)                                                                              | ✅   |           |     |     |     |     |     |
+| ↳ ABI-modifying compiler flags                                                                        |     | ✅         |     |     | \*1 | \*2 |     |
+| ↳ Extract dependency information, configure no-std externally                                         |     | ✅         |     |     |     | ✅   |     |
+| [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html)                                                              | ✅   |           |     |     |     |     |     |
+| ↳ Extending type system to support scalable vectors                                                   |     | ✅         |     |     |     |     |     |
+| ↳ Investigate SME support                                                                             | ✅   |           |     |     |     |     |     |
+| ↳ Land nightly experiment for SVE types                                                               |     | ✅         |     |     |     |     |     |
+| [Stabilize public/private dependencies](https://rust-lang.github.io/rust-project-goals/2025h1/pub-priv.html)                                                  | ✅   |           |     |     |     |     |     |
+| [Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2025h1/unsafe-fields.html)                                                                     |     | ✅         |     |     |     |     |     |
+| [Use annotate-snippets for rustc diagnostic output](https://rust-lang.github.io/rust-project-goals/2025h1/annotate-snippets.html)                             |     |           |     |     |     |     |     |
+| ↳ Production use of annotate-snippets                                                                 |     |           | \*3 |     |     |     |     |
+| ↳ Standard reviews                                                                                    |     | ✅         |     |     |     |     |     |
+| [rustc-perf improvements](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html)                                                       |     |           |     |     |     |     | \*7 |
 
 
 \*1: [RFC #3716](https://github.com/rust-lang/rfcs/pull/3716), currently in PFCP ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html))
@@ -239,9 +243,9 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*7: Update performance regression policy ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html))
 
 ### crates-io team
-| Goal                                                                         | [Design mtg.][valid_team_asks] |
-| :--                                                                          | :--     |
-| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html#ownership-and-team-asks) | \*1 \*2 |
+| Goal                                                 | [Design mtg.][valid_team_asks] |
+| :--                                                  | :--     |
+| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html) | \*1 \*2 |
 
 
 \*1: 1 hour Overall Design, threat model, and discussion of key management and quorums ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html))
@@ -250,11 +254,11 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*2: 1 hour General design/implementation for automated index signing ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html))
 
 ### infra team
-| Goal                                                                         | [Good vibes][valid_team_asks] | [Deploy][valid_team_asks] | [r?][valid_team_asks] | [Design mtg.][valid_team_asks] |
-| :--                                                                          | :-- | :-- | :-- | :-- |
-| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html#ownership-and-team-asks) |     |     |     | \*1 |
-| [Metrics Initiative](https://rust-lang.github.io/rust-project-goals/2025h1/metrics-initiative.html#ownership-and-team-asks)          | ✅   |     |     |     |
-| [rustc-perf improvements](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html#ownership-and-team-asks)      | ✅   | \*2 | ✅   |     |
+| Goal                                                 | [Good vibes][valid_team_asks] | [Deploy][valid_team_asks] | [r?][valid_team_asks] | [Design mtg.][valid_team_asks] |
+| :--                                                  | :-- | :-- | :-- | :-- |
+| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html) |     |     |     | \*1 |
+| [Metrics Initiative](https://rust-lang.github.io/rust-project-goals/2025h1/metrics-initiative.html)          | ✅   |     |     |     |
+| [rustc-perf improvements](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html)      | ✅   | \*2 | ✅   |     |
 
 
 \*1: 3 hours of design and threat model discussion. Specific production infrastructure setup will come at a later time after the initial proof of concept. ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html))
@@ -263,34 +267,35 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*2: rustc-perf improvements, testing infrastructure ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html))
 
 ### lang team
-| Goal                                                                                                                                                                               | [Good vibes][valid_team_asks] | [Champion][valid_team_asks] | [Experiment][valid_team_asks] | [Design mtg.][valid_team_asks] | [RFC][valid_team_asks] | [Stabilize.][valid_team_asks] | [Policy][valid_team_asks] |
-| :--                                                                                                                                                                                | :-- | :--           | :--           | :--                 | :--            | :-- | :-- |
-| ["Stabilizable" prototype for expanded const generics](https://rust-lang.github.io/rust-project-goals/2025h1/min_generic_const_arguments.html#ownership-and-team-asks)                                                                     | ✅   |               |               |                     |                |     |     |
-| [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks)                                                                                   |     |               |               |                     |                |     | \*4 |
-| [Design and iteration for macro fragment fields](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks) (part of [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html)) |     | [Josh Triplett][] |               | ✅                   | ✅              |     |     |
-| [Design for macro metavariable constructs](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks) (part of [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html))       | ✅   |               |               |                     |                |     |     |
-| [Evaluate approaches for seamless interop between C++ and Rust](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html#ownership-and-team-asks)                                                                      | ✅   | [Tyler Mandry][]      |               | \*3                 |                |     |     |
-| [Experiment with ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2025h1/ergonomic-rc.html#ownership-and-team-asks)                                                                                                  |     | [Niko Matsakis][] |               |                     |                |     |     |
-| [Expose experimental LLVM features for GPU offloading](https://rust-lang.github.io/rust-project-goals/2025h1/GPU-Offload.html#ownership-and-team-asks)                                                                                     |     | [TC][]  | ![Complete][] |                     |                |     |     |
-| [Extending type system to support scalable vectors](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                                     |     | [David Wood][]    |               |                     | ✅              |     |     |
-| [Externally Implementable Items](https://rust-lang.github.io/rust-project-goals/2025h1/eii.html#ownership-and-team-asks)                                                                                                                   |     | [Niko Matsakis][] | ![Complete][] |                     |                |     |     |
-| [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html#ownership-and-team-asks)                                                                                       | ✅   |               |               |                     |                | ✅   |     |
-| [Implementable trait aliases](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                        |     | [Tyler Mandry][]      |               |                     | ✅              |     |     |
-| [Improve state machine codegen](https://rust-lang.github.io/rust-project-goals/2025h1/improve-rustc-codegen.html#ownership-and-team-asks)                                                                                                  |     | [TC][]  | ✅             |                     |                |     |     |
-| [Investigate SME support](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                                                               | ✅   |               |               |                     |                |     |     |
-| [Nightly support for ergonomic SIMD multiversioning](https://rust-lang.github.io/rust-project-goals/2025h1/simd-multiversioning.html#ownership-and-team-asks)                                                                              |     |               | ✅             | ✅                   | ✅              |     |     |
-| [Null and enum-discriminant runtime checks in debug builds](https://rust-lang.github.io/rust-project-goals/2025h1/null-enum-discriminant-debug-checks.html#ownership-and-team-asks)                                                        | ✅   |               |               |                     |                |     |     |
-| [Pin ergonomics](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                                     |     | [Tyler Mandry][]      | ![Complete][] |                     |                |     |     |
-| [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html#ownership-and-team-asks)                                                                                                   |     | [Niko Matsakis][] | ![Complete][] | \*1                 | (stretch goal) |     |     |
-| [Research: How to achieve safety when linking separately compiled code](https://rust-lang.github.io/rust-project-goals/2025h1/safe-linking.html#ownership-and-team-asks)                                                                   | ✅   | [Niko Matsakis][] | [Niko Matsakis][] |                     |                |     |     |
-| [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                               |     | [Niko Matsakis][] |               |                     | ![Complete][]  | ✅   |     |
-| [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks)                                                                                                                   | ✅   |               |               |                     |                |     |     |
-| [Trait for generators (sync)](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                        |     | [Tyler Mandry][]      |               | 2 meetings expected | ✅              |     |     |
-| [Unsafe binders](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                                     |     | \*2           |               |                     | Stretch goal   |     |     |
-| [Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2025h1/unsafe-fields.html#ownership-and-team-asks)                                                                                                                          | ✅   | [Scott McMurray][]     |               | ✅                   | ✅              |     |     |
-| [`async fn` in `dyn Trait`](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                                          |     | [Niko Matsakis][] |               |                     |                |     |     |
-| [`macro_rules!` attributes](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks) (part of [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html))                      |     | [Josh Triplett][] |               |                     | ✅              |     |     |
-| [`macro_rules!` derives](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks) (part of [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html))                         |     | [Josh Triplett][] |               |                     | ✅              |     |     |
+| Goal                                                                                                | [Good vibes][valid_team_asks] | [Champion][valid_team_asks] | [Experiment][valid_team_asks] | [Design mtg.][valid_team_asks] | [RFC][valid_team_asks] | [Stabilize.][valid_team_asks] | [Policy][valid_team_asks] |
+| :--                                                                                                 | :-- | :--           | :--           | :--                 | :--            | :-- | :-- |
+| ["Stabilizable" prototype for expanded const generics](https://rust-lang.github.io/rust-project-goals/2025h1/min_generic_const_arguments.html)              | ✅   |               |               |                     |                |     |     |
+| [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html)                                                                                   |     |               |               |                     |                |     |     |
+| ↳ Implementable trait aliases                                                                       |     | [Tyler Mandry][]      |               |                     | ✅              |     |     |
+| ↳ Pin ergonomics                                                                                    |     | [Tyler Mandry][]      | ![Complete][] |                     |                |     |     |
+| ↳ Return type notation                                                                              |     | [Niko Matsakis][] |               |                     | ![Complete][]  | ✅   |     |
+| ↳ Trait for generators (sync)                                                                       |     | [Tyler Mandry][]      |               | 2 meetings expected | ✅              |     |     |
+| ↳ Unsafe binders                                                                                    |     | \*2           |               |                     | Stretch goal   |     |     |
+| ↳ `async fn` in `dyn Trait`                                                                         |     | [Niko Matsakis][] |               |                     |                |     |     |
+| [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html)                            |     |               |               |                     |                |     | \*4 |
+| ↳ Design and iteration for macro fragment fields                                                    |     | [Josh Triplett][] |               | ✅                   | ✅              |     |     |
+| ↳ Design for macro metavariable constructs                                                          | ✅   |               |               |                     |                |     |     |
+| ↳ `macro_rules!` attributes                                                                         |     | [Josh Triplett][] |               |                     | ✅              |     |     |
+| ↳ `macro_rules!` derives                                                                            |     | [Josh Triplett][] |               |                     | ✅              |     |     |
+| [Evaluate approaches for seamless interop between C++ and Rust](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html)               | ✅   | [Tyler Mandry][]      |               | \*3                 |                |     |     |
+| [Experiment with ergonomic ref-counting](https://rust-lang.github.io/rust-project-goals/2025h1/ergonomic-rc.html)                                           |     | [Niko Matsakis][] |               |                     |                |     |     |
+| [Expose experimental LLVM features for GPU offloading](https://rust-lang.github.io/rust-project-goals/2025h1/GPU-Offload.html)                              |     | [TC][]  | ![Complete][] |                     |                |     |     |
+| [Externally Implementable Items](https://rust-lang.github.io/rust-project-goals/2025h1/eii.html)                                                            |     | [Niko Matsakis][] | ![Complete][] |                     |                |     |     |
+| [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html)                                | ✅   |               |               |                     |                | ✅   |     |
+| [Improve state machine codegen](https://rust-lang.github.io/rust-project-goals/2025h1/improve-rustc-codegen.html)                                           |     | [TC][]  | ✅             |                     |                |     |     |
+| [Nightly support for ergonomic SIMD multiversioning](https://rust-lang.github.io/rust-project-goals/2025h1/simd-multiversioning.html)                       |     |               | ✅             | ✅                   | ✅              |     |     |
+| [Null and enum-discriminant runtime checks in debug builds](https://rust-lang.github.io/rust-project-goals/2025h1/null-enum-discriminant-debug-checks.html) | ✅   |               |               |                     |                |     |     |
+| [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html)                                            |     | [Niko Matsakis][] | ![Complete][] | \*1                 | (stretch goal) |     |     |
+| [Research: How to achieve safety when linking separately compiled code](https://rust-lang.github.io/rust-project-goals/2025h1/safe-linking.html)            | ✅   | [Niko Matsakis][] | [Niko Matsakis][] |                     |                |     |     |
+| [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html)                                                            | ✅   |               |               |                     |                |     |     |
+| ↳ Extending type system to support scalable vectors                                                 |     | [David Wood][]    |               |                     | ✅              |     |     |
+| ↳ Investigate SME support                                                                           | ✅   |               |               |                     |                |     |     |
+| [Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2025h1/unsafe-fields.html)                                                                   | ✅   | [Scott McMurray][]     |               | ✅                   | ✅              |     |     |
 
 
 \*1: first meeting scheduled for Jan; second meeting may be required ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html))
@@ -305,13 +310,13 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*4: Discussed with [Eric Holk][] and [Vincenzo Palazzo][]; lang would decide whether to delegate specific matters to wg-macros ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html))
 
 ### leadership-council team
-| Goal                                                                                                     | [Alloc funds][valid_team_asks] | [Org][valid_team_asks] | [Policy][valid_team_asks] | [Misc][valid_team_asks] |
-| :--                                                                                                      | :-- | :-- | :-- | :-- |
-| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html#ownership-and-team-asks)                             |     |     | \*2 |     |
-| [Organize Rust All-Hands 2025](https://rust-lang.github.io/rust-project-goals/2025h1/all-hands.html#ownership-and-team-asks)                                     | \*3 |     |     | \*4 |
-| [Run the 2025H1 project goal program](https://rust-lang.github.io/rust-project-goals/2025h1/stabilize-project-goal-program.html#ownership-and-team-asks)         |     | \*6 |     |     |
-| [Rust Vision Document](https://rust-lang.github.io/rust-project-goals/2025h1/rust-vision-doc.html#ownership-and-team-asks)                                       |     |     |     | \*1 |
-| [Team swag](https://rust-lang.github.io/rust-project-goals/2025h1/all-hands.html#ownership-and-team-asks) (part of [Organize Rust All-Hands 2025](https://rust-lang.github.io/rust-project-goals/2025h1/all-hands.html)) |     |     |     | \*5 |
+| Goal                                                                     | [Alloc funds][valid_team_asks] | [Org][valid_team_asks] | [Policy][valid_team_asks] | [Misc][valid_team_asks] |
+| :--                                                                      | :-- | :-- | :-- | :-- |
+| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html)                     |     |     | \*2 |     |
+| [Organize Rust All-Hands 2025](https://rust-lang.github.io/rust-project-goals/2025h1/all-hands.html)                             | \*3 |     |     | \*4 |
+| ↳ Team swag                                                              |     |     |     | \*5 |
+| [Run the 2025H1 project goal program](https://rust-lang.github.io/rust-project-goals/2025h1/stabilize-project-goal-program.html) |     | \*6 |     |     |
+| [Rust Vision Document](https://rust-lang.github.io/rust-project-goals/2025h1/rust-vision-doc.html)                               |     |     |     | \*1 |
 
 
 \*1: Create supporting subteam + Zulip stream ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/rust-vision-doc.html))
@@ -332,78 +337,81 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*6: approve creation of new team ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/stabilize-project-goal-program.html))
 
 ### libs team
-| Goal                                                                                                                                                            | [Good vibes][valid_team_asks] | [r?][valid_team_asks] |
-| :--                                                                                                                                                             | :-- | :-- |
-| [Instrument the Rust standard library with safety contracts](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html#ownership-and-team-asks)                                                          | ✅   |     |
-| [Standard Library Contracts](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html#ownership-and-team-asks) (part of [Instrument the Rust standard library with safety contracts](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html)) |     | ✅   |
+| Goal                                                                           | [Good vibes][valid_team_asks] | [r?][valid_team_asks] |
+| :--                                                                            | :-- | :-- |
+| [Instrument the Rust standard library with safety contracts](https://rust-lang.github.io/rust-project-goals/2025h1/std-contracts.html) | ✅   |     |
+| ↳ Standard Library Contracts                                                   |     | ✅   |
 
 ### libs-api team
-| Goal                                                                                                          | [Good vibes][valid_team_asks] | [Design mtg.][valid_team_asks] | [RFC][valid_team_asks] |
-| :--                                                                                                           | :-- | :-- | :-- |
-| [Evaluate approaches for seamless interop between C++ and Rust](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html#ownership-and-team-asks) | ✅   | \*1 |     |
-| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2025h1/libtest-json.html#ownership-and-team-asks)                          | ✅   |     |     |
-| [Trait for generators (sync)](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                   |     |     | ✅   |
+| Goal                                                                                  | [Good vibes][valid_team_asks] | [Design mtg.][valid_team_asks] | [RFC][valid_team_asks] |
+| :--                                                                                   | :-- | :-- | :-- |
+| [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html)                                                                     |     |     |     |
+| ↳ Trait for generators (sync)                                                         |     |     | ✅   |
+| [Evaluate approaches for seamless interop between C++ and Rust](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html) | ✅   | \*1 |     |
+| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2025h1/libtest-json.html)                          | ✅   |     |     |
 
 
 \*1: 2-3 meetings expected; all involve lang ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/seamless-rust-cpp.html))
 
 ### opsem team
-| Goal                                                                                                                        | [Good vibes][valid_team_asks] | [r?][valid_team_asks] |
-| :--                                                                                                                         | :-- | :--       |
-| [Null and enum-discriminant runtime checks in debug builds](https://rust-lang.github.io/rust-project-goals/2025h1/null-enum-discriminant-debug-checks.html#ownership-and-team-asks) | ✅   | [Ben Kimock][] |
+| Goal                                                                                                | [Good vibes][valid_team_asks] | [r?][valid_team_asks] |
+| :--                                                                                                 | :-- | :--       |
+| [Null and enum-discriminant runtime checks in debug builds](https://rust-lang.github.io/rust-project-goals/2025h1/null-enum-discriminant-debug-checks.html) | ✅   | [Ben Kimock][] |
 
 ### project-stable-mir team
-| Goal                                                                                     | [r?][valid_team_asks] |
-| :--                                                                                      | :-- |
-| [Publish first version of StableMIR on crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/stable-mir.html#ownership-and-team-asks) | ✅   |
+| Goal                                                             | [r?][valid_team_asks] |
+| :--                                                              | :-- |
+| [Publish first version of StableMIR on crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/stable-mir.html) | ✅   |
 
 ### release team
-| Goal                                                                         | [Good vibes][valid_team_asks] |
-| :--                                                                          | :-- |
-| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html#ownership-and-team-asks) | \*1 |
+| Goal                                                 | [Good vibes][valid_team_asks] |
+| :--                                                  | :-- |
+| [Crates.io mirroring](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html) | \*1 |
 
 
 \*1: Asynchronous discussion of the release team's role in the chain of trust, and preliminary approval of an experimental proof of concept. Approximately ~1 hour of total time across the 6-month period. ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html))
 
 ### rustdoc team
-| Goal                                                                                                                          | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [RFC][valid_team_asks] | [Stabilize.][valid_team_asks] |
-| :--                                                                                                                           | :-- | :-- | :-- | :-- |
-| [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-semver-checks.html#ownership-and-team-asks)    | ✅   |     |     |     |
-| [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html#ownership-and-team-asks) | \*1 |     |     |     |
-| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks)                                                                              | ✅   |     |     |     |
-| [Rustdoc features to extract doc tests](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html#ownership-and-team-asks) (part of [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html))                    |     | ✅   | ✅   | ✅   |
+| Goal                                                                                                  | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [RFC][valid_team_asks] | [Stabilize.][valid_team_asks] |
+| :--                                                                                                   | :-- | :-- | :-- | :-- |
+| [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2025h1/cargo-semver-checks.html)    | ✅   |     |     |     |
+| [Making compiletest more maintainable: reworking directive handling](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html) | \*1 |     |     |     |
+| [Rust-for-Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html)                                                                              | ✅   |     |     |     |
+| ↳ Rustdoc features to extract doc tests                                                               |     | ✅   | ✅   | ✅   |
 
 
 \*1: including consultations for desired test behaviors and testing infra consumers ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/compiletest-directive-rework.html))
 
 ### spec team
-| Goal                                                                                          | [Good vibes][valid_team_asks] | [Spec text][valid_team_asks] |
-| :--                                                                                           | :-- | :--           |
-| [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html#ownership-and-team-asks)  |     | [Joel Marcey][]   |
-| [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html#ownership-and-team-asks) | ✅   |               |
-| [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))          |     | [Niko Matsakis][] |
+| Goal                                                                  | [Good vibes][valid_team_asks] | [Spec text][valid_team_asks] |
+| :--                                                                   | :-- | :--           |
+| [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html)                                                     |     |               |
+| ↳ Return type notation                                                |     | [Niko Matsakis][] |
+| [Implement restrictions, prepare for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/restrictions.html)  |     | [Joel Marcey][]   |
+| [Publish first rust-lang-owned release of "FLS"](https://rust-lang.github.io/rust-project-goals/2025h1/spec-fls-publish.html) | ✅   |               |
 
 ### testing-devex team
-| Goal                                                                                 | [Good vibes][valid_team_asks] |
-| :--                                                                                  | :-- |
-| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2025h1/libtest-json.html#ownership-and-team-asks) | ✅   |
+| Goal                                                         | [Good vibes][valid_team_asks] |
+| :--                                                          | :-- |
+| [Finish the libtest json output experiment](https://rust-lang.github.io/rust-project-goals/2025h1/libtest-json.html) | ✅   |
 
 ### types team
-| Goal                                                                                                                                                   | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [RFC][valid_team_asks] | [RFC rev.][valid_team_asks] | [Stabilize.][valid_team_asks] | [FCP][valid_team_asks] |
-| :--                                                                                                                                                    | :-- | :--            | :--          | :-- | :-- | :-- |
-| ["Stabilizable" prototype for expanded const generics](https://rust-lang.github.io/rust-project-goals/2025h1/min_generic_const_arguments.html#ownership-and-team-asks)                                         | ✅   |                |              |     |     |     |
-| [Extending type system to support scalable vectors](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))         |     |                | ✅            |     |     |     |
-| [Formalize const-traits in a-mir-formality](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html#ownership-and-team-asks) (part of [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html)) | \*2 |                |              |     |     |     |
-| [Implementable trait aliases](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                            |     | ✅              | ✅            |     |     |     |
-| [Investigate SME support](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                                   | ✅   |                |              |     |     |     |
-| [Land nightly experiment for SVE types](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks) (part of [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html))                     |     |                | ✅            |     |     |     |
-| [Model coherence in a-mir-formality](https://rust-lang.github.io/rust-project-goals/2025h1/formality.html#ownership-and-team-asks)                                                                             | ✅   |                |              |     |     |     |
-| [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2025h1/next-solver.html#ownership-and-team-asks)                                                                                 | ✅   | ✅              |              |     |     | \*3 |
-| [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html#ownership-and-team-asks)                                                                       |     |                |              | \*1 |     |     |
-| [Return type notation](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                   |     | ✅              |              |     | ✅   |     |
-| [Scalable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2025h1/Polonius.html#ownership-and-team-asks)                                                                            |     | [Matthew Jasper][] |              |     |     |     |
-| [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html#ownership-and-team-asks)                                                                                       | ✅   |                |              |     |     |     |
-| [Unsafe binders](https://rust-lang.github.io/rust-project-goals/2025h1/async.html#ownership-and-team-asks) (part of [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html))                                                                         |     |                | Stretch goal |     |     |     |
+| Goal                                                                                   | [Good vibes][valid_team_asks] | [r?][valid_team_asks] | [RFC][valid_team_asks] | [RFC rev.][valid_team_asks] | [Stabilize.][valid_team_asks] | [FCP][valid_team_asks] |
+| :--                                                                                    | :-- | :--            | :--          | :-- | :-- | :-- |
+| ["Stabilizable" prototype for expanded const generics](https://rust-lang.github.io/rust-project-goals/2025h1/min_generic_const_arguments.html) | ✅   |                |              |     |     |     |
+| [Async](https://rust-lang.github.io/rust-project-goals/2025h1/async.html)                                                                      |     |                |              |     |     |     |
+| ↳ Implementable trait aliases                                                          |     | ✅              | ✅            |     |     |     |
+| ↳ Return type notation                                                                 |     | ✅              |              |     | ✅   |     |
+| ↳ Unsafe binders                                                                       |     |                | Stretch goal |     |     |     |
+| [Model coherence in a-mir-formality](https://rust-lang.github.io/rust-project-goals/2025h1/formality.html)                                     | ✅   |                |              |     |     |     |
+| [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2025h1/next-solver.html)                                         | ✅   | ✅              |              |     |     | \*3 |
+| [Prepare const traits for stabilization](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html)                               |     |                |              | \*1 |     |     |
+| ↳ Formalize const-traits in a-mir-formality                                            | \*2 |                |              |     |     |     |
+| [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html)                                               | ✅   |                |              |     |     |     |
+| ↳ Extending type system to support scalable vectors                                    |     |                | ✅            |     |     |     |
+| ↳ Investigate SME support                                                              | ✅   |                |              |     |     |     |
+| ↳ Land nightly experiment for SVE types                                                |     |                | ✅            |     |     |     |
+| [Scalable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2025h1/Polonius.html)                                    |     | [Matthew Jasper][] |              |     |     |     |
 
 
 \*1: Types team needs to validate the approach ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/const-trait.html))
@@ -415,10 +423,10 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*3: for necessary refactorings ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/next-solver.html))
 
 ### wg-macros team
-| Goal                                                                                                                                                                         | [Good vibes][valid_team_asks] | [Policy][valid_team_asks] |
-| :--                                                                                                                                                                          | :-- | :-- |
-| [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks)                                                                             |     | \*1 |
-| [Design for macro metavariable constructs](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html#ownership-and-team-asks) (part of [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html)) | ✅   |     |
+| Goal                                                                     | [Good vibes][valid_team_asks] | [Policy][valid_team_asks] |
+| :--                                                                      | :-- | :-- |
+| [Declarative (`macro_rules!`) macro improvements](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html) |     | \*1 |
+| ↳ Design for macro metavariable constructs                               | ✅   |     |
 
 
 \*1: Discussed with [Eric Holk][] and [Vincenzo Palazzo][]; lang would decide whether to delegate specific matters to wg-macros ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html))
