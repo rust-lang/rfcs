@@ -16,7 +16,7 @@ Different crates and items have conflicting requirements for their constants.
 For some, [the exact value of a constant is platform dependant](https://internals.rust-lang.org/t/pre-rfc-doc-consts-attribute/21987/9).
 For others, [constant folding obsurces the meaning of values](https://github.com/rust-lang/rust/issues/128347).
 Hovever, [showing a constant as written may leak implementation details], 
-and in some cases, there is no possible value 
+and in some cases, there is no possible value that would be meaningful to the user of the library.
 
 
 # Guide-level explanation
@@ -25,7 +25,7 @@ and in some cases, there is no possible value
 The `#[doc(consts)]` attribute can be placed on any item to control how contained constant expressions are displayed in rustdoc-generated documentation.
 
 * `#[doc(consts = "fold")]` will show them in their fully-evaluated state.
-* `#[doc(consts = "expr")]` will show them as-written
+* `#[doc(consts = "expr")]` will show them as-written.
 * `#[doc(consts = "hide")]` will cause constant expressions to be replaced with `_` or not shown at all.
 
 
@@ -43,6 +43,11 @@ constexprs affected include:
 * the RHS of `static` items
 * const generics in type aliases
 
+### Interaction with `#[doc(inline)]`
+When an item is inlined, it is rendered as if it had been defined in the crate it is being inlined into.
+
+This means that if the `doc(consts)` modes of the source and destination crate do not match, an inlined item will *always* be rendered with the mode from the destination crate.
+
 ## The Values
 
 ### "fold"
@@ -57,6 +62,7 @@ If the constexpr contains private identifiers, they will be exposed, so library 
 
 ### "hide"
 This will cause constants and statics to display without any value, as if the value was unrenderable (see [ONCE_INIT](https://doc.rust-lang.org/nightly/std/sync/constant.ONCE_INIT.html)), and will cause other constant expressions–such as generic const parameters–to be rendered as `_`.
+
 <!--This is the technical portion of the RFC. Explain the design in sufficient detail that:
 
 - Its interaction with other features is clear.
@@ -73,11 +79,15 @@ Rustdoc does not currently have the ability to show all constants as-written, na
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+* The attribute is named `consts` and not `const` to avoid using keywords in attributes
+* A key-value format is used instead of a directive system like `doc(fold)` to allow multiple states without polluting the doc attribute namespace.
+
+<!--
 - Why is this design the best in the space of possible designs?
 - What other designs have been considered and what is the rationale for not choosing them?
 - What is the impact of not doing this?
 - If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
-
+-->
 # Prior art
 [prior-art]: #prior-art
 
@@ -100,7 +110,8 @@ Please also take into consideration that rust sometimes intentionally diverges f
 
 - What should be happen rustdoc cannot format a constant as requested?
 - How should structs be handled in `"expr"` mode?
-
+- Are there any other constants that show up in items that this should affect?
+- How desirable is the hiding of generic const parameters?
 <!--
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
 - What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
