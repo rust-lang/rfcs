@@ -1,97 +1,180 @@
-- Feature Name: (fill me in with a unique ident, `my_awesome_feature`)
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Feature Name: `build-target-edition`
+- Start Date: 2025-02-13
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+Deprecate `lib.edition`, etc in favor of only setting `package.edition`, removing the fields in the next Edition.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+Cargo supports setting the edition per-build-target:
+```toml
+[package]
+name = "foo"
+edition = "2021"
+
+[lib]
+edition = "2015"
+
+[[bin]]
+name = "foo"
+path = "src/main.rs"
+edition = "2015"
+
+[[example]]
+name = "foo"
+path = "examples/foo.rs"
+edition = "2015"
+
+[[test]]
+name = "foo"
+path = "tests/foo.rs"
+edition = "2015"
+
+[[bench]]
+name = "foo"
+path = "benches/foo.rs"
+edition = "2015"
+```
+
+This was intended for ([cargo#5661](https://github.com/rust-lang/cargo/issues/5661)):
+- Migrating to a new edition per build-target
+- Per edition tests
+
+In practice, this feature does not seem to be in common use.
+Searching the latest `Cargo.toml` files of every package on crates.io,
+we found 13 packages using this feature
+([zulip](https://rust-lang.zulipchat.com/#narrow/channel/246057-t-cargo/topic/Deprecate.20build-target.20.60edition.60.20field.3F/near/499047806)):
+- 4 set `edition` on the sole build-target, rather than on the `package`
+- 3 set `edition` because they enumerated every build-target field but then forgot to update them when updating `package.edition`
+- 3 (+2 forks) have per-edition tests
+- 1 has every version yanked
+
+While this does not account for transient use of this feature during an Edition migration,
+from our experience and observing others, we think this practice is not very common.
+In fact, it seems more likely that migrating a lint at a time may be more beneficial
+([cargo#11125](https://github.com/rust-lang/cargo/issues/11125#issuecomment-2641119791)).
+There is also an open question on the Cargo team on how much to focus on multiple build-targets per package
+vs individual packages
+(see [This Development-cycle in Cargo: 1.77](https://blog.rust-lang.org/inside-rust/2024/02/13/this-development-cycle-in-cargo-1-77.html#when-to-use-packages-or-workspaces)).
+
+Drawbacks of this feature include:
+- Using this has a lot of friction as users have to explicitly
+  enumerate each build target they want to set `edition` on which usually requires
+  also setting the `name` and `path`.
+- This has led to bugs where people thought they migrated editions but did not
+- This is an easily overlooked feature to take into account when extending Cargo
+- Cargo cannot tell a `build.rs` what Edition to generate code for as it may generate code for one of several
+  ([cargo#6408](https://github.com/rust-lang/cargo/issues/6408)).
+  This will become more important once we have [metabuild](https://github.com/rust-lang/cargo/issues/14903) for delegating build scripts to dependencies.
+- Making it more difficult for tools like `cargo fmt`
+  ([rustfmt#5071](https://github.com/rust-lang/rustfmt/pull/5071)) which need to map
+  a file back to its edition which requires heuristics to associate a `.rs`
+  file with a `Cargo.toml` and then to associate it with a specific build-target.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Rust programmer. That generally means:
+Documentation updates:
 
-- Introducing new named concepts.
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
+## Configuring a target
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+*From the [Cargo book](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#configuring-a-target)*
+
+...
+
+```toml
+[lib]
+name = "foo"           # The name of the target.
+path = "src/lib.rs"    # The source file of the target.
+test = true            # Is tested by default.
+doctest = true         # Documentation examples are tested by default.
+bench = true           # Is benchmarked by default.
+doc = true             # Is documented by default.
+proc-macro = false     # Set to `true` for a proc-macro library.
+harness = true         # Use libtest harness.
+crate-type = ["lib"]   # The crate types to generate.
+required-features = [] # Features required to build this target (N/A for lib).
+
+edition = "2015"       # Deprecated, N/A for Edition 20XX+
+```
+
+...
+
+### The `edition` field
+
+The `edition` field defines the [Rust edition] the target will use. If not
+specified, it defaults to the [`edition` field][package-edition] for the
+`[package]`.
+
+This field is deprecated and unsupported for Edition 20XX+
+
+## Migration guide
+
+*From [Rust Edition Guide: Advanced migration strategies](https://doc.rust-lang.org/nightly/edition-guide/editions/advanced-migrations.html#migrating-a-large-project-or-workspace)*
+
+### Migrating a large project or workspace
+
+You can migrate a large project incrementally to make the process easier if you run into problems.
+
+In a [Cargo workspace], each package defines its own edition, so the process naturally involves migrating one package at a time.
+
+Within a [Cargo package], you can either migrate the entire package at once, or migrate individual [Cargo targets] one at a time.
+For example, if you have multiple binaries, tests, and examples, you can use specific target selection flags with `cargo fix --edition` to migrate just that one target.
+By default, `cargo fix` uses `--all-targets`.
+
+*(removed talk of the build-target `edition` field)*
+
+### Migrating macros
+
+...
+
+If you have macros, you are encouraged to make sure you have tests that fully
+cover the macro's syntax. You may also want to test the macros by importing and
+using them in crates from multiple editions, just to ensure it works correctly
+everywhere.
+You can do this in doctests by setting the [edition attribute](https://doc.rust-lang.org/stable/rustdoc/write-documentation/documentation-tests.html#attributes)
+or by creating a package for your tests in your workspace for each edition.
+
+If you run into issues, you'll need to read through the chapters of
+this guide to understand how the code can be changed to work across all
+editions.
+
+*(added a testing strategy which was previously left unspoken)*
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+A non-`None` edition will be considered deprecated
+- A deprecation message will eventually be shown by Cargo
+  - Timing depends on if this will be blocked on having `[lints]` control over this or not
+- In Edition 20XX+, an error will be reported when this field is present
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Why should we *not* do this?
+- This makes testing macros more difficult as they are limited to either
+  - doctests
+  - creating packages just for the sake of defining tests
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
-
 # Prior art
 [prior-art]: #prior-art
-
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+- When will Cargo start to report the deprecation message?
+  - Cargo currently lacks lint control for itself ([cargo#12235](https://github.com/rust-lang/cargo/issues/12235)) which we could wait for
+  - We could unconditionally report the warning but the Cargo team avoids adding warnings without a way of suppressing them without changing behavior
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
+- Reporting the Edition to `build.rs`
