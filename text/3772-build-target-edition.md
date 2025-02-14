@@ -164,6 +164,25 @@ A non-`None` edition will be considered deprecated
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## One Edition field controlling another
+
+The exact semantics of `package.edition` vs `<build-target>.edition` have not been well defined when it comes to the manifest format itself.
+
+`package.edition`'s [documentation](https://doc.rust-lang.org/cargo/reference/manifest.html#the-edition-field) says:
+
+> [it] affects which Rust Edition your package is compiled with
+
+while `<build-target>.edition` [documentation](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#the-edition-field) says:
+
+> [it] defines the Rust edition the target will use
+
+For Edition 2024, support for `<build-target>.proc_macro` and `<build-target>.crate_type`
+was removed based on `package.edition` and not `<build-target>.edition`.
+
+By having `package.edition` affect `<build-target>.edition`,
+we are effectively saying that `package.edition` affects the manifest format
+while `<build-target>.edition` affects only affects the source code of the build-target.
+
 # Prior art
 [prior-art]: #prior-art
 
