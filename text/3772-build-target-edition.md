@@ -152,7 +152,7 @@ editions.
 A non-`None` edition will be considered deprecated
 - A deprecation message will eventually be shown by Cargo
   - Timing depends on if this will be blocked on having `[lints]` control over this or not
-- In Edition 20XX+, an error will be reported when this field is present
+- When `package.edition` is set to Edition 20XX+, an error will be reported when a `<build-target>.edition` field is set.
 
 # Drawbacks
 [drawbacks]: #drawbacks
