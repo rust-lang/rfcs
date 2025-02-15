@@ -13,7 +13,7 @@ Demote target `i686-pc-windows-gnu` from Tier 1 to Tier 2 (with host tools) to b
 
 ## Background
 
-Rust has supported Windows ever since before 1.0, with two different flavors of Windows targets: MSVC-based and GNU-based.
+Rust has supported Windows for a long time, with two different flavors of Windows targets: MSVC-based and GNU-based.
 MSVC-based targets (for example the main Windows target `x86_64-pc-windows-msvc`) use Microsoft's native `link.exe` linker and libraries, while GNU-based targets (like `i686-pc-windows-gnu`) are built entirely from free software components like `gcc`, `ld`, and MinGW.
 
 The major reason to use a GNU-based toolchain instead of the native MSVC-based one is cross-compilation and licensing. `link.exe` only runs on Windows (barring Wine hacks) and requires a license for commercial usage.
