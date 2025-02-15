@@ -89,7 +89,7 @@ As mentioned above, there are issues and it does cause a fair share of problems.
 
 A fair amount of tests are disabled with an open issue with no comments.
 I would say that it is on the edge of being excessive, not quite having reached that amount (but it is likely that will be reached eventually).
-For example, [#134777](https://github.com/rust-lang/rust/pull/134777) observed and un-ignored a lot of ignored Winodws tests, many of which were likely ignored on all of Windows because of Winodws GNU issues.
+For example, [#134777](https://github.com/rust-lang/rust/pull/134777) observed and un-ignored a lot of ignored Windows tests, many of which were likely ignored on all of Windows because of Windows GNU issues.
 Another example of an ignored test is [#135572](https://github.com/rust-lang/rust/pull/135572) that does not support Windows GNU because it was too mcuh effort to test locally.
 
 > The target must provide as much of the Rust standard library as is feasible and appropriate to provide [...].
