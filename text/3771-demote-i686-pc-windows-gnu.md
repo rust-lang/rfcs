@@ -63,7 +63,7 @@ The Windows GNU experts that provide direct support to the Rust project focus al
 MSYS2, a major distributor of the GNU-based Windows platform, has been [dropping some 32-bit packages](https://www.msys2.org/news/#2023-12-13-starting-to-drop-some-32-bit-packages) and [no longer distributes Clang for 32-bit](https://github.com/msys2/MINGW-packages/pull/21998), showing even their shift away from the platform.
 In response to inquiries about their opinion on reducing support for the target, [MSYS2 folks were positive](https://github.com/msys2/MINGW-packages/issues/23346).
 
-[^1]: despite saying he is "not a maintainer", mati865 is effectively our maintainer for x86_64-pc-windows-gnu and x86_64-pc-windows-gnullvm https://rust-lang.zulipchat.com/#narrow/channel/233931-t-compiler.2Fmajor-changes/topic/Demote.20.60i686-pc-windows-gnu.60.20compiler-team.23822/near/490675824
+[^1]: despite saying he is only a maintainer for x86_64-pc-windows-gnullvm, mati865 is effectively also our maintainer for x86_64-pc-windows-gnu https://rust-lang.zulipchat.com/#narrow/channel/233931-t-compiler.2Fmajor-changes/topic/Demote.20.60i686-pc-windows-gnu.60.20compiler-team.23822/near/490675824
 [^2]: https://devblogs.microsoft.com/oldnewthing/20220418-00/?p=106489
 
 ## Target Tier Policy Requirements
