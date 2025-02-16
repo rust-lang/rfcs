@@ -59,7 +59,7 @@ impl<T> Vec<T> {
 }
 ```
 
-This is conceptually similar to `#[must_use]` on the function referring to the output value and helps you (or downstream consumers) to catch likely mistakes.
+This is conceptually similar to `#[must_use]` on the function, but for an output parameter rather than the return value. Like `#[must_use]`, it helps you (or downstream consumers) to catch likely mistakes.
 
 A common case when this is useful is when the function has no side effects (other than allocation). A typical example is methods modifying collections, builders or similar objects.
 
@@ -70,7 +70,7 @@ Note that this is currently subject to some limitations: if the reference was pa
 
 Whenever a function paramter is marked with `#[must_use_output]` and the caller does not later access the value a warning is emitted similar to using the `+=` operator on integers and later not using the value.
 
-It is an error to put this attribute on parameters with types other than reference types. Pointers, smart pointers and generics are forbidden mainly for simplicity of initial implementation. They can be implemented and allowed later if it's even possible at all.
+It is an error to put this attribute on parameters with types other than reference types. Pointers, smart pointers, and generics that hide the reference, are forbidden mainly for simplicity of initial implementation. They can be implemented and allowed later if it's even possible at all.
 
 The compiler makes no distinction whether the reference is unique or shared because writes can happen through both, there doesn't seem to be a reason to forbid `Freeze` references and there is at least one case when even `Freeze` reference is useful.
 
@@ -85,7 +85,7 @@ The standard library functions get annotated with this attribute as well, includ
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Adds another atrribute to the language complicating it
+- Adds another attribute to the language, complicating it
 - In some cases analysis will fail and perhaps people will have false sene of security
 - People could misuse it to attempt to enforce soundness of `unsafe` code (which it cannot do)
 
@@ -94,7 +94,8 @@ The standard library functions get annotated with this attribute as well, includ
 
 - We could also simply not do this but the potential mistakes it catches are real.
 - The name could be something different and preferably shorter. The name used here was suggested by Josh Triplett and is pretty readable and it can be used before stabilization in the absence of better one.
-- Make it a `clippy` lint instead. However not everyone uses `clippy` and the need to communicate which arguments are considered important would diminish its effect.
+- We could write `#[must_use]` on a reference parameter instead. The downside would be that this could be mistaken for saying that the *callee* must use the parameter, rather than the *caller*.
+- Make it a `clippy` lint instead. However not everyone uses `clippy` and the need to communicate which arguments are considered important would diminish its effect. `#[must_use]` is a native rustc lint, and this should be as well, using the same machinery.
 - Try to somehow analyze the code and not require the attribute. This seems hard and it could lead into libraries accidentally triggering warnings in users code if they change the body of the function.
 - Implement a more full feature - e.g. by doing some things in "future posibilities" section. However this feature should be useful even without them.
 - Have the atribute on the function instead listing the names of paramters. This could make it nicer to extend to support "or" relationship described in "Future possibilities"
