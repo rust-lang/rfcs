@@ -124,7 +124,7 @@ The full slate of project goals are as follows. These goals all have identified 
 | [Rust Vision Document](https://rust-lang.github.io/rust-project-goals/2025h1/rust-vision-doc.html)                                                                  | [Niko Matsakis][]    | [leadership-council]                                           |
 | [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h1/arm-sve-sme.html)                                                                    | [David Wood][]       | [compiler], [lang], [types]                                    |
 | [Scalable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2025h1/Polonius.html)                                                         | [Rémy Rakic][]             | [types]                                                        |
-| [Secure quorum-based cryptographic verification and mirroring for crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html) | [@walterhpearce][]   | [cargo], [crates-io], [infra], [leadership-council], [release] |
+| [Secure quorum-based cryptographic verification and mirroring for crates.io](https://rust-lang.github.io/rust-project-goals/2025h1/verification-and-mirroring.html) | [walterhpearce][]   | [cargo], [crates-io], [infra], [leadership-council], [release] |
 | [Stabilize public/private dependencies](https://rust-lang.github.io/rust-project-goals/2025h1/pub-priv.html)                                                        | ![Help Wanted][] | [cargo], [compiler]                                            |
 | [Stabilize tooling needed by Rust for Linux](https://rust-lang.github.io/rust-project-goals/2025h1/rfl.html)                                                        | [Niko Matsakis][]    | [cargo], [clippy], [compiler], [rustdoc]                       |
 | [Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2025h1/unsafe-fields.html)                                                                           | [Jack Wrenn][]         | [compiler], [lang]                                             |
@@ -532,7 +532,6 @@ Those column names refer to specific things that can be asked of teams:
 [community-survey]: https://github.com/rust-lang/surveys
 [compiler]: http://github.com/rust-lang/compiler-team
 [compiler-fcp]: https://www.rust-lang.org/governance/teams
-[core]: https://www.rust-lang.org/governance/teams
 [council-librarians]: https://www.rust-lang.org/governance/teams
 [crate-maintainers]: https://www.rust-lang.org/governance/teams
 [crates-io]: https://github.com/rust-lang/crates.io
@@ -542,6 +541,7 @@ Those column names refer to specific things that can be asked of teams:
 [docker]: https://www.rust-lang.org/governance/teams
 [docs-rs]: https://github.com/rust-lang/docs.rs
 [docs-rs-reviewers]: https://www.rust-lang.org/governance/teams
+[edition]: http://github.com/rust-lang/edition-team
 [emacs]: https://www.rust-lang.org/governance/teams
 [emscripten]: https://www.rust-lang.org/governance/teams
 [foundation-board-project-directors]: https://www.rust-lang.org/governance/teams
@@ -577,7 +577,6 @@ Those column names refer to specific things that can be asked of teams:
 [project-const-generics]: https://github.com/rust-lang/project-const-generics
 [project-const-traits]: https://www.rust-lang.org/governance/teams
 [project-dyn-upcasting]: https://github.com/rust-lang/dyn-upcasting-coercion-initiative
-[project-edition-2024]: https://www.rust-lang.org/governance/teams
 [project-exploit-mitigations]: https://github.com/rust-lang/project-exploit-mitigations
 [project-generic-associated-types]: https://github.com/rust-lang/generic-associated-types-initiative
 [project-group-leads]: https://www.rust-lang.org/governance/teams
@@ -697,7 +696,7 @@ Those column names refer to specific things that can be asked of teams:
 [TC]: https://github.com/traviscross
 [Luca Versari]: https://github.com/veluca93
 [Vincenzo Palazzo]: https://github.com/vincenzopalazzo
-[@walterhpearce]: https://github.com/walterhpearce
+[walterhpearce]: https://github.com/walterhpearce
 [Benno Lossin]: https://github.com/y86-dev
 [Jane Lusby]: https://github.com/yaahc
 
