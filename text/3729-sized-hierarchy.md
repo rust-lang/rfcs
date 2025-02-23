@@ -587,9 +587,10 @@ to the prelude.
 [implicit-const-metasized-supertraits]: #implicit-const-metasized-supertraits
 
 It is necessary to introduce a implicit default bound of `const MetaSized` on a trait's
-`Self` type in order to maintain backwards compatibility (referred to as an implicit
-supertrait hereafter for brevity). Like implicit `const Sized` bounds, this is omitted
-if an explicit `const Sized`, `Sized`, `MetaSized` or `Pointee` bound is present.
+`Self` type in order to maintain backwards compatibility in the current edition (referred
+to as an implicit supertrait hereafter for brevity). Like implicit `const Sized` bounds,
+this is omitted if an explicit `const Sized`, `Sized`, `MetaSized` or `Pointee` bound is
+present.
 
 Without this implicit supertrait, the below example would no longer compile: `needs_drop`'s
 `T: ?Sized` would be migrated to a `const MetaSized` bound which is not guaranteed to
@@ -619,6 +620,12 @@ trait Foo: const MetaSized {
 For the same reasons that `?Sized` is equivalent to `const MetaSized`, adding
 a `const MetaSized` implicit supertrait will not break any existing implementations
 of traits as every existing type already implements `const MetaSized`.
+
+**Edition change:** In the current edition, a default `const MetaSized` supertrait is
+added. In the next edition, no default supertrait is added. During edition migration,
+`const MetaSized` is explicitly added as a supertrait to all existing traits not explicitly
+relaxed further. By avoiding having a default supertrait in the next edition, new traits
+will be implementable on `Pointee` types.
 
 This implicit supertrait could be relaxed without breaking changes within the standard
 library and in third party crates.
