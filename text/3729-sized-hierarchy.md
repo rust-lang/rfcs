@@ -352,7 +352,7 @@ the compiler and cannot be implemented manually:
     - Types whose size is computable given knowledge of the type, target
       platform and runtime environment.
       - `const Sized` does not require knowledge of the runtime environment
-    - `Sized` is a subtrait of `MetaSized`.
+    - `Sized` is a subtrait of `MetaSized`
     - `Sized` will be implemented for:
         - scalable vectors from [rfcs#3268][rfc_scalable_vectors]
         - compound types where every element is `Sized`
@@ -366,6 +366,22 @@ the compiler and cannot be implemented manually:
         - closures and generators
         - compound types where every element is `const Sized`
         - anything else which currently implements `Sized`
+    - Non-const `Sized` types have the same properties as `const Sized` types
+        - i.e. `Sized` types..
+            - ..can be returned from functions
+            - ..can be passed to functions by value, reference or pointer
+            - ..can exist as local values in the stack
+            - ..can be the types of static variables
+            - ..can be loaded/stored to/from memory for spilling to the stack and
+              to follow calling conventions
+            - ..can be fields in abstract data types
+            - ..can be the implementor of traits
+        - Specific `Sized` types, such as scalable vectors using `repr(scalable)`
+          from [rfcs#3268][rfc_scalable_vectors], may impose further restrictions
+          such as being unable to be used in abstract data types or be used as
+          static variables
+    - Types implementing `Sized` will not require special machinery in the compiler,
+      such as `unsized_locals` or `unsized_fn_params`, to be considered `Sized`
 
 Introducing new automatically implemented traits is backwards-incompatible,
 at least if you try to add it as a bound to an existing function[^2][^3] (and
