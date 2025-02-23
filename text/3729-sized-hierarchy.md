@@ -389,6 +389,10 @@ new auto traits that which go unused aren't that useful), but due to being
 supertraits of `Sized` and `Sized` being a default bound, these
 backwards-incompatibilities are avoided for `MetaSized` and `Pointee`.
 
+As an implementation detail, `Pointee` could be treated as syntax for expressing
+a lack of any bounds on the sizedness of a parameter, rather than being an additional
+obligation to be proven.
+
 Relaxing a bound from `Sized` to `MetaSized` or `Pointee` is non-breaking as
 the calling bound must have either `T: Sized` or `T: ?Sized`, both of which
 would satisfy any relaxed bound[^4]. A parameter bounded by `Sized` and used
