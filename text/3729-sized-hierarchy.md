@@ -556,11 +556,11 @@ every type in Rust today which would satisfy a `?Sized` bound would satisfy
 a `const MetaSized` bound.
 
 **Edition change:** In the current edition,`?Sized` will be syntatic sugar for
-a `const MetaSized` bound. As the `?Trait` syntax is currently accepted for any trait
-but ignored for every trait except `Sized`, `?MetaSized` and `?Pointee` bounds would
-be ignored. In the next edition, any uses of `?Sized` syntax will be rewritten to
-a `const MetaSized` bound. Any other uses of the `?Trait` syntax will be removed as
-part of the migration and the `?Trait` syntax will be prohibited.
+a `const MetaSized` bound. The `?Trait` syntax is currently an error for any trait
+except `Sized`, which would continue. In the next edition, any uses of `?Sized`
+syntax will be rewritten to a `const MetaSized` bound. Any other uses of the
+`?Trait` syntax will be removed as part of the migration and the `?Trait` syntax
+will be prohibited.
 
 A default implicit bound of `const Sized` is added by the compiler to every type
 parameter `T` that does not have an explicit `~const Sized`, `Sized`, `?Sized`,
