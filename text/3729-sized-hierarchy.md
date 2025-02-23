@@ -858,17 +858,23 @@ implemented by the compiler and therefore this property can be guaranteed.
 ## Forward compatibility with supertraits implying default bound removal
 [forward-compatibility-with-supertraits-default-bound]: #forward-compatibility-with-supertraits-implying-default-bound-removal
 
-Traits which are a supertrait of any of the proposed traits will not
+Traits which are a subtrait of any of the proposed traits will not
 automatically imply the proposed trait in any bounds where the trait is
 used, e.g.
 
 ```rust
 trait NewTrait: MetaSized {}
 
+// Subtractive case (adding a trait bound will not weaken the existing bounds)
 struct NewRc<T: NewTrait> {} // equiv to `T: NewTrait + Sized` as today
+
+// Additive case (adding a trait bound can strengthen the existing bounds)
+struct NewRc<T: Pointee + NewTrait> {} // equiv to `T: NewTrait + MetaSized` as today
 ```
 
-If the user wanted `T: MetaSized` then it would need to be written explicitly.
+It remains the case with this proposal that if the user wanted `T: MetaSized`
+then it would need to be written explicitly.
+
 This is forward compatible with trait bounds which have sizedness supertraits
 implying the removal of the default `const Sized` bound.
 
