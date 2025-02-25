@@ -34,7 +34,9 @@ From a consumer's perspective, this feature could make the discovery of the chan
 For instance, the "crates" plugin could leaverage this field to show a link to
 the changelog when a user hovers on a dependency in `Cargo.toml`.
 
-Current situation: a consumer usually need to jump through several hops to find the changelog:
+![crates-hover](https://github.com/user-attachments/assets/1f6c075b-fffb-4bd8-92d9-6bee16b0f6e3)
+
+Current situation: a consumer usually needs to jump through several hops to find the changelog:
 
 ```mermaid
 flowchart LR;
