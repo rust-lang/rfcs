@@ -628,12 +628,40 @@ functions.
 
 ## Safe Unions
 
-Unsafe struct and enum fields behave very similarly to union fields — unsafe fields differ only in
-that they additionally make initialization and mutation unsafe. Given this closeness, it may be
-viable to migrate — across an edition boundary — today's implicitly unsafe unions into *explicitly*
-unsafe unions that leverage the unsafe field syntax.
+Today, unions provide language support for fields with subtractive *language* invariants. Unions may
+be safely defined, constructed and mutated — but require unsafe to read. Consequently, it is
+possible to place an union into a state where its fields cannot be soundly read, using only safe
+code; e.g.
+([playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=1d816399559950ccae810c4a41fab4e9)):
 
-For example, the 2027 edition could require that all unions leverage the `unsafe` keyword to define
-their fields. The 2024-to-2027 migration script would wrap existing initializations and mutations
-in `unsafe` blocks annotated with the comment `// SAFETY: No obligations`. In doing so, we would
-create syntactic space for *safe* unions in 2030.
+```rust
+#[derive(Copy, Clone)] #[repr(u8)] enum Zero { V = 0 }
+#[derive(Copy, Clone)] #[repr(u8)] enum One  { V = 1 }
+
+union Tricky {
+    a: (Zero, One),
+    b: (One, Zero),
+}
+
+let mut tricky = Tricky { a: (Zero::V, One::V) };
+tricky.b.0 = One::V;
+
+// Now, neither `tricky.a` nor `tricky.b` are in a valid state.
+```
+
+The possibility of such unions makes it tricky to retrofit a mechanism for safe access: Because
+unsafe was not required to define or mutate this union, the invariant that makes reading sound is
+entirely implicit.
+
+Speculatively, it might be possible to make the subtractive language invariant of union fields
+*explicit*; e.g.:
+
+```rust
+union MaybeUninit<T> {
+    uninit: (),
+    unsafe(invalid) value: ManuallyDrop<T>,
+}
+```
+
+Migrating today's implicitly-unsafe unions to tomorrow's explicitly-unsafe unions over an edition
+boundary would free up the syntactic space for safe unions.
