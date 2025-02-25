@@ -175,6 +175,13 @@ proposed to use a strictly formatted Markdown file or an external link for the
 changelog field. The strict format, while ideal for machine consumption,
 imposes too much constraint and lead to a refusal.
 
+Another critic of the previous RFC is that if this field is just a link that will be displayed,
+then it seems to not bring much value over placing a link within a README.
+However, placing a link in README adds another indirection for discovering the changelog,
+and it effectively prevents other sources from making the changelog more discoverable.
+For example, third-party editor plugins showing crate information in the context of cargo
+manifest files cannot leverage the link from README to make changelog more discoverable.
+
 ## Alternative: Local File
 [alternative-local-file]: #alternative-local-file
 
@@ -198,7 +205,7 @@ always link to the latest changelog, which is supposed to contain all
 changelog entries from initial versions to unreleased commits.
 If we adopt the local file approach, when we view an outdated version of a
 crate on docs.rs, we only get a link to the outdated changelog, which is not
-helpful for viewing the breaking changes introduced in new versions, requring
+helpful for viewing the breaking changes introduced in new versions, requiring
 another click on the doc.rs page to switch to the latest version.
 
 ## Alternative: Do Nothing
