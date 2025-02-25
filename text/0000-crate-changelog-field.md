@@ -167,6 +167,14 @@ repository and the websites backing their repositories can already render the
 changelogs. So, in order to avoid unnecessary efforts, this RFC proposes to
 just use a valid URL for the `changelog` field.
 
+## Alternative: Previously closed RFC
+[alternative-previously-closed-rfc]: #alternative-previously-closed-rfc
+
+[Previously closed RFC](https://github.com/rust-lang/rfcs/pull/2129)
+proposed to use a strictly formatted Markdown file or an external link for the
+changelog field. The strict format, while ideal for machine consumption,
+imposes too much constraint and lead to a refusal.
+
 ## Alternative: Local File
 [alternative-local-file]: #alternative-local-file
 
@@ -204,11 +212,6 @@ changelogs. However, such effort is neither scalable nor ideal.
 
 # Prior art
 [prior-art]: #prior-art
-
-[Previously closed RFC](https://github.com/rust-lang/rfcs/pull/2129)
-proposed to use a strictly formatted Markdown file or an external link for the
-changelog field. The strict format, while ideal for machine consumption,
-imposes too much constraint and lead to a refusal.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
