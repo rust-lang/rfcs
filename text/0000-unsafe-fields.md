@@ -695,7 +695,15 @@ be required to use unsafe fields, which would reduce special-casing of the stand
 
 - If the syntax for restrictions does not change, what is the ordering of keywords on a field that
   is both unsafe and mut-restricted?
-- Are there any interactions or edge cases with other language features that need to be considered?
+
+## Terminology
+
+This RFC defines three terms of art: *safety invariant*, *library safety invariant*, and *language
+safety invariant*. The meanings of these terms are not original to this RFC, and the question of
+which terms should be assigned to these meanings [is being hotly
+debated](https://github.com/rust-lang/unsafe-code-guidelines/issues/539). This RFC does not
+prescribe its terminology. Documentation of the unsafe fields tooling should reflect broader
+consensus, once that consensus is reached.
 
 # Future possibilities
 
