@@ -286,8 +286,8 @@ For more information about this error, try `rustc --explain E0133`.
 
 ## When To Use Unsafe Fields
 
-You should use the `unsafe` keyword on any that carries a safety invariant, but you may never make
-the invariant weaker than what the destructor of the field requires.
+You should use the `unsafe` keyword on any that carries a library safety invariant, but you may
+never make the invariant weaker than what the destructor of the field requires.
 
 ### Example: Field with Local Invariant
 
@@ -349,6 +349,27 @@ struct MaybeInvalidStr<'a> {
 ```
 
 ## When *Not* To Use Unsafe Fields
+
+### Example: Relaxing a Language Invariant
+
+The `unsafe` modifier is appropriate only for denoting *library* safety invariants. It has no impact
+on *language* safety invariants, which must *never* be violated. This, for example, is an unsound
+API:
+
+```rust
+struct Zeroed<T> {
+    // SAFETY: The value of `zeroed` consists only of bytes initialized to `0`.
+    unsafe zeroed: T,
+}
+
+impl<T> Zeroed<T> {
+    pub fn zeroed() -> Self {
+        unsafe { Self { zeroed: core::mem::zeroed() }}
+    }
+}
+```
+
+...because `Zeroed::<NonZeroU8>::zeroed()` induces undefined behavior.
 
 ### Example: Field with a Subtractive Invariant and Drop Glue
 
