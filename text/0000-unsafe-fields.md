@@ -6,8 +6,8 @@
 # Summary
 
 This RFC proposes extending Rust's tooling support for safety hygiene to named fields that carry
-additive library safety invariants. Consequently, Rust programmers will be able to use the `unsafe`
-keyword to denote when a named field carries an additive library safety invariant; e.g.:
+library safety invariants. Consequently, Rust programmers will be able to use the `unsafe` keyword
+to denote when a named field carries a library safety invariant; e.g.:
 
 ```rust
 struct UnalignedRef<'a, T> {
@@ -166,102 +166,128 @@ pub struct UnalignedRef<'a, T> {
 }
 ```
 
-(Note, the `unsafe` field modifier is only applicable to named fields. You should avoid attaching
-library safety invariants to unnamed fields.)
+The `unsafe` field modifier is only applicable to named fields. You should avoid attaching library
+safety invariants to unnamed fields.
 
 Rust provides tooling to help you maintain good field safety hygiene. Clippy's
-[`missing_safety_doc`] lint checks that `unsafe` fields have accompanying safety documentation. The
-Rust compiler itself enforces that ues of `unsafe` fields that could violate its invariant — i.e.,
-initializations, writes, references, and reads — must occur within the context of an `unsafe`
-block.; e.g.:
+[`missing_safety_doc`] lint checks that `unsafe` fields have accompanying safety documentation.
+
+The Rust compiler enforces that uses of `unsafe` fields that could violate its invariant — i.e.,
+initializations, writes, references, and copies — must occur within the context of an `unsafe`
+block. For example, compiling this program:
 
 ```rust
-impl<'a, T> UnalignedRef<'a, T> {
-    pub fn from_ref(ptr: &'a T) -> Self {
-        // SAFETY: By invariant on `&T`, `ptr` is a valid and well-aligned instance of `T`.
-        unsafe {
-            Self { ptr, _lifetime: PhantomData, }
-        }
-    }
-}
-```
+#![forbid(unsafe_op_in_unsafe_fn)]
 
-...and Clippy's [`undocumented_unsafe_blocks`] lint enforces that the `unsafe` block has a `//
-SAFETY` comment.
-
-[`undocumented_unsafe_blocks`]: https://rust-lang.github.io/rust-clippy/stable/index.html#undocumented_unsafe_blocks
-
-Fields marked `unsafe` may be safely moved and copied; e.g.:
-
-```rust
 struct Alignment {
-    /// SAFETY: `pow` must be between 0 and 29.
+    /// SAFETY: `pow` must be between 0 and 29 (inclusive).
     pub unsafe pow: u8,
 }
 
 impl Alignment {
+    pub fn new(pow: u8) -> Option<Self> {
+        if pow > 29 {
+            return None;
+        }
+
+        Some(Self { pow })
+    }
+
     pub fn as_log(self) -> u8 {
         self.pow
     }
-}
-```
 
-...but all other uses, including initialization and referencing, require `unsafe`; e.g., this:
-
-```rust
-struct CacheArcCount<T> {
-    /// SAFETY: This `Arc`'s `ref_count` must equal the
-    /// value of the `ref_count` field.
-    unsafe arc: Arc<T>,
-    /// SAFETY: See [`CacheArcCount::arc`].
-    unsafe ref_count: usize,
-}
-
-impl<T> CacheArcCount<T> {
-    fn new(value: T) -> Self {
-        Self {
-            arc: Arc::new(value),
-            ref_count: 1,
-        }
-    }
-}
-
-impl<T> core::ops::Deref for CacheArcCount<T> {
-    type Target = Arc<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.arc
+    /// # Safety
+    ///
+    /// The caller promises to not write a value greater than 29 into the returned reference.
+    pub unsafe fn as_mut_lug(&mut self) -> &mut u8 {
+        &mut self.pow
     }
 }
 ```
 
-...produces the errors:
+...emits the errors:
 
 ```
 error[E0133]: initializing type with an unsafe field is unsafe and requires unsafe block
-  --> src/lib.rs:11:9
+  --> src/lib.rs:14:14
    |
-11 | /         Self {
-12 | |             arc: Arc::new(value),
-13 | |             ref_count: 1,
-14 | |         }
-   | |_________^ initialization of struct with unsafe field
+14 |         Some(Self { pow })
+   |              ^^^^^^^^^^^^ initialization of struct with unsafe field
    |
    = note: unsafe fields may carry library invariants
 
 error[E0133]: use of unsafe field is unsafe and requires unsafe block
-  --> src/lib.rs:22:10
+  --> src/lib.rs:18:9
    |
-22 |         &self.arc
-   |          ^^^^^^^^ use of unsafe field
+18 |         self.pow
+   |         ^^^^^^^^ use of unsafe field
    |
    = note: unsafe fields may carry library invariants
+
+error[E0133]: use of unsafe field is unsafe and requires unsafe block
+  --> src/lib.rs:25:14
+   |
+25 |         &mut self.pow
+   |              ^^^^^^^^ use of unsafe field
+   |
+   = note: for more information, see <https://doc.rust-lang.org/nightly/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+   = note: unsafe fields may carry library invariants
+note: an unsafe function restricts its caller, but its body is safe by default
+  --> src/lib.rs:24:5
+   |
+24 |     pub unsafe fn as_mut_lug(&mut self) -> &mut u8 {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+note: the lint level is defined here
+  --> src/lib.rs:1:38
+   |
+1  | #![forbid(unsafe_op_in_unsafe_fn)]
+   |           ^^^^^^^^^^^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0133`.
+```
+
+...which may be resolved by wrapping the use-sites in `unsafe { ... }` blocks; e.g.:
+
+```diff
+  #![forbid(unsafe_op_in_unsafe_fn)]
+
+  struct Alignment {
+      /// SAFETY: `pow` must be between 0 and 29 (inclusive).
+      pub unsafe pow: u8,
+  }
+
+  impl Alignment {
+      pub fn new(pow: u8) -> Option<Self> {
+          if pow > 29 {
+              return None;
+          }
+-         Some(Self { pow })
++         // SAFETY: We have ensured that `pow <= 29`.
++         Some(unsafe { Self { pow } })
+      }
+
+      pub fn as_log(self) -> u8 {
+-         self.pow
++         // SAFETY: Copying `pow` does not violate its invariant.
++         unsafe { self.pow }
+      }
+
+      /// # Safety
+      ///
+      /// The caller promises to not write a value greater than 29 into the returned reference.
+      pub unsafe fn as_mut_lug(&mut self) -> &mut u8 {
+-         &mut self.pow
++         // SAFETY: The caller promises not to violate `pow`'s invariant.
++         unsafe { &mut self.pow }
+      }
+  }
 ```
 
 ## When To Use Unsafe Fields
 
-You should use the `unsafe` keyword on any field declaration that carries an invariant
-that is assumed to be true by `unsafe` code.
+You should use the `unsafe` keyword on any that carries a safety invariant, but you may never make
+the invariant weaker than what the destructor of the field requires.
 
 ### Example: Field with Local Invariant
 
@@ -300,13 +326,14 @@ struct Zeroator {
 }
 ```
 
-## When *Not* To Use Unsafe Fields
+### Example: Field with a Subtractive Invariant
 
-### Example: Field with Suspended Invariant
+You may use the `unsafe` modifier to denote that a field *relaxes* the invariant imposed byte its
+type, so long as you do not relax that invariant beyond what is required to soundly run the field's
+destructor.
 
-A field might be unsafe because it *relaxes* the library safety invariants imposed by its type. For
-example, a `str` is bound by both the language safety invariant that it is initialized bytes, and by
-the library safety invariant that it contains valid UTF-8. It is sound to temporarily violate the
+For example, a `str` is both trivially destructable (because it implements `Copy`), and bound by the
+library safety invariant that it contains valid UTF-8. It is sound to temporarily violate the
 library invariant of `str`, so long as the invalid `str` is not safely exposed to code that assumes
 `str` validity.
 
@@ -321,21 +348,56 @@ struct MaybeInvalidStr<'a> {
 }
 ```
 
-However, the `unsafe` modifier, above, is insufficient to prevent invalid use in safe contexts; e.g.
-Rust accepts this, without error:
+## When *Not* To Use Unsafe Fields
+
+### Example: Field with a Subtractive Invariant and Drop Glue
+
+Although you may use the `unsafe` modifier to denote that a field relaxes its type's invariant, you
+must never relax that invariant beyond what is required to run its destructor.
+
+For example, `Box` has a non-trivial destructor which requires that its referent has the same size
+and alignment that the referent was allocated with. Adding the `unsafe` modifier to a `Box` field
+which violates this invariant; e.g.:
 
 ```rust
-impl<'a> core::ops::Deref for MaybeInvalidStr<'a> {
-    type Target = str;
+struct BoxedErased {
+    /// SAFETY: `data`'s logical type has `type_id`.
+    unsafe data: Box<[MaybeUninit<u8>]>,
+    /// SAFETY: See [`BoxErased::data`].
+    unsafe type_id: TypeId,
+}
 
-    fn deref(&self) -> &str {
-        self.maybe_invalid
+impl BoxedErased {
+    fn new<T: 'static>(src: Box<T>) -> Self {
+        let data = …; // cast `Box<T>` to `Box<[MaybeUninit<u8>]>`
+        let type_id = TypeId::of::<T>;
+        // SAFETY: …
+        unsafe {
+            BoxedErased {
+                data,
+                type_id,
+            }
+        }
     }
 }
 ```
 
-The `unsafe` keyword, alone, cannot be relied upon to ensure that invalid use of such fields cannot
-occur in safe contexts.
+...is insufficent for ensuring that using `BoxedErased` or its `data` field in safe contexts cannot
+lead to undefined behavior: namely, if `BoxErased` or its `data` field is dropped, its destructor
+may induce UB.
+
+In such situations, you may avert the potential for undefined behavior by wrapping the problematic
+field in `ManuallyDrop`; e.g.:
+
+```diff
+  struct BoxedErased {
+      /// SAFETY: `data`'s logical type has `type_id`.
+-     unsafe data: Box<[MaybeUninit<u8>]>,
+      /// SAFETY: See [`BoxErased::data`].
++     unsafe data: ManuallyDrop<Box<[MaybeUninit<u8>]>>,
+      unsafe type_id: TypeId,
+  }
+```
 
 ### Example: Field with Correctness Invariant
 
@@ -502,16 +564,25 @@ However, the `ptr` field introduces a declaration-site safety obligation that is
 with `unsafe` at any use site; this violates [**Tenet: Unsafe Usage is Always
 Unsafe**](#tenet-unsafe-usage-is-always-unsafe).
 
-### Suspended Invariants Are Supported
+### Non-Trivial Destructors are Prohibited
 
-To provide sound safety tooling for fields with subtractive invariants, Rust must enforce that such
-fields have trivial destructors, à la union fields. We initially considered this requirement to be
-merely inconvenient — if we followed the same enforcement regime as unions, `unsafe` fields would
-either need to be `Copy` or wrapped in `ManuallyDrop`.
+If a programmer applies the `unsafe` modifier to a field with a non-trivial destructor and relaxes
+its invariant beyond that which is required by the field's destructor, Rust cannot prevent the
+unsound use of that field in safe contexts. This is, seemingly, a soft violation of [**Tenet: Unsafe
+Usage is Always Unsafe**](#tenet-unsafe-usage-is-always-unsafe). We resolve this by documenting that
+such fields are a serious violation of good safety hygiene, and accept the risk that this
+documentation is ignored. This risk is minimized by prevalence: we feel that relaxing a field's
+invariant beyond that of its destructor is a rare subset of the cases in which a field carries a
+relaxed variant, which itself a rare subset of the cases in which a field carries a safety
+invariant.
 
-In fact, we discovered, adopting this approach would contradict our design tenets and place library
-authors in an impossible dilemma. To illustrate, let's say a library author presently provides an
-API this this shape:
+Alternatively, we previously considered that this risk might be averted by requiring that `unsafe`
+fields have trivial destructors, à la union fields, by requiring that `unsafe` field types be either
+`Copy` or `ManuallyDrop`.
+
+Unfortunately, we discovered that adopting this approach would contradict our design tenets and
+place library authors in an impossible dilemma. To illustrate, let's say a library author presently
+provides an API this this shape:
 
 ```rust
 pub struct SafeAbstraction {
@@ -553,11 +624,11 @@ impl Drop for SafeAbstraction {
 ```
 
 This is a SemVer-breaking change. If the library author goes though with this, the aforementioned
-downstream code will no longer compile.
-
-The library author cannot use `unsafe` to denote that this field carries a safety invariant;
-consequently, a one-size-fits-all design violates our first design tenet: *a field must be marked
-`unsafe` if it carries a safety invariant*.
+downstream code will no longer compile. In this scenario, the library author cannot use `unsafe` to
+denote that this field carries a safety invariant; this is *both* a hard violation of [**Tenet:
+Unsafe Fields Denote Safety Invariants**](#tenet-unsafe-fields-denote-safety-invariants), and (in
+requiring trivially `unsafe` drop glue), a violation of [**Tenet: Safe Usage is Usually
+Safe**](#tenet-safe-usage-is-usually-safe).
 
 # Drawbacks
 
@@ -606,25 +677,6 @@ be required to use unsafe fields, which would reduce special-casing of the stand
 - Are there any interactions or edge cases with other language features that need to be considered?
 
 # Future possibilities
-
-## Tooling for Fields with Suspended Safety Invariants
-
-We will additionally explore supporting fields with suspended safety invariants. Speculatively, this
-might take the form of an additional modifier; e.g.:
-
-```rust
-struct MaybeInvalidStr<'a> {
-    /// SAFETY: `maybe_invalid` may not contain valid UTF-8. Nonetheless, it MUST always contain
-    /// initialized bytes (per language safety invariant on `str`).
-    unsafe(relaxed) maybe_invalid: &'a str
-}
-```
-
-...which would convey that Rust must also treat moves and copies of such fields as unsafe.
-
-Alternatively, this use-case might be addressed by introducing a designated `MaybeInvalid<T>`
-wrapper in the standard library, which encapsulates `T` and provides only `unsafe` accessor
-functions.
 
 ## Safe Unions
 
