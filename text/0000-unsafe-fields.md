@@ -179,7 +179,7 @@ block. For example, compiling this program:
 ```rust
 #![forbid(unsafe_op_in_unsafe_fn)]
 
-struct Alignment {
+pub struct Alignment {
     /// SAFETY: `pow` must be between 0 and 29 (inclusive).
     pub unsafe pow: u8,
 }
@@ -200,7 +200,7 @@ impl Alignment {
     /// # Safety
     ///
     /// The caller promises to not write a value greater than 29 into the returned reference.
-    pub unsafe fn as_mut_lug(&mut self) -> &mut u8 {
+    pub unsafe fn as_mut_log(&mut self) -> &mut u8 {
         &mut self.pow
     }
 }
@@ -252,7 +252,7 @@ For more information about this error, try `rustc --explain E0133`.
 ```diff
   #![forbid(unsafe_op_in_unsafe_fn)]
 
-  struct Alignment {
+  pub struct Alignment {
       /// SAFETY: `pow` must be between 0 and 29 (inclusive).
       pub unsafe pow: u8,
   }
@@ -286,8 +286,8 @@ For more information about this error, try `rustc --explain E0133`.
 
 ## When To Use Unsafe Fields
 
-You should use the `unsafe` keyword on any that carries a library safety invariant, but you may
-never make the invariant weaker than what the destructor of the field requires.
+You should use the `unsafe` keyword on any field that carries a library safety invariant, but you
+may never make the invariant weaker than what the destructor of the field requires.
 
 ### Example: Field with Local Invariant
 
@@ -295,7 +295,7 @@ In the simplest case, a field's safety invariant is a restriction of the invaria
 field type, and concern only the immediate value of the field; e.g.:
 
 ```rust
-struct Alignment {
+pub struct Alignment {
     /// SAFETY: `pow` must be between 0 and 29.
     pub unsafe pow: u8,
 }
@@ -328,8 +328,8 @@ struct Zeroator {
 
 ### Example: Field with a Subtractive Invariant
 
-You may use the `unsafe` modifier to denote that a field *relaxes* the invariant imposed byte its
-type, so long as you do not relax that invariant beyond what is required to soundly run the field's
+You may use the `unsafe` modifier to denote that a field *relaxes* the invariant imposed by its type
+so long as you do not relax that invariant beyond what is required to soundly run the field's
 destructor.
 
 For example, a `str` is both trivially destructable (because it implements `Copy`), and bound by the
@@ -447,7 +447,7 @@ struct Layout {
 The `unsafe` modifier should only be used on fields with *safety* invariants, not merely correctness
 invariants.
 
-We might also imagine a variant of the above example where `alignment_pow`, like `size` doesn't
+We might also imagine a variant of the above example where `alignment_pow`, like `size`, doesn't
 carry a safety invariant. Ultimately, whether or not it makes sense for a field to be `unsafe` is a
 function of programmer preference and API requirements.
 
