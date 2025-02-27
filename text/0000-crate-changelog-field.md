@@ -220,6 +220,44 @@ changelogs. However, such effort is neither scalable nor ideal.
 # Prior art
 [prior-art]: #prior-art
 
+## NPM
+
+[Before npm v7, files named `CHANGES` / `CHANGELOG` / `HISTORY` are always included regardless of settings](https://docs.npmjs.com/cli/v6/configuring-npm/package-json#files).
+In npm v7, [those files are no longer always included](https://github.com/npm/npm-packlist/pull/61).
+npm does not impose any constraint on the format of those files.
+And the website of npm registry doesn't make the changelog more accessible to users.
+
+[A changelog RFC that purposes to introduce `changelog` command to npm](https://github.com/npm/rfcs/pull/8)
+was approved in 2018 but got [withdrawn](https://github.com/npm/rfcs/blob/main/withdrawn/0002-changelog.md) later in 2021.
+This command makes it easy to view the changelog for a library.
+
+The main points for withdrawal are
+
+- npm no longer always include `CHANGES` / `CHANGELOG` / `HISTORY` files after v7.
+- Managing changelog is considered outside of the scope of the **npm cli**
+- The RFC is long inactive after being approved.
+- Current **npm cli** team is unlikely to implement it
+
+## PyPI
+
+`pyproject.toml` supports `project.urls` table which includes a list of URLs associated with the project.
+And these URLs are displayed on the left sidebar of the project page on PyPI.
+
+```toml
+[project.urls]
+Homepage = "https://example.com"
+Documentation = "https://readthedocs.org"
+Repository = "https://github.com/me/spam.git"
+Issues = "https://github.com/me/spam/issues"
+Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+```
+
+They keeps [a list of well-known labels](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls)
+which includes `changelog`(with alias `changes`, `whatsnew` and `history`) and `releasenotes`.
+
+A [search](https://grep.app/search?f.lang=TOML&f.lang.pattern=toml&f.path.pattern=pyproject.toml&q=Changelog+%3D)
+for the usage of `changelog` url in `pyproject.toml` yields many results.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
