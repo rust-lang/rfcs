@@ -166,6 +166,9 @@ pub struct UnalignedRef<'a, T> {
 }
 ```
 
+You should use the `unsafe` keyword on any field that carries a library safety invariant which
+differs from the invariant provided by its type.
+
 The `unsafe` field modifier is only applicable to named fields. You should avoid attaching library
 safety invariants to unnamed fields.
 
@@ -284,101 +287,23 @@ For more information about this error, try `rustc --explain E0133`.
   }
 ```
 
-## When To Use Unsafe Fields
-
-You should use the `unsafe` keyword on any field that carries a library safety invariant, but you
-may never make the invariant weaker than what the destructor of the field requires.
-
-### Example: Field with Local Invariant
-
-In the simplest case, a field's safety invariant is a restriction of the invariants imposed by the
-field type, and concern only the immediate value of the field; e.g.:
+You may use `unsafe` to denote that a type relaxes its type's library safety invariant; e.g.:
 
 ```rust
-pub struct Alignment {
-    /// SAFETY: `pow` must be between 0 and 29.
-    pub unsafe pow: u8,
-}
-```
-
-### Example: Field with Remote Invariant
-
-A field might carry an invariant with respect to data beyond its immediate bytes; e.g. beyond a reference:
-
-```rust
-struct CacheArcCount<T> {
-    /// SAFETY: This `Arc`'s `ref_count` must equal the value of the `ref_count` field.
-    unsafe arc: Arc<T>,
-    /// SAFETY: See [`CacheArcCount::arc`].
-    unsafe ref_count: usize,
-}
-```
-
-...or even beyond the Rust abstract machine; e.g.:
-
-```rust
-struct Zeroator {
-    /// SAFETY: The fd points to a uniquely-owned file, and the bytes from the start of the file to
-    /// the offset `cursor` (exclusive) are zero.
-    unsafe fd: OwnedFd,
-    /// SAFETY: See [`Zeroator::fd`].
-    unsafe cursor: usize,
-}
-```
-
-### Example: Field with a Subtractive Invariant
-
-You may use the `unsafe` modifier to denote that a field *relaxes* the invariant imposed by its type
-so long as you do not relax that invariant beyond what is required to soundly run the field's
-destructor.
-
-For example, a `str` is both trivially destructable (because it implements `Copy`), and bound by the
-library safety invariant that it contains valid UTF-8. It is sound to temporarily violate the
-library invariant of `str`, so long as the invalid `str` is not safely exposed to code that assumes
-`str` validity.
-
-Below, `MaybeInvalidStr` encapsulates an initialized-but-potentially-invalid `str` as an unsafe
-field:
-
-```rust
-struct MaybeInvalidStr<'a> {
+struct MaybeInvalidStr {
     /// SAFETY: `maybe_invalid` may not contain valid UTF-8. Nonetheless, it MUST always contain
     /// initialized bytes (per language safety invariant on `str`).
-    unsafe maybe_invalid: &'a str
+    unsafe maybe_invalid: str
 }
 ```
 
-## When *Not* To Use Unsafe Fields
+...but you *must* ensure that the field is soundly droppable before it is dropped. A `str` is bound
+by the library safety invariant that it contains valid UTF-8, but because it is trivially
+destructible, no special action needs to be taken to ensure it is in a safe-to-drop state.
 
-### Example: Relaxing a Language Invariant
-
-The `unsafe` modifier is appropriate only for denoting *library* safety invariants. It has no impact
-on *language* safety invariants, which must *never* be violated. This, for example, is an unsound
-API:
-
-```rust
-struct Zeroed<T> {
-    // SAFETY: The value of `zeroed` consists only of bytes initialized to `0`.
-    unsafe zeroed: T,
-}
-
-impl<T> Zeroed<T> {
-    pub fn zeroed() -> Self {
-        unsafe { Self { zeroed: core::mem::zeroed() }}
-    }
-}
-```
-
-...because `Zeroed::<NonZeroU8>::zeroed()` induces undefined behavior.
-
-### Example: Field with a Subtractive Invariant and Drop Glue
-
-Although you may use the `unsafe` modifier to denote that a field relaxes its type's invariant, you
-must never relax that invariant beyond what is required to run its destructor.
-
-For example, `Box` has a non-trivial destructor which requires that its referent has the same size
+By contrast, `Box` has a non-trivial destructor which requires that its referent has the same size
 and alignment that the referent was allocated with. Adding the `unsafe` modifier to a `Box` field
-which violates this invariant; e.g.:
+that violates this invariant; e.g.:
 
 ```rust
 struct BoxedErased {
@@ -403,9 +328,9 @@ impl BoxedErased {
 }
 ```
 
-...is insufficent for ensuring that using `BoxedErased` or its `data` field in safe contexts cannot
-lead to undefined behavior: namely, if `BoxErased` or its `data` field is dropped, its destructor
-may induce UB.
+...does not ensure that using `BoxedErased` or its `data` field in safe contexts cannot lead to
+undefined behavior: namely, if `BoxErased` or its `data` field is dropped, its destructor may induce
+UB.
 
 In such situations, you may avert the potential for undefined behavior by wrapping the problematic
 field in `ManuallyDrop`; e.g.:
@@ -420,7 +345,30 @@ field in `ManuallyDrop`; e.g.:
   }
 ```
 
-### Example: Field with Correctness Invariant
+## When *Not* To Use Unsafe Fields
+
+### Relaxing a Language Invariant
+
+The `unsafe` modifier is appropriate only for denoting *library* safety invariants. It has no impact
+on *language* safety invariants, which must *never* be violated. This, for example, is an unsound
+API:
+
+```rust
+struct Zeroed<T> {
+    // SAFETY: The value of `zeroed` consists only of bytes initialized to `0`.
+    unsafe zeroed: T,
+}
+
+impl<T> Zeroed<T> {
+    pub fn zeroed() -> Self {
+        unsafe { Self { zeroed: core::mem::zeroed() }}
+    }
+}
+```
+
+...because `Zeroed::<NonZeroU8>::zeroed()` induces undefined behavior.
+
+### Denoting a Correctness Invariant
 
 A library *correctness* invariant is an invariant imposed by an API whose violation must not result
 in undefined behavior. In the below example, unsafe code may rely upon `alignment_pow`s invariant,
