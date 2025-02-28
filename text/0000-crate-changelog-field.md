@@ -151,6 +151,12 @@ results, as `Homepage` and `Repository` links also show there.
   making offline usage of the `chagelog` field impractical.
 - This proposal does not constrain the format of the changelog, making it hard
   for external tools to consume the contents of the changelog.
+- Although `changelog` URL usually won't change from release to release,
+  sometimes a crate might change its `changelog` URL, which could invalidate
+  the `changelog` URLs in previously published versions. This is a clear indication
+  that `changelog` URL is inheritly a piece of mutable metadata that could be kept per
+  crate instead of per crate version. However, currently there is no ideal solution
+  to handle mutable metadata associated with crates.
 
 # Rationale and Alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
