@@ -258,6 +258,29 @@ which includes `changelog`(with alias `changes`, `whatsnew` and `history`) and `
 A [search](https://grep.app/search?f.lang=TOML&f.lang.pattern=toml&f.path.pattern=pyproject.toml&q=Changelog+%3D)
 for the usage of `changelog` url in `pyproject.toml` yields many results.
 
+## CRAN
+
+The R community follows the GNU convention for [`NEWS`](https://www.gnu.org/prep/standards/standards.html#NEWS-File)
+and [`ChangeLog`](https://www.gnu.org/prep/standards/standards.html#Change-Logs) files.
+
+The `NEWS` file contains a list of user-visible changes worth mentioning. Items for old versions are not discarded.
+When `NEWS` file become too big, some of the older items should be moved into `ONEWS` file and
+a note referring the user to that file should be put at the end of `NEWS` file.
+
+The `NEWS` file can be in plaintext(`NEWS`), Markdown(`NEWS.md`) or R document(`inst/NEWS.Rd`) formats.
+
+
+The `Changelog` file is more detailed and accurate, including developer-facing changes.
+
+By default, `NEWS` file will be included into a CRAN package but `Changelog` will not,
+as documented in the [package structure of an R package](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Package-structure-1).
+
+The CRAN website shows a link to the [rendered `NEWS` file](https://cran.r-project.org/web/packages/ggplot2/news/news.html)
+on the package's web page.
+
+R also provides a function `news()` for building and querying R or package news information,
+which comes handy when in a REPL or IDE like RStudio.
+
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
