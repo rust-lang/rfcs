@@ -309,6 +309,10 @@ We may have a single macro to declare all bounds:
 declare_default_bounds! { Sized, ?Forget, PartialEq };
 ```
 
+## Do not default `Self` in traits and associated types to `?Trait` from the beginning
+
+This will drastically reduce implementation complexity as it would be possible to do with a simple desugaring, because recursive bounds would not need to be infinitely bounded. But it will open a possibility for libraries to be locked into `Forget` bounds in some cases.
+
 # Prior art
 [prior-art]: #prior-art
 
