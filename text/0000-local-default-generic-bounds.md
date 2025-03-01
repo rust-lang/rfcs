@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 <!-- todo: Replace with RFC PR later -->
-[`forget_marker_trait`]: https://github.com/Ddystopia/rfcs/blob/leak-marker-trait-and-local-default-bounds/text/0000-forget-marker-trait.md
+[`forget_marker_trait`]: https://github.com/rust-lang/rfcs/pull/3782
 
 # Summary
 [summary]: #summary
