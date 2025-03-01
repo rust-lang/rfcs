@@ -1194,25 +1194,6 @@ The field projection operator `->` has the following syntax:
 [_Expression_]: https://doc.rust-lang.org/reference/expressions.html
 [TUPLE_INDEX]: https://doc.rust-lang.org/reference/tokens.html#tuple-index
 
-#### Desugaring
-
-```rust
-struct T {
-    field: F,
-}
-
-let t: C<T> = /* ... */;
-let _ = t->field;
-
-// becomes
-
-let _ = Project::<field_of!(<C<T> as Projectable>::Inner, field)>::project(t);
-```
-
-The `C<T>` in the `C<T> as Projectable` comes from a type inference variable over the expression
-`t`.
-
-
 #### `Projectable` & `Project` Traits
 
 Added to `core::ops`:
@@ -1231,6 +1212,24 @@ where
     fn project(self) -> Self::Output;
 }
 ```
+
+#### Desugaring
+
+```rust
+struct T {
+    field: F,
+}
+
+let t: C<T> = /* ... */;
+let _ = t->field;
+
+// becomes
+
+let _ = Project::<field_of!(<C<T> as Projectable>::Inner, field)>::project(t);
+```
+
+The `C<T>` in the `C<T> as Projectable` comes from a type inference variable over the expression
+`t`.
 
 ## Stdlib Field Projections
 
