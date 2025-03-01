@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 <!-- todo: Replace with RFC PR later -->
-[`local_default_bounds`]: https://internals.rust-lang.org/t/pre-rfc-local-default-bounds/22453
+[`local_default_bounds`]: https://github.com/rust-lang/rfcs/pull/3783
 
 # Summary
 [summary]: #summary
