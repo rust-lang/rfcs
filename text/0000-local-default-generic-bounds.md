@@ -298,7 +298,7 @@ We may have four attributes: `default_generic_bounds`, `default_foreign_assoc_bo
 #![default_foreign_assoc_bounds(?Sized)]
 ```
 
-Previous version of this RFC was exactly this, you can read it [here](https://github.com/Ddystopia/rfcs/blob/leak-marker-trait-and-local-default-bounds/text/0000-local-default-generic-bounds.md).
+Previous version of this RFC was exactly this, you can read it [here](https://github.com/Ddystopia/rfcs/blob/49f52526b9f455ddbc333a7b453f8d61f1918534/text/0000-local-default-generic-bounds.md).
 
 ## Alternative syntax
 [alternative-syntax]: #alternative-syntax
