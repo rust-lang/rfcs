@@ -896,6 +896,44 @@ fn init(foo: &mut Opaque<Foo>) {
 }
 ```
 
+##### Limitations
+
+A type can only be annotated with `#[projecting]` if it is also `#[repr(transparent)]`, because of
+the following problem:
+
+Assume that we could annotate the following container with `#[projecting]`:
+
+```rust
+#[projecting]
+struct Container<T> {
+    count: u64,
+    value: T,
+}
+```
+
+Now the memory layout of a `Container<Foo>` could look like this (one character represents one byte):
+
+```text
+|count---|bar-|baz-|
+```
+
+If we now want to project `&Container<Foo>` to `&Container<u32>`, we would have to project to `baz`.
+But the problem is that the memory layout of `Container<u32>` looks like this:
+
+```text
+|count---|u32-|
+```
+
+Now projecting becomes impossible for two reasons:
+- this layout is not contained as a direct sublayout of the above (ie with `count` mapped to `count`
+  and `u32` mapped to `baz`),
+- projecting for references is done simply via offsetting.
+
+So is not possible to project to the correct layout with both of these constraints.
+
+This is also the reason for why `Arc<T>` cannot be projected to `Arc<Field>` (the reference count is
+stored in front of the `T`). However, it is possible to create an [`ArcRef<T>`](arcref) that
+tracks the reference count separately from the field.
 
 ## Impact of this Feature
 
@@ -1687,6 +1725,7 @@ Types that might be good candidates for [`#[projecting]`](#projecting-attribute)
 - `ManuallyDrop<T>`
 
 ### `ArcRef<T>` for Stdlib
+[arcref]: #arcref-t--for-stdlib
 
 Using field projections, we can implement an `Arc` reference type, a pointer that owns a refcount on
 an `Arc`, but points not at the entire struct in the `Arc`, but rather a field of that struct.
