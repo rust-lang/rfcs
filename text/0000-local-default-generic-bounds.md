@@ -326,6 +326,34 @@ This will drastically reduce implementation complexity as it would be possible t
 
 - [ ] How to handle GATs? Rustc currently does not support proving `for<U> <T as Trait>::Assoc<U>: Forget`.
 - [ ] How to solve recursive associated type bounds? `trait Trait { type Assoc: Trait }`
+- [ ] We probably don't want to alter macro output, it would probably be too hard to implement and design. How should we handle this?
+
+```rust
+// macro crate
+#![default_generic_bounds(PartialEq)]
+#[macro_export]
+macro_rules! make_functions {
+    (
+        { $a:item }
+        { $($b:tt)* }
+        { $($d:tt)* }
+    ) => {
+        $a
+        $($b)*
+        pub fn c<C>(c: &C) -> bool { c == c }
+        pub fn d<D: $($d:tt)*>(_: &D) -> bool { true }
+    }
+}
+
+// user crate
+#![default_generic_bounds(?Forget)]
+make_functions! { 
+    { pub fn a<A>(_: &A) -> bool { true } }
+    { pub fn b<B>(_: &B) -> bool { true } }
+    {}
+}
+```
+
 - [ ] Syntax
 - [ ] How to display it in Rustdoc
 - [ ] Should we allow default `!` bounds? What would it mean?
