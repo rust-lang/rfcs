@@ -214,7 +214,7 @@ mod other_crate {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Introduce new trait level attibute: `default_generic_bounds` used to (non-exhaustively) enumerate overwrides of defaults for different types of bounds. Only a special set of traits would be allowed and would grow with new "breaking" traits, like `Forget`.
+Introduce new crate level attibute: `default_generic_bounds` used to (non-exhaustively) enumerate overwrides of defaults for different types of bounds. Only a special set of traits would be allowed and would grow with new "breaking" traits, like `Forget`.
 
 Every trait would initally have its unique default. In practice, bounds for all traits that are stable at the date of RFC except `Sized` would default to `?Trait`. For new "breaking" traits, default would be `Trait`, except bounds for `Self` in traits and associated types in traits.
 
