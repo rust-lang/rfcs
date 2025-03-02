@@ -633,7 +633,7 @@ Unions are always `Forget`. All members of `union` must be `Forget`, but it is a
 - `Box::<T>::forget` is available only for `T: Forget`.
 - `forget_unchecked`, a new unsafe function, is added to forget `T: ?Forget` types. It is a wrapper around `ManuallyDrop::new_unchecked`, just as `forget` is a wrapper around `ManuallyDrop::new`.
 - `PhantomNonForget` is a `!Forget` ZST for types to become `!Forget`. If we decide to have `impl<T: 'static> Forget for T {}`, we should add a generic parameter/lifetime to `PhantomNonForget`.
-- `Vec::drain` is available only for `T: Forget` types. A new method might be added to work with `T: ?Forget`.
+- Similar to other APIs, `T: Forget` -> `Drait<T>: Forget` and `T: !Forget` -> `Drait<T>: !Forget`.
 - APIs like `std::sync::mpsc::Sender::send` are available only for `T: Forget`.
 - Possibly new channels should be introduced, that are compatible with `T: !Forget` types too.
 - `Vec::set_len` is available only for `T: Forget` types, to not create a footgun for `unsafe` code in the wild. Maybe a new method should be added to support `T: ?Forget`.
