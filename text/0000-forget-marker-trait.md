@@ -734,6 +734,29 @@ mod other_crate {
 }
 ```
 
+#### Macros
+
+If macro-library generates code, some problems during the migration are possible:
+
+```rust
+mod user {
+    #![default_generic_bounds(?Forget)]
+
+    ::library::make!(); // Will not compile because `T` is `?Forget`.
+}
+
+mod user {
+    #[macro_export]
+    macro_rules! make {
+        () => {
+            pub fn foo<T>(t: T) {
+                ::core::mem::forget(t);
+            }
+        }
+    }
+}
+```
+
 #### Changing default
 
 It is not required, but in next editions we may swap the default for `default_generic_bounds`. Crates that want to continue using old default in next editions will set `#![default_generic_bounds(Forget)]`.
