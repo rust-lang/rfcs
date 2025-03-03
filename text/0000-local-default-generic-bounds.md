@@ -211,6 +211,29 @@ mod other_crate {
 }
 ```
 
+### Macros
+
+If macro-library generates code, some problems during the migration are possible:
+
+```rust
+mod user {
+    #![default_generic_bounds(?Forget)]
+
+    ::library::make!(); // Will not compile because `T` is `?Forget`.
+}
+
+mod user {
+    #[macro_export]
+    macro_rules! make {
+        () => {
+            pub fn foo<T>(t: T) {
+                ::core::mem::forget(t);
+            }
+        }
+    }
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
