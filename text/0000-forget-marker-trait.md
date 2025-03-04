@@ -20,77 +20,12 @@ Back in 2015, the [decision was made][safe-mem-forget] to make `mem::forget` saf
 
 [safe-mem-forget]: https://github.com/rust-lang/rfcs/pull/1066
 
-## What are RAII guards? [^raii]
-[raii-guards]: #raii-guards
-
-[^raii]: https://rust-unofficial.github.io/patterns/patterns/behavioural/RAII.html
-
-RAII is a useful pattern for ensuring resources are properly deallocated or finalized. We can make use of the borrow checker in Rust to statically prevent errors stemming from using resources after finalization takes place.
-
-```rust
-use std::ops::Deref;
-
-struct Foo;
-
-struct Mutex<T> {
-    // `MutexGuard` is borrowing from here
-}
-
-struct MutexGuard<'a, T: 'a> {
-    data: &'a T,
-    // ...
-}
-
-impl<T> Mutex<T> {
-    fn lock(&self) -> MutexGuard<T> {
-        // Lock the underlying OS mutex.
-
-        // MutexGuard keeps a reference to self
-        MutexGuard {
-            data: self
-        }
-    }
-}
-
-// Destructor for unlocking the mutex.
-impl<'a, T> Drop for MutexGuard<'a, T> {
-    fn drop(&mut self) {
-        // Unlock the underlying OS mutex.
-    }
-}
-
-impl<'a, T> Deref for MutexGuard<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        self.data
-    }
-}
-
-fn baz(x: Mutex<Foo>) {
-    let xx = x.lock();
-    xx.foo(); // foo is a method on Foo.
-              // The borrow checker ensures we can't store a reference to the underlying
-              // Foo which will outlive the guard xx.
-
-    // x is unlocked when we exit this function and xx's destructor is executed.
-}
-```
-
-The core aim of the borrow checker is to ensure that references to data do not outlive that data. The RAII guard pattern works because the guard object contains a reference to the underlying resource and only exposes such references. Rust ensures that the guard cannot outlive the underlying resource and that references to the resource mediated by the guard cannot outlive the guard. To see how this works it is helpful to examine the signature of deref without lifetime elision:
-
-```rust
-fn deref<'a>(&'a self) -> &'a T {
-    // ...
-}
-```
-
-The returned reference to the resource has the same lifetime as `self` (`'a`). The borrow checker, therefore, ensures that the lifetime of the reference to `T` is shorter than the lifetime of `self`.
-
 ### What is a proxy RAII guard?
 [proxy-raii-guards]: #proxy-raii-guards
 
-`thread::scoped` is special because it uses the RAII guard as a proxy to represent other values, but this proxy is not used to access those values. Instead, we are trusting that the borrow checker will ensure that the guard cannot outlive those values, and therefore that joining the thread in the guard's destructor is enough to ensure that the spawned thread is no longer running. [^proxy-raii-guard-source]
+`thread::scoped` is special because it uses the RAII guard [^raii] as a proxy to represent other values, but this proxy is not used to access those values. Instead, we are trusting that the borrow checker will ensure that the guard cannot outlive those values, and therefore that joining the thread in the guard's destructor is enough to ensure that the spawned thread is no longer running. [^proxy-raii-guard-source]
+
+[^raii]: https://rust-unofficial.github.io/patterns/patterns/behavioural/RAII.html
 
 ```rust
 struct JoinHandle<'a>(/* ... */);
@@ -120,7 +55,7 @@ As we can see, `buffer` is borrowed for a lifetime `'a`, until `guard` is live. 
 ### Why is the proxy RAII guard gone?
 [proxy-raii-guards-leakpokaplipse]: #proxy-raii-guards-leakpokaplipse
 
-In 2015, the [leakpocalypse] happened, and the language faced the question: do we make it safe to skip destructors or not? [PPYP] allows data structures to provide RAII guards while being resilient to skipping the destructor. The only use case in std that cannot be expressed without destructor always running was `JoinGuard`, [which later got replaced too][thred-scope-doc].
+We can't use proxy RAII guard to ensure cleanup anymore. In 2015, the [leakpocalypse] happened, and the language faced the question: do we make it safe to skip destructors or not? [PPYP] allows data structures to provide RAII guards while being resilient to skipping the destructor. The only use case in std that cannot be expressed without destructor always running was `JoinGuard`, [which later got replaced too][thred-scope-doc].
 
 [leakpocalypse]: https://github.com/rust-lang/rust/issues/24292
 [PPYP]: https://cglab.ca/~abeinges/blah/everyone-poops/
@@ -144,16 +79,18 @@ fn main() {
 }
 ```
 
-As you can see, after calling `something_with_clean_up`, the control flow is passed to the library. The rest of the user's code *cannot* continue executing before `something_with_clean_up` performs a cleanup.
+As you can see, after calling `something_with_clean_up`, the control flow is passed to the library. The rest of the user's code *cannot* continue executing before `something_with_clean_up` performs a cleanup - so it can, for example, derigester pointer from external code or restore broken invariants.
 
-Thus, there was no point in redesigning the language and delaying Rust 1.0, practically all APIs and patterns could be safely expressed without destructors always running, so making `std::mem::forget` safe was a good decision at the time.
+Thus, there was no point in redesigning the language and delaying Rust 1.0, practically all APIs and patterns could be safely expressed without destructors always running, so making `std::mem::forget` safe and removing "Proxy RAII Guard" was a good decision at the time.
 
 ## What is different
 [what-is-different]: #what-is-different
 
-Edition 2018 introduced `async` Rust. But as turned out, nuances in its design conflicted with an earlier decision. All `async` calls are essentially constructors for state machines which borrow some resources from outside or directly own them. It is user's responsibility to poll those state machines to completion. `!Forget` use cases could've been expressed by other means in sync Rust (like taking a callback instead of returning a guard or [PPYP]), but with `async`, anything turns directly into `impl Future + use<'a>` which is equivalent to the RAII guard. This means, that sync pattern of taking a closure cannot be used - everything is transformed into RAII guard by the compiler.
+Edition 2018 introduced `async` Rust. But as turned out, nuances in its design conflicted with an earlier decision. All `async` calls are essentially constructors for state machines which borrow some resources from outside or directly own them. It is user's responsibility to poll those state machines to completion.
 
-Various OS or C/C++ APIs cannot be made `async` without performance or ergonomics costs. PPYP can work for `Drain<'a>`, but not for `io_uring`. As long as the future is `'static` or directly owns all data it is accessing, `Pin` guarantees are sufficient. Otherwise, there is no way to make a sound API.
+`!Forget` use cases could've been expressed by other means in sync Rust (like taking a callback instead of returning a guard or [PPYP]), but with `async`, anything turns directly into `impl Future + use<'a>` which is equivalent to the RAII guard. This means, that sync pattern of taking a closure cannot be used - everything is transformed into RAII guard by the compiler.
+
+Various OS or C/C++ APIs cannot be made `async` without performance or ergonomics costs, because futures become a proxy RAII guard for those APIs. PPYP can work for `Drain<'a>`, but not for `io_uring`. As long as the future is `'static` or directly owns all data it is accessing, `Pin` guarantees are sufficient. Otherwise, there is no way to make a sound API. Currently, they are forced into using `'static` bounds, which is one of the pain points users are reporting about `async` Rust, together with `Send` issues.
 
 Let's try to translate the previous example, a widely used pattern, to `async` Rust.
 
@@ -307,10 +244,7 @@ It is common for C/C++ APIs to require some cleanup. It is not an issue for `syn
 
 The core goal of `Forget` trait, as proposed in that RFC, is to bring back the "Proxy Guard" idiom for non-static types, with `async` being the primary motivation.
 
-## What does `!Forget` mean?
-[what-not-forget-mean]: #what-not-forget-mean
-
-If any resources are borrowed by some type `T: !Forget`, they will remain borrowed until `T` is dropped. See a more precise description in [#reference-level-explanation](#reference-level-explanation).
+If any resources are borrowed by some type `T: !Forget`, they will remain borrowed until `T` is dropped.
 
 ```rust
 let mut resource = [0u8; 1024];
@@ -324,14 +258,14 @@ unsafe { std::mem::forget_unchecked(borrower) };
 let first_byte = resource[0]; // Potential UB
 ```
 
-## How is `Forget` related to `Pin`?
+## Relation between `Forget` and `Pin`
 [connection-to-pin]: #connection-to-pin
 
 Both `Forget` and `Pin` concepts serve a similar purpose - guaranteeing that some memory is not moved or repurposed. How `Forget` does it? If any resource is borrowed, you cannot take `&mut` reference to it, as it would be aliased by `!Forget` type that is borrowing from it. Before `!Forget` type goes out of scope, removing the borrow, its drop handler must be executed, just like `Pin`'s [drop guarantee]. So `!Unpin` protects directly owned memory, while `!Forget` protects *borrowed* memory. It is important to note that `Forget` is not defined around memory, but around values - see [#reference-level-explanation](#reference-level-explanation).
 
 With `Forget`, some authors may have the option of borrowing data rather than owning it, making their futures `Unpin`, but `!Forget`.
 
-## Core problem
+## Undefined Behavior without `!Forget`
 
 Consider that example
 
@@ -362,7 +296,7 @@ fn main() {
 }
 ```
 
-In this case, `handle` borrows from `buf`, but the code that accessing `buf` is not directly tied to `handle`, it runs independently of it. Because of this, even if we pin `handle`, we still can *remove the borrow* (by ending the lifetime of `handle`) on `buf` while `JoinHandle`'s memory remains available (`forget(Box::pin(handle))`).
+In this case, `handle` borrows from `buf`, but the code that accessing `buf` is not directly tied to `handle`, it runs independently of it. Because of this, even if we pin `handle`, we still can *remove the borrow* (by ending the lifetime of `handle`) on `buf` while `JoinHandle`'s memory remains available (`forget(Box::pin(handle))`). Thus, `Pin` guarantees are not enough, we need `!Forget`.
 
 Functions having signatures with weakening can remove a type from the scope without running its destructor. The following function is an example of a weakening function - after it is called, the borrow checker assumes that the lifetime of `T` has ended, as well as all borrows held by `T`.
 
@@ -372,8 +306,6 @@ fn weakener<T>(foo: T) -> i32 {
     0
 }
 ```
-
-Currently, many APIs are forced into using `'static` bounds, which is one of the pain points users are reporting about `async` Rust, together with `Send` issues.
 
 ## Not only forgets
 [channels-unsoundness]: #channels-unsoundness
