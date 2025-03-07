@@ -350,6 +350,10 @@ begin
 end Item_Fits_Test;
 ```
 
+Pattern types [rust#123646](https://github.com/rust-lang/rust/issues/123646) are a generalized form
+of the concept underpinning `NonZero` and may offer a generalized solution to the problems described
+in this RFC, if they are adopted into Rust.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
