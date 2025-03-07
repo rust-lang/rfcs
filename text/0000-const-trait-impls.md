@@ -873,7 +873,7 @@ This can be achieved across an edition by having some intermediate syntax like p
 
 Then in the following edition, we can forbid the `#[next_const]` attribute and just make it the default.
 
-The disadvantage of this is that by default, it creates stricter bounds than desired.
+The disadvantage of this is that sometimes, it creates stricter bounds than desired.
 
 ```rust
 const fn foo<T: Foo>() {
@@ -884,15 +884,13 @@ const fn foo<T: Foo>() {
 compiles today, and allows all types that implement `Foo`, irrespective of the constness of the impl.
 With the opt-out scheme that would still compile, but suddenly require callers to provide a const impl.
 
-The safe default (and the one folks are used to for a few years now on stable), is that trait bounds just work, you just
-can't call methods on them.
-This is both useful in
+The alternative proposed above (and the one folks are used to for a few years now on stable), is that trait bounds mean the same on all functions, you just can't call methods on them in `const fn`.
 
 * nudging function authors to using the minimal necessary bounds to get their function
 body to compile and thus requiring as little as possible from their callers,
 * ensuring our implementation is correct by default.
 
-The implementation correctness argument is partially due to our history with `?const` (see https://github.com/rust-lang/rust/issues/83452 for where we got it wrong and thus decided to stop using opt-out), and partially with our history with `?` bounds not being great either (https://github.com/rust-lang/rust/issues/135229, https://github.com/rust-lang/rust/pull/132209). An opt-in is much easier to make sound and keep sound.
+The implementation correctness argument is partially due to our history with `cosnt fn` trait bounds (see https://github.com/rust-lang/rust/issues/83452 for where we got "reject all trait bounds" wrong and thus decided to stop using opt-out), and partially with our history with `?` bounds not being great either (https://github.com/rust-lang/rust/issues/135229, https://github.com/rust-lang/rust/pull/132209). An opt-in is much easier to make sound and keep sound.
 
 To get more capabilities, you add more syntax. Thus the opt-out approach was not taken.
 
