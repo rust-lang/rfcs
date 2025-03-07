@@ -1,6 +1,6 @@
 - Feature Name: `const-nonzero-ergonomics`
 - Start Date: 2025-03-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3786](https://github.com/rust-lang/rfcs/pull/3786)
 - Rust Issue: none
 
 # Summary
