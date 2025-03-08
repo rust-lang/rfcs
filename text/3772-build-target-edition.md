@@ -1,7 +1,7 @@
 - Feature Name: `build-target-edition`
 - Start Date: 2025-02-13
 - RFC PR: [rust-lang/rfcs#3772](https://github.com/rust-lang/rfcs/pull/3772)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/cargo#15283](https://github.com/rust-lang/cargo/issues/15283)
 
 # Summary
 [summary]: #summary
