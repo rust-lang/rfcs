@@ -11,7 +11,7 @@ type is only seamlessly usable if all APIs with non-zero semantics use this type
 to/from conversion at any API boundary that differs in its use of `NonZero`.
 
 The burden of these conversions is especially heavy in tests and examples. This RFC proposes new
-coercions to facilitate implicit conversion to `NonZero` from integral constants, simplifying usage
+coercions to facilitate implicit conversion to `NonZero` from integer literals, simplifying usage
 in tests and examples, where succinctness and readability are paramount.
 
 # Motivation
@@ -21,7 +21,7 @@ Using `NonZero` to express non-zero semantics is valuable because it leads to cl
 removes the need for some runtime zero-checks and creates potential for niche optimizations.
 
 In typical logic code, `NonZero<T>` values are validated early in the process, such as when parsing
-user input. We start with a value of integral type `T` which may or may not be zero, and we parse
+user input. We start with a value of integer type `T` which may or may not be zero, and we parse
 this into a `NonZero<T>` - if this succeeds, we know it is not zero and can skip zero-checks in any
 further calls, as long as the API surface uses `NonZero<T>`.
 
@@ -84,11 +84,11 @@ creates a difference between the two categories of usage:
 `NonZero`, giving a false impression of API complexity and discouraging API authors from using
 `NonZero` despite its advantages.**
 
-In test and example code this commonly occurs with integral constants and literals. The values are
+In test and example code this commonly occurs with integer literals. The values are
 known and can be validated at compile time to be non-zero and within expected bounds.
 
-This RFC proposes that we omit the ceremony with constants, allowing implicit coercion of non-zero
-integral constants and literals to `NonZero<T>`, thereby encouraging Rust crate authors to
+This RFC proposes that we omit the ceremony with literals, allowing implicit coercion of non-zero
+integer literals to `NonZero<T>`, thereby encouraging Rust crate authors to
 make more extensive use of `NonZero`, which they may today choose to avoid due to the extra cruft
 it adds to tests and examples.
 
@@ -171,8 +171,8 @@ fn item_fits_exactly_in_packaging(height: NonZero<u32>) -> bool {
 ```
 
 When writing test or example code and using hardcoded constants, you can omit the conversion into
-`NonZero<T>` - it is done implicitly at compile time. This only works with constant values (either
-`const` variables or literals like `1234`).
+`NonZero<T>` - it is done implicitly at compile time. This only works with integer literals
+like `1234`.
 
 ```rust ignore
 #[test]
@@ -201,7 +201,7 @@ This can likely be implemented as a new coercion, consisting approximately of
 the following processing steps:
 
 1. During type checking (`rustc_hir_typeck/src/coercion.rs:coerce()`), we detect the coercion
-   opportunity from an integral constant (literal or variable, explicitly typed or inferred) to
+   opportunity from an integer literal (either explicitly typed or inferred) to
    a `NonZero<T>` with a potentially compatible `T`. At this stage, we only have types and do not
    yet have values (which might be zero or out of bounds).
 1. If the types are potentially compatible, we emit this as a new `Adjustment::NonZero` variant.
