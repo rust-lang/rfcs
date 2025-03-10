@@ -205,7 +205,7 @@ Integer literals (e.g., `123`, `0xFF`) are implicitly coerced to `std::num::NonZ
 * The target type is explicitly `NonZero<T>` or inferred as such.
 * A single integer type can be identified for the coercion.
     * If the literal is untyped (e.g. `123`), the `T` must be unambiguously resolved from the target `NonZero<T>` type.
-    * If the literal is typed (e.g. `123u32`), the `T` in the `NonZero<T>` must either be inferred or match the literal's type.
+    * If the literal is typed (e.g. `123u32`), the `T` in the `NonZero<T>` must either explicitly or via inference match the literal's type.
 
 The coercion happens at compile time, with the emitted code being the equivalent of
 `const { NonZero::new(literal).unwrap() }` for valid cases, with no runtime checks.
