@@ -838,6 +838,65 @@ let bars: DoubleRef<'_, i32> = d->bar;
 assert_eq!((42, 24), bars.read());
 ```
 
+#### Simultaneous Projections
+
+One important detail of the `Projectable` and `Project` traits is that they only enable support for
+a single projection. So the value `x` will be consumed when doing `x->y`.
+
+Simultaneous projections are governed by the `SimultaneousProjectable` and `SimultaneousProject`
+traits. When projecting a value whose type implements these traits, it can be projected once for
+each field. So if our `DoubleRef` implemented them, we could also check the value of the two `baz`
+fields:
+
+```rust
+struct Foo {
+    bar: i32,
+    baz: u32,
+}
+
+let x: &Foo = &Foo { bar: 42, baz: 43 };
+let y: &Foo = &Foo { bar: 24, baz: 25 };
+let d: DoubleRef<'_, Foo> = DoubleRef::new(x, y);
+let bars: DoubleRef<'_, i32> = d->bar;
+let bazes: DoubleRef<'_, u32> = d->baz;
+assert_eq!((42, 24), bars.read());
+assert_eq!((43, 25), bazes.read());
+```
+
+Implementing these traits for `DoubleRef` looks like this:
+
+```rust
+impl<'a, T> SimultaneousProjectable for DoubleRef<'a, T> {
+    type Inter = (*mut T, *mut T);
+
+    fn start_projection(self) -> Self::Inter {
+        (self.first, self.second)
+    }
+}
+
+impl<'a, T, F> SimultaneousProject<F> for DoubleRef<'a, T>
+where
+    F: Field<Base = T>,
+{
+    type Output = DoubleRef<'a, F::Type>;
+
+    unsafe fn project(inter: Self::Inter) -> Self::Output {
+        DoubleRef {
+            first: unsafe { &mut *inter.0.project() },
+            second: unsafe { &mut *inter.1.project() },
+        }
+    }
+}
+```
+
+A couple of important notes:
+- we need to remove the `Project` implementation, since there is a blanket impl for types that
+  implement `SimultaneousProject`.
+- the `Inter` type has to implement `Clone` and the compiler will clone it for every projection the
+  user requests.
+- the compiler ensures that `project` will only be called at most once for each field via the
+  projection operator.
+
 #### Containers
 
 The other kind of projections are that of *containers*, for example `UnsafeCell<T>` or
@@ -960,6 +1019,8 @@ concepts are:
 - projection operator `->`,
   - `Project` trait,
   - `Projectable` trait,
+  - `SimultaneousProject` trait,
+  - `SimultaneousProjectable` trait,
 
 To ease understanding, here is a short explanation of the interactions between these concepts. The
 following subsections explain them in more detail, so refer to them in cases of ambiguity. The
@@ -969,6 +1030,9 @@ information about a field (such as the base struct and the field type) via the `
 trait and the `field_of!` macro makes it possible to name the [field types]. Finally, the
 [`#[projecting]`](#projecting-attribute) attribute allows `repr(transparent)` structs to be ignored
 when looking for fields for projection.
+
+The traits `SimultaneousProject` and `SimultaneousProjectable` exist to support simultaneous
+projections.
 
 ### Field Types
 [field type]: #field-types
@@ -1232,17 +1296,13 @@ The field projection operator `->` has the following syntax:
 [_Expression_]: https://doc.rust-lang.org/reference/expressions.html
 [TUPLE_INDEX]: https://doc.rust-lang.org/reference/tokens.html#tuple-index
 
-#### `Projectable` & `Project` Traits
+#### `[Simultaneous]Project[able]` Traits
 
-The projection operator is governed by three traits added to `core::ops`:
+The projection operator is governed by four traits added to `core::ops`:
 
 ```rust
 pub trait Projectable: Sized {
     type Inner: ?Sized;
-    // name-bikeshed needed
-    type Inter;
-
-    fn start_projection(self) -> Self::Inter;
 }
 
 pub trait Project<F>: Projectable
@@ -1251,15 +1311,42 @@ where
 {
     type Output;
 
-    fn project_last(inter: Self::Inter) -> Self::Output;
+    fn project(self) -> Self::Output;
 }
 
 // name-bikeshed needed
-pub unsafe trait SimultaneousProject<F>: Project<F>
+pub trait SimultaneousProjectable: Projectable {
+    // name-bikeshed needed
+    type Inter: Clone;
+
+    fn start_projection(self) -> Self::Inter;
+}
+
+// name-bikeshed needed
+pub trait SimultaneousProject<F>: SimultaneousProjectable
 where
     F: Field<Base = Self::Inner>,
 {
-   fn project(inter: Self::Inter) -> Self::Output;
+    type Output;
+
+    /// # Safety
+    ///
+    /// This function may only be called once for each value of `Self::Inter` that is derived from
+    /// a value of `Self` via [`SimultaneousProjectable::start_projection`] or cloning such a value.
+    unsafe fn project(inter: Self::Inter) -> Self::Output;
+}
+
+impl<T, F> Project<F> for T
+where
+    T: SimultaneousProjectable<F>,
+    F: Field<Base = T::Inner>,
+{
+    type Output = <T as SimultaneousProject<F>>::Output;
+
+    fn project(self) -> Self::Output {
+        // SAFETY: we only call one project function from the derived value of `start_projection`.
+        unsafe { <T as SimultaneousProject<F>>::project(self.start_projection()) }
+    }
 }
 ```
 
@@ -1268,10 +1355,9 @@ type has any kind of projection and for which fields there could be projections.
 sees `x->y`, the type of `x` has to implement `Projectable` in order for the compiler to verify that
 the associated type `Inner` of that impl has a field named `y`.
 
-`SimultaneousProject` can be implemented in addition to `Project` in order to allow projecting the
-same expression for different fields at the same time. This is also the reason for the existence of
-`Projectable::Inter`, since multiple values of `Self` "pointing" to the same value might not be
-allowed to coexist (this is the case for `&mut T`).
+`SimultaneousProject` can be implemented instead of `Project` in order to allow projecting the same
+expression for different fields at the same time. The `Inter` associated type of
+`SimultaneousProjectable` is cloned for each such simultaneous projection (except the last).
 
 #### Desugaring
 
@@ -1313,15 +1399,17 @@ let _ = t->y;
 // becomes
 
 let __inter_t = Projectable::start_projection(t);
-let _ = SimultaneousProject::<field_of!(<C<T> as Projectable>::Inner, field)>::project(
-   unsafe { ptr::read(&__inter_t) },
-);
-let _ = SimultaneousProject::<field_of!(<C<T> as Projectable>::Inner, x)>::project(
-   unsafe { ptr::read(&__inter_t) },
-);
-let _ = Project::<field_of!(<C<T> as Projectable>::Inner, y)>::project_last(
-   Projectable::start_projection(t),
-);
+let _ = unsafe {
+    SimultaneousProject::<field_of!(<C<T> as Projectable>::Inner, field)>::project(
+        __inter_t.clone()
+    )
+};
+let _ = unsafe {
+    SimultaneousProject::<field_of!(<C<T> as Projectable>::Inner, x)>::project(__inter_t.clone())
+};
+let _ = unsafe {
+    SimultaneousProject::<field_of!(<C<T> as Projectable>::Inner, y)>::project(__inter_t)
+};
 ```
 
 Essentially, the compiler starts projecting the value and then re-uses the same `Inter` value for
@@ -1351,23 +1439,13 @@ For example, `&T` would be implemented like this:
 ```rust
 impl<'a, T: ?Sized> Projectable for &'a T {
     type Inner = T;
+}
+
+impl<'a, T: ?Sized> SimultaneousProjectable for &'a T {
     type Inter = *const T;
 
     fn start_projection(self) -> Self::Inter {
         self
-    }
-}
-
-impl<'a, T: ?Sized, F> Project<F> for &'a T
-where
-    F: Field<Base = T>,
-    // Needed to be able to `.cast` below
-    F::Type: Sized + 'a,
-{
-    type Output = &'a F::Type;
-
-    fn project_last(ptr: *const T) -> Self::Output {
-        Self::project(ptr)
     }
 }
 
@@ -1377,7 +1455,7 @@ where
     // Needed to be able to `.cast` below
     F::Type: Sized + 'a,
 {
-    fn project(ptr: *const T) -> Self::Output {
+    unsafe fn project(ptr: *const T) -> Self::Output {
         let ptr = ptr.cast::<u8>();
         let ptr = unsafe { ptr.add(F::OFFSET) };
         let ptr = ptr.cast::<F::Type>();
@@ -1467,31 +1545,22 @@ Now the only component that is left is an implementation of `Projectable` and `P
 ```rust
 impl<'a, T: ?Sized> Projectable for Pin<&'a mut T> {
     type Inner = T;
+}
+
+impl<'a, T: ?Sized> SimultaneousProjectable for Pin<&'a mut T> {
     type Inter = *mut T;
 
     fn start_projection(self) -> Self::Inter {
         unsafe { Pin::into_inner_unchecked(self) }
     }
 }
-
-impl<'a, T, F> Project<F> for Pin<&'a mut T>
-where
-    F: UnalignedField<Base = T> + PinField,
-{
-    type Output = <F as PinField>::Projected<'a>;
-
-    fn project_last(inter: Self::Inter) -> Self::Output {
-        let r: &mut F::Type = <&mut T as Project<F>>::project(inter);
-        <F as PinField>::from_pinned_ref(r)
-    }
-}
-
 unsafe impl<'a, T, F> SimultaneousProject<F> for Pin<&'a mut T>
 where
     F: UnalignedField<Base = T> + PinField,
 {
-    fn project(inter: Self::Inter) -> Self::Output {
-        let r: &mut F::Type = <&mut T as Project<F>>::project(inter);
+    unsafe fn project(inter: Self::Inter) -> Self::Output {
+        let r: *mut F::Type = <*mut T as Project<F>>::project(inter);
+        let r = unsafe { &mut *r };
         <F as PinField>::from_pinned_ref(r)
     }
 }
@@ -1757,6 +1826,9 @@ We can then make it have field projections:
 ```rust
 impl<T: ?Sized> Projectable for ArcRef<T> {
     type Inner = T;
+}
+
+impl<T: ?Sized> SimultaneousProjectable for ArcRef<T> {
     type Inter = Self;
 
     fn start_projection(self) -> Self {
@@ -1764,30 +1836,19 @@ impl<T: ?Sized> Projectable for ArcRef<T> {
     }
 }
 
-impl<T: ?Sized, F> Project<F> for ArcRef<T>
+impl<T: ?Sized, F> SimultaneousProject<F> for ArcRef<T>
 where
     F: Field<Base = T>
 {
     type Output = ArcRef<F::Type>;
 
-    fn project_last(inter: Self) -> Self::Output {
+    unsafe fn project(inter: Self) -> Self::Output {
         // We give the refcount to the output, so we have to forget `self`.
         let this = ManuallyDrop::new(inter);
         ArcRef {
             ptr: NonNull::project(this.ptr),
             count: this.count
         }
-    }
-}
-
-impl<T: ?Sized, F> SimultaneousProject<F> for ArcRef<T>
-where
-    F: Field<Base = T>
-{
-    fn project(inter: Self) -> Self::Output {
-        let this = inter.clone();
-        mem::forget(inter);
-        <Self as Project<F>>::project_last(this)
     }
 }
 ```
@@ -1797,6 +1858,9 @@ And to get an `ArcRef` from an `Arc`, we can also use field projections:
 ```rust
 impl<T: ?Sized> Projectable for Arc<T> {
     type Inner = T;
+}
+
+impl<T: ?Sized> SimultaneousProjectable for Arc<T> {
     type Inter = ArcRef<T>;
 
     fn start_projection(self) -> ArcRef<T> {
@@ -1810,17 +1874,8 @@ where
 {
     type Output = ArcRef<F::Type>;
 
-    fn project_last(inter: Self::Inter) -> Self::Output {
-        <ArcRef<T> as Project<F>>::project_last(inter)
-    }
-}
-
-impl<T: ?Sized, F> SimultaneousProject<F> for Arc<T>
-where
-    F: Field<Base = T>
-{
-    fn project(inter: Self::Inter) -> Self::Output {
-        <ArcRef<T> as SimultaneousProject<F>>::project(inter)
+    unsafe fn project(inter: Self::Inter) -> Self::Output {
+        unsafe { <ArcRef<T> as SimultaneousProject<F>>::project(inter) }
     }
 }
 ```
@@ -1895,7 +1950,7 @@ where
 {
     type Output = Cow<'a, F::Type>;
 
-    fn project_last(inter: Self) -> Self::Output {
+    fn project(inter: Self) -> Self::Output {
         match inter {
             Cow::Borrowed(this) => Cow::Borrowed(<&T as Project<F>>::project(this)),
             Cow::Owned(this) => Cow::Owned(F::move_out(this)),
@@ -1926,7 +1981,10 @@ projection:
 ```rust
 impl<T: Projectable> Projectable for Option<T> {
     type Inner = <T as Projectable>::Inner;
-    type Inter = Option<<T as Projectable>::Inter>;
+}
+
+impl<T: SimultaneousProjectable> SimultaneousProjectable for Option<T> {
+    type Inter = Option<<T as SimultaneousProjectable>::Inter>;
 
     fn start_projection(self) -> Self::Inter {
         self.map(T::start_projection)
@@ -1941,19 +1999,21 @@ where
 {
     type Output = Option<F::Type>;
     
-    fn project_last(inter: Self::Inter) -> Self::Output {
-        inter.map(<T as Project<F>>::project_last)
+    fn project(inter: Self::Inter) -> Self::Output {
+        inter.map(<T as Project<F>>::project)
     }
 }
 
+// This probably overlaps with the impl above, but if the compiler is smart enough, it should know
+// that they don't actually overlap.
 impl<T, F> SimultaneousProject<F> for Option<T>
 where
     T: SimultaneousProject<F>,
     F: Field<Base = Self::Inner>,
     F::Type: Sized,
 {
-    fn project(inter: Self::Inter) -> Self::Output {
-        inter.map(<T as SimultaneousProject<F>>::project)
+    unsafe fn project(inter: Self::Inter) -> Self::Output {
+        inter.map(|v| unsafe { <T as SimultaneousProject<F>>::project(v) })
     }
 }
 ```
