@@ -197,23 +197,15 @@ of constant values that would typically happen elsewhere in real code.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This can likely be implemented as a new coercion, consisting approximately of
-the following processing steps:
+Integer literals (e.g., `123`, `0xFF`, `0_u32`) are implicitly coerced to `std::num::NonZero<T>`
+(`T` being `u8`, `u32`, etc.) if all of the following are true:
 
-1. During type checking (`rustc_hir_typeck/src/coercion.rs:coerce()`), we detect the coercion
-   opportunity from an integer literal (either explicitly typed or inferred) to
-   a `NonZero<T>` with a potentially compatible `T`. At this stage, we only have types and do not
-   yet have values (which might be zero or out of bounds).
-1. If the types are potentially compatible, we emit this as a new `Adjustment::NonZero` variant.
-1. During MIR building, when the constant values are available, we apply the adjustment and perform
-   the "is it zero" and "is it in bounds of T" check, before emitting MIR for something like
-   `NonZero::new_unchecked(123)`.
-1. If at this stage we detect an invalid value (zero or out of bounds), we emit a compiler
-   diagnostic and give up on this coercion.
+* The value of the literal is not 0.
+* The value of the literal fits within `T`’s range (e.g., `300` fails for `NonZero<u8>`).
+* The target type is explicitly `NonZero<T>` or inferred as such.
 
-The situation before this change would be that the compilation fails at the type check stage
-because `u32 != NonZero<u32>`, so this should not be breaking any existing code, only enabling
-new capabilities.
+The coercion happens at compile time, with the emitted code being the equivalent of
+`const { NonZero::new(literal).unwrap() }` for valid cases, with no runtime checks.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -356,10 +348,6 @@ in this RFC, if they are adopted into Rust.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-The details of how the coercions would be implemented are only vaguely understood by the RFC author
-and compiler experts may have different perspectives on how the details would best work out. Take
-the draft implementation thoughts above with a grain of salt.
 
 The alternatives presented above appear inferior but only slightly so - we should carefully consider
 which strategy to apply here, especially if there appear corner cases not yet explored, where the
