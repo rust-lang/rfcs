@@ -568,6 +568,9 @@ supported-targets = 'cfg(target_os = "linux")'
 
 A lint could be added to highlight the fact that the `[target]` table is unused.
 
+Exception should be made for `target.'cfg(any())'`/`target.'cfg(false)` tables, as they are often
+used to lock the version of transitive dependencies, and should not be linted against.
+
 ## `supported-targets` at the cargo-target level
 
 The `supported-targets` field could also be added at the cargo-target level to have more
