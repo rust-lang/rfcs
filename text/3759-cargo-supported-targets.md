@@ -85,7 +85,8 @@ require a desktop OS, using `supported-targets` makes `cargo <command>` ignore p
 [reference-level-explanation]: #reference-level-explanation
 
 The `supported-targets` field is an optional key that tells cargo which targets the package can be
-built for.
+built for. However, it does not affect which host can build the package i.e., any host can still build
+the package, but only for certain targets.
 ```toml
 [package]
 # ...
@@ -341,6 +342,7 @@ the package's `supported-targets` needs to be a subset of every `[dev-dependenci
 package's library and binaries, and so it must respect the `supported-targets` of the package.
 
 ### Compatibility of `[build-dependencies]`
+[build-dependencies-compatability]: #compatibility-of-build-dependencies
 
 What makes `[build-dependencies]` unique is that they are built for the host computer, and not the
 selected target. As such, they are not restrained by the `supported-targets` of the package. Hence,
@@ -424,6 +426,9 @@ baz = "0.1.0"
 Currently, `baz` is included in the dependency tree of `foo`, even though `foo` is never built for
 `macos`. `baz` could be pruned from the dependency tree of `foo`, since `target_os = "macos"` is
 mutually exclusive with `target_os = "linux"`.
+
+This only applies to `[dependencies]` and `[dev-dependencies]`, as `[build-dependencies]` are
+[not restrained by `supported-targets`](build-dependencies-compatability), so they are not pruned.
 
 Formally, dependencies (and transitive dependencies) under `[target.**.dependencies]` tables are
 eliminated from the dependency tree of a package if the `supported-targets` of the package is
