@@ -45,7 +45,7 @@ Quotes from "Size != Stride" [Pre-RFC thread](https://internals.rust-lang.org/t/
 > In order to be backwards compatible, this change requires a new implicit trait bound, applied everywhere. However, that makes this change substantially less useful. If that became the way things worked forever, then `#[repr(compact)]` types would be very difficult to use, as almost no generic functions would accept them. Very few functions actually need `AlignSized`, but every generic function would get it implicitly.
 
 
-@scottmdcm
+@scottmcm
 
 > Note that every time this has come up -- `?Move`, `?Pinned`, etc -- the answer has been **"we're not adding more of these"**.
 > 
