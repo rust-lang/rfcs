@@ -759,7 +759,7 @@ Why should we *not* do this?
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- Variable definition syntax could be `$ident(/* ... */)` rather than
+- Variable definition syntax could be `$ident:(/* ... */)` rather than
   `$ident(/* ... */)`. Including the `:` is proposed to be more consistent
   with existing fragment specifiers.
 - There is room for macros to become smarter in their expansions without adding
