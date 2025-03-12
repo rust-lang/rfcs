@@ -759,6 +759,8 @@ Why should we *not* do this?
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+- In macro metavariable syntax, using named capture groups, we could treat `count` and `index` as *fields* rather than *functions*. For instance, we could write `${$group.index}` rather than `${index($group)}`. This would be consistent with the [macro fragment fields](https://github.com/rust-lang/rfcs/pull/3714) proposal.
+- Since we no longer need both `count` and `len`, we could choose to use either name for the remaining function we still provide. We should consider whether `count` or `len` best describes this functionality.
 - Variable definition syntax could be `$ident:(/* ... */)` rather than
   `$ident(/* ... */)`. Including the `:` is proposed to be more consistent
   with existing fragment specifiers.
