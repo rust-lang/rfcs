@@ -189,14 +189,14 @@ pub trait Clone {
 }
 ```
 
-That would be a backwards-compatability-breaking change, because today `T: Clone + ?Sized` (or of course `Self: Clone` in a trait context, with no implied `Self: Sized`) implies that `T: Sized`, but it might be that its impact is small enough to allow (and even if not, it might be worth it for Rust 2.0).
+That would be a backwards-compatibility-breaking change, because today `T: Clone + ?Sized` (or of course `Self: Clone` in a trait context, with no implied `Self: Sized`) implies that `T: Sized`, but it might be that its impact is small enough to allow (and even if not, it might be worth it for Rust 2.0).
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
 
 How can we mitigate the risk of unintended unsized or large allocas? Note that the problem already exists today with large structs/arrays. A MIR lint against large/variable stack sizes would probably help users avoid these stack overflows. Do we want it in Clippy? rustc?
 
-How do we handle truely-unsized DSTs when we get them? They can theoretically be passed to functions, but they can never be put in temporaries.
+How do we handle truly-unsized DSTs when we get them? They can theoretically be passed to functions, but they can never be put in temporaries.
 
 Accumulative allocas (aka `'fn` borrows) are beyond the scope of this RFC.
 

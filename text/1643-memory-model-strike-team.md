@@ -214,7 +214,7 @@ weighed:
 - **Optimization.** The stricter the rules, the more we can optimize.
   - on the other hand, rules that are overly strict may prevent people
     from writing unsafe code that they would like to write, ultimately
-    leading to slower exeution.
+    leading to slower execution.
 - **Comprehensibility.** It is important to strive for rules that end
   users can readily understand. If learning the rules requires diving
   into academic papers or using Coq, it's a non-starter.
@@ -243,7 +243,7 @@ should build on the examples from before, in that proposals can be
 weighed against their effect on the examples and optimizations.
 
 There will likely also be some feedback between this phase and the
-previosu: as new proposals are considered, that may generate new
+previous: as new proposals are considered, that may generate new
 examples that were not relevant previously.
 
 Note that even once a high-level design is adopted, it will be

@@ -1,7 +1,7 @@
 - Feature Name: `clippy_uno`
 - Start Date: 2018-06-14
-- RFC PR: [rust-lang/rfcs#2539](https://github.com/rust-lang/rfcs/pull/2539)
-- Rust Issue: [rust-lang-nursery/rust-clippy#54881](https://github.com/rust-lang-nursery/rust-clippy/issues/3343)
+- RFC PR: [rust-lang/rfcs#2476](https://github.com/rust-lang/rfcs/pull/2476)
+- Rust Issue: [rust-lang-nursery/rust-clippy#3343](https://github.com/rust-lang-nursery/rust-clippy/issues/3343)
 
 # Summary
 [summary]: #summary
@@ -39,7 +39,7 @@ one is an indication of a very specialized situation.
 
 Currently to allow/deny Clippy lints you have to `#[cfg_attr(clippy, allow(lintname))]` which is somewhat tedious.
 
-The compiler should support something like `#[allow(clippy::lintname)]` which won't attempt to warn about nonexistant lints
+The compiler should support something like `#[allow(clippy::lintname)]` which won't attempt to warn about nonexistent lints
 at all when not running Clippy.
 
 
@@ -513,7 +513,7 @@ concisely.
 false }`
 (or vice versa) and suggest using the condition directly.
 - [misrefactored_assign_op](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#misrefactored_assign_op): Checks for `a op= a op b` or `a op= b op a` patterns.
-- [neg_cmp_op_on_partial_ord](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#neg_cmp_op_on_partial_ord): Checks for the usage of negated comparision operators on types which only implement
+- [neg_cmp_op_on_partial_ord](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#neg_cmp_op_on_partial_ord): Checks for the usage of negated comparison operators on types which only implement
 `PartialOrd` (e.g. `f64`).
 - [zero_prefixed_literal](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#zero_prefixed_literal): Warns if an integral constant literal starts with `0`.
 - [bool_comparison](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#bool_comparison): Checks for expressions of the form `x == true` (or vice
@@ -530,7 +530,7 @@ or closure that returns the unit type.
 - [clone_on_copy](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#clone_on_copy): Checks for usage of `.clone()` on a `Copy` type.
 - [unit_arg](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#unit_arg): Checks for passing a unit value as an argument to a function without using a unit literal (`()`).
 - [transmute_int_to_float](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#transmute_int_to_float): Checks for transmutes from an integer to a float.
-- [double_comparisons](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#double_comparisons): Checks for double comparions that could be simpified to a single expression.
+- [double_comparisons](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#double_comparisons): Checks for double comparisons that could be simplified to a single expression.
 - [eval_order_dependence](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#eval_order_dependence): Checks for a read and a write to the same variable where
 whether the read occurs before or after the write depends on the evaluation
 order of sub-expressions.

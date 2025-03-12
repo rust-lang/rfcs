@@ -30,7 +30,7 @@ For an example of multiple attributes, say we want to have two attribute macros
 (`sparkles` and `crackles`), but only when `feature = "magic"` is enabled. We
 can write this as:
 
-```rust,igore
+```rust,ignore
 #[cfg_attr(feature = "magic", sparkles, crackles)]
 fn bewitched() {}
 ```
@@ -86,7 +86,7 @@ mod os;
 For an example of multiple attributes, say we want to have two attribute macros,
 but only when `feature = "magic"` is enabled. We can write this as:
 
-```rust,igore
+```rust,ignore
 #[cfg_attr(feature = "magic", sparkles, crackles)]
 fn bewitched() {}
 ```
@@ -122,7 +122,7 @@ Today, an attribute can look like:
 * ``name = `TokenTree` ``
 
 where `TokenStream` is a sequence of tokens that only has the restriction that
-delimiters match and `TokenTree` is a single identifer, literal, punctuation
+delimiters match and `TokenTree` is a single identifier, literal, punctuation
 mark, or a delimited `TokenStream`.
 
 With this RFC accepted, the following cannot ever be parsed as attributes:

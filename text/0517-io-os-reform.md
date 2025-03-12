@@ -294,7 +294,7 @@ models or nonblocking IO, nor is it a goal for the blocking APIs to eventually
 be used in a nonblocking "mode" or style.
 
 Rather, the hope is that the basic abstractions of files, paths, sockets, and so
-on will eventually be usable directly within an async IO programing model and/or
+on will eventually be usable directly within an async IO programming model and/or
 with nonblocking APIs. This is the case for most existing languages, which offer
 multiple interoperating IO models.
 
@@ -1470,7 +1470,7 @@ Windows, it can be considered an optimization for `flush` and on
 Windows behave identically to `sync_all`, just as it does on some Unix
 filesystems.)
 
-The `path` method wil remain `#[unstable]`, as we do not yet want to
+The `path` method will remain `#[unstable]`, as we do not yet want to
 commit to its API.
 
 The `open_mode` function will be removed in favor of and will take an

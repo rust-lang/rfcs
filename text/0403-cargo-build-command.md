@@ -184,7 +184,7 @@ are target triples. The dependencies section underneath is the same as the
 top-level dependencies section in terms of functionality.
 
 Semantically, platform specific dependencies are activated whenever Cargo is
-compiling for a the exact target. Dependencies in other `$target` sections
+compiling for the exact target. Dependencies in other `$target` sections
 will not be compiled.
 
 However, when generating a lockfile, Cargo will always download all dependencies
@@ -394,7 +394,7 @@ directly. Additionally, packages using `*-sys` packages should not declare a
 ## Phasing strategy
 
 The modifications to the `build` command are breaking changes to Cargo. To ease
-the transition, the build comand will be join'd to the root path of a crate, and
+the transition, the build command will be join'd to the root path of a crate, and
 if the file exists and ends with `.rs`, it will be compiled as describe above.
 Otherwise a warning will be printed and the fallback behavior will be
 executed.

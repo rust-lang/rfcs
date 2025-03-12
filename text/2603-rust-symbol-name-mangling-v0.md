@@ -348,7 +348,7 @@ and `NCNvNtC7mycrate3foo3bars_0` respectively.
 Methods are nested within `impl` or `trait` items. As such it would be
 possible to construct their symbol names as paths like
 `my_crate::foo::{{impl}}::some_method` where `{{impl}}` somehow identifies
-the the `impl` in question. Since `impl`s don't have names, we'd have to
+the `impl` in question. Since `impl`s don't have names, we'd have to
 use an indexing scheme like the one used for closures (and indeed, this is
 what the compiler does internally). Adding in generic arguments to, this
 would lead to symbol names looking like

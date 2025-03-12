@@ -56,7 +56,7 @@ The following method is added to the `Read` trait:
 fn read_exact(&mut self, buf: &mut [u8]) -> Result<()>;
 ```
 
-Aditionally, a default implementation of this method is provided:
+Additionally, a default implementation of this method is provided:
 
 ``` rust
 fn read_exact(&mut self, mut buf: &mut [u8]) -> Result<()> {

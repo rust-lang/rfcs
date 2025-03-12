@@ -5,13 +5,13 @@
 
 # Summary
 
-Provide a pair of intrinsic functions for hinting the likelyhood of branches being taken.
+Provide a pair of intrinsic functions for hinting the likelihood of branches being taken.
 
 # Motivation
 
 Branch prediction can have significant effects on the running time of some code. Especially tight
 inner loops which may be run millions of times. While in general programmers aren't able to
-effectively provide hints to the compiler, there are cases where the likelyhood of some branch
+effectively provide hints to the compiler, there are cases where the likelihood of some branch
 being taken can be known.
 
 For example: in arbitrary-precision arithmetic, operations are often performed in a base that is

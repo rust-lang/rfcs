@@ -317,7 +317,7 @@ requirements of the compiler change, and even amongst platforms these details
 may be subtly different.
 
 The compiler will essentially consider `rustc-macro` crates as `--crate-type
-dylib -C prefer-dyanmic`. That is, compiled the same way they are today. This
+dylib -C prefer-dynamic`. That is, compiled the same way they are today. This
 namely means that these macros  will dynamically link to the same standard
 library as the compiler itself, therefore sharing resources like a global
 allocator, etc.
@@ -492,7 +492,7 @@ pub struct Foo {
   need to be careful to parenthesize token streams like this when it generates
   a stringified source.
 
-* By having separte library and macro crate support today (e.g. `serde` and
+* By having separate library and macro crate support today (e.g. `serde` and
   `serde_macros`) it's possible for there to be version skew between the two,
   making it tough to ensure that the two versions you're using are compatible
   with one another. This would be solved if `serde` itself could define or

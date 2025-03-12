@@ -53,7 +53,7 @@ However these static functions are fairly cumbersome in the common case, where y
 
 ## Signed Offset
 
-The cast in `ptr.offset(idx as isize)` is unnecessarily annoying. Idiomatic Rust code uses unsigned offsets, but low level code is forced to constantly cast those offsets. To understand why this interface is designed as it is, some background is neeeded.
+The cast in `ptr.offset(idx as isize)` is unnecessarily annoying. Idiomatic Rust code uses unsigned offsets, but low level code is forced to constantly cast those offsets. To understand why this interface is designed as it is, some background is needed.
 
 `offset` is directly exposing LLVM's `getelementptr` instruction, with the `inbounds` keyword. `wrapping_offset` removes the `inbounds` keyword. `offset` takes a signed integer, because that's what GEP exposes. It's understandable that we've been conservative here; GEP is so confusing that it has an [entire FAQ](http://llvm.org/docs/GetElementPtr.html).
 

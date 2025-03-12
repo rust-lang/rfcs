@@ -75,7 +75,7 @@ This leads us to our second refinement.  We add the rule that `&T` is `Send` if 
 `T` is `Sync`--in other words, we disallow `Send`ing shared references with a
 non-threadsafe interior.  We do, however, still allow `&mut T` where `T` is `Send`, even
 if it is not `Sync`.  This is safe because `&mut T` linearizes access--the only way to
-access the the original data is through the unique reference, so it is safe to send to other
+access the original data is through the unique reference, so it is safe to send to other
 threads.  Similarly, we allow `&T` where `T` is `Sync`, even if it is not `Send`, since by the definition of `Sync` `&T` is already known to be threadsafe.
 
 Note that this definition of `Send` is identical to the old definition of `Send` when

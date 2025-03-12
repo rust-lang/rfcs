@@ -67,7 +67,7 @@ The implementation of this features uses interval arithmetic and an extension of
 
 This feature has already [been implemented](https://github.com/rust-lang/rust/pull/50912), so the code there may be used for further reference. The source contains detailed comments about the implementation.
 
-For `usize` and `isize`, no assumptions about the maximimum value are permitted. To exhaustively match on either pointer-size integer type a wildcard pattern (`_`) must be used (or if [open-ended range patterns are added](https://github.com/rust-lang/rfcs/issues/947), ranges must be open ended [e.g. `0..`]). An unstable feature `precise_pointer_size_matching` will be added to permit matching exactly on pointer-size integer types.
+For `usize` and `isize`, no assumptions about the maximum value are permitted. To exhaustively match on either pointer-size integer type a wildcard pattern (`_`) must be used (or if [open-ended range patterns are added](https://github.com/rust-lang/rfcs/issues/947), ranges must be open ended [e.g. `0..`]). An unstable feature `precise_pointer_size_matching` will be added to permit matching exactly on pointer-size integer types.
 
 # Drawbacks
 [drawbacks]: #drawbacks

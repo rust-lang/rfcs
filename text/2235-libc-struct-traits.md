@@ -52,7 +52,7 @@ This extra trait will increase the testing requirements for `libc`.
 # Rationale and alternatives
 [alternatives]: #alternatives
 
-Adding these trait implementations behind a singular feature flag has the best compination of utility and ergonomics out of the possible alternatives listed below:
+Adding these trait implementations behind a singular feature flag has the best combination of utility and ergonomics out of the possible alternatives listed below:
 
 ## Always enabled with no feature flags
 

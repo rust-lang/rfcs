@@ -115,7 +115,7 @@ The alternative design is to make the literals the values and not the references
 1)
 Keep the types of array literals as `[T, ..N]`.
 Change the types of byte literals from `&'static [u8]` to `[u8, ..N]`.
-Change the types of string literals form `&'static str` to to `FixedString<N>`.
+Change the types of string literals form `&'static str` to `FixedString<N>`.
 2)
 Introduce the missing family of types - strings of fixed size - `FixedString<N>`.
 ...

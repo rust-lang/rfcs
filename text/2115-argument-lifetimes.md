@@ -461,7 +461,7 @@ bindings.
 
 ## Possible extension or alternative: "backreferences"
 
-A different approach would be refering to elided lifetimes through their
+A different approach would be referring to elided lifetimes through their
 parameter name, like so:
 
 ```rust

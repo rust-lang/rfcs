@@ -90,7 +90,7 @@ The pattern portion is composed of zero or more subpatterns concatenated togethe
 ```rust
 macro_rules! println {
   // Takes a variable number of arguments after the template
-  ($tempate:expr, $($args:expr),*) => { ... }
+  ($template:expr, $($args:expr),*) => { ... }
 }
 ```
 which can be invoked like so:
@@ -103,7 +103,7 @@ println!("", foo, bar) // 2 args
 
 The `*` in the pattern of this example indicates "0 or more repetitions". One can also use `+` for "at _least_ one repetition" or `?` for "at _most_ one repetition".
 
-In the body of a rule, one can specify to repeat some code for every occurence of the pattern in the invokation:
+In the body of a rule, one can specify to repeat some code for every occurrence of the pattern in the invocation:
 
 ```rust
 macro_rules! foo {

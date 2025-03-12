@@ -1,6 +1,5 @@
 
-Start Date: 2016-01-04
-
+- Start Date: 2016-01-04
 - RFC PR: [rust-lang/rfcs#1567](https://github.com/rust-lang/rfcs/pull/1567)
 - Rust Issue: N/A
 
@@ -131,7 +130,7 @@ Now let's take a full example:
 
 # Drawbacks
 
-This will make contributing slighty more complex, as there are rules to follow, whereas right now there are none.
+This will make contributing slightly more complex, as there are rules to follow, whereas right now there are none.
 
 # Alternatives
 

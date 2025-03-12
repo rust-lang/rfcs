@@ -1,6 +1,6 @@
 - Feature Name: north_star
 - Start Date: 2016-08-07
-- RFC PR: #1728
+- RFC PR: [rust-lang/rfcs#1728](https://github.com/rust-lang/rfcs/pull/1728)
 - Rust Issue: N/A
 
 # Summary
@@ -157,7 +157,7 @@ Key terminology used in this RFC:
 
 - _release cycle milestone_ - All goals have estimates for completion, placed on
   milestones that correspond to the 6 week release cycle. These milestones are
-  timed to corrspond to a release cycle, but don't represent a specific
+  timed to correspond to a release cycle, but don't represent a specific
   release. That is, work toward the current nightly, the current beta, or even
   that doesn't directly impact a specific release, all goes into the release
   cycle milestone corresponding to the time period in which the work is
@@ -278,7 +278,7 @@ to the appropriate milestone. Some goals may be expected to be completed in
 the distant future, and these do not need to be assigned a milestone.
 
 The release cycle milestone corresponds to a six week period of time and
-contains the work done during that time. It does not correspend to a specific
+contains the work done during that time. It does not correspond to a specific
 release, nor do the goals assigned to it need to result in a stable feature
 landing in any specific release.
 

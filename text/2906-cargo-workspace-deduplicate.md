@@ -3,6 +3,8 @@
 - RFC PR: [rust-lang/rfcs#2906](https://github.com/rust-lang/rfcs/pull/2906)
 - Rust Issue: [rust-lang/cargo#8415](https://github.com/rust-lang/cargo/issues/8415)
 
+> **Note**: This feature was stabilized in Rust 1.64. Several design changes were made in the course of the implementation. Please see the documentation for [`[workspace.package]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-package-table) and [`[workspace.dependencies]`](https://doc.rust-lang.org/nightly/cargo/reference/workspaces.html#the-dependencies-table) for details on how to use this feature.
+
 # Summary
 [summary]: #summary
 
@@ -438,14 +440,14 @@ continue to prune accidentally unused entries.
 ## Effect on `cargo metadata`
 
 Executing `cargo metadata` to learn about a crate graph will implicitly perform
-all subsitution defined in this proposal. Consumers of `cargo metadata` will
+all substitution defined in this proposal. Consumers of `cargo metadata` will
 continue to get the same output they got before this proposal, meaning that
 implicit substitutions, if any, will be invisible to users of `cargo metadata`.
 
 ## Effect on `cargo read-manifest`
 
 Similar to `cargo metadata`, the `cargo read-manifest` command will perform all
-necessary subsitutions when presenting the output as JSON.
+necessary substitutions when presenting the output as JSON.
 
 ## Effect resolution for relative `path` dependencies
 
@@ -453,7 +455,7 @@ Like today, `path` dependencies will be resolved relative to the file that
 defines them. This means that references to dependencies defined in the
 workspace means paths are still relative to the workspace root itself.
 
-For example if you write down a `[workspace.depencencies]` directive with a
+For example if you write down a `[workspace.dependencies]` directive with a
 relative path:
 
 ```toml

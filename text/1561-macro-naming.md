@@ -54,7 +54,7 @@ foo!();
 macro! foo { ... }
 ```
 
-(Note, I'm using a hypothetical `macro!` defintion which I will define in a future
+(Note, I'm using a hypothetical `macro!` definition which I will define in a future
 RFC. The reader can assume it works much like `macro_rules!`, but with the new
 naming scheme).
 

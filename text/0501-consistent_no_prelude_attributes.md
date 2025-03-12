@@ -1,4 +1,4 @@
-- Start Date: (2014-12-06)
+- Start Date: 2014-12-06
 - RFC PR: [rust-lang/rfcs#501](https://github.com/rust-lang/rfcs/pull/501)
 - Rust Issue: [rust-lang/rust#20561](https://github.com/rust-lang/rust/issues/20561)
 
@@ -75,4 +75,4 @@ Finally, the old attribute name should emit a deprecated warning, and be removed
  - Keep the current behavior
  - Remove the `#[no_implicit_prelude]` attribute all together, instead forcing users to use
    `#[no_std]` in combination with `extern crate std;` and `use std::prelude::*`.
- - Generalize preludes more to allow custom ones, which might superseed the attributes from this RFC.
+ - Generalize preludes more to allow custom ones, which might supersede the attributes from this RFC.

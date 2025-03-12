@@ -101,7 +101,7 @@ and methods of a struct should be defined nearby.
 I propose three changes to the language:
 
 - `impl` on multiple-ident paths such as `impl mymod::MyStruct` is disallowed.
-  Since this currently suprises the user by having absolutely no effect for
+  Since this currently surprises the user by having absolutely no effect for
   static methods, support for this is already broken.
 - `impl MyStruct` must occur in the same module that `MyStruct` is defined.
   This is to prevent the above problems with `impl`-across-modules.

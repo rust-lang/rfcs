@@ -93,7 +93,7 @@ Note the returned values for two differently-typed variants may compare in any w
   simply treat them as single-variant enums and synthesise a zero constant. Note that this is what
   would be done for single-variant enums anyway.
 
-* Do nothing. Improvements to codegen and/or optimisation could make this uneccessary. The
+* Do nothing. Improvements to codegen and/or optimisation could make this unnecessary. The
   "Sufficiently Smart Compiler" trap is a strong case against this reasoning though. There will
   likely always be cases where the user can write more efficient code than the compiler can produce.
 
@@ -329,7 +329,7 @@ pub enum SqlState {
     FdwReplyHandle,
     FdwSchemaNotFound,
     FdwTableNotFound,
-    FdwUnableToCreateExcecution,
+    FdwUnableToCreateExecution,
     FdwUnableToCreateReply,
     FdwUnableToEstablishConnection,
     PlpgsqlError,

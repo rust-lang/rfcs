@@ -3,6 +3,13 @@
 - RFC PR: [rust-lang/rfcs#3239](https://github.com/rust-lang/rfcs/pull/3239)
 - Rust Issue: [rust-lang/rust#96901](https://github.com/rust-lang/rust/issues/96901)
 
+# This RFC was previously approved, but part of it later **withdrawn**
+
+The `cfg(target = "...")` conditional compilation key was previously approved,
+but was later withdrawn. For details, see the [summary comment].
+
+[summary comment]: https://github.com/rust-lang/rust/pull/96909#issuecomment-1148979831
+
 # Summary
 [summary]: #summary
 

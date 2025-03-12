@@ -396,7 +396,7 @@ system. The one twist is the use of `Pin`, which makes it possible to keep data
 borrowed across separate calls to `poll` (i.e., "borrowing over yield
 points"). The mechanics of pinning are explained
 in [the RFC that introduced it](https://github.com/rust-lang/rfcs/pull/2349)
-and the [blog post about t he latest revisions](https://boats.gitlab.io/blog/post/rethinking-pin/).
+and the [blog post about the latest revisions](https://boats.gitlab.io/blog/post/rethinking-pin/).
 
 ## Relation to futures 0.1
 
@@ -404,7 +404,7 @@ The various discussions outlined in the historical context section above cover t
 path to these APIs from futures 0.1. But, in a nutshell, there are three major shifts:
 
 - The use of `Pin<&mut self>` rather than just `&mut self`, which is necessary
-to support borrowing withing `async` blocks. The `Unpin` marker trait can be used
+to support borrowing within `async` blocks. The `Unpin` marker trait can be used
 to restore ergonomics and safety similar to futures 0.1 when writing futures by hand.
 
 - Dropping *built in* errors from `Future`, in favor of futures returning a `Result`

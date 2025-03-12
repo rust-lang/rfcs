@@ -249,7 +249,7 @@ So why do this? AFAICS there are 3 main reasons
     the argument. However there may be no sensible default type to use for `T`
     or, worse, they may not have any types at their disposal that implement
     `SomeTrait`. As the user in this case is only using `None`, a sensible
-    choice for `T` would be a type such that `Option<T>` can ony be `None`, ie.
+    choice for `T` would be a type such that `Option<T>` can only be `None`, ie.
     it would be nice to use `!`. If `!` has a trivial implementation of
     `SomeTrait` then the choice of `T` is truly irrelevant as this means `foo`
     doesn't use any associated types/lifetimes/constants or static methods of

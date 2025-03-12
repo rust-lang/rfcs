@@ -182,7 +182,7 @@ provide context as to what's going on and where to find this file for inclusion.
 The acceptance of this proposal would minimally impact all levels of Rust users
 as it is something that provides convenience but is not a necessary thing to
 learn to use Rust. It should be taught to existing users by updating
-documentation to show it in use and to include in in the Rust Programming
+documentation to show it in use and to include in the Rust Programming
 Language book to teach new users. Currently the newest version of The Rust
 Programming Language book has a section for [doc comments](https://doc.rust-lang.org/nightly/book/second-edition/ch14-02-publishing-to-crates-io.html#documentation-comments) that will need to be expanded
 to show how users can include docs from external sources. The Rust Reference

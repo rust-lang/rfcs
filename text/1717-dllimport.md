@@ -109,7 +109,7 @@ meaning that it will be common that these attributes are left off by accident.
 - Instead of enhancing `#[link]`, a `#[linked_from = "foo"]` annotation could be added.
   This has the drawback of not being able to handle native libraries whose
   name is unpredictable across platforms in an easy fashion, however.
-  Additionally, it adds an extra attribute to the comipler that wasn't known
+  Additionally, it adds an extra attribute to the compiler that wasn't known
   previously.
 
 - Support a `#[dllimport]` on extern blocks (or individual symbols, or both).
@@ -117,7 +117,7 @@ meaning that it will be common that these attributes are left off by accident.
   - This attribute would duplicate the information already provided by
     `#[link(kind="...")]`.
   - It is not always known whether `#[dllimport]` is needed. Native
-    libraires are not always known whether they're linked dynamically or
+    libraries are not always known whether they're linked dynamically or
     statically (e.g. that's what a build script decides), so `dllimport`
     will need to be guarded by `cfg_attr`.
 

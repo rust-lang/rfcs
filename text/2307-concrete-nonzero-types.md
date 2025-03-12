@@ -62,7 +62,7 @@ With `NonNull` covering pointers, the remaining use cases for `NonZero` are inte
 One problem of the current API is that
 it is unclear what happens or what *should* happen to `NonZero<T>` or `Option<NonZero<T>>`
 when `T` is some type other than a raw pointer or a primitive integer.
-In particular, crates outside of `std` can implement `Zeroable` for their abitrary types
+In particular, crates outside of `std` can implement `Zeroable` for their arbitrary types
 since it is a public trait.
 
 To avoid this question entirely,
@@ -77,7 +77,7 @@ When an integer value can never be zero because of the way an algorithm works,
 this fact can be encoded in the type system
 by using for example the `NonZeroU32` type instead of `u32`.
 
-This enables code recieving such a value to safely make some assuptions,
+This enables code receiving such a value to safely make some assumptions,
 for example that dividing by this value will not cause a `attempt to divide by zero` panic.
 This may also enable the compiler to make some memory optimizations,
 for example `Option<NonZeroU32>` might take no more space than `u32`
@@ -182,7 +182,7 @@ This adds to the ever-expanding API surface of the standard library.
   (Stable APIs that mention traits like `RangeArgument` that are not stable *yet*
   but have a path to stabilization are less of an abuse.)
 
-* Still, we could decide on some answer to “`Zeroable` for abitrary types”,
+* Still, we could decide on some answer to “`Zeroable` for arbitrary types”,
   implement and test it, stabilize `NonZero<T>` and `Zeroable` as-is
   (re-exported in `std`), and not add `num::NonZero*`.
 

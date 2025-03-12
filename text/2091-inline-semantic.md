@@ -330,7 +330,7 @@ information in such a strange way. There are two restrictions that force us to a
     solution for systems languages like Rust because optimization often collapses multiple levels
     of function calls.  In some embedded systems, the backtrace may even be unavailable!
 
-2. Solutions that use default function arguments alongside normal arguments are are often used in
+2. Solutions that use default function arguments alongside normal arguments are often used in
     languages that do not perform inference higher than statement level, e.g. Swift and C#. Rust
     does not (yet) support default function arguments or function overloading because they interfere
     with type inference, so such solutions are ruled out.
@@ -878,7 +878,7 @@ This RFC tries to abide by the following restrictions:
     accepts the caller information; it shouldn't require the trait itself to enforce it. It
     should not affect the signature of the function. This is an extension of rule 2, since the
     `Index` trait is involved in `HashMap::index`. The stability of `Index` must be upheld, e.g. it
-    should remain object-safe, and existing implementions should not be forced to accept the caller
+    should remain object-safe, and existing implementations should not be forced to accept the caller
     location.
 
 Restriction 4 "interface independence" is currently not implemented due to lack of
@@ -1031,7 +1031,7 @@ extern {
     fn close_fd(fd: c_int);
 }
 
-// declaration + defintion
+// declaration + definition
 #[precondition(option.is_some(), "Trying to unwrap None")]
 fn unwrap<T>(option: Option<T>) -> T {
     match option {

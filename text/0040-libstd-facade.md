@@ -164,7 +164,7 @@ algorithms apart from the default sorting algorithm.
 #### FromStr
 
 This trait and module are left out because strings are left out. All types in
-libmini can have their implemention of FromStr in the crate which implements
+libmini can have their implementation of FromStr in the crate which implements
 strings
 
 #### Floats

@@ -113,7 +113,7 @@ unsafe impl<'a> Allocator for &'a System { ... }
 ///
 /// # Note
 ///
-/// For techical reasons, only non-generic methods of the `Allocator` trait
+/// For technical reasons, only non-generic methods of the `Allocator` trait
 /// will be forwarded to the selected global allocator in the current
 /// implementation.
 pub struct Heap;

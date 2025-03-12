@@ -75,7 +75,7 @@ counter.replace(counter.replace(0) - 1);
 ```
 
 Also, we're adding more specific functions to a core type.
-That comes with cost in documentation and maintainance.
+That comes with cost in documentation and maintenance.
 
 # Alternatives
 [alternatives]: #alternatives

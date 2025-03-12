@@ -73,18 +73,18 @@ book will run when developers do `x.py check`. This is similar to how, today,
 Traivs runs a subset of the tests, but buildbot runs all of them.
 
 The landing page on doc.rust-lang.org will show off the full bookshelf, to let
-people find the documenation they need. It will also link to their respective
+people find the documentation they need. It will also link to their respective
 repositories.
 
 Finally, this creates a path for more books in the future: "the FFI Book" would
 be one example of a possibility for this kind of thing. The docs team will
-develop critera for accepting a book as part of the official project.
+develop criteria for accepting a book as part of the official project.
 
 # How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 The landing page on doc.rust-lang.org will show off the full bookshelf, to let
-people find the documenation they need. It will also link to their respective
+people find the documentation they need. It will also link to their respective
 repositories.
 
 # Drawbacks

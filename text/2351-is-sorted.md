@@ -210,7 +210,7 @@ too.
 
 
 ### Add the three methods to additional data structures (like `LinkedList`) as well
-Adding these methods to every data structure in the standard libary is a lot of
+Adding these methods to every data structure in the standard library is a lot of
 duplicate code. Optimally, we would have a trait that represents sequential
 data structures and would only add `is_sorted` and friends to said trait. We
 don't have such a trait as of now; so `Iterator` is the next best thing. Slices

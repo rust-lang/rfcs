@@ -1,7 +1,7 @@
 - Feature Name: N/A
 - Start Date: 2022-04-12
 - RFC PR: [rust-lang/rfcs#3254](https://github.com/rust-lang/rfcs/pull/3254)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: n/a
 
 # Summary
 [summary]: #summary

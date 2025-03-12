@@ -41,7 +41,7 @@ the *number* of repetitions of `$x`.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The [example `vec` macro defininition in the guide][guide-vec] could be made
+The [example `vec` macro definition in the guide][guide-vec] could be made
 more efficient if it could use `Vec::with_capacity` to pre-allocate a vector
 with the correct capacity.  To do this, we need to know the number of
 repetitions.
@@ -277,7 +277,7 @@ these workarounds are sometimes difficult to discover and naive
 implementations can significantly harm compiler performance.
 
 Furthermore, the additional syntax is limited to declarative macros, and its
-use should be limited to specific circustances where it is more understandable
+use should be limited to specific circumstances where it is more understandable
 than the alternatives.
 
 # Rationale and alternatives

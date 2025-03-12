@@ -12,7 +12,7 @@ possible to lift these restrictions backwards compatibly if desired.
 
 # Key Terminology
 
-- `macro`: anything invokable as `foo!(...)` in source code.
+- `macro`: anything invocable as `foo!(...)` in source code.
 - `MBE`: macro-by-example, a macro defined by `macro_rules`.
 - `matcher`: the left-hand-side of a rule in a `macro_rules` invocation, or a subportion thereof.
 - `macro parser`: the bit of code in the Rust parser that will parse the input using a grammar derived from all of the matchers.
@@ -45,7 +45,7 @@ and `$foo` and `$i` are simple NT's with `expr` and `ident` as their
 respective fragment specifiers.
 
 `$(i:ident),*` is *also* an NT; it is a complex NT that matches a
-comma-seprated repetition of identifiers. The `,` is the separator
+comma-separated repetition of identifiers. The `,` is the separator
 token for the complex NT; it occurs in between each pair of elements
 (if any) of the matched fragment.
 
@@ -329,7 +329,7 @@ accordingly.
 
 Below are some examples of FIRST and LAST.
 (Note in particular how the special ε element is introduced and
-eliminated based on the interation between the pieces of the input.)
+eliminated based on the interaction between the pieces of the input.)
 
 Our first example is presented in a tree structure to elaborate on how
 the analysis of the matcher composes. (Some of the simpler subtrees

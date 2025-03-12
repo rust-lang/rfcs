@@ -997,7 +997,7 @@ is a more general *control flow graph* ([CFG]) control feature.
 While it doesn't as straightforwardly solve the rightward drift or ergonomic
 issues as this RFC does, it allows [the macros to be improved] by removing
 duplication of `else` blocks. The closest syntax today for that is `loop-break`,
-but that doesn't work as `continue` is intentionally non-hygenic.
+but that doesn't work as `continue` is intentionally non-hygienic.
 
 RFC 2046 is also a bit orthogonal in the sense that it's fully compatible
 with this RFC. The general label break is useful and powerful, as seen in

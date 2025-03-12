@@ -50,7 +50,7 @@ This supports the use cases of projects, teams, or organizations using specific
 sets of code style guidelines beyond the Rust defaults. This also enables the
 creation and maintenance of documented practices and preferences that can be
 standardized in a useful way. Furthermore, this provides a standardized means of
-explaining decisions when a style gude must be violated by attaching an
+explaining decisions when a style guide must be violated by attaching an
 overriding lint attribute to a specific item.
 
 - What is the expected outcome?

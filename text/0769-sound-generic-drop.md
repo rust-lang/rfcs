@@ -4,7 +4,7 @@
 
 # History
 
-2015.09.18 -- This RFC was partially superceded by [RFC 1238], which
+2015.09.18 -- This RFC was partially superseded by [RFC 1238], which
 removed the parametricity-based reasoning in favor of an attribute.
 
 [RFC 1238]: https://github.com/rust-lang/rfcs/blob/master/text/1238-nonparametric-dropck.md

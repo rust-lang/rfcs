@@ -65,7 +65,7 @@ subteam in terms of crate maintenance. However, as [RFC 1242] states, this is
 not a major commitment.
 
 Acceptance into the nursery could be hindered if it is believed it could be 
-hard to reverse course later due to the required RFC being percieved as an 
+hard to reverse course later due to the required RFC being perceived as an 
 obstacle. On the other hand, RFCs with broad consensus do not generally impose 
 a large procedural burden, and if there is no consensus it might be too early 
 to deprecate a nursery crate anyway.

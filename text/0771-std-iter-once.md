@@ -1,4 +1,4 @@
-- Start Date: 2015-1-30
+- Start Date: 2015-01-30
 - RFC PR: [rust-lang/rfcs#771](https://github.com/rust-lang/rfcs/pull/771)
 - Rust Issue: [rust-lang/rust#24443](https://github.com/rust-lang/rust/issues/24443)
 

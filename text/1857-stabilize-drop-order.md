@@ -44,7 +44,7 @@ code (which could rely on the new drop order).
 
 Both requirements seem quite difficult, if not impossible, to meet. Even in case
 we figured out how to meet those requirements, the complexity of the approach would
-probably outweight the current complexity of having a non-intuitive drop order.
+probably outweigh the current complexity of having a non-intuitive drop order.
 
 Finally, in case people really dislike the current drop order, it may still
 be possible to introduce alternative, opt-in, drop orders in a backwards
@@ -128,7 +128,7 @@ in the future.
 
 Closure captures are also dropped in unspecified order. At this moment, it seems
 like the drop order is similar to the order in which the captures are consumed within
-the closure (see [this blog post](https://aochagavia.github.io/blog/exploring-rusts-unspecified-drop-order/)
+the closure (see [this blog post](https://ochagavia.nl/blog/exploring-rusts-unspecified-drop-order/)
 for more details). Again, this order is closely tied to an implementation that
 we may want to change in the future, and the benefits of stabilizing it seem small.
 Furthermore, enforcing invariants through closure captures seems like a terrible footgun

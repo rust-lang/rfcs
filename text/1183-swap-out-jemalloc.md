@@ -31,13 +31,13 @@ the allocator.
 In addition to using an entirely separate allocator altogether, some Rust
 programs may want to simply instrument allocations or shim in additional
 functionality (such as memory tracking statistics). This is currently quite
-difficult to do, and would be accomodated with a custom allocation scheme.
+difficult to do, and would be accommodated with a custom allocation scheme.
 
 # Detailed design
 
 The high level design can be found [in this gist][gist], but this RFC intends to
 expound on the idea to make it more concrete in terms of what the compiler
-implementation will look like. A [sample implementaiton][impl] is available of
+implementation will look like. A [sample implementation][impl] is available of
 this section.
 
 [gist]: https://gist.github.com/alexcrichton/41c6aad500e56f49abda

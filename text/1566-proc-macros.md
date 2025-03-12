@@ -387,7 +387,7 @@ We could keep the existing system or remove procedural macros from Rust.
 We could have an AST-based (rather than token-based) system. This has major
 backwards compatibility issues.
 
-We could allow pluging in at later stages of compilation, giving macros access
+We could allow plugging in at later stages of compilation, giving macros access
 to type information, etc. This would allow some really interesting tools.
 However, it has some large downsides - it complicates the whole compilation
 process (not just the macro system), it pollutes the whole compiler with macro

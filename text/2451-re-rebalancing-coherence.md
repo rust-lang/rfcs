@@ -192,7 +192,7 @@ least one of the following is true:
   - No uncovered type parameters `P1..=Pn` may appear in `T0..Ti` (excluding
     `Ti`)
 
-The primary change from the rules defined in in [RFC #1023] is that we only
+The primary change from the rules defined in [RFC #1023] is that we only
 restrict the appearance of *uncovered* type parameters. Once again, it is
 important to note that for the purposes of coherence, `#[fundamental]` types are
 special. `Box<T>` is not considered covered, and `Box<LocalType>` is considered
@@ -285,7 +285,7 @@ applies to `std`, `Vec<T>` now applies to types from `std` and any other crate.
   `impl<T> SomeTrait<LocalType, T> for ForeignType`, because no sibling crate
   can write an overlapping impl. However, this is not something that the
   majority of library authors are aware of, and requires API designers to order
-  their type parameters based on how likely they are to be overidden by other
+  their type parameters based on how likely they are to be overridden by other
   crates.
 
   We could instead provide a mechanism for traits to opt into a redesigned

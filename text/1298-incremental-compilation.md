@@ -1,7 +1,7 @@
 - Feature Name: incremental-compilation
 - Start Date: 2015-08-04
-- RFC PR: (leave this empty)
-- Rust Issue: (leave this empty)
+- RFC PR: [rust-lang/rfcs#1298](https://github.com/rust-lang/rfcs/pull/1298)
+- Rust Issue: [rust-lang/rust-roadmap-2017#4](https://github.com/rust-lang/rust-roadmap-2017/issues/4)
 
 # Summary
 
@@ -149,7 +149,7 @@ saved. The effect of saving fewer things (such as only saving object
 code) will simply be to make incremental compilation somewhat less
 effective, since we will be forced to re-type-check and re-trans
 functions where we might have gotten away with only generating new
-object code. However, this is expected to be be a second order effect
+object code. However, this is expected to be a second order effect
 overall, particularly since LLVM optimization time can be a very large
 portion of compilation.
 
@@ -541,7 +541,7 @@ recompiling all of them. Our plan is to phase span support in incrementally:
    particular AST node (relative to the root of the item). Since we
    are hashing the structure of the AST, we know the AST from the
    previous and current compilation will match, and thus we can
-   compute the current span by finding tha corresponding AST node and
+   compute the current span by finding the corresponding AST node and
    loading its span. This will require some refactoring and work however.
    
 <a id="optimization"></a>

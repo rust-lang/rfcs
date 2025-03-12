@@ -1,6 +1,6 @@
 - Feature Name: N/A
 - Start Date: 2018-05-04
-- RFC PR: #2436
+- RFC PR: [rust-lang/rfcs#2436](https://github.com/rust-lang/rfcs/pull/2436)
 - Rust Issue: N/A
 
 # Summary
@@ -30,9 +30,9 @@ Rustfmt has many options for customising formatting. The behaviour of those opti
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-See the [guide text](../style-guide/README.md).
+See the [guide text](https://doc.rust-lang.org/nightly/style-guide/).
 
-The style guide lives in the RFC repo, since it can be considered an appendix to this RFC. We might want to duplicate the style guide elsewhere to make it more discoverable, but the version here will be the 'source of truth'. Amendments to the style guide should go through the RFC process.
+The style guide formerly lived in the RFC repo, since it was an appendix to this RFC. The style guide has now been moved to the `rust-lang/rust` repository, as of RFC 3309. Amendments to the style guide go through the FCP process.
 
 
 

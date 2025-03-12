@@ -339,7 +339,7 @@ section! For example these two sections are equivalent:
 log = { git = 'https://github.com/rust-lang-nursery/log' }
 ```
 
-This is not accidental! The intial development of the `[patch]` feature was
+This is not accidental! The initial development of the `[patch]` feature was
 actually focused on prepublishing dependencies and was called `[prepublish]`,
 but while discussing it a conclusion was reached that `[prepublish]` already
 allowed replacing existing versions in a registry, but issued a warning when
@@ -368,7 +368,7 @@ The mechanism itself is straightforward enough that a handful of examples (as in
 this RFC) is generally enough to explain it. In the docs, these examples should
 be spelled out in greater detail.
 
-Most notably, however, the [overriding dependenices][over] section of Cargo's
+Most notably, however, the [overriding dependencies][over] section of Cargo's
 documentation will be rewritten to primarily mention `[patch]`, but
 `[replace]` will be mentioned still with a recommendation to use `[patch]`
 instead if possible.

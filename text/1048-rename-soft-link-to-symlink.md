@@ -143,7 +143,7 @@ Unix.  It is a classic compromise, that makes everyone unhappy.
 
 `sym_link` is slightly more consistent with the complementary `hard_link`
 function, and treating "sym link" as two separate words has some precedent in
-two of the Windows-targetted APIs, Delphi and some of the PowerShell cmdlets
+two of the Windows-targeted APIs, Delphi and some of the PowerShell cmdlets
 observed.  However, I have not found any other snake case API that uses that,
 and only a couple of Windows-specific APIs that use it in camel case; most
 usage prefers the single word "symlink" to the two word "sym link" as the

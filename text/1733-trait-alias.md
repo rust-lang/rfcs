@@ -57,7 +57,7 @@ impl<T> FooBackend for T where T: Foo<Backend> {}
 
 With that, it’s now possible to pass an object that implements `Foo<Backend>` to a function
 expecting a `FooBackend`. However, what about impl blocks? What happens if we implement only
-`FooBackend`? Well, we cannot, because the trait explicitely states that we need to implement
+`FooBackend`? Well, we cannot, because the trait explicitly states that we need to implement
 `Foo<Backend>`. We hit a problem here. The problem is that even though there’s a compatibility at
 the `trait bound` level between `Foo<Backend>` and `FooBackend`, there’s none at the `impl` level,
 so all we’re left with is implementing `Foo<Backend>` – that will also provide an implementation for
@@ -325,7 +325,7 @@ There’s currently no alternative to the impl problem described here.
 
 ## `ConstraintKinds`
 
-Similar to GHC’s `ContraintKinds`, we could declare an entire predicate as a reified list of
+Similar to GHC’s `ConstraintKinds`, we could declare an entire predicate as a reified list of
 constraints, instead of creating an alias for a set of supertraits and predicates. Syntax would be
 something like `constraint Foo<T> = T: Bar, Vec<T>: Baz;`, used as `fn quux<T>(...) where Foo<T> { ... }`
 (i.e. direct substitution). Trait object usage is unclear.
@@ -362,7 +362,7 @@ using the `trait` keyword to define alias on *lifetimes* seems a wrong design ch
 very consistent.
 
 If we chose another keyword, like `constraint`, I feel less concerned and it would open further
-opportunies – see the `ConstraintKinds` alternative discussion above.
+opportunities – see the `ConstraintKinds` alternative discussion above.
 
 ## Which bounds need to be repeated when using a trait alias?
 

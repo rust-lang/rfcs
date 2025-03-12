@@ -18,7 +18,7 @@ Currently, if one wants to create a raw pointer pointing to something, one has n
 The problem with this is that there are some invariants that we want to attach to references, that have to *always hold*.
 The details of this are not finally decided yet, but true in practice because of annotations we emit to LLVM.
 It is also the next topic of discussion in the [Unsafe Code Guidelines](https://github.com/rust-rfcs/unsafe-code-guidelines/).
-In particular, references must be aligned and dereferencable, even when they are created and never used.
+In particular, references must be aligned and dereferenceable, even when they are created and never used.
 
 One consequence of these rules is that it becomes essentially impossible to create a raw pointer pointing to an unaligned struct field:
 `&packed.field as *const _` creates an intermediate unaligned reference, triggering undefined behavior because it is not aligned.
@@ -63,7 +63,7 @@ let x = unsafe { &packed.field }; // `x` is not aligned -> undefined behavior
 ```
 
 There is no situation in which the above code is correct, and hence it is a hard error to write this (after a transition period).
-This applies to most ways of creating a reference, i.e., all of the following are UB if `X` is not properly aligned and dereferencable:
+This applies to most ways of creating a reference, i.e., all of the following are UB if `X` is not properly aligned and dereferenceable:
 
 ```rust
 fn foo() -> &T {

@@ -122,7 +122,7 @@ For reference, a list of all the code points allowed by this lint can be found [
 There are some specific interesting code points that we feel necessary to call out here:
 
  - `less_used_codepoints` will warn on U+200C ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER, despite these being useful in the  Perso-Arabic and some Indic scripts. In Indic scripts these characters force different visual forms, which is not very necessary for programming. These have further semantic meaning in Arabic where they can be used to mark prefixes or mixed-script words, which will not crop up so often in programming (we're not able to use `-` in identifiers for marking pre/suffixes in Latin-script identifiers and it's fine). Persian seems to make the most use of these, with some compound words requiring use of these. For now this RFC does not attempt to deal with this and follows the recommendation of the specification, if there is a need for it in the future we can add this for Persian users.
- - `less_used_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukranian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
+ - `less_used_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukrainian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
 
 
 ## Adjustments to the "bad style" lints
@@ -152,7 +152,7 @@ We expect most of these to be between Cyrillic-Latin-Greek and some in Ethiopic-
 
 In a code base, if the _only_ code points from a given script group (aside from `Latin`, `Common`, and `Inherited`) are such exact confusables, lint about it with `mixed_script_confusables` (lint name can be finalized later).
 
-As an implementation note, it may be worth dealing with confusable modifiers via a separate lint check -- if a modifier is from a different (non-`Common`/`Inherited`) script group from the thing preceding it. This has some behaviorial differences but should not increase the chance of false positives.
+As an implementation note, it may be worth dealing with confusable modifiers via a separate lint check -- if a modifier is from a different (non-`Common`/`Inherited`) script group from the thing preceding it. This has some behavioral differences but should not increase the chance of false positives.
 
 The exception for `Latin` is made because the standard library is Latin-script. It could potentially be removed since a code base using the standard library (or any Latin-using library) is likely to be using enough of it that there will be non-confusable characters in use. (This is in unresolved questions)
 

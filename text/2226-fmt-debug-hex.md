@@ -136,7 +136,7 @@ This is fixed by [PR #46233](https://github.com/rust-lang/rust/pull/46233).
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The hexadecimal flag in the the `Debug` trait is superficially redundant
+The hexadecimal flag in the `Debug` trait is superficially redundant
 with the `LowerHex` and `UpperHex` traits.
 If these traits were not stable yet, we could have considered a more unified design.
 

@@ -42,7 +42,7 @@ Implement these traits for the primitive numeric types *without* overloading,
 i.e. only `impl AddAssign<i32> for i32 { .. }`.
 
 Add an `op_assign` feature gate. When the feature gate is enabled, the compiler
-will consider these traits when typecheking `a += b`. Without the feature gate
+will consider these traits when typechecking `a += b`. Without the feature gate
 the compiler will enforce that `a` and `b` must be primitives of the same
 type/category as it does today.
 

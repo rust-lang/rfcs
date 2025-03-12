@@ -193,7 +193,7 @@ union U<T> { x:(), f: ManuallyDrop<T> }
 
 fn main() {
     let mut u : U<(Vec<i32>,)> = U { x: () };
-    unsafe { u.f.0 = Vec::new() }; // uninitialized `Vec` being droped
+    unsafe { u.f.0 = Vec::new() }; // uninitialized `Vec` being dropped
 }
 ```
 This requires `unsafe` because it desugars to `ManuallyDrop::deref_mut(&mut u.f).0`,
@@ -201,7 +201,7 @@ and while writing to a union field is safe, taking a reference is not.
 
 For this reason, `DerefMut` auto-deref is not applied when working on a union or
 its fields.  However, note that manually dereferencing is still possible, so
-`*(u.f).0 = Vec::new()` is still a way to drop an uninitialized field!  But this
+`(*u.f).0 = Vec::new()` is still a way to drop an uninitialized field!  But this
 can never happen when no `*` is involved, and hopefully dereferencing an element
 of a union is a clear enough signal that the union better be initialized
 properly for this to make sense.

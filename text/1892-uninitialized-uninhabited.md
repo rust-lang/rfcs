@@ -146,9 +146,9 @@ actually unsafe - where we have to assert to the compiler that we have a valid
 value. And we only ever tell the compiler we have a value of type `T` where we
 know we actually do have a value of type `T`. As such, this is fine to use with
 any `T`, including `!`. If the callback diverges then it's not possible to get
-to the `unsafe` block and try to read the non-existant value.
+to the `unsafe` block and try to read the non-existent value.
 
-Given that it's so easy for code using `uninitialzed` to hide bugs like this,
+Given that it's so easy for code using `uninitialized` to hide bugs like this,
 and given that there's a better alternative, this RFC proposes deprecating
 `uninitialized` and introducing the `MaybeUninit` type into the standard
 library as a replacement.
@@ -207,7 +207,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn into_inner(self) -> T {
         std::ptr::read(&*self.value)
@@ -217,7 +217,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_ref(&self) -> &T {
         &*self.value
@@ -227,7 +227,7 @@ impl<T> MaybeUninit<T> {
     ///
     /// # Unsafety
     ///
-    /// It is up to the caller to guarantee that the the `MaybeUninit` really is in an initialized
+    /// It is up to the caller to guarantee that the `MaybeUninit` really is in an initialized
     /// state, otherwise this will immediately cause undefined behavior.
     pub unsafe fn get_mut(&mut self) -> &mut T {
         &mut *self.value

@@ -481,7 +481,7 @@ For example, this should issue a warning:
 ```rust
 #[derive(Debug)]
 /// Link to [S::fmt]
-struct S;`
+struct S;
 ```
 
 but this should link to the implementation of `Debug::fmt` for `S`:
@@ -491,7 +491,7 @@ use std::fmt::Debug;
 
 #[derive(Debug)]
 /// Link to [S::fmt]
-struct S;`
+struct S;
 ```
 
 [ref-ufcs]: https://github.com/rust-lang-nursery/reference/blob/96e976d32a0a6927dd26c2ee805aaf44ef3bef2d/src/expressions.md#disambiguating-function-calls

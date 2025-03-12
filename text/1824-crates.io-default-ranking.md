@@ -74,7 +74,7 @@ A few assumptions we made:
 ## Order by recent downloads
 
 Through the iterations of this RFC, there was no consensus around a way to order
-crates that would be useful, understandable, resistent to being gamed, and not
+crates that would be useful, understandable, resistant to being gamed, and not
 require work of curators, reviewers, or moderators. Furthermore, different
 people in different situations may value different aspects of crates.
 
@@ -272,7 +272,7 @@ These would be displayed as badges on lists of crates.
 
 These levels would not have any time commitments attached to them-- maintainers
 who would like to batch changes into releases every 6 months could report
-"actively developed" just as much as mantainers who like to release every 6
+"actively developed" just as much as maintainers who like to release every 6
 weeks. This would need to be clearly communicated to set crate user
 expectations properly.
 

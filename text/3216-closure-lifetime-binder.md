@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#97362](https://github.com/rust-lang/rust/issues/97362)
 
 
-This RFC went through a pre-RFC phase at https://internals.rust-lang.org/t/pre-rfc-allow-for-a-syntax-with-closures-for-explicit-higher-ranked-lifetimes/15888
+This RFC went through a pre-RFC phase at <https://internals.rust-lang.org/t/pre-rfc-allow-for-a-syntax-with-closures-for-explicit-higher-ranked-lifetimes/15888>
 
 # Summary
 

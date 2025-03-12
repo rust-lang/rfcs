@@ -1,6 +1,6 @@
-- Start Date: (fill me in with today's date, 2014-08-28)
-- RFC PR: [rust-lang/rfcs#218](https://github.com/rust-lang/rfcs/pull/218/files)
-- Rust Issue: [rust-lang/rust#218](https://github.com/rust-lang/rust/issues/24266)
+- Start Date: 2014-08-28
+- RFC PR: [rust-lang/rfcs#218](https://github.com/rust-lang/rfcs/pull/218)
+- Rust Issue: [rust-lang/rust#24266](https://github.com/rust-lang/rust/issues/24266)
 
 # Summary
 
@@ -98,7 +98,7 @@ completed, one can then take the next step of adding the actual field.
 # Drawbacks
 
 Some people like "There is only one way to do it."  But, there is
-precendent in Rust for violating "one way to do it" in favor of
+precedent in Rust for violating "one way to do it" in favor of
 syntactic convenience or regularity; see
 the [Precedent for flexible syntax in Rust] appendix.
 Also, see the [Always Require Braces] alternative below.
@@ -311,7 +311,7 @@ adoption of [Rust RFC 25].
 
 ## Precedent for flexible syntax in Rust
 
-There is precendent in Rust for violating "one way to do it" in favor
+There is precedent in Rust for violating "one way to do it" in favor
 of syntactic convenience or regularity.
 
 For example, one can often include an optional trailing comma, for
@@ -358,7 +358,7 @@ is not a democracy, the number of commenters should not matter anyway.)
 * "Frequently start out with an empty struct and add fields as I need them." ==> Favors: This RFC or Always Require Braces
 * "Foo{} suggests is constructing something that it's not; all uses of the value `Foo` are indistinguishable from each other" ==> Favors: Status Quo
 * "I find it strange anyone would prefer `let x = Foo{};` over `let x = Foo;`" ==> Favors Status Quo; strongly opposes Always Require Braces.
-* "I agree that 'instantiation-should-follow-declation', that is, structs declared `;, (), {}` should only be instantiated [via] `;, (), { }` respectively" ==> Opposes leniency of this RFC in that it allows expression to use include or omit `{}` on an empty struct, regardless of declaration form, and vice-versa.
+* "I agree that 'instantiation-should-follow-declaration', that is, structs declared `;, (), {}` should only be instantiated [via] `;, (), { }` respectively" ==> Opposes leniency of this RFC in that it allows expression to use include or omit `{}` on an empty struct, regardless of declaration form, and vice-versa.
 * "The code generation argument is reasonable, but I wouldn't want to force noisier syntax on all 'normal' code just to make macros work better." ==> Favors: This RFC
 
 [Always Require Braces]: #always-require-braces

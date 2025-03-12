@@ -263,7 +263,7 @@ Trait headers are written according to the following grammar:
 TRAIT_HEADER =
   'trait' IDENT [ '<' INPUT_PARAMS '>' ] [ ':' BOUNDS ] [ WHERE_CLAUSE ]
 
-INPUT_PARAMS = INPUT_TY { ',' INPUT_TY }* [ ',' ]
+INPUT_PARAMS = INPUT_PARAM { ',' INPUT_PARAM }* [ ',' ]
 INPUT_PARAM  = IDENT [ ':' BOUNDS ]
 
 BOUNDS = BOUND { '+' BOUND }* [ '+' ]
@@ -1263,7 +1263,7 @@ impl<'a, T> Sliceable for &'a Vec<T> {
 But then there's a difficult question:
 
 ```
-fn dice<A>(a: &A) -> &A::Slice where &A: Slicable {
+fn dice<A>(a: &A) -> &A::Slice where &A: Sliceable {
     a // is this allowed?
 }
 ```

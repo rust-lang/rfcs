@@ -239,7 +239,7 @@ of the compiler before they are finalized.
 Due to the lack of stable plugins, making changes to libsyntax can
 currently be quite disruptive to the ecosystem that relies on plugins.
 In an effort to ease this pain, we generally try to batch up such
-changes so that they occur all at once, rather than occuring in a
+changes so that they occur all at once, rather than occurring in a
 piecemeal fashion. In practice, this means that you should add:
 
     cc #31645 @Manishearth

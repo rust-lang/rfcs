@@ -129,7 +129,7 @@ are generally considered underspecified.
 We expect that there will be cases that fall on a grey line between
 bug and expected behavior, and discussion will be needed to determine
 where it falls. The recent conflict between `Rc` and scoped threads is
-an example of such a discusison: it was clear that both APIs could not
+an example of such a discussion: it was clear that both APIs could not
 be legal, but not clear which one was at fault. The results of these
 discussions will feed into the Rust spec as it is developed.
     
@@ -181,9 +181,9 @@ Known areas where change is expected include the following:
 
 - Destructors semantics:
   - We plan to stop zeroing data and instead use marker flags on the stack,
-    as specified in [RFC 320]. This may affect destructors that rely on ovewriting
+    as specified in [RFC 320]. This may affect destructors that rely on overwriting
     memory or using the `unsafe_no_drop_flag` attribute.
-  - Currently, panicing in a destructor can cause unintentional memory
+  - Currently, panicking in a destructor can cause unintentional memory
     leaks and other poor behavior (see [#14875], [#16135]). We are
     likely to make panic in a destructor simply abort, but the precise
     mechanism is not yet decided.
@@ -281,7 +281,7 @@ the change still breaks a large body of code we do not have access to.
 
 **What attribute should we use to "opt out" of soundness changes?**
 The section on breaking changes indicated that it may sometimes be
-appropriate to includ an "opt out" that people can use to temporarily
+appropriate to include an "opt out" that people can use to temporarily
 revert to older, unsound type rules, but did not specify precisely
 what that opt-out should look like. Ideally, we would identify a
 specific attribute in advance that will be used for such purposes.  In

@@ -75,7 +75,7 @@ instead; similarly for `print!`.
 
 The usual drawbacks of adding macros to the prelude apply.  In this
 case, I think the most significant concern is to choose names that are
-unlikely to to conflict with existing library crates' _exported_
+unlikely to conflict with existing library crates' _exported_
 macros.  (Conversely, _internal_ macros with the same names and
 semantics demonstrate that the names chosen are appropriate.)
 

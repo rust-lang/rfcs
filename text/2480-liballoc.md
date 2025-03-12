@@ -46,7 +46,7 @@ toward making `no_std` application compatible with Stable Rust.
 As of this writing not all of that work is completed yet.
 For example, [`#[panic_implementation]`][panic-impl] is required for `no_std` but still unstable.
 So it may seem that this RFC does not unlock anything new,
-as `no_std` application still need to be on Nigthly anyway.
+as `no_std` application still need to be on Nightly anyway.
 
 [coordinated push]: https://github.com/rust-lang-nursery/embedded-wg/issues/42
 [panic-impl]: https://github.com/rust-lang/rust/issues/44489

@@ -84,7 +84,7 @@ With `identity`, this intent becomes clearer.
 
 The `drop` function in `core::mem` is defined as `pub fn drop<T>(_x: T) { }`.
 The same effect can be achieved by writing `{ _x; }`. This presents us
-with a precendent that such trivial functions are considered useful and
+with a precedent that such trivial functions are considered useful and
 includable inside the standard library even though they can be written easily
 inside a user's crate.
 
