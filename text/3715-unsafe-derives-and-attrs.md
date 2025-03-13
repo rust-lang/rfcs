@@ -35,15 +35,31 @@ pub fn derive_helper_attr(_item: TokenStream) -> TokenStream {
 }
 ```
 
-Invoking this derive requires writing either
-`#[unsafe(derive(DangerousTrait))]` or `#[derive(unsafe(DangerousTrait))]`.
-(The latter syntax allows isolating the `unsafe` to a single derive within a
-list of derives.) Invoking an unsafe derive without the unsafe derive syntax
-will produce a compiler error. Using the unsafe derive syntax without an unsafe
-derive will trigger an "unused unsafe" lint.
+Invoking this derive requires writing `#[derive(unsafe(DangerousTrait))]`.
+Invoking an unsafe derive without the unsafe derive syntax will produce a
+compiler error. Using the unsafe derive syntax without an unsafe derive will
+trigger an "unused unsafe" lint.
 
 A `proc_macro_derive` attribute can include both `attributes` for helper
 attributes and `unsafe` to declare the derive unsafe, in any order.
+
+If writing code that enforces `SAFETY` comments for every use of `unsafe`, you
+can write the `SAFETY` comment either prior to the derive (for a single unsafe
+derive) or prior to the specific `unsafe(DangerousTrait)` in a list of derives:
+
+```rust
+/// SAFETY: ...
+#[derive(unsafe(DangerousTrait))]
+struct SomeStruct { ... }
+
+#[derive(
+    /// SAFETY: ...
+    unsafe(DangerousTrait),
+    /// SAFETY: ...
+    unsafe(AnotherDangerousTrait),
+)]
+struct AnotherStruct { ... }
+```
 
 ## Attributes
 
@@ -61,14 +77,28 @@ pub fn dangerous(_attr: TokenStream, item: TokenStream) -> TokenStream {
 Invoking an unsafe attribute requires the unsafe attribute syntax:
 `#[unsafe(dangerous)]`.
 
+If writing code that enforces `SAFETY` comments for every use of `unsafe`, you
+can write the `SAFETY` comment immediately prior to the attribute:
+
+```rust
+/// SAFETY: ...
+#[unsafe(dangerous)]
+```
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-Should we support the `#[unsafe(derive(DangerousTrait))]` syntax, or only
-`#[derive(unsafe(DangerousTrait))]`? The former elevates the `unsafe` to be
-more visible, and allows deriving several traits using one `unsafe`. The latter
-isolates the `unsafe` to a specific trait. This RFC proposes supporting both,
-but we could choose to only support the latter instead.
+This RFC proposes the synax `#[derive(unsafe(DangerousTrait))]`. We could,
+instead, put the `unsafe` on the outside: `#[unsafe(derive(DangerousTrait))]`.
+
+Some rationale for putting it on the inside:
+- This encourages minimizing the scope of the `unsafe`, isolating it to a
+  single trait.
+- This allows writing all traits to derive within a single `#[derive(...)]`, if
+  desired. Putting the `unsafe` on the outside requires separate `derive`s for
+  safe and unsafe derives, and potentially multiple if the derives care about
+  ordering.
+- This makes it easy to attach `SAFETY` comments to each individual trait.
 
 We could use a different syntax for invoking unsafe derives, such as
 `derive(unsafe Trait)`. However, that would be inconsistent with unsafe
@@ -80,14 +110,6 @@ modifier to `Trait` (e.g. an unsafe version of `Trait`).
 
 RFC 3325 defined unsafe attributes. This RFC provides a natural extension of
 that mechanism to derives.
-
-# Unresolved questions
-[unresolved-questions]: #unresolved-questions
-
-This RFC proposes accepting both `#[unsafe(derive(MyTrait))]` and
-`#[derive(unsafe(MyTrait))]`, among other reasons to make it easy to write
-`#[derive(SafeTrait, unsafe(MyTrait))]`. Should we allow both, or only allow
-the former?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
