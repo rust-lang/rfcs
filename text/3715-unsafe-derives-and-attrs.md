@@ -48,14 +48,14 @@ can write the `SAFETY` comment either prior to the derive (for a single unsafe
 derive) or prior to the specific `unsafe(DangerousTrait)` in a list of derives:
 
 ```rust
-/// SAFETY: ...
+// SAFETY: ...
 #[derive(unsafe(DangerousTrait))]
 struct SomeStruct { ... }
 
 #[derive(
-    /// SAFETY: ...
+    // SAFETY: ...
     unsafe(DangerousTrait),
-    /// SAFETY: ...
+    // SAFETY: ...
     unsafe(AnotherDangerousTrait),
 )]
 struct AnotherStruct { ... }
@@ -81,7 +81,7 @@ If writing code that enforces `SAFETY` comments for every use of `unsafe`, you
 can write the `SAFETY` comment immediately prior to the attribute:
 
 ```rust
-/// SAFETY: ...
+// SAFETY: ...
 #[unsafe(dangerous)]
 ```
 
