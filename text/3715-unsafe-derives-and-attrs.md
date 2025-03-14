@@ -99,6 +99,10 @@ Some rationale for putting it on the inside:
   safe and unsafe derives, and potentially multiple if the derives care about
   ordering.
 - This makes it easy to attach `SAFETY` comments to each individual trait.
+- One way to think of `derive(Trait)` is `derive` is the mechanism to invoke
+  derive macros, and `Trait` is the actual derive macro. In this sense, when
+  writing `derive(unsafe(UnsafeTrait))`, the `unsafe` is attached to the
+  specific derive macro rather than the `derive` directive.
 
 We could use a different syntax for invoking unsafe derives, such as
 `derive(unsafe Trait)`. However, that would be inconsistent with unsafe
