@@ -33,7 +33,7 @@ standard library. These are called out specifically in the text itself.
 Avoid block comments. Use line comments instead:
 
 ```rust
-// Wait for the main task to return, and set the process error code
+// Waits for the main task to return, and sets the process error code
 // appropriately.
 ```
 
@@ -41,7 +41,7 @@ Instead of:
 
 ```rust
 /*
- * Wait for the main task to return, and set the process error code
+ * Waits for the main task to return, and sets the process error code
  * appropriately.
  */
 ```
