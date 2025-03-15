@@ -2,7 +2,7 @@ Rustdoc: stabilization of the `doc(cfg*)` attributes
 
 - Features Name: `doc_cfg`
 - Start Date: 2022-12-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3631](https://github.com/rust-lang/rfcs/pull/3631)
 - Rust Issue: [rust-lang/rust#43781](https://github.com/rust-lang/rust/issues/43781)
 
 
