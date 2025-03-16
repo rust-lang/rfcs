@@ -120,6 +120,11 @@ like a modifier to `DangerousDeriveMacro` (e.g. an unsafe version of
 `DangerousDeriveMacro`), particularly in the common case where
 `DangerousDeriveMacro` has the same name as a trait.
 
+We could use a similar syntax for declaring unsafe derives as invoking them:
+`proc_macro_derive(unsafe(DangerousDeriveMacro))`. However, because of the
+precedent of `unsafe(attribute)`, this can be interpreted as being an unsafe
+operation to *define* rather than an unsafe operation to *invoke*.
+
 # Prior art
 [prior-art]: #prior-art
 
