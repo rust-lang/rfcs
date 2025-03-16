@@ -93,16 +93,17 @@ instead, put the `unsafe` on the outside: `#[unsafe(derive(DangerousTrait))]`.
 
 Some rationale for putting it on the inside:
 - This encourages minimizing the scope of the `unsafe`, isolating it to a
-  single trait.
-- This allows writing all traits to derive within a single `#[derive(...)]`, if
-  desired. Putting the `unsafe` on the outside requires separate `derive`s for
-  safe and unsafe derives, and potentially multiple if the derives care about
-  ordering.
-- This makes it easy to attach `SAFETY` comments to each individual trait.
-- One way to think of `derive(Trait)` is `derive` is the mechanism to invoke
-  derive macros, and `Trait` is the actual derive macro. In this sense, when
-  writing `derive(unsafe(UnsafeTrait))`, the `unsafe` is attached to the
-  specific derive macro rather than the `derive` directive.
+  single derive macro.
+- This allows writing all derive macros to invoke within a single
+  `#[derive(...)]`, if desired. Putting the `unsafe` on the outside requires
+  separate `derive`s for safe and unsafe derives, and potentially multiple if
+  the derives care about ordering.
+- This makes it easy to attach `SAFETY` comments to each individual derive
+  macro.
+- One way to think of `derive(Macro)` is that `derive(..)` enters a context in
+  which one or more derive macros can be invoked, and naming `Macro` is how we
+  actually invoke the derive macro. When invoking unsafe derive macros, we have
+  to wrap those with `unsafe(..)` as in `derive(unsafe(DangerousDeriveMacro))`.
 
 We could use a different syntax for invoking unsafe derives, such as
 `derive(unsafe Trait)`. However, that would be inconsistent with unsafe
