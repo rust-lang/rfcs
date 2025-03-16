@@ -98,8 +98,8 @@ Some rationale for putting it on the inside:
   single derive macro.
 - This allows writing all derive macros to invoke within a single
   `#[derive(...)]`, if desired. Putting the `unsafe` on the outside requires
-  separate `derive`s for safe and unsafe derives, and potentially multiple if
-  the derives care about ordering.
+  separate `derive`s for safe and unsafe derives, and potentially multiple in
+  the (unusual) case where the derives care about ordering.
 - This makes it easy to attach `SAFETY` comments to each individual derive
   macro.
 - One way to think of `derive(Macro)` is that `derive(..)` enters a context in
