@@ -220,9 +220,6 @@ requests arise.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-We should provide a way for derive macros to declare themselves `unsafe` to
-invoke, requiring an unsafe attribute syntax to invoke.
-
 We should provide a way for derive macros to invoke other derive macros.
 
 We should provide a means to perform a `derive` on a struct without being
