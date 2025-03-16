@@ -107,6 +107,12 @@ Some rationale for putting it on the inside:
   actually invoke the derive macro. When invoking unsafe derive macros, we have
   to wrap those with `unsafe(..)` as in `derive(unsafe(DangerousDeriveMacro))`.
 
+We could, *if* we used the `unsafe(derive(...))` syntax, additionally restrict
+such derives to only contain a single trait, forcing the developer to only
+invoke a single derive macro per `unsafe(derive(...))`. However, this syntax
+naturally leads people to assume this would work, only to encounter an error
+when they do the natural thing that seems like it should work.
+
 We could use a different syntax for invoking unsafe derives, such as
 `derive(unsafe DangerousDeriveMacro)`. However, that would be inconsistent with
 unsafe attributes (which use parentheses), *and* it has the potential to look
