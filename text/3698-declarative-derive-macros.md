@@ -70,17 +70,16 @@ If a derive macro mistakenly emits the token stream it was applied to
 the duplicate item should hint to the user that the macro was defined
 incorrectly, and remind the user that derive macros only append new items.
 
-A `derive()` rule can be marked as `unsafe`: `unsafe derive() (...)
-=> { ... }`. Invoking such a derive using a rule marked as unsafe
-requires unsafe derive syntax: either
-`#[unsafe(derive(DangerousTrait))]` or
-`#[derive(unsafe(DangerousTrait))]`. (The latter syntax allows
-isolating the `unsafe` to a single derive within a list of
-derives.) Invoking an unsafe derive rule without the unsafe derive
-syntax will produce a compiler error. Using the unsafe derive
-syntax without an unsafe derive will trigger an "unused unsafe"
-lint. (RFC 3715 defines the equivalent mechanism for proc macro
-derives.)
+A `derive()` rule can be marked as `unsafe`:
+`unsafe derive() (...) => { ... }`.
+Invoking such a derive using a rule marked as `unsafe`
+requires `unsafe` derive syntax:
+`#[derive(unsafe(DangerousDeriveMacro))]`
+
+Invoking an unsafe derive rule without the unsafe derive syntax will produce a
+compiler error. Using the unsafe derive syntax without an unsafe derive will
+trigger an "unused unsafe" lint. (RFC 3715 defines the equivalent mechanism for
+proc macro derives.)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
