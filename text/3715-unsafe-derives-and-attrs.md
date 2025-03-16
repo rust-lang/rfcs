@@ -29,34 +29,35 @@ When declaring a proc macro `derive`, you can add the `unsafe` parameter to the
 `proc_macro_derive` attribute to indicate that the derive requires `unsafe`:
 
 ```rust
-#[proc_macro_derive(DangerousTrait, unsafe)]
-pub fn derive_helper_attr(_item: TokenStream) -> TokenStream {
+#[proc_macro_derive(DangerousDeriveMacro, unsafe)]
+pub fn derive_dangerous_derive_macro(_item: TokenStream) -> TokenStream {
     TokenStream::new()
 }
 ```
 
-Invoking this derive requires writing `#[derive(unsafe(DangerousTrait))]`.
-Invoking an unsafe derive without the unsafe derive syntax will produce a
-compiler error. Using the unsafe derive syntax without an unsafe derive will
-trigger an "unused unsafe" lint.
+Invoking this derive macro requires writing
+`#[derive(unsafe(DangerousDeriveMacro))]`. Invoking an unsafe derive macro
+without the unsafe derive syntax will produce a compiler error. Using the
+unsafe derive syntax without an unsafe derive macro will trigger an "unused
+unsafe" lint.
 
 A `proc_macro_derive` attribute can include both `attributes` for helper
 attributes and `unsafe` to declare the derive unsafe, in any order.
 
 If writing code that enforces `SAFETY` comments for every use of `unsafe`, you
 can write the `SAFETY` comment either prior to the derive (for a single unsafe
-derive) or prior to the specific `unsafe(DangerousTrait)` in a list of derives:
+derive) or prior to the specific `unsafe(DangerousDeriveMacro)` in a list of derives:
 
 ```rust
 // SAFETY: ...
-#[derive(unsafe(DangerousTrait))]
+#[derive(unsafe(DangerousDeriveMacro))]
 struct SomeStruct { ... }
 
 #[derive(
     // SAFETY: ...
-    unsafe(DangerousTrait),
+    unsafe(DangerousDeriveMacro),
     // SAFETY: ...
-    unsafe(AnotherDangerousTrait),
+    unsafe(AnotherDangerousDeriveMacro),
 )]
 struct AnotherStruct { ... }
 ```
@@ -88,8 +89,9 @@ can write the `SAFETY` comment immediately prior to the attribute:
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-This RFC proposes the synax `#[derive(unsafe(DangerousTrait))]`. We could,
-instead, put the `unsafe` on the outside: `#[unsafe(derive(DangerousTrait))]`.
+This RFC proposes the synax `#[derive(unsafe(DangerousDeriveMacro))]`. We
+could, instead, put the `unsafe` on the outside:
+`#[unsafe(derive(DangerousDeriveMacro))]`.
 
 Some rationale for putting it on the inside:
 - This encourages minimizing the scope of the `unsafe`, isolating it to a
@@ -106,9 +108,11 @@ Some rationale for putting it on the inside:
   to wrap those with `unsafe(..)` as in `derive(unsafe(DangerousDeriveMacro))`.
 
 We could use a different syntax for invoking unsafe derives, such as
-`derive(unsafe Trait)`. However, that would be inconsistent with unsafe
-attributes (which use parentheses), *and* it has the potential to look like a
-modifier to `Trait` (e.g. an unsafe version of `Trait`).
+`derive(unsafe DangerousDeriveMacro)`. However, that would be inconsistent with
+unsafe attributes (which use parentheses), *and* it has the potential to look
+like a modifier to `DangerousDeriveMacro` (e.g. an unsafe version of
+`DangerousDeriveMacro`), particularly in the common case where
+`DangerousDeriveMacro` has the same name as a trait.
 
 # Prior art
 [prior-art]: #prior-art
