@@ -113,7 +113,7 @@ In the author's opinion, having source injected via this mechanism does not make
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-How should this interact with doctests? Does it apply to the crate being tested or to the generated test?
+None to my knowledge.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
