@@ -28,13 +28,13 @@ Cargo has features for configuring flags for a workspace (RUSTFLAGS, `target.<na
 
 Additionally, some existing CLI options could have been useful as attributes. This leads to the second group: Maintainers of the Rust language. Often we need to decide between attributes and flags; either we duplicate features between the two (lints, `crate-name`, `crate-type`), or we make it harder to configure the options for stakeholder group 1.
 
-The third group is the authors of external tools. The [original motivation][impl] for this feature was for Crater, which wanted to enable a rustfix feature in *all* crates it built without having to modify the source code. Other motivations include the currently-unstable [`register-tool`], which with this RFC could be an attribute passed by the external tool (or configured in the workspace), and [custom test frameworks].
+The third group is the authors of external tools. The [original motivation][impl] for this feature was for Crater, which wanted to enable a rustfix feature in *all* crates it built without having to modify the source code. Other motivations include the currently-unstable [`register-tool`], which with this RFC could be an attribute passed by the external tool (or configured in the workspace), and [build-std], which wants to inject `no_std` into all crates being compiled.
 
 [impl]: https://github.com/rust-lang/rust/pull/52355
 [`register-tool`]: https://github.com/rust-lang/rust/issues/66079#issuecomment-1010266282
 [doc-url]: https://doc.rust-lang.org/rustdoc/write-documentation/the-doc-attribute.html#at-the-crate-level
 [`doc(html_no_source)`]: https://github.com/rust-lang/rust/issues/75497
-[custom test frameworks]: https://github.com/rust-lang/rust/pull/52355#issuecomment-405037604
+[build-std]: https://github.com/rust-lang/rfcs/pull/3791#discussion_r1998684847
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -48,6 +48,9 @@ This feature lets you pass attributes to your whole workspace at once, even if r
 For example, you could configure `strict_provenance_lints` for all your crates by adding
 `build.rustflags = ["--crate-attr=feature(strict_provenance_lints)", "-Wfuzzy_provenance_casts", "-Wlossy_provenance_casts"]`
 to `.cargo/config.toml`.
+
+This feature also applies to doctests.
+Running (for example) `RUSTDOCFLAGS="--crate-attr='feature(strict_provenance_lints)' -Wfuzzy_provenance_casts" cargo test --doc` will enable `fuzzy_provenance_casts` for all doctests that are run.
 
 (This snippet is adapted from [the unstable book].)
 
@@ -76,6 +79,11 @@ The argument to `--crate-attr` is treated as-if it were surrounded by `#![ ]`, i
 If the attribute is already present in the source code, it behaves exactly as it would if duplicated twice in the source.
 For example, duplicating `no_std` is idempotent; duplicating `crate_type` generates both types; and duplicating `crate_name` is idempotent if the names are the same and a hard error otherwise.
 It is suggested, but not required, that the implementation not warn on idempotent attributes, even if it would normally warn that duplicate attributes are unused.
+
+`--crate-attr` is also a rustdoc flag. Rustdoc behaves identically to rustc for the main crate being compiled.
+For doctests, by default, `--crate-attr` applies to both the main crate and the generated doctest.
+This can be overridden for the doctest using `--crate-attr=doc(test(attr(...)))`.
+`--crate-attr=doc(...)` attributes never apply to the generated doctest, only to the main crate (with the exception of `doc(test(attr(...)))`, which applies the inner `...` attribute, not the doc attribute itself).
 
 [shebang parsing]: https://doc.rust-lang.org/nightly/reference/input-format.html#shebang-removal
 [`Attr`]: https://doc.rust-lang.org/nightly/reference/attributes.html
