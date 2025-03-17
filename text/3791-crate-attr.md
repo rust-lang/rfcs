@@ -7,6 +7,9 @@
 [summary]: #summary
 
 `--crate-attr` allows injecting crate-level attributes via the command line.
+It is supported by all the major tools: Rustc, Rustdoc, Clippy, and Rustfmt.
+Rustdoc extends it to doctests, discussed in further detail below.
+It is encouraged, but not required, that external `rustc_driver` tools also support this flag.
 
 # Motivation
 [motivation]: #motivation
@@ -60,6 +63,16 @@ Running (for example) `RUSTDOCFLAGS="--crate-attr='feature(strict_provenance_lin
 [reference-level-explanation]: #reference-level-explanation
 
 Any crate-level attribute is valid to pass to `--crate-attr`.
+Attributes are applied in the order they were given on the command line; so `--crate-attr=warn(unused) --crate-attr=deny(unused)` is equivalent to `deny(unused)`.
+`crate-attr` attributes are applied before source code attributes.
+For example, the following file, when compiled with `crate-attr=deny(unused)`, does not fail with an error, but only warns:
+
+```rust
+#![warn(unused)]
+fn foo() {}
+```
+
+This means that `crate-attr=deny(unused)` is exactly equivalent to `-D unused`.
 
 Formally, the expansion behaves as follows:
 
