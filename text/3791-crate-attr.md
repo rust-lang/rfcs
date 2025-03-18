@@ -62,17 +62,9 @@ Running (for example) `RUSTDOCFLAGS="--crate-attr='feature(strict_provenance_lin
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
+## Semantics
+
 Any crate-level attribute is valid to pass to `--crate-attr`.
-Attributes are applied in the order they were given on the command line; so `--crate-attr=warn(unused) --crate-attr=deny(unused)` is equivalent to `deny(unused)`.
-`crate-attr` attributes are applied before source code attributes.
-For example, the following file, when compiled with `crate-attr=deny(unused)`, does not fail with an error, but only warns:
-
-```rust
-#![warn(unused)]
-fn foo() {}
-```
-
-This means that `crate-attr=deny(unused)` is exactly equivalent to `-D unused`.
 
 Formally, the expansion behaves as follows:
 
@@ -93,6 +85,8 @@ If the attribute is already present in the source code, it behaves exactly as it
 For example, duplicating `no_std` is idempotent; duplicating `crate_type` generates both types; and duplicating `crate_name` is idempotent if the names are the same and a hard error otherwise.
 It is suggested, but not required, that the implementation not warn on idempotent attributes, even if it would normally warn that duplicate attributes are unused.
 
+## Doctests
+
 `--crate-attr` is also a rustdoc flag. Rustdoc behaves identically to rustc for the main crate being compiled.
 For doctests, by default, `--crate-attr` applies to both the main crate and the generated doctest.
 This can be overridden for the doctest using `--crate-attr=doc(test(attr(...)))`.
@@ -100,6 +94,32 @@ This can be overridden for the doctest using `--crate-attr=doc(test(attr(...)))`
 
 [shebang parsing]: https://doc.rust-lang.org/nightly/reference/input-format.html#shebang-removal
 [`Attr`]: https://doc.rust-lang.org/nightly/reference/attributes.html
+
+## Ordering
+
+Attributes are applied in the order they were given on the command line; so `--crate-attr=warn(unused) --crate-attr=deny(unused)` is equivalent to `deny(unused)`.
+`crate-attr` attributes are applied before source code attributes.
+For example, the following file, when compiled with `crate-attr=deny(unused)`, does not fail with an error, but only warns:
+
+```rust
+#![warn(unused)]
+fn foo() {}
+```
+
+Additionally, all existing `-A -W -D -F` flags become aliases for `--crate-attr` (`allow`, `warn`, `deny`, and `forbid`, respectively). In particular, this implies that the following CLI flag combinations are exactly equivalent:
+- `-D unused`
+- `-A unused -D unused`
+- `--crate-attr=allow(unused) -D unused`
+
+`--force-warn` has no attribute that is equivalent, and is not affected by this RFC.
+
+"Equivalence" as described in this section only makes sense because lint attributes are defined to have a precedence order.
+Other attributes, such as doc-comments, define no such precedence. Those attributes have whatever meaning they define for their order.
+For example, passing `'--crate-attr=doc = "Compiled on March 18 2025"'` to a crate with `#![doc = "My awesome crate"]` on the first line would generate documentation for the crate root reading:
+```
+Compiled on March 18 2025
+My awesome crate
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
