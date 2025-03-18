@@ -80,6 +80,7 @@ Another consequence is that the argument to `--crate-attr` is syntactically isol
 `--crate-attr` is treated as Rust source code, which means that whitespace, block comments, and raw strings are valid: `'--crate-attr= crate_name /*foo bar*/ = r#"my-crate"# '` is equivalent to `--crate-attr=crate_name="my-crate"`.
 
 The argument to `--crate-attr` is treated as-if it were surrounded by `#![ ]`, i.e. it must be an inner attribute and it cannot include multiple attributes, nor can it be any grammar production other than an [`Attr`].
+In particular, this implies that `//!` syntax for doc-comments is disallowed (although `doc = "..."` is fine).
 
 If the attribute is already present in the source code, it behaves exactly as it would if duplicated twice in the source.
 For example, duplicating `no_std` is idempotent; duplicating `crate_type` generates both types; and duplicating `crate_name` is idempotent if the names are the same and a hard error otherwise.
