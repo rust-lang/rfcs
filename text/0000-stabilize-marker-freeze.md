@@ -8,6 +8,7 @@
 
 - Stabilize `core::marker::Freeze` in trait bounds.
 - Provide a `PhantomNotFreeze` marker type to opt out of `Freeze`.
+    - This type implements all auto traits except for `Freeze`.
 - Change `PhantomData<T>` to implement `Freeze` only if `T: Freeze`.
 
 # Motivation
@@ -211,12 +212,7 @@ Debates have landed on the conservation of the `Freeze` name, under the main con
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- Should `PhantomNotFreeze` be `Send`/`Sync`?
-    - RFC author is of the opinion that it should, and that `Send`/`Sync` should be addressed orthogonally.
-    - RFC author also indicates that if the core team wishes to consider this more deeply, the fix to `PhantomData` makes this `PhantomNotFreeze` a simple convenience type, which arguably doesn't have equivalents for `Send` and `Sync`.
-- Given that removing a `Freeze` implementation from a type would only be considered a breaking change if its documentation states so, how would the standard library express which types are stably `Freeze`?
-    - As a blanket statement about primitive types (including function pointers)?
-    - How about "common sense" types, such as `IpAddr`, `Box`, `Arc`...?
+None.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -235,3 +231,7 @@ Debates have landed on the conservation of the `Freeze` name, under the main con
 - Adding a `trait Pure: Freeze` which extends the interior immutability guarantee to indirected data could be valuable:
     - This is however likely to be a fool's errand, as indirections could (for example) be hidden behind keys to global collections.
     - Providing such a trait could be left to the ecosystem unless we'd want it to be an auto-trait also (unlikely).
+
+- Given that removing a `Freeze` implementation from a type would only be considered a breaking change if its documentation states so, we may want a way for the standard library express which types are stably `Freeze`.
+    - Maybe we could do this as a blanket statement about primitive types (including function pointers).
+    - Or we might make the statement individually about "common sense" types such as `IpAddr`, `Box`, `Arc`.
