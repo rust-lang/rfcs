@@ -275,6 +275,8 @@ Both `Forget` and `Pin` concepts serve a similar purpose - guaranteeing that som
 
 With `Forget`, some authors may have the option of borrowing data rather than owning it, making their futures `Unpin`, but `!Forget`.
 
+It is possible that in the future we may teach `Pin` in terms of `Forget`, because new rustaceans will already be familiar with the borrow checker, which is enough to grasp `Forget` and how they pin other values using borrows.
+
 ## Undefined Behavior without `!Forget`
 
 Consider that example
