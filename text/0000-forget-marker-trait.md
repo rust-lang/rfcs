@@ -562,7 +562,7 @@ Unions are always `Forget`. All members of `union` must be `Forget`, but it is a
 - `Rc`/`Arc` - all APIs for construction,  except the new `Rc::new_unchecked` method, only exist for `T: Forget` types. If we decide to not have `impl<T: 'static> Forget for T {}`, in the future we *may* allow safe constructors for `T: ?Forget + 'static` (resources are borrowed for `'static`, it fulfills the guarantee we are giving to the unsafe code) and something along the lines of `T: ?Forget + Freeze` (to forbid cycles), author of the RFC is not familiar enough with interior mutability questions.
 - `ManuallyDrop<T>` always implements `Forget`, regardless of the `T`. `ManuallyDrop::new` is available for types with `T: Forget`.  New unsafe method `ManuallyDrop::new_unchecked`, available for `T: ?Forget`, is introduced. We may add a safe constructor with `T: ?Forget + 'static`, as we allow forgetting in statics.
 - `Box::<T>::into_ptr` is available only for `T: Forget`. As for `T: !Forget` users should `ManuallyDrop::new_unchecked` and take the pointer via `&raw mut`. It will still be allowed to pass this pointer to `Box::from_ptr`.
-- `Box::<T>::forget` is available only for `T: Forget`.
+- `Box::<T>::leak` is available only for `T: Forget`.
 - `forget_unchecked`, a new unsafe function, is added to forget `T: ?Forget` types. It is a wrapper around `ManuallyDrop::new_unchecked`, just as `forget` is a wrapper around `ManuallyDrop::new`.
 - `PhantomNonForget` is a `!Forget` ZST for types to become `!Forget`. If we decide to have `impl<T: 'static> Forget for T {}`, we should add a generic parameter/lifetime to `PhantomNonForget`.
 - Similar to other APIs, `T: Forget` -> `Drait<T>: Forget` and `T: !Forget` -> `Drait<T>: !Forget`.
