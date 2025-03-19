@@ -736,6 +736,7 @@ The author of https://zetanumbers.github.io/book/myosotis.html is working on ano
 - https://without.boats/blog/asynchronous-clean-up/
 - https://zetanumbers.github.io/book/myosotis.html: an independent exploration of the same problem space with similar, but subtly different, conclusions.
 - https://hackmd.io/@wg-async/S1Q6Leam0: a design meeting regarding the previous post
+- https://blog.yoshuawuyts.com/linear-types-one-pager/
 
 ## Leakpocalypse
 [leakpocalypse-prior-art]: #leakpocalypse-prior-art
@@ -767,8 +768,8 @@ The author of https://zetanumbers.github.io/book/myosotis.html is working on ano
 [must-move-prior-art]: #must-move-prior-art
 
 - https://faultlore.com/blah/linear-rust/
-- https://blog.yoshuawuyts.com/linear-types-one-pager/
 - https://smallcultfollowing.com/babysteps/blog/2023/03/16/must-move-types/
+- https://blog.yoshuawuyts.com/linearity-and-control/
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
