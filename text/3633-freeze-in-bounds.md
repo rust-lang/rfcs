@@ -1,7 +1,7 @@
-- Feature Name: `stabilize_marker_freeze`
+- Feature Name: `freeze`
 - Start Date: 2024-05-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3633](https://github.com/rust-lang/rfcs/pull/3633)
+- Tracking Issue: [rust-lang/rust#121675](https://github.com/rust-lang/rust/issues/121675)
 
 # Summary
 [summary]: #summary
