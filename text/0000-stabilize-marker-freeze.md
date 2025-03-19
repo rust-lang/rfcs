@@ -157,7 +157,7 @@ A point of contention during the RFC's discussions was whether `Freeze` should b
 Debates have landed on the conservation of the `Freeze` name, under the main considerations that:
 - No better name was found despite the efforts in trying to find one,
 - that the current name was already part of the Rust jargon,
-- and that stabilizing this feature too valuable to hold it back on naming.
+- and that stabilizing this feature is too valuable to hold it back on naming.
 
 # Drawbacks
 [drawbacks]: #drawbacks
