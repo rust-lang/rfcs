@@ -62,6 +62,10 @@ struct SomeStruct { ... }
 struct AnotherStruct { ... }
 ```
 
+(Note that current rustfmt will place every derive on a line of its own if any
+have a comment. That could be changed in a future style edition, but this RFC
+is not making or advocating any style proposals.)
+
 ## Attributes
 
 When declaring a proc macro attribute, you can add the `unsafe` parameter to
