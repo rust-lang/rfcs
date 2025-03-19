@@ -16,6 +16,10 @@ Add a `Forget` marker trait indicating whether it is safe to skip the destructor
 
 Many readers may find the biggest problem with `Forget` to be migration. RFC's confidence is taken from the fact that migration can be done easily. See [#migration](#migration) section for details.
 
+Shortly, not having `!Forget` types undermines lifetimes, sacrifices all performance, ergonomics and efficiency. Rust, as well as expernal APIs, naturally converge towards `!Forget` types, but old decisions are forcing us into `Arc`, `'static`, allocations etc.
+
+---
+
 Back in 2015, the [decision was made][safe-mem-forget] to make `mem::forget` safe, making every type implicitly implement `Forget`. All APIs in `std` could've been preserved after that change, except one. Today is 2025 and some things changed, old reasoning is no longer true. This RFC is not targeted at resource leaks in general but is instead focused on allowing a number of APIs to become safe by providing new unsafe guarantees.
 
 [safe-mem-forget]: https://github.com/rust-lang/rfcs/pull/1066
@@ -243,7 +247,7 @@ The async version of [`take_mut`] cannot be created as it relies on cleanup code
 ### C/C++ bindings + async do not work well together
 [example-async-c-cpp-bindings]: #example-async-c-cpp-bindings
 
-It is common for C/C++ APIs to require some cleanup. It is not an issue for `sync` rust, as wrappers can just take a closure/callback and ensure that cleanup. But all `async` calls are transformed into `impl Future + use<'a>`, not passing control flow to the wrapper. `io_uring` and `async-cuda` fall into that category too. For embedded/kernel development this issue is even worse, as you often cannot afford an allocation due to the lack of resources or complex locking, making borrows your only option and making `Pin`'s drop guarantee not useful for you.
+It is common for C/C++ APIs to require some cleanup. It is not an issue for `sync` rust, as wrappers can just take a closure/callback and ensure that cleanup. But all `async` calls are transformed into `impl Future + use<'a>`, not passing control flow to the wrapper. `io_uring`, WASI 0.3 and `async-cuda` fall into that category too. By not having `!Forget` types Rust clearly lags behind current moments towards efficient asynchronous APIs. For embedded/kernel development this issue is even worse, as you often cannot afford an allocation due to the lack of resources or complex locking, making borrows your only option and making `Pin`'s drop guarantee not useful for you.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
