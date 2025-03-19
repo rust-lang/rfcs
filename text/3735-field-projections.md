@@ -910,6 +910,9 @@ way:
 #[repr(transparent)]
 pub struct Opaque<T> {
     inner: UnsafeCell<MaybeUninit<T>>,
+    // should be replaced by wrapping `inner` in `UnsafePinned` from
+    // https://github.com/rust-lang/rfcs/pull/3467
+    _phantom_pinned: PhantomPinned,
 }
 
 impl<T> Opaque<T> {
