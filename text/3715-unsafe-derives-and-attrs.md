@@ -44,9 +44,9 @@ unsafe" lint.
 A `proc_macro_derive` attribute can include both `attributes` for helper
 attributes and `unsafe` to declare the derive unsafe, in any order.
 
-If writing code that enforces `SAFETY` comments for every use of `unsafe`, you
-can write the `SAFETY` comment either prior to the derive (for a single unsafe
-derive) or prior to the specific `unsafe(DangerousDeriveMacro)` in a list of derives:
+When writing a `SAFETY` comment for each `unsafe`, you can place the `SAFETY`
+comment either prior to the derive (for a single unsafe derive) or prior to the
+specific `unsafe(DangerousDeriveMacro)` in a list of derives:
 
 ```rust
 // SAFETY: ...
@@ -78,8 +78,8 @@ pub fn dangerous(_attr: TokenStream, item: TokenStream) -> TokenStream {
 Invoking an unsafe attribute requires the unsafe attribute syntax:
 `#[unsafe(dangerous)]`.
 
-If writing code that enforces `SAFETY` comments for every use of `unsafe`, you
-can write the `SAFETY` comment immediately prior to the attribute:
+When writing a `SAFETY` comment for each `unsafe`, you can place the `SAFETY`
+comment immediately prior to the attribute:
 
 ```rust
 // SAFETY: ...
