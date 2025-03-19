@@ -773,7 +773,7 @@ The author of https://zetanumbers.github.io/book/myosotis.html is working on ano
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- [ ] Maybe the name `Forget` is misleading, as its core is around the `unsafe` guarantee of borrowed resources and the destructor. `IndirectPin`?
+- [ ] Maybe the name `Forget` is misleading, as its core is around the `unsafe` guarantee of borrowed resources and the destructor?
 - [ ] Maybe force `impl Forget for T where T: 'static {}` and add a generic to the `PhantomNonForget`? Use cases and unsafe guarantee are fine with it, and we already allow `!Forget` in `static`.
 - [ ] Maybe add `StaticForget<T: ?Forget + 'static>: Forget`.
 - [ ] How does it interact with `&own`?
