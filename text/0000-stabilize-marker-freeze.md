@@ -7,8 +7,8 @@
 [summary]: #summary
 
 - Stabilize `core::marker::Freeze` in trait bounds.
-	- Rename `core::marker::Freeze` to `core::marker::ShallowImmutable`. This proposition is tentative, the RFC will keep on using the historical `core::marker::Freeze` name.
-	- Provide a marker type to opt out of `core::marker::Freeze` for the most semver-conscious maintainers. Tentatively named `core::marker::PhantomNotFreeze` (or `core::marker::PhantomNotShallowImmutable` to go with the proposed rename)
+- Provide a `PhantomNotFreeze` marker type to opt out of `Freeze`.
+- Change `PhantomData<T>` to implement `Freeze` only if `T: Freeze`.
 
 # Motivation
 [motivation]: #motivation
