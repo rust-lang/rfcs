@@ -129,6 +129,14 @@ We could use a similar syntax for declaring unsafe derives as invoking them:
 precedent of `unsafe(attribute)`, this can be interpreted as being an unsafe
 operation to *define* rather than an unsafe operation to *invoke*.
 
+If we didn't have this feature, a workaround trait authors could use for the
+specific case of a derive macro implementing a trait is to have a separate
+marker trait as a supertrait of the unsafe trait. Then,
+`derive(DangerousTrait)` could require separately doing `unsafe impl
+PrerequisiteForDangerousTrait`. This would achieve the goal of requiring
+`unsafe` to appear somewhere when deriving the trait, but would not tie the two
+together as directly or clearly.
+
 # Prior art
 [prior-art]: #prior-art
 
