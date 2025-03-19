@@ -192,7 +192,7 @@ least one of the following is true:
   - No uncovered type parameters `P1..=Pn` may appear in `T0..Ti` (excluding
     `Ti`)
 
-The primary change from the rules defined in in [RFC #1023] is that we only
+The primary change from the rules defined in [RFC #1023] is that we only
 restrict the appearance of *uncovered* type parameters. Once again, it is
 important to note that for the purposes of coherence, `#[fundamental]` types are
 special. `Box<T>` is not considered covered, and `Box<LocalType>` is considered

@@ -50,7 +50,7 @@ Rust's complexity.
 Experienced Rust users may have noticed that the compiler already
 performs a similar seeming kind of inference in other settings. In
 particular, in function definitions or impls, outlives requirements
-are rarely needed. This is due to the mechanism of known as *implied
+are rarely needed. This is due to the mechanism known as *implied
 bounds* (also explained in more detail in the next section), which
 allows a function (resp. impl) to infer outlives requirements based on
 the types of its parameters (resp. input types):

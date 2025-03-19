@@ -9,6 +9,12 @@
 
 In the next edition, drop temporaries in tail expressions *before* dropping locals, rather than after.
 
+![A diagram showing a function with one let statement "let x = g();" and a tail expression "temp().h()"
+and a visualisation of how long x and temp live before and after this change.
+Before: x is created first, then temp is created, then x is dropped, then temp is dropped.
+After: x is created first, then temp is created, then temp is dropped, then x is dropped.
+](3606-temporary-lifetimes-in-tail-expressions/diagram.svg)
+
 # Motivation
 
 Temporaries in the tail expression in a block live longer than the block itself,

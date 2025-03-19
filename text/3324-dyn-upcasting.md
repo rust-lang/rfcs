@@ -11,7 +11,7 @@ Enable upcasts from `dyn Trait1` to `dyn Trait2` if `Trait1` is a subtrait of `T
 
 This RFC does not enable `dyn (Trait1 + Trait2)` for arbitrary traits. If `Trait1` has multiple supertraits, you can upcast to any one of them, but not to all of them.
 
-This RFC has already been implemented in the nightly compiled with the feature gate `trait_upcasting`.
+This RFC has already been implemented in the nightly compiler with the feature gate `trait_upcasting`.
 
 # Motivation
 [motivation]: #motivation

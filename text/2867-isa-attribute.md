@@ -28,7 +28,7 @@ fn add_one(x: i32) -> i32 {
     x + 1
 }
 
-// This will compile as `a32` code on both `arm` and thumb` targets
+// This will compile as `a32` code on both `arm` and `thumb` targets
 #[instruction_set(arm::a32)]
 fn add_five(x: i32) -> i32 {
     x + 5

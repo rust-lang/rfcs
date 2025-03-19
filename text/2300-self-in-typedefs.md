@@ -638,7 +638,7 @@ impl Trait for Foo {
 ### Conclusion
 
 We've now examined a few cases and seen that indeed, the meaning of `Self` is
-consistent in all of them as well as with what the meaning in in today's Rust.
+consistent in all of them as well as with what the meaning in today's Rust.
 
 ## Doing nothing
 
