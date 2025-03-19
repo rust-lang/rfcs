@@ -228,6 +228,12 @@ See [blog.japaric.io/safe-dma] for more.
 [`tokio_uring`]: https://docs.rs/tokio-uring/latest/tokio_uring/
 [`rio`]: https://lib.rs/crates/rio/
 
+### WASI 3.0
+
+WASI 0.3 has an [uring-like design], and the lack of guaranteed destructors means that for the Rust bindings we have to choose between different options, none of which are great. Thanks @yoshuawuyts for bringing that up!
+
+[uring-like design]: https://github.com/WebAssembly/component-model/issues/471
+
 ### `take_mut`
 
 The async version of [`take_mut`] cannot be created as it relies on cleanup code to abort the program.
