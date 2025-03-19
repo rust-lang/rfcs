@@ -630,7 +630,7 @@ If the crate is maintained, however, migration should not be difficult.
 #![default_generic_bounds(?Forget)]
 ```
 
-2. Audite your codebase to work properly with `!Forget` types.
+2. Audit your codebase to work properly with `!Forget` types.
 
 3. Resolve any compilation errors by explicitly adding `+ Forget` where needed.
 
