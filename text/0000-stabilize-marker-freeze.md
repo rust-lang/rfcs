@@ -27,8 +27,8 @@ pub struct VtAccumulator<Tail, Head> {
     head: Head,
 }
 impl<Tail: VTable<'a>, Head: VTable<'a>> VTable<'a> for VtAccumulator<Tail, Head> {
-	const VT: &'a Self = &Self {tail: *Tail::VT, head: *Head::VT}; // Doesn't compile since 1.78
-} 
+    const VT: &'a Self = &Self {tail: *Tail::VT, head: *Head::VT}; // Doesn't compile since 1.78
+}
 ```
 
 Making `VTable` a subtrait of `core::marker::Freeze` in this example is sufficient to allow this example to compile again, as static-promotion becomes legal again. This is however impossible as of today due to `core::marker::Freeze` being restricted to `nightly`.
@@ -89,7 +89,7 @@ in read-only static memory or writeable static memory, or the optimizations that
 in code that holds an immutable reference to `T`.
 
 # Semver hazard
-`Freeze` being an auto-trait that encodes a low level property of the types it is implemented for, 
+`Freeze` being an auto-trait that encodes a low level property of the types it is implemented for,
 it is strongly advised against to rely on external types maintaining that property unless that
 contract is explicitly stated out-of-band (through documentation, for example).
 
@@ -100,7 +100,7 @@ fact explicitly.
 While `UnsafeCell<T>` is currently `!Freeze` regardless of `T`, allowing `UnsafeCell<T>: Freeze` if `T` is
 a Zero-Sized-Type is currently under consideration.
 
-Therefore, the advised way to make your types `!Freeze` regardless of their actual contents is to add a 
+Therefore, the advised way to make your types `!Freeze` regardless of their actual contents is to add a
 [`PhantomNotFreeze`](core::marker::PhantomNotFreeze) field to it.
 
 [`PhantomData<T>`](core::marker::PhantomData) only implements `Freeze` if `T` does, making it a good way
@@ -143,7 +143,7 @@ This latter property is [`PhantomNotFreeze`]'s raison-d'être: while other Zero-
 [`PhantomNotFreeze`] is the only ZST (outside of [`PhantomData<T>`] where `T` isn't `Freeze`) that is guaranteed to stay that way.
 
 Notable types that are currently `!Freeze` but might not remain so in the future are:
-- `UnsafeCell<T>` where `core::mem::size_of::<T>() == 0` 
+- `UnsafeCell<T>` where `core::mem::size_of::<T>() == 0`
 - `[T; 0]` where `T: !Freeze`.
 ```
 
@@ -163,10 +163,10 @@ Debates have landed on the conservation of the `Freeze` name, under the main con
 [drawbacks]: #drawbacks
 
 - Some people have previously argued that this would be akin to exposing compiler internals.
-	- The RFC author disagrees, viewing `Freeze` in a similar light as `Send` and `Sync`: a trait that allows soundness requirements to be proven at compile time.
+    - The RFC author disagrees, viewing `Freeze` in a similar light as `Send` and `Sync`: a trait that allows soundness requirements to be proven at compile time.
 - `Freeze` being an auto-trait, it is, like `Send` and `Sync` a sneaky SemVer hazard.
-	- Note that this SemVer hazard already exists through the existence of static-promotion, as exemplified by the following example:
-	```rust
+    - Note that this SemVer hazard already exists through the existence of static-promotion, as exemplified by the following example:
+    ```rust
     // old version of the crate.
     mod v1 {
         pub struct S(i32);
@@ -188,17 +188,17 @@ Debates have landed on the conservation of the `Freeze` name, under the main con
     const C1: &v1::S = &v1::S::new();
     // New version: does not build
     const C2: &v2::S = &v2::S::new();
-	```
- 	- The provided example is also, in RFC author's estimation, the main way in which `Freeze` is likely to be depended upon: allowing bounds on it will likely not expand the hazard much.
+    ```
+    - The provided example is also, in RFC author's estimation, the main way in which `Freeze` is likely to be depended upon: allowing bounds on it will likely not expand the hazard much.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - The benefits of stabilizing `core::mem::Freeze` have been highlighted in [Motivation](#motivation).
-	- By not stabilizing `core::mem::Freeze` in trait bounds, we are preventing useful and sound code patterns from existing which were previously supported.
+    - By not stabilizing `core::mem::Freeze` in trait bounds, we are preventing useful and sound code patterns from existing which were previously supported.
 - Alternatively, a non-auto sub-trait of `core::mem::Freeze` may be defined:
-	- While this reduces the SemVer hazard by making its breakage more obvious, this does lose part of the usefulness that `core::mem::Freeze` would provide to projects such as `zerocopy`.
-	- A "perfect" derive macro should then be introduced to ease the implementation of this trait. A lint may be introduced in `clippy` to inform users of the existence and applicability of this new trait.
+    - While this reduces the SemVer hazard by making its breakage more obvious, this does lose part of the usefulness that `core::mem::Freeze` would provide to projects such as `zerocopy`.
+    - A "perfect" derive macro should then be introduced to ease the implementation of this trait. A lint may be introduced in `clippy` to inform users of the existence and applicability of this new trait.
 
 # Prior Art
 [prior-art]: #prior-art
@@ -228,10 +228,10 @@ Debates have landed on the conservation of the `Freeze` name, under the main con
     - `#[derive(Freeze, Send, Sync, Pin)]` was proposed as the way for authors to explicitly opt into these trait, making their removal a breaking change.
     - Note that a syntax to express this for `async fn`'s resulting opaque type would need to be established too.
     - Such a lint would have the additional benefit of helping authors spot when they accidentally remove one of these properties from their types.
- 
+
 - Complementary to that lint, a lint encouraging explicitly opting in or out of auto-traits that are available for a type would help raise the
   awareness around auto-traits and their semver implications.
 
 - Adding a `trait Pure: Freeze` which extends the interior immutability guarantee to indirected data could be valuable:
-	- This is however likely to be a fool's errand, as indirections could (for example) be hidden behind keys to global collections. 
-	- Providing such a trait could be left to the ecosystem unless we'd want it to be an auto-trait also (unlikely).
+    - This is however likely to be a fool's errand, as indirections could (for example) be hidden behind keys to global collections.
+    - Providing such a trait could be left to the ecosystem unless we'd want it to be an auto-trait also (unlikely).
