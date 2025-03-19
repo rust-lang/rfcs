@@ -933,8 +933,9 @@ impl<T> Opaque<T> {
 Now `&Opaque<T>` can represent a reference that points at data from other languages, such as C.
 
 The `#[projecting]` attribute changes the way the field types are generated for this type. Instead
-of having a field type representing the `inner` field, this type will "project" through to the type
-`T`, inheriting all fields that `T` has. So if we consider the type `Foo` from above:
+of having a field type representing the `inner` field, this type will "project" through to the
+generic parameter `T`, inheriting all fields that `T` has. So if we consider the type `Foo` from
+above:
 
 ```rust
 struct Foo {
@@ -1079,9 +1080,9 @@ implement the `Field` trait:
 pub unsafe trait Field: UnalignedField {}
 ```
 
-In addition to all fields of all structs and tuples, field types are generated for transparent,
-[`#[projecting]`](#projecting-attribute) container types as follows: given a transparent, generic
-type annotated with [`#[projecting]`](#projecting-attribute) and a struct contained in it:
+In addition to all fields of all structs and tuples, field types are generated for
+[`#[projecting]`](#projecting-attribute) container types as follows: given a type annotated with
+[`#[projecting]`](#projecting-attribute) and a field contained in it that has itself field types:
 
 ```rust
 #[projecting]
@@ -1113,8 +1114,8 @@ The implementation of the `UnalignedField` trait sets the associated types and c
 This can even be done for multiple levels: `Container<Container<Foo>>` also has a [field type] `bar`
 of type `Container<Container<i32>>`. Mixing different container types is also possible.
 
-Annotating a struct with [`#[projecting]`](#projecting-attribute) disables projection via that structs own fields.
-Continuing the example from above:
+Annotating a struct with [`#[projecting]`](#projecting-attribute) disables projection via that
+structs own fields. Continuing the example from above:
 
 ```rust
 struct Bar {}
@@ -1217,9 +1218,9 @@ pub mod bar {
 #### `#[projecting]` Attribute
 
 The `#[projecting]` attribute can be put on a struct or union declaration. It requires that the type
-has at least one generic type parameter, here we call this parameter `T`. Additionally, the type
-must be `#[repr(transparent)]` and either always zero-sized or there must be a unique non-zero-sized
-field of type `T` (or a type that is `#[projecting]` over `T`).
+is `#[repr(transparent)]` and there must be a unique non-zero-sized field (it is allowed to be
+generic and thus not always non-zero-sized). Alternatively, it is allowed to be zero-sized, but then
+must either have a single generic, or annotate the projected generic with `#[projecting]`.
 
 So for example:
 
@@ -1246,20 +1247,38 @@ Some more examples:
 // This type is always zero-sized, but "contains" a field.
 #[projecting]
 #[repr(transparent)]
-pub struct Container2<T> {
+pub struct Container<T> {
     _phantom: PhantomData<T>,
 }
 
 #[projecting]
 #[repr(transparent)]
-pub struct Container3<T> {
-    // nesting multiple containers is fine as long as all of them are `#[projecting]` over the same
-    // generic.
+pub struct Container<T> {
+    // nesting multiple containers is fine.
     ctr: Container<Container2<T>>,
     // other zero-sized fields still are allowed:
     _variance: PhantomData<fn(T)>,
 }
+
+// multiple generics, but still only one field that is not always zero-sized.
+#[projecting]
+#[repr(transparent)]
+pub struct Container<T, U> {
+    inner: T,
+    _phantom: PhantomData<U>,
+}
+
+// multiple generics and zero-sized
+#[projecting]
+#[repr(transparent)]
+pub struct Container<#[projecting] T, U> {
+    inner: PhantomData<T>,
+    other: PhantomData<U>,
+}
 ```
+
+In the last two examples, if we're given `&Container<Foo, Bar>`, then the projection to `bar` has
+the type `&Container<i32, Bar>`.
 
 Here are some error examples:
 
@@ -1280,6 +1299,13 @@ pub struct Container {}
 #[repr(transparent)]
 pub struct Container {
     foo: Foo,
+}
+
+// ERROR: ambiguous projection generic
+#[projecting]
+#[repr(transparent)]
+pub struct Container<T, U> {
+    _phantom: PhantomData<(T, U)>,
 }
 ```
 
