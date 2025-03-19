@@ -148,6 +148,8 @@ Notable types that are currently `!Freeze` but might not remain so in the future
 - `[T; 0]` where `T: !Freeze`.
 ```
 
+As this marker exists solely to remove `Freeze` implementations, it shall be `Send`, `Sync` and generally implement all non-`Freeze` traits that `PhantomData<()>` implements, in a similar fashion to `PhantomData<()>`
+
 This new marker type shall be introduced at the same time as the stabilization of `Freeze` in bounds.
 
 ## Addressing the naming
