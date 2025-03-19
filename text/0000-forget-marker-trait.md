@@ -27,7 +27,7 @@ Back in 2015, the [decision was made][safe-mem-forget] to make `mem::forget` saf
 ### What is a proxy RAII guard?
 [proxy-raii-guards]: #proxy-raii-guards
 
-`thread::scoped` is special because it uses the RAII guard [^raii] as a proxy to represent other values, but this proxy is not used to access those values. Instead, we are trusting that the borrow checker will ensure that the guard cannot outlive those values, and therefore that joining the thread in the guard's destructor is enough to ensure that the spawned thread is no longer running. [^proxy-raii-guard-source]
+`thread::scoped` was special because it used the RAII guard [^raii] as a proxy to represent other values, but this proxy was not used to access those values. Instead, we are trusted that the borrow checker will ensure that the guard cannot outlive those values, and therefore that joining the thread in the guard's destructor is enough to ensure that the spawned thread is no longer running. [^proxy-raii-guard-source]
 
 [^raii]: https://rust-unofficial.github.io/patterns/patterns/behavioural/RAII.html
 
