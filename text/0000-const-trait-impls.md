@@ -252,7 +252,7 @@ const fn default<T: (const) Default>() -> T {
 ```
 
 `(const)` means "conditionally" in this context, or specifically "const impl required if called in const context".
-It is the opposite of `?` (prexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const`
+It is the opposite of `?` (preexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const`
 (not proposed here, see  [this alternatives section](#make-all-const-fn-arguments-const-trait-by-default-and-require-an-opt-out-const-trait) for why it was rejected)
 would mean "no const impl required, even if called in const context".
 
