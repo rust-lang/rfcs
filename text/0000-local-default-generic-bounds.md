@@ -254,6 +254,10 @@ mod b {
     trait Baz<T> { // Observed as `T: Forget`
         type Qux<U>; // `U` is observed as `U: Forget` by `b` and other crates that have not migrated. 
     }
+    trait Foo {}
+
+    fn foo_static() -> impl Foo; // Observed as `impl Foo + Forget`
+    fn foo_dyn() -> Box<dyn Foo>; // Observed as `Box<dyn Foo + Forget>`
 
     // Observed as `T: Forget`, `U: Forget`, `for<V: Forget> Baz<V>: Forget`.
     fn baz<T: Baz<U>, U>() {}
