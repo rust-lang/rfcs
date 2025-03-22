@@ -222,7 +222,7 @@ mod user {
     ::library::make!(); // Will not compile because `T` is `?Forget`.
 }
 
-mod user {
+mod macro_library {
     #[macro_export]
     macro_rules! make {
         () => {
