@@ -181,7 +181,7 @@ For migrated users it is equivalent to semver's `minor` change, while not migrat
 
 ### Weakening associated type bound and `Self` bound in traits
 
-Bounds for associated types and `Self` in traits would be weakened in respect to the new traits from the start:
+Traits and associated types will ignore default_generic_bounds and always default to the most permissive possible bounds:
 
 ```rust
 trait Foo: ?Trait {
@@ -189,7 +189,7 @@ trait Foo: ?Trait {
 }
 ```
 
-This change would not be observable for not migrated crates, because `default_generic_bounds` would default to `Trait`. But if users start migrate before libraries, they will not lock them into old bounds.
+This change would not be observable for not migrated crates, because `default_generic_bounds` would default to `Trait`, which takes effect on function generic arguments. But if users start migrate before libraries, they will not lock them into old bounds.
 
 ```rust
 #![default_generic_bounds(?Forget)]
