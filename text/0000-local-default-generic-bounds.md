@@ -122,7 +122,7 @@ Code above will be observable as (code in today's Rust without any defaults):
 ```rust
 use std::ops::Deref;
 
-trait Trait: Deref<Target: ?Forget> {
+trait Trait: Deref<Target: ?Forget> + ?PartialEq {
     type Assoc;
 }
 
