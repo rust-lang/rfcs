@@ -197,35 +197,35 @@ of constant values that would typically happen elsewhere in real code.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Integer literals (e.g., `123`, `0xFF`) are implicitly coerced to `std::num::NonZero<T>`
-(`T` being `u8`, `u32`, etc.) if all of the following are true:
+Untyped integer literals (e.g., `123`, `0xFF` but not `123_u32`) are implicitly coerced
+to `std::num::NonZero<T>` (T` being `u8`, `u32`, etc.) if all of the following are true:
 
 * The value of the literal is not 0.
 * The value of the literal fits within `T`’s range (e.g., `300` fails for `NonZero<u8>`).
 * The target type is explicitly `NonZero<T>` or inferred as such.
-* A single integer type can be identified for the coercion.
-    * If the literal is untyped (e.g. `123`), the `T` must be unambiguously resolved from the target `NonZero<T>` type.
-    * If the literal is typed (e.g. `123u32`), the `T` in the `NonZero<T>` must either explicitly or via inference match the literal's type.
+* The type `T` is unambiguously resolved from the target `NonZero<T>` type.
 
 The coercion happens at compile time, with the emitted code being the equivalent of
 `const { NonZero::new(literal).unwrap() }` for valid cases, with no runtime checks.
 
-The coercion only happens when the source type is identified as an integer literal at the type check
-stage. This implies that the coercion does not apply to expressions, even those that combine literals.
+The coercion is allowed when the source is an integer literal (`123`) or an integer literal
+negation expression (`-123`). The coercion does not apply to other expressions besides unary
+negation, even if the expressions combine literals (e.g. `123 + 456` does not qualify).
 
 ```rust ignore
-fn foo(count: NonZero<u8>) { }
+fn foo(count: NonZero<i8>) { }
 
 foo(123); // OK
+foo(-123); // OK
 foo(0x11); // OK
-foo(123_u8); // OK
 
 foo(0); // Error - value cannot be zero.
-foo(300); // Error - out of bounds of u8.
+foo(300); // Error - out of bounds of i8.
+foo(123_i8); // Error - only untyped literals accepted.
 foo(123_usize); // Error - literal has non-matching type.
 foo(123 - 1); // Error - coercion not applied for expressions.
 
-const MAGIC_VALUE: NonZero<u8> = 123; // OK - coercion logic is same as when calling a fn.
+const MAGIC_VALUE: NonZero<i8> = 123; // OK - coercion logic is same as when calling a fn.
 ```
 
 # Drawbacks
