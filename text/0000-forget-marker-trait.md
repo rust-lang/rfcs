@@ -45,7 +45,7 @@ let mut buffer = [0u8; 1024];
 // `guard` is now borrowing from `buffer`
 let guard = thread::scoped(|| {
     for i in 0..1000 {
-        bufffer[i] = i;
+        buffer[i] = i;
     }
 });
 
