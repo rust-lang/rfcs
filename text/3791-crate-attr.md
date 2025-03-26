@@ -126,9 +126,18 @@ My awesome crate
 
 `file!`, `include!`, `include_str!`, and `module_path!` all behave the same as when written in source code.
 
-`--crate-attr` shares an edition with the crate (i.e. it is affected by `--edition`). In practice this should not be observable.
+`--crate-attr` shares an edition with the crate (i.e. it is affected by `--edition`). This may be observable because `doc` attributes can invoke arbitrary macros. Consider this use of [indoc]:
+```
+--crate-attr='doc = indoc::indoc! {"
+    test
+    this
+"}'
+```
+Edition-related changes to how proc-macros are passed tokens may need to consider how crate-attr is affected.
 
 The behavior of `file!` and `column!` are not specified; see "Unresolved questions".
+
+[indoc]: https://docs.rs/indoc/latest/indoc/
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -168,3 +177,5 @@ In the author's opinion, having source injected via this mechanism does not make
 [future-possibilities]: #future-possibilities
 
 This proposal would make it easier to use external tools with [`#![register_tool]`][`register-tool`], since they could be configured for a whole workspace at once instead of individually; and could be configured without modifying the source code.
+
+I would like to add an `#![edition = ...]` attribute and make `--edition` an alias for `--crate-attr=edition`. At that point the interaction between crate-attr and macros becomes more complicated. But right now there is no interaction because `--edition` must always be a flag.
