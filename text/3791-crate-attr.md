@@ -131,7 +131,7 @@ In practice, this has not be a large drawback for `crate_name` and `crate_type`,
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- We could require `--crate-attr=#![foo]` instead. This is more verbose and requires extensive shell quoting, for not much benefit.
+- We could require `--crate-attr=#![foo]` instead. This is more verbose and requires extensive shell quoting, for not much benefit. It does however resolve the concern around `column!` (to include the `#![` in the column number), and looks closer to the syntax in a source file.
 - We could disallow comments in the attribute. This perhaps makes the design less surprising, but complicates the implementation for little benefit.
 - We could apply `--crate-attr` after attributes in the source, instead of before. This has two drawbacks:
     1. It has different behavior for lints than the existing A/W/D flags, so those flags could not semantically be unified with crate-attr. We would be adding yet another precedence group.
