@@ -135,7 +135,7 @@ My awesome crate
 ```
 Edition-related changes to how proc-macros are passed tokens may need to consider how crate-attr is affected.
 
-The behavior of `file!` and `column!` are not specified; see "Unresolved questions".
+The behavior of `line!` and `column!` are not specified; see "Unresolved questions".
 
 [indoc]: https://docs.rs/indoc/latest/indoc/
 
