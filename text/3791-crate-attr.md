@@ -122,6 +122,14 @@ Compiled on March 18 2025
 My awesome crate
 ```
 
+## Spans, modules, and editions
+
+`file!`, `include!`, `include_str!`, and `module_path!` all behave the same as when written in source code.
+
+`--crate-attr` shares an edition with the crate (i.e. it is affected by `--edition`). In practice this should not be observable.
+
+The behavior of `file!` and `column!` are not specified; see "Unresolved questions".
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -155,8 +163,6 @@ In the author's opinion, having source injected via this mechanism does not make
 - Is `--crate-name` equivalent to `--crate-attr=crate_name`? As currently implemented, the answer is no. Fixing this is hard; see https://github.com/rust-lang/rust/issues/91632 and https://github.com/rust-lang/rust/pull/108221#issuecomment-1435765434 (these do not directly answer why, but I am not aware of any documentation that does).
 
 - How should macros that give information about source code behave when used in this attribute? For example, `line!` does not seem to have an obvious behavior, and `column!` could either include or not include the surrounding `#![]`.
-
-Note this should not be construed to imply that `--crate-attr` uses a different file/module than the source or otherwise limits macros. `file!`, `include!`, `include_str!`, and `module_path!` should all behave the same as when written in source code.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
