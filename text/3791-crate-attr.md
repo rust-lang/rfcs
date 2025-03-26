@@ -143,6 +143,8 @@ In the author's opinion, having source injected via this mechanism does not make
 [prior-art]: #prior-art
 
 - HTML allows `<meta http-equiv=...>` to emulate headers, which is very useful for using hosted infra where one does not control the server.
+- bash allows `-x` and similar to emulate `set -x` (for all `set` arguments). It also allows `-O shopt_...` for all `shopt ...` arguments.
+- tmux config syntax is the same as its CLI syntax (for example `tmux set-option ...` is mostly the same as writing `set-option ...` in `tmux.conf`, modulo some issues around startup order and inherited options).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
