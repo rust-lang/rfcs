@@ -152,7 +152,9 @@ In the author's opinion, having source injected via this mechanism does not make
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-None to my knowledge.
+How should macros that give information about source code behave when used in this attribute? For example, `line!` does not seem to have an obvious behavior, and `column!` could either include or not include the surrounding `#![]`.
+
+Note this should not be construed to imply that `--crate-attr` uses a different file/module than the source or otherwise limits macros. `file!`, `include!`, `include_str!`, and `module_path!` should all behave the same as when written in source code.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
