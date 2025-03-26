@@ -178,6 +178,4 @@ In the author's opinion, having source injected via this mechanism does not make
 
 This proposal would make it easier to use external tools with [`#![register_tool]`][`register-tool`], since they could be configured for a whole workspace at once instead of individually; and could be configured without modifying the source code.
 
-I would like to add an `#![edition = ...]` attribute and make `--edition` an alias for `--crate-attr=edition`. At that point the interaction between crate-attr and macros becomes more complicated. But right now there is no interaction because `--edition` must always be a flag.
-
 We may want to allow [procedural macros at the crate root](https://github.com/rust-lang/rust/issues/54726). At that point we have to decide whether those macros can see `--crate-attr`. I *think* this should not be an issue because the attributes are prepended, not appended, but it needs more research.
