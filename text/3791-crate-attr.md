@@ -133,6 +133,9 @@ In practice, this has not be a large drawback for `crate_name` and `crate_type`,
 
 - We could require `--crate-attr=#![foo]` instead. This is more verbose and requires extensive shell quoting, for not much benefit.
 - We could disallow comments in the attribute. This perhaps makes the design less surprising, but complicates the implementation for little benefit.
+- We could apply `--crate-attr` after attributes in the source, instead of before. This has two drawbacks:
+    1. It has different behavior for lints than the existing A/W/D flags, so those flags could not semantically be unified with crate-attr. We would be adding yet another precedence group.
+    2. It does not allow configuring a "default" option for a workspace and then overriding it in a single crate.
 - We could add a syntax for passing multiple attributes in a single CLI flag. We would have to find a syntax that avoids ambiguity *and* that does not mis-parse the data inside string literals (i.e. picking a fixed string, such as `|`, would not work because it has to take quote nesting into account). This greatly complicates the implementation for little benefit.
 
 This cannot be done in a library or macro. It can be done in an external tool, but only by modifying the source in place, which requires first parsing it, and in general is much more brittle than this approach (for example, preventing the argument from injecting a unterminated block comment, or from injecting a non-attribute grammar production, becomes much harder).
