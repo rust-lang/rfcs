@@ -7,7 +7,7 @@
 [summary]: #summary
 
 `--crate-attr` allows injecting crate-level attributes via the command line.
-It is supported by all the major tools: Rustc, Rustdoc, Clippy, and Rustfmt.
+It is supported by all the official rustc drivers: Rustc, Rustdoc, Clippy, Miri, and Rustfmt.
 Rustdoc extends it to doctests, discussed in further detail below.
 It is encouraged, but not required, that external `rustc_driver` tools also support this flag.
 
