@@ -1043,3 +1043,7 @@ impl RngCore for CountingRng {
 
 and use it in non-generic code.
 It is not clear this is doable soundly for generic methods.
+
+## Macro matcher
+
+In the future, we may want to provide a macro matcher for this optional component of a function declaration or trait declaration, similar to `:vis` for an optional visibility. This would allow macros to match it conveniently, and may encourage forwards compatibility with future things in the same category. However, we should not add such a matcher right away, until we have a clearer picture of what else we may add to the same category.
