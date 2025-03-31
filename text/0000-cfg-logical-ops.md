@@ -1,6 +1,6 @@
 - Feature Name: `cfg_logical_ops`
 - Start Date: 2025-03-30
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3796](https://github.com/rust-lang/rfcs/pull/3796)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -20,13 +20,46 @@ logical operators, we are _lessening_ the burden of having to remember the `cfg`
 # Explanation
 [explanation]: #explanation
 [cfg-syntax]: https://doc.rust-lang.org/reference/conditional-compilation.html#r-cfg.syntax
+[precedence]: https://doc.rust-lang.org/reference/expressions.html#expression-precedence
 
 `#[cfg(foo && bar)]` enables the annotated code if and only if both `foo` **and** `bar` are enabled.
 Similarly, `#[cfg(foo || bar)]` enables the annotated code if and only if either `foo` **or** `bar`
 is enabled. Finally, `#[cfg(!foo)]` enables the annotated code if and only if `foo` is **not**
-enabled. `#[cfg_attr]` and `cfg!()` behave the same way. Precedence is the same as in expressions.
+enabled. `#[cfg_attr]` and `cfg!()` behave the same way.
 
-In terms of formal syntax, the [`[cfg.syntax]`][cfg-syntax] is changed to the following:
+Precedence is the [same as in expressions][precedence].
+
+## Examples
+
+| Syntax                             | Equivalent to                                      | Rationale                                                                           |
+| ---------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `a && b`                           | `all(a, b)`                                        | definition of `&&`                                                                  |
+| `a \|\| b`                         | `any(a, b)`                                        | definition of `\|\|`                                                                |
+| `!a`                               | `not(a)`                                           | definition of `!`                                                                   |
+| `(a)`                              | `a`                                                | definition of `()`                                                                  |
+| `a && b && c && d`                 | `all(a, b, c, d)` (or `all(all(all(a, b), c), d)`) | `&&` is associative                                                                 |
+| `a \|\| b \|\| c \|\| d`           | `any(a, b, c, d)` (or `any(any(any(a, b), c), d)`) | `\|\|` is associative                                                               |
+| `!!!!!!a`                          | `not(not(not(not(not(not(a))))))`                  | `!` can be repeated                                                                 |
+| `((((((a))))))`                    | a                                                  | `()` can be nested                                                                  |
+| `a && b \|\| c && d`               | `any(all(a, b), all(c, d))`                        | `\|\|` has lower precedence than `&&`                                               |
+| `a \|\| b && c \|\| d`             | `any(a, all(b, c), d)`                             | `\|\|` has lower precedence than `&&`                                               |
+| `(a \|\| b) && (c \|\| d)`         | `all(any(a, b), any(c, d))`                        | `()` can be used for grouping                                                       |
+| `!a \|\| !b && !c`                 | `any(not(a), all(not(b), not(c)))`                 | `!` has highest precedence                                                          |
+| `feature="foo" \|\| feature="bar"` | `any(feature="foo", feature="bar")`                | `\|\|` has lower precedence than `=`                                                |
+| `feature="foo" && feature="bar"`   | `all(feature="foo", feature="bar")`                | `&&` has lower precedence than `=`                                                  |
+| `!feature="foo"`                   | _syntax error_                                     | `!` has higher precedence than `=`, which may be confusing, so we ban this syntax   |
+| `!(feature="foo")`                 | `not(feature="foo")`                               | use `()` for grouping                                                               |
+| `!all(x, y)`                       | `not(all(x, y))`                                   | `!` has lower precedence than "function call"                                       |
+| `any(!x \|\| !w, !(y && z))`       | `any(any(not(x), not(w)), not(all(y, z)))`         | `!`, `&&` etc. can be used inside `any`, `all` and `not`                            |
+| `true && !false`                   | `all(true, not(false))`                            | `!`, `&&` etc. can be used on boolean literals (they are syntactically identifiers) |
+| `!accessible(std::mem::forget)`    | `not(accessible(std::mem::forget))`                | `!`, `&&` etc. can be used on `cfg_accessible`                                      |
+| `accessible(std::a \|\| std::b)`   | _syntax error_                                     | … but not inside                                                                    |
+| `!version("1.42.0")`               | `not(version("1.42.0"))`                           | `!`, `&&` etc. can be used on `cfg_version`                                         |
+| `version(!"1.42.0")`               | _syntax error_                                     | … but not inside                                                                    |
+
+## Formal syntax
+
+[`[cfg.syntax]`][cfg-syntax] is changed to the following:
 
 > **<sup>Syntax</sup>**\
 > _ConfigurationPredicate_ :\
@@ -36,8 +69,19 @@ In terms of formal syntax, the [`[cfg.syntax]`][cfg-syntax] is changed to the fo
 > &nbsp;&nbsp; | _ConfigurationNot_\
 > &nbsp;&nbsp; | _ConfigurationAnd_\
 > &nbsp;&nbsp; | _ConfigurationOr_\
-> &nbsp;&nbsp; | _ConfigurationNotOption_\
+> &nbsp;&nbsp; | _ConfigurationNegation_\
 > &nbsp;&nbsp; | `(` _ConfigurationPredicate_ `)`
+>
+> _ConfigurationNegatable_ :\
+> &nbsp;&nbsp; _ConfigurationOptionIdent_\
+> &nbsp;&nbsp; | _ConfigurationAll_\
+> &nbsp;&nbsp; | _ConfigurationAny_\
+> &nbsp;&nbsp; | _ConfigurationNot_\
+> &nbsp;&nbsp; | _ConfigurationNegation_ \
+> &nbsp;&nbsp; | `(` _ConfigurationPredicate_ `)`
+>
+> _ConfigurationOptionIdent_ :\
+> &nbsp;&nbsp; [IDENTIFIER]
 >
 > _ConfigurationOption_ :\
 > &nbsp;&nbsp; [IDENTIFIER]&nbsp;(`=` ([STRING_LITERAL] | [RAW_STRING_LITERAL]))<sup>?</sup>
@@ -57,11 +101,14 @@ In terms of formal syntax, the [`[cfg.syntax]`][cfg-syntax] is changed to the fo
 > _ConfigurationOr_\
 > &nbsp;&nbsp; _ConfigurationPredicate_ `||` _ConfigurationPredicate_
 >
-> _ConfigurationNotOption_\
-> &nbsp;&nbsp; `!` _ConfigurationOption_
+> _ConfigurationNegation_\
+> &nbsp;&nbsp; `!` _ConfigurationNegatable_
 >
 > _ConfigurationPredicateList_\
 > &nbsp;&nbsp; _ConfigurationPredicate_ (`,` _ConfigurationPredicate_)<sup>\*</sup> `,`<sup>?</sup>
+
+All future function-like predicates (such as `version` and `accessible`) should be added to
+_ConfigurationNegatable_.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -74,6 +121,10 @@ In terms of formal syntax, the [`[cfg.syntax]`][cfg-syntax] is changed to the fo
 - The current syntax is verbose and a relic of the past when attributes could not contain arbitrary
   tokens.
 - Using existing, widely-understood operators makes the syntax more familiar.
+- `&` and `|` could be used instead of `&&` and `||`. Short-circuiting behavior is unobservable in
+  this context, so the behavior would be the same.
+- `feature != "foo"` could be allowed as shorthand for `!(feature = "foo")`. This could plausibly be
+  interpreted as "any feature except 'foo'", which is why it is not included in this proposal.
 
 # Prior art
 [prior-art]: #prior-art
