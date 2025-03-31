@@ -518,6 +518,7 @@ Everywhere where non-const trait bounds can be written, but only for traits that
     * super trait bounds
     * where bounds
     * associated type bounds
+* return position impl trait
 
 ### `const` desugaring
 
@@ -653,8 +654,9 @@ In the future we will also want to support `dyn (const) Trait` bounds, which inv
 While that can in generic contexts always be handled by adding more `(const) Destruct` bounds, it would be more similar to how normal `dyn` safety
 works if there were implicit `(const) Destruct` bounds for (most?) `(const) Trait` bounds.
 
-Thus we require that all `trait`s with `(const)` methods also have a `(const) Destruct` super trait bound to ensure users don't need to add `(const) Destruct` bounds everywhere.
-We may relax this requirement in the future or make it implied.
+Thus we lint all `const trait`s with `(const)` methods that take `self` by value to also have a `(const) Destruct` super trait bound to ensure users don't need to add `(const) Destruct` bounds everywhere.
+Other traits may want to add them, and some traits with `self` by value methods may not want to add them. Since it is not backwards compatible to require or relax that super trait bound later,
+we aren't requiring users to choose either, but are suggesting good defaults via lints.
 
 ## `(const)` bounds on `Drop` impls
 
