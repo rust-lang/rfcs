@@ -52,10 +52,10 @@ In terms of formal syntax, the [`[cfg.syntax]`][cfg-syntax] is changed to the fo
 > &nbsp;&nbsp; (`not` | `!`) `(` _ConfigurationPredicate_ `)`
 >
 > _ConfigurationAnd_\
-> &nbsp;&nbsp; _ConfigurationPredicateList_ `&&` _ConfigurationPredicateList_
+> &nbsp;&nbsp; _ConfigurationPredicate_ `&&` _ConfigurationPredicate_
 >
 > _ConfigurationOr_\
-> &nbsp;&nbsp; _ConfigurationPredicateList_ `||` _ConfigurationPredicateList_
+> &nbsp;&nbsp; _ConfigurationPredicate_ `||` _ConfigurationPredicate_
 >
 > _ConfigurationNotOption_\
 > &nbsp;&nbsp; `!` _ConfigurationOption_
