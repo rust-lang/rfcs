@@ -15,17 +15,17 @@ Make trait methods callable in const contexts. This includes the following parts
 Fully contained example ([Playground of currently working example](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=2ab8d572c63bcf116b93c632705ddc1b)):
 
 ```rust
-trait Default {
+const trait Default {
     (const) fn default() -> Self;
 }
 
-impl Default for () {
+impl const Default for () {
     const fn default() {}
 }
 
 struct Thing<T>(T);
 
-impl<T: (const) Default> Default for Thing<T> {
+impl<T: (const) Default> const Default for Thing<T> {
     (const) fn default() -> Self { Self(T::default()) }
 }
 
@@ -66,7 +66,7 @@ This RFC requires familarity with "const contexts", so you may have to read [the
 
 Calling functions during const eval requires those functions' bodies to only use statements that const eval can handle. While it's possible to just run any code until it hits a statement const eval cannot handle, that would mean the function body is part of its semver guarantees. Something as innocent as a logging statement would make the function uncallable during const eval.
 
-Thus we have a marker (`const`) to add in front of functions that requires the function body to only contain things const eval can handle. This in turn allows a `const` annotated function to be called from const contexts, as you now have a guarantee it will stay callable.
+Thus we have a marker, `const`, to add in front of functions that requires the function body to only contain things const eval can handle. This in turn allows a `const` annotated function to be called from const contexts, as you now have a guarantee it will stay callable.
 
 When calling a trait method, this simple scheme (that works great for free functions and inherent methods) does not work.
 
@@ -153,10 +153,11 @@ fn compile_time_default<T: const Default>() -> T {
 
 ### Conditionally const traits methods
 
-Traits need to opt-in to allowing their impls to have const methods. Thus you need to prefix the methods you want to be const callable with `(const)`:
+Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `const` and prefix the methods you want to be const callable with `(const)`.
+Doing this at the same time is not a breaking change. Adding more `(const)` methods later is a breaking change (unless they are entirely new methods with default bodies).
 
 ```rust
-trait Trait {
+const trait Trait {
     (const) fn thing();
 }
 ```
@@ -173,33 +174,34 @@ trait Trait {
 }
 ```
 
-and a result of this RFC would be that we would remove the attribute and add the `(const) fn` syntax for *methods*.
+and a result of this RFC would be that we would remove the attribute and add the `(const) fn` syntax for *methods* and the `const trait` syntax
+for trait declarations.
 Free functions are unaffected and will stay as `const fn`.
 
 ### Impls for conditionally const methods
 
-Methods that are declared as `(const)` on a trait can now be made `const` in an impl:
+Methods that are declared as `(const)` on a trait can now be made `const` in an impl, if that impl is marked as `impl cosnt Trait`:
 
 ```rust
-impl Trait for Type {
+impl const Trait for Type {
     const fn thing() {}
 }
 ```
 
-If a single `(const)` method is declared as `const` in the impl, all `(const)` methods must be declared as such.
-It is still completely fine to just declare no methods `const` and keep the existing behaviour. Thus adding `(const)`
-methods to traits is not a breaking change. Only marking more methods as `(const)` if there are already some `(const)`
-methods is.
+
 
 ### `const` methods and non-`const` methods on the same trait
 
+If there is no `(const)` modifier on a method in a `const trait`, it is treated as any normal method is today.
+So `impl const Trait` blocks cannot mark them as `const` either.
+
 ```rust
-trait Foo {
+const trait Foo {
     (const) fn foo(&self);
     fn bar(&self);
 }
 
-impl Foo for () {
+impl const Foo for () {
     const fn foo(&self) {}
     fn bar(&self) {
         println!("writing to terminal is not possible in const eval");
@@ -209,20 +211,20 @@ impl Foo for () {
 
 ### Conditionally-const trait bounds
 
-Many generic `const fn` and especially many trait impls of traits with `(const)` methods do not actually require a const methods in the trait impl for their generic parameters.
+Many generic `const fn` and especially many `const trait`s do not actually require a const methods in the trait impl for their generic parameters.
 As `const fn` can also be called at runtime, it would be too strict to require it to only be able to call things with const methods in the trait impls.
 Picking up the example from [the beginning](#summary):
 
 ```rust
-trait Default {
+const trait Default {
     (const) fn default() -> Self;
 }
 
-impl Default for () {
+impl const Default for () {
     const fn default() {}
 }
 
-impl<T: Default> Default for Box<T> {
+impl<T: Default> const Default for Box<T> {
     fn default() -> Self { Box::new(T::default()) }
 }
 
@@ -294,20 +296,20 @@ which we definitely do not support and have historically rejected over and over 
 
 ### Impls with const methods for conditionally const trait methods
 
-trait impls with const methods for generic types work similarly to generic `const fn`.
-Any `impl Trait for Type` is allowed to have `(const)` trait bounds if it has `const` methods:
+`const trait` impls for generic types work similarly to generic `const fn`.
+Any `impl const Trait for Type` is allowed to have `(const)` trait bounds:
 
 ```rust
 struct MyStruct<T>(T);
 
-impl<T: (const) Add<Output = T>> Add for MyStruct<T> {
+impl<T: (const) Add<Output = T>> const Add for MyStruct<T> {
     type Output = MyStruct<T>;
     const fn add(self, other: MyStruct<T>) -> MyStruct<T> {
         MyStruct(self.0 + other.0)
     }
 }
 
-impl<T> Add for &MyStruct<T>
+impl<T> const Add for &MyStruct<T>
 where
     for<'a> &'a T: (const) Add<Output = T>,
 {
@@ -332,16 +334,16 @@ struct MyStruct<T>(T);
 generates
 
 ```rust
-impl<T: PartialEq> PartialEq for MyStruct<T> {
+impl<T: (const) PartialEq> const PartialEq for MyStruct<T> {
     (const) fn eq(&self, other: &Rhs) -> bool {
         self.0 == other.0
     }
 }
 
-impl<T: Eq> Eq for MyStruct<T> {}
+impl<T: (const) Eq> const Eq for MyStruct<T> {}
 ```
 
-For THIS RFC, we stick with `derive_const`, because it interacts with other ongoing bits of design work (e.g., RFC 3715)
+For this RFC, we stick with `derive_const`, because it interacts with other ongoing bits of design work (e.g., RFC 3715)
 and we don't want to have to resolve all design questions at once to do anything.
 We encourage another RFC to integrate const/unsafe and potentially other modifiers into the derive syntax in a better way.
 If this lands prior to stabilization, we should implement the const portion of it, otherwise we'll deprecate `derive_const`.
@@ -446,8 +448,10 @@ For closures and them implementing the `Fn` traits, see the [Future possibilitie
 You can make trait impls of many standard library traits for your own types have `const` methods.
 While it was often possible to write the same code in inherent methods, operators were
 covered by traits from `std::ops` and thus not avaiable for const contexts.
-Most of the time it suffices to add `const` before the methods in the impl block.
-The compiler will guide you and suggest where to also
+Most of the time it suffices to add `const` after the `impl`.
+
+The compiler will then guide you and suggest where to also
+add `const` before methods and
 add `(const)` bounds for trait bounds on generic parameters of methods or the impl.
 
 Similarly you can make your traits available for users of your crate to implement constly.
@@ -459,8 +463,8 @@ Note that this has two caveats that are actually the same:
 This is necessary as otherwise users of your crate may have impls where only some `(const)` methods from the trait
 have been marked as `const`, making that trait unusable in `const Trait` or `(const) Trait` bounds.
 
-Most of the time it suffices to add `(const)` before all methods of your trait. The compiler will
-guide you and suggest where to also add `(const)` bounds for super trait bounds or trait bounds
+Most of the time it suffices to add `(const)` before all methods of your trait `const` before the `trait` keyword.
+The compiler will guide you and suggest where to also add `(const)` bounds for super trait bounds or trait bounds
 on generic parameters of your trait or your methods.
 
 It should be rare that you are marking some methods as `(const)` and some not, and such unusual cases should
@@ -508,9 +512,9 @@ Everywhere where non-const trait bounds can be written, but only for traits that
 
 * `const fn`
 * `(const) fn`
-* trait impls of traits with `(const)` methods
+* `impl const Trait` blocks
 * NOT in inherent impls, the individual `const fn` need to be annotated instead
-* `trait` declarations with `(const)` methods
+* `const trait` declarations
     * super trait bounds
     * where bounds
     * associated type bounds
@@ -657,20 +661,20 @@ We may relax this requirement in the future or make it implied.
 It is legal to add `(const)` to `Drop` impls' bounds, even thought the struct doesn't have them:
 
 ```rust
-trait Bar {
+const trait Bar {
     (const) fn thing(&mut self);
 }
 
 struct Foo<T: Bar>(T);
 
-impl<T: (const) Bar> Drop for Foo<T> {
+impl<T: (const) Bar> const Drop for Foo<T> {
     const fn drop(&mut self) {
         self.0.thing();
     }
 }
 ```
 
-There is no reason (and no coherent representation) of adding `(const)` trait bounds to a type.
+There is currently no reason (and no coherent representation) of adding `(const)` trait bounds to a type.
 Our usual `Drop` rules enforce that an impl must have the same bounds as the type.
 `(const)` modifiers are special here, because they are only needed in const contexts.
 While they cause exactly the divergence that we want to prevent with the `Drop` impl rules:
@@ -682,7 +686,7 @@ a type can be declared, but not dropped, because bounds are unfulfilled, this is
 Extraneous `(const) Trait` bounds where `Trait` isn't a bound on the type at all are still rejected:
 
 ```rust
-impl<T: (const) Bar + (const) Baz> Drop for Foo<T> {
+impl<T: (const) Bar + (const) Baz> const Drop for Foo<T> {
     const fn drop(&mut self) {
         self.0.thing();
     }
