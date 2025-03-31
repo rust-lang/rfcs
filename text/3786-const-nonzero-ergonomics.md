@@ -198,7 +198,7 @@ of constant values that would typically happen elsewhere in real code.
 [reference-level-explanation]: #reference-level-explanation
 
 Untyped integer literals (e.g., `123`, `0xFF` but not `123_u32`) are implicitly coerced
-to `std::num::NonZero<T>` (T` being `u8`, `u32`, etc.) if all of the following are true:
+to `std::num::NonZero<T>` (`T` being `u8`, `u32`, etc.) if all of the following are true:
 
 * The value of the literal is not 0.
 * The value of the literal fits within `T`’s range (e.g., `300` fails for `NonZero<u8>`).
