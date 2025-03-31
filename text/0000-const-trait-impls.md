@@ -658,7 +658,7 @@ We may relax this requirement in the future or make it implied.
 
 ## `(const)` bounds on `Drop` impls
 
-It is legal to add `(const)` to `Drop` impls' bounds, even thought the struct doesn't have them:
+It is legal to add `(const)` to `Drop` impls' bounds, even though the struct doesn't have them:
 
 ```rust
 const trait Bar {
@@ -714,7 +714,7 @@ note: the implementor must specify the same requirement
 
 ## Adding any feature at all around constness
 
-I think we've reached the point where all critics have agreed that this one kind of effect system is unavoidable since we want to be able to write maintainable code for compile time evaluation.
+I think we've reached the point where all critics have agreed that this one kind of effect system is unavoidable since we want to be able to write maintainable generic code for compile time evaluation.
 
 So the main drawback is that it creates interest in extending the system or add more effect systems, as we have now opened the door with an effect system that supports traits.
 Even though I personally am interested in adding an effect for panic-freedom, I do not think that adding this const effect system should have any bearing on whether we'll add
