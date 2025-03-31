@@ -27,7 +27,8 @@ Similarly, `#[cfg(foo || bar)]` enables the annotated code if and only if either
 is enabled. Finally, `#[cfg(!foo)]` enables the annotated code if and only if `foo` is **not**
 enabled. `#[cfg_attr]` and `cfg!()` behave the same way.
 
-Precedence is the [same as in expressions][precedence].
+Precedence is the [same as in expressions][precedence], with `=` being treated as `==` for this
+purpose.
 
 ## Examples
 
