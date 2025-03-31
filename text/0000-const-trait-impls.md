@@ -292,7 +292,7 @@ You first figure out which method you're calling, then you check its bounds.
 Otherwise it would at least seem like we'd have to allow some SFINAE or method overloading style things,
 which we definitely do not support and have historically rejected over and over again.
 
-### Impls with const methods for conditionally const  trait methods
+### Impls with const methods for conditionally const trait methods
 
 trait impls with const methods for generic types work similarly to generic `const fn`.
 Any `impl Trait for Type` is allowed to have `(const)` trait bounds if it has `const` methods:
@@ -319,6 +319,32 @@ where
 ```
 
 See [this playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=313a38ef5c36b2ddf489f74167c1ac8a) for an example that works on nightly today.
+
+### Derives
+
+Most of the time you don't want to write out your impls by hand, but instead derive them as the implementation is obvious from your data structure.
+
+```rust
+#[const_derive(PartialEq, Eq)]
+struct MyStruct<T>(T);
+```
+
+generates
+
+```rust
+impl<T: PartialEq> PartialEq for MyStruct<T> {
+    (const) fn eq(&self, other: &Rhs) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T: Eq> Eq for MyStruct<T> {}
+```
+
+For THIS RFC, we stick with `derive_const`, because it interacts with other ongoing bits of design work (e.g., RFC 3715)
+and we don't want to have to resolve all design questions at once to do anything.
+We encourage another RFC to integrate const/unsafe and potentially other modifiers into the derive syntax in a better way.
+If this lands prior to stabilization, we should implement the const portion of it, otherwise we'll deprecate `derive_const`.
 
 ### `(const) Destruct` trait
 
@@ -957,6 +983,12 @@ as they need to actually call the generic `FnOnce` argument or nested `PartialEq
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Better derive syntax than `#[derive_const(Trait)]`
+
+Once `unsafe` derives have been finalized, we can separately design const derives and
+deprecate `derive_const` at that time (mostly by just removing it from any documents explaining it,
+so that the ecosystem slowly migrates, maybe with an actual deprecation warning later).
 
 ## Migrate to `(const) fn`
 
