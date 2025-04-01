@@ -213,7 +213,7 @@ seem like a minor concern, when we hit 1.0 the lint names will be locked down,
 so it's worth trying to clean them up now.
 
 The basic rule is: the lint name should make sense when read as "allow
-*lint-name*" or "allow *lint-name* items". For example, "allow
+*lint_name*" or "allow *lint_name* items". For example, "allow
 `deprecated` items" and "allow `dead_code`" makes sense, while "allow
 `unsafe_block`" is ungrammatical (should be plural).
 
@@ -225,7 +225,7 @@ Specifically, this RFC proposes that:
 
 * Lints that apply to arbitrary items (like the stability lints) should just
   mention what they check for: use `deprecated` rather than `deprecated_items`.
-  This keeps lint names short. (Again, think "allow *lint-name* items".)
+  This keeps lint names short. (Again, think "allow *lint_name* items".)
 
 * If a lint applies to a specific grammatical class, mention that class and use
   the plural form: use `unused_variables` rather than `unused_variable`.
