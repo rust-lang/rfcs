@@ -399,6 +399,130 @@ We might also imagine a variant of the above example where `alignment_pow`, like
 carry a safety invariant. Ultimately, whether or not it makes sense for a field to be `unsafe` is a
 function of programmer preference and API requirements.
 
+## Complete Example
+
+The below example demonstrates how field safety support can be applied to build a practical
+abstraction with small safety boundaries
+([playground](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=e8aa2af933f5bf4892d1be951062538d)):
+
+```rust
+#![deny(
+    unfulfilled_lint_expectations,
+    clippy::missing_safety_doc,
+    clippy::undocumented_unsafe_blocks,
+)]
+
+use std::{
+    cell::UnsafeCell,
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
+
+/// An `Arc` that provides exclusive access to its referent.
+///
+/// A `UniqueArc` may have any number of `KeepAlive` handles which ensure that
+/// the inner value is not dropped. These handles only control dropping, and do
+/// not provide read or write access to the value.
+pub struct UniqueArc<T: 'static> {
+    /// # Safety
+    ///
+    /// So long as `T` is owned by `UniqueArc`, `T` may not be accessed (read or
+    /// written) other than via this `UniqueArc`.
+    unsafe arc: Arc<UnsafeCell<T>>,
+}
+
+/// Keeps the parent [`UniqueArc`] alive without providing read or write access
+/// to its value.
+pub struct KeepAlive<T> {
+    /// # Safety
+    ///
+    /// `T` may not be accessed (read or written) via this `Arc`.
+    #[expect(unused)]
+    unsafe arc: Arc<UnsafeCell<T>>,
+}
+
+impl<T> UniqueArc<T> {
+    /// Constructs a new `UniqueArc` from a value.
+    pub fn new(val: T) -> Self {
+        let arc = Arc::new(UnsafeCell::new(val));
+        // SAFETY: Since we have just created `arc` and have neither cloned it
+        // nor leaked a reference to it, we can be sure `T` cannot be read or
+        // accessed other than via this particular `arc`.
+        unsafe { Self { arc } }
+    }
+
+    /// Releases ownership of the enclosed value.
+    ///
+    /// Returns `None` if any `KeepAlive`s were created but not destroyed.
+    pub fn into_inner(self) -> Option<T> {
+        // SAFETY: Moving `arc` out of `Self` releases it from its safety
+        // invariant.
+        let arc = unsafe { self.arc };
+        Arc::into_inner(arc).map(UnsafeCell::into_inner)
+    }
+
+    /// Produces a `KeepAlive` handle, which defers the destruction
+    /// of the enclosed value.
+    pub fn keep_alive(&self) -> KeepAlive<T> {
+        // SAFETY: By invariant on `KeepAlive::arc`, this clone will never be
+        // used for accessing `T`, as required by `UniqueArc::arc`. The one
+        // exception is that, if a `KeepAlive` is the last reference to be
+        // dropped, then it will drop the inner `T`. However, if this happens,
+        // it means that the `UniqueArc` has already been dropped, and so its
+        // invariant will not be violated.
+        unsafe {
+            KeepAlive {
+                arc: self.arc.clone(),
+            }
+        }
+    }
+}
+
+impl<T> Deref for UniqueArc<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        // SAFETY: We do not create any other owning references to `arc` - we
+        // only dereference it below, but do not clone it.
+        let arc = unsafe { &self.arc };
+        let ptr = UnsafeCell::get(arc);
+        // SAFETY: We satisfy all requirements for pointer-to-reference
+        // conversions [1]:
+        // - By invariant on `&UnsafeCell<T>`, `ptr` is well-aligned, non-null,
+        //   dereferenceable, and points to a valid `T`.
+        // - By invariant on `Self::arc`, no other `Arc` references exist to
+        //   this value which will be used for reading or writing. Thus, we
+        //   satisfy the aliasing invariant of `&` references.
+        //
+        // [1] https://doc.rust-lang.org/1.85.0/std/ptr/index.html#pointer-to-reference-conversion
+        unsafe { &*ptr }
+    }
+}
+
+impl<T> DerefMut for UniqueArc<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        // SAFETY: We do not create any other owning references to `arc` - we
+        // only dereference it below, but do not clone it.
+        let arc = unsafe { &mut self.arc };
+        let val = UnsafeCell::get(arc);
+        // SAFETY: We satisfy all requirements for pointer-to-reference
+        // conversions [1]:
+        // - By invariant on `&mut UnsafeCell<T>`, `ptr` is well-aligned,
+        //   non-null, dereferenceable, and points to a valid `T`.
+        // - By invariant on `Self::arc`, no other `Arc` references exist to
+        //   this value which will be used for reading or writing. Thus, we
+        //   satisfy the aliasing invariant of `&mut` references.
+        //
+        // [1] https://doc.rust-lang.org/1.85.0/std/ptr/index.html#pointer-to-reference-conversion
+        unsafe { &mut *val }
+    }
+}
+
+// SAFETY: `UniqueArc<T>` has the same aliasing and synchronization properties
+// as `&mut T`, and so it is `Sync` if `&mut T` is `Sync`.
+unsafe impl<T> Sync for UniqueArc<T> where &'static mut T: Sync {}
+```
+
 # Reference-level explanation
 
 ## Syntax
