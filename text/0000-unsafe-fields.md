@@ -628,6 +628,40 @@ variants are conceptually unsafe, requiring the programmer to use `unsafe` even 
 of 'safe' fields. This violates [*Tenet: Safe Usage is Usually
 Safe*](#tenet-safe-usage-is-usually-safe).
 
+### Field Moving is Safe
+
+We propose that all uses of `unsafe` fields require `unsafe`, including reading. Alternatively, we
+might consider making reads safe. However, a field may carry an invariant that would be violated by
+a read. In the [*Complete Example*](#complete-example), `KeepAlive<T>::arc` is marked `unsafe`
+because it carries such an invariant:
+
+```rust
+/// Keeps the parent [`UniqueArc`] alive without providing read or write access
+/// to its value.
+pub struct KeepAlive<T> {
+    /// # Safety
+    ///
+    /// `T` may not be accessed (read or written) via this `Arc`.
+    unsafe arc: Arc<UnsafeCell<T>>,
+}
+```
+
+Allowing `arc` to be safely moved out of `KeepAlive<T>` would create the false impression that it is
+safe to use `arc` — it is not. By requiring `unsafe` to read `arc`, Rust's safety tooling ensures a
+narrow safety boundary: the user is forced to justify their actions when accessing `arc` (which
+documents its safety conditions as they relate to `KeepAlive`), rather than in downstream
+interactions with `UnsafeCell<T>` (whose methods necessarily provide only general guidance).
+Consequently, we require that moving unsafe fields out of their enclosing type requires `unsafe`. 
+
+### Field Copying is Safe
+
+We propose that all uses of unsafe fields require `unsafe`, including copying. Alternatively, we
+might consider making field copies safe. However, a field may carry an invariant that could be
+violated as consequence a copy. For example, consider a field of type `&'static RefCell<T>` that
+imposes an invariant on the value of `T`. In this alternative proposal, such a field could be safely
+copiable out of its enclosing type, then safely mutated via the API of `RefCell`. Consequently, we
+require that copying unsafe fields out of their enclosing type requires `unsafe`.
+
 ### Copy Is Safe To Implement
 
 We propose that `Copy` is conditionally unsafe to implement; i.e., that the `unsafe` modifier is
