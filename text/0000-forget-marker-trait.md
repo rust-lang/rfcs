@@ -14,7 +14,7 @@ Add a `Forget` marker trait indicating whether it is safe to skip the destructor
 # Motivation
 [motivation]: #motivation
 
-Many readers may find the biggest problem with `Forget` to be migration. RFC's confidence is taken from the fact that migration can be done easily. See [#migration](#migration) section for details.
+Many Rust programmers may find the biggest problem with `Forget` to be migration. But this RFC describes how migration can be done easily. See [#migration](#migration) section for details.
 
 In short, the lack of `!Forget` types undermines lifetimes, sacrificing all performance, ergonomics and efficiency. Rust, as well as external APIs, naturally converge towards `!Forget` types, but old decisions force us to shift to `Arc`, `'static`, allocations, etc.
 
