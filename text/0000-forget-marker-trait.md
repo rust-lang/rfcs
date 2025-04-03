@@ -542,7 +542,7 @@ fn phantom<'a>(baz: &'a Baz) -> Foo<PhantomData<&'a ()>> {
 
 Type becomes `!Forget` if it directly contains `!Forget` member.
 
-We should either allow `!Forget` types in statics or make all `'static` types `Forget` because it fulfills the unsafe guarantee and we can't enforce any code running before the program's abortion.
+We should either allow `!Forget` types in statics or make all `'static` types `Forget` because it fulfills the unsafe guarantee and we can't enforce any code running before the program exits or aborts.
 
 ```rust
 let mut resource = [0u8; 64];
