@@ -710,7 +710,7 @@ It is not required, but in next editions we may swap the default for `default_ge
 
 If [`local_default_bounds`] is not accepted, we can make a satisfactory migration by having editions <= 2024 have `Forget` as the default, and editions after 2024 have `?Forget` as the default.
 
-While it will not split the ecosystem, it will require everyone to make a migration just as in the [`local_default_bounds`] solution. There are concern about locking crates into `Forget` bounds on associated types in traits (like `async fn`). Migration can probably be automated for `#![forbid(unsafe)]` crates.
+While it will not split the ecosystem, it will require everyone to make a migration just as in the [`local_default_bounds`] solution. There are concern about locking crates into `Forget` bounds on associated types in traits (like `async fn`). Migration can probably be automated for crates without unsafe code.
 
 [default auto traits]: https://github.com/rust-lang/rust/pull/120706
 
