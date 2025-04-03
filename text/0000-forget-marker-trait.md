@@ -182,7 +182,7 @@ fn spawn<'a>(fut: impl IntoFuture + 'a) -> TaskHandler<'a> {
 ### Async DMA
 [example-async-dma]: #example-async-dma
 
-DMA stands for Direct Memory Access and it’s a peripheral used for transferring data between two memory locations in parallel to the operation of the core processor. For the purposes of this example, it can be thought of as `memcpy` in parallel to any other code.
+DMA stands for Direct Memory Access, which is used to transfer data between two memory locations in parallel to the operation of the core processor. For the purposes of this example, it can be thought of as `memcpy` in parallel to any other code.
 
 Let's say that `Serial::read_exact` triggers a DMA transfer and returns a future that will resolve on completion. It would be safe if we were to block on this future (basically passing control flow to the future itself), but we may instead trigger undefined behavior with `forget`:
 
