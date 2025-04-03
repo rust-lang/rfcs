@@ -16,11 +16,11 @@ Add a `Forget` marker trait indicating whether it is safe to skip the destructor
 
 Many Rust programmers may find the biggest problem with `Forget` to be migration. But this RFC describes how migration can be done easily. See [#migration](#migration) section for details.
 
-In short, the lack of `!Forget` types undermines lifetimes, sacrificing all performance, ergonomics and efficiency. Rust, as well as external APIs, naturally converge towards `!Forget` types, but old decisions force us to shift to `Arc`, `'static`, allocations, etc.
+In short, the lack of `!Forget` types undermines lifetimes, sacrificing all 3 of performance, ergonomics and efficiency. Most Rust code, as well as external APIs, naturally converge towards `!Forget` types, but in the absence of `Forget` trait support, those APIs use a mixture of `Arc`, `'static`, allocations, etc.
 
 ---
 
-Back in 2015, the [decision was made][safe-mem-forget] to make `mem::forget` safe, making every type implicitly implement `Forget`. All APIs in `std` could've been preserved after that change, except one. Today is 2025 and some things changed, old reasoning is no longer true. This RFC is not targeted at resource leaks in general but is instead focused on allowing a number of APIs to become safe by providing new unsafe guarantees.
+Back in 2015, the [decision was made][safe-mem-forget] to make `mem::forget` safe, making every type effectively implement `Forget`. All the APIs in `std` were able remain safe after this change, except one. This RFC is not targeted at resource leaks in general, but is instead focused on allowing a number of APIs to become safe, by providing new unsafe guarantees using `Forget`.
 
 [safe-mem-forget]: https://github.com/rust-lang/rfcs/pull/1066
 
