@@ -182,13 +182,19 @@ fn spawn<'a>(fut: impl IntoFuture + 'a) -> TaskHandler<'a> {
 
 DMA stands for Direct Memory Access, which is used to transfer data between two memory locations in parallel to the operation of the core processor. For the purposes of this example, it can be thought of as `memcpy` in parallel to any other code.
 
-Let's say that `Serial::read_exact` triggers a DMA transfer and returns a future that will resolve on completion. It would be safe if we were to block on this future (basically passing control flow to the future itself), but we may instead trigger undefined behavior with `forget`:
+Let's say that the poll of `Serial::read_exact` triggers a DMA transfer. It would be safe if we were to block on this future (basically passing control flow to the future itself), but we may instead trigger undefined behavior with `forget`:
 
 ```rust
 fn start(serial: &mut Serial) {
     let mut buf = [0; 16];
 
-    mem::forget(serial.read_exact(&mut buf));
+    let mut fut = Box::pin(serial.read_exact(&mut buf));
+
+    fut.poll(cx); // start dma transfer
+
+    // Memory of the future itself is still valid (inside the allocation),
+    // but the buffer lives outside of it and is not protected.
+    core::mem::forget(fut); // or `Box::leak`
 }
 
 fn corrupted() {
@@ -203,10 +209,6 @@ start(&mut serial);
 // so they will be corrupted.
 corrupted();
 ```
-
-See [blog.japaric.io/safe-dma] for more.
-
-[blog.japaric.io/safe-dma]: https://blog.japaric.io/safe-dma/
 
 ### GPU
 [example-async-cuda]: #example-async-cuda
