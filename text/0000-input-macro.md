@@ -17,6 +17,9 @@ let possible_name: Result<String, _> = input!(); // This could fail for example 
 // Besides we can show a message to the user
 let possible_age: Result<u8, _> = input!("Please enter your age: "); // This could fail for example if the user enters a string instead of a number in the range of u8
 
+// And yes this is a result so we can handle errors like this
+let lastname = input!("Please enter your lastname: ").expect("The lastname is required"); // This could fail for example if the user enters a empty string
+
 // --- Other way to use the macro ---
 
 struct Price {
@@ -56,6 +59,8 @@ For example, that in this we can handle the error in a different way.
 If we get a EOF we can return `None` and handle it in a different way but it's not exactly a error, it's a different case, EOF is valid but doesn't have a value, a way to represent this, that is why we use a `Option`.
 
 **DISCLAIMER**: The behavior of the `input!` to me is the most intuitive, but I think that the `try_input!` could be useful in some cases to be correct with the error handling. We can change the name of the macro `try_input!` or delete it if we think that is not necessary. It's just a idea, I'm open to suggestions.
+
+The behaviour of the `try_input!` is the same as the `input!` but the return type is `Result<Option<T>, InputError>`. The `InputError` is a enum that contains the error that could be returned by the `input!` macro. It was thinking thanks to the [commet of Josh Tripplet](https://github.com/rust-lang/rfcs/pull/3196#issuecomment-972915603) in [a previous RFC](https://github.com/rust-lang/rfcs/pull/3196). And to be honest yes, I think that is a good idea to have a way to handle the EOF, EOF is not exactly a error but it's a behaviour not too friendly usually because is a subtle distinction, is not exactly an edge case, but it's a less common scenario that people often overlook at first.
 
 # Motivation
 [motivation]: #motivation
