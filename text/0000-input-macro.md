@@ -1,17 +1,66 @@
 - Feature Name: `input macros`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2025-04-02)
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-One paragraph explanation of the feature.
+This RFC propose the addition of macros and some functions that can be used to read input from the user in a more ergonomic way like the [Input built-in function in Python](https://peps.python.org/pep-3111/). 
+
+With this initiative we can build a small interactive programs that reads input from standard input and writes output to standard output is well-established as a simple and fun way of learning and teaching Rust as a new programming language. 
+
+```rust
+println!("Please enter your name: ");
+let possible_name: Result<String, _> = input!(); // This could fail for example if the user closes the input stream
+
+// Besides we can show a message to the user
+let possible_age: Result<u8, _> = input!("Please enter your age: "); // This could fail for example if the user enters a string instead of a number in the range of u8
+
+// --- Other way to use the macro ---
+
+struct Price {
+    currency: String,
+    amount: f64,
+}
+
+impl FromStr for Price {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split_whitespace().collect();
+        if parts.len() != 2 {
+            return Err("String must have two parts".to_string());
+        }
+        let currency = parts[0].to_string();
+        let amount = parts[1].parse().unwrap();
+        Ok(Price { currency, amount })
+    }
+}
+
+let price: Price = input!("Please introduce a price (format: '[currency] [amount]'): ")?; // This could fail for example if the input is reading from a pipe and we delete the file whose descriptor is being read meanwhile the program is running
+
+```
+
+In this examples I show many ways to use the `input!` macro.
+
+In this macro we think that EOF is error case, so we return a `Result` with the error type being the error that caused the EOF. This is because is easily to handle the error for something new and we can mantain a similar behavior.
+
+However we can use besides:
+
+```rust
+let name: Option<String> = try_input!("Please introduce a price: ")?;
+```
+
+For example, that in this we can handle the error in a different way.
+If we get a EOF we can return `None` and handle it in a different way but it's not exactly a error, it's a different case, EOF is valid but doesn't have a value, a way to represent this, that is why we use a `Option`.
+
+**DISCLAIMER**: The behavior of the `input!` to me is the most intuitive, but I think that the `try_input!` could be useful in some cases to be correct with the error handling. We can change the name of the macro `try_input!` or delete it if we think that is not necessary. It's just a idea, I'm open to suggestions.
 
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+This kind of macros could be useful for beginners and reduce the barrier to entry for new Rustaceans. It would also make the language more friendly and help with the cognitive load of learning a new language.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -95,3 +144,6 @@ Note that having something written down in the future-possibilities section
 is not a reason to accept the current or a future RFC; such notes should be
 in the section on motivation or rationale in this or subsequent RFCs.
 The section merely provides additional information.
+
+Bullshit:
+https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt-dev
