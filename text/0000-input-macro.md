@@ -41,7 +41,7 @@ impl FromStr for Price {
     }
 }
 
-let price: Price = input!("Please introduce a price (format: '[currency] [amount]'): ")?; // This could fail for example if the input is reading from a pipe and we delete the file whose descriptor is being read meanwhile the program is running
+let price: Price = input!("Please introduce a price: ")?; // This could fail for example if the input is reading from a pipe and we delete the file whose descriptor is being read meanwhile the program is running
 
 ```
 
