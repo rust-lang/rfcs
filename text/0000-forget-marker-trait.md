@@ -556,7 +556,7 @@ resource[0] = 42; // unreachable
 
 All APIs in the standard library should be migrated at once. With available migration strategies, there is no benefit in gradual migration, it will greatly reduce the productivity of rustc developers by adding boilerplate and noise into the codebase. An audit must be performed to ensure which APIs must remain `Forget`. See [#migration](#migration) for more details.
 
-No existing non-generic types in std will be changed to `!Forget`.
+All existing non-generic types in std will continue to be `Forget`.
 
 ## `Copy`
 [copy]: #copy
