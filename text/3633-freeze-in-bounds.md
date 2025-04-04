@@ -47,7 +47,7 @@ It is automatically implemented by the compiler for any type that doesn't contai
 
 Notably, a `const` can only store a reference to a value of type `T` if `T: core::marker::NoCell`, in a pattern named "static-promotion".
 
-As `core::marker::NoCell` is an auto-trait, it poses an inherent semver-hazard (which is already exposed through static-promotion): this RFC proposes the simultaneous addition and stabilization of a `core::marker::PhantomCell` type to provide a stable mean for maintainers to reliably opt out of `NoCell` without forbidding zero-sized types that are currently `!NoCell` due to the conservativeness of `NoCell`'s implementation being locked into remaining `!NoCell`.
+As `core::marker::NoCell` is an auto-trait, it poses an inherent semver-hazard (which is already exposed through static-promotion). This RFC proposes the simultaneous addition and stabilization of a `core::marker::PhantomCell` type, to provide a stable means for maintainers to reliably opt out of `NoCell`, without forbidding zero-sized types. These types are currently `!NoCell` due to the conservativeness of `NoCell`'s implementation.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -91,7 +91,7 @@ in code that holds an immutable reference to `T`.
 
 # Semver hazard
 `NoCell` being an auto-trait that encodes a low level property of the types it is implemented for,
-it is strongly advised against to rely on external types maintaining that property unless that
+you should avoid relying on external types maintaining that property, unless that
 contract is explicitly stated out-of-band (through documentation, for example).
 
 Conversely, authors that consider `NoCell` to be part of a type's contract should document this
