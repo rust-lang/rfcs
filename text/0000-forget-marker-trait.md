@@ -321,10 +321,14 @@ fn weakener<T>(foo: T) -> i32 {
 }
 ```
 
-## Not only forgets
+## How API of channels needs to change in order to work with `!Forget` types.
 [channels-unsoundness]: #channels-unsoundness
 
-There exists a way to exploit the old `thread::scoped` API without any memory leaks! We can move `JoinHandle` inside the thread it is meant to protect, creating a kind of cycle:
+Currently, channels are created via `let (tx, rx) = channel()`. This is not compatible with `!Forget` types. This section explains how developers should use them instead and why.
+
+There exists a way to exploit the old `thread::scoped` API without any memory leaks[^no_leaks_sidenode]. We can move `JoinHandle` inside the thread it is meant to protect, thereby creating a cyclic relationship:
+
+[^no_leaks_sidenode]: This would become a memory leak if instead of spawning the thread will use another way to create the cycle. See later.
 
 ```rust
 use std::{
@@ -344,7 +348,7 @@ where
     F: FnOnce() -> (),
     F: Send + 'a,
 {
-    todo!()
+    todo!("schedule `F` on the actual thread")
 }
 
 fn main() {
@@ -370,7 +374,7 @@ fn main() {
 }
 ```
 
-In this code, no memory is leaked, and `JoinHandle`'s destructor is not skipped. However, many types of channels - including rendezvous channels — can also be vulnerable to this issue if their signatures allow an equivalent implementation using reference counting.
+This code is clearly unsound because we are aliasing a mutable reference, which permits potential data races and use-after-free issues. Furthermore, many types of channels - including rendezvous channels—can be vulnerable to this issue if their signatures allow an equivalent implementation using reference counting.
 
 ```rust
 fn main() {
@@ -394,10 +398,58 @@ fn main() {
 }
 ```
 
+What is the actual problem?
+
+### The reason of the channels unsoundness
+[channels-unsoundness-reason]: #channels-unsoundness-reason
+
+The core issue is not inherent to `scoped` or `JoinHandle` per se - it lies in the API design and its interaction with `!Forget` types. From the type system's perspective, `scoped` is consuming `F` and returning another type with some lifetime. This ereasure plays a critical role to avoid a cyclic type that will not compile. It creates a pathway for unsoundness when combined with signatures resembling reference-counted types like `Arc`.
+
+```rust
+trait Erase { }
+impl<T> Erase for T {}
+
+struct JoinHandle<'a>(Box<dyn Erase + Send + 'a>);
+
+impl Drop for JoinHandle<'_> {
+    fn drop(&mut self) {}
+}
+
+fn scoped<'a, F>(f: F) -> JoinHandle<'a>
+where
+    F: FnOnce() -> (),
+    F: Send + 'a,
+{
+    JoinHandle(Box::new(f))
+}
+
+fn main() {
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    let mut buf = [0; 1024];
+    let buf_ref = &mut buf;
+
+    let handle = scoped(move || {
+        buf_ref[0] = 1;
+        drop(rx);
+    });
+
+    _ = tx.send(handle);
+    drop(tx);
+
+    // handle no longer guards `buf`.
+
+    // "aliased" `&mut`, but it is not UB in that case, because `f` in not running.
+    buf[0] = 1;
+}
+```
+
 ### Solution for message passing of `!Forget` types.
 [solution-to-self-referential-problem]: #solution-to-self-referential-problem
 
-One might speculate and try to fix some holes, for example by making `JoinHandle: !Send`, but this can only count as a workaround. If we look at the problem in depth, we can see that `Forget` is generally incompatible with `Rc`, as well as other APIs that can be expressed with its signature, because it creates a hidden self-reference. In the example earlier, the borrow checker cannot see a connection between `rx` and `tx` - when `tx` is dropped, `buf` is no longer borrowed. What if retained such a connection?
+Thus, there is no point in blaming `scoped`; its API can already be replicated safely in current code, and other `Arc`-like APIs can also cause leaks. This demonstrates that approaches such as making `JoinHandle: !Send` are not feasible. How can we fix it?
+
+Looking at our first example with `Arc`, let's replace our `Arc` with a reference:
 
 ```rust
 fn main() {
@@ -421,7 +473,7 @@ fn main() {
 }
 ```
 
-And we got a compiler error preventing the unsoundness:
+This change results in compiler errors that prevent the unsound behavior:
 
 ```rust
  error[E0597]: `mutex` does not live long enough
@@ -453,7 +505,7 @@ error[E0505]: cannot move out of `mutex` because it is borrowed
    |          borrow later used here
 ```
 
-This example is exactly like the first one with `Arc`, but uses references instead - we are allowed to pass them with `JoinHandle: !Forget`. But what with channels? There are not so many examples in the ecosystem that follow this approach in the signature, as it is not `'static`, but there are some:
+Here, a single action to replace `Arc<T>` with `&'a T` allowed code to become sound - `JoinHandle: !Forget` allowes to pass references into tasks and removes the need for reference counting in that case. The same approach applies to channels. This approach is not compatible with `JoinHandle: Forget` and cannot be used today with functions like `tokio::spawn` due to `'static` bound, but ecosystem has some examples:
 
 ```rust
 fn main() {
@@ -478,9 +530,9 @@ fn main() {
 }
 ```
 
-This code fails to compile too. Why? Because borrow checker detects a self-reference! `handle` borrows `queue`, but we are moving `handle` into `queue`, thus `queue` borrows `queue`. This means we cannot call `drop` on queue or take a reference to it, but since `drop` is inserted by the compiler, we have an error. If there was a `loop {}` and borrow cheker considered diverging during analysis, it would compile and would be sound.
+This code fails to compile, which prevents the unsound behavior. The failure occurs because the borrow checker detects a self-reference: `handle` borrows `queue`, but moving `handle` into `queue` causes `queue` to indirectly borrow itself. Since the compiler inserts a call to `drop` on `queue`, this self-referential borrow is caught at compile time.
 
-This means that to use message-passing with `!Forget` types, API authors must rely on lifetimes more - because `Forget` types fundamentally involve lifetime management. Looking at the example above, `rx` cannot be passed to the traditional `spawn`, because of the `F: 'static` requirement. But `thread::scope` allows it - as well as async `scope` does, with the future itself being `!Forget`. Note that rendezvous channels can be soundly expressed using that API and `PhantomData`.
+Thus, to support message passing with `!Forget` types, API authors must rely more heavily on lifetimes. Since `Forget` types inherently involve lifetime management, using explicit lifetimes (for example, by replacing `Arc<T>` with `&'a T`, having `PhantomData` together with a pointer etc) prevents the formation of cycles that can lead to unsoundness. While this approach is not compatible with APIs that require a `'static` bound (such as `tokio::spawn`), it works in environments like `thread::scope` or async scopes, where the future itself can be `!Forget`. Notably, rendezvous channels can be soundly expressed using this API alongside `PhantomData`.
 
 ## Traditional combinators and patterns
 [traditional-workflows]: #traditional-workflows
