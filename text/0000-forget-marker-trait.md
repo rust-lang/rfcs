@@ -20,7 +20,7 @@ In short, the lack of `!Forget` types undermines lifetimes, sacrificing all 3 of
 
 `Forget` is designed to allow proxy RAII guards. Futures needed for `io_uring`-like APIs are essentially a proxy RAII guard, it will be explained later.
 
-Many Rust programmers may find the biggest problem with `Forget` to be migration. But this RFC describes how migration can be done easily. See [#migration](#migration) section for details.
+Many Rust programmers may find the biggest problem with `Forget` to be migration. But this RFC describes how migration can be done easily. See [#ecosystem-migration](#ecosystem-migration) section for details.
 
 [safe-mem-forget]: https://github.com/rust-lang/rfcs/pull/1066
 
@@ -556,7 +556,7 @@ resource[0] = 42; // unreachable
 ## Standard Library
 [std]: #std
 
-All APIs in the standard library should be migrated at once. With available migration strategies, there is no benefit in gradual migration, it will greatly reduce the productivity of rustc developers by adding boilerplate and noise into the codebase. An audit must be performed to ensure which APIs must remain `Forget`. See [#migration](#migration) for more details.
+All APIs in the standard library should be migrated at once. With available migration strategies, there is no benefit in gradual migration, it will greatly reduce the productivity of rustc developers by adding boilerplate and noise into the codebase. An audit must be performed to ensure which APIs must remain `Forget`. See [#ecosystem-migration](#ecosystem-migration) for more details.
 
 All existing non-generic types in std will continue to be `Forget`.
 
@@ -586,8 +586,8 @@ Unions are always `Forget`. All members of `union` must be `Forget`, but it is a
 - `ptr::write` is available for all types.
 - Etc
 
-## Migration
-[migration]: #drawbacks
+## Ecosystem Migration
+[ecosystem-migration]: #ecosystem-migration
 
 ### Migration using [`local_default_bounds`] RFC
 [local-defaults-migration]: #local-defaults-migration
