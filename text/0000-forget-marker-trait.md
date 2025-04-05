@@ -18,6 +18,8 @@ Back in 2015, the [decision was made][safe-mem-forget] to make `mem::forget` saf
 
 In short, the lack of `!Forget` types undermines lifetimes, sacrificing all 3 of performance, ergonomics and efficiency. Most Rust code, as well as external APIs, naturally converge towards `!Forget` types, but in the absence of `Forget` trait support, those APIs use a mixture of `Arc`, `'static`, allocations, etc.
 
+`Forget` is designed to allow proxy RAII guards. Futures needed for `io_uring`-like APIs are essentially a proxy RAII guard, it will be explained later.
+
 Many Rust programmers may find the biggest problem with `Forget` to be migration. But this RFC describes how migration can be done easily. See [#migration](#migration) section for details.
 
 [safe-mem-forget]: https://github.com/rust-lang/rfcs/pull/1066
