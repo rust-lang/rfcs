@@ -328,7 +328,7 @@ Currently, channels are created via `let (tx, rx) = channel()`. This is not comp
 
 There exists a way to exploit the old `thread::scoped` API without any memory leaks[^no_leaks_sidenode]. We can move `JoinHandle` inside the thread it is meant to protect, thereby creating a cyclic relationship:
 
-[^no_leaks_sidenode]: This would become a memory leak if instead of spawning the thread will use another way to create the cycle. See later.
+[^no_leaks_sidenode]: This would become a memory leak if instead of spawning the thread we will just return the closure as the handle, but without it's type mentioned to prevent cycle errors. See later.
 
 ```rust
 use std::{
@@ -374,7 +374,7 @@ fn main() {
 }
 ```
 
-This code is clearly unsound because we are aliasing a mutable reference, which permits potential data races and use-after-free issues. Furthermore, many types of channels - including rendezvous channels—can be vulnerable to this issue if their signatures allow an equivalent implementation using reference counting.
+This code is clearly unsound because we are aliasing a mutable reference, which permits potential data races and use-after-free issues. Furthermore, many types of channels - including rendezvous channels - can be vulnerable to this issue if their signatures allow an equivalent implementation using reference counting.
 
 ```rust
 fn main() {
@@ -444,10 +444,14 @@ fn main() {
 }
 ```
 
+`JoinHandle` and `scoped` have exactly the same signature as before, but use basic language primitives under the hood. The signature of `scoped` can be summarized as `F + 'a -> 'a` - it erased the concrete type `F` and returned just `JoinHandle<'a>`. `Box<dyn Trait>` is a basic property of the language.
+
+We will call APis that split ownership of the allocation between `tx` and `rx` and allow writes `Arc`-like. `Box<dyn Trait>` can cause `Arc`-like APIs to leak, because we can erase the type of `rx` and place it in the shared allocation using `tx`.
+
+*Any* `Arc`-like API is capable of causing leaks, without any `unsafe` code on the `scoped` side. This demonstrates that approaches such as making `JoinHandle: !Send` are not feasible. How can we fix it?
+
 ### Solution for message passing of `!Forget` types.
 [solution-to-self-referential-problem]: #solution-to-self-referential-problem
-
-Thus, there is no point in blaming `scoped`; its API can already be replicated safely in current code, and other `Arc`-like APIs can also cause leaks. This demonstrates that approaches such as making `JoinHandle: !Send` are not feasible. How can we fix it?
 
 Looking at our first example with `Arc`, let's replace our `Arc` with a reference:
 
@@ -505,7 +509,7 @@ error[E0505]: cannot move out of `mutex` because it is borrowed
    |          borrow later used here
 ```
 
-Here, a single action to replace `Arc<T>` with `&'a T` allowed code to become sound - `JoinHandle: !Forget` allowes to pass references into tasks and removes the need for reference counting in that case. The same approach applies to channels. This approach is not compatible with `JoinHandle: Forget` and cannot be used today with functions like `tokio::spawn` due to `'static` bound, but ecosystem has some examples:
+Here, a single step to replace `Arc<T>` with `&'a T` allowed code to become sound - `JoinHandle: !Forget` allowes to pass references into tasks and removes the need for the reference counting in that case - the allocation is not *owned* by `tx` and `rx`, they are *borrowing* from it, making them not `Arc`-like. The same approach applies to channels. This approach is not compatible with `JoinHandle: Forget` and cannot be used today with functions like `tokio::spawn` due to `'static` bound, but ecosystem has some examples:
 
 ```rust
 fn main() {
@@ -530,7 +534,7 @@ fn main() {
 }
 ```
 
-This code fails to compile, which prevents the unsound behavior. The failure occurs because the borrow checker detects a self-reference: `handle` borrows `queue`, but moving `handle` into `queue` causes `queue` to indirectly borrow itself. Since the compiler inserts a call to `drop` on `queue`, this self-referential borrow is caught at compile time.
+This code fails to compile, which prevents the unsound behavior. The failure occurs because the borrow checker detects a self-reference: `handle` borrows `queue`, but moving `handle` into `queue` causes `queue` to indirectly borrow itself. Since the compiler inserts a call to `drop` on `queue`, this self-referential borrow is caught at compile time. But `Arc` is *designed* to remove the lifetime, removing borrow-checkers ability to prevent loops, self-references and leaks.
 
 Thus, to support message passing with `!Forget` types, API authors must rely more heavily on lifetimes. Since `Forget` types inherently involve lifetime management, using explicit lifetimes (for example, by replacing `Arc<T>` with `&'a T`, having `PhantomData` together with a pointer etc) prevents the formation of cycles that can lead to unsoundness. While this approach is not compatible with APIs that require a `'static` bound (such as `tokio::spawn`), it works in environments like `thread::scope` or async scopes, where the future itself can be `!Forget`. Notably, rendezvous channels can be soundly expressed using this API alongside `PhantomData`.
 
