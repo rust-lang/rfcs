@@ -444,7 +444,7 @@ fn main() {
 }
 ```
 
-`JoinHandle` and `scoped` have exactly the same signature as before, but use basic language primitives under the hood. The signature of `scoped` can be summarized as `F + 'a -> 'a` - it erased the concrete type `F` and returned just `JoinHandle<'a>`. `Box<dyn Trait>` is a basic property of the language.
+`JoinHandle` and `scoped` have exactly the same signature as before, but use basic language primitives under the hood. The signature of `scoped` can be summarized as `F + 'a -> 'a` - it erased the concrete type `F` and returned just `JoinHandle<'a>`. `Box<dyn Trait>` is a core language feature, we can't remove it for `!Forget` types, as it would render them unusable.
 
 We will call APis that split ownership of the allocation between `tx` and `rx` and allow writes `Arc`-like. `Box<dyn Trait>` can cause `Arc`-like APIs to leak, because we can erase the type of `rx` and place it in the shared allocation using `tx`.
 
@@ -795,7 +795,7 @@ We can do nothing, but use cases just keep piling up.
 
 The author of https://zetanumbers.github.io/book/myosotis.html is working on another approach to that problem, but it is not public yet.
 
-It is also possible to preserve current `Arc`-like channels by disabling the basic property of type ereasure for `!Forget` types - disallow the signatures like `F + 'a -> 'a`. This way, `JoinHandle` would be generic over the closure, not a lifetime: `JoinHandle<F>`. That way, we will trigger the infinitely recursive type error instead of a borrow-checker's error. But this will be a major downside to `!Forget` types, making them barely usable.
+It is also possible to preserve current `Arc`-like channels by disabling the type ereasure for `!Forget` types - disallow the signatures like `F + 'a -> 'a`. This way, `JoinHandle` would be generic over the closure, not a lifetime: `JoinHandle<F>`. That way, we will trigger the infinitely recursive type error instead of a borrow-checker's error. But this will be a major downside to `!Forget` types, making them barely usable.
 
 # Prior Art
 [prior-art]: #prior-art
