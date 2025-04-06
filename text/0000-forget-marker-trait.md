@@ -534,7 +534,7 @@ fn main() {
 }
 ```
 
-This code fails to compile, which prevents the unsound behavior. The failure occurs because the borrow checker detects a self-reference: `handle` borrows `queue`, but moving `handle` into `queue` causes `queue` to indirectly borrow itself. Since the compiler inserts a call to `drop` on `queue`, this self-referential borrow is caught at compile time. But `Arc` is *designed* to remove the lifetime, removing borrow-checkers ability to prevent loops, self-references and leaks.
+This code fails to compile, which prevents the unsound behavior. The failure occurs because the borrow checker detects a self-reference: `handle` borrows `queue`, but moving `handle` into `queue` causes `queue` to indirectly borrow itself. Since the compiler inserts a call to `drop` on `queue`, this self-referential borrow is caught at compile time. But `Arc` is *designed* to remove the lifetime, removing borrow-checker's ability to prevent loops, self-references and leaks.
 
 Thus, to support message passing with `!Forget` types, API authors must rely more heavily on lifetimes. Since `Forget` types inherently involve lifetime management, using explicit lifetimes (for example, by replacing `Arc<T>` with `&'a T`, having `PhantomData` together with a pointer etc) prevents the formation of cycles that can lead to unsoundness. While this approach is not compatible with APIs that require a `'static` bound (such as `tokio::spawn`), it works in environments like `thread::scope` or async scopes, where the future itself can be `!Forget`. Notably, rendezvous channels can be soundly expressed using this API alongside `PhantomData`.
 
@@ -794,6 +794,8 @@ All types were assumed to be `!Forget` in Rust's early days, and then it was cha
 We can do nothing, but use cases just keep piling up.
 
 The author of https://zetanumbers.github.io/book/myosotis.html is working on another approach to that problem, but it is not public yet.
+
+It is also possible to preserve current `Arc`-like channels by disabling the basic property of type ereasure for `!Forget` types - disallow the signatures like `F + 'a -> 'a`. This way, `JoinHandle` would be generic over the closure, not a lifetime: `JoinHandle<F>`. That way, we will trigger the infinitely recursive type error instead of a borrow-checker's error. But this will be a major downside to `!Forget` types, making them barely usable.
 
 # Prior Art
 [prior-art]: #prior-art
