@@ -403,7 +403,7 @@ What is the actual problem?
 ### The reason of the channels unsoundness
 [channels-unsoundness-reason]: #channels-unsoundness-reason
 
-The core issue is not inherent to `scoped` or `JoinHandle` per se - it lies in the API design and its interaction with `!Forget` types. From the type system's perspective, `scoped` is consuming `F` and returning another type with some lifetime. This ereasure plays a critical role to avoid a cyclic type that will not compile. It creates a pathway for unsoundness when combined with signatures resembling reference-counted types like `Arc`.
+The core issue is not inherent to `scoped` or `JoinHandle` per se - it lies in the API design and its interaction with `!Forget` types. From the type system's perspective, `scoped` is consuming `F` and returning another type with some lifetime. This erasure plays a critical role to avoid a cyclic type that will not compile. It creates a pathway for unsoundness when combined with signatures resembling reference-counted types like `Arc`.
 
 ```rust
 trait Erase { }
@@ -446,7 +446,7 @@ fn main() {
 
 `JoinHandle` and `scoped` have exactly the same signature as before, but use basic language primitives under the hood. The signature of `scoped` can be summarized as `F + 'a -> 'a` - it erased the concrete type `F` and returned just `JoinHandle<'a>`. `Box<dyn Trait>` is a core language feature, we can't remove it for `!Forget` types, as it would render them unusable.
 
-We will call APis that split ownership of the allocation between `tx` and `rx` and allow writes `Arc`-like. `Box<dyn Trait>` can cause `Arc`-like APIs to leak, because we can erase the type of `rx` and place it in the shared allocation using `tx`.
+We will call APis that split ownership of the allocation between `tx` and `rx` and allow writes `Arc`-like. `Box<dyn Trait>` can cause `Arc`-like APIs to leak, because we can erase the type of `rx` and place it in the shared allocation using `tx`, keeping it alive indefinitely because `rx` is inside.
 
 *Any* `Arc`-like API is capable of causing leaks, without any `unsafe` code on the `scoped` side. This demonstrates that approaches such as making `JoinHandle: !Send` are not feasible. How can we fix it?
 
