@@ -6,19 +6,32 @@
 # Summary
 [summary]: #summary
 
-This RFC propose the addition of macros and some functions that can be used to read input from the user in a more ergonomic way like the [Input built-in function in Python](https://peps.python.org/pep-3111/). 
+This RFC propose the addition of macros and some functions that can be used to 
+read input from the user in a more ergonomic way like the 
+[Input built-in function in Python](https://peps.python.org/pep-3111/). 
 
-With this initiative we can build a small interactive programs that reads input from standard input and writes output to standard output is well-established as a simple and fun way of learning and teaching Rust as a new programming language. 
+With this initiative we can build a small interactive programs that reads input 
+from standard input and writes output to standard output is well-established as 
+a simple and fun way of learning and teaching Rust as a new programming 
+language. 
 
 ```rust
 println!("Please enter your name: ");
-let possible_name: Result<String, _> = input!(); // This could fail for example if the user closes the input stream
+let possible_name: Result<String, _> = input!(); // This could fail for example 
+                                                 // if the user closes the input 
+                                                 // stream
 
 // Besides we can show a message to the user
-let possible_age: Result<u8, _> = input!("Please enter your age: "); // This could fail for example if the user enters a string instead of a number in the range of u8
+let possible_age: Result<u8, _> = input!("Please enter your age: "); 
+                                        // This could fail for example if the 
+                                        // user enters a string instead of a 
+                                        // number in the range of u8
 
-// And yes this is a result so we can handle errors like this
-let lastname = input!("Please enter your lastname: ").expect("The lastname is required"); // This could fail for example if the user enters a empty string
+// And yes, this is a result so we can handle errors like this
+let lastname = input!("Please enter your lastname: ")
+                .expect("The lastname is required"); 
+                    // This could fail for example if the 
+                    // user enters a empty string
 
 // --- Other way to use the macro ---
 
@@ -41,13 +54,18 @@ impl FromStr for Price {
     }
 }
 
-let price: Price = input!("Please introduce a price: ")?; // This could fail for example if the input is reading from a pipe and we delete the file whose descriptor is being read meanwhile the program is running
+let price: Price = input!("Please introduce a price: ")?; 
+        // This could fail for example if the input is reading from a pipe and 
+        // we delete the file whose descriptor is being read meanwhile the 
+        // program is running
 
 ```
 
-In this examples I show many ways to use the `input!` macro.
+In these examples I show many ways to use the `input!` macro.
 
-In this macro we think that EOF is error case, so we return a `Result` with the error type being the error that caused the EOF. This is because is easily to handle the error for something new and we can mantain a similar behavior.
+In this macro we think that EOF is error case, so we return a `Result` with the 
+error type being the error that caused the EOF. This is because is easily to 
+handle the error for something new and we can mantain a similar behavior.
 
 However we can use besides:
 
@@ -56,39 +74,78 @@ let name: Option<String> = try_input!("Please introduce a price: ")?;
 ```
 
 For example, that in this we can handle the error in a different way.
-If we get a EOF we can return `None` and handle it in a different way but it's not exactly a error, it's a different case, EOF is valid but doesn't have a value, a way to represent this, that is why we use a `Option`.
+If we get a EOF we can return `None` and handle it in a different way but it's 
+not exactly a error, it's a different case, EOF is valid but doesn't have a 
+value, a way to represent this, that is why we use a `Option`.
 
-**DISCLAIMER**: The behavior of the `input!` to me is the most intuitive, but I think that the `try_input!` could be useful in some cases to be correct with the error handling. We can change the name of the macro `try_input!` or delete it if we think that is not necessary. It's just a idea, I'm open to suggestions.
+**DISCLAIMER**: The behavior of the `input!` to me is the most intuitive, but I 
+think that the `try_input!` could be useful in some cases to be correct with the 
+error handling. We can change the name of the macro `try_input!` or delete it if 
+we think that is not necessary. It's just a idea, I'm open to suggestions.
 
-The behaviour of the `try_input!` is the same as the `input!` but the return type is `Result<Option<T>, InputError>`. The `InputError` is a enum that contains the error that could be returned by the `input!` macro. It was thinking thanks to the [commet of Josh Tripplet](https://github.com/rust-lang/rfcs/pull/3196#issuecomment-972915603) in [a previous RFC](https://github.com/rust-lang/rfcs/pull/3196). And to be honest yes, I think that is a good idea to have a way to handle the EOF, EOF is not exactly a error but it's a behaviour not too friendly usually because is a subtle distinction, is not exactly an edge case, but it's a less common scenario that people often overlook at first.
+The behaviour of the `try_input!` is the same as the `input!` but the return 
+type is `Result<Option<T>, InputError>`. The `InputError` is a enum that 
+contains the error that could be returned by the `input!` macro. It was thinking 
+thanks to the 
+[commet of Josh Tripplet](https://github.com/rust-lang/rfcs/pull/3196#issuecomment-972915603) 
+in [a previous RFC](https://github.com/rust-lang/rfcs/pull/3196). And to be 
+honest yes, I think that is a good idea to have a way to handle the EOF, EOF is 
+not exactly a error but it's a behaviour not too friendly usually because is a 
+subtle distinction, is not exactly an edge case, but it's a less common scenario 
+that people often overlook at first.
 
 # Motivation
 [motivation]: #motivation
 
-This kind of macros could be useful for beginners and reduce the barrier to entry for new Rustaceans. It would also make the language more friendly and help with the cognitive load of learning a new language.
+This kind of macros could be useful for beginners and reduce the barrier to 
+entry for new Rustaceans. It would also make the language more friendly and help 
+with the cognitive load of learning a new language.
 
-The second chapter in the book talk about to make a guessing game, and in this chapter we can see how to read input from the user, but it is not too friendly and is not too easy to understand. It's really complex to explain to someone of high level what is a `Buffer` for give you a example, so in this case we can use the `input!` macro to make it easier.
+The second chapter in the book talk about to make a guessing game, and in this 
+chapter we can see how to read input from the user, but it is not too friendly 
+and is not too easy to understand. It's really complex to explain to someone of 
+high level what is a `Buffer` for give you a example, so in this case we can use 
+the `input!` macro to make it easier.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Explaining the idea is not a rabbit hole, it's a very basic idea.
-- We add a new macro `input!` that can be used to read input from the user in a more friendly way. This macro returns a `Result<T, InputError>`.
-- We add a new macro `try_input!` that can be used to read input from the user in a more friendly way but with a different behaviour, this macro return a `Result<Option<T>, InputError>`.
-- In both cases we must to accept a type `T` where `T` is a type who implement `FromStr` trait, so we can convert the input to the type that we want.
-- We must to specify the `InputError` type who must to be a enum that have three variants:
-    - `EOF` that is the error that we get when we reach the end of the input stream.
-    - `Parse(e)` that is the error that we get when we can't parse the input to the type that we want, `e` is the equivalent to a variable which type is `FromStr::Err`.
-    - `Io(e)` that is the error that we get when we have a IO error, `e` is the equivalent to a variable which type is `std::io::Error`.
+- We add a new macro `input!` that can be used to read input from the user in a 
+  more friendly way. This macro returns a `Result<T, InputError>`.
+- We add a new macro `try_input!` that can be used to read input from the user 
+  in a more friendly way but with a different behaviour, this macro return a 
+  `Result<Option<T>, InputError>`.
+- In both cases we must to accept a type `T` where `T` is a type who implement 
+  `FromStr` trait, so we can convert the input to the type that we want.
+- We must to specify the `InputError` type who must to be a enum that have three 
+  variants:
+    - `EOF` that is the error that we get when we reach the end of the input 
+      stream.
+    - `Parse(e)` that is the error that we get when we can't parse the input to 
+      the type that we want, `e` is the equivalent to a variable which type is 
+      `FromStr::Err`.
+    - `Io(e)` that is the error that we get when we have a IO error, `e` is the 
+      equivalent to a variable which type is `std::io::Error`.
 
 
 - Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it should impact the way they use Rust. It should explain the impact as concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
+- Explaining how Rust programmers should *think* about the feature, and how it 
+  should impact the way they use Rust. It should explain the impact as 
+  concretely as possible.
+- If applicable, provide sample error messages, deprecation warnings, or 
+  migration guidance.
+- If applicable, describe the differences between teaching this to existing Rust 
+  programmers and new Rust programmers.
+- Discuss how this impacts the ability to read, understand, and maintain Rust 
+  code. Code is read and modified far more often than written; will the proposed 
+  feature make code easier to maintain?
 
-For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
+For implementation-oriented RFCs (e.g. for compiler internals), this section 
+should focus on how compiler contributors should think about the change, and 
+give examples of its concrete impact. For policy RFCs, this section should 
+provide an example-driven introduction to the policy, and explain its impact in 
+concrete terms.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -115,7 +172,6 @@ For implementation-oriented RFCs (e.g. for compiler internals), this section sho
 #[macro_export]
 macro_rules! input {
     () => {{
-        // If you want a different type, change <String> here:
         $crate::read_input_from(&mut ::std::io::stdin().lock(), None)
     }};
     ($($arg:tt)*) => {{
@@ -183,13 +239,15 @@ impl<E: std::fmt::Display + std::fmt::Debug> std::fmt::Display for InputError<E>
 impl<E: std::fmt::Display + std::fmt::Debug> std::error::Error for InputError<E> {}
 ```
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+This is the technical portion of the RFC. Explain the design in sufficient 
+detail that:
 
 - Its interaction with other features is clear.
 - It is reasonably clear how the feature would be implemented.
 - Corner cases are dissected by example.
 
-The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
+The section should return to the examples given in the previous section, and 
+explain more fully how the detailed proposal makes those examples work.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -204,8 +262,9 @@ The section should return to the examples given in the previous section, and exp
 
 ## Why should the macro trim newlines?
 
-We assume that the returned string will often be processed with `FromStr::from_str`,
-for example it is likely that developers will attempt the following:
+We assume that the returned string will often be processed with 
+`FromStr::from_str`, for example it is likely that developers will attempt the 
+following:
 
 ```rs
 let age: i32 = input!()?;
