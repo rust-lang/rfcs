@@ -34,15 +34,16 @@ pub trait Frob {
 }
 ```
 
-Most of `frob-lib`'s users will need `Frob::frob`'s return type to be `Send`,
-so the library wants to make this common case as painless as possible. But
+Most of `frob-lib`'s users will need `Frob::frob`'s return type to be `Send`, so
+the library wants to make this common case as painless as possible. But
 non-`Send` usage should be supported as well.
 
 ### MVP: `trait_variant`
 
 Because Return Type Notation isn't supported yet, `frob-lib` follows the
-recommended practice of using the [`trait-variant`](https://docs.rs/trait-variant/)
-crate to have `Send` and non-`Send` variants.
+recommended practice of using the
+[`trait-variant`](https://docs.rs/trait-variant/) crate to have `Send` and
+non-`Send` variants.
 
 ```rust
 //! crate `frob-lib``
@@ -209,7 +210,8 @@ in existence.
 ## (Speculative) `Async` trait
 
 There has been some discussion about a variant of the `Future` trait with an
-`unsafe` poll method, to support structured concurrency ([wg-async design notes](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html)).
+`unsafe` poll method, to support structured concurrency ([wg-async design
+notes](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html)).
 *If* such a change ever happens, then the same "weak"/"strong" relationship will
 arise: the safe-to-poll `Future` trait would be a "strong" version of the
 unsafe-to-poll `Async`. As the linked design notes explain, there are major
@@ -264,9 +266,11 @@ result is syntactically valid—then the trait alias is implementable.
 A trait alias has the following syntax (using the Rust Reference's notation):
 
 > [Visibility](https://doc.rust-lang.org/stable/reference/visibility-and-privacy.html)<sup>?</sup>
-> `trait` [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html)
+> `trait`
+> [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html)
 > [GenericParams](https://doc.rust-lang.org/stable/reference/items/generics.html)<sup>?</sup>
-> `=` [TypeParamBounds](https://doc.rust-lang.org/stable/reference/trait-bounds.html)<sup>?</sup>
+> `=`
+> [TypeParamBounds](https://doc.rust-lang.org/stable/reference/trait-bounds.html)<sup>?</sup>
 > [WhereClause](https://doc.rust-lang.org/stable/reference/items/generics.html#where-clauses)<sup>?</sup>
 > `;`
 
@@ -276,9 +280,11 @@ trait alias.
 Implementable trait aliases must follow a more restrictive form:
 
 > [Visibility](https://doc.rust-lang.org/stable/reference/visibility-and-privacy.html)<sup>?</sup>
-> `trait` [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html)
+> `trait`
+> [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html)
 > [GenericParams](https://doc.rust-lang.org/stable/reference/items/generics.html)<sup>?</sup>
-> `=` [TypePath](https://doc.rust-lang.org/stable/reference/paths.html#paths-in-types)
+> `=`
+> [TypePath](https://doc.rust-lang.org/stable/reference/paths.html#paths-in-types)
 > [WhereClause](https://doc.rust-lang.org/stable/reference/items/generics.html#where-clauses)<sup>?</sup>
 > `;`
 
@@ -447,9 +453,9 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
 # Drawbacks
 
 - The syntactic distance between implementable and non-implementable aliases is
-  short, which might confuse users. In particular, the fact that
-  `trait Foo = Bar + Send;` means something different than
-  `trait Foo = Bar where Self: Send;` will likely be surprising to many.
+  short, which might confuse users. In particular, the fact that `trait Foo =
+  Bar + Send;` means something different than `trait Foo = Bar where Self:
+  Send;` will likely be surprising to many.
 - Adds complexity to the language, which might surprise or confuse users.
 - Many of the motivating use-cases involve language features that are not yet
   stable, or even merely speculative. More experience with those features might
@@ -474,9 +480,10 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
   - It could also make it less obvious which trait is being implemented, versus
     required; are we implementing `Bar`, `Send`, or both?
   - Again, user feedback could help make this decision.
-- Another option is to require an attribute on implementable aliases; e.g. `#[implementable] trait Foo = ...`.
-  This would make the otherwise-subtle implementability rules more explicit, at
-  the cost of cluttering user code and the attribute namespace.
+- Another option is to require an attribute on implementable aliases; e.g.
+  `#[implementable] trait Foo = ...`. This would make the otherwise-subtle
+  implementability rules more explicit, at the cost of cluttering user code and
+  the attribute namespace.
 - A previous version of this RFC required generic parameters of implementable
   trait aliases to be used as generic parameters of the alias's primary trait.
   This restriction was meant to avoid surprising errors:
@@ -517,9 +524,9 @@ even at the risk of potential confusion.
 
 # Unresolved questions
 
-- How does `rustdoc` render these? Consider the `Frob` example—ideally,
-  `Frob` should be emphasized compared to `LocalFrob`, but it's not clear
-  how that would work.
+- How does `rustdoc` render these? Consider the `Frob` example—ideally, `Frob`
+  should be emphasized compared to `LocalFrob`, but it's not clear how that
+  would work.
 
 # Future possibilities
 
@@ -557,7 +564,8 @@ impl Foo for Stu {
 Such a feature could be useful when a trait has multiple items and you want to
 split it in two.
 
-However, there are some issues to resolve. Most glaring is the risk of name collisions:
+However, there are some issues to resolve. Most glaring is the risk of name
+collisions:
 
 ```rust
 trait A {
@@ -624,10 +632,9 @@ pub trait Frobnicate = FlexibleFrobnicate<Output = Option<Self::Item>> {
 }
 ```
 
-`impl` blocks should be allowed to omit associated items that are
-"uniquely constrained" by other such items. Such a capability would be useful
-even outside the context of trait aliases, for example when implementing
-`IntoIterator`:
+`impl` blocks should be allowed to omit associated items that are "uniquely
+constrained" by other such items. Such a capability would be useful even outside
+the context of trait aliases, for example when implementing `IntoIterator`:
 
 ```rust
 struct Iter;
@@ -672,9 +679,10 @@ trait ResultIterator = Iterator<Item = Result<Self::Ok, Self::Err>> {
 ```
 
 In the context of the above example, a `T: ResultIterator` bound would mean
-"there exist unique types `Ok` and `Err` such that
-`T: Iterator<Item = Result<Ok, Err>>` holds". Current Rust provides no mechanism
-for expressing a bound like that; you need a separate trait, like [`TryFuture`](https://docs.rs/futures-core/latest/futures_core/future/trait.TryFuture.html).
+"there exist unique types `Ok` and `Err` such that `T: Iterator<Item =
+Result<Ok, Err>>` holds". Current Rust provides no mechanism for expressing a
+bound like that; you need a separate trait, like
+[`TryFuture`](https://docs.rs/futures-core/latest/futures_core/future/trait.TryFuture.html).
 
 This feature could even allow GATification of `Iterator` (or `FnMut`, etc)
 without variance bounds:
