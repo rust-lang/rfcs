@@ -74,13 +74,13 @@ On macOS we use weak linking to do this:
 
 ```rust
 // Always available under these conditions.
-#[any(
+#[cfg(any(
     os_version_min("macos", "11.0"),
     os_version_min("ios", "14.0"),
     os_version_min("tvos", "14.0"),
     os_version_min("watchos", "7.0"),
     os_version_min("visionos", "1.0")
-)]
+))]
 let preadv = {
     extern "C" {
         fn preadv(libc::c_int, *const libc::iovec, libc::c_int, off64_t) -> isize;
