@@ -113,7 +113,7 @@ The `os_version_min` predicate allows users to conditionally compile code based 
 It requires a key and a version string.
 The key can be either a `target_os` string or else one of a set of target-defined strings.
 Version strings are always target defined (see [Versioning Schema][versioning-schema]) and will be compared against the target's supported version.
-For example, `#[cfg("macos", "11.0")]` has the key `macos` and the minimum version `11.0`, which will match any macos version greater than or equal to `11.0`.
+For example, `#[cfg(os_version_min("macos", "11.0"))]` has the key `macos` and the minimum version `11.0`, which will match any macOS version greater than or equal to macOS 11 Big Sur.
 If a target doesn't support a key, then the `cfg` will always return `false`.
 
 Each target platform will set the minimum API versions it supports for each key.
