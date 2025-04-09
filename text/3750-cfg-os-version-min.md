@@ -14,7 +14,7 @@ E.g. `cfg!(os_version_min("windows", "6.1.7600"))` would match Windows version >
 
 Operating systems and their libraries are continually advancing, adding and sometimes removing APIs or otherwise changing behaviour.
 Versioning of APIs is common so that developers can target the set of APIs they support.
-Crates including the standard library must account for various API version requirements for the crate to be able to run.
+Crates, including the standard library, must account for various API version requirements for the crate to be able to run.
 Rust currently has no mechanism for crates to compile different code (or to gracefully fail to compile) depending on the minimum targeted API version.
 This leads to the following issues:
 
