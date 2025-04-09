@@ -23,7 +23,7 @@ The standard library often performs [dynamic API detection](https://github.com/r
 For example, the [current `Mutex` impl](https://github.com/rust-lang/rust/blob/234099d1d12bef9d6e81a296222fbc272dc51d89/library/std/src/sys/windows/mutex.rs#L1-L20) has a Windows 7 fallback. Users who only ever intend to run their code on newer versions of Windows will still pay a runtime cost for this dynamic API detection.
 Providing a mechanism for specifying which minimum API version the user cares about, allows for statically specifying which APIs a binary can use.
 * Certain features cannot be dynamically detected and thus limit possible implementations.
-The libc crate must use [a raw syscalls on Android for `accept4`](https://github.com/rust-lang/libc/pull/1968), because this was only exposed in libc in version 21 of the Android API.
+The libc crate must use [a raw syscall on Android for `accept4`](https://github.com/rust-lang/libc/pull/1968), because this was only exposed in libc in version 21 of the Android API.
 Additionally libstd must dynamically load `signal` for all versions of Android despite it being required only for versions 19 and below.
 In the future there might be similar changes where there is no way to implement a solution for older versions.
 * Trying to compile code with an implicit dependency on a API version greater than what is supported by the target platform leads to linker errors.
