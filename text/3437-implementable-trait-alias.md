@@ -5,9 +5,11 @@
 
 # Summary
 
-Extend `#![feature(trait_alias)]` to permit `impl` blocks for trait aliases with
-a single primary trait. Also support fully-qualified method call syntax with
-such aliases.
+Extend `#![feature(trait_alias)]` to permit `impl` blocks for most trait aliases.
+Also support fully-qualified method call syntax with such aliases.
+
+Additionally, allow trait aliases to have bodies, which can contain `type`s,
+`const`s, and.or `fn`s.
 
 # Motivation
 
@@ -22,6 +24,11 @@ relationships with the following properties:
 
 Subtrait relationships are commonly used to model this, but this often leads to
 coherence and backward compatibility issues.
+
+In addition, sometimes one may wish to split a trait into two parts; however,
+this is impossible to accomplish backward-compatibly at present.
+
+It is also impossible to rename trait items in a backward-compatible way.
 
 ## AFIT `Send` bound aliases
 
@@ -46,7 +53,7 @@ recommended practice of using the
 non-`Send` variants.
 
 ```rust
-//! crate `frob-lib``
+//! crate `frob-lib`
 
 #[trait_variant::make(Frob: Send)]
 pub trait LocalFrob {
@@ -169,55 +176,56 @@ pub trait Frob = LocalFrob<frob(..): Send> + Send;
 With today's `trait_alias`, it wouldn't make much difference for `downstream`.
 `impl` blocks for `Frob` would still be broken.
 
-## (Speculative) GATification of `Iterator`
+## Splitting a trait
 
-*This example relies on some language features that are currently pure
-speculation. Implementable trait aliases are potentially necessary to support
-this use-case, but not sufficient.*
-
-Ever since the GAT MVP was stabilized, there has been discussion about how to
-add `LendingIterator` to the standard library, without breaking existing uses of
-`Iterator`. The relationship between `LendingIterator` and `Iterator` is
-"weak"/"strong"; an `Iterator` is a `LendingIterator` with an extra guarantee
-about its `Item` associated type (namely, that it is bivariant in its lifetime
-parameter).
-
-Now, let's imagine that Rust had some form of "variance bounds", that allowed
-restricting the way in which a type's GAT can depend on said GAT's generic
-parameters. One could then define `Iterator` in terms of `LendingIterator`, like
-so:
+Consider this humble library:
 
 ```rust
-//! `core::iter`
-pub trait LendingIterator {
-    type Item<'a>
-    where
-        Self: 'a;
-
-    fn next(&'a mut self) -> Self::Item<'a>;
+trait Frob {
+   fn frazzle(&self);
+   fn brop(&self);
 }
-
-pub trait Iterator = LendingIterator
-where
-    // speculative syntax, just for the sake of this example
-    for<'a> Self::Item<'a>: bivariant_in<'a>;
 ```
 
-But, as with the previous example, we are foiled by the fact that trait aliases
-aren't `impl`ementable, so this change would break every `impl Iterator` block
-in existence.
+Now, let us imagine that the authors of `frob-lib` realize that some types can
+only implement one of `frazzle` or `brop`, but not both. They want to split the
+trait in two. But, as with our previous example, there is no way to do this in a
+backward-compatible way without painful compromises.
 
-## (Speculative) `Async` trait
+## Removing a `Sized` bound
 
-There has been some discussion about a variant of the `Future` trait with an
-`unsafe` poll method, to support structured concurrency ([wg-async design
-notes](https://rust-lang.github.io/wg-async/vision/roadmap/scopes/capability/variant_async_trait.html)).
-*If* such a change ever happens, then the same "weak"/"strong" relationship will
-arise: the safe-to-poll `Future` trait would be a "strong" version of the
-unsafe-to-poll `Async`. As the linked design notes explain, there are major
-problems with expressing that relationship in today's Rust.
+Consider this other humble library:
+
+```rust
+trait Frob {
+   type Frobber:
+
+   fn frob(&self, frobber: &Self::Frobber);
+}
+```
+
+Currently, `Frob::Frobber` has a `Sized` bound, but the signature of `frob()`
+doesn't require it. However, there is no good way at present for `frob-lib` to
+remove the bound.
+
+## Renaming trait items
+
+Consider this verbose library:
+
+```rust
+trait TraitForFrobbing {
+   type TypeThatEnablesFrobbing:
+
+   fn perform_the_frobbing_operation_posthaste(&self, frobber: &Self::TypeThatEnablesFrobbing);
+}
+```
+
+The library author may want to rename the trait and its items to something less
+unwieldy. Unfortunately, he has no good way to accomplish this at present.
 
 # Guide-level explanation
+
+## `impl` blocks for trait aliases
 
 With `#![feature(trait_alias)]` (RFC #1733), one can define trait aliases, for
 use in bounds, trait objects, and `impl Trait`. This feature additionally allows
@@ -255,51 +263,106 @@ impl Frob for MyType {
 
 `impl`s of `Frob` now Just Work.
 
-The rule of thumb is: if you can copy everything between the `=` and `;` of a
-trait alias, paste it between the `for` and `{` of a trait `impl` block, and the
-result is syntactically valid—then the trait alias is implementable.
+## Bodies for trait aliases
+
+Trait aliases can also now sepcify an optional body, which can contain various
+items. These items are themselves aliases for items defined on the respective
+traits.
+
+```rust
+//! crate `foolib`
+
+trait Foo {
+    type AssocTy;
+
+    const ASSOC: i32;
+
+    fn method(&self);
+    fn another_method(&self);
+}
+
+trait QuiteVerboseAlias = Foo {
+    type TypeThatIsAssociated = Self::AssocTy;
+
+    const ASSOCIATED_CONSTANT: i32 = Self::ASSOC;
+
+    fn a_method_you_can_call = Self::method;
+}
+```
+
+You can then refer to these associated items wherever the alias is in
+scope:
+
+```rust
+fn do_thing<T: QuiteVerboseAlias>(arg: T, another_arg: T::TypeThatIsAssociated) {
+    arg.a_method_you_can_call();
+
+    // You can also still use the original names from the aliased trait
+    arg.method();
+    arg.another_method();
+}
+```
+
+You can also use the alias names when implementing the trait alias:
+
+```rust
+impl QuiteVerboseAlias for () {
+    type TypeThatIsAssociated = i32;
+
+    const ASSOC: i32 = 42;
+
+    fn a_method_you_can_call(&self) {
+        println!("foo")
+    }
+
+    fn another_method(&self) {
+        println!("bar")
+    }
+}
+```
+
+## Implementing trait aliases for multiple traits
+
+Trait aliases that combine multiple traits with `+` are also implementable:
+
+```rust
+trait Foo {
+    fn foo();
+}
+
+trait Bar {
+    fn bar();
+}
+
+trait FooBar = Foo + Bar;
+
+impl FooBar for () {
+    fn foo() {
+        println!("foo");
+    }
+
+    fn bar() {
+        println!("bar");
+    }
+}
+```
+
+However, be careful: if both traits have an item of the same name, you won’t be
+able to disambiguate, and will have to split the `impl` block into separate
+impls for the two underlying traits. Or, alternatively, you can give the trait
+alias a body, and define item aliases with distinct names for each of the
+conflicting items.
 
 # Reference-level explanation
 
-## Implementability rules
+## Implementing trait aliases
 
-A trait alias has the following syntax (using the Rust Reference's notation):
-
-> [Visibility](https://doc.rust-lang.org/stable/reference/visibility-and-privacy.html)<sup>?</sup>
-> `trait`
-> [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html)
-> [GenericParams](https://doc.rust-lang.org/stable/reference/items/generics.html)<sup>?</sup>
-> `=`
-> [TypeParamBounds](https://doc.rust-lang.org/stable/reference/trait-bounds.html)<sup>?</sup>
-> [WhereClause](https://doc.rust-lang.org/stable/reference/items/generics.html#where-clauses)<sup>?</sup>
-> `;`
-
-For example, `trait Foo<T> = PartialEq<T> + Send where Self: Sync;` is a valid
-trait alias.
-
-Implementable trait aliases must follow a more restrictive form:
-
-> [Visibility](https://doc.rust-lang.org/stable/reference/visibility-and-privacy.html)<sup>?</sup>
-> `trait`
-> [IDENTIFIER](https://doc.rust-lang.org/stable/reference/identifiers.html)
-> [GenericParams](https://doc.rust-lang.org/stable/reference/items/generics.html)<sup>?</sup>
-> `=`
-> [TypePath](https://doc.rust-lang.org/stable/reference/paths.html#paths-in-types)
-> [WhereClause](https://doc.rust-lang.org/stable/reference/items/generics.html#where-clauses)<sup>?</sup>
-> `;`
-
-For example, `trait Foo<T> = PartialEq<T> where Self: Sync;` is a valid
-implementable alias. The `=` must be followed by a single trait (or
-implementable trait alias), and then some number of where clauses. The trait's
-generic parameter list may contain associated type constraints (for example
-`trait IntIterator = Iterator<Item = u32>`).
-
-## Usage in `impl` blocks
-
-An `impl` block for a trait alias looks just like an `impl` block for the
-underlying trait. The alias's where clauses are enforced as requirements that
-the `impl`ing type must meet—just like `where` clauses in trait declarations are
-treated.
+A trait alias is considered implementable if it includes at least one trait
+reference before the `where` keyword. (Henceforth, these are the “primary
+traits” of the alias.)`impl`ementing the alias implements these primary traits,
+and only these traits. The alias’s `where` clauses are enforced as requirements
+that the `impl`ing type must meet—just like `where` clauses in trait
+declarations are treated.
 
 ```rust
 pub trait CopyIterator = Iterator<Item: Copy> where Self: Send;
@@ -412,16 +475,16 @@ impl Frob for MyType {
 }
 ```
 
-Trait aliases are `unsafe` to implement iff the underlying trait is marked
-`unsafe`.
+Trait aliases are `unsafe` to implement iff one or more primary traits are
+marked `unsafe`.
 
 ## Usage in paths
 
-Implementable trait aliases can also be used with trait-qualified and
-fully-qualified method call syntax, as well as in paths more generally. When
-used this way, they are treated equivalently to the underlying primary trait,
-with the additional restriction that all `where` clauses and type
-parameter/associated type bounds must be satisfied.
+Trait aliases can also be used with trait-qualified and fully-qualified method
+call syntax, as well as in paths more generally. When used this way, they are
+treated equivalently to the underlying primary trait(s), with the additional
+restriction that all `where` clauses and type parameter/associated type bounds
+must be satisfied.
 
 ```rust
 use std::array;
@@ -438,8 +501,7 @@ let signed_iter = [1_i32].into_iter();
 //IntIter::next(&mut signed_iter); // ERROR: Expected `<Self as Iterator>::Item` to be `u32`, it is `i32`
 ```
 
-Implementable trait aliases can also be used with associated type bounds; the
-associated type must belong to the alias's primary trait.
+Implementable trait aliases can also be used with associated type bounds.
 
 ```rust
 trait IteratorAlias = Iterator;
@@ -450,43 +512,291 @@ let _: IntIter<Item = u32> = [1_u32].into_iter(); // `Item = u32` is redundant, 
 //let _: IntIter<Item = f64> = [1.0_f64].into_iter(); // ERROR: `Item = f64` conflicts with `Item = u32`
 ```
 
+Items from traits in `where` clauses of the alias are accessible, unless
+shadowed by items in the primary trait(s):
+
+```rust
+trait Foo {
+    fn frob();
+    fn frit();
+}
+
+trait Bar {
+    fn frit();
+    fn bork();
+}
+
+trait FooBar = Bar where Self: Foo;
+
+fn example<T: FooBar>() {
+    T::frob(); // resolves to `<T as Foo>::frob`
+    T::frit(); // resolves to `<T as Bar>::frit`
+    T::bork(); // resolves to `<T as Bar>::bork`
+}
+```
+
+## Aliases with multiple primary traits
+
+A trait alias with multiple primary traits can be implemented, unless one of the
+primary traits requires specifying an item that conflicts with an item of the
+same name in a different primary trait.
+
+```rust
+trait Foo {
+    fn frob();
+}
+
+trait Bar {
+    fn frob() {}
+}
+
+// This isn't implementable, due to conflict between `Foo::frob` and `Bar::frob`
+trait FooBar = Foo + Bar;
+```
+
+If the confliting items all have defaults, the alias will be implementable, but
+overriding the defaults will not be possible.
+
+```rust
+trait Foo {
+    fn frob() {}
+}
+
+trait Bar {
+    fn frob() {}
+}
+
+// This is implementable, but the `impl` block won't be able
+// to override the default bodies of the `frob()` functions.
+trait FooBar = Foo + Bar;
+```
+
+Name conflicts of this sort also cause ambiguity when using the alias:
+
+```rust
+fn example<T: FooBar>() {
+    T::frob(); // ERROR: ambiguous
+}
+```
+
+To resolve these conflicts, you can use trait alias bodies, as described below.
+
+## Bodies for trait aliases
+
+Trait aliases can now optionally contain a body, specifying aliases for various
+items. These can be types, constants, or functions.
+
+### `type`s and `const` items in trait alias bodies
+
+```rust
+trait Foo {
+    type Assoc;
+    const ASSOC: i32;
+}
+
+trait Alias = Foo {
+    type AssocVec = Vec<Self::Assoc>;
+    const ASSOC_PLUS_1: i32 = Self::ASSOC + 1;
+}
+```
+
+`<T as Alias>::AssocVec` means the same thing as `Vec<<T as Foo>::Assoc>`, and
+`<T as Alias>::ASSOC_PLUS_1` is equivalent to `const { <T as Foo>::ASSOC + 1 }`.
+
+To be implementable, a `type` or `const` alias item must obey certain
+restrictions. It must either be set equal to an item of a primary trait of the
+alias:
+
+```rust
+trait Foo {
+    type Assoc;
+    const ASSOC: i32;
+}
+
+trait Alias = Foo {
+    type Associated = Self::Assoc;
+    const ASSOCIATED: i32 = Self::ASSOC;
+}
+
+impl Alias for () {
+    type Associated = i32; // Equivalent to `type Assoc = i32;`
+    const ASSOCIATED: i32 = 42; // Equivalent to `const ASSOC: i32 = 42;`
+}
+```
+
+Or, the trait alias must set an associated type of the primary trait equal to a
+generic type, with the alias item as a generic parameter of that type. For
+example, here is
+[`TryFuture`](https://docs.rs/futures-core/latest/futures_core/future/trait.TryFuture.html)
+as an implementable trait alias:
+
+```rust
+/// This means:
+/// "A `TryFuture` is a `Future` where there exist
+/// unique types `Self::Ok` and `Self::Error` such that
+/// `Self: Future<Output = Result<Self::Ok, Self::Error>>`."
+pub trait TryFuture = Future<Output = Result<Self::Ok, Self::Error>> {
+    // The values of these `type`s are defined by the `Output = ...` above.
+    // So there is no need for `= ...` RHS
+    type Ok;
+    type Error;
+}
+
+// Example impl
+
+struct AlwaysFails;
+
+impl TryFuture for AlwaysFails {
+    type Ok = !;
+    type Error = ();
+
+    fn poll(self: Pin<&mut Self>, _: &mut Context<'_>) -> Poll<Result<!, ()>> {
+        Poll::Ready(Err(()))
+    }
+}
+```
+
+The generic parameter can also be nested:
+
+```rust
+trait Foo {
+    type Assoc;
+}
+
+trait Bar = Foo<Assoc = Result<Self::Foo, Vec<Self::Foo>>> {
+    type Foo;
+}
+```
+
+Items defined in a trait alias body shadow items of the same name in a primary
+trait.
+
+```rust
+trait Foo {
+    type Assoc;
+}
+
+trait Bar {
+    type Assoc;
+}
+
+trait FooBar = Foo + Bar {
+    type Assoc = <Self as Foo>::Assoc; // `FooBar::Assoc` will resolve to `Foo::Assoc`
+    type BarAssoc = <Self as Bar>::Assoc;
+}
+```
+
+#### GATs in type alias bodies
+
+Type alias bodies can also contain GATs. These are also subject to the
+implementability rules, though reordering generic parameters does not inhibit
+implementability.
+
+```rust
+trait Foo {
+    type Gat<'a, T, U>
+    where
+       Self: 'a;
+}
+
+trait Alias = Foo {
+    type Tag<'a, U, T> = Self::Gat<'a, T, U>; // Implementable
+    type GatVec<'a, T, U> = Self::Gat<'a, Vec<T>, U>; // Not implementable
+    type GatSame<'a, T> = Self::Gat<'a, T, T>; // Not implementable
+}
+```
+
+### `fn`s in type alias bodies
+
+#### Implementable `fn`s
+
+Trait alias bodies can also contain aliases for methods of its primary trait(s).
+This involves a new syntax form for implementable function aliases:
+
+```rust
+trait Frob {
+    fn frob(&self);
+}
+
+trait Alias = Frob {
+    fn method = Self::frob; // `Alias::method()` is equivalent to `Frob::frob()`
+}
+```
+
+Effect keywords like `const`, `async`, or `unsafe` do not need to be specified.
+
+You are allowed to specify generic parameters, in order to reorder them. But you
+don't have to:
+
+```rust
+trait Frob {
+    fn frob<T, U>(&self);
+}
+
+trait Alias = Frob {
+    fn alias = Self::frob; // OK
+    fn alias2<T, U> = Self::frob<U, T>; // Also OK
+    //fn alias3<T> = Self::frob<T, T>; // ERROR, as would not be implementable
+}
+```
+
+#### Non-implementable `fn`s
+
+A trait alias body can also contain non-alias `fn`s, with bodies. These are not
+implementable:
+
+```rust
+trait Frob {
+    fn frob(&self) -> i32;
+}
+
+trait Alias = Frob {
+    #[must_use]
+    fn frob_twice(&self) -> i32 {
+        self.frob() + self.frob()
+    }
+}
+```
+
+This is similar to defining an extension trait like
+[`Itertools`](https://docs.rs/itertools/latest/itertools/trait.Itertools.html).
+(One difference from extension traits is that trait aliases do not create their
+own `dyn` types.)
+
 # Drawbacks
 
-- The syntactic distance between implementable and non-implementable aliases is
-  short, which might confuse users. In particular, the fact that `trait Foo =
-  Bar + Send;` means something different than `trait Foo = Bar where Self:
-  Send;` will likely be surprising to many.
-- Adds complexity to the language, which might surprise or confuse users.
-- Many of the motivating use-cases involve language features that are not yet
-  stable, or even merely speculative. More experience with those features might
-  unearth better alternatives.
+- The fact that `trait Foo = Bar + Send;` means something different than `trait
+  Foo = Bar where Self: Send;` will likely be surprising to many.
+- Adds complexity to the language. In particular, trait alias bodies introduce a
+  large amount of new syntax and complexity, but will likely be rarely used.
+- There is a lot of overlap between trait alias bodies and extension traits.
 
 # Rationale and alternatives
 
-- Very lightweight, with no new syntax forms. Compare "trait transformers"
-  proposals, for example—they are generally much heavier.
-  - However, trait transformers would also address more use-cases (for example,
-    sync and async versions of a trait).
-- Better ergonomics compared to purely proc-macro based solutions.
-- One alternative is to allow marker traits or auto traits to appear in `+`
-  bounds of implementable aliases. (For example, `trait Foo = Bar + Send;` could
-  be made implementable).
-  - This may make the implementablility rules more intuitive to some, as the
-    distinction between `+ Send` and `where Self: Send` would no longer be
-    present.
-  - However, it also might make the rules less intuitive, as the symmetry with
-    `impl` blocks would be broken.
-  - Also, such a change might break the commutativity of `+`.
-  - It could also make it less obvious which trait is being implemented, versus
-    required; are we implementing `Bar`, `Send`, or both?
-  - Again, user feedback could help make this decision.
-- Another option is to require an attribute on implementable aliases; e.g.
-  `#[implementable] trait Foo = ...`. This would make the otherwise-subtle
-  implementability rules more explicit, at the cost of cluttering user code and
-  the attribute namespace.
-- A previous version of this RFC required generic parameters of implementable
-  trait aliases to be used as generic parameters of the alias's primary trait.
-  This restriction was meant to avoid surprising errors:
+## Require an attribute to mark the trait as implementable
+
+We could require an attribute on implementable aliases; e.g. `#[implementable]
+trait Foo = ...`. However, there is not much reason to opt out of
+implementability.
+
+## No trait alias bodies
+
+Not including this part of the proposal would significantly decrease the overall
+complexity of the feature. However, it would also reduce its power: trait
+aliases could no longer be used to rename trait items, and naming conflicts in
+multi-primary-trait aliases would be impossible to resolve.
+
+## No non-implementable items in trait alias bodies
+
+Such items don't have much utility from a backward-compatibility perspective,
+and overlap with extension traits. However, the cost of allowing them is very
+low.
+
+## Unconstrained generic parameters
+
+A previous version of this RFC required generic parameters of implementable
+trait aliases to be used as generic parameters of a primary trait of the alias.
+This restriction was meant to avoid surprising errors:
 
 ```rust
 trait Foo<T> = Copy;
@@ -518,234 +828,32 @@ impl Foo<i32> for MyType { // ERROR: overlapping impls
 However, upon further discussion, I now lean toward allowing more flexibility,
 even at the risk of potential confusion.
 
+## Allow `impl Foo + Bar for Type { ... }` directly, without an alias
+
+It's a forward-compatibility hazard, with no use-case that I can see.
+
+## Implementing aliases with 0 primary traits
+
+We could allow implementing aliases with no primary traits, as a no-op. However,
+I don't see the point in it.
+
 # Prior art
 
 - [`trait_transformer` macro](https://github.com/google/impl_trait_utils)
 
 # Unresolved questions
 
-- How does `rustdoc` render these? Consider the `Frob` example—ideally, `Frob`
-  should be emphasized compared to `LocalFrob`, but it's not clear how that
-  would work.
+- How does `rustdoc` render these?
 
 # Future possibilities
 
 - New kinds of bounds: anything that makes `where` clauses more powerful would
   make this feature more powerful as well.
-  - Variance bounds would allow this feature to support backward-compatible
+  - Variance bounds could allow this feature to support backward-compatible
     GATification.
-  - Method unsafety bounds would support the `Future` → `Async` use-case.
 - `trait Foo: Copy = Iterator;` could be allowed as an alternative syntax to
   `trait Foo = Iterator where Self: Copy;`.
-- `impl Trait<Assoc = Ty> for Type { /* ... */ }` could be permitted in the
-  future, to make the "copy-paste" rule of thumb work better.
-
-## Combining multiple primary traits into one `impl` block
-
-As an extension of this proposal, Rust could allows trait aliases to be
-implementable even if they have multiple primary traits. For example:
-
-```rust
-trait Foo = Clone + PartialEq;
-
-struct Stu;
-
-impl Foo for Stu {
-    fn clone(&self) -> Self {
-        Stu
-    }
-
-    fn eq(&self, other: &Self) -> bool {
-        true
-    }
-}
-```
-
-Such a feature could be useful when a trait has multiple items and you want to
-split it in two.
-
-However, there are some issues to resolve. Most glaring is the risk of name
-collisions:
-
-```rust
-trait A {
-    fn foo();
-}
-
-trait B {
-    fn foo();
-}
-
-// How would you write an `impl` block for this?
-trait C = A + B;
-```
-
-Such a feature could also make it harder to find the declaration of a trait item
-from its implementation, especially if IDE "go to definition" is not available.
-One would need to first find the trait alias definition, and then look through
-every primary trait to find the item. (However, given the current situation with
-postfix method call syntax, maybe this is an acceptable trade-off.)
-
-Perhaps a more narrowly tailored version of this extension, in which both
-subtrait and supertrait explicitly opt-in to support sharing an `impl` block
-with one another, would satisfy the backward-compatibility use-case while
-avoiding the above issues. Alternatively, there could be an explictit syntax for
-disambiguating within the `impl` block which trait an item comes from.
-
-## Associated items in trait aliases
-
-Trait aliases could be expanded to support associated types and consts[^1] that
-are uniquely constrained by the associated items of the underlying trait and
-where clauses. For example, imagine that `foolib v1.0` defines a trait like the
-following:
-
-[^1]: Supporting associated methods (with non-overridable defaults) is also a
-possibility. However, extension traits already address all potential use-cases
-of that feature (as far as I can see).
-
-```rust
-//! foolib 1.0
-
-pub trait Frobnicate {
-    type Item;
-
-    frob(&self) -> Option<Self::Item>;
-}
-```
-
-Later on, `foolib`'s developers realize that many users want their `frob()`
-implementation to return something other than `Option` (`Result`, for example).
-With trait alias associated types, this could be done backward-compatibly and
-with no coherence issues:
-
-```rust
-//! foolib 1.1
-
-pub trait FlexibleFrobnicate {
-    type Output;
-
-    frob(&self) -> Self::Output;
-}
-
-pub trait Frobnicate = FlexibleFrobnicate<Output = Option<Self::Item>> {
-    type Item;
-}
-```
-
-`impl` blocks should be allowed to omit associated items that are "uniquely
-constrained" by other such items. Such a capability would be useful even outside
-the context of trait aliases, for example when implementing `IntoIterator`:
-
-```rust
-struct Iter;
-
-impl Iterator for Iter {
-    type Item = u32;
-
-    fn next(&mut self) -> Option<u32> {
-        Some(42)
-    }
-}
-
-struct IntoIter;
-
-impl IntoIterator for IntoIter {
-    type IntoIter = Iter;
-
-    // `type Item` is uniquely constrained by `Self::IntoIter`,
-    // so it could be omitted.
-
-    fn into_iter(self) -> Iter {
-        Iter
-    }
-}
-```
-
-### Trait aliases constrained by their associated items
-
-If trait aliases with associated items are additionally allowed to refer to
-those items from the definition of the alias itself, it would be possible to
-express certain kinds of trait bounds that current `where` clauses do not
-support.
-
-For example:
-
-```rust
-/// An `Iterator` that yields `Result`s.
-trait ResultIterator = Iterator<Item = Result<Self::Ok, Self::Err>> {
-    type Ok;
-    type Err;
-}
-```
-
-In the context of the above example, a `T: ResultIterator` bound would mean
-"there exist unique types `Ok` and `Err` such that `T: Iterator<Item =
-Result<Ok, Err>>` holds". Current Rust provides no mechanism for expressing a
-bound like that; you need a separate trait, like
-[`TryFuture`](https://docs.rs/futures-core/latest/futures_core/future/trait.TryFuture.html).
-
-This feature could even allow GATification of `Iterator` (or `FnMut`, etc)
-without variance bounds:
-
-```rust
-pub trait LendingIterator {
-    type LentItem<'a>
-    where
-        Self: 'a;
-
-    fn next<'a>(&'a mut self) -> Option<Self::LentItem<'a>>;
-}
-
-// `T: Iterator` means
-// "there exists a unique type `Item` such that
-// `T: LendingIterator where for<'a> Self::LentItem<'a> = Item`"
-// (which holds iff `Self::LentItem<'a>` is bivariant in `'a`).
-pub trait Iterator = LendingIterator
-where
-    // Still need to solve implied `'static` bound problem
-    // (https://blog.rust-lang.org/2022/10/28/gats-stabilization.html#implied-static-requirement-from-higher-ranked-trait-bounds)
-    for<'a> Self::LentItem<'a> = Self::Item,
-{
-    type Item;
-}
-```
-
-### Name conflicts
-
-One wrinkle with the above scheme, is that it is possible for the trait being
-aliased to define, in a new minor version, additional trait items that have the
-same name as associated items of the alias itself.
-
-```rust
-//! foolib
-#![feature(associated_type_defaults)]
-
-pub trait Foo {
-    type Assoc;
-    /// Added in v1.1
-    type WrappedAssoc = Result<Self::Assoc, ()>;
-}
-```
-
-```rust
-//! aliaslib
-extern crate foolib;
-
-pub trait Alias = foolib::Foo {
-    /// Added in v1.1
-    type WrappedAssoc = Option<Self::Assoc>;
-}
-```
-
-```rust
-//! thirdlib
-extern crate foolib;
-extern crate aliaslib;
-
-impl Alias for Bar {
-    // What does this do?
-    // The issues here are similar to those for combining multiple traits
-    // in the same `impl` block.
-    type WrappedAssoc = Option<()>;
-}
-```
+- We could allow trait aliases to define their own defaults for `impl`s. One
+  possibility is [the `default partial impl` syntax I suggested on
+  IRLO](https://internals.rust-lang.org/t/idea-partial-impls/22706/).
+- We could allow implementable `fn` aliases in non-alias `trait` definitions.
