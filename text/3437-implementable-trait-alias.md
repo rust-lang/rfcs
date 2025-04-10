@@ -178,23 +178,26 @@ With today's `trait_alias`, it wouldn't make much difference for `downstream`.
 
 ## Splitting a trait
 
-Consider this humble library:
+To exemplify this use-case, we will use [Niko Matsakis’s proposal to split the
+`Deref`
+trait](https://github.com/rust-lang/rust/pull/135881#issuecomment-2718417230).
+
+`Deref` currently looks like this:
 
 ```rust
-trait Frob {
-   fn frazzle(&self);
-   fn brop(&self);
+pub trait Deref {
+    type Target: ?Sized;
+
+    fn deref(&self) -> &Self::Target;
 }
 ```
 
-Now, let us imagine that the authors of `frob-lib` realize that some types can
-only implement one of `frazzle` or `brop`, but not both. They want to split the
-trait in two. But, as with our previous example, there is no way to do this in a
-backward-compatible way without painful compromises.
+Niko wants to split off the `type Target` part into a separate `Receiver`
+supertrait. But there is no backward-compatible way to do this at present.
 
 ## Removing a `Sized` bound
 
-Consider this other humble library:
+Consider this humble library:
 
 ```rust
 trait Frob {
@@ -205,8 +208,8 @@ trait Frob {
 ```
 
 Currently, `Frob::Frobber` has a `Sized` bound, but the signature of `frob()`
-doesn't require it. However, there is no good way at present for `frob-lib` to
-remove the bound.
+doesn't require it. However, there is no backward-compatible way at present for
+`frob-lib` to remove the bound.
 
 ## Renaming trait items
 
@@ -353,6 +356,22 @@ impls for the two underlying traits. Or, alternatively, you can give the trait
 alias a body, and define item aliases with distinct names for each of the
 conflicting items.
 
+We can use this to split the `Deref` trait, as suggested in the motivation section:
+
+```rust
+//! New `Deref`
+
+pub trait Reciever {
+    type Target: ?Sized;
+}
+
+pub trait DerefToTarget: Reciever {
+    fn deref(&self) -> &Self::Target;
+}
+
+pub trait Deref = Receiver + DerefToTarget;
+```
+
 # Reference-level explanation
 
 ## Implementing trait aliases
@@ -418,8 +437,8 @@ impl IntIterator for Baz {
     // The alias constrains `Self::Item` to `i32`, so we don't need to specify it
     // (though we are allowed to do so if desired).
 
-    fn next(&mut self) -> i32 {
-        -27
+    fn next(&mut self) -> Option<i32> {
+        Some(-27)
     }
 }
 ```
@@ -440,8 +459,8 @@ impl IntIterator for Baz {
     // so `Item` must be `i32`
     // and we don't need to specify it.
 
-    fn next(&mut self) -> i32 {
-        -27
+    fn next(&mut self) -> Option<i32> {
+        Some(-27)
     }
 }
 ```
@@ -494,7 +513,7 @@ trait IntIter = Iterator<Item = u32> where Self: Clone;
 let iter = [1_u32].into_iter();
 let _: IntIter::Item = IntIter::next(&mut iter); // works
 let _: <array::IntoIter as IntIter>::Item = <array::IntoIter as IntIter>::next(); // works
-//IntIter::clone(&iter); // ERROR: trait `Iterator` has no method named `clone()`
+IntIter::clone(&iter);
 let dyn_iter: &mut dyn Iterator<Item = u32> = &mut iter;
 //IntIter::next(dyn_iter); // ERROR: `dyn Iterator<Item = u32>` does not implement `Clone`
 let signed_iter = [1_i32].into_iter();
@@ -763,6 +782,64 @@ This is similar to defining an extension trait like
 (One difference from extension traits is that trait aliases do not create their
 own `dyn` types.)
 
+## Interaction with `dyn`
+
+Trait aliases do not define their own `dyn` types. This RFC does not change that
+pre-existing behavior. However, we do make one change to which trait aliases
+also define a type alias for a trait object. If a trait alias contains multiple
+non-auto traits (primary or not), but one of them is a subtrait of all the
+others, then the corresponding `dyn` type for that trait alias is now an alias
+for the `dyn` type for that subtrait.
+
+This is necessary to support the `Deref` example from earlier.
+
+```rust
+trait Foo {
+    fn foo(&self);
+}
+trait Bar: Foo {
+    fn bar(&self);
+}
+
+trait FooBar = Foo + Bar; // `dyn FooBar` is an alias of `dyn Bar`
+trait FooBar2 = Foo
+where
+    Self: Bar; // `dyn FooBar2` is also an alias of `dyn Bar`
+```
+
+N.B.: when using implementable trait aliases to split a trait into two parts
+*without* a supertrait/subtrait relationship between them, you have to be
+careful in order to preserve `dyn` compatiblilty.
+
+```rust
+trait Foo {
+    fn foo(&self);
+}
+trait Bar {
+    fn bar(&self);
+}
+
+trait FooBar = Foo + Bar; // `dyn FooBar` is not a valid type!
+```
+
+To make it work, you can do:
+
+```rust
+trait Foo {
+    fn foo(&self);
+}
+
+trait Bar {
+    fn bar(&self);
+}
+
+#[doc(hidden)]
+trait FooBarDyn: Foo + Bar {}
+impl<T: Foo + Bar + ?Sized> FooBarDyn for T {}
+
+trait FooBar = Foo + Bar + FooBarDyn; // `dyn FooBar` now works just fine
+```
+
 # Drawbacks
 
 - The fact that `trait Foo = Bar + Send;` means something different than `trait
@@ -785,6 +862,10 @@ Not including this part of the proposal would significantly decrease the overall
 complexity of the feature. However, it would also reduce its power: trait
 aliases could no longer be used to rename trait items, and naming conflicts in
 multi-primary-trait aliases would be impossible to resolve.
+
+It's this last issue especially that leads me to not relegate this to a future
+possibility. Adding a defaulted item to a trait should at most require minor
+changes to dependents, and restructuring a large `impl` block is not “minor”.
 
 ## No non-implementable items in trait alias bodies
 
@@ -830,7 +911,8 @@ even at the risk of potential confusion.
 
 ## Allow `impl Foo + Bar for Type { ... }` directly, without an alias
 
-It's a forward-compatibility hazard, with no use-case that I can see.
+It's a forward-compatibility hazard (if the traits gain items with conflicting
+names), with no use-case that I can see.
 
 ## Implementing aliases with 0 primary traits
 
@@ -851,9 +933,23 @@ I don't see the point in it.
   make this feature more powerful as well.
   - Variance bounds could allow this feature to support backward-compatible
     GATification.
-- `trait Foo: Copy = Iterator;` could be allowed as an alternative syntax to
-  `trait Foo = Iterator where Self: Copy;`.
 - We could allow trait aliases to define their own defaults for `impl`s. One
   possibility is [the `default partial impl` syntax I suggested on
   IRLO](https://internals.rust-lang.org/t/idea-partial-impls/22706/).
 - We could allow implementable `fn` aliases in non-alias `trait` definitions.
+- We could allow any `impl` block to implement items from supertraits of its
+  primary trait(s).
+  - This would allow splitting a trait into a supertrait and a subtrait without
+    having to give the subtrait a new name.
+  - However, it would make it more difficult to deduce what traits an `impl`
+    block is implementing.
+  - In addition, it poses a danger if an `unsafe` subtrait depends on an
+    `unsafe` marker supertrait: you could implement the subtrait, carefully
+    checking that you meet its preconditions, while not realizing that you are
+    also implementing the supertrait and need to check its conditions as well.
+  - And even if the traits are not `unsafe`, they could still have preconditions
+    that are important for correctness. Users should never be committing to such
+    things unknowingly.
+- We could add an attribute for trait aliases to opt in to generating their own
+  `dyn` type.
+  - This could be prototyped as a proc macro.
