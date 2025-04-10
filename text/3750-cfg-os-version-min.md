@@ -128,9 +128,8 @@ However, there is currently no support for setting a `os_version_min` version ab
 ## Versioning Schema
 [versioning-schema]: #versioning-schema
 
-Version strings can take on nearly any form and while there are some standard formats, such as semantic versioning or release dates, projects can change schemas or provide aliases for some or all of their releases.
-Because of this diversity in version strings each platform will be responsible for defining an `is_gte` comparison function for each key they support.
-Alternatively they can use one of the pre-defined functions.
+Version strings can take on nearly any form and while there are some standard formats, such as semantic versioning or release dates, projects/platforms can change schemas or provide aliases for some or all of their releases.
+Because of this diversity in version strings, each target will be responsible for validating the version, and defining comparisons on it.
 
 ## Linting
 [linting]: #linting
