@@ -837,7 +837,9 @@ trait Bar {
 trait FooBarDyn: Foo + Bar {}
 impl<T: Foo + Bar + ?Sized> FooBarDyn for T {}
 
-trait FooBar = Foo + Bar + FooBarDyn; // `dyn FooBar` now works just fine
+trait FooBar = Foo + Bar
+where
+    Self: FooBarDyn; // `dyn FooBar` now works just fine
 ```
 
 # Drawbacks
