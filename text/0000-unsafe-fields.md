@@ -426,8 +426,8 @@ use std::{
 pub struct UniqueArc<T: 'static> {
     /// # Safety
     ///
-    /// So long as `T` is owned by `UniqueArc`, `T` may not be accessed (read or
-    /// written) other than via this `UniqueArc`.
+    /// While this `UniqueArc` exists, the value pointed by this `arc` may not
+    /// be accessed (read or written) other than via this `UniqueArc`.
     unsafe arc: Arc<UnsafeCell<T>>,
 }
 
