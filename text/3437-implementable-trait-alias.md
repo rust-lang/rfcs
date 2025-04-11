@@ -622,6 +622,26 @@ trait Alias = Foo {
 `<T as Alias>::AssocVec` means the same thing as `Vec<<T as Foo>::Assoc>`, and
 `<T as Alias>::ASSOC_PLUS_1` is equivalent to `const { <T as Foo>::ASSOC + 1 }`.
 
+Items defined in a trait alias body shadow items of the same name in a primary
+trait.
+
+```rust
+trait Foo {
+    type Assoc;
+}
+
+trait Bar {
+    type Assoc;
+}
+
+trait FooBar = Foo + Bar {
+    type Assoc = <Self as Foo>::Assoc; // `FooBar::Assoc` will resolve to `Foo::Assoc`
+    type BarAssoc = <Self as Bar>::Assoc;
+}
+```
+
+#### Implementability
+
 To be implementable, a `type` or `const` alias item must obey certain
 restrictions. It must either be set equal to an item of a primary trait of the
 alias:
@@ -684,24 +704,6 @@ trait Foo {
 
 trait Bar = Foo<Assoc = Result<Self::Foo, Vec<Self::Foo>>> {
     type Foo;
-}
-```
-
-Items defined in a trait alias body shadow items of the same name in a primary
-trait.
-
-```rust
-trait Foo {
-    type Assoc;
-}
-
-trait Bar {
-    type Assoc;
-}
-
-trait FooBar = Foo + Bar {
-    type Assoc = <Self as Foo>::Assoc; // `FooBar::Assoc` will resolve to `Foo::Assoc`
-    type BarAssoc = <Self as Bar>::Assoc;
 }
 ```
 
