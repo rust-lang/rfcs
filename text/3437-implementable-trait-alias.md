@@ -640,7 +640,7 @@ trait FooBar = Foo + Bar {
 }
 ```
 
-As aliases, `type` and `const` alias items do not require or accept bounds or
+As aliases, `type` and `const` alias items neither require nor accept bounds or
 `where` clauses; these are taken from the thing being aliased.
 
 #### Implementability
@@ -750,8 +750,8 @@ trait Alias = Frob {
 }
 ```
 
-Effect keywords like `const`, `async`, or `unsafe` do not need to be specified,
-and are not permitted.
+Modifers like `const`, `async`, `unsafe`, or `extern "C"` are neither required
+nor accepted.
 
 You are allowed to specify generic parameters, in order to reorder them. But you
 don't have to:
