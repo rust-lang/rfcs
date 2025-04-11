@@ -757,6 +757,149 @@ Unsafe Fields Denote Safety Invariants**](#tenet-unsafe-fields-denote-safety-inv
 requiring trivially `unsafe` drop glue), a violation of [**Tenet: Safe Usage is Usually
 Safe**](#tenet-safe-usage-is-usually-safe).
 
+### Unsafe Wrapper Type
+
+This RFC proposes extending the Rust language with first-class support for field (un)safety.
+Alternatively, we could attempt to achieve the same effects by leveraging Rust's existing visibility
+and safety affordances. At first blush, this seems plausible; it's trivial to define a wrapper that
+only provides unsafe initialization and access to its value:
+
+```rust
+#[repr(transparent)]
+pub struct Unsafe<T: ?Sized>(T);
+
+impl<T: ?Sized> Unsafe<T> {
+
+pub unsafe fn new(val: T) -> Self
+    where
+        T: Sized
+    {
+        Self(val)
+    }
+
+    pub unsafe fn as_ref(&self) -> &T {
+        &self.0
+    }
+
+    pub unsafe fn as_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+
+    pub unsafe fn into_inner(self) -> T
+    where
+        T: Sized
+    {
+        self.0
+    }
+}
+```
+
+However, this falls short of the assurances provided by first-class support for field safety.
+`Unsafe::new` inherits the safety conditions of the field that the `Unsafe` will be assigned to, and
+the safety conditions of its accessors inherit the safety conditions of the field that the `Unsafe`
+was read or referenced from. Consequently, what safety proofs one must write when using such a
+wrapper are a product of the dataflow of the program.
+
+And worse, certain dangerous flows do not require `unsafe` at all. For instance, unsafe fields of
+the same type can be laundered between fields with different invariants; safe code could exchange
+`Even` and `Odd`s' `val`s:
+
+```rust
+struct Even {
+    val: Unsafe<usize>,
+}
+
+struct Odd {
+    val: Unsafe<usize>,
+}
+```
+
+We can plug this particular hole by adding a type parameter to `Unsafe` that encodes the type of the
+outer datatype, `O`; e.g.:
+
+```rust
+#[repr(transparent)]
+pub struct Unsafe<O: ?Sized, T: ?Sized>(PhantomData<O>, T);
+```
+
+However, it remains possible to exchange unsafe fields within the same type; for example, safe code
+can freely exchange the values of `len` and `cap` of this hypothetical vector:
+
+```rust
+struct Vec<T> {
+    alloc: Unsafe<Self, *mut T>,
+    len: Unsafe<Self, usize>,
+    cap: Unsafe<Self, usize>,
+}
+```
+
+The [`unsafe-fields`](https://crates.io/crates/unsafe-fields) crate plugs this hole by extending
+`Unsafe` with a const generic that holds a hash of the field name. Even so, it remains possible for
+safe code to exchange the same unsafe field between different instances of the same type (e.g.,
+exchanging the `len`s of two instances of the aforementioned `Vec`).
+
+These challenges motivate first-class support for field safety tooling.
+
+### More Syntactic Granularity
+
+This RFC proposes the rule that *a field marked `unsafe` is unsafe to use*. This rule is flexible
+enough to handle arbitrary field invariants, but — in some scenarios — requires that the user write
+trivial safety comments. For example, in some scenarios, an unsafe is trivially sound to read:
+
+```rust
+struct Even {
+    /// # Safety
+    ///
+    /// `val` is an even number.
+    val: u8,
+}
+
+impl Into<u8> for Even {
+    fn into(self) -> u8 {
+        // SAFETY: Reading this `val` cannot
+        // violate its invariant.
+        unsafe { self.val }
+    }
+}
+```
+
+In other scenarios, an unsafe field is trivially sound to `&`-reference (but not `&mut`-reference).
+
+Since it is impossible for the compiler to precisely determine the safety requirements of an unsafe
+field from a type-directed analysis, we must *either* choose a usage rule that fits all scenarios
+(i.e., the approach adopted by this RFC) *or* provide the user with a mechanism to signal their
+requirements to the compiler. Here, we explore this alternative.
+
+The design space of syntactic knobs is vast. For instance, we could require that the user enumerate
+the operations that require `unsafe`; e.g.:
+
+- `unsafe(init,&mut,&,read)` (everything is unsafe)
+- `unsafe(init,&mut,&)` (everything except reading unsafe)
+- `unsafe(init,&mut)` (everything except reading and `&`-referencing unsafe)
+- etc.
+
+Besides the unclear semantics of an unparameterized `unsafe()`, this design has the disadvantage
+that the most permissive (and thus dangerous) semantics are the cheapest to type. To mitigate this,
+we might instead imagine reversing the polarity of the modifier:
+
+- `safe(read)` all operations except reading are safe
+- `safe(read,&)` all operations except reading and `&`-referencing are safe
+- etc.
+
+...but using `safe` to denote the presence of a safety invariant is probably too surprising in the
+context of Rust's existing safety tooling.
+
+Alternatively, if we are confident that a hierarchy of operations exists, the brevity of the API can
+be improved by having the presence of one modifier imply others (e.g., `unsafe(&mut)` could denote
+that initialization, mutation and `&mut`-referencing) are unsafe. However, this requires that the
+user internalize this hierarchy, or else risk selecting the wrong modifier for their invariant.
+
+Although we cannot explore the entire design space of syntactic modifiers here, we broadly feel that
+their additional complexity exceeds that of our proposed design. Our proposed rule that *a field
+marked `unsafe` is unsafe to use* is both pedagogically simple and fail safe; i.e., so long as a
+field is marked `unsafe`, it cannot be misused in such a way that its invariant is violated in safe
+code.
+
 # Drawbacks
 
 ## Alarm Fatigue
