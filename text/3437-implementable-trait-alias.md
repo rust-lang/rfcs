@@ -856,7 +856,8 @@ where
 
 We could require an attribute on implementable aliases; e.g. `#[implementable]
 trait Foo = ...`. However, there is not much reason to opt out of
-implementability.
+implementability. On the other hand, users may not want to commit to the primary
+vs secondary trait distinction immediately.
 
 ## No trait alias bodies
 
@@ -919,7 +920,8 @@ names), with no use-case that I can see.
 ## Implementing aliases with 0 primary traits
 
 We could allow implementing aliases with no primary traits, as a no-op. However,
-I don't see the point in it.
+I don't see the point in it, and there is a risk of people thinking it does
+something when it does not.
 
 # Prior art
 
