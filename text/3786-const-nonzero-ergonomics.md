@@ -226,6 +226,9 @@ foo(123_usize); // Error - literal has non-matching type.
 foo(123 - 1); // Error - coercion not applied for expressions.
 
 const MAGIC_VALUE: NonZero<i8> = 123; // OK - coercion logic is same as when calling a fn.
+
+let i: i8 = 123;
+foo(i); // Error - the coercion only applies to literals, not for values in general.
 ```
 
 # Drawbacks
