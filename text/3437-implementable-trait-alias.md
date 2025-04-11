@@ -602,10 +602,10 @@ To resolve these conflicts, you can use trait alias bodies, as described below.
 
 ## Bodies for trait aliases
 
-Trait aliases can now optionally contain a body, specifying aliases for various
-items. These can be types, constants, or functions.
+Trait aliases can now optionally contain a body, which specifies various *alias
+items*. These can be types, constants, or functions.
 
-### `type`s and `const` items in trait alias bodies
+### `type`s and `const` alias items in trait alias bodies
 
 ```rust
 trait Foo {
@@ -622,8 +622,8 @@ trait Alias = Foo {
 `<T as Alias>::AssocVec` means the same thing as `Vec<<T as Foo>::Assoc>`, and
 `<T as Alias>::ASSOC_PLUS_1` is equivalent to `const { <T as Foo>::ASSOC + 1 }`.
 
-Items defined in a trait alias body shadow items of the same name in a primary
-trait.
+Alias items defined in a trait alias body shadow items of the same name in
+primary traits.
 
 ```rust
 trait Foo {
@@ -639,6 +639,9 @@ trait FooBar = Foo + Bar {
     type BarAssoc = <Self as Bar>::Assoc;
 }
 ```
+
+As aliases, `type` and `const` alias items do not require or accept bounds or
+`where` clauses; these are taken from the thing being aliased.
 
 #### Implementability
 
@@ -709,9 +712,9 @@ trait Bar = Foo<Assoc = Result<Self::Foo, Vec<Self::Foo>>> {
 
 #### GATs in type alias bodies
 
-Type alias bodies can also contain GATs. These are also subject to the
-implementability rules, though reordering generic parameters does not inhibit
-implementability.
+Type alias bodies can also contain GAT alias items. These are also subject to
+the implementability rules, though reordering generic parameters does not
+inhibit implementability.
 
 ```rust
 trait Foo {
@@ -727,12 +730,15 @@ trait Alias = Foo {
 }
 ```
 
+### Bounds
+
 ### `fn`s in type alias bodies
 
 #### Implementable `fn`s
 
-Trait alias bodies can also contain aliases for methods of its primary trait(s).
-This involves a new syntax form for implementable function aliases:
+Trait alias bodies can also contain function alias items for methods of its
+primary trait(s). This involves a new syntax form for implementable function
+aliases:
 
 ```rust
 trait Frob {
@@ -744,7 +750,8 @@ trait Alias = Frob {
 }
 ```
 
-Effect keywords like `const`, `async`, or `unsafe` do not need to be specified.
+Effect keywords like `const`, `async`, or `unsafe` do not need to be specified,
+and are not permitted.
 
 You are allowed to specify generic parameters, in order to reorder them. But you
 don't have to:
@@ -760,6 +767,9 @@ trait Alias = Frob {
     //fn alias3<T> = Self::frob<T, T>; // ERROR, as would not be implementable
 }
 ```
+
+Just like `type` alias items, implementable `fn` alias items neither require nor
+accept `where` clauses or bounds of any sort.
 
 #### Non-implementable `fn`s
 
@@ -783,6 +793,10 @@ This is similar to defining an extension trait like
 [`Itertools`](https://docs.rs/itertools/latest/itertools/trait.Itertools.html).
 (One difference from extension traits is that trait aliases do not create their
 own `dyn` types.)
+
+These non-alias function items can specify `where` clauses and bounds like any
+other function item. They also have the same default `Sized` bounds on their
+generic type parameters.
 
 ## Interaction with `dyn`
 
