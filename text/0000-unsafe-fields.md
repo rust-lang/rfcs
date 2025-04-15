@@ -766,7 +766,7 @@ pub struct Unsafe<T: ?Sized>(T);
 
 impl<T: ?Sized> Unsafe<T> {
 
-pub unsafe fn new(val: T) -> Self
+    pub fn new(val: T) -> Self
     where
         T: Sized
     {
@@ -791,10 +791,9 @@ pub unsafe fn new(val: T) -> Self
 ```
 
 However, this falls short of the assurances provided by first-class support for field safety.
-`Unsafe::new` inherits the safety conditions of the field that the `Unsafe` will be assigned to, and
-the safety conditions of its accessors inherit the safety conditions of the field that the `Unsafe`
+The safety conditions of its accessors inherit the safety conditions of the field that the `Unsafe`
 was read or referenced from. Consequently, what safety proofs one must write when using such a
-wrapper are a product of the dataflow of the program.
+wrapper depend on the dataflow of the program.
 
 And worse, certain dangerous flows do not require `unsafe` at all. For instance, unsafe fields of
 the same type can be laundered between fields with different invariants; safe code could exchange
