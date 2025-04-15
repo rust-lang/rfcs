@@ -517,10 +517,6 @@ impl<T> DerefMut for UniqueArc<T> {
         unsafe { &mut *val }
     }
 }
-
-// SAFETY: `UniqueArc<T>` has the same aliasing and synchronization properties
-// as `&mut T`, and so it is `Sync` if `&mut T` is `Sync`.
-unsafe impl<T> Sync for UniqueArc<T> where for<'a> &'a mut T: Sync {}
 ```
 
 # Reference-level explanation
