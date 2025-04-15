@@ -951,6 +951,15 @@ consensus, once that consensus is reached.
 
 # Future possibilities
 
+## Syntactic Knobs and Wrapper Types
+
+This RFC is forwards-compatible with some future additions of [syntactic
+knobs](#more-syntactic-granularity) and tooling-aware [wrapper types](#unsafe-wrapper-type). A
+variant of `unsafe` that permits safe `&`-referencing could be introduced at any time without
+breaking existing code. Over an edition boundary, safe reads of `unsafe` fields could be permitted
+by rewriting existing `unsafe` fields to wrap their field type in a tooling-aware `Unsafe` wrapper
+type.
+
 ## Safe Unions
 
 Today, unions provide language support for fields with subtractive *language* invariants. Unions may
