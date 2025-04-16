@@ -18,6 +18,14 @@ syntax to implement. However, trait `derive` macros cannot currently require
 `unsafe`. This RFC defines a syntax for declaring and using unsafe `derive`
 macros.
 
+This provides value for any derive of an `unsafe trait`, ranging from standard
+library unsafe traits such as `Send` and `Sync` to more complex unsafe traits
+in the ecosystem. With this mechanism available, an `unsafe trait` has the
+option of providing two different kinds of `derive` macros: a safe `derive`
+macro that implements the `unsafe` trait in a fashion that's always safe (or
+that fails if some obligation is not met), or an `unsafe` `derive` macro that
+puts the safety obligation on the invoker of the `derive`.
+
 This RFC also defines a syntax for declaring proc macro attributes as unsafe.
 
 # Guide-level explanation
