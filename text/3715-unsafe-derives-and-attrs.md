@@ -31,6 +31,30 @@ This RFC also defines a syntax for declaring proc macro attributes as unsafe.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## Attributes
+
+When declaring a proc macro attribute, you can add the `unsafe` parameter to
+the `proc_macro_attribute` attribute to indicate that the attribute requires
+`unsafe`:
+
+```rust
+#[proc_macro_attribute(unsafe)]
+pub fn dangerous(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}
+```
+
+Invoking an unsafe attribute requires the unsafe attribute syntax:
+`#[unsafe(dangerous)]`.
+
+When writing a `SAFETY` comment for each `unsafe`, you can place the `SAFETY`
+comment immediately prior to the attribute:
+
+```rust
+// SAFETY: ...
+#[unsafe(dangerous)]
+```
+
 ## Derives
 
 When declaring a proc macro `derive`, you can use the following syntax to
@@ -73,30 +97,6 @@ struct AnotherStruct { ... }
 (Note that current rustfmt will place every derive on a line of its own if any
 have a comment. That could be changed in a future style edition, but this RFC
 is not making or advocating any style proposals.)
-
-## Attributes
-
-When declaring a proc macro attribute, you can add the `unsafe` parameter to
-the `proc_macro_attribute` attribute to indicate that the attribute requires
-`unsafe`:
-
-```rust
-#[proc_macro_attribute(unsafe)]
-pub fn dangerous(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
-}
-```
-
-Invoking an unsafe attribute requires the unsafe attribute syntax:
-`#[unsafe(dangerous)]`.
-
-When writing a `SAFETY` comment for each `unsafe`, you can place the `SAFETY`
-comment immediately prior to the attribute:
-
-```rust
-// SAFETY: ...
-#[unsafe(dangerous)]
-```
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
