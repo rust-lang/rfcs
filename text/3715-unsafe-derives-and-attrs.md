@@ -98,6 +98,24 @@ struct AnotherStruct { ... }
 have a comment. That could be changed in a future style edition, but this RFC
 is not making or advocating any style proposals.)
 
+### Helper attributes
+
+A `derive` macro can have helper attributes. You can use the following syntax
+to declare a helper attribute as `unsafe`:
+
+```rust
+#[proc_macro_derive(MyDeriveMacro(, attributes(unsafe(dangerous_helper_attr))]
+pub fn derive_my_derive_macro(_item: TokenStream) -> TokenStream {
+    TokenStream::new()
+}
+```
+
+Invoking this helper attribute requires the unsafe attribute syntax:
+`#[unsafe(dangerous_helper_attr)]`.
+
+Any combination of safe and unsafe attributes are allowed in both safe and
+unsafe derive macros.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -157,6 +175,3 @@ that mechanism to derives.
 When we add support for `macro_rules!`-based attributes and derives, we should
 provide a means for such attributes and derives to declare themselves unsafe as
 well.
-
-We could provide a syntax to declare specific helper attributes of a derive as
-unsafe, without declaring the entire derive unsafe.
