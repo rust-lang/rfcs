@@ -20,7 +20,7 @@ const trait Default {
 }
 
 impl const Default for () {
-    const fn default() {}
+    (const) fn default() {}
 }
 
 struct Thing<T>(T);
@@ -180,11 +180,11 @@ Free functions are unaffected and will stay as `const fn`.
 
 ### Impls for conditionally const methods
 
-Methods that are declared as `(const)` on a trait can now be made `const` in an impl, if that impl is marked as `impl cosnt Trait`:
+Methods that are declared as `(const)` on a trait can now also be made `(const)` in an impl, if that impl is marked as `impl const Trait`:
 
 ```rust
 impl const Trait for Type {
-    const fn thing() {}
+    (const) fn thing() {}
 }
 ```
 
@@ -202,7 +202,7 @@ const trait Foo {
 }
 
 impl const Foo for () {
-    const fn foo(&self) {}
+    (const) fn foo(&self) {}
     fn bar(&self) {
         println!("writing to terminal is not possible in const eval");
     }
@@ -221,11 +221,11 @@ const trait Default {
 }
 
 impl const Default for () {
-    const fn default() {}
+    (const) fn default() {}
 }
 
 impl<T: Default> const Default for Box<T> {
-    fn default() -> Self { Box::new(T::default()) }
+    (const) fn default() -> Self { Box::new(T::default()) }
 }
 
 // This function requires a `const` impl for the type passed for T,
@@ -304,7 +304,7 @@ struct MyStruct<T>(T);
 
 impl<T: (const) Add<Output = T>> const Add for MyStruct<T> {
     type Output = MyStruct<T>;
-    const fn add(self, other: MyStruct<T>) -> MyStruct<T> {
+    (const) fn add(self, other: MyStruct<T>) -> MyStruct<T> {
         MyStruct(self.0 + other.0)
     }
 }
@@ -314,7 +314,7 @@ where
     for<'a> &'a T: (const) Add<Output = T>,
 {
     type Output = MyStruct<T>;
-    const fn add(self, other: &MyStruct<T>) -> MyStruct<T> {
+    (const) fn add(self, other: &MyStruct<T>) -> MyStruct<T> {
         MyStruct(&self.0 + &other.0)
     }
 }
@@ -605,7 +605,7 @@ struct NewType<T>(T);
 
 impl<T: (const) Add<Output = T>> const Add for NewType<T> {
     type Output = Self;
-    fn add(self, other: Self) -> Self::Output {
+    (const) fn add(self, other: Self) -> Self::Output {
         NewType(self.0 + other.0)
     }
 }
@@ -620,7 +620,7 @@ struct Error;
 
 impl<T: (const) Add<Output = T>> const Add for NewType<T> {
     type Output = Result<Self, Error>;
-    fn add(self, other: Self) -> Self::Output {
+    (const) fn add(self, other: Self) -> Self::Output {
         if self.1 {
             Ok(NewType(self.0 + other.0, other.1))
         } else {
@@ -670,7 +670,7 @@ const trait Bar {
 struct Foo<T: Bar>(T);
 
 impl<T: (const) Bar> const Drop for Foo<T> {
-    const fn drop(&mut self) {
+    (const) fn drop(&mut self) {
         self.0.thing();
     }
 }
@@ -689,7 +689,7 @@ Extraneous `(const) Trait` bounds where `Trait` isn't a bound on the type at all
 
 ```rust
 impl<T: (const) Bar + (const) Baz> const Drop for Foo<T> {
-    const fn drop(&mut self) {
+    (const) fn drop(&mut self) {
         self.0.thing();
     }
 }
