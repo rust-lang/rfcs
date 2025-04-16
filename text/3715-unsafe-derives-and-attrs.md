@@ -25,11 +25,11 @@ This RFC also defines a syntax for declaring proc macro attributes as unsafe.
 
 ## Derives
 
-When declaring a proc macro `derive`, you can add the `unsafe` parameter to the
-`proc_macro_derive` attribute to indicate that the derive requires `unsafe`:
+When declaring a proc macro `derive`, you can use the following syntax to
+indicate that the derive requires `unsafe`:
 
 ```rust
-#[proc_macro_derive(DangerousDeriveMacro, unsafe)]
+#[proc_macro_derive(unsafe(DangerousDeriveMacro)]
 pub fn derive_dangerous_derive_macro(_item: TokenStream) -> TokenStream {
     TokenStream::new()
 }
@@ -124,10 +124,10 @@ like a modifier to `DangerousDeriveMacro` (e.g. an unsafe version of
 `DangerousDeriveMacro`), particularly in the common case where
 `DangerousDeriveMacro` has the same name as a trait.
 
-We could use a similar syntax for declaring unsafe derives as invoking them:
-`proc_macro_derive(unsafe(DangerousDeriveMacro))`. However, because of the
-precedent of `unsafe(attribute)`, this can be interpreted as being an unsafe
-operation to *define* rather than an unsafe operation to *invoke*.
+We could use a different syntax for declaring unsafe derives, such as
+`proc_macro_derive(DangerousDeriveMacro, unsafe)`. This would have the
+advantage of not looking like the definition incurs an unsafe obligation, but
+the disadvantage of using a different syntax for definition and use.
 
 If we didn't have this feature, a workaround trait authors could use for the
 specific case of a derive macro implementing a trait is to have a separate
