@@ -1,7 +1,7 @@
 - Feature Name: `unsafe_fields`
 - Start Date: 2023-07-13
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3458](https://github.com/rust-lang/rfcs/pull/3458)
+- Rust Issue: [rust-lang/rust#132922](https://github.com/rust-lang/rust/issues/132922)
 
 # Summary
 
