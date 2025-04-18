@@ -897,36 +897,29 @@ code.
 
 # Drawbacks
 
-## Alarm Fatigue
+## Trivial Safety Proofs
 
-Although the `unsafe` keyword gives Rust's safety hygiene tooling insight into whether a field
-carries safety invariants, it does not give Rust deeper insight into the semantics of those
-invariants. Consequently, Rust must err on the side caution, requiring `unsafe` for most uses of
-unsafe field — including uses that the programmer can see are conceptually harmless.
+The primary drawback of this proposal is that it — in some scenarios — necessitates writing
+'trivial' safety proofs. For example, merely reading `Vec`'s `len` field obviously cannot invalidate
+its invariant; nonetheless, this field, if marked `unsafe`, would be `unsafe` to read. An `unsafe`
+block and attendant `SAFETY` comment is required. In most cases, this is a one-time chore: the
+maintainer can define a *safe* accessor (i.e.,
+[`Vec::len`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.len)) that encapsulates this
+proof. However, in cases where multiple, partial field borrows are required, such an accessor cannot
+be invoked. [Future language extensions that permit partial borrows may resolve this
+drawback.](#partial-borrows).
 
-In these cases, Rust's safety hygiene tooling will suggest that the harmless operation is wrapped
-in an `unsafe` block, and the programmer will either:
-
-- comply and provide a trivial safety proof, or
-- opt out of Rust's field safety tooling by removing the `unsafe` modifier from their field.
-
-The former is a private annoyance; the latter is a rebuttal of Rust's safety hygiene conventions
-and tooling. Such rebuttals are not unprecedented in the Rust ecosystem. Even among prominent
-projects, it is not rare to find a conceptually unsafe function that is not marked unsafe. The
-discovery of such functions by the broader Rust community has, occasionally, provoked controversy.
+At the extreme, a programmer frustrated with field safety tooling might opt to continue with the
+status quo approach for maintaining field invariants. Such rebuttals of safety tooling are not
+unprecedented in the Rust ecosystem. Even among prominent projects, it is not rare to find a
+conceptually unsafe function or impl that is not marked unsafe. The discovery of such functions by
+the broader Rust community has, occasionally, provoked controversy.
 
 This RFC takes care not to fuel such flames; e.g., [**Tenet: Unsafe Fields Denote Safety
 Invariants**](#tenet-unsafe-fields-denote-safety-invariants) admonishes that programmers *should* —
 but **not** *must* — denote field safety invariants with the `unsafe` keyword. It is neither a
-soundness nor security issue to continue to adhere to the convention of using visibility to enforce
-field safety invariants.
-
-This RFC does not, itself, attempt to address alarm fatigue. Instead, we propose a simple extension
-to Rust's safety tooling that is, by virtue of its simplicity, particularly amenable to future
-iterative refinement. We imagine empowering Rust to reason about safety invariants, either via
-[type-directed analyses](#safe-reads-for-fields-with-local-non-suspended-invariants), or via
-syntactic extensions. The design of these refinements will be guided by the valuable usage data
-produced by implementing this RFC.
+soundness nor security issue to continue to adhere to the current convention of using visibility to
+enforce field safety invariants.
 
 # Prior art
 
@@ -950,6 +943,17 @@ prescribe its terminology. Documentation of the unsafe fields tooling should ref
 consensus, once that consensus is reached.
 
 # Future possibilities
+
+## Partial Borrows
+
+The primary drawback of this proposal is that it — in some scenarios — necessitates writing
+'trivial' safety proofs. For example, merely reading `Vec`'s `len` field obviously cannot invalidate
+its invariant; nonetheless, this field, if marked `unsafe`, would be `unsafe` to read. An `unsafe`
+block and attendant `SAFETY` comment is required. In most cases, this is a one-time chore: the
+maintainer can define a *safe* accessor (i.e.,
+[`Vec::len`](https://doc.rust-lang.org/std/vec/struct.Vec.html#method.len)) that encapsulates this
+proof. However, in cases where multiple, partial field borrows are required, such an accessor cannot
+be invoked. Future language extensions that permit partial borrows will resolve this drawback.
 
 ## Syntactic Knobs and Wrapper Types
 
