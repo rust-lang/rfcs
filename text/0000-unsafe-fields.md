@@ -895,6 +895,36 @@ marked `unsafe` is unsafe to use* is both pedagogically simple and fail safe; i.
 field is marked `unsafe`, it cannot be misused in such a way that its invariant is violated in safe
 code.
 
+### Mixing Syntactic Knobs with a Wrapper Type
+
+One alternative proposed in this RFC's discussion recommends a combination of syntactic knobs and a
+wrapper type. In brief, a simple [`Unsafe` wrapper type](#unsafe-wrapper-type) would be provided,
+along with two field safety modifiers:
+
+- `unsafe`
+  All uses except reading are `unsafe`.
+- `unsafe(mut)`
+  All uses except reading and `&mut`-referencing are `unsafe`.
+
+Under this proposal, a programmer would use some combination of `unsafe`, `unsafe(mut)` and `Unsafe`
+to precisely tune Rust's safety tooling protections, depending on the hazards of their invariant.
+
+The primary advantage of this approach is that it results in comparatively fewer instances in which
+[the programmer must write a 'trivial' safety proof](#trivial-safety-proofs). However, it achieves
+this by front-loading the requirement that the programmer imagine all possible safety hazards of
+their field. A mistake, here, may lead to a false sense of security if Rust fails to require
+`unsafe` for uses that are, in fact, dangerous. By contrast, this RFC requires that programmers
+resolve these questions only on an as-needed basis; e.g., until you need to `&`-reference a field,
+you do not need to confront whether doing so is *always* a safe operation.
+
+This alternative also inherits some of the disadvantages of [`Unsafe` wrapper
+types](#unsafe-wrapper-type); namely that the safety proofs needed to operate on an `Unsafe` wrapper
+value depend on the dataflow of the program; the wrapper value must be traced to its originating
+field so that field's safety documentation may be examined.
+
+Comparatively, we believe that this RFC's proposal is both pedagogically simpler and less prone to
+misuse, and that these benefits outweigh its [drawbacks](#drawbacks).
+
 # Drawbacks
 
 ## Trivial Safety Proofs
@@ -958,13 +988,13 @@ be invoked. Future language extensions that permit partial borrows will resolve 
 ## Syntactic Knobs and Wrapper Types
 
 While we are confident that this RFC has the best tradeoffs among the alternatives in the design
-space, it is not a one-way door.  This RFC is forwards-compatible with some future additions of
-[syntactic knobs](#more-syntactic-granularity) and tooling-aware [wrapper
-types](#unsafe-wrapper-type). A variant of `unsafe` that permits safe `&`-referencing could be
-introduced at any time without breaking existing code. Over an edition boundary, safe reads of
-`unsafe` fields could be permitted by rewriting existing `unsafe` fields to wrap their field type in
-a tooling-aware `Unsafe` wrapper type. This migration would be sound, but not seamless, and could
-not be embarked on lightly.
+space, it is not a one-way door.  This RFC is forwards-compatible with some future additions of some
+[combinations](#mixing-syntactic-knobs-with-a-wrapper-type) of [syntactic
+knobs](#more-syntactic-granularity) and [wrapper types](#unsafe-wrapper-type). A variant of `unsafe`
+that permits safe `&`-referencing could be introduced at any time without breaking existing code.
+Over an edition boundary, safe reads of `unsafe` fields could be permitted by rewriting existing
+`unsafe` fields to wrap their field type in a tooling-aware `Unsafe` wrapper type. This migration
+would be sound, but not seamless, and could not be embarked on lightly.
 
 ## Safe Unions
 
