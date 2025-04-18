@@ -904,7 +904,7 @@ along with two field safety modifiers:
 - `unsafe`
   All uses except reading are `unsafe`.
 - `unsafe(mut)`
-  All uses except reading and `&mut`-referencing are `unsafe`.
+  All uses except reading and `&`-referencing are `unsafe`.
 
 Under this proposal, a programmer would use some combination of `unsafe`, `unsafe(mut)` and `Unsafe`
 to precisely tune Rust's safety tooling protections, depending on the hazards of their invariant.
