@@ -1,29 +1,29 @@
 - Feature Name: `input macros`
-- Start Date: 2025-04-02)
+- Start Date: 2025-04-02
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
 
-This RFC propose the addition of macros and some functions that can be used to 
-read input from the user in a more ergonomic way like the 
+This RFC proposes the addition of macros and some functions that can be used to 
+read input from the user in a more ergonomic way, similar to the 
 [Input built-in function in Python](https://peps.python.org/pep-3111/). 
 
-With this initiative we can build a small interactive programs that reads input 
-from standard input and writes output to standard output is well-established as 
-a simple and fun way of learning and teaching Rust as a new programming 
-language. 
+With this initiative, we can build a small interactive programs that reads input 
+from standard input and writes output to standard output. This is 
+well-established as a simple and fun way of learning and teaching Rust as a 
+new programming language. 
 
 ```rust
 println!("Please enter your name: ");
-let possible_name: Result<String, _> = input!(); // This could fail for example 
+let possible_name: Result<String, _> = input!(); // This could fail, for example 
                                                  // if the user closes the input 
                                                  // stream
 
 // Besides we can show a message to the user
 let possible_age: Result<u8, _> = input!("Please enter your age: "); 
-                                        // This could fail for example if the 
+                                        // This could fail, for example if the 
                                         // user enters a string instead of a 
                                         // number in the range of u8
 
@@ -33,7 +33,7 @@ let lastname = input!("Please enter your lastname: ")
                     // This could fail for example if the 
                     // user enters a empty string
 
-// --- Other way to use the macro ---
+// --- Another way to use the macro ---
 
 struct Price {
     currency: String,
@@ -56,12 +56,12 @@ impl FromStr for Price {
 
 let price: Price = input!("Please introduce a price: ")?; 
         // This could fail for example if the input is reading from a pipe and 
-        // we delete the file whose descriptor is being read meanwhile the 
+        // we delete the file whose descriptor is being read while the
         // program is running
 
 ```
 
-In these examples I show many ways to use the `input!` macro.
+In these examples, I show several ways to use the `input!` macro.
 
 In this macro we think that EOF is error case, so we return a `Result` with the 
 error type being the error that caused the EOF. This is because is easily to 
@@ -152,7 +152,8 @@ concrete terms.
 
 ```rs
 /// A macro that:
-/// - reads **one line** from stdin (as `String` by default),
+/// - optionally prints a prompt (with `print!`).
+/// - reads **one line** from stdin.
 /// - returns `Err(InputError::Eof)` if EOF is encountered.
 /// - returns `Err(InputError::Parse(e))` if the input cannot be parsed.
 /// - returns `Err(InputError::Io(e))` if an IO error occurs.
@@ -172,12 +173,47 @@ concrete terms.
 #[macro_export]
 macro_rules! input {
     () => {{
-        $crate::read_input_from(&mut ::std::io::stdin().lock(), None)
+        $crate::read_input_from(
+            &mut ::std::io::stdin().lock(),
+            None,
+            $crate::PrintStyle::Continue,
+        )
     }};
     ($($arg:tt)*) => {{
         $crate::read_input_from(
             &mut ::std::io::stdin().lock(),
-            Some(format_args!($($arg)*))
+            Some(format_args!($($arg)*)),
+            $crate::PrintStyle::Continue
+        )
+    }};
+}
+
+/// A macro that:
+/// - prints the prompt on its own line (with `println!`),
+/// - then reads one line,
+/// - returns `Err(InputError::Eof)` if EOF is encountered.
+/// - returns `Err(InputError::Parse(e))` if the input cannot be parsed.
+/// - returns `Err(InputError::Io(e))` if an IO error occurs.
+/// - otherwise parses into `String`.
+///
+/// # Usage:
+/// ```no_run
+/// let line: String = inputln!("What's your favorite color?").unwrap();
+/// ```
+#[macro_export]
+macro_rules! inputln {
+    () => {{
+        $crate::read_input_from(
+          &mut ::std::io::stdin().lock(), 
+          None, 
+          $crate::PrintStyle::NewLine
+        )
+    }};
+    ($($arg:tt)*) => {{
+        $crate::read_input_from(
+          &mut ::std::io::stdin().lock(), 
+          None, 
+          $crate::PrintStyle::NewLine
         )
     }};
 }
@@ -198,7 +234,16 @@ where
     T::Err: std::fmt::Display + std::fmt::Debug,
 {
     if let Some(prompt_args) = prompt {
-        print!("{}", prompt_args);
+        match print_style {
+            PrintStyle::Continue => {
+                // Use print! for no newline
+                print!("{}", prompt_args);
+            }
+            PrintStyle::NewLine => {
+                // Use println! for adding a newline
+                println!("{}", prompt_args);
+            }
+        }
         // Always flush so the user sees the prompt immediately
         io::stdout().flush().map_err(InputError::Io)?;
     }
@@ -226,6 +271,15 @@ pub enum InputError<E> {
     Eof,
 }
 
+/// Defines how the prompt should be printed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrintStyle {
+    /// Print the prompt without a trailing newline (uses `print!`).
+    Continue,
+    /// Print the prompt with a trailing newline (uses `println!`).
+    NewLine,
+}
+
 impl<E: std::fmt::Display + std::fmt::Debug> std::fmt::Display for InputError<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -239,15 +293,17 @@ impl<E: std::fmt::Display + std::fmt::Debug> std::fmt::Display for InputError<E>
 impl<E: std::fmt::Display + std::fmt::Debug> std::error::Error for InputError<E> {}
 ```
 
-This is the technical portion of the RFC. Explain the design in sufficient 
-detail that:
-
-- Its interaction with other features is clear.
-- It is reasonably clear how the feature would be implemented.
-- Corner cases are dissected by example.
-
-The section should return to the examples given in the previous section, and 
-explain more fully how the detailed proposal makes those examples work.
+Another thing to consider is that the `input!` and `inputln!` macros just 
+delegate to the `read_input_from` function, which is the core of the
+implementation. This function is generic over the reader type and the type
+that we want to parse. Besides that, we have a `PrintStyle` enum that is used to
+determine how to print the prompt. The `PrintStyle` enum has two variants:
+- `PrintStyle::Continue` that is used to print the prompt without a trailing 
+  newline.
+- `PrintStyle::NewLine` that is used to print the prompt with a trailing
+  newline.
+It allow us to use the same function for both macros and to have a more
+ergonomic way to print the prompt.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -314,10 +370,40 @@ fn main() -> Result<(), InputError<ParseFloatError>> {
 }
 ```
 
-- Why is this design the best in the space of possible designs?
-- What other designs have been considered and what is the rationale for not choosing them?
-- What is the impact of not doing this?
-- If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+## What is the impact of not doing this?
+If this RFC is not accepted, the current way of reading input from the user
+will remain the same. This means that new Rustaceans will have to learn how to
+use the `std::io::Stdin::read_line` function and how to handle the `Buffer`
+and the `String` types. This can be a barrier to entry for new Rustaceans and
+it can make the language less friendly. 
+
+I present this RFC as a Pre-RFC into a meetup of [Rust Argentina](https://rust-lang.ar/p/2025-april/)
+and I receive a lot of positive feedback. I think that this RFC could be a good
+idea to make the language more friendly and to help new Rustaceans to learn the
+language.
+
+Many people in the meetup was new in the language it was the perfect public to 
+taste the idea. Mostly NodeJS, Python and Go developers. They were
+enthusiastic about the idea and they think that it could be a good idea to
+have a macro like this. And they were not too happy with the current way of
+reading input from the user. They think that it was too complex and not too
+friendly. 
+
+The minute when I present the idea was [this](https://youtu.be/CjZq93pzOkA?t=4080)
+Sorry the presentation is in Spanish, but I add the time of the moment when I
+present the idea.
+And yes the guy with the black shirt is me.
+
+## Could this be done in a library or macro instead? 
+
+Well yes, but I think that this is a good idea to have it in the standard
+library. I think that this is a good idea to have it in the standard library
+because it is a common use case and it is a good idea to have it in the
+standard library to make the language more friendly.
+
+Another way that we could consider this is added like a pseudo oficial library 
+like `rand` which is not in the standard library but is recommended by the Rust 
+team and the oficial documentation as the book does it.
 
 # Prior art
 [prior-art]: #prior-art
@@ -332,21 +418,10 @@ Some behaviors are different, for example:
 - C#'s `Console.ReadLine()` returns `null` if the input is EOF.
 - Go's `bufio.Reader.ReadString()` returns an error if the input is EOF.
 
-
-
-Discuss prior art, both the good and the bad, in relation to this proposal.
-A few examples of what this can include are:
-
-- For language, library, cargo, tools, and compiler proposals: Does this feature exist in other programming languages and what experience have their community had?
-- For community proposals: Is this done by some other community and what were their experiences with it?
-- For other teams: What lessons can we learn from what other communities have done here?
-- Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-
-This section is intended to encourage you as an author to think about the lessons from other languages, provide readers of your RFC with a fuller picture.
-If there is no prior art, that is fine - your ideas are interesting to us whether they are brand new or if it is an adaptation from other languages.
-
-Note that while precedent set by other languages is some motivation, it does not on its own motivate an RFC.
-Please also take into consideration that rust sometimes intentionally diverges from common language features.
+Maybe a thing to have in mind is that in JavaScript we have the `prompt` function
+but this function in the case of the browser enable a little dialog when we 
+select cancel this dialog we receive a `null` value.
+This is a [specification in JavaScript](https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt-dev).
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -356,10 +431,6 @@ Please also take into consideration that rust sometimes intentionally diverges f
 
 Should the function additionally be added to `std::prelude`, so that beginners
 can use it without needing to import `std::io`?
-
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -375,24 +446,3 @@ Once this RFC is implemented:
 
 With this addition Rust might lend itself more towards being the first
 programming language for students.
-
-Think about what the natural extension and evolution of your proposal would
-be and how it would affect the language and project as a whole in a holistic
-way. Try to use this section as a tool to more fully consider all possible
-interactions with the project and language in your proposal.
-Also consider how this all fits into the roadmap for the project
-and of the relevant sub-team.
-
-This is also a good place to "dump ideas", if they are out of scope for the
-RFC you are writing but otherwise related.
-
-If you have tried and cannot think of any future possibilities,
-you may simply state that you cannot think of anything.
-
-Note that having something written down in the future-possibilities section
-is not a reason to accept the current or a future RFC; such notes should be
-in the section on motivation or rationale in this or subsequent RFCs.
-The section merely provides additional information.
-
-Bullshit:
-https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#dom-prompt-dev
