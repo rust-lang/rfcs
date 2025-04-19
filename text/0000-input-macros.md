@@ -28,10 +28,10 @@ let possible_age: Result<u8, _> = input!("Please enter your age: ");
                                         // number in the range of u8
 
 // And yes, this is a result so we can handle errors like this
-let lastname = input!("Please enter your lastname: ")
-                .expect("The lastname is required"); 
-                    // This could fail for example if the 
-                    // user enters a empty string
+let lastname: String = input!("Please enter your lastname: ")
+                        .expect("The lastname is required"); 
+                            // This could fail for example if the 
+                            // user enters a empty string
 
 // --- Another way to use the macro ---
 
@@ -54,58 +54,55 @@ impl FromStr for Price {
     }
 }
 
-let price: Price = input!("Please introduce a price: ")?; 
+let price: Price = input!("Please enter a price: ")?; 
         // This could fail for example if the input is reading from a pipe and 
         // we delete the file whose descriptor is being read while the
         // program is running
 
 ```
 
-In these examples, I show several ways to use the `input!` macro.
+The examples above demonstrate several ways to use the `input!` macro.
 
-In this macro we think that EOF is error case, so we return a `Result` with the 
-error type being the error that caused the EOF. This is because is easily to 
-handle the error for something new and we can mantain a similar behavior.
+In this macro, reaching EOF is consider an error case, so we return a `Result` 
+with an error type indicating the cause of the EOF. This approach makes error 
+handling straightforward and maintains consistent behavior.
 
-However we can use besides:
+Alternatively, the following can be used:
 
 ```rust
-let name: Option<String> = try_input!("Please introduce a price: ")?;
+let name: Option<Price> = try_input!("Please enter a price: ")?;
 ```
 
-For example, that in this we can handle the error in a different way.
-If we get a EOF we can return `None` and handle it in a different way but it's 
-not exactly a error, it's a different case, EOF is valid but doesn't have a 
-value, a way to represent this, that is why we use a `Option`.
+In this case, EOF is not treated as an error, but as a valid case represented by
+`None`. This allows handling EOF differently from other errors, since EOF 
+indicates the absence of a value rather than an error condition. This is why the 
+macro returns an `Option` type.
 
-**DISCLAIMER**: The behavior of the `input!` to me is the most intuitive, but I 
-think that the `try_input!` could be useful in some cases to be correct with the 
-error handling. We can change the name of the macro `try_input!` or delete it if 
-we think that is not necessary. It's just a idea, I'm open to suggestions.
+**Note**: The behavior of the `input!` is intended to be intuitive, but the 
+`try_input!` may be useful in cases where more nuanced error handling is 
+required. The name `try_input!` is provisional and open to change or removal 
+based on further discussion and feedback.
 
-The behaviour of the `try_input!` is the same as the `input!` but the return 
+The behaviour of `try_input!` is similar to `input!` but its return 
 type is `Result<Option<T>, InputError>`. The `InputError` is a enum that 
-contains the error that could be returned by the `input!` macro. It was thinking 
-thanks to the 
+contains the error that could be returned by the `input!` macro. This design was 
+inspired by 
 [commet of Josh Tripplet](https://github.com/rust-lang/rfcs/pull/3196#issuecomment-972915603) 
-in [a previous RFC](https://github.com/rust-lang/rfcs/pull/3196). And to be 
-honest yes, I think that is a good idea to have a way to handle the EOF, EOF is 
-not exactly a error but it's a behaviour not too friendly usually because is a 
-subtle distinction, is not exactly an edge case, but it's a less common scenario 
-that people often overlook at first.
+on [a previous RFC](https://github.com/rust-lang/rfcs/pull/3196). Handling EOF 
+as a distinct case (rather than an error) allows for more flexible error 
+handling, as EOF is not always an error but rather a less common scenario that 
+can be overlooked.
 
 # Motivation
 [motivation]: #motivation
 
-This kind of macros could be useful for beginners and reduce the barrier to 
-entry for new Rustaceans. It would also make the language more friendly and help 
-with the cognitive load of learning a new language.
+These macros could be especially useful for beginners, reducing the barrier to 
+entry for new Rustaceans. They would also make the language more approachable 
+and help lower the cognitive load when learning Rust.
 
-The second chapter in the book talk about to make a guessing game, and in this 
-chapter we can see how to read input from the user, but it is not too friendly 
-and is not too easy to understand. It's really complex to explain to someone of 
-high level what is a `Buffer` for give you a example, so in this case we can use 
-the `input!` macro to make it easier.
+For example, the second chapter of the Rust book introduces a guessing game and demonstrates how to read input from the user. The current approach is not very beginner-friendly and can be difficult to explain, especially concepts like 
+buffers. Using the `input!` macro would simplify this process and make it more 
+accessible.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -127,25 +124,6 @@ Explaining the idea is not a rabbit hole, it's a very basic idea.
       `FromStr::Err`.
     - `Io(e)` that is the error that we get when we have a IO error, `e` is the 
       equivalent to a variable which type is `std::io::Error`.
-
-
-- Explaining the feature largely in terms of examples.
-- Explaining how Rust programmers should *think* about the feature, and how it 
-  should impact the way they use Rust. It should explain the impact as 
-  concretely as possible.
-- If applicable, provide sample error messages, deprecation warnings, or 
-  migration guidance.
-- If applicable, describe the differences between teaching this to existing Rust 
-  programmers and new Rust programmers.
-- Discuss how this impacts the ability to read, understand, and maintain Rust 
-  code. Code is read and modified far more often than written; will the proposed 
-  feature make code easier to maintain?
-
-For implementation-oriented RFCs (e.g. for compiler internals), this section 
-should focus on how compiler contributors should think about the change, and 
-give examples of its concrete impact. For policy RFCs, this section should 
-provide an example-driven introduction to the policy, and explain its impact in 
-concrete terms.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -334,8 +312,8 @@ whenever they want to parse the returned string. In cases where newlines have to
 be preserved the underlying `std::io::Stdin::read_line` can be used directly 
 instead.
 
-This is the default behavior in Python and C# for example, these cases trim
-newlines by default. In Go, the `bufio.Reader.ReadString()` function
+This is the default behavior in Python and C# for give you a example, these 
+cases trim newlines by default. In Go, the `bufio.Reader.ReadString()` function
 does not trim newlines, but the `bufio.Scanner` type does. The `bufio.Scanner`
 type is the one that is used in the Go standard library for reading input
 from the console. The `bufio.Scanner` type is a higher level abstraction.
@@ -377,22 +355,18 @@ use the `std::io::Stdin::read_line` function and how to handle the `Buffer`
 and the `String` types. This can be a barrier to entry for new Rustaceans and
 it can make the language less friendly. 
 
-I present this RFC as a Pre-RFC into a meetup of [Rust Argentina](https://rust-lang.ar/p/2025-april/)
-and I receive a lot of positive feedback. I think that this RFC could be a good
-idea to make the language more friendly and to help new Rustaceans to learn the
-language.
+This RFC was presented as a pre-RFC at a [Rust Argentina meetup](https://rust-lang.ar/p/2025-april/), 
+where it received positive feedback, particularly from attendees new to Rust 
+(many with backgrounds in NodeJS, Python, and Go). They found the current 
+approach to reading input in Rust complex and not very user-friendly, and were 
+enthusiastic about the proposed macros.
 
-Many people in the meetup was new in the language it was the perfect public to 
-taste the idea. Mostly NodeJS, Python and Go developers. They were
-enthusiastic about the idea and they think that it could be a good idea to
-have a macro like this. And they were not too happy with the current way of
-reading input from the user. They think that it was too complex and not too
-friendly. 
+They were not too happy with the current way of reading input from the user. 
+They think that it was too complex and not too friendly. 
 
-The minute when I present the idea was [this](https://youtu.be/CjZq93pzOkA?t=4080)
-Sorry the presentation is in Spanish, but I add the time of the moment when I
-present the idea.
-And yes the guy with the black shirt is me.
+The presentation can be found [here](https://youtu.be/CjZq93pzOkA?t=4080) (in 
+Spanish)
+And yes, the guy with the black shirt with the Rust logo is me (👋).
 
 ## Could this be done in a library or macro instead? 
 
@@ -439,6 +413,25 @@ Once this RFC is implemented:
 
 * The Chapter 2 of the Rust book could be simplified
   to introduce mutability and borrowing in a more gentle manner.
+
+  In the current version of the book, the code looks like this:
+  ```rust
+  let mut guess = String::new();
+
+  io::stdin()
+      .read_line(&mut guess)
+      .expect("Failed to read line");
+
+  let guess: u32 = guess.trim().parse().expect("Please type a number!");
+
+  println!("You guessed: {guess}");
+  ```
+
+  With the new macros, it could be simplified to:  
+
+  ```rust
+  let guess: u8 = input!().expect("Please type a number!");
+  ```
 
 * Clippy might also introduce a lint to tell users to avoid unnecessary
   allocations due to repeated `inputln()` calls and suggest
