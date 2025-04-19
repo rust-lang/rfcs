@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes adding a new method, Option::update_or_default, to the standard library’s Option<T> type. The method replaces the current value with the result of applying a user-provided closure to it, or, if the option is None, inserts T::default() before applying the closure. This streamlines a common pattern of initializing an Option with a default and transforming it in place, reducing boilerplate and improving readability.
+This RFC proposes adding a new method, `Option::update_or_default`, to the standard library’s `Option<T>` type. The method replaces the current value with the result of applying a user-provided closure to it, or, if the option is `None`, inserts `T::default()` before applying the closure. This streamlines a common pattern of initializing an `Option` with a default and transforming it in place, reducing boilerplate and improving readability.
 
 # Motivation
 [motivation]: #motivation
