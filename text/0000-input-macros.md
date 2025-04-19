@@ -229,12 +229,12 @@ where
     let mut input = String::new();
     let bytes_read = reader.read_line(&mut input).map_err(InputError::Io)?;
     
-    let trimmed = input.trim_end_matches(['\r', '\n'].as_ref());
-
     // If 0, that's EOF — return Eof error
-    if trimmed == 0 {
+    if bytes_read == 0 {
         return Err(InputError::Eof);
     }
+
+    let trimmed = input.trim_end_matches(['\r', '\n'].as_ref());
     trimmed.parse::<T>().map_err(InputError::Parse)
 }
 
