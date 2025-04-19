@@ -1,4 +1,4 @@
-- Feature Name: `input macros`
+- Feature Name: input_macros
 - Start Date: 2025-04-19
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
