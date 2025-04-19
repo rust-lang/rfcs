@@ -382,7 +382,7 @@ team and the oficial documentation as the book does it.
 # Prior art
 [prior-art]: #prior-art
 
-Python has [input()], Ruby has [gets], C# has `Console.ReadLine()`
+Python has `input()`, Ruby has `gets`, C# has `Console.ReadLine()`
 ... all of these return a string read from standard input.
 
 Some behaviors are different, for example:
