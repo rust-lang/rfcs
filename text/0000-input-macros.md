@@ -1,6 +1,6 @@
 - Feature Name: input_macros
 - Start Date: 2025-04-19
-- RFC PR: [rust-lang/rfcs#3799](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3799](https://github.com/rust-lang/rfcs/pull/3799)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
