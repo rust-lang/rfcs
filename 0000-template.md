@@ -11,7 +11,13 @@ One paragraph explanation of the feature.
 # Motivation
 [motivation]: #motivation
 
-Why are we doing this? What use cases does it support? What is the expected outcome?
+Any changes to Rust should focus on solving a problem that users of Rust are having.
+This section should explain this problem in detail, including necessary background.
+
+It should also contain several specific use cases where this feature can help a user, and explain how it helps.
+This can then be used to guide the design of the feature.
+
+This section is one of the most important sections of any RFC, and can be lengthy.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
