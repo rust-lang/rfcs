@@ -106,8 +106,8 @@ beginner-friendly and can be difficult to explain, especially concepts like
 buffers. Using the `input!` macro would simplify this process and make it more 
 accessible.
 
-This functionality is highly requested by the community, as evidenced we can 
-find a [PR in Rust](https://github.com/rust-lang/rust/pull/75435) with 
+This functionality is highly requested by the community, we can find as 
+evidenced a [PR in Rust](https://github.com/rust-lang/rust/pull/75435) with 
 many comments and a lot of discussion about this topic. We can also find
 other [RFC](https://github.com/rust-lang/rfcs/pull/3183), 
 [another RFC](https://github.com/rust-lang/rfcs/pull/3196) and
@@ -120,20 +120,32 @@ This RFC aims to provide a solution to this problem.
 Like many others, I would like to have a simple way to read input from the user
 without having to deal with the complexities of the standard library. 
 
-This RFC proposes allows us a more graceful introduction to Rust, not only a 
+This RFC proposes to allow us a more graceful introduction to Rust, not only a 
 utility function. It aims to make the language more approachable and
 friendly for new users of the language.
 
-The idea behind of make a new macro provide of these discussion.
-In many of these discussions, show examples of possible implementations, but
+The idea behind creating a new macro comes from these discussions.
+In many of these discussions, examples are shown of possible implementations, but
 most of them use macros to implement this functionality.
-The idea could be implemented as a function, too, actually [a old poll](https://strawpoll.com/zxds5jye6/results)
-show that the majority want the feature, the implementation is not so important.
-The implementation of this RFC is a macro, but it could be change to a function
+The idea could be implemented as a function, too, actually [an old poll](https://strawpoll.com/zxds5jye6/results)
+shows that the majority wants the feature, the specific implementation is less 
+important.
+The implementation of this RFC is a macro, but it could be changed to a function
 if the community prefers that way or we could have both options.
 
-This poll was taken in [this comment](https://github.com/rust-lang/rfcs/pull/3183#issuecomment-979421461)
+This poll was mentioned in [this comment](https://github.com/rust-lang/rfcs/pull/3183#issuecomment-979421461)
 on a previous RFC. (Thanks to [undersquire](https://github.com/undersquire))
+
+Besides, the idea of this implementation is solve too the problem of parsing 
+some types for example in other languages we have functions like `nextInt()` in 
+Java which is a function that reads an integer from the input stream and returns 
+it. We don't have this in Rust, we have to use the `read_line` function and then 
+trim the string and parse it into the type that we want. 
+And this is a very common use case, we sometime read a string from the input
+but we want to parse it into a number or a struct.
+
+If we repeat this process many times in our code, we have a lot of boilerplate
+code that we can avoid with this macro. 
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
