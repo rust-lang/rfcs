@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes the addition of macros and some functions that can be used to 
+This RFC proposes the addition of macros or some functions that can be used to 
 read input from the user in a more ergonomic way, similar to the 
 [Input built-in function in Python](https://peps.python.org/pep-3111/). 
 
@@ -100,9 +100,40 @@ These macros could be especially useful for beginners, reducing the barrier to
 entry for new Rustaceans. They would also make the language more approachable 
 and help lower the cognitive load when learning Rust.
 
-For example, the second chapter of the Rust book introduces a guessing game and demonstrates how to read input from the user. The current approach is not very beginner-friendly and can be difficult to explain, especially concepts like 
+For example, the second chapter of the Rust book introduces a guessing game and 
+demonstrates how to read input from the user. The current approach is not very 
+beginner-friendly and can be difficult to explain, especially concepts like 
 buffers. Using the `input!` macro would simplify this process and make it more 
 accessible.
+
+This functionality is highly requested by the community, as evidenced we can 
+find a [PR in Rust](https://github.com/rust-lang/rust/pull/75435) with 
+many comments and a lot of discussion about this topic. We can also find
+other [RFC](https://github.com/rust-lang/rfcs/pull/3183), 
+[another RFC](https://github.com/rust-lang/rfcs/pull/3196) and
+many issues in the Rust repository that discuss this topic.
+In addition, this is not a new idea, as we can find similar topics in 
+[internal.rust-lang discussions](https://internals.rust-lang.org/t/pre-rfc-input-macro/527).
+
+This RFC aims to provide a solution to this problem. 
+
+Like many others, I would like to have a simple way to read input from the user
+without having to deal with the complexities of the standard library. 
+
+This RFC proposes allows us a more graceful introduction to Rust, not only a 
+utility function. It aims to make the language more approachable and
+friendly for new users of the language.
+
+The idea behind of make a new macro provide of these discussion.
+In many of these discussions, show examples of possible implementations, but
+most of them use macros to implement this functionality.
+The idea could be implemented as a function, too, actually [a old poll](https://strawpoll.com/zxds5jye6/results)
+show that the majority want the feature, the implementation is not so important.
+The implementation of this RFC is a macro, but it could be change to a function
+if the community prefers that way or we could have both options.
+
+This poll was taken in [this comment](https://github.com/rust-lang/rfcs/pull/3183#issuecomment-979421461)
+on a previous RFC. (Thanks to [undersquire](https://github.com/undersquire))
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
