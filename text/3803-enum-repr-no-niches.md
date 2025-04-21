@@ -1,6 +1,6 @@
 - Feature Name: `enum_repr_no_niches`
 - Start Date: 2025-04-21
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3803](https://github.com/rust-lang/rfcs/pull/3803)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 
