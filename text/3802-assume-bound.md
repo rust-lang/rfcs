@@ -1,6 +1,6 @@
 - Feature Name: `assume_bound`
 - Start Date: 2025-04-21
-- RFC PR: [rust-lang/rfcs#3802](https://github.com/rust-lang/rfcs/pull/3800)
+- RFC PR: [rust-lang/rfcs#3802](https://github.com/rust-lang/rfcs/pull/3802)
 - Rust Issue: N/A
 
 # Summary
