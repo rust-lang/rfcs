@@ -475,19 +475,30 @@ In the Rust ecosystem, [there](https://docs.rs/fake-enum) [are](https://docs.rs/
 
 Current options and sub-options:
 1. Use `#[repr(_, something_here)]`.
+
     Advantage: The feature semantically modifies the layout/representation.
+
     1. `#[repr(_, no_niches)]`.
+
         Advantage: Very precise in what it does.
+
         Disadvantage: Uses "niche" which is a niche term.
+
     2. `#[repr(_, non_exhaustive)]`.
+
         Advantage: Clear that it implies `#[non_exhaustive]`.
+
         Disadvantage: Might be confusing for users which kind of `non_exhaustive` they should use.
+
     3. `#[repr(_, abi_stable)]`.
     3. `#[repr(_, all_bits_valid)]`.
     4. `#[repr(_, discriminant = no_niches)]` to mirror [RFC 3659](https://github.com/rust-lang/rfcs/pull/3659).
 2. Use `#[non_exhaustive(something_here)]`.
+
     Advantage: Might be easier to explain the effect to users ("this works just like `#[non_exhaustive]`, except stronger").
+
     Advantage: Might align better with future additions to `#[non_exhaustive]`, such as [`#[non_exhaustive(pub)]`](https://internals.rust-lang.org/t/pre-rfc-relaxed-non-exhaustive-structs/11977).
+
     1. `#[non_exhaustive(no_niches)]`.
     2. `#[non_exhaustive(abi)]`.
     3. `#[non_exhaustive(repr)]`.
