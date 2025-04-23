@@ -1,6 +1,6 @@
 - Feature Name: `cfg_alias`
 - Start Date: 2025-04-23
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3804](https://github.com/rust-lang/rfcs/pull/3804)
 - Rust Issue:
   [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
