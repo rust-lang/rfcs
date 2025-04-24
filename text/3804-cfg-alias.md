@@ -12,10 +12,9 @@ This RFC introduces a way to name configuration predicates for easy reuse
 throughout a crate.
 
 ```rust
-#![cfg_alias(
-    x86_linux,
-    all(any(target_arch = "x86", target_arch = "x86_64"), target_os = "linux")
-)]
+#![cfg_alias(x86_linux = all(
+    any(target_arch = "x86", target_arch = "x86_64"), target_os = "linux"
+))]
 
 #[cfg(x86_linux)]
 fn foo() { /* ... */ }
@@ -44,6 +43,22 @@ various Cargo environment variables and potentially doing string manipulation
 worth doing. Allowing aliases to be defined within the crate and with the same
 syntax as the `cfg` itself makes this much easier.
 
+Another benefit is the ability to easily adjust configuration to many different
+areas of code at once. A simple example is gating unfinished code that can be
+toggled together:
+
+```rust
+#![cfg_alias(todo = false)] // change `false` to `true` to enable WIP code
+
+#[cfg(todo)]
+fn to_be_tested() { /* ... */ }
+
+
+#[test]
+#[cfg(todo)]
+fn test_to_be_tested() { /* ... */ }
+```
+
 # Guide-level explanation
 
 [guide-level-explanation]: #guide-level-explanation
@@ -51,7 +66,7 @@ syntax as the `cfg` itself makes this much easier.
 There is a new crate-level attribute that takes a name and a `cfg` predicate:
 
 ```rust
-#![cfg_alias(some_alias, predicate)]
+#![cfg_alias(some_alias = predicate)]
 ```
 
 `predicate` can be anything that usually works within `#[cfg(...)]`, including
@@ -79,11 +94,11 @@ The new crate-level attribute is introduced:
 
 ```text
 CfgAliasAttribute:
-    cfg_alias(IDENTIFIER, ConfigurationPredicate)
+    cfg_alias(IDENTIFIER `=` ConfigurationPredicate)
 ```
 
 The identifier is added to the `cfg` namespace. It must not conflict with any
-builtin configuration names, or with those passed via `--cfg`.
+builtin configuration names, or with those passed via `--cfg` or `--check-cfg`. [^check-cfg]
 
 Once defined, the alias can be used as a regular predicate.
 
@@ -97,7 +112,7 @@ will emit an unknown configuration lint:
 // The lint could mention that `some_alias` was found in the
 // crate but is not available here.
 
-#![cfg_alias(some_alias, true)]
+#![cfg_alias(some_alias =  true)]
 ```
 
 RFC Question:
@@ -109,6 +124,9 @@ other?
 
 If we go with the first option, we should limit to a single expansion to avoid
 recursing (as is done for `#define` in C).
+
+[^check-cfg]: `--check-cfg` is included here because it indicates there may be a
+    corresponding `--cfg`.
 
 # Drawbacks
 
@@ -124,9 +142,10 @@ recursing (as is done for `#define` in C).
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-- The syntax `cfg_alias(name, predicate)` was chosen for similarity with
-  `cfg_attr(predicate, attributes)`. Alternatives include:
-  - `cfg_alias(name = predicate)`
+- The syntax `cfg_alias(name =  predicate)` was chosen to mimic assignment in
+  Rust and key-value mappings in attributes. Alternatives include:
+  - `cfg_alias(name, predicate)`, which is more similar to
+    `cfg_attr(predicate, attributes)`.
 - It may be possible to have `#[cfg_alias(...)]` work as an outer macro and only
   apply to a specific scope. This likely is not worth the complexity.
 
