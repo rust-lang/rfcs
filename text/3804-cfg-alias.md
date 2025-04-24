@@ -97,8 +97,13 @@ CfgAliasAttribute:
     cfg_alias(IDENTIFIER `=` ConfigurationPredicate)
 ```
 
-The identifier is added to the `cfg` namespace. It must not conflict with any
-builtin configuration names, or with those passed via `--cfg` or `--check-cfg`. [^check-cfg]
+The identifier is added to the `cfg` namespace. It must not conflict with:
+
+- Any builtin configuration names
+- Any configuration passed via `--cfg`
+- Any configuration passed with `--check-cfg`, since this indicates a possible
+  but omitted `--cfg` option
+- Other aliases that are in scope
 
 Once defined, the alias can be used as a regular predicate.
 
@@ -115,18 +120,54 @@ will emit an unknown configuration lint:
 #![cfg_alias(some_alias =  true)]
 ```
 
-RFC Question:
+_RFC question: "usable only after definition" is mentioned here to retain the
+ability to parse attributes in order, rather than going back and updating
+earlier attributes that may use the alias. Is this a reasonable limitation to
+keep?_
 
-Two ways to implement this are with (1) near-literal substitution, or (2)
-checking whether the alias should be set or not at the time it is defined. Is
-there any user-visible behavior that would make us need to specify one or the
-other?
+_RFC question: two ways to implement this are with (1) near-literal
+substitution, or (2) checking whether the alias should be set or not at the time
+it is defined. Is there any user-visible behavior that would make us need to
+specify one or the other?_
 
-If we go with the first option, we should limit to a single expansion to avoid
-recursing (as is done for `#define` in C).
+_If we go with the first option, we should limit to a single expansion to avoid
+recursing (as is done for `#define` in C)._
 
-[^check-cfg]: `--check-cfg` is included here because it indicates there may be a
-    corresponding `--cfg`.
+## `cfg_alias` in non-crate attributes
+
+`cfg_alias` may also be used as a module-level attribute rather than
+crate-level:
+
+```rust
+#[cfg_alias(foo = bar)]
+mod uses_bar {
+    // Enabled/disabled based on `cfg(bar)`
+    #[cfg(foo)]
+    fn qux() { /* ... */ }
+}
+
+#[cfg_alias(foo = baz)]
+mod uses_baz {
+    // Enabled/disabled based on `cfg(baz)`
+    #[cfg(foo)]
+    fn qux() { /* ... */ }
+}
+```
+
+This has the advantage of keeping aliases in closer proximity to where they are
+used; if a configuration pattern is only used within a specific module, an alias
+can be added at the top of the file rather than making it crate-global.
+
+When defined at a module level, aliases are added to the configuration namespace
+for everything within that module including later module-level configuration.
+There is no conflict with aliases that use the same name in other modules.
+
+This RFC proposes that the use of `cfg_alias` on modules _should_ be included if
+possible. However, this may bring implementation complexity since, to the RFC
+author's knowledge, the rustc configuration system is not designed to allow
+scoped configuration. If implementation of module-level aliases turns out to be
+nontrivial, this portion of the feature may be deferred or dropped before
+stabilization.
 
 # Drawbacks
 
