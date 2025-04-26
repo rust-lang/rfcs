@@ -16,7 +16,7 @@ well-established as a simple and fun way of learning and teaching Rust as a
 new programming language. 
 
 ```rust
-println!("Please enter your name: ");
+print!("Please enter your name: ");
 let possible_name: Result<String, _> = input!(); // This could fail, for example 
                                                  // if the user closes the input 
                                                  // stream
