@@ -104,7 +104,7 @@ A `derive` macro can have helper attributes. You can use the following syntax
 to declare a helper attribute as `unsafe`:
 
 ```rust
-#[proc_macro_derive(MyDeriveMacro(, attributes(unsafe(dangerous_helper_attr))]
+#[proc_macro_derive(MyDeriveMacro, attributes(unsafe(dangerous_helper_attr))]
 pub fn derive_my_derive_macro(_item: TokenStream) -> TokenStream {
     TokenStream::new()
 }
