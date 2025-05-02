@@ -375,3 +375,6 @@ fn foo(x: &u8) {
 - We could add type-safe APIs for over-aligned pointers; for example,
   over-aligned reference types that are subtypes of `&`/`&mut`.
 - We could also add similar APIs for over-aligned function pointers.
+- We could loosen the restriction that fields of a `packed(n)` struct cannot
+  specify an alignment greater that `n`. (Apparently, some C compilers allow
+  something similar.)
