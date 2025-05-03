@@ -26,6 +26,17 @@ macro that implements the `unsafe` trait in a fashion that's always safe (or
 that fails if some obligation is not met), or an `unsafe` `derive` macro that
 puts the safety obligation on the invoker of the `derive`.
 
+Some examples of potential unsafe derives for `unsafe trait`s:
+
+- `TrustedLen` and `DerefPure` in the standard library. (Currently unstable,
+  but such a derive would be useful when they're stable, serving the function
+  of an `unsafe impl`.)
+- `pyo3::marker::Ungil` in `pyo3`, in place of the current handling of a
+  blanket impl for any `Send` type.
+- A hypothetical derive for `bytes::Buf` or similar. (For cases where a type
+  has fields or trivial expressions corresponding to the current slice and
+  offset.)
+
 This RFC also defines a syntax for declaring proc macro attributes as unsafe.
 
 # Guide-level explanation
