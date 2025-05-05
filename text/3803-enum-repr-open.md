@@ -504,7 +504,8 @@ Current options and sub-options:
     4. `#[repr(_, abi_stable)]`.
     5. `#[repr(_, all_bits_valid)]`.
     6. `#[repr(_, allow_undeclared_variants)]`.
-    7. `#[repr(_, discriminant = no_niches)]` to mirror [RFC 3659](https://github.com/rust-lang/rfcs/pull/3659).
+    7. `#[repr(_, niches(on))]` (to match `niches(off)` if we wanted that).
+    8. `#[repr(_, discriminant = open)]` to mirror [RFC 3659](https://github.com/rust-lang/rfcs/pull/3659).
 2. Use `#[non_exhaustive(something_here)]`.
 
     Advantage: Might be easier to explain the effect to users ("this works just like `#[non_exhaustive]`, except stronger").
