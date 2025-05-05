@@ -377,7 +377,7 @@ We could add a helper attribute `#[diagnostics::enum_like]` on newtype `struct`s
 A common suggestion is to wait for [pattern types](https://internals.rust-lang.org/t/thoughts-on-pattern-types-and-subtyping/17675), define their interaction with niches, and instead suggest people write:
 
 ```rust
-#[repr(u8)]
+#[repr(bikeshed_guarantee_abi(u8))]
 pub enum Weather {
     Sunny = 0,
     Windy = 1,
@@ -412,7 +412,7 @@ If the author of the Rust binding were to add `Weather::Snowy`, that would be a 
 This is also a lot more error-prone, as you'd have to ensure that the niches in the pattern type does not overlap with the other variants. Consider e.g. the following innocuous change:
 
 ```diff
- #[repr(u8)]
+ #[repr(bikeshed_guarantee_abi(u8))]
  pub enum Weather {
      Sunny = 0,
      Windy = 1,
