@@ -473,7 +473,7 @@ enum KnownWeather {
 
 union Weather {
    known: KnownWeather,
-   unknown: u8
+   unknown: u8,
 }
 
 const SNOWY: u8 = 4;
@@ -487,7 +487,13 @@ match Weather::current() {
 }
 ```
 
-While this would allow us to avoid adding any new syntax, it is quite verbose, and would thus still push library authors towards avoiding exposing the union in favour of instead panicking on unknown variants.
+Advantages:
+- Would allow us to avoid adding any new syntax
+
+Disadvantages:
+- It is quite verbose, and would thus still push library authors towards avoiding exposing the union in favour of instead panicking on unknown variants.
+- You'd have to ensure to match the two `u8`s, and it is unclear what type would you use for `#[repr(C)]`.
+- Modifying the rules around `union` and `unsafe` might be difficult to do soundly.
 
 
 # Prior art
