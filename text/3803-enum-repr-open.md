@@ -1,4 +1,4 @@
-- Feature Name: `enum_repr_no_niches`
+- Feature Name: `enum_repr_open`
 - Start Date: 2025-04-21
 - RFC PR: [rust-lang/rfcs#3803](https://github.com/rust-lang/rfcs/pull/3803)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -7,9 +7,9 @@
 # Summary
 [summary]: #summary
 
-Allow `#[repr(_, no_niches)]` on field-less (C-style) enums to disable the niche layout optimization on discriminants, allowing using the enum directly in FFI.
+Allow `#[repr(_, open)]` on field-less (C-style) enums to allow using the enum directly in FFI.
 
-Enums with the `no_niches` modifier cannot be matched on exhaustively without the use of a wildcard arm. This feature is similar but distinct from the `#[non_exhaustive]` attribute, since it works on an ABI level and applies in the defining module as well.
+Enums with the `open` modifier cannot be matched on exhaustively without the use of a wildcard arm. This feature is similar but distinct from the `#[non_exhaustive]` attribute, since it works on an ABI level and applies in the defining module as well.
 
 
 # Motivation
@@ -93,7 +93,7 @@ This is slightly wrong though, since the value `0` actually represents `MouseBut
 
 Winit could have used the `struct` + `const`s pattern, but other mouse button mappings are comparatively rare that the cost of doing this is too high.
 
-The `bitflags` crate might also benefit from marking their enums as `no_niches`.
+The `bitflags` crate might also benefit from marking their enums as `#[repr(_, open)]`.
 
 
 # Guide-level explanation
@@ -124,7 +124,7 @@ This API could be translated to Rust as follows:
 //! Bindings to a service for guessing the current weather.
 
 /// The different kinds of weather.
-#[repr(u8, no_niches)]
+#[repr(u8, open)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Weather {
     Sunny = 0,
@@ -147,7 +147,7 @@ impl Weather {
 }
 ```
 
-The `#[repr(u8)]` makes it so that the `Weather` enum has the same size as `weather_t` (matches the `uint8_t`), and the `no_niches` modifier is required because C enums are "open" / non-exhaustive and can have values added to them at any time in an API- and ABI-compatible update.
+The `#[repr(u8)]` makes it so that the `Weather` enum has the same size as `weather_t` (matches the `uint8_t`), and the `open` modifier is required because C enums are non-exhaustive and can have values added to them at any time in an API- and ABI-compatible update.
 
 An example usage of this binding might be:
 
@@ -195,7 +195,7 @@ The syntax is not completely decided on, see [the unresolved questions section][
 
 ## Restrictions on the modifier
 
-The `no_niches` modifier can be used inside `#[repr]` attributes on enums.
+The `open` modifier can be used inside `#[repr]` attributes on enums.
 
 The enum must have an explicit representation, that is, either a [primitive representation](https://doc.rust-lang.org/1.86.0/reference/type-layout.html#primitive-representations) or the [`C` representation](https://doc.rust-lang.org/1.86.0/reference/type-layout.html#the-c-representation).
 
@@ -203,10 +203,10 @@ For the initial implementation, we allow only field-less enums ["without explici
 
 ## Semantic operation
 
-Adding the `no_niches` modifier acts as-if the compiler were to insert extra un-nameable enum variants, such that the enum is able to exhaustively represent every bit-pattern of the underlying integer type.
+Adding the `open` modifier acts as-if the compiler were to insert extra un-nameable enum variants, such that the enum is able to exhaustively represent every bit-pattern of the underlying integer type.
 
 ```rust
-#[repr(u8, no_niches)]
+#[repr(u8, open)]
 pub enum Weather {
     Sunny = 0,
     Windy = 1,
@@ -231,7 +231,7 @@ pub enum Weather {
 A more complex example could be:
 
 ```rust
-#[repr(i16, no_niches)]
+#[repr(i16, open)]
 pub enum Foo {
     A = 10,
     B = -3,
@@ -263,13 +263,15 @@ pub enum Foo {
 
 The above change has a profound impact on the ABI / the validity invariant of the enum: every bit pattern of the underlying integer type is now a valid bit pattern of the enum discriminant itself.
 
+Stated alternatively, the niche layout optimization on the enum discriminant is disabled.
+
 This allows you to safely transmute from the underlying bit-pattern to the enum itself, as shown in the following example:
 
 ```rust
 impl From<u8> for Weather {
     fn from(value: u8) -> Self {
-        // SAFETY: The enum is `no_niches` and fieldless,
-        // and can thus represent all bit-patterns of `u8`.
+        // SAFETY: The enum is `open` and fieldless, and
+        // can thus represent all bit-patterns of `u8`.
         unsafe { core::mem::transmute::<u8, Weather>(value) }
     }
 }
@@ -316,11 +318,11 @@ assert_ne!(discriminant(&snowy), discriminant(&Weather::from(42)));
 
 ## Usage in pattern matching
 
-Adding the `no_niches` modifier affects exhaustiveness-checking, since it adds extra variants.
+Adding the `open` modifier affects exhaustiveness-checking, since it adds extra variants.
 
 Unlike `#[non_exhaustive]`, the check is enabled everywhere, regardless of visibility attributes and crate boundaries (because it works on the ABI level).
 
-Whether exhaustiveness-checking is affected by `no_niches` enums that already has enough variants to represent every bit-pattern of the underlying integer type depends on the final syntax, see [the unresolved questions section][unresolved-questions].
+Whether exhaustiveness-checking is affected by `open` enums that already has enough variants to represent every bit-pattern of the underlying integer type depends on the final syntax, see [the unresolved questions section][unresolved-questions].
 
 ## Derives
 
@@ -330,7 +332,7 @@ Whether exhaustiveness-checking is affected by `no_niches` enums that already ha
 
 The exact output of `#[derive(Debug)]` is [an unresolved question][derivedebug].
 
-User-defined derives and proc-macros will have to know when to emit the extra match arm (so most user-defined derive macros probably won't support `#[repr(_, no_niches)]` initially). Proc-macros could either choose to inspect the `repr`, or to defensively emit an extra `#[allow(unreachable_patterns)] _ => {}` match arm.
+User-defined derives and proc-macros will have to know when to emit the extra match arm (so most user-defined derive macros probably won't support `#[repr(_, open)]` initially). Proc-macros could either choose to inspect the `repr`, or to defensively emit an extra `#[allow(unreachable_patterns)] _ => {}` match arm.
 
 ## Handling unknown variants
 
@@ -429,7 +431,7 @@ This would be a fairly large bug, since the `Weather` enum suddenly grew to 2 by
 Similar to above, but instead only define the semantics in terms of pattern types:
 
 ```rust
-#[repr(u8, no_niches)]
+#[repr(u8, open)]
 pub enum Weather {
     Sunny = 0,
     Windy = 1,
@@ -449,7 +451,7 @@ pub enum Weather {
 
 This clashes with Rust's existing concept of enum discriminants though, and thus is unclear what `core::mem::discriminant` would return for the `_Unknown` variant. It is also unclear how `as` casts would work (since those only work on field-less enums).
 
-But if these issues were resolved, we could in the future consider `#[repr(_, no_niches)]` to simply be a shorthand for having a hidden variant that uses pattern types.
+But if these issues were resolved, we could in the future consider `#[repr(_, open)]` to simply be a shorthand for having a hidden variant that uses pattern types.
 
 ## `std` macro
 
@@ -478,43 +480,51 @@ Current options and sub-options:
 
     Advantage: The feature semantically modifies the layout/representation.
 
-    1. `#[repr(_, no_niches)]`.
+    1. `#[repr(_, open)]`
+
+        Advantage: Matches Clang's existing naming.
+
+        Disadvantage: Might be unclear what "open" means. Open to what?
+
+    2. `#[repr(_, no_niches)]`.
 
         Advantage: Very precise in what it does.
 
-        Disadvantage: Uses "niche" which is a niche term.
+        Disadvantages: Uses "niche" which is a niche term.
+        Poor framing because it disables optimizations instead of allowing something new.
 
-    2. `#[repr(_, non_exhaustive)]`.
+    3. `#[repr(_, non_exhaustive)]`.
 
         Advantage: Clear that it implies `#[non_exhaustive]`.
 
         Disadvantage: Might be confusing for users which kind of `non_exhaustive` they should use.
 
-    3. `#[repr(_, abi_stable)]`.
-    3. `#[repr(_, all_bits_valid)]`.
-    4. `#[repr(_, discriminant = no_niches)]` to mirror [RFC 3659](https://github.com/rust-lang/rfcs/pull/3659).
+    4. `#[repr(_, abi_stable)]`.
+    5. `#[repr(_, all_bits_valid)]`.
+    6. `#[repr(_, allow_undeclared_variants)]`.
+    7. `#[repr(_, discriminant = no_niches)]` to mirror [RFC 3659](https://github.com/rust-lang/rfcs/pull/3659).
 2. Use `#[non_exhaustive(something_here)]`.
 
     Advantage: Might be easier to explain the effect to users ("this works just like `#[non_exhaustive]`, except stronger").
 
     Advantage: Might align better with future additions to `#[non_exhaustive]`, such as [`#[non_exhaustive(pub)]`](https://internals.rust-lang.org/t/pre-rfc-relaxed-non-exhaustive-structs/11977).
 
-    1. `#[non_exhaustive(no_niches)]`.
+    1. `#[non_exhaustive(open)]`.
     2. `#[non_exhaustive(abi)]`.
     3. `#[non_exhaustive(repr)]`.
     4. `#[non_exhaustive(layout)]`.
-3. New attribute `#[really_non_exhaustive]` or similar.
+3. New attribute `#[open]`, `#[really_non_exhaustive]` or similar.
 
 We have a kind of decision tree here, where some unresolved questions depend on the syntax. The exact syntax does not need to be decided before accepting the RFC, though we should choose one of the main "branches".
 
-The RFC author himself is undecided on the syntax, but decided to go with `#[repr(_, no_niches)]` for the body of the RFC, to make the desired semantics clearer to the RFC reader.
+The RFC author himself is undecided on the syntax.
 
 ## Should `#[non_exhaustive]` be required
 
 If we choose syntax 1, it might be desirable to require the `#[non_exhaustive]` attribute as well for clarity?
 
 ```rust
-#[repr(u8, no_niches)]
+#[repr(u8, open)]
 #[non_exhaustive] // Maybe required?
 enum Weather {
     Sunny = 0,
@@ -523,7 +533,7 @@ enum Weather {
 }
 ```
 
-If we don't require it, what are the semantic differences between the two cases? Do we warn if both are supplied? Or do we give different error messages when not matching exhaustively based on if the enum uses `#[non_exhaustive]` on `#[repr(_, no_niches)]` vs. not using it?
+If we don't require it, what are the semantic differences between the two cases? Do we warn if both are supplied? Or do we give different error messages when not matching exhaustively based on if the enum uses `#[non_exhaustive]` on `#[repr(_, open)]` vs. not using it?
 
 See also the [exhaustive match of known values][exhaustive-match-of-known-values] future possibility.
 
@@ -534,8 +544,8 @@ Choosing syntax 2 seems to imply that `#[non_exhaustive]` is semantically presen
 This has implications for the following corner-case:
 
 ```rust
-#[repr(u8, no_niches)]
-pub enum AllNichesFilled {
+#[repr(u8, open)]
+pub enum AllVariantsPresent {
     X00 = 0x00,
     X01 = 0x01,
     X02 = 0x02,
@@ -544,13 +554,13 @@ pub enum AllNichesFilled {
     XFF = 0xff,
 }
 
-match AllNichesFilled::X00 {
-    AllNichesFilled::X00 => (),
-    AllNichesFilled::X01 => (),
-    AllNichesFilled::XAC => (),
+match AllVariantsPresent::X00 {
+    AllVariantsPresent::X00 => (),
+    AllVariantsPresent::X01 => (),
+    AllVariantsPresent::XAC => (),
     // ...
-    AllNichesFilled::XFE => (),
-    AllNichesFilled::XFF => (),
+    AllVariantsPresent::XFE => (),
+    AllVariantsPresent::XFF => (),
 
     // Should we require this match arm? It can never be reached ABI-wise,
     // because every bit-pattern of the underlying u8 is exhausted, but a
@@ -599,17 +609,17 @@ It would be nice to have some way to safely convert from the underlying integer 
 
 A warning could be emitted when using raw `enum` in C FFI as a return type, or as a parameter type behind a pointer (e.g. an out pointer `&mut Weather`). This would have notified the developer in the "guide level explanation" section of the unsoundness immediately, instead of later.
 
-This might need some way to suppress the warning on the enum itself (`#[repr(_, niches)]`? `#[exhaustive]`?), since certain enums _are_ valid to use across FFI. Examples of this include C99's `_Bool` if it were an enum, enums marked `__attribute__((enum_extensibility(closed)))`, enums such as `CompassDirection` (there are only ever four cardinal directions) and enums otherwise documented as exhaustive.
+This might need some way to suppress the warning on the enum itself (`#[repr(_, closed)]`? `#[exhaustive]`?), since certain enums _are_ valid to use across FFI. Examples of this include C99's `_Bool` if it were an enum, enums marked `__attribute__((enum_extensibility(closed)))`, enums such as `CompassDirection` (there are only ever four cardinal directions) and enums otherwise documented as exhaustive.
 
 ## Enums with fields
 [enums-with-fields]: #enums-with-fields
 
-The `no_niches` option apply specifically to the enum discriminant. This could be extended to [`#[repr(_)]` enums with fields](https://doc.rust-lang.org/1.86.0/reference/type-layout.html#reprc-enums-with-fields), and would translate to the `no_niches` option being present on the internal discriminant enum.
+The `open` modifier apply specifically to the enum discriminant. This could be extended to [`#[repr(_)]` enums with fields](https://doc.rust-lang.org/1.86.0/reference/type-layout.html#reprc-enums-with-fields), and would translate to the `open` option being present on the internal discriminant enum.
 
 Building on the reference link:
 
 ```rust
-#[repr(C, no_niches)] // `no_niches` was added
+#[repr(C, open)] // `open` was added
 enum MyEnum {
     A(u32),
     B(f32, u64),
@@ -618,7 +628,7 @@ enum MyEnum {
 }
 
 // Would have this discriminant enum.
-#[repr(C, no_niches)]
+#[repr(C, open)]
 enum MyEnumDiscriminant { A, B, C, D }
 ```
 
@@ -627,14 +637,14 @@ enum MyEnumDiscriminant { A, B, C, D }
 The reference [states](https://doc.rust-lang.org/1.86.0/reference/type-layout.html#r-layout.repr.primitive.constraint):
 > It is an error for zero-variant enums to have a primitive representation
 
-We could consider relaxing this for `no_niches` enums, since these are actually inhabited:
+We could consider relaxing this for `open` enums, since these are actually inhabited:
 
 ```rust
 #[repr(u8)] // Disallowed.
 pub enum Never {}
 let never = unsafe { core::mem::transmute::<u8, Never>(42) }; // Unsound.
 
-#[repr(u8, no_niches)] // Could be allowed.
+#[repr(u8, open)] // Could be allowed.
 pub enum Empty {}
 let empty = unsafe { core::mem::transmute::<u8, Empty>(42) }; // Sound.
 ```
@@ -649,9 +659,9 @@ If Rust intends to make big strides here, it might make sense to tailor the synt
 
 ## Changing the default
 
-Making `#[repr(C)]` and `#[repr(uXX)]` enums have the `no_niches` modifier by default across an edition boundary could make interoperability with C easier and even further remove the footgun (anecdotally, I've seen several people surprised that `#[repr(C)] enum` isn't a good idea for interfacing with C enums).
+Making `#[repr(C)]` and `#[repr(uXX)]` enums have the `open` modifier by default across an edition boundary could make interoperability with C easier and even further remove the footgun (anecdotally, I've seen several people surprised that `#[repr(C)] enum` isn't a good idea for interfacing with C enums).
 
-Would need some way to re-opt-in to niches, maybe `#[repr(_, niches)]`?
+Would need some way to re-opt-in to niche optimizations, maybe `#[repr(_, closed)]`?
 
 ## Pattern types in `repr`
 [pattern-types-in-repr]: #pattern-types-in-repr
@@ -659,7 +669,7 @@ Would need some way to re-opt-in to niches, maybe `#[repr(_, niches)]`?
 This feature could work nicely with having [pattern types](https://internals.rust-lang.org/t/thoughts-on-pattern-types-and-subtyping/17675) in the enum `repr`, since it would allow defining very precisely the actual valid bit-patterns of the enum's discriminant.
 
 ```rust
-#[repr(u8 in 1..=255, no_niches)]
+#[repr(u8 in 1..=255, open)]
 pub enum NonZeroU8 {
     One = 1,
     Two = 2,
@@ -691,7 +701,7 @@ From a SemVer perspective, this would separate ABI from API, so we could say tha
 
 ## Match diagnostics
 
-Similar to above, it might be desirable for diagnostics to differ between `no_niches` and `#[non_exhaustive]`.
+Similar to above, it might be desirable for diagnostics to differ between `#[repr(_, open)]` and `#[non_exhaustive]`.
 
 So e.g. for something like the following:
 
