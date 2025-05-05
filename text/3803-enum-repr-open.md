@@ -488,7 +488,8 @@ match Weather::current() {
 ```
 
 Advantages:
-- Would allow us to avoid adding any new syntax
+- Would allow us to avoid adding any new syntax.
+- The known variants and unknown variants are clearly separate types.
 
 Disadvantages:
 - It is quite verbose, and would thus still push library authors towards avoiding exposing the union in favour of instead panicking on unknown variants.
