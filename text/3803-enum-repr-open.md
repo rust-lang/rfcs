@@ -334,6 +334,8 @@ The exact output of `#[derive(Debug)]` is [an unresolved question][derivedebug].
 
 User-defined derives and proc-macros will have to know when to emit the extra match arm (so most user-defined derive macros probably won't support `#[repr(_, open)]` initially). Proc-macros could either choose to inspect the `repr`, or to defensively emit an extra `#[allow(unreachable_patterns)] _ => {}` match arm.
 
+Adding a crate for making such semantic inspections easier [is a future possibility][helper-crate-for-macro-authors].
+
 ## Handling unknown variants
 
 Matching on unknown variants is possible:
@@ -717,3 +719,10 @@ The diagnostic might suggest to add both `Weather::Rainy` and the `_` blanket pa
 And maybe `match` statements like `match Weather::current() { _ => {} }` would warn by default about possibly unhandled cases?
 
 See also the [`non_exhaustive_omitted_patterns`](https://doc.rust-lang.org/rustc/lints/listing/allowed-by-default.html#non-exhaustive-omitted-patterns) lint.
+
+## Helper crate for macro authors
+[helper-crate-for-macro-authors]: #helper-crate-for-macro-authors
+
+It might be useful to publish a helper crate that could help with parsing the `open` modifier.
+
+An alternative would be to explicitly document how macro authors are expected to deal with open enums.
