@@ -661,9 +661,9 @@ If Rust intends to make big strides here, it might make sense to tailor the synt
 
 ## Changing the default
 
-Making `#[repr(C)]` and `#[repr(uXX)]` enums have the `open` modifier by default across an edition boundary could make interoperability with C easier and even further remove the footgun (anecdotally, I've seen several people surprised that `#[repr(C)] enum` isn't a good idea for interfacing with C enums).
+Making `#[repr(C)]` (and maybe `#[repr(uXX)]`?) enums have the `open` modifier by default across an edition boundary could make interoperability with C easier and even further remove the footgun (anecdotally, I've seen several people surprised that `#[repr(C)] enum` isn't a good idea for interfacing with C enums).
 
-Would need some way to re-opt-in to niche optimizations, maybe `#[repr(_, closed)]`?
+Would perhaps need some way to re-opt-in to niche optimizations, maybe `#[repr(C, closed)]`?
 
 ## Pattern types in `repr`
 [pattern-types-in-repr]: #pattern-types-in-repr
