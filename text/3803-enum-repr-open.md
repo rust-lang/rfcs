@@ -459,6 +459,36 @@ But if these issues were resolved, we could in the future consider `#[repr(_, op
 
 This cannot feasibly be implemented as a helper macro in the standard library, as filling out the enum with fake variants very quickly grows to impossible amounts of data that would have to be sent to the compiler.
 
+## Use unions
+
+An alternative would be to use `union`s together with some modifications to how `match` works to soundly look through certain kinds of unions such that one could write (without `unsafe`):
+
+```rust
+#[repr(u8)]
+enum KnownWeather {
+    Sunny = 0,
+    Windy = 1,
+    Rainy = 2,
+}
+
+union Weather {
+   known: KnownWeather,
+   unknown: u8
+}
+
+const SNOWY: u8 = 4;
+
+match Weather::current() {
+   Weather { known: KnownWeather::Sunny } => {...}
+   Weather { known: KnownWeather::Windy } => {...}
+   Weather { known: KnownWeather::Rainy } => {...}
+   Weather { unknown: SNOWY } => {...}
+   _ => {...}
+}
+```
+
+While this would allow us to avoid adding any new syntax, it is quite verbose, and would thus still push library authors towards avoiding exposing the union in favour of instead panicking on unknown variants.
+
 
 # Prior art
 [prior-art]: #prior-art
