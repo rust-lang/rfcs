@@ -600,6 +600,12 @@ Ideas:
 
 Regardless, this is probably `T-libs` purview, and can be decided in a FCP during the implementation phase.
 
+## Opposite modifier
+
+There are a few future possibilities below where it makes sense to have the opposite modifier, something like `#[repr(_, closed)]`.
+
+We should consider before stabilization whether we should add such a modifier at the same time, to allow for better forwards compatibility.
+
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
