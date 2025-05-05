@@ -227,9 +227,10 @@ unsafe extern "C" {
 The effect of the attribute is to force the `static` to be stored with at least
 the specified alignment. The attribute does not force padding bytes to be added
 after the `static`. For `static`s inside `unsafe extern` blocks, if the `static`
-does not meet the specified alignment, the behavior is undefined. (For
-misaligned `static` items declared inside old-style `extern` blocks, UB occurs
-only if the item is used.)
+does not meet the specified alignment, the behavior is undefined. (This UB is
+analogous to the UB that can result if the static item is not a valid value of
+its type. The question of whether the UB can occur even if the item is unused,
+has the same answer for both cases.)
 
 The `align` attribute may also be applied to thread-local `static`s created with
 the `thread_local!` macro; the attribute affects the alignment of the underlying
