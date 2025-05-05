@@ -7,7 +7,7 @@
 # Summary
 [summary]: #summary
 
-Allow `#[repr(_, open)]` on field-less (C-style) enums to allow using the enum directly in FFI.
+Allow `#[repr(_, open)]` on field-less (C-style) enums to allow the enum to contain unknown variants, which enables using the enum directly in FFI.
 
 Enums with the `open` modifier cannot be matched on exhaustively without the use of a wildcard arm. This feature is similar but distinct from the `#[non_exhaustive]` attribute, since it works on an ABI level and applies in the defining module as well.
 
