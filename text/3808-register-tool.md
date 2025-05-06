@@ -218,7 +218,7 @@ This makes the rules for name resolution even more complicated.
 
 This runs the risk that external tools will add attributes that change the meaning of the code, such that the behavior is different when the tool is present. There is not much we can do about this other than to ask tool authors not to do that.
 
-This introduces a new "meta-breaking" concern: once this is stabilized, adding a new tool namespace, like we did for `diagnostic` and `rust_analyzer`, becomes a breaking change. I think in practice there will be few enough external tools that this will not be a major concern and we can just pick a name that isn't already in use. Note that, because `![register_*_tool(...)]` for a built-in tool errors, the user will see immediately what went wrong, instead of getting confusing errors from the attributes in the tool namespace.
+This introduces a new "meta-breaking" concern: once this is stabilized, adding a new tool namespace, like we did for `diagnostic` and `rust_analyzer`, becomes a breaking change. I think in practice there will be few enough external tools that this will not be a major concern and we can just pick a name that isn't already in use. Note that, because `#![register_*_tool(...)]` for a built-in tool errors, the user will see immediately what went wrong, instead of getting confusing errors from the attributes in the tool namespace.
 
 The lang team [expressed a concern][lang concern] in 2022 that the name `register_*_tool` would mislead users into thinking that this *automatically* runs the tool. I do not think this is likely in practice; if someone adds this attribute, it's because the docs for the external tool told them to do so, and those docs should also say how to run the tool.
 
