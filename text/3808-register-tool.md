@@ -46,7 +46,7 @@ There are currently two solutions to this: [upstream lints directly to Clippy](h
 
 There are also several linting tools that don't make sense to upstream to Clippy:
 
-- [`cargo semver-checks`](https://github.com/obi1kenobi/cargo-semver-checks/) (uses its own analysis framework, unrelated to `rustc_driver`)
+- [`cargo-semver-checks`](https://github.com/obi1kenobi/cargo-semver-checks/) (uses its own analysis framework, unrelated to `rustc_driver`)
 - [`dylint`](https://github.com/trailofbits/dylint) (custom, user-extensible lints)
 - [`marker`](https://github.com/rust-marker/marker) (custom, user-extensible lints, but a different approach)
 - [`klint`](https://github.com/Rust-for-Linux/linux/pull/958) (Rust-for-Linux specific linter)
@@ -141,10 +141,11 @@ The Rust language can be extended and analyzed using external tools. If your too
 The syntax for external attributes is carefully designed such that you do not need to do name resolution in order to recognize the attributes. As long as `register_attribute_tool(your_tool)` is present at the crate root, `#[your_tool::your_attribute]` will always be an [inert] attribute you can parse directly; it can never be a re-export of a different item, nor a reference to a local item.
 
 Please *do* verify that `register_attribute_tool` is present, and either warn or error otherwise. If you do not do so, you may accidentally interpret a crate or local module as your tool.
+We will ensure that `rustdoc --output-format json` includes `register_attribute_tool` so that users of rustdoc json are not required to reimplement a rust parser.
 
 Please do *not* suggest using `#[cfg_attr(your_tool, your_attribute)]`. Doing so runs the risk that the language will add that lint or attribute in a future version. Use tool namespaces instead, as that's what they're for! It's ok to pass a custom `cfg` when your tool runs, but avoid using it to guard tool lints and attributes unless it would break your MSRV (minimum supported Rust version).
 
-Please do *not* use tool attributes for metadata that changes the meaning of the code. At that point you are parsing a dialect of Rust, and there is no indication for your users that their code will be interpreted differently by your tool than by the compiler.  For example, `#[must_use]` and `#[inline]` would be suitable for tool attributes, but `#[repr]` and `#[panic_handler]` are not, because they change the meaning of the code. For that use case, use proc-macros, generated code, or bare (un-namespaced) attributes instead, all of which will give a hard error if they cannot be understood by the compiler. If absolutely necessary to use bare attributes, use a C-style namespace like `#[rustc_const_stable]`. We understand that switching from `cfg_attr` to namespaced attributes increases your MSRV, but please avoid it in new code.
+Please do *not* use tool attributes for metadata that changes the meaning of the code. At that point you are parsing a dialect of Rust, and there is no indication for your users that their code will be interpreted differently by your tool than by the compiler.  For example, `#[must_use]` and `#[automatically_derived]` would be suitable for tool attributes, but `#[repr]` and `#[panic_handler]` are not, because they change the meaning of the code. For that use case, use proc-macros, generated code, or bare (un-namespaced) attributes instead, all of which will give a hard error if they cannot be understood by the compiler. If absolutely necessary to use bare attributes, use a C-style namespace like `#[rustc_const_stable]`. We understand that switching from `cfg_attr` to namespaced attributes increases your MSRV, but please avoid it in new code.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
