@@ -249,7 +249,9 @@ How does this interact with [proc-macro lints][`proc_macro_lint`]?
 - We could allow proc-macros to register a scoped tool, such that e.g. `#[serde::flatten]` is valid while the proc-macro is expanding, but not elsewhere in the crate. This is similar to [derive helpers], but namespaced. We would have to take care to avoid ambiguity between the scoped tool and globally registered tools in such a way that external tools still do not need to perform name resolution.
 - Once [expression attributes] are stabilized, this would also allow tool attributes on expressions.
 - We could support registering tools through `Cargo.toml`, which Cargo would then pass to `rustc` using `--crate-attr` (similar to `--check-cfg`). We would have to consider how this interacts with duplicate registration; we don't want to error if a tool is configured both through Cargo.toml and in source code.
+- Some existing attributes, such as [`coverage`], have exactly the semantics of a tool attribute: they add additional meaning when a specific feature or flag is enabled, and ignored otherwise. They could use this mechanism - perhaps we could add a new top-level `metadata` tool namespace for metadata that is expected to be useful for more than one tool, or otherwise officially sanctioned.
 
 [`proc_macro_lint`]: https://github.com/rust-lang/rust/pull/135432
 [derive helpers]: https://doc.rust-lang.org/nightly/reference/procedural-macros.html#derive-macro-helper-attributes
 [expression attributes]: https://github.com/rust-lang/rust/issues/15701
+[`coverage`]: https://doc.rust-lang.org/nightly/unstable-book/language-features/coverage-attribute.html#coverage_attribute
