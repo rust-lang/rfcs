@@ -99,25 +99,28 @@ The reason this requires resolution changes is because tool attributes are [iner
 
 ## For users of external tools
 
+**NOTE**: this section is written assuming that the [`--crate-attr`] RFC has been accepted.
+If this RFC somehow is accepted before `--crate-attr`, everything is *roughly* the same, but the guide will suggest `#![register_lint_tool]` instead of using Cargo.
+
 Several official tools let you configure their behavior on specific parts of your code. For example, Clippy lets you use `#[warn(clippy::as_ptr_cast_mut)]` to warn on that lint for a single item, and Rustfmt lets you use `#[rustfmt::skip]` to avoid formatting a single item. You can also do this for external tools that are not provided in the Rust toolchain. See the documentation of those tools for the lints and attributes they support.
 
-To tell `rustc` that you are using an external tool, use `#![register_lint_tool(my_tool)]` or `#![register_attribute_tool(my_tool)]` in your crate root.
+To tell the compiler about an external tool, add a `tools` section to Cargo.toml:
+```toml
+[tools]
+some_tool = { lints = true, attributes = true }
+```
+The tool name must be a valid Rust identifier, so use underscores, not dashes.
 
-If a tool name conflicts with a crate names, you can disambiguate the crate with `::my_tool`:
-
+If a tool name conflicts with a crate name, you can disambiguate the crate with `::some_tool`:
 ```rust
-#![register_attribute_tool(my_tool)]
-
-extern crate my_tool;
-
 // This is the attribute specified in the crate.
-#[::my_tool::attribute]
+#[::some_tool::attribute]
 fn foo() {
     // ...
 }
 
 // This is the attribute specified by the tool.
-#[my_tool::attribute]
+#[some_tool::attribute]
 fn bar() {
     // ...
 }
@@ -126,7 +129,7 @@ fn bar() {
 Crate-level lints for external tools can be configured in `Cargo.toml`, like any other crate-level lint:
 
 ```toml
-[lints.my_tool]
+[lints.some_tool]
 my_lint = "warn"
 ```
  
@@ -136,7 +139,7 @@ my_lint = "warn"
 
 ## For authors of external tools
 
-The Rust language can be extended and analyzed using external tools. If your tool can parse Rust, you may wish to allow configuring it at sub-crate levels (e.g. individual functions, types, and modules). To reuse the same syntax as the official tools, like Clippy and Rustfmt, instruct your users to add `#![register_lint_tool(your_tool)]` (if your tool only adds new lints) or `#![register_attribute_tool(your_tool)]` (if your tool only adds new attributes). If your tool supports both lints and attributes, register both. Then, instruct your users to add either `#[warn(your_tool::your_lint)]` or `#[your_tool::your_attribute(your_tokens)]` as appropriate.
+The Rust language can be extended and analyzed using external tools. If your tool can parse Rust, you may wish to allow configuring it at sub-crate levels (e.g. individual functions, types, and modules). To reuse the same syntax as the official tools, like Clippy and Rustfmt, instruct your users to add `tools.your_tool = { lints = true }` to Cargo.toml (if your tool only adds new lints) or `tools.your_tool = { attributes = true }` (if your tool only adds new attributes). If your tool supports both lints and attributes, use both. Then, instruct your users to add either `#[warn(your_tool::your_lint)]` or `#[your_tool::your_attribute(your_tokens)]` as appropriate.
 
 The syntax for external attributes is carefully designed such that you do not need to do name resolution in order to recognize the attributes. As long as `register_attribute_tool(your_tool)` is present at the crate root, `#[your_tool::your_attribute]` will always be an [inert] attribute you can parse directly; it can never be a re-export of a different item, nor a reference to a local item.
 
@@ -149,6 +152,8 @@ Please do *not* use tool attributes for metadata that changes the meaning of the
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## Language
 
 The tool prelude is separated into the tool attribute prelude (which is in the type namespace) and the lint prelude (which is only active inside lint controls).
 
@@ -175,7 +180,7 @@ This is in order to not require external tools to perform name resolution. This 
 
 The `#![register_attribute_tool(ident)]` crate-level attribute adds a new tool to the tool attribute prelude. The `#![register_lint_tool(ident)]` crate-level attribute adds a new tool to the lint prelude. For both attributes, tools must be a single ident, not a nested path.
 
-`#[no_implicit_prelude]` keeps its current behavior, i.e. it removes all tools that are in the prelude by default. However, those tools can now be explicitly added back with e.g. `#![register_attribute_tool(rustfmt)]`.
+`#![no_implicit_prelude]` does not affect tools.
 
 Like today, attributes and lints in a tool namespace are always considered used by the compiler. The compiler does not verify the contents of any tool attribute, except to verify that all attributes are syntactically valid [tool attributes].
 
@@ -183,8 +188,26 @@ Unknown tool names in lints remain a hard error until the story for proc-macro l
 
 Modules in the first path of an attribute (e.g. `#[unregistered::name]`) are assumed to be a crate if they cannot be resolved, and therefore give a hard error if not registered.
 
-Registering a tool multiple times is an error. This makes registering a predefined tool (`clippy`, `miri`) using `#![register_*_tool(...)]` an error unless `#![no_implicit_prelude]` is specified.
+Registering a predefined tool (`clippy`, `miri`) using `#![register_*_tool(...)]` is an error.
 
+`register_attribute_tool` and `register_lint_tool` are idempotent; duplicating the attribute has no effect.
+
+## Cargo
+
+Cargo removes the current "specifying unrecognized tools may break" warning for `lints.some_unknown_tool`. Identifying unknown tools is now rustc's job, not Cargo's.
+
+A new [manifest] section called `tools` is added. `tools` takes a list of objects in the following format:
+```
+NAME = { lints = BOOL, attributes = BOOL }
+```
+For each `NAME`:
+- If `lints` is `true`, Cargo passes [`--crate-attr`]`=register_lint_tool(NAME)`
+- If `attributes` is `true`, Cargo passes `--crate-attr=register_lint_tool(NAME)`
+
+As a quality of implementation concern, Cargo should validate that `NAME` is a valid Rust identifier. It should *not* try to validate that each `lints.NAME` is present in the top-level `tools` table, as there are other ways to register tools.
+
+[`--crate-attr`]: https://github.com/rust-lang/rfcs/pull/3791
+[manifest]: https://doc.rust-lang.org/cargo/reference/manifest.html
 [tool attributes]: https://doc.rust-lang.org/nightly/reference/attributes.html#tool-attributes
 [`unknown_lints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unknown-lints
 
