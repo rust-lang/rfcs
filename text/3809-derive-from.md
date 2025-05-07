@@ -113,6 +113,20 @@ fn foo() {
 
 If you need to support conversion in the opposite direction, you will need to implement `impl From<FieldType> for StructType` manually.
 
+If the struct is generic over the type of the inner field, the `From` implementation will be also generic:
+
+```rust
+#[derive(From)]
+struct Id<T: Debug>(T);
+
+// Will generate:
+impl<T: Debug> From<T> for Id {
+    fn from(value: T) -> Self {
+        Self(value)
+    }
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
