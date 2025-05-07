@@ -55,7 +55,7 @@ To summarize, if `From` was `derive`-able, it could reduce the need for using ma
 Apart from the `From` trait being generally useful in various situations, it is especially handy in tests, where various fixture functions can simply receive `T: Into<Newtype>` to avoid test code having to use `.into()` or a newtype struct constructor everywhere.
 
 ## Why does it make sense to derive `From`?
-There are various "standard" crates defined in the Rust standard library that are pervasively used across the ecosystem. Currently, some of these traits can already be automatically derived, for example `Hash` or `Debug`. These traits can be derived automatically because they are composable; an implementation of the trait for a struct can be composed of the trait implementations of its fields.
+There are various "standard" traits defined in the Rust standard library that are pervasively used across the ecosystem. Currently, some of these traits can already be automatically derived, for example `Hash` or `Debug`. These traits can be derived automatically because they are composable; an implementation of the trait for a struct can be composed of the trait implementations of its fields.
 
 One reason why we might not want to enable automatic derive for a specific trait is when the implementation would not be *obvious*. For example, if we allowed deriving `Display`, it is unclear how should the individual field implementations be composed. Should they be separated with a newline? Or a comma? That depends on the given type.
 
