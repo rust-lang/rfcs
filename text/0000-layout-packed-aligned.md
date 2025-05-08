@@ -6,13 +6,17 @@
 # Summary
 [summary]: #summary
 
-This RFC makes it legal to have `#[repr(C)]` structs that are:
+This RFC deprecates the existing `#[repr(C)]` attribute and introduces two new variants of this attribute:
+
+- `#[repr(C(target))]`, for structs intended for interoperability with operating system APIs
+- `#[repr(C(system))]`, for structs intended for interoperability with libraries compiled for the current target
+
+Compared to `#[repr(C)]`, these new attributes require the user to clarify their usage intent. This allows us to have nested structs that are:
 - Both packed and aligned.
 - Packed, and transitively contains`#[repr(align)]` types.
+These usages were previously prohibited under [E0588](https://doc.rust-lang.org/nightly/error_codes/E0588.html).
 
-It also introduces `#[repr(system)]` which is designed for interoperability with operating system APIs.
-It has the same behavior as `#[repr(C)]` except on `*-pc-windows-gnu` targets where it uses the msvc layout
-rules instead.
+Existing `#[repr(C)]` usages will emit a warning and default to `#[repr(C(target))]`.
 
 # Motivation
 [motivation]: #motivation
@@ -20,7 +24,7 @@ rules instead.
 This RFC enables the following struct definitions:
 
 ```rs
-#[repr(C, packed(2), align(4))]
+#[repr(C(target), packed(2), align(4))]
 struct Foo { // Alignment = 4, Size = 8
     a: u8,   // Offset = 0
     b: u32,  // Offset = 2
@@ -40,14 +44,25 @@ struct  __attribute__((packed, aligned(4))) MyStruct {
 
 Currently, `#[repr(packed(_))]` structs cannot be `#[repr(align(_))]` or transitively contain `#[repr(align(_))]` types. Attempting to do so results in a [hard error](https://doc.rust-lang.org/nightly/error_codes/E0588.html).
 
-This behavior was added in the [original implementation](https://github.com/rust-lang/rust/issues/33158) of `#[repr(packed)]` due to concerns over differing behavior between msvc and gcc/clang. This makes it cumbersome or even impossible to produce C-compatible struct layouts in Rust when the corresponding C types were annotated with both `packed` and `aligned`.
+This behavior was added in the [original implementation](https://github.com/rust-lang/rust/issues/33158) of `#[repr(packed)]` due to concerns over differing behavior between MSVC and gcc/clang. This makes it cumbersome or even impossible to produce C-compatible struct layouts in Rust when the corresponding C types were annotated with both `packed` and `aligned`.
+
+Although [The Rust reference](https://doc.rust-lang.org/reference/type-layout.html#the-c-representation) documents the meaning
+of `repr(C)` quite clearly (types are laid out linearly, according to a fixed algorithm.), when you see `#[repr(C)]` in code,
+its meaning can be somewhat ambiguous. Their intention could be one of three things:
+1. Having a target-independent and stable representation of the data structure for storage or transmission.
+2. FFI with C and C++ libraries compiled for the same target.
+3. Interoperability with operating system APIs.
+
+Previously, `#[repr(C)]` was being used for all 3 scenarios because [E0588](https://doc.rust-lang.org/nightly/error_codes/E0588.html) prohibits the user from creating a `#[repr(C)]` struct with ambiguous layout between targets.
+This RFC seeks to differentiate between 2 and 3, leaving 1 for a Rust-defined linear layout to be addressed in a separate RFC.
+
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## `#[repr(C)]`
-When `align` and `packed` attributes exist on the same type, or when `packed` structs transitively contains `align` types,
-the resulting layout matches the target toolchain ABI.
+## `#[repr(C(target))]`
+Structs annotated with this attribute are guaranteed to have the same layout as a struct produced by the C compiler for the current target toolchain.
+This is useful for interfacing with libraries compiled for the current target.
 
 For example, given:
 ```c
@@ -56,12 +71,12 @@ struct Foo(u8);
 #[repr(C, packed(1))]
 struct Bar(Foo);
 ```
-`align_of::<Bar>()` would be 4 for `*-pc-windows-msvc` and 1 for everything else.
+`align_of::<Bar>()` would be 4 for `*-pc-windows-msvc` and 1 for everything else, matching the target toolchain (MSVC).
 
 
-## `#[repr(system)]`
-When `align` and `packed` attributes exist on the same type, or when `packed` structs transitively contains `align` types,
-the resulting layout matches the target OS ABI.
+## `#[repr(C(system))]`
+Structs annotated with this attribute are guaranteed to have the same layout as a struct defined by the target OS ABI.
+This is useful for interfacing with operating system APIs.
 
 For example, given:
 ```c
@@ -70,13 +85,7 @@ struct Foo(u8);
 #[repr(system, packed(1))]
 struct Bar(Foo);
 ```
-`align_of::<Bar>()` would be 4 for `*-pc-windows-msvc` and `*-pc-windows-gnu`. It would be 1 for everything else.
-
-## `#[repr(Rust)]`
-When `align(N)` and `packed(M)` attributes exist on the same type, or when `packed` structs contain `aligned` fields,
-the type will have their base alignment increased to `N`, while the struct fields will be laid out as if their
-alignments were decreased to `M`. However, in general Rust is free to reorder
-these fields for optimization purposes, and the only guarantee is that the fields will maintain a minimum alignment of `M`.
+`align_of::<Bar>()` would be 4 for `*-pc-windows-msvc` and `*-pc-windows-gnu`. It would be 1 for everything else. This matches the target OS (windows).
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -108,34 +117,21 @@ increased to be N.
 
 When a `#[repr(packed(M))]` struct transitively contains a field with `#[repr(align(N))]` type, depending on the
 target triplet, either:
-- The field is added to the struct with alignment decreased to M. The packing requirement overrides the alignment requirement. (This is the case for GCC, `#[repr(Rust)]`, `#[repr(C)]` on gnu targets, and `#[repr(system)]` on non-windows targets.)
-- The field is added to the struct with alignment decreased to M and then increased to N. The alignment requirement overrides the packing requirement. (This is the case for MSVC, `#[repr(C)]` on msvc targets, `#[repr(system)]` on windows targets.)
+- The field is added to the struct with alignment decreased to M. The packing requirement overrides the alignment requirement. (This is the case for GCC, `#[repr(C(target))]` on gnu targets, and `#[repr(C(system))]` on non-windows targets.)
+- The field is added to the struct with alignment decreased to M and then increased to N. The alignment requirement overrides the packing requirement. (This is the case for MSVC, `#[repr(C(target))]` on msvc targets, `#[repr(C(system))]` on windows targets.)
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-Although [The Rust reference](https://doc.rust-lang.org/reference/type-layout.html#the-c-representation) documents the meaning
-of repr(C) quite clearly (types are laid out linearly, according to a fixed algorithm), when you see `#[repr(C)]` in code,
-its meaning can be somewhat ambiguous. When someone puts `#[repr(C)]` on their struct, their intention could be one of three things:
-1. Having a target-independent and stable representation of the data structure for storage or transmission.
-2. FFI with C and C++ libraries compiled for the same target.
-3. Interoperability with operating system APIs.
-
-Today, `#[repr(C)]` is being used for all 3 scenarios because the user cannot create a `#[repr(C)]` struct with ambiguous layout between targets. However, this also means
-that there exists some C layouts that cannot be specified using `#[repr(C)]`.
-
-This RFC addresses use case 2 with `#[repr(C)]` and use case 3 with `#[repr(system)]`. For use case 1, people will have to seek alternative solutions such as `crABI` or
-protobuf. However, it could be a footgun if people continue to use `#[repr(C)]` for use case 1.
-
 It's worthy to note that while this RFC does require people to stop treating `repr(C)` as a linear layout but rather as an
-ABI compatiblity layout, our intention is not proposing a breaking change: `packed` structs are previously banned from
-transitively containing `aligned` fields, so in most cases existing `repr(C)` structs will be laid out in exactly the same
+ABI compatiblity layout, it is not our intention to propose a breaking change: `packed` structs are previously banned from
+transitively containing `aligned` fields, so the proposed default `repr(C(target))` will have structs laid out in exactly the same
 way as it did before. However, due to an oversight in the current implementation of the Rust compiler, the restriction
 can actuall be
 [circumvented](https://github.com/rust-lang/rust/issues/100743#issuecomment-1229343705) using generics. Applications
-using this pattern to circumvent the restriction will see a change in the struct layout on MSVC targets.
+using this pattern to circumvent the restriction may see a change in the struct layout on MSVC targets.
 
-This RFC alone still doesn't make `repr(C)` fully match the target (MSVC) toolchain in all cases; the known other
+This RFC alone still doesn't make `repr(C(target))` fully match the target (MSVC) toolchain in all cases; the known other
 divergences are enums with overflowing discriminant and how a field of type [T; 0] is handled. So while this does
 improve parity, the reality is that there are still edge cases to keep track of for now. These cases shall be addressed
 in future RFCs.
@@ -146,8 +142,8 @@ in future RFCs.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC clarifies that:
-- `repr(C)` must interoperate with the C compiler for the target.
-- `repr(system)` must interoperate with the operating system APIs for the target.
+- `repr(C(target))` must interoperate with the C compiler for the target.
+- `repr(C(system))` must interoperate with the operating system APIs for the target.
 - Similiar to Clang, `repr(C)` does not guarantee consistent layout between targets.
 
 Alternatively, we can also create syntax that allows the user to specify exactly which semantic to use when packed structs transitively contains aligned fields.
