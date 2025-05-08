@@ -99,9 +99,9 @@ attribute accepts a single required parameter, which must be a power-of-2
 integer literal from 1 up to 2<sup>29</sup>. (This is the same as
 `#[repr(align(…))]`.)
 
-Multiple `align` attributes may be present on the same item; the highest
-alignment among them will be used. The compiler may signal this case with a
-warn-by-default lint.
+Multiple instances of the `align` attribute may be present on the same item; the
+highest alignment among them will be used. The compiler may signal this case
+with a warn-by-default lint.
 
 ## On ADT fields
 
@@ -135,8 +135,8 @@ necessarily add extra padding to force the field to have a size that is a
 multiple of its alignment. (The size of the containing ADT must still be a
 multiple of its alignment; that hasn't changed.)
 
-`align` attributes for fields of a `#[repr(packed(n))]` ADT may not specify an
-alignment higher than `n`.
+Instances of the `align` attribute for fields of a `#[repr(packed(n))]` ADT may
+not specify an alignment higher than `n`.
 
 ```rust
 #[repr(packed(4))]
@@ -150,7 +150,7 @@ struct Sardines {
 }
 ```
 
-`align()` attributes on ADT fields are shown in `rustdoc`-generated documentation.
+`align` attributes on ADT fields are shown in `rustdoc`-generated documentation.
 
 ## Interaction with `repr(C)`
 
@@ -250,14 +250,15 @@ fn main() {
 }
 ```
 
-`align()` attributes on `static`s are shown in `rustdoc`-generated documentation.
+`align` attributes on `static`s are shown in `rustdoc`-generated documentation.
 
 ## On function items
 
 On function items, `#[align(…)]` sets the alignment of the function’s code. This
 replaces `#[repr(align(…))]` on function items from `#![feature(fn_align)]`.
 
-`align` attributes on function items are shown in `rustdoc`-generated documentation.
+`align` attributes on function items are shown in `rustdoc`-generated
+documentation.
 
 ## On local variables
 
@@ -279,7 +280,7 @@ fn main() {
 }
 ```
 
-`align` attributes may not be applied to function parameters.
+The `align` attribute may not be applied to function parameters.
 
 ```rust
 fn foo(#[align(8)] _a: u32) {} //~ ERROR
@@ -331,11 +332,30 @@ Drawbacks:
 `align = n` might be misinterpreted as requesting an alignment of *exactly* `n`,
 instead of *at least* `n`.
 
+## `#[align(…)]` on function parameters
+
+We could choose to allow this. However, this RFC specifies that it should be
+rejected, because users might incorrectly think the attribute affects ABI when
+it does not. C and C++ make the same choice.
+
 # Prior art
 [prior-art]: #prior-art
 
-This proposal is the Rust equivalent of [C
-`alignas`](https://en.cppreference.com/w/c/language/_Alignas_).
+This proposal is the Rust equivalent of
+[C](https://en.cppreference.com/w/c/language/_Alignas_) and
+[C++](https://en.cppreference.com/w/cpp/language/alignas) `alignas`.
+
+There are a few significant semantic differences between those features and this
+RFC:
+
+- `#[align]` additionally allows applying the attribute to function item
+  declarations, which `alignas` does not permit.
+- C++, but not C, allows applying `alignas` to type declarations, like Rust’s
+  `repr(align)`; this RFC does not permit that usage.
+- `alignas(n)` accepts any integer constant expression or type name for `n`;
+  this RFC accepts only integer literals (for now).
+- `alignas(n)` allows `n` to be zero, in which case the specifier is ignored;
+  this RFC does not permit that usage.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
