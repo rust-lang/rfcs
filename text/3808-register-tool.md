@@ -7,10 +7,9 @@
 [summary]: #summary
 
 This RFC adds two new attributes:
-- `#![register_lint_tool(tool_name)]` allows controlling namespaced lints with `#[warn(tool_name::lint_name)]`
+- `#![register_lint_tool(tool_name)]` allows controlling namespaced lints with `#[warn(tool_name::lint_name)]`.
 - `#![register_attribute_tool(tool_name)]` allows using tool names in [inert attributes][inert] with `#[tool_name::attribute_name(token_tree)]`.
-
-Additionally, it specifies a new Cargo manifest table named `tools` which allows configuring those attributes from Cargo.toml.
+- `#![register_tool(tool_name)]` is an alias for `#![register_lint_tool(tool_name)] #![register_attribute_tool(tool_name)]`.
 
 Note that this does not add any new functionality into the compiler; it only relaxes the current restrictions. While `rustc` verifies that tool attributes and lints are syntactically valid and do not cause ambiguity during name resolution, it does no extra processing.
 
