@@ -260,6 +260,12 @@ does not affect the alignment of its function item type, which remains a 1-ZST.)
 This replaces `#[repr(align(…))]` on function items, from
 `#![feature(fn_align)]`.
 
+The numerical value of a function pointer to function with an `#[align(n)]`
+attribute is *not* always guaranteed to be a multiple of `n` on all targets. For
+example, on 32-bit ARM, the low bit of the function pointer is set for functions
+using the Thumb instruction set, even though the actual code of the function is
+always aligned to at least 2 bytes.
+
 `align` attributes on function items are shown in `rustdoc`-generated
 documentation.
 
@@ -319,14 +325,20 @@ Benefits of this alternative:
 
 - No new attribute polluting the namespace.
 - Requesting a certain alignment is spelled the same everywhere.
-- `#[repr(…)]` on fields might accept additional options in the future.
+- `#[repr(…)]` on fields might accept additional options in the future, for
+  specifying layout and padding more preciesely.
+- `#[repr(…)]` on statics and function items could also in theory take on new
+  roles in the future. For example, `#[instruction_set(…)]` could become
+  `#[repr(instruction_set(…))]`, and/or `export_name` could become
+  `#[repr(export_name(…))]`.
 
 Drawbacks:
 
 - `#[repr(align(…))]` is a longer and noisier syntax.
-- `#[repr(…)]` on non-ADTs, with the possible exception of field definitions, will
-  probably only ever accept `align(…)` as an argument. It would not be consistent
-  with the existing `#[repr(…)]` on ADTs.
+- `#[repr(…)]` on non-ADTs, with the possible exception of field definitions,
+  will probably only ever accept `align(…)` as an argument, unless we choose to
+  overturn the precedent of e.g. `#[instruction_set(…)]`. It would çertainly not
+  be consistent with the existing `#[repr(…)]` on ADTs.
 - `#[align(…)]` *only* aligns, while `#[repr(align(…))]` also pads to a multiple
   of the alignment. Having different syntax makes that distinction more clear.
 
