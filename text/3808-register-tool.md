@@ -71,17 +71,11 @@ There are also some tools that would benefit from using developer-added metadata
 
 ## For users of external tools
 
-**NOTE**: this section is written assuming that the [`--crate-attr`] RFC has been accepted.
-If this RFC somehow is accepted before `--crate-attr`, everything is *roughly* the same, but the guide will suggest `#![register_lint_tool]` instead of using Cargo.
-
 Several official tools let you configure their behavior on specific parts of your code. For example, Clippy lets you use `#[warn(clippy::as_ptr_cast_mut)]` to warn on that lint for a single item, and Rustfmt lets you use `#[rustfmt::skip]` to avoid formatting a single item. You can also do this for external tools that are not provided in the Rust toolchain. See the documentation of those tools for the lints and attributes they support.
 
-To tell the compiler about an external tool, add a `tools` section to Cargo.toml:
-```toml
-[tools]
-some_tool = { lints = true, attributes = true }
-```
-The tool name must be a valid Rust identifier, so use underscores, not dashes.
+To tell the compiler about an external tool, add `#![register_tool(some_tool)]` to your crate root.
+Note that this changes name resolution, and may give errors if you have a crate named `some_tool`.
+The compiler will suggest ways to fix the new errors.
 
 If a tool name conflicts with a crate name, you can disambiguate the crate with `::some_tool`:
 ```rust
@@ -98,20 +92,19 @@ fn bar() {
 }
 ```
 
-Crate-level lints for external tools can be configured in `Cargo.toml`, like any other crate-level lint:
+Crate-level lints for external tools can use `#![warn(some_tool::lint_name)]`, like any lint.
+Tools may also support a custom configuration format that allows you to control lints for your whole workspace at once.
+Consult the documentation of the tool you use.
 
-```toml
-[lints.some_tool]
-my_lint = "warn"
-```
- 
 [Kani]: https://github.com/model-checking/kani
 [`bevy_lint`]: https://thebevyflock.github.io/bevy_cli/bevy_lint/
 [Bevy game engine]: https://bevyengine.org/
 
 ## For authors of external tools
 
-The Rust language can be extended and analyzed using external tools. If your tool can parse Rust, you may wish to allow configuring it at sub-crate levels (e.g. individual functions, types, and modules). To reuse the same syntax as the official tools, like Clippy and Rustfmt, instruct your users to add `tools.your_tool = { lints = true }` to Cargo.toml (if your tool only adds new lints) or `tools.your_tool = { attributes = true }` (if your tool only adds new attributes). If your tool supports both lints and attributes, use both. Then, instruct your users to add either `#[warn(your_tool::your_lint)]` or `#[your_tool::your_attribute(your_tokens)]` as appropriate.
+The Rust language can be extended and analyzed using external tools. If your tool can parse Rust, you may wish to allow configuring it at sub-crate levels (e.g. individual functions, types, and modules). To reuse the same syntax as the official tools, like Clippy and Rustfmt, instruct your users to add `#![register_lint_tool(your_tool)]` (if your tool only adds new lints) or `#![register_attribute_tool(your_tool)]` (if your tool only adds new attributes). If your tool supports both lints and attributes, use `#![register_tool(your_tool]`. Then, instruct your users to add either `#[warn(your_tool::your_lint)]` or `#[your_tool::your_attribute(your_tokens)]` as appropriate.
+
+We do not specify a syntax for crate-level configuration. We suggest using `[package.metadata.your_tool]` in Cargo.toml.
 
 The syntax for external attributes is carefully designed such that you do not need to do name resolution in order to recognize the attributes. As long as `register_attribute_tool(your_tool)` is present at the crate root, `#[your_tool::your_attribute]` will always be an [inert] attribute you can parse directly; it can never be a re-export of a different item, nor a reference to a local item.
 
@@ -163,6 +156,7 @@ Like today, attributes and lints in a tool namespace are always considered used 
 Registering a predefined tool (`clippy`, `miri`, etc.) using `#![register_*_tool(...)]` is an error.
 
 The `rustc` tool namespace is currently reserved and will continue to be reserved after this RFC, i.e, `register_*_tool(rustc)` is an error.
+Additionally, any tool namespace starting with `rustc`, such as `rustc_lint`, is reserved.
 
 Ambiguity between a tool name and any other name in the type namespace is always a hard error. For example, this code would error:
 
@@ -201,20 +195,6 @@ Modules in the first path of an attribute (e.g. `#[unregistered::name]`) are ass
 Unknown tool names in lints remain a hard error until the story for proc-macro lints is resolved (see [Future possibilities](#future-possibilities)).
 
 `#![no_implicit_prelude]` does not affect tools.
-
-## Cargo
-
-Cargo removes the current "specifying unrecognized tools may break" warning for `lints.some_unknown_tool`. Identifying unknown tools is now rustc's job, not Cargo's.
-
-A new [manifest] section called `tools` is added. `tools` takes a list of objects in the following format:
-```
-NAME = { lints = BOOL, attributes = BOOL }
-```
-For each `NAME`:
-- If `lints` is `true`, Cargo passes [`--crate-attr`]`=register_lint_tool(NAME)`
-- If `attributes` is `true`, Cargo passes `--crate-attr=register_lint_tool(NAME)`
-
-As a quality of implementation concern, Cargo should validate that `NAME` is a valid Rust identifier. It should *not* try to validate that each `lints.NAME` is present in the top-level `tools` table, as there are other ways to register tools.
 
 [`--crate-attr`]: https://github.com/rust-lang/rfcs/pull/3791
 [manifest]: https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -276,6 +256,8 @@ How does this interact with [proc-macro lints][`proc_macro_lint`]?
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+- We could allow registering tools in Cargo.toml (with a `package.tools` field?). This would avoid duplicating tool registration for each crate in the workspace. This depends on [`--crate-attr`] being stabilized.
+- We could make `[lints]` support external tools as a first-class feature. This needs a way for tools to read the metadata out of `Cargo.toml` (e.g. `cargo metadata`, or just parsing the toml file), because cargo does not drive external tools. Additionally, we cannot guarantee that tools will actually read the metadata.
 - Proc macros wish to register custom lints; see [`proc_macro_lint`]. We would have to establish some mechanism to prevent overlapping namespaces. Perhaps `warn(::project::lint_name)` could refer to the proc macro and `warn(project::lint_name)` would refer to any registered tool (only when a `project` tool is regisetered; in the common case where no tool is registered, `project::` would still refer to the proc macro).
 - Projects may wish to have both a proc-macro crate with lints and a CLI with lints. To allow this, we would require `proc_macro_lint` to create an exhaustive list of lints that can be created, such that we can still run `unknown_lints` and do not need to create a new cooperation mechanism between `proc_macro_lint` and `register_lint_tool`, nor to require users of the project to distinguish the two with `::project` (see immediately above). We might still run into difficulty if the proc-macro lint namespace is only active while the proc-macro is expanding; it depends on how `proc_macro_lint` is specified. But I think it's ok to delay that discussion until `proc_macro_lint` gets an RFC.
 - We could allow proc-macros to register a scoped tool, such that e.g. `#[serde::flatten]` is valid while the proc-macro is expanding, but not elsewhere in the crate. This is similar to [derive helpers], but namespaced. We would have to take care to avoid ambiguity between the scoped tool and globally registered tools in such a way that external tools still do not need to perform name resolution.
