@@ -256,8 +256,8 @@ fn main() {
 ## On function items
 
 On function items, `#[align(…)]` sets the alignment of the function’s code. (It
-does not affect the  alignment of its function item type, which remains a
-1-ZST.) This replaces `#[repr(align(…))]` on function items, from
+does not affect the alignment of its function item type, which remains a 1-ZST.)
+This replaces `#[repr(align(…))]` on function items, from
 `#![feature(fn_align)]`.
 
 `align` attributes on function items are shown in `rustdoc`-generated
@@ -312,7 +312,7 @@ additional padding.
 
 ## `#[align(…)]` vs `#[repr(align(…))]`
 
-One potential alternative would be to use  `#[repr(align(…))]` everywhere,
+One potential alternative would be to use `#[repr(align(…))]` everywhere,
 instead of introducing a new attribute.
 
 Benefits of this alternative:
