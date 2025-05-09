@@ -104,7 +104,7 @@ Consult the documentation of the tool you use.
 
 The Rust language can be extended and analyzed using external tools. If your tool can parse Rust, you may wish to allow configuring it at sub-crate levels (e.g. individual functions, types, and modules). To reuse the same syntax as the official tools, like Clippy and Rustfmt, instruct your users to add `#![register_lint_tool(your_tool)]` (if your tool only adds new lints) or `#![register_attribute_tool(your_tool)]` (if your tool only adds new attributes). If your tool supports both lints and attributes, use `#![register_tool(your_tool]`. Then, instruct your users to add either `#[warn(your_tool::your_lint)]` or `#[your_tool::your_attribute(your_tokens)]` as appropriate.
 
-We do not specify a syntax for crate-level configuration. We suggest using `[package.metadata.your_tool]` in Cargo.toml.
+We do not specify a syntax for package-level configuration. We suggest using `[package.metadata.your_tool]` in Cargo.toml.
 
 The syntax for external attributes is carefully designed such that you do not need to do name resolution in order to recognize the attributes. As long as `register_attribute_tool(your_tool)` is present at the crate root, `#[your_tool::your_attribute]` will always be an [inert] attribute you can parse directly; it can never be a re-export of a different item, nor a reference to a local item.
 
@@ -256,8 +256,13 @@ How does this interact with [proc-macro lints][`proc_macro_lint`]?
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- We could allow registering tools in Cargo.toml (with a `package.tools` field?). This would avoid duplicating tool registration for each crate in the workspace. This depends on [`--crate-attr`] being stabilized.
+- We could allow registering tools in Cargo.toml (with a `package.tools` or `workspace.tools` field). This would avoid duplicating tool registration for each crate in the package/workspace. This depends on [`--crate-attr`] being stabilized.
+    - If this is a `package.tools` field, it should allow workspace inheritance.
+    - External tools often have a dedicated cfg (e.g. `cfg(kani)`). We could add a way for registering the tool to also register the name with `check-cfg`. We would need an opt-out for tools that don't have a dedicated cfg.
+    - Since tool authors will usually be different from package authors, we may want to allow specifying tool metadata in a reusable form (e.g. `.cargo/tools.toml`).
+    - We could allow building an external tool as a [runnable dependency].
 - We could make `[lints]` support external tools as a first-class feature. This needs a way for tools to read the metadata out of `Cargo.toml` (e.g. `cargo metadata`, or just parsing the toml file), because cargo does not drive external tools. Additionally, we cannot guarantee that tools will actually read the metadata.
+    - `[lints]` could automatically imply registering the tool, even if not present in `package.tools`.
 - Proc macros wish to register custom lints; see [`proc_macro_lint`]. We would have to establish some mechanism to prevent overlapping namespaces. Perhaps `warn(::project::lint_name)` could refer to the proc macro and `warn(project::lint_name)` would refer to any registered tool (only when a `project` tool is regisetered; in the common case where no tool is registered, `project::` would still refer to the proc macro).
 - Projects may wish to have both a proc-macro crate with lints and a CLI with lints. To allow this, we would require `proc_macro_lint` to create an exhaustive list of lints that can be created, such that we can still run `unknown_lints` and do not need to create a new cooperation mechanism between `proc_macro_lint` and `register_lint_tool`, nor to require users of the project to distinguish the two with `::project` (see immediately above). We might still run into difficulty if the proc-macro lint namespace is only active while the proc-macro is expanding; it depends on how `proc_macro_lint` is specified. But I think it's ok to delay that discussion until `proc_macro_lint` gets an RFC.
 - We could allow attribute macros to register a [derive helper], so that they can emit other attributes for an external tool.
@@ -265,6 +270,7 @@ How does this interact with [proc-macro lints][`proc_macro_lint`]?
 - Once [expression attributes] are stabilized, this would also allow tool attributes on expressions.
 - Some existing attributes, such as [`coverage`], have exactly the semantics of a tool attribute: they add additional meaning when a specific feature or flag is enabled, and ignored otherwise. They could use this mechanism (over an edition boundary, as described above).
 
+[runnable dependency]: https://github.com/rust-lang/cargo/issues/2267
 [`proc_macro_lint`]: https://github.com/rust-lang/rust/pull/135432
 [derive helpers]: https://doc.rust-lang.org/nightly/reference/procedural-macros.html#derive-macro-helper-attributes
 [expression attributes]: https://github.com/rust-lang/rust/issues/15701
