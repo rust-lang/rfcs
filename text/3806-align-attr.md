@@ -43,7 +43,7 @@ pub struct foo {
 The `__bindgen_padding_0` field makes the generated bindings more confusing and
 less ergonomic. Also, it is unsound: the padding should be using `MaybeUninit`.
 And even then, there is no guarantee of ABI compatibility on all potential
-platforms.
+targets.
 
 ## Packing values into fewer cache lines
 
@@ -74,7 +74,7 @@ However, this approach has several downsides:
   crate's public API.
 - It may add padding to the value, which might not be necessary or desirable.
 
-In some cases, it can also improve performance to align function items in the
+In some cases, it can also improve performance to align a function's code in the
 same way.
 
 ## Required alignment for low-level use cases
@@ -130,10 +130,11 @@ least the specified alignment. If the field already has at least that
 alignment, due to the required alignment of its type or to a `repr` attribute on
 the containing type, the attribute has no effect.
 
-In contrast to a `repr(align(…))` wrapper struct, an `align` annotation does *not*
-necessarily add extra padding to force the field to have a size that is a
+In contrast to a `repr(align(…))` wrapper struct, an `align` annotation does
+*not* necessarily add extra padding to force the field to have a size that is a
 multiple of its alignment. (The size of the containing ADT must still be a
-multiple of its alignment; that hasn't changed.)
+multiple of its alignment, which must in turn be no less than that of the
+most-aligned field. That hasn't changed.)
 
 Instances of the `align` attribute for fields of a `#[repr(packed(n))]` ADT may
 not specify an alignment higher than `n`.
@@ -254,8 +255,10 @@ fn main() {
 
 ## On function items
 
-On function items, `#[align(…)]` sets the alignment of the function’s code. This
-replaces `#[repr(align(…))]` on function items from `#![feature(fn_align)]`.
+On function items, `#[align(…)]` sets the alignment of the function’s code. (It
+does not affect the  alignment of its function item type, which remains a
+1-ZST.) This replaces `#[repr(align(…))]` on function items, from
+`#![feature(fn_align)]`.
 
 `align` attributes on function items are shown in `rustdoc`-generated
 documentation.
