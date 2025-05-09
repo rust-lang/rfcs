@@ -327,18 +327,18 @@ Benefits of this alternative:
 - Requesting a certain alignment is spelled the same everywhere.
 - `#[repr(…)]` on fields might accept additional options in the future, for
   specifying layout and padding more preciesely.
-- `#[repr(…)]` on statics and function items could also in theory take on new
-  roles in the future. For example, `#[instruction_set(…)]` could become
-  `#[repr(instruction_set(…))]`, and/or `export_name` could become
-  `#[repr(export_name(…))]`.
+- `#[repr(…)]` on function items could also accept `instruction_set(…)` as an
+  argument, replacing the existing attribute of that name.
 
 Drawbacks:
 
 - `#[repr(align(…))]` is a longer and noisier syntax.
-- `#[repr(…)]` on non-ADTs, with the possible exception of field definitions,
-  will probably only ever accept `align(…)` as an argument, unless we choose to
-  overturn the precedent of e.g. `#[instruction_set(…)]`. It would çertainly not
-  be consistent with the existing `#[repr(…)]` on ADTs.
+- `#[repr(…)]` on non-ADTs would never accept the same set of options as on
+  ADTs. On field definitions, it might accept additional options to precisely
+  control layout; on function items, it might accept `instruction_set(…)`, if we
+  were to overturn the precedent of that being a standalone attribute. On
+  statics and local variables, I doubt it would ever accept anything else at
+  all.
 - `#[align(…)]` *only* aligns, while `#[repr(align(…))]` also pads to a multiple
   of the alignment. Having different syntax makes that distinction more clear.
 
