@@ -156,7 +156,9 @@ Like today, attributes and lints in a tool namespace are always considered used 
 Registering a predefined tool (`clippy`, `miri`, etc.) using `#![register_*_tool(...)]` is an error.
 
 The `rustc` tool namespace is currently reserved and will continue to be reserved after this RFC, i.e, `register_*_tool(rustc)` is an error.
-Additionally, any tool namespace starting with `rustc`, such as `rustc_lint`, is reserved.
+
+Note that the compiler currently reserves all attributes starting with `rustc` (such as `#[rustcat]`), even if they do not have a trailing `_`.
+That continues to be the case after this RFC, but tool names starting with `rustc` are not explicitly prohibited in `register_*_tool` attributes.
 
 Ambiguity between a tool name and any other name in the type namespace is always a hard error. For example, this code would error:
 
