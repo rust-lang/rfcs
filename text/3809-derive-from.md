@@ -156,7 +156,7 @@ Using `#[derive(From)]` on unit structs, enums or tuple/named field structs that
 # Drawbacks
 [drawbacks]: #drawbacks
 
-While this does enable more Rust code to "just work", it also introduces a special case that will have to be explained to the users. In this case it seems quite easily understandable though ("it only works for structs with a single field"), and we should be able to produce high-quality error messages in the compiler, as it is trivial to detect how many fields does a struct have.
+While this does enable more Rust code to "just work", it also introduces a special case that will have to be explained to the users. In this case it seems quite easily understandable though ("it only works for structs with a single field"), and we should be able to produce high-quality error messages in the compiler, as it is trivial to detect how many fields a struct has.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
