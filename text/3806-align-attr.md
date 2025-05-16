@@ -356,6 +356,22 @@ We could choose to allow this. However, this RFC specifies that it should be
 rejected, because users might incorrectly think the attribute affects ABI when
 it does not. C and C++ make the same choice.
 
+To give an example of what could go wrong, consider the following function:
+
+```rust
+fn example(#[align(1024)] very_large_value: [u64; 8192]) {
+    // use `very_large_value` by reference
+}
+```
+
+Calling this function this function will most likely involve first passing
+`very_large_value` on the stack or by pointer, and then copying the entire array
+to a new place on the stack in order to align it. This implicit extra stack copy
+is not present for `#[align(…)]`ed locals. Forbidding this, and requiring users
+to make the move/copy explicit, avoids the performance footgun.
+
+We could always lift this limitation in the future.
+
 # Prior art
 [prior-art]: #prior-art
 
