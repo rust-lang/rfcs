@@ -260,6 +260,9 @@ does not affect the alignment of its function item type, which remains a 1-ZST.)
 This replaces `#[repr(align(…))]` on function items, from
 `#![feature(fn_align)]`.
 
+On `async fn`, the attribute controls the alignment of the code of the function
+that returns the `Future`.
+
 The numerical value of a function pointer to a function with an `#[align(n)]`
 attribute is *not* always guaranteed to be a multiple of `n` on all targets. For
 example, on 32-bit ARM, the low bit of the function pointer is set for functions
@@ -414,3 +417,7 @@ fn foo(x: &u8) {
 - We could loosen the restriction that fields of a `packed(n)` struct cannot
   specify an alignment greater that `n`. (Apparently, some C compilers allow
   something similar.)
+- Once
+  [`#![feature(stmt_expr_attributes)]`](https://github.com/rust-lang/rust/issues/15701)
+  is stable, we could allow applying `#![align(…))]` to closures and async
+  blocks as well.
