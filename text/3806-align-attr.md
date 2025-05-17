@@ -83,6 +83,11 @@ Some low-level use-cases (for example, the [RISC-V `mtvec`
 register](https://five-embeddev.com/riscv-priv-isa-manual/Priv-v1.12/machine.html#machine-trap-vector-base-address-register-mtvec))
 require functions or statics to have a certain minimum alignment.
 
+## Pointer tagging
+
+Users may want to specify a minimum alignment for various items, in order to
+leave the low bits of pointers to such items free to store additional data.
+
 ## Interoperating with systems that have types where size is not a multiple of alignment
 
 In Rust, a type’s size is always a multiple of its alignment. However, there are
@@ -371,6 +376,30 @@ for `#[align(…)]`ed locals. Forbidding this, and requiring users to make the
 move/copy explicit, avoids the performance footgun.
 
 We could always lift this limitation in the future.
+
+## Interaction with `async fn`
+
+This RFC specifies that when applied to `async fn`, the `align` attribute should
+affect the alignment of the function that returns the future. This breaks
+precedent with `#[inline]`, which affects the alignment of the future `poll`
+method.
+
+There is good reason for this difference. In the case of `inline`, controlling
+the inlineability of the function that returns the future is almost never what
+you want. That function is mostly trivial, and there is little reason to deviate
+from the default of inlining it in most cases. Controlling the inlineability of
+the `poll` method is far more useful.
+
+In contrast, there are several potential reasons to want to control the
+alignment of an `async fn`. For example, this could be used in concert with
+function pointer tagging schemes. If users apply `#[align(…)]` to an `async fn`
+item believing that it will affect the alignment of the function’s pointer (as
+it does with any other function item), but instead it affects that of the `poll`
+method, that could even result in UB. Therefore, it makes more sense to choose
+the simpler and more consistent rule of having the `#[align(…)]` attribute
+affect the alignment of the function that returns the future.
+
+The current `#![feature(fn_align)]` works this way already.
 
 # Prior art
 [prior-art]: #prior-art
