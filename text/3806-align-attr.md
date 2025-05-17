@@ -6,18 +6,19 @@
 # Summary
 [summary]: #summary
 
-Add an `#[align(…)]` attribute to set the minimum alignment of `struct` and `enum`
-fields, `static`s, functions, and local variables.
+Add an `#[align(…)]` attribute to set the minimum alignment of `struct` and
+`enum` fields, `static`s, functions, and local variables.
 
 # Motivation
 [motivation]: #motivation
 
 ## Bindings to C and C++
 
-[C](https://en.cppreference.com/w/c/language/_Alignas) and [C++](https://en.cppreference.com/w/cpp/language/alignas)
-provide an `alignas` modifier to set the alignment of specific struct fields. To
-represent such structures in Rust, `bindgen` is sometimes forced to add explicit
-padding fields:
+[C](https://en.cppreference.com/w/c/language/_Alignas) and
+[C++](https://en.cppreference.com/w/cpp/language/alignas) provide an `alignas`
+modifier to set the alignment of specific struct fields. To represent such
+structures in Rust, `bindgen` is sometimes forced to add explicit padding
+fields:
 
 ```c
 // C code
@@ -131,9 +132,9 @@ union Baz {
 ```
 
 The effect of the attribute is to force the address of the field to have at
-least the specified alignment. If the field already has at least that
-alignment, due to the required alignment of its type or to a `repr` attribute on
-the containing type, the attribute has no effect.
+least the specified alignment. If the field already has at least that alignment,
+due to the required alignment of its type or to a `repr` attribute on the
+containing type, the attribute has no effect.
 
 In contrast to a `repr(align(…))` wrapper struct, an `align` annotation does
 *not* necessarily add extra padding to force the field to have a size that is a
@@ -401,6 +402,25 @@ affect the alignment of the function that returns the future.
 
 The current `#![feature(fn_align)]` works this way already.
 
+## `#[align(…)] mut local` via `mut #[align(…)] local`
+
+This RFC proposes that the `#[align(…)]` attribute should come before the `mut`
+keyword when declaring an aligned local variable.
+
+Local variables are declared with [identifier
+patterns](https://doc.rust-lang.org/reference/patterns.html#identifier-patterns).
+The local is defined by three pieces of information:
+
+- Its name, which is declared explicity
+- Its mutability, which is declared explicity via the presence or absence of the
+  `mut` keyword
+- Its type, which is derived implicitly from the structure and type of the
+  surrounding pattern.
+
+In Rust, attributes come before the element they modify. In this case, the `mut`
+keyword is an integral part of the local’s declaration; therefore, the attribute
+should precede it.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -423,8 +443,16 @@ RFC:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-1. What should the syntax be for applying the `align` attribute to `ref`/`ref
-   mut` bindings?
+## MSVC
+
+Does MSVC do something weird with `alignas`? In other words, is the concern
+about `repr(C)` vs `repr(linear)` purely theoretical at this point, or does it
+matter in practice today?
+
+## Interaction with `ref`/`ref mut`
+
+What should the syntax be for applying the `align` attribute to `ref`/`ref mut`
+bindings?
 
   - Option A: the attribute goes inside the `ref`/`ref mut`.
 
@@ -442,11 +470,57 @@ fn foo(x: &u8) {
 }
 ```
 
-(I believe the simplest option is to forbid this combination entirely for now.)
+I believe the simplest option is to forbid this combination entirely for now,
+especially as there is effectively no use-case for it.
 
-2. Does MSVC do something weird with `alignas`? In other words, is the concern
-   about `repr(C)` vs `repr(linear)` purely theoretical at this point, or does
-   it matter in practice today?
+### How I believe we should decide this eventually
+
+In my view, the resolution of this question hinges on whether `ref`/`ref mut`
+are an integral part of the local declaration. My instinct is to say that they
+are not. Like the rest of the surrounding pattern, they describe how the initial
+value of the local should be extracted from the scrutinee. Like this surrounding
+pattern, they implicitly affect the local’s type, but don’t otherwise affect its
+properties. At the point of use, you can’t distinguish a local declared with
+`ref`/`ref mut` from one declared some other way.
+
+However, one could argue that `ref`/`ref mut` are part of the same “binding
+mode” syntactic element as `mut`, and that therefore, if the `align` attribute
+precedes `mut`, it should precede `ref`/`ref mut` also.
+
+I believe the the correct time to resolve this question will be when we decide
+on a syntax for combining `ref`/`ref mut` with `mut`. If we choose a syntax that
+make it clear that these are distinct elements:
+
+```rust
+let ref (mut x) = …;
+let ref mut (mut x) = …;
+```
+
+Then, that would imply that `#[align(…)]` should be applied just before the `mut`:
+
+```rust
+let ref #[align(…)] x = …;
+let ref mut #[align(…)] x = …;
+let ref #[align(…)] mut x = …;
+let ref mut #[align(…)] mut x = …;
+```
+
+But if we choose a syntax that treats tem as components of a single “binding
+mode” element:
+
+```rust
+let mut ref x = …;
+let mut ref mut x = …;
+```
+
+Then, `#[align]` should always precede that element:
+
+```rust
+let #[align(…)] ref x = …;
+let #[align(…)] ref mut x = …;
+let #[align(…)] mut ref x = …;
+let #[align(…)] mut ref mut x = …;
+```
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
