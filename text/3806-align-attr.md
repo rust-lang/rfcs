@@ -49,10 +49,10 @@ targets.
 ## Packing values into fewer cache lines
 
 When working with large values (lookup tables, for example), it is often
-desirable, for optimal performance, to pack them into as few cache lines as
-possible. One way of doing this is to force the alignment of the value to be at
-least the size of the cache line, or perhaps the greatest common denominator of
-the value and cache line sizes.
+desirable, for optimal performance, to ensure they cross over as few cache lines
+as possible. One way of doing this is to force the alignment of the value to be
+at least the size of the cache line—or, for smaller values,
+`next_power_of_two()` of the value size.
 
 The simplest way of accomplishing this in Rust today is to use a wrapper struct
 with a `#[repr(align(…))]` attribute:
