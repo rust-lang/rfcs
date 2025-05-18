@@ -382,8 +382,7 @@ We could always lift this limitation in the future.
 
 This RFC specifies that when applied to `async fn`, the `align` attribute should
 affect the alignment of the function that returns the future. This breaks
-precedent with `#[inline]`, which affects the alignment of the future `poll`
-method.
+precedent with `#[inline]`, which affects the future `poll` method.
 
 There is good reason for this difference. In the case of `inline`, controlling
 the inlineability of the function that returns the future is almost never what
