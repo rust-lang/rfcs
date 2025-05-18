@@ -63,9 +63,7 @@ type SomeLargeType = [[u8; 64]; 21];
 #[repr(align(128))]
 struct CacheAligned<T>(T);
 
-static LOOKUP_TABLE: CacheAligned<SomeLargeType> = CacheAligned(SomeLargeType {
-    data: todo!(),
-});
+static LOOKUP_TABLE: CacheAligned<SomeLargeType> = CacheAligned(todo!());
 ```
 
 However, this approach has several downsides:
