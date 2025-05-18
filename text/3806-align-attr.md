@@ -71,7 +71,7 @@ However, this approach has several downsides:
 - It requires defining a separate wrapper type.
 - It changes the type of the item, which may not be allowed if it is part of the
   crate's public API.
-- It may add padding to the value, which might not be necessary or desirable.
+- It may add unnecessary padding to the value, wasting memory.
 
 In some cases, it can also improve performance to align a function's code in the
 same way.
