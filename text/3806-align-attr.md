@@ -296,7 +296,8 @@ fn main() {
 }
 ```
 
-The `align` attribute may not be applied to function parameters.
+The `align` attribute may not be applied to function parameters. (This
+prohibition is semantic, not syntactic; it is allowed under `#[cfg(false)]`).
 
 ```rust
 fn foo(#[align(8)] _a: u32) {} //~ ERROR
