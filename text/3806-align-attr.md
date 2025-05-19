@@ -91,8 +91,8 @@ leave the low bits of pointers to such items free to store additional data.
 
 In Rust, a type’s size is always a multiple of its alignment. However, there are
 other languages that can interoperate with Rust, where this is not the case
-(WGSL, for example). It’s important for Rust to be able to represent such
-structures.
+([WGSL](https://www.w3.org/TR/WGSL/#alignment-and-size), for example). It’s
+important for Rust to be able to represent such structures.
 
 # Explanation
 [explanation]: #explanation
