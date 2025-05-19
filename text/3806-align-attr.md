@@ -161,7 +161,7 @@ struct Sardines {
 
 `repr(C)` currently has two contradictory meanings: “a simple, linear layout
 algorithm that works the same everywhere” and “an ABI matching that of the
-target’s standard C compiler”. This RFC does not aim to reslove that conflict;
+target’s standard C compiler”. This RFC does not aim to resolve that conflict;
 that is being discussed as part of [RFC
 3718](https://github.com/rust-lang/rfcs/pull/3718). Henceforth, we will use
 `repr(C_for_real)` to denote “match the system C compiler”, and `repr(linear)`
@@ -311,7 +311,7 @@ let #[align(4)] _ = true; //~ ERROR
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This feature adds additional complexity to the languge.
+- This feature adds additional complexity to the language.
 - The distinction between `align` and `repr(align)` may be confusing for users.
 
 # Rationale and alternatives
@@ -333,7 +333,7 @@ Benefits of this alternative:
 - No new attribute polluting the namespace.
 - Requesting a certain alignment is spelled the same everywhere.
 - `#[repr(…)]` on fields might accept additional options in the future, for
-  specifying layout and padding more preciesely.
+  specifying layout and padding more precisely.
 - `#[repr(…)]` on function items could also accept `instruction_set(…)` as an
   argument, replacing the existing attribute of that name.
 
@@ -408,9 +408,9 @@ Local variables are declared with [identifier
 patterns](https://doc.rust-lang.org/reference/patterns.html#identifier-patterns).
 The local is defined by three pieces of information:
 
-- Its name, which is declared explicity
-- Its mutability, which is declared explicity via the presence or absence of the
-  `mut` keyword
+- Its name, which is declared explicitly
+- Its mutability, which is declared explicitly via the presence or absence of
+  the `mut` keyword
 - Its type, which is derived implicitly from the structure and type of the
   surrounding pattern.
 
