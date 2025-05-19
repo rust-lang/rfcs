@@ -46,7 +46,7 @@ less ergonomic. Also, it is unsound: the padding should be using `MaybeUninit`.
 And even then, there is no guarantee of ABI compatibility on all potential
 targets.
 
-## Packing values into fewer cache lines
+## Packing a value into fewer cache lines
 
 When working with large values (lookup tables, for example), it is often
 desirable to ensure they cross over as few cache lines as possible. This
