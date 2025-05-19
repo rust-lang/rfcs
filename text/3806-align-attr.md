@@ -303,7 +303,8 @@ prohibition is semantic, not syntactic; it is allowed under `#[cfg(false)]`).
 fn foo(#[align(8)] _a: u32) {} //~ ERROR
 ```
 
-They also may not be applied to `_` bindings.
+The attribute may only be applied to binding patterns. It may not be applied to
+any other type of pattern, including wildcard patterns:
 
 ```rust
 let #[align(4)] _ = true; //~ ERROR
@@ -418,6 +419,12 @@ The local is defined by three pieces of information:
 In Rust, attributes come before the element they modify. In this case, the `mut`
 keyword is an integral part of the local’s declaration; therefore, the attribute
 should precede it.
+
+## `#[align(…)]` on `_` wildcard patterns
+
+This makes no semantic sense. Just as binding modes can only be applied to
+bindings, `#[align(…)]` also can only be applied to bindings. `_` patterns are
+not bindings; they are a completely separate element in the grammar.
 
 # Prior art
 [prior-art]: #prior-art
