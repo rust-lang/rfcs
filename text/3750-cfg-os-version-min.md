@@ -1,4 +1,4 @@
-- Feature Name: `cfg_os_version_min`
+- Feature Name: `cfg_target_version`
 - Start Date: 2024-12-27
 - RFC PR: [rust-lang/rfcs#3750](https://github.com/rust-lang/rfcs/pull/3750)
 - Rust Issue: [rust-lang/rust#136866](https://github.com/rust-lang/rust/issues/136866)
@@ -6,8 +6,8 @@
 # Summary
 [summary]: #summary
 
-A new `cfg` predicate `os_version_min` that allows users to declare the minimum primary (target-defined) API level required/supported by a block.
-E.g. `cfg!(os_version_min("windows", "6.1.7600"))` would match Windows version >= 6.1.7600.
+A new `cfg` predicate `target_version` that allows users to declare the minimum primary (target-defined) API level required/supported by a block.
+E.g. `cfg!(target_version("windows", "6.1.7600"))` would match Windows version >= 6.1.7600.
 
 # Motivation
 [motivation]: #motivation
@@ -47,18 +47,18 @@ Each standard library target uses a sensible minimum API version. for `x86_64-pc
 For `x86_64-win7-pc-windows-msvc` the minimum API version is "6.1.7600" which corresponds to Windows 7.
 However, inferring the API version from the target name isn't ideal especially as it can change over time.
 
-Instead you use the `os_version_min` predicates to specify the minimum API levels of various parts of the operating system.  For example:
+Instead you use the `target_version` predicates to specify the minimum API levels of various parts of the operating system.  For example:
 
-* `os_version_min("windows", <string>)` would test the [minimum build version](https://gaijin.at/en/infos/windows-version-numbers) of Windows.
-* `os_version_min("libc", <string>)` would test the version of libc.
-* `os_version_min("kernel", <string>)` would test the version of the kernel.
+* `target_version("windows", <string>)` would test the [minimum build version](https://gaijin.at/en/infos/windows-version-numbers) of Windows.
+* `target_version("libc", <string>)` would test the version of libc.
+* `target_version("kernel", <string>)` would test the version of the kernel.
 
-Let’s use `os_version_min("windows", …)` for a simple example.
+Let’s use `target_version("windows", …)` for a simple example.
 
 ```rust
 pub fn random_u64() -> u64 {
     let mut rand = 0_u64.to_ne_bytes();
-    if cfg!(os_version_min("windows", "10.0.10240")) {
+    if cfg!(target_version("windows", "10.0.10240")) {
         // For an API version greater or equal to Windows 10, we use `ProcessPrng`
         unsafe { ProcessPrng(rand.as_mut_ptr(), rand.len()) };
     } else {
@@ -75,11 +75,11 @@ On macOS we use weak linking to do this:
 ```rust
 // Always available under these conditions.
 #[cfg(any(
-    os_version_min("macos", "11.0"),
-    os_version_min("ios", "14.0"),
-    os_version_min("tvos", "14.0"),
-    os_version_min("watchos", "7.0"),
-    os_version_min("visionos", "1.0")
+    target_version("macos", "11.0"),
+    target_version("ios", "14.0"),
+    target_version("tvos", "14.0"),
+    target_version("watchos", "7.0"),
+    target_version("visionos", "1.0")
 ))]
 let preadv = {
     extern "C" {
@@ -91,11 +91,11 @@ let preadv = {
 // Otherwise `preadv` needs to be weakly linked.
 // We do that using a `weak!` macro, defined elsewhere.
 #[cfg(not(any(
-    os_version_min("macos", "11.0"),
-    os_version_min("ios", "14.0"),
-    os_version_min("tvos", "14.0"),
-    os_version_min("watchos", "7.0"),
-    os_version_min("visionos", "1.0")
+    target_version("macos", "11.0"),
+    target_version("ios", "14.0"),
+    target_version("tvos", "14.0"),
+    target_version("watchos", "7.0"),
+    target_version("visionos", "1.0")
 )))]
 weak!(fn preadv(libc::c_int, *const libc::iovec, libc::c_int, off64_t) -> isize);
 
@@ -109,11 +109,11 @@ if let Some(preadv) = preadv {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-The `os_version_min` predicate allows users to conditionally compile code based on the API version supported by the target platform using `cfg`.
+The `target_version` predicate allows users to conditionally compile code based on the API version supported by the target platform using `cfg`.
 It requires a key and a version string.
 The key can be either a `target_os` string or else one of a set of target-defined strings.
 Version strings are always target defined (see [Versioning Schema][versioning-schema]) and will be compared against the target's supported version.
-For example, `#[cfg(os_version_min("macos", "11.0"))]` has the key `macos` and the minimum version `11.0`, which will match any macOS version greater than or equal to macOS 11 Big Sur.
+For example, `#[cfg(target_version("macos", "11.0"))]` has the key `macos` and the minimum version `11.0`, which will match any macOS version greater than or equal to macOS 11 Big Sur.
 If a target doesn't support a key, then the `cfg` will always return `false`.
 
 Each target platform will set the minimum API versions it supports for each key.
@@ -123,7 +123,7 @@ Each target platform will set the minimum API versions it supports for each key.
 
 Currently the standard library is pre-compiled meaning that only a single version of each API can be supported, which must be the minimum version.
 Third party crates can choose to use a higher API level so long as it's compatible with the baseline API version.
-However, there is currently no support for setting a `os_version_min` version above the target's baseline (see [Future Possibilities][future-possibilities]).
+However, there is currently no support for setting a `target_version` version above the target's baseline (see [Future Possibilities][future-possibilities]).
 
 ## Versioning Schema
 [versioning-schema]: #versioning-schema
@@ -134,8 +134,8 @@ Because of this diversity in version strings, each target will be responsible fo
 ## Linting
 [linting]: #linting
 
-By default `os_version_min` will be linted by `check_cfg` in a similar way to `target_os`.
-That is, all valid values for `target_os` will be accepted as valid keys for `os_version_min` on all platforms.
+By default `target_version` will be linted by `check_cfg` in a similar way to `target_os`.
+That is, all valid values for `target_os` will be accepted as valid keys for `target_version` on all platforms.
 The list of additional keys supported by the target will be consulted, which will then be allowed on a per-target basis.
 
 ## Future Compatibility
@@ -154,7 +154,7 @@ Each supported platform will need to implement version string parsing logic (or 
 The overall mechanism proposed here builds on other well established primitives in Rust such as `cfg`.
 A mechanism which tries to bridge cross-platform differences under one `min_target_api_version` predicate [was suggested](https://github.com/rust-lang/rfcs/blob/b0f94000a3ddbd159013e100e48cd887ba2a0b54/text/0000-min-target-api-version.md) but was rejected due to different platforms having divergent needs.
 
-For many platforms, the `target_os` name and the `os_version_min` name will be identical.
+For many platforms, the `target_os` name and the `target_version` name will be identical.
 Even platforms that have multiple possible `versions` relevant to the OS will still have one primary version.
 E.g. for `linux` the primary version would refer to the kernel with `libc` being a secondary OS library version.
 Therefore it would make sense for the primary target OS version to be a property of `target_os`.
@@ -174,7 +174,7 @@ For example, on Windows `WINVER` can be used:
 #endif
 ```
 
-This RFC is a continuation of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3379) more narrowly scoped to just `os_version_min`.
+This RFC is a continuation of [RFC #3379](https://github.com/rust-lang/rfcs/pull/3379) more narrowly scoped to just `os_version_min` (renamed to `target_version` in this RFC).
 That RFC was in turn an updated version of [this RFC draft](https://github.com/rust-lang/rfcs/pull/3036), with the changes reflecting conversations from the draft review process and [further Zulip discussion](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/CFG.20OS.20Redux.20.28migrated.29/near/294738760).
 
 # Unresolved questions
@@ -183,8 +183,9 @@ That RFC was in turn an updated version of [this RFC draft](https://github.com/r
 Custom targets usually specify their configurations in JSON files.
 It is unclear how the target maintainers would add version comparison information to these files.
 
-What exactly should the syntax be?
-Should we draw a distinction between cases where the `os_version_min` directly implies a specific `target_os` and cases where it doesn't (see alternatives)?
+Bikeshedding the name. `platform_version` and `os_version` are among other suggestions.
+
+Should we draw a distinction between cases where the `target_version` directly implies a specific `target_os` and cases where it doesn't (see alternatives)?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
