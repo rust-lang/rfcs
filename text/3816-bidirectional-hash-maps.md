@@ -11,6 +11,7 @@ Many times, people would wish for a simple reverse-lookup function to convert th
 
 ```rust
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 pub enum MyEnum {
     VariantA,
@@ -20,13 +21,14 @@ pub enum MyEnum {
     // and so on...
 }
 
-const STRING_TO_MYENUM_MAP: HashMap<&str, MyEnum> = HashMap::from([("a", MyEnum::VariantA), ("b", MyEnum::VariantB), ("c", MyEnum::VariantC), ("d", MyEnum::VariantD)] /* and so on... */);
-const MYENUM_TO_STRING_MAP: HashMap<MyEnum, &str> = HashMap::from([(MyEnum::VariantA, "a"), (MyEnum::VariantB, "b"), (MyEnum::VariantC, "c"), (MyEnum::VariantD, "d")] /* and so on...*/);
+const STRING_TO_MYENUM_MAP: LazyLock<HashMap<&str, MyEnum>> = LazyLock::new(|| HashMap::from([("a", MyEnum::VariantA), ("b", MyEnum::VariantB), ("c", MyEnum::VariantC), ("d", MyEnum::VariantD)] /* and so on... */));
+const MYENUM_TO_STRING_MAP: LazyLock<HashMap<MyEnum, &str>> = LazyLock::new(|| HashMap::from([(MyEnum::VariantA, "a"), (MyEnum::VariantB, "b"), (MyEnum::VariantC, "c"), (MyEnum::VariantD, "d")] /* and so on...*/));
 ```
 
 This is too cumbersome for many people to use. True, they could implement their own method, but could there be a better solution using just one map? They could define it:
 ```rust
 use std::collections::BijectionMap;
+use std::sync::LazyLock;
 
 pub enum MyEnum {
     VariantA,
@@ -35,7 +37,7 @@ pub enum MyEnum {
     VariantD,
 }
 
-const STRING_CONV_MYENUM_MAP: BijectionMap<&str, MyEnum> = BijectionMap::from([("a", MyEnum::VariantA), ("b", MyEnum::VariantB), ("c", MyEnum::VariantC), ("d", MyEnum::VariantD)] /* and so on... */);
+const STRING_CONV_MYENUM_MAP: LazyLock<BijectionMap<&str, MyEnum>> = LazyLock::new(BijectionMap::from([("a", MyEnum::VariantA), ("b", MyEnum::VariantB), ("c", MyEnum::VariantC), ("d", MyEnum::VariantD)] /* and so on... */));
 ```
 and use it here:
 
