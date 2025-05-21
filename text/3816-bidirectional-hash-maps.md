@@ -53,9 +53,12 @@ for user in users {
     USER_BIDI_MAP.insert(user.username, user.email);
 }
 let random_user_who_logged_in = "iamaverysmartperson";
-let their_email USER_BIDI_MAP.get(random_user_who_logged_in);
+let their_email = USER_BIDI_MAP.get(random_user_who_logged_in);
+```
+
 It can also be used to convert enums to other values:
 
+```rust
 pub enum IpResponse<Value, Error> {
    Success(Value),
    Info(Value),
