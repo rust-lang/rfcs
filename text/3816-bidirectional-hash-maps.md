@@ -22,8 +22,10 @@ pub enum MyEnum {
 
 const STRING_TO_MYENUM_MAP: HashMap<&str, MyEnum> = HashMap::from([("a", MyEnum::VariantA), ("b", MyEnum::VariantB), ("c", MyEnum::VariantC), ("d", MyEnum::VariantD)] /* and so on... */);
 const MYENUM_TO_STRING_MAP: HashMap<MyEnum, &str> = HashMap::from([(MyEnum::VariantA, "a"), (MyEnum::VariantB, "b"), (MyEnum::VariantC, "c"), (MyEnum::VariantD, "d")] /* and so on...*/);
-This is too cumbersome for many people to use. True, they could implement their own method, but could there be a better solution using just one map? They could define it
+```
 
+This is too cumbersome for many people to use. True, they could implement their own method, but could there be a better solution using just one map? They could define it:
+```rust
 use std::collections::BijectionMap;
 
 pub enum MyEnum {
