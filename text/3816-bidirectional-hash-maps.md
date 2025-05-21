@@ -48,7 +48,7 @@ A BijectionMap is a Rust collection that maps keys and values together. Unlike a
 Say you're developing a program and you need to check usernames and match them up with user emails and vice versa. You can, obviously, use two hashmaps and develop a reverser function. But why do two if you can use just one map?
 
 ```rust
-let USER_BIDI_MAP = BijectionMap::new::<&str, &str<()
+let USER_BIDI_MAP = BijectionMap::<&str, &str>::new();
 for user in users {
     USER_BIDI_MAP.insert(user.username, user.email);
 }
