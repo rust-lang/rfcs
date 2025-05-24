@@ -16,7 +16,7 @@ However, there is no equivalent method for string slices. This proposal aims to 
 
 Chunking is an action that may often be needed when working with data that can be seen as an iterator.
 This is why there are methods for this with slices and iterators.
-But, there are none for &str even tho it can be useful a lot of time!
+But, there are none for `&str` even tho it can be useful a lot of time!
 Here are some examples:
 
 - Converting binary or hexadecimal strings into an iterator of an integer.
