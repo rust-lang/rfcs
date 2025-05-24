@@ -1,4 +1,4 @@
-- Feature Name: `str-chunks`
+- Feature Name: `str_chunks`
 - Start Date: 2025-05-24
 - RFC PR: [rust-lang/rfcs#3818](https://github.com/rust-lang/rfcs/pull/3818)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
