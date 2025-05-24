@@ -76,7 +76,7 @@ Also, `str::chunks()` is faster than `Chars::array_chunks()` (without even consi
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`slice::chunks` but for `&str` and with chunks item being `&str` of the same string slice;
+`slice::chunks` but for `&str` and with chunks being substrings as `&str`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
