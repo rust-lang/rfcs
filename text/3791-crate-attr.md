@@ -68,10 +68,11 @@ Any crate-level attribute is valid to pass to `--crate-attr`.
 
 Formally, the expansion behaves as follows:
 
-1. The crate is parsed as if `--crate-attr` were not present.
+1. The crate root (initial file given to rustc) is parsed as if `--crate-attr` were not present.
 2. The attributes in `--crate-attr` are parsed.
-3. The attributes are injected at the top of the crate root.
-4. Macro expansion is performed.
+3. The attributes are injected at the top of the crate root (see below for
+   relative ordering to any existing attributes).
+4. Compilation continues as normal.
 
 As a consequence, this feature does not affect [shebang parsing], nor can it affect nor be affected by comments that appear on the first source line.
 
@@ -85,6 +86,9 @@ In particular, this implies that `//!` syntax for doc-comments is disallowed (al
 If the attribute is already present in the source code, it behaves exactly as it would if duplicated twice in the source.
 For example, duplicating `no_std` is idempotent; duplicating `crate_type` generates both types; and duplicating `crate_name` is idempotent if the names are the same and a hard error otherwise.
 It is suggested, but not required, that the implementation not warn on idempotent attributes, even if it would normally warn that duplicate attributes are unused.
+
+The compiler is free to re-order steps 1 and 2 in the above order if desirable.
+This shouldn't have any user-observable effect beyond changes in diagnostics.
 
 ## Doctests
 
@@ -124,7 +128,10 @@ My awesome crate
 
 ## Spans, modules, and editions
 
-`file!`, `include!`, `include_str!`, and `module_path!` all behave the same as when written in source code.
+`include!`, `include_str!`, and `module_path!` all behave the same as when
+written in source code at the top of the crate root. That is, any module or
+path-relative resolution within the `--crate-attr` attribute should be treated
+the same as ocurring within the crate root.
 
 `--crate-attr` shares an edition with the crate (i.e. it is affected by `--edition`). This may be observable because `doc` attributes can invoke arbitrary macros. Consider this use of [indoc]:
 ```
@@ -135,7 +142,30 @@ My awesome crate
 ```
 Edition-related changes to how proc-macros are passed tokens may need to consider how crate-attr is affected.
 
-The behavior of `line!` and `column!` are not specified; see "Unresolved questions".
+`file!`, `line!`, `column!` *within* the --crate-attr attribute use a synthetic
+file (e.g., file might be `<cli-arg>`). This avoids ambiguity for the span
+overlapping actual bytes in any existing files on disk, and matches precedent
+in other toolchains, e.g., see clang's output for `--include` on the command
+line:
+
+```shell
+$ touch t.h
+$ clang t.h --include foo.h
+<built-in>:1:10: fatal error: 'foo.h' file not found
+    1 | #include "foo.h"
+      |          ^~~~~~~
+1 error generated.
+```
+
+The line and column will ideally be relative to the individual --crate-attr
+command line flag, though this is considered a best-effort detail for quality
+of diagnostics.  They will not be affected by the injected `#![` surrounding
+the parsed
+attribute.
+
+The original source parsing (i.e., the file provided to rustc) is not affected
+by the injected attributes, in effect, they are treated as ocurring within 0
+bytes at the start of the file.
 
 [indoc]: https://docs.rs/indoc/latest/indoc/
 
@@ -153,7 +183,7 @@ In practice, this has not be a large drawback for `crate_name` and `crate_type`,
 - We could apply `--crate-attr` after attributes in the source, instead of before. This has two drawbacks:
     1. It has different behavior for lints than the existing A/W/D flags, so those flags could not semantically be unified with crate-attr. We would be adding yet another precedence group.
     2. It does not allow configuring a "default" option for a workspace and then overriding it in a single crate.
-- We could add a syntax for passing multiple attributes in a single CLI flag. We would have to find a syntax that avoids ambiguity *and* that does not mis-parse the data inside string literals (i.e. picking a fixed string, such as `|`, would not work because it has to take quote nesting into account). This greatly complicates the implementation for little benefit.
+- We could add a syntax for passing multiple attributes in a single CLI flag. We would have to find a syntax that avoids ambiguity *and* that does not mis-parse the data inside string literals (i.e. picking a fixed string, such as `|`, would not work because it has to take quote nesting into account). This greatly complicates the implementation for little benefit. We also already have @file syntax to pass in arguments from a file which provides an escape hatch if this is truly helpful.
 
 This cannot be done in a library or macro. It can be done in an external tool, but only by modifying the source in place, which requires first parsing it, and in general is much more brittle than this approach (for example, preventing the argument from injecting a unterminated block comment, or from injecting a non-attribute grammar production, becomes much harder).
 
@@ -170,8 +200,6 @@ In the author's opinion, having source injected via this mechanism does not make
 [unresolved-questions]: #unresolved-questions
 
 - Is `--crate-name` equivalent to `--crate-attr=crate_name`? As currently implemented, the answer is no. Fixing this is hard; see https://github.com/rust-lang/rust/issues/91632 and https://github.com/rust-lang/rust/pull/108221#issuecomment-1435765434 (these do not directly answer why, but I am not aware of any documentation that does).
-
-- How should macros that give information about source code behave when used in this attribute? For example, `line!` does not seem to have an obvious behavior, and `column!` could either include or not include the surrounding `#![]`.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
