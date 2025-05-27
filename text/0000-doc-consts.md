@@ -7,7 +7,7 @@
 # Summary
 [summary]: #summary
 
-Introduce a `#[doc(consts = ...)]` attribute controlling how constant expressions are rendered by rustdoc.
+Introduce a `#[doc(normalize::consts = ...)]` attribute controlling how constant expressions are rendered by rustdoc.
 
 # Motivation
 [motivation]: #motivation
@@ -22,11 +22,11 @@ and in some cases, there is no possible value that would be meaningful to the us
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The `#[doc(consts)]` attribute can be placed on any item to control how contained constant expressions are displayed in rustdoc-generated documentation.
+The `#[doc(normalize::consts)]` attribute can be placed on any item to control how contained constant expressions are displayed in rustdoc-generated documentation.
 
-* `#[doc(consts = "fold")]` will show them in their fully-evaluated state.
-* `#[doc(consts = "expr")]` will show them as-written.
-* `#[doc(consts = "hide")]` will cause constant expressions to be replaced with `_` or not shown at all.
+* `#[doc(normalize::consts = "fold")]` will show them in their fully-evaluated state.
+* `#[doc(normalize::consts = "expr")]` will show them as-written.
+* `#[doc(normalize::consts = "hide")]` will cause constant expressions to be replaced with `_` or not shown at all.
 
 
 # Reference-level explanation
@@ -34,7 +34,7 @@ The `#[doc(consts)]` attribute can be placed on any item to control how containe
 
 
 ## The Attribute
-The `#[doc(consts)]` attribute determines how constant expressions (constexprs) are rendered by rustdoc.
+The `#[doc(normalize::consts)]` attribute determines how constant expressions (constexprs) are rendered by rustdoc.
 When applied to any item (including the top-level module within a crate, or impl blocks), it affects all constexprs within that item, and within all childern of that item.
 Whenever multiple such attributes would take effect, the innermost attribute takes priority.
 
@@ -46,7 +46,7 @@ constexprs affected include:
 ### Interaction with `#[doc(inline)]`
 When an item is inlined, it is rendered as if it had been defined in the crate it is being inlined into.
 
-This means that if the `doc(consts)` modes of the source and destination crate do not match, an inlined item will *always* be rendered with the mode from the destination crate.
+This means that if the `doc(normalize::consts)` modes of the source and destination crate do not match, an inlined item will *always* be rendered with the mode from the destination crate.
 
 ## The Values
 
@@ -81,7 +81,8 @@ Rustdoc does not currently have the ability to show all constants as-written, na
 
 * The attribute is named `consts` and not `const` to avoid using keywords in attributes
 * A key-value format is used instead of a directive system like `doc(fold)` to allow multiple states without polluting the doc attribute namespace.
-
+* The `normalize::` prefix is used because of how const normalization paralells type normalization,
+  and to improve discoverability via search engines if someone finds it in an unfamiliar codebase.
 <!--
 - Why is this design the best in the space of possible designs?
 - What other designs have been considered and what is the rationale for not choosing them?
@@ -90,7 +91,6 @@ Rustdoc does not currently have the ability to show all constants as-written, na
 -->
 # Prior art
 [prior-art]: #prior-art
-
 
 - [RFC 3631](https://github.com/rust-lang/rfcs/pull/3631) for an attribute that affects the rendering of child items in a nesting way.
 
@@ -121,6 +121,7 @@ Please also take into consideration that rust sometimes intentionally diverges f
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+- `#[doc(normalize::types)]` to control normalization of types.
 - Controlling the base of folded integer literals.
 - Allowing the attribute on individual constant expressions, such as if a type alias has multible const generics that should be rendered differntly.
 - Seperatly specifying the rendering for different categories of constant expressions, such as declaring that only `static` items should have their value hidden.
