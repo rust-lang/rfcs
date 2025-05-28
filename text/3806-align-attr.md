@@ -511,7 +511,7 @@ let ref #[align(…)] mut x = …;
 let ref mut #[align(…)] mut x = …;
 ```
 
-But if we choose a syntax that treats tem as components of a single “binding
+But if we choose a syntax that treats them as components of a single “binding
 mode” element:
 
 ```rust
