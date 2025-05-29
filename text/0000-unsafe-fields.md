@@ -988,13 +988,12 @@ be invoked. Future language extensions that permit partial borrows will resolve 
 ## Syntactic Knobs and Wrapper Types
 
 While we are confident that this RFC has the best tradeoffs among the alternatives in the design
-space, it is not a one-way door.  This RFC is forwards-compatible with some future additions of some
+space, it is not a one-way door. Changes to the default semantics of `unsafe` could be realized over
+an edition boundary. This RFC is also forwards-compatible with some future additions of some
 [combinations](#mixing-syntactic-knobs-with-a-wrapper-type) of [syntactic
-knobs](#more-syntactic-granularity) and [wrapper types](#unsafe-wrapper-type). A variant of `unsafe`
-that permits safe `&`-referencing could be introduced at any time without breaking existing code.
-Over an edition boundary, safe reads of `unsafe` fields could be permitted by rewriting existing
-`unsafe` fields to wrap their field type in a tooling-aware `Unsafe` wrapper type. This migration
-would be sound, but not seamless, and could not be embarked on lightly.
+knobs](#more-syntactic-granularity) and [wrapper types](#unsafe-wrapper-type). For example, in
+addition to this RFC's `unsafe` modifier, additional variants in the form `unsafe(<modifiers>)`
+(e.g., `unsafe(mut)`) could be added to denote that some subset of uses is always safe.
 
 ## Safe Unions
 
