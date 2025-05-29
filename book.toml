@@ -5,6 +5,7 @@ title = "The Rust RFC Book"
 smart-punctuation = true
 no-section-label = true
 git-repository-url = "https://github.com/rust-lang/rfcs"
+edit-url-template = "https://github.com/rust-lang/rfcs/edit/master/{path}"
 site-url = "/rfcs/"
 
 [output.html.search]
