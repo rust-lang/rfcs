@@ -55,7 +55,7 @@ the [Unsafe Code Guidelines Project](https://github.com/rust-lang/unsafe-code-gu
 [Miri](https://github.com/rust-lang/miri/),
 the collection of [accepted RFCs](https://rust-lang.github.io/rfcs/),
 the [Ferrocene Language Specification](https://spec.ferrocene.dev/),
-lots context and decisions spread over [tons of GitHub issues](https://github.com/rust-lang/rust/issues/),
+lots of context and decisions spread over [tons of GitHub issues](https://github.com/rust-lang/rust/issues/),
 [MiniRust](https://github.com/RalfJung/minirust),
 the [source code](https://github.com/rust-lang/rust/),
 and more.
