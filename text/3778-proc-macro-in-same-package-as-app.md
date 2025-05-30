@@ -17,6 +17,8 @@ A common thing to ask about proc macros when one is first learning them is: "Why
 
 It doesn't have to be this way though, because we already have this mechanism of compiling orders – the example that come to mind is the `tests` directory. It relies on the `src` directory being built first, and likewise we could introduce a `proc-macro` directory that would be compiled before `src`.
 
+**To be absolutely clear**, this is not a proposal for same-*crate* proc macros (unlike previous proposals), but same-*package* proc macros. 
+
 The motivation of having this new directory comes down to just convenience. This may sound crude at first, but convenience is a key part of any feature in software. It is known in UX design that every feature has an *interaction cost*: how much effort do I need to put in to use the feature? For example, a feature with low interaction cost, with text editor support, is renaming a variable. Just press F2 and type in a new name. What this provides is incredibly useful – without it, having a subpar variable/function name needed a high interaction cost, especially if it is used across multiple files, and as a result, we are discouraged to change variable names to make it better, when we have new retrospect. With a lower interaction cost, the renaming operation is greatly promoted, and leads to better code.
 
 This proposal aims smooth out the user experience when it comes to creating new proc macro, and achieve a similar effect to the F2 operation. It is important to emphasise that proc macros can dramatically simplify code, especially derive macros, but they a lot of the times aren't used because of all the extra hoops one has to get through. This would make proc macros (more of) "yet another feature", rather than a daunting one.
@@ -89,3 +91,7 @@ Harder to implement, with less payoff.
 [future-possibilities]: #future-possibilities
 
 As described in the [motivation] section, this proposal is aimed to make the process of creating proc macros easier. So a natural extension of this is to remove the need of third-party libraries like syn and proc-macro2. There is already an effort to implement quote, so they might be a possibility.
+
+Second, this might enable for some sort of `$crate` metavariable.
+
+Another possibility is possibly allowing for proc macro crates to export data structures, which would make writing certain things easier.
