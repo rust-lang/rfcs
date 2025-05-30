@@ -1,9 +1,7 @@
 - Feature Name: `proc-macro-in-same-package-as-app`
-- Start Date: tbd
-
-tbd:
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Start Date: 2025-05-30
+- RFC PR: [rust-lang/rfcs#3826](https://github.com/rust-lang/rfcs/pull/3826)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000) tbd
 
 # Summary
 [summary]: #summary
