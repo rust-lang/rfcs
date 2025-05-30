@@ -8,18 +8,18 @@ tbd:
 # Summary
 [summary]: #summary
 
-Have a new folder in a cargo project, called `proc-macro`. This would be like the `tests` directory in that it is alongside the source code. This would eliminate the need to create an extra package for proc macros.
+Have a new folder in a cargo project, called `proc-macro`. This would be like the `tests` directory in that it is alongside the source code. It would eliminate the need to create an extra package for proc macros.
 
 # Motivation
 [motivation]: #motivation
 
-A common thing to ask about proc macros when one is first learning them is: "Why on earth does it have to be in a separate package?!" Of course, we eventually get to know that the reason is that proc macros are basically *compiler plugins*, meaning that they have to be compiled first, before the main code is compiled. So in summary, one needs to be compiled before the other.
+A common thing to ask about proc macros when first learning them is: "Why on earth does it have to be in a separate package?!" Of course, we eventually get to know that the reason is that proc macros are basically *compiler plugins*, meaning that they have to be compiled first, before the main code is compiled. So in summary, one needs to be compiled before the other.
 
-It doesn't have to be this way though, because we already have this mechanism of compiling orders – the example that come to mind is the `tests` directory. It relies on the `src` directory being built first, and likewise we could introduce a `proc-macro` directory that would be compiled before `src`.
+It doesn't have to be this way though, because we already have this mechanism of compiling one thing before another – for example, the `tests` directory. It relies on the `src` directory being built first, and likewise we could introduce a `proc-macro` directory that would compile before `src`.
 
-**To be absolutely clear**, this is not a proposal for same-*crate* proc macros (unlike previous proposals), but same-*package* proc macros. 
+**To be absolutely clear**, this is not a proposal for same-*crate* proc macros (unlike previous proposals), but same-*package* proc macros: a much simpler problem. 
 
-The motivation of having this new directory comes down to just convenience. This may sound crude at first, but convenience is a key part of any feature in software. It is known in UX design that every feature has an *interaction cost*: how much effort do I need to put in to use the feature? For example, a feature with low interaction cost, with text editor support, is renaming a variable. Just press F2 and type in a new name. What this provides is incredibly useful – without it, having a subpar variable/function name needed a high interaction cost, especially if it is used across multiple files, and as a result, we are discouraged to change variable names to make it better, when we have new retrospect. With a lower interaction cost, the renaming operation is greatly promoted, and leads to better code.
+The motivation of this new directory comes down to just convenience. This may sound crude at first, but convenience is a key part of any feature in software. It is known in UX design that every feature has an *interaction cost*: how much effort do I need to put in to use the feature? For example, a feature with low interaction cost, with text editor support, is renaming a variable. Just press F2 and type in a new name. What this provides is incredibly useful – without it, having a subpar variable/function name needed a high interaction cost, especially if it is used across multiple files, and as a result, we are discouraged to change variable names to make it better, when we have retrospect. With a lower interaction cost, the renaming operation is greatly promoted, and leads to better code.
 
 This proposal aims smooth out the user experience when it comes to creating new proc macro, and achieve a similar effect to the F2 operation. It is important to emphasise that proc macros can dramatically simplify code, especially derive macros, but they a lot of the times aren't used because of all the extra hoops one has to get through. This would make proc macros (more of) "yet another feature", rather than a daunting one.
 
@@ -50,7 +50,7 @@ Or, if the file happens to be `mod.rs`, you can access it directly after the `pr
 Libraries like `syn`, `quote`, and `proc-macro2`, would be included under `[dev-dependecies]` in the cargo.toml. (Perhaps we should put it in build dependencies? or a new dependency section for proc macros.)
 
 ## How it would work in the implementation
-Cargo would have to compile the `proc-macro` directory first, as a proc macro type (of course). Then, in compiling the main code, `crate::proc_macro::file_name::my_macro` would resolve the module to the file `/proc-macro/file_name.rs`. Alternatively, if the user uses `mod.rs`, it would be resolved from `crate::proc_macro::my_macro`. This would finally be passed into rustc.
+Cargo would have to compile the `proc-macro` directory first, as a proc macro type (of course). Then, in compiling the main code, `crate::proc_macro::file_name::my_macro` would resolve the module to the file `proc-macro/file_name.rs`. Alternatively, if the user uses `mod.rs`, it would be resolved from `crate::proc_macro::my_macro`. This would finally be passed into rustc.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -70,7 +70,7 @@ This would suffer from the same issue as the last alternative, plus being harder
 
 > Introspection
 
-Harder to implement, with less payoff. 
+Harder to implement, with less payoff relative to the amount of work required. 
 
 # Prior art
 [prior-art]: #prior-art
@@ -79,7 +79,7 @@ Harder to implement, with less payoff.
 2. Declarative macros: can sit side by side as well, but is less powerful.
 3. Lisp macros: same as last two, except more powerful.
 4. `tests` directory, and `build.rs`: compiled at a different time as the main code.
-5. `Makefiles`, or other build systems: they allow for more customisability for when code is built.
+5. `Makefiles`, or other build systems: they allow for customisability for when code is built.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
