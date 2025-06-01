@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Have a new target in a cargo project, called `proc-macro`. Its default location is  in `src/macros.rs`. This would be like the `lib.rs` in that it is alongside the source code. It would eliminate the need to create an extra package for proc macros.
+Have a new target in a cargo project, called `proc-macro`. Its default location is  in `src/procmacros.rs`. This would be like the `lib.rs` in that it is alongside the source code. It would eliminate the need to create an extra package for proc macros.
 
 # Motivation
 [motivation]: #motivation
@@ -21,7 +21,7 @@ The motivation of this new target comes down to just convenience. This may sound
 
 This proposal aims smooth out the user experience when it comes to creating new proc macro, and achieve a similar effect to the F2 operation. It is important to emphasise that proc macros can dramatically simplify code, especially derive macros, but they a lot of the times aren't used because of all the extra hoops one has to get through. This would make proc macros (more of) "yet another feature", rather than a daunting one.
 
-An objection to this one might raise is "How much harder is typing in `cargo new` than `touch macros.rs`?" But we should consider if we would still use as much integration tests if the `tests` directory if it is required to be in a seperate package. The answer is most likely less. This is because (1) having a new package requires ceremony, like putting in a new dependency in cargo.toml, and (2) requires adding to the project structure. A *tiny* bit in lowering the interaction cost, even from 2 steps to 1, can greatly improve the user experience. 
+An objection to this one might raise is "How much harder is typing in `cargo new` than `touch procmacros.rs`?" But we should consider if we would still use as much integration tests if the `tests` directory if it is required to be in a seperate package. The answer is most likely less. This is because (1) having a new package requires ceremony, like putting in a new dependency in cargo.toml, and (2) requires adding to the project structure. A *tiny* bit in lowering the interaction cost, even from 2 steps to 1, can greatly improve the user experience. 
 
 Another benefit is that a library developer don't have to manage two packages if one requires proc macros, and make them be in sync with each other.
 
@@ -37,12 +37,21 @@ Currently, we create a new proc macro as so:
 4. Implement the proc macro in the new package
 
 After this change, we create a new proc macro like this:
-1. Implement the proc macro in a new `macros.rs` in `proc-macro`.
+1. Implement the proc macro in a new `procmacros.rs` in `proc-macro`.
 
+To build only the macro, use:
+```console
+$ cargo build --macros
+```
+
+## Importing
+[importing]: #importing
 To use the proc macro, simply import it via `macros::*`.
 ```rust
 use macros::my_macro;
 ```
+
+Note that macros is only available to inside the package (i.e. bin, lib, examples...). This means that one would have to reexport the macros in `lib.rs` in order for users of a library to use it. It would still be available in `main.rs`, `tests`, `examples`, etc, though.
 
 ## An example
 Suppose you are developing a library that would have normal functions as well as proc macros. The file structure would look like this:
@@ -50,17 +59,27 @@ Suppose you are developing a library that would have normal functions as well as
 My-Amazing-Library
 |---src
 |   |---lib.rs
-|   |---macros.rs
+|   |---procmacros.rs
 |   |---common.rs
 |---cargo.toml
 ```
-`common.rs` is a normal file that declares common data structures and functions. `macros.rs` defines macros, which will be made available to `lib.rs`. `lib.rs` can use the macros defined, and/or reexport the macros.
+`common.rs` is a normal file that declares common data structures and functions. `procmacros.rs` defines macros, which will be made available to `lib.rs`. `lib.rs` can use the macros defined, and reexport the macros to make it available to anyone using the library.
 
-Using code in `common.rs` in `macros.rs` is like how you would normally:
+Using code in `common.rs` in `procmacros.rs` is like how you would normally:
 ```rust
 mod common;
 use common::*;
 ```
+
+Now, to make the macros available, reexport them, and if you want gate a macro behind a feature flag, it would be like how you would normally also, with cfg:
+```rust
+// in lib.rs
+#[cfg(feature = "my_feature")]
+pub use macros::a_niche_macro;
+pub use macros::a_common_macro; // (not gated)
+```
+
+Finally, testing is also how you would expect it. It would be made available to the `tests` directory. ([importing])
 
 ## Cargo.toml configs
 Libraries like `syn`, `quote`, and `proc-macro2`, would be included under `[build-dependecies]` in the cargo.toml. (Perhaps we should put it in a new dependency section for proc macros?)
@@ -71,7 +90,7 @@ Here are all the options available under it, the values set are its default.
 ```toml
 [proc-macro]
 name = "macros"
-path = "src/macros.rs"
+path = "src/procmacros.rs"
 test = true
 doctest = true
 bench = false
@@ -85,8 +104,19 @@ To disable automatic finding, use:
 autoprocmacro = false
 ```
 
-## How it would work in the implementation
-Then pass it into rustc with `--extern=macros=target/_profile_/deps/lib_____`. The process would occur after the compilation of `build.rs` to make metadata and files generated in OUT_DIR available, but before `lib.rs` to make macros available. This means `macros.rs` cannot use code in `lib.rs`, so the code would have to be factored out into a seperate file.
+## Implemention Details
+The package targets would be compiled in the following order:
+1. `build`
+2. `macros`
+3. `lib`
+4. `bin`s
+5. ...
+
+During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(config!(proc_macro))` would be ok in the macros crate), as well as the `CARGO_CFG_PROC_MACRO` env variable. The `OUT_DIR` environment variable would be available, with all other usually available variables.
+
+Any libraries to be linked, as specified in `build.rs` via stdout, would be linked and made available in the `macros`.
+
+The compiled macros crate would be passed into rustc with `--extern=macros=target/_profile_/deps/lib_____` when compiling the other crates. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -128,6 +158,7 @@ Harder to implement, with less payoff relative to the amount of work required.
 [unresolved-questions]: #unresolved-questions
 
 1. Should proc macro dependencies be listed under `[build-dependencies]`, or a new `[proc-macro-dependencies]` section?
+2. What case should `procmacros.rs` be? No spaces, kebab case, or snake? Having no spaces would be the most agnostic solution
 2. ~~Should we import like `crate::proc_macro::file::macro`, or via a new keyword, like `crate_macros::file::macro`? The latter would avoid name collisions, but might be more confusing.~~
 
 # Future possibilities
