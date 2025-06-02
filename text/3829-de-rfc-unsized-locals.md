@@ -12,7 +12,7 @@ _Following the great success of the [type ascription de-RFC], we now present the
 Unsized locals ([RFC 1909], called "unsized rvalues" originally)
 has been a merged RFC for eight years with no clear path to stabilization.
 
-There is still a very large gap in the implementation in rustc that hasn't been adressed for many years and there are several language problems with this feature. 
+There is still a very large gap in the implementation in rustc that hasn't been addressed for many years and there are several language problems with this feature. 
 
 This RFC intends to advocate for the feature being removed entirely with a fresh RFC being necessary to add a similiar feature again.
 
@@ -29,7 +29,7 @@ fn main() {
 ```
 
 This will dynamically allocate space on the stack for the string.
-C has a similiar feature, [`alloca`] and variable length arrays (VLA), the latter having been made optional to implement in C11.
+C has a similar feature, [`alloca`] and variable length arrays (VLA), the latter having been made optional to implement in C11.
 
 ## Lack of Proper Implementation
 
@@ -48,9 +48,9 @@ which is purely about the langauge design of the feature.
 
 The original RFC was very short, and especially short on motivation and rationale for the design.
 
-Dynamic stack allocation in geneneral has a rather significant downside: it makes it easy to accidentally overflow the stack if you allocate a lot.
+Dynamic stack allocation in general has a rather significant downside: it makes it easy to accidentally overflow the stack if you allocate a lot.
 Stacks are usually rather small (on the order of few megabytes, depending on the platform), which means that dynamically allocating user-controlled input on the stack is often rather dangerous.
-While stack overflows are not considered memory unsafe by Rust, they still cause crashes which can lead to denial of service vulnerabilities and unrealiableness in general.
+While stack overflows are not considered memory unsafe by Rust, they still cause crashes which can lead to denial of service vulnerabilities and unreliability in general.
 Dynamic stack allocation as currently implemented interacts especially poorly with loops.
 Allocations are not freed until the function returns, so the following example overflows the stack:
 
@@ -79,9 +79,9 @@ As such, it behaves similarly to `unsafe` (but is not actually `unsafe`).
 With `unsized_locals`, the use of dynamic stack allocation is completely implicit.
 When you create an unsized local, it is often not obvious that dynamic stack allocation is happening.
 In the example from the start, we need to be aware of all the involved types (which are often inferred in practice) to know that this is a potentially problematic unsized local that we have to audit more carefully instead of a normal sized local.
-Especially around strings, which are often user-controlled, this easily lead to accidental dangerous situations.
+Especially around strings, which are often user-controlled, this easily leads to accidentally-dangerous situations.
 
-Rusts strings, reference types, and `Sized` are a part of the language that can often be hard to understand for beginners coming from garbage collected languages.
+Rust's strings, reference types, and `Sized` are a part of the language that can often be hard to understand for beginners coming from garbage-collected languages.
 By allowing people to create a dynamic stack allocation without being aware of what is happening, we open the doors for people, especially new Rust programmers who are not intimately familiar with the tradeoffs of dynamic stack allocation, to shoot themselves in the foot and become vulnerable to unexpected crashes.
 
 As a _dangerous_ feature, dynamic stack allocation must be explicit and obvious - and `unsized_locals` makes it implicit _by design_.
@@ -124,8 +124,8 @@ It is independent of this RFC.
 # Posterior art
 [posterior-art]: #posterior-
 
-The best prior art for this removal is of course the inspiration for the de-RFC format, the [type-ascription de-RFC].
-[MCP 630] can also be seen as prior art
+The best prior art for this removal is of course the inspiration for the de-RFC format, the [type ascription de-RFC].
+[MCP 630] can also be seen as prior art.
 
 # Unresolved answers
 [unresolved-answers]: #unresolved-answers
@@ -139,7 +139,7 @@ In the future, dynamic stack allocation may be re-added to Rust via some other f
 
 Alternatively, it could be decided, explicitly or implicitly through inaction, that dynamic stack allocation is not a fit for Rust and will not be added.
 
-[type-ascription de-RFC]: https://rust-lang.github.io/rfcs/3307-de-rfc-type-ascription.html
+[type ascription de-RFC]: https://rust-lang.github.io/rfcs/3307-de-rfc-type-ascription.html
 [`alloca`]: https://man7.org/linux/man-pages/man3/alloca.3.html
 [MCP 630]: https://github.com/rust-lang/compiler-team/issues/630
 [RFC 1808]: https://github.com/rust-lang/rfcs/pull/1808
