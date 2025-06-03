@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Have a new target in a cargo project, called `proc-macro`. Its default location is  in `src/procmacros.rs`. This would be like the `lib.rs` in that it is alongside the source code. It would eliminate the need to create an extra package for proc macros.
+Have a new target in a cargo project, called `proc-macro`. Its default location is in `proc-macro/lib.rs`. This would be like the `tests` directory in that it is alongside the source code. It would eliminate the need to create an extra package for proc macros.
 
 # Motivation
 [motivation]: #motivation
@@ -21,7 +21,7 @@ The motivation of this new target comes down to just convenience. This may sound
 
 This proposal aims smooth out the user experience when it comes to creating new proc macro, and achieve a similar effect to the F2 operation. It is important to emphasise that proc macros can dramatically simplify code, especially derive macros, but they a lot of the times aren't used because of all the extra hoops one has to get through. This would make proc macros (more of) "yet another feature", rather than a daunting one.
 
-An objection to this one might raise is "How much harder is typing in `cargo new` than `touch procmacros.rs`?" But we should consider if we would still use as much integration tests if the `tests` directory if it is required to be in a seperate package. The answer is most likely less. This is because (1) having a new package requires ceremony, like putting in a new dependency in cargo.toml, and (2) requires adding to the project structure. A *tiny* bit in lowering the interaction cost, even from 2 steps to 1, can greatly improve the user experience. 
+An objection to this one might raise is "How much harder is typing in `cargo new` than `mkdir proc-macro`?" But we should consider if we would still use as much integration tests if the `tests` directory if it is required to be in a seperate package. The answer is most likely less. This is because (1) having a new package requires ceremony, like putting in a new dependency in cargo.toml, and (2) requires adding to the project structure. A *tiny* bit in lowering the interaction cost, even from 2 steps to 1, can greatly improve the user experience. 
 
 Another benefit is that a library developer don't have to manage two packages if one requires proc macros, and make them be in sync with each other.
 
@@ -37,7 +37,8 @@ Currently, we create a new proc macro as so:
 4. Implement the proc macro in the new package
 
 After this change, we create a new proc macro like this:
-1. Implement the proc macro in a new `procmacros.rs` in `proc-macro`.
+1. Create a new folder in the root of the project called `proc-macro`
+2. Implement the proc macro in a new `lib.rs` in the new folder.
 
 To build only the macro, use:
 ```console
@@ -57,23 +58,17 @@ Note that macros is only available to inside the package (i.e. bin, lib, example
 Suppose you are developing a library that would have normal functions as well as proc macros. The file structure would look like this:
 ```
 My-Amazing-Library
+|---proc-macro
+|   |---lib.rs
 |---src
 |   |---lib.rs
-|   |---procmacros.rs
-|   |---common.rs
-|---Cargo.toml
+|---cargo.toml
 ```
-`common.rs` is a normal file that declares common data structures and functions. `procmacros.rs` defines macros, which will be made available to `lib.rs`. `lib.rs` can use the macros defined, and reexport the macros to make it available to anyone using the library.
-
-Using code in `common.rs` in `procmacros.rs` is like how you would normally:
-```rust
-mod common;
-use common::*;
-```
+`proc-macro/lib.rs` defines macros, which will be made available to `src/lib.rs`. `src/lib.rs` can use the macros defined, and reexport the macros to make it available to anyone using the library.
 
 Now, to make the macros available, reexport them, and if you want gate a macro behind a feature flag, it would be like how you would normally also, with cfg:
 ```rust
-// in lib.rs
+// in src/lib.rs
 #[cfg(feature = "my_feature")]
 pub use macros::a_niche_macro;
 pub use macros::a_common_macro; // (not gated)
@@ -90,7 +85,7 @@ Here are all the options available under it, the values set are its default.
 ```toml
 [proc-macro]
 name = "macros"
-path = "src/procmacros.rs"
+path = "proc-macro/lib.rs"
 test = true
 doctest = true
 bench = false
@@ -130,12 +125,9 @@ None at the moment
 
 This would require changes to rustc, when there is a simpler solution.
 
-2. Have it within a `proc_macros` directory
+2. Have it within `src/proc-macro.rs`
 
-This was the original idea; but upon further consideration it turns out to be worse than the current. The justification of it over a file was:
-> *Since it would compile first, proc macro files cannot import functions in the main code. The problem is having it side-by-side to the rest of your code makes it seem like you could just import it, when you cannot. Having it as a seperate directory makes clear of this.*
-
-While it was true that proc macro files cannot import functions in the main code, it can import other modules, making the statement's merits false.
+The problem with this is the confusion it creates for users. Someone looking through `src/` aren't able to see which files are part of the library, or part of proc macro. In addition, having it within the same directory have led some users, like with `lib.rs` and `main.rs`, to use `mod` for importing when they meant `use` from the library.
 
 3. Eliminate the need for new proc macro files/folders entirely, have the compiler work out where the proc macros are and separate them.
 
@@ -158,7 +150,7 @@ Harder to implement, with less payoff relative to the amount of work required.
 [unresolved-questions]: #unresolved-questions
 
 1. Should proc macro dependencies be listed under `[build-dependencies]`, or a new `[proc-macro-dependencies]` section?
-2. What case should `procmacros.rs` be? No spaces, kebab case, or snake? Having no spaces would be the most agnostic solution
+2. What case should `proc-macro/` be? No spaces, kebab case, or snake? Having no spaces would be the most agnostic solution
 2. ~~Should we import like `crate::proc_macro::file::macro`, or via a new keyword, like `crate_macros::file::macro`? The latter would avoid name collisions, but might be more confusing.~~
 
 # Future possibilities
