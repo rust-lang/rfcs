@@ -27,8 +27,8 @@ Another benefit is that a library developer don't have to manage two packages if
 
 In summary (TL;DR), the effort one needs to put in to use a feature is extremely important. Proc macros currently has a higher ceiling, needing one to create a whole new package in order to use it, and lowering the ceiling, even just a little bit, could massively improve user experience. This proposal can lower it.
 
-# Explanation
-[explanation]: #explanation
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
 
 Currently, we create a new proc macro as so:
 1. Create a new package
@@ -76,6 +76,24 @@ pub use macros::a_common_macro; // (not gated)
 
 Finally, testing is also how you would expect it. It would be made available to the `tests` directory. ([importing])
 
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+The package targets would be compiled in the following order:
+1. `build`
+2. `macros`
+3. `lib`
+4. `bin`s
+5. ...
+
+The macros would be available to all targets built afterwards.
+
+During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(config!(proc_macro))` would be ok in the macros crate), as well as the `CARGO_CFG_PROC_MACRO` env variable. The `OUT_DIR` environment variable would be available, with all other usually available variables.
+
+Any libraries to be linked, as specified in `build.rs` via stdout, would be linked and made available in the `macros`.
+
+The compiled macros crate would be passed into rustc with `--extern=macros=target/_profile_/deps/lib_____` when compiling the other crates. 
+
 ## Cargo.toml configs
 Libraries like `syn`, `quote`, and `proc-macro2`, would be included under `[build-dependecies]` in the cargo.toml. (Perhaps we should put it in a new dependency section for proc macros?)
 
@@ -98,20 +116,6 @@ To disable automatic finding, use:
 [package]
 autoprocmacro = false
 ```
-
-## Implemention Details
-The package targets would be compiled in the following order:
-1. `build`
-2. `macros`
-3. `lib`
-4. `bin`s
-5. ...
-
-During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(cfg!(proc_macro))` would be ok in the macros crate), as well as the `CARGO_CFG_PROC_MACRO` env variable. The `OUT_DIR` environment variable would be available, with all other usually available variables.
-
-Any libraries to be linked, as specified in `build.rs` via stdout, would be linked and made available in the `macros`.
-
-The compiled macros crate would be passed into rustc with `--extern=macros=target/_profile_/deps/lib_____` when compiling the other crates. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
