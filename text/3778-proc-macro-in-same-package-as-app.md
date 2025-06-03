@@ -61,7 +61,7 @@ My-Amazing-Library
 |   |---lib.rs
 |   |---procmacros.rs
 |   |---common.rs
-|---cargo.toml
+|---Cargo.toml
 ```
 `common.rs` is a normal file that declares common data structures and functions. `procmacros.rs` defines macros, which will be made available to `lib.rs`. `lib.rs` can use the macros defined, and reexport the macros to make it available to anyone using the library.
 
