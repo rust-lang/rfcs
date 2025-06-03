@@ -120,7 +120,8 @@ autoprocmacro = false
 # Drawbacks
 [drawbacks]: #drawbacks
 
-None at the moment
+1. Added complexity - Somewhat increases maintainance cost of cargo
+2. Migrations - Existing crates now need to migrate to the new system, taking time, and it may cause some exisiting code that's always using the latest version of libraries to break.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
