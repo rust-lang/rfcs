@@ -14,7 +14,9 @@ has been a merged RFC for eight years with no clear path to stabilization.
 
 There is still a very large gap in the implementation in rustc that hasn't been addressed for many years and there are several language problems with this feature. 
 
-This RFC intends to advocate for the feature being removed entirely with a fresh RFC being necessary to add a similiar feature again.
+This RFC intends to advocate for the feature being removed entirely with a fresh RFC being necessary to add a similar feature again.
+
+Note that the acceptance of this RFC should not be taken as judgement on a future RFC. A fresh RFC with a new design would be required, and this RFC may provide input on design constraints for such an RFC, but this should not be taken as pre-rejecting such an RFC.
 
 # Demotivation
 [demotivation]: #demotivation
