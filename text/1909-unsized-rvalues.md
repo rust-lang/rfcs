@@ -5,7 +5,7 @@
 
 > ⚠ Update 8 years later ⚠
 >
-> [The team decided to un-accept](https://github.com/rust-lang/rfcs/pull/3829) this RFC and the feature has been removed.
+> [The team decided to un-accept](https://github.com/rust-lang/rfcs/pull/3829) the portions of this RFC not related to function parameters and the `unsized_locals` feature has been removed.
 
 
 # Summary
