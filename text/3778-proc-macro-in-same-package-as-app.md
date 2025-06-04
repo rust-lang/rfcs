@@ -88,7 +88,7 @@ The package targets would be compiled in the following order:
 
 The macros would be available to all targets built afterwards. Exports of `macros` is only available inside the package, so any publicly available ones need to be reexported in `lib`.
 
-During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(config!(proc_macro))` would be ok in the macros crate), as well as the `CARGO_CFG_PROC_MACRO` env variable. The `OUT_DIR` environment variable would be available, with all other usually available variables.
+During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(cfg!(proc_macro))` would be ok in the macros crate), as well as the `CARGO_CFG_PROC_MACRO` env variable. The `OUT_DIR` environment variable would be available, with all other usually available variables.
 
 Any libraries to be linked, as specified in `build.rs` via stdout, are not to be available to `macros`. In addition, linker arguments can be passed through `cargo::rustc-link-arg-macros=FLAG`  via stdout of `build.rs`.
 
