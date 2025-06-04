@@ -22,6 +22,18 @@ crates to avoid defining proc macros, reduce dependencies and compilation time,
 and provide these macros unconditionally without requiring the user to enable a
 feature.
 
+The [`macro_rules_attribute`](https://crates.io/crates/macro_rules_attribute)
+crate defines proc macros that allow invoking declarative macros as derives,
+demonstrating a demand for this. This feature would allow defining such derives
+without requiring proc macros at all, and would support the same invocation
+syntax as a proc macro.
+
+The derive feature of the crate has [various uses in the
+ecosystem](https://github.com/search?q=macro_rules_attribute%3A%3Aderive&type=code).
+That crate likewise offers a `derive_alias` mechanism, which could similarly be
+implemented using exclusively declarative macros given the feature proposed in
+this RFC.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
