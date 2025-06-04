@@ -90,7 +90,7 @@ The macros would be available to all targets built afterwards. Exports of `macro
 
 Any libraries to be linked, as specified in `build.rs` via stdout, are not to be available to `macros`. In addition, linker arguments can be passed through `cargo::rustc-link-arg-macros=FLAG` via stdout of `build.rs`.
 
-The compiled macros crate would be passed into rustc with `--extern=macros=target/_profile_/deps/lib_____` when compiling the other crates. 
+Any artifacts created during compilation are to be in `target/_profile_/deps`, as usual. The compiled macros crate would be passed into rustc with `--extern=macros=target/_profile_/deps/lib_____` when compiling the other crates. Finally, the compiled lib_____ would be put in `target/macros/`, along with its `.d` file.
 
 ## Cfg and Environment Variables
 During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(cfg!(proc_macro))` would be ok in the macros crate).
