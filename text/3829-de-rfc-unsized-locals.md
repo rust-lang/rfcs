@@ -87,6 +87,13 @@ By allowing people to create a dynamic stack allocation without being aware of w
 As a _dangerous_ feature, dynamic stack allocation must be explicit and obvious - and `unsized_locals` makes it implicit _by design_.
 Therefore, `unsized_locals` must go.
 
+`unsized_locals` is not the only feature that can cause unbounded stack allocation and eventually lead to stack overflow in Rust, one has to look no further than Dijkstra's favorite: recursion.
+A program with unbounded recursion is easily found and fixed, but especially recursive parsers suffer from similar problems where user input can cause stack overflows.
+What makes recursion different from dynamic stack allocation?
+The main difference here is that recursion is a lot harder to do on accident.
+When recursion is used, it is usually used on purpose, and while sometimes the potential for stack overflows is overlooked, the general feature is usually used on purpose.
+That said, recursion can certainly be dangerous in some contexts, but prior existing features are not a good reason to introduce more ways to blow the stack.
+
 # Guide-level obfuscation
 [guide-level-obfuscation]: #guide-level-obfuscation
 
