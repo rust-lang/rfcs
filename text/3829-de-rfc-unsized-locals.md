@@ -59,7 +59,7 @@ There are ways around this (rewinding the stack pointer at the end of the loop t
 ## Implicit Danger
 
 While lack of implementation quality is a sign of lack of interest for the feature, it is not the primary reason for this RFC,
-which is purely about the langauge design of the feature.
+which is purely about the language design of the feature.
 
 The original RFC was very short, and especially short on motivation and rationale for the design.
 
