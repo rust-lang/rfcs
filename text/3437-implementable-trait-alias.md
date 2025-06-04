@@ -217,7 +217,7 @@ Consider this verbose library:
 
 ```rust
 trait TraitForFrobbing {
-   type TypeThatEnablesFrobbing:
+   type TypeThatEnablesFrobbing;
 
    fn perform_the_frobbing_operation_posthaste(&self, frobber: &Self::TypeThatEnablesFrobbing);
 }
