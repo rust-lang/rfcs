@@ -949,10 +949,6 @@ something when it does not.
 
 # Future possibilities
 
-- New kinds of bounds: anything that makes `where` clauses more powerful would
-  make this feature more powerful as well.
-  - Variance bounds could allow this feature to support backward-compatible
-    GATification.
 - We could allow trait aliases to define their own defaults for `impl`s. One
   possibility is [the `default partial impl` syntax I suggested on
   IRLO](https://internals.rust-lang.org/t/idea-partial-impls/22706/).
@@ -973,3 +969,49 @@ something when it does not.
 - We could add an attribute for trait aliases to opt in to generating their own
   `dyn` type.
   - This could be prototyped as a proc macro.
+
+## New kinds of bounds
+
+Anything that makes `where` clauses more powerful would make this feature more
+powerful as well.
+
+For example:
+
+- If we could write bounds for the `const`ness of a method, that could allow
+emulating some of [const traits](https://github.com/rust-lang/rfcs/pull/3762)—or
+even form part of the desugaring for that feature:
+
+```rust
+pub trait PartialEq<Rhs = Self>
+where
+    Rhs: ?Sized,
+{
+    fn eq(&self, other: &Rhs) -> bool;
+
+    fn ne(&self, other: &Rhs) -> bool {
+        !(self.eq(other))
+    }
+}
+
+trait ConstPartialEq<Rhs> = PartialEq<Rhs>
+where
+    Self::eq: const,
+    Self::ne: const; // 🚲🏠
+```
+
+- If we could write a bound requiring that a GAT not use is lifetime, that could
+enable retrofitting `LendingIterator` into `Iterator`:
+
+```rust
+pub trait LendingIterator {
+    type Item<'a>
+    where
+        Self: 'a;
+
+     fn next(&mut self) -> Option<Self::Item<'_>>;
+}
+
+pub trait Iterator = Iterator
+where
+    for<'a> Self::Item<'a>: doesnt_depend_on<'a>; // 🚲🏠
+```
