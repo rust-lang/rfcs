@@ -268,7 +268,7 @@ impl Frob for MyType {
 
 ## Bodies for trait aliases
 
-Trait aliases can also now sepcify an optional body, which can contain various
+Trait aliases can also now specify an optional body, which can contain various
 items. These items are themselves aliases for items defined on the respective
 traits.
 
@@ -361,11 +361,11 @@ We can use this to split the `Deref` trait, as suggested in the motivation secti
 ```rust
 //! New `Deref`
 
-pub trait Reciever {
+pub trait Receiver {
     type Target: ?Sized;
 }
 
-pub trait DerefToTarget: Reciever {
+pub trait DerefToTarget: Receiver {
     fn deref(&self) -> &Self::Target;
 }
 
@@ -573,7 +573,7 @@ trait Bar {
 trait FooBar = Foo + Bar;
 ```
 
-If the confliting items all have defaults, the alias will be implementable, but
+If the conflicting items all have defaults, the alias will be implementable, but
 overriding the defaults will not be possible.
 
 ```rust
@@ -750,7 +750,7 @@ trait Alias = Frob {
 }
 ```
 
-Modifers like `const`, `async`, `unsafe`, or `extern "C"` are neither required
+Modifiers like `const`, `async`, `unsafe`, or `extern "C"` are neither required
 nor accepted.
 
 You are allowed to specify generic parameters, in order to reorder them. But you
@@ -825,7 +825,7 @@ where
 
 N.B.: when using implementable trait aliases to split a trait into two parts
 *without* a supertrait/subtrait relationship between them, you have to be
-careful in order to preserve `dyn` compatiblilty.
+careful in order to preserve `dyn` compatibility.
 
 ```rust
 trait Foo {
