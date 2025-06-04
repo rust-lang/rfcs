@@ -95,6 +95,8 @@ The main difference here is that recursion is a lot harder to do on accident.
 When recursion is used, it is usually used on purpose, and while sometimes the potential for stack overflows is overlooked, the general feature is usually used on purpose.
 That said, recursion can certainly be dangerous in some contexts, but prior existing features are not a good reason to introduce more ways to blow the stack.
 
+The Linux kernel has spent a lot of time on getting VLAs (C's cousin to `unsized_locals`) [removed from the codebase](https://www.phoronix.com/news/Linux-Kills-The-VLA).
+
 # Guide-level obfuscation
 [guide-level-obfuscation]: #guide-level-obfuscation
 
