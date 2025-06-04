@@ -35,7 +35,7 @@ C has a similar feature, [`alloca`] and variable length arrays (VLA), the latter
 
 This feature has never been properly implemented in rustc.
 The variable length array form proposed in the RFC still doesn't exist at all, only the unsized local variable does.
-It is implemented in the type checker and codegen, but lacking MIR semantics and therefore unimplemented in the compile time function evaluator.
+It is implemented in the type checker and codegen, but [lacking MIR semantics](https://github.com/rust-lang/rust/issues/48055#issuecomment-1837424794) and therefore unimplemented in the compile time function evaluator.
 This is very significant, as MIR semantics govern how the feature should behave precisely in the first place.
 Without them, they cannot work in `const` and optimizations are likely broken around them.
 Because of this lack of implementation quality, the `unsized_locals` feature was already accepted for removal from rustc two years ago in [MCP 630].
