@@ -193,5 +193,3 @@ Harder to implement, with less payoff relative to the amount of work required.
 1. As described in the [motivation] section, this proposal is aimed to make the process of creating proc macros easier. So a natural extension of this is to remove the need of third-party libraries like syn and proc-macro2. There is already an effort to implement quote, so they might be a possibility.
 
 2. This might enable for some sort of `$crate` metavariable.
-
-3. Enabling multiple lib targets.
