@@ -13,6 +13,14 @@ Have a new target in a cargo project, called `proc-macro`. Its default location 
 
 A common thing to ask about proc macros when first learning them is: "Why on earth does it have to be in a separate package?!" Of course, we eventually get to know that the reason is that proc macros are basically *compiler plugins*, meaning that they have to be compiled first, before the main code is compiled. So in summary, one needs to be compiled before the other.
 
+Currently, we create a new proc macro as so:
+1. Create a new package
+2. In its cargo.toml, specify that it is a proc macro package
+3. In the main project, add the package as a dependency
+4. Implement the proc macro in the new package
+
+While this doesn't seem like a lot, with reasons explained later, could actually be making code worse.
+
 It doesn't have to be this way though, because we already have this mechanism of compiling one thing before another – for example, the `tests` directory. It relies on the `src` directory being built first, and likewise we could introduce a `proc-macro` target that would compile before `src`.
 
 **To be absolutely clear**, this is not a proposal for same-*crate* proc macros (unlike previous proposals), but same-*package* proc macros: a much simpler problem. 
@@ -29,12 +37,6 @@ In summary (TL;DR), the effort one needs to put in to use a feature is extremely
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
-
-Currently, we create a new proc macro as so:
-1. Create a new package
-2. In its cargo.toml, specify that it is a proc macro package
-3. In the main project, add the package as a dependency
-4. Implement the proc macro in the new package
 
 After this change, we create a new proc macro like this:
 1. Create a new folder in the root of the project called `proc-macro`
