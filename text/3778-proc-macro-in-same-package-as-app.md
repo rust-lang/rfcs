@@ -140,6 +140,11 @@ To disable automatic finding, use:
 autoprocmacro = false
 ```
 
+## Cargo CLI Additions
+- `cargo build --macros` – Compile `macros` only
+- `cargo build --all-targets` – Equivalent to specifying `--lib --bins --tests --benches --examples --macros`
+- `cargo test --macros` would not be not possible
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
