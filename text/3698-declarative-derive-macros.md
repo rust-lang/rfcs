@@ -189,9 +189,11 @@ demonstrating a demand for this. This feature would allow defining such derives
 without requiring proc macros at all, and would support the same invocation
 syntax as a proc macro.
 
-Some crates in the ecosystem already implement the equivalent of derives using
-declarative macros; for instance, see
-[merde](https://github.com/bearcove/merde).
+The derive feature of the crate has [various uses in the
+ecosystem](https://github.com/search?q=macro_rules_attribute%3A%3Aderive&type=code).
+That crate likewise offers a `derive_alias` mechanism, which could similarly be
+implemented using exclusively declarative macros given the feature proposed in
+this RFC.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
