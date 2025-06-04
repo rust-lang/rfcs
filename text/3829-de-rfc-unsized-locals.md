@@ -94,6 +94,10 @@ The `unsized_locals` feature is removed from the compiler and [RFC 1909] is offi
 
 If someone wants to bring dynamic stack allocation into Rust again, a new design will have to be designed from scratch, considering all the problems laid out in this RFC.
 
+This does not have a negative effect on features that feature unsized values in function signatures like `unsized_fn_params`.
+Their behavior is much more clear and they are implemented differently.
+In fact, `unsized_fn_params` is currently needed in the standard library to implement `Box<dyn FnOnce()> as FnOnce()>`.
+
 # Drawforwards
 [drawforwards]: #drawforwards
 
@@ -129,6 +133,7 @@ The best prior art for this removal is of course the inspiration for the de-RFC 
 
 # Unresolved answers
 [unresolved-answers]: #unresolved-answers
+
 
 None
 
