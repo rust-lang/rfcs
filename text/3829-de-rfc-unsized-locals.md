@@ -41,16 +41,6 @@ Without them, they cannot work in `const` and optimizations are likely broken ar
 Because of this lack of implementation quality, the `unsized_locals` feature was already accepted for removal from rustc two years ago in [MCP 630].
 This removal hasn't yet been implemented.
 
-## Implicit Danger
-
-While lack of implementation quality is a sign of lack of interest for the feature, it is not the primary reason for this RFC,
-which is purely about the langauge design of the feature.
-
-The original RFC was very short, and especially short on motivation and rationale for the design.
-
-Dynamic stack allocation in general has a rather significant downside: it makes it easy to accidentally overflow the stack if you allocate a lot.
-Stacks are usually rather small (on the order of few megabytes, depending on the platform), which means that dynamically allocating user-controlled input on the stack is often rather dangerous.
-While stack overflows are not considered memory unsafe by Rust, they still cause crashes which can lead to denial of service vulnerabilities and unreliability in general.
 Dynamic stack allocation as currently implemented interacts especially poorly with loops.
 Allocations are not freed until the function returns, so the following example overflows the stack:
 
@@ -65,6 +55,17 @@ fn main() {
 }
 ```
 There are ways around this (rewinding the stack pointer at the end of the loop to free up the memory), but they are not currently implemented.
+
+## Implicit Danger
+
+While lack of implementation quality is a sign of lack of interest for the feature, it is not the primary reason for this RFC,
+which is purely about the langauge design of the feature.
+
+The original RFC was very short, and especially short on motivation and rationale for the design.
+
+Dynamic stack allocation in general has a rather significant downside: it makes it easy to accidentally overflow the stack if you allocate a lot.
+Stacks are usually rather small (on the order of few megabytes, depending on the platform), which means that dynamically allocating user-controlled input on the stack is often rather dangerous.
+While stack overflows are not considered memory unsafe by Rust, they still cause crashes which can lead to denial of service vulnerabilities and unreliability in general.
 
 Dynamic stack allocation also has its upsides.
 It is generally faster than heap allocation and can therefore improve performance in cases where the previously mentioned downsides are not a concern.
