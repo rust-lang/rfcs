@@ -22,6 +22,17 @@ allow many crates to avoid defining proc macros, reduce dependencies and
 compilation time, and provide these macros unconditionally without requiring
 the user to enable a feature.
 
+The [`macro_rules_attribute`](https://crates.io/crates/macro_rules_attribute)
+crate defines proc macros that allow invoking declarative macros as attributes,
+demonstrating a demand for this. This feature would allow defining such
+attributes without requiring proc macros at all, and would support the same
+invocation syntax as a proc macro.
+
+Some macros in the ecosystem already implement the equivalent of attribute
+using declarative macros; for instance, see
+[smol-macros](https://crates.io/crates/smol-macros), which provides a `main!`
+macro and recommends using it with `macro_rules_attribute::apply`.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
