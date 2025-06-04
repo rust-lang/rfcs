@@ -122,6 +122,7 @@ autoprocmacro = false
 
 1. Added complexity - Somewhat increases maintainance cost of cargo
 2. Migrations - Existing crates now need to migrate to the new system, taking time, and it may cause some exisiting code that's always using the latest version of libraries to break.
+3. Build systems that aren't Cargo needs to update to keep up with this feature
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
