@@ -3,6 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1909](https://github.com/rust-lang/rfcs/pull/1909)
 - Rust Issue: [rust-lang/rust#48055](https://github.com/rust-lang/rust/issues/48055)
 
+> ⚠ Update 8 years later ⚠
+>
+> [The team decided to un-accept](https://github.com/rust-lang/rfcs/pull/3829) this RFC and the feature has been removed.
+
+
 # Summary
 [summary]: #summary
 
