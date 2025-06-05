@@ -44,7 +44,7 @@ After this change, we create a new proc macro like this:
 
 To build only the macro, use:
 ```console
-$ cargo build --macros
+$ cargo build --proc-macro
 ```
 
 ## Importing
@@ -72,8 +72,8 @@ Now, to make the macros available, reexport them, and if you want gate a macro b
 ```rust
 // in src/lib.rs
 #[cfg(feature = "my_feature")]
-pub use macros::a_niche_macro;
-pub use macros::a_common_macro; // (not gated)
+pub use proc_macro::a_niche_macro;
+pub use proc_macro::a_common_macro; // (not gated)
 ```
 
 Finally, testing is also how you would expect it. It would be made available to the `tests` directory. ([importing])
@@ -83,19 +83,19 @@ Finally, testing is also how you would expect it. It would be made available to 
 
 The package targets would be compiled in the following order:
 1. `build`
-2. `macros`
+2. `proc-macro`
 3. `lib`
 4. `bin`s
 5. ...
 
-The macros would be available to all targets built afterwards. Exports of `macros` is only available inside the package, so any publicly available ones need to be reexported in `lib`.
+The macros would be available to all targets built afterwards. Exports of `proc-macro` is only available inside the package, so any publicly available ones need to be reexported in `lib`.
 
-Any libraries to be linked, as specified in `build.rs` via stdout, are not to be available to `macros`. In addition, linker arguments can be passed through `cargo::rustc-link-arg-macros=FLAG` via stdout of `build.rs`.
+Any libraries to be linked, as specified in `build.rs` via stdout, are not to be available to `proc-macro`. In addition, linker arguments can be passed through `cargo::rustc-link-arg-proc-macro=FLAG` via stdout of `build.rs`.
 
-Any artifacts created during compilation are to be in `target/_profile_/deps`, as usual. The compiled macros crate would be passed into rustc with `--extern=macros=target/_profile_/deps/lib_____` when compiling the other crates. Finally, the compiled lib_____ would be put in `target/macros/`, along with its `.d` file.
+Any artifacts created during compilation are to be in `target/_profile_/deps`, as usual. The compiled macros crate would be passed into rustc with `--extern=proc_macro=target/_profile_/deps/lib_____` when compiling the other crates. Finally, the compiled lib_____ would be put in `target/proc-macro/`, along with its `.d` file.
 
 ## Cfg and Environment Variables
-During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(cfg!(proc_macro))` would be ok in the macros crate).
+During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(cfg!(proc_macro))` would be ok in the `proc-macro` crate).
 
 As well as those it, the following environment variables are set. For conciseness, this RFC will not attempt to outline the use of all environment variables. Refer to the [documentation](https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-crates).
 - `CARGO`
@@ -142,9 +142,9 @@ autoprocmacro = false
 ```
 
 ## Cargo CLI Additions
-- `cargo build --macros` – Compile `macros` only
-- `cargo build --all-targets` – Equivalent to specifying `--lib --bins --tests --benches --examples --macros`
-- `cargo test --macros` – Test `macros` only
+- `cargo build --proc-macro` – Compile `proc-macro` only
+- `cargo build --all-targets` – Equivalent to specifying `--lib --bins --tests --benches --examples --proc-macro`
+- `cargo test --proc-macro` – Test `proc-macro` only
 
 ## Documentation
 
@@ -160,7 +160,7 @@ There would be a new item listed under "Crates" of the sidebar, for the new crat
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-1. Use `crate::macros::*` as the import path
+1. Use `crate::proc_macro::*` as the import path
 
 This would require changes to rustc, when there is a simpler solution.
 
