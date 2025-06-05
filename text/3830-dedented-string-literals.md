@@ -427,7 +427,7 @@ They compose with other every other string literal modifier.
 To be precise, the RFC introduces 6 new types of string literals:
 
 - Dedented string literal: `d"string"`
-- Dedented raw string literal: `dr#"string"`
+- Dedented raw string literal: `dr#"string"#`
 - Dedented byte string literal: `db"string"`
 - Dedented byte raw string literal: `dbr#"string"#`
 - Dedented C string literal: `dc"string"`
