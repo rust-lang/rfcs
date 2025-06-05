@@ -178,8 +178,9 @@ With today's `trait_alias`, it wouldn't make much difference for `downstream`.
 
 ## Splitting a trait
 
-To exemplify this use-case, we will use [Niko Matsakis’s proposal to split the
-`Deref`
+### `Deref` → `Receiver` + `Deref`
+
+[Niko Matsakis wants to split up the `Deref`
 trait](https://github.com/rust-lang/rust/pull/135881#issuecomment-2718417230).
 
 `Deref` currently looks like this:
@@ -193,7 +194,23 @@ pub trait Deref {
 ```
 
 Niko wants to split off the `type Target` part into a separate `Receiver`
-supertrait. But there is no backward-compatible way to do this at present.
+supertrait. But there is no good backward-compatible way to do this at present.
+
+### `Iterator` → `LendingIterator` + `Iterator`
+
+Once the necessary language features are stabilized, the library team will
+likely want to add a `LendingIterator` trait to the standard library, that looks
+like this:
+
+```rust
+pub trait LendingIterator {
+    type Item<'a> where Self: 'a;
+    fn next(&mut self) -> Option<Self::Item<'_>>;
+}
+```
+
+Ideally, every `Iterator` should automatically be a `LendingIterator`. But,
+again, there is no good way to do this right now.
 
 ## Removing a `Sized` bound
 
@@ -321,6 +338,20 @@ impl QuiteVerboseAlias for () {
     fn another_method(&self) {
         println!("bar")
     }
+}
+```
+
+This could be used to add `LendingIterator` as a supertrait of `Iterator`, as
+mentioned in the motivation section:
+
+```rust
+pub trait LendingIterator {
+    type Item<'a> where Self: 'a;
+    fn next(&mut self) -> Option<Self::Item<'_>>;
+}
+
+pub trait Iterator = for<'a> LendingIterator<Item<'a> = <Self as Iterator>::Item> {
+    type Item;
 }
 ```
 
@@ -975,11 +1006,10 @@ something when it does not.
 Anything that makes `where` clauses more powerful would make this feature more
 powerful as well.
 
-For example:
-
-- If we could write bounds for the `const`ness of a method, that could allow
-emulating some of [const traits](https://github.com/rust-lang/rfcs/pull/3762)—or
-even form part of the desugaring for that feature:
+For example, if we could write bounds for the `const`ness of a method, that
+could allow emulating some of [const
+traits](https://github.com/rust-lang/rfcs/pull/3762)—or even form part of the
+desugaring for that feature:
 
 ```rust
 pub trait PartialEq<Rhs = Self>
@@ -997,21 +1027,4 @@ trait ConstPartialEq<Rhs> = PartialEq<Rhs>
 where
     Self::eq: const,
     Self::ne: const; // 🚲🏠
-```
-
-- If we could write a bound requiring that a GAT not use is lifetime, that could
-enable retrofitting `LendingIterator` into `Iterator`:
-
-```rust
-pub trait LendingIterator {
-    type Item<'a>
-    where
-        Self: 'a;
-
-     fn next(&mut self) -> Option<Self::Item<'_>>;
-}
-
-pub trait Iterator = Iterator
-where
-    for<'a> Self::Item<'a>: doesnt_depend_on<'a>; // 🚲🏠
 ```
