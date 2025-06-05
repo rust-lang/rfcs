@@ -355,6 +355,10 @@ pub trait Iterator = for<'a> LendingIterator<Item<'a> = <Self as Iterator>::Item
 }
 ```
 
+You’ll note that `Iterator`’s body does not explicitly define `Item`. Instead,
+it’s defined implicitly by the `for<'a> <Self as LendingIterator>::Item<'a> =
+<Self as Iterator>::Item` clause in the alias definition.
+
 ## Implementing trait aliases for multiple traits
 
 Trait aliases that combine multiple traits with `+` are also implementable:
@@ -634,7 +638,9 @@ To resolve these conflicts, you can use trait alias bodies, as described below.
 ## Bodies for trait aliases
 
 Trait aliases can now optionally contain a body, which specifies various *alias
-items*. These can be types, constants, or functions.
+items*. These can be types, constants, or functions. It must always be possible
+to derive the value of these items from the implementations of the aliased
+traits; compilation will fail otherwise.
 
 ### `type`s and `const` alias items in trait alias bodies
 
@@ -672,13 +678,9 @@ trait FooBar = Foo + Bar {
 ```
 
 As aliases, `type` and `const` alias items neither require nor accept bounds or
-`where` clauses; these are taken from the thing being aliased.
+`where` clauses; these are taken from the things being aliased.
 
-#### Implementability
-
-To be implementable, a `type` or `const` alias item must obey certain
-restrictions. It must either be set equal to an item of a primary trait of the
-alias:
+`type` and `const` alias items may appear in implementations of the alias:
 
 ```rust
 trait Foo {
@@ -697,9 +699,8 @@ impl Alias for () {
 }
 ```
 
-Or, the trait alias must set an associated type of the primary trait equal to a
-generic type, with the alias item as a generic parameter of that type. For
-example, here is
+Alias items may be defined *implicitly*, through bounds on the trait alias
+itself. For example, here is
 [`TryFuture`](https://docs.rs/futures-core/latest/futures_core/future/trait.TryFuture.html)
 as an implementable trait alias:
 
@@ -729,23 +730,9 @@ impl TryFuture for AlwaysFails {
 }
 ```
 
-The generic parameter can also be nested:
-
-```rust
-trait Foo {
-    type Assoc;
-}
-
-trait Bar = Foo<Assoc = Result<Self::Foo, Vec<Self::Foo>>> {
-    type Foo;
-}
-```
-
 #### GATs in type alias bodies
 
-Type alias bodies can also contain GAT alias items. These are also subject to
-the implementability rules, though reordering generic parameters does not
-inhibit implementability.
+Type alias bodies can also contain GAT alias items:
 
 ```rust
 trait Foo {
@@ -755,9 +742,9 @@ trait Foo {
 }
 
 trait Alias = Foo {
-    type Tag<'a, U, T> = Self::Gat<'a, T, U>; // Implementable
-    type GatVec<'a, T, U> = Self::Gat<'a, Vec<T>, U>; // Not implementable
-    type GatSame<'a, T> = Self::Gat<'a, T, T>; // Not implementable
+    type Tag<'a, U, T> = Self::Gat<'a, T, U>;
+    type GatVec<'a, T, U> = Self::Gat<'a, Vec<T>, U>;
+    type GatSame<'a, T> = Self::Gat<'a, T, T>;
 }
 ```
 
@@ -784,8 +771,8 @@ trait Alias = Frob {
 Modifiers like `const`, `async`, `unsafe`, or `extern "C"` are neither required
 nor accepted.
 
-You are allowed to specify generic parameters, in order to reorder them. But you
-don't have to:
+You are allowed to specify the generic parameters, in order to reorder them. But
+you don't have to:
 
 ```rust
 trait Frob {
@@ -917,7 +904,7 @@ It's this last issue especially that leads me to not relegate this to a future
 possibility. Adding a defaulted item to a trait should at most require minor
 changes to dependents, and restructuring a large `impl` block is not “minor”.
 
-## No non-implementable items in trait alias bodies
+## No non-implementable `fn`s` in trait alias bodies
 
 Such items don't have much utility from a backward-compatibility perspective,
 and overlap with extension traits. However, the cost of allowing them is very
