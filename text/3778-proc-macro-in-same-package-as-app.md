@@ -98,7 +98,6 @@ Any artifacts created during compilation are to be in `target/_profile_/deps`, a
 During compilation, it would set the `proc_macro` cfg variable (i.e. `assert!(cfg!(proc_macro))` would be ok in the macros crate).
 
 As well as those it, the following environment variables are set. For conciseness, this RFC will not attempt to outline the use of all environment variables. Refer to the [documentation](https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-crates).
-- `CARGO_CFG_PROC_MACRO` to 1. 
 - `CARGO`
 - `CARGO_MANIFEST_DIR`
 - `CARGO_MANIFEST_PATH`
