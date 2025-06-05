@@ -1043,7 +1043,7 @@ trait FrobWithAvx2 = FrobWithUnknownTargetFeatures;
 where
     Self::frob: needs_target_features!("avx2"); // 🚲🏠
 
-trait FrobWithNoTargetFeatures = FrobWithAvx2
+trait FrobWithNoTargetFeatures = FrobWithUnknownTargetFeatures
 where
     Self::frob: needs_target_features!(""); // 🚲🏠
 ```
