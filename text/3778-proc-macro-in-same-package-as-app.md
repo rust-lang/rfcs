@@ -145,7 +145,11 @@ autoprocmacro = false
 ## Cargo CLI Additions
 - `cargo build --macros` – Compile `macros` only
 - `cargo build --all-targets` – Equivalent to specifying `--lib --bins --tests --benches --examples --macros`
-- `cargo test --macros` would not be not possible
+- `cargo test --macros` – Test `macros` only
+
+## Documentation
+
+There would be a new item listed under "Crates" of the sidebar, for the new crate. This shoul
 
 # Drawbacks
 [drawbacks]: #drawbacks
