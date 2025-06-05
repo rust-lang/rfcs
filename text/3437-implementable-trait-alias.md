@@ -1028,3 +1028,35 @@ where
     Self::eq: const,
     Self::ne: const; // 🚲🏠
 ```
+
+Additionally, if we could write bounds for the target features required by a
+function, that could also be leveraged by implementable aliases:
+
+```rust
+trait FrobWithAvx2 {
+    #[target_feature(enable = "avx2")]
+    fn frob(self);
+}
+
+trait FrobWithNoTargetFeatures = FrobWithAvx2
+where
+    Self::frob: needs_target_features!(""); // 🚲🏠
+```
+
+Additional language extensions might be necessary to handle cases where the set
+of target features a trait implementation may or may not use is large or open:
+
+```rust
+trait FrobWithUnknownTargetFeatures {
+    #[target_feature(enable = "*")] // 🚲🏠
+    fn frob(self);
+}
+
+trait FrobWithAvx2 = FrobWithUnknownTargetFeatures;
+where
+    Self::frob: needs_target_features!("avx2"); // 🚲🏠
+
+trait FrobWithNoTargetFeatures = FrobWithAvx2
+where
+    Self::frob: needs_target_features!(""); // 🚲🏠
+```
