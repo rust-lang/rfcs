@@ -940,7 +940,18 @@ fn main() {
 }
 ```
 
-The reasoning is that turning this into a syntax error is too strict, when it can be auto-fixed by tooling like `rustfmt`.
+Reason: turning this into a syntax error is too strict, when it can be auto-fixed by tooling like `rustfmt`:
+
+```rs
+fn main() {
+    println!(d"
+        create table student(
+            id int primary key,
+            name text
+        )
+        ");
+}
+```
 
 ## Differences from RFC 3450
 
