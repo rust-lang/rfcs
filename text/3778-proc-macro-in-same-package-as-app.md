@@ -148,7 +148,7 @@ autoprocmacro = false
 
 ## Documentation
 
-There would be a new item listed under "Crates" of the sidebar, for the new crate. This shoul
+There would be a new item listed under "Crates" of the sidebar, for the new crate. This should only display "macros" — or whatever the name of the `proc-macro` crate happened to be called — of the current package. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
