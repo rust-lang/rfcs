@@ -238,7 +238,8 @@ fn main() {
             id int primary key,
             name text
         )
-        ");
+        "
+    );
 ^^^^^^^^ // common leading whitespace (will be removed)
 }
 ```
@@ -250,8 +251,7 @@ All of the above problems are gracefully solved:
 1. Nicely composes with raw string literal: `dr#"string"#`, in which the first newline *cannot* be escaped.
 1. Indentation level of the statement is larger than the `println!` call,
    making it more obvious that the string is inside the call at a glance.
-1. The closing parentheses in the SQL statement aligs with `create table`
-   and is 1 level larger than `println!`.
+1. The closing parentheses in the SQL statement aligs with `create table`.
 
 Now, consider the example with multiple nested scopes again:
 
@@ -263,14 +263,16 @@ fn main() {
                 id int primary key,
                 name text
             )
-            ");
+            "
+        );
     }
     println!(d"
         create table student(
             id int primary key,
             name text
         )
-        ");
+        "
+    );
     {
         {
             println!(d"
@@ -278,7 +280,8 @@ fn main() {
                     id int primary key,
                     name text
                 )
-                ");
+                "
+            );
         } 
     }
 }
@@ -305,8 +308,9 @@ fn main() {
             id int primary key,
             name text
         )
-");
+"
 // no common leading whitespace = nothing to remove
+    );
 }
 ```
 
@@ -334,8 +338,9 @@ fn main() {
             id int primary key,
             name text
         )
-    ");
+    "
 ^^^^ // common leading whitespace (will be removed)
+    );
 }
 ```
 
@@ -363,8 +368,9 @@ fn main() {
             id int primary key,
             name text
         )
-        ");
+        "
 ^^^^^^^^ // common leading whitespace (will be removed)
+    );
 }
 ```
 
@@ -402,9 +408,10 @@ fn main() {
             id int primary key,
             name text
         )
-            ");
+            "
 ^^^^^^^^ // common leading whitespace: 8 spaces
 ^^^^^^^^^^^^ // closing quote indentation: 12 spaces
+    );
 }
 
 // spaces removed from the beginning of each line = min(8, 12) = 8
@@ -417,9 +424,10 @@ fn main() {
             id int primary key,
             name text
         )
-                ");
+                "
 ^^^^^^^^ // common leading whitespace: 8 spaces
 ^^^^^^^^^^^^^^^^ // closing quote indentation: 16 spaces
+    );
 }
 // spaces removed from the beginning of each line = min(8, 16) = 8
 ```
@@ -431,9 +439,10 @@ fn main() {
             id int primary key,
             name text
         )
-                    ");
+                    "
 ^^^^^^^^ // common leading whitespace: 8 spaces
 ^^^^^^^^^^^^^^^^^^^^ // closing quote indentation: 20 spaces
+    );
 }
 // spaces removed from the beginning of each line = min(8, 20) = 8
 ```
@@ -466,8 +475,9 @@ fn main() {
             id int primary key,
             name text
         )
-        ");
+        "
 ^^^^^^^^ // common leading whitespace (will be removed)
+    );
 }
 ```
 
@@ -561,8 +571,9 @@ let py = format!(dr#"
         print("{message}")
 
     hello()
-    "#);
+    "#
 //^^ removed
+);
 
 let expected = "def hello():\n    print(\"Hello, world!\")\n\nhello()";
 assert_eq!(py, expected);
@@ -580,8 +591,9 @@ let mut py = String::new();
 
 writeln!(py, d"
     def hello():
-    ");
+    "
 //^^ removed
+);
 
 // Note: We want to add 2 newlines here.
 // - `writeln!` adds 1 newline at the end
@@ -592,12 +604,14 @@ writeln!(py, d"
 writeln!(py, dr#"
     print("{message}")
 
-"#);
+"#
 //^^ kept
+);
 
 write!(py, d"
 hello()
-            ");
+            "
+);
 //^^^^^^^^^^ No whitespace is removed here.
 //           If the closing quote is after the common indentation
 //           (in this case there is no common indentation at all),
@@ -922,7 +936,8 @@ fn main() {
             id int primary key,
             name text
         )
-        ");
+        "
+    );
 }
 ```
 
@@ -937,7 +952,8 @@ fn main() {
         create table student(
             id int primary key,
             name text
-        )"); // ERROR
+        )" // ERROR
+    );
 }
 ```
 
@@ -957,7 +973,8 @@ fn main() {
             id int primary key,
             name text
         )
-                ");
+                "
+    );
 }
 ```
 
@@ -970,7 +987,8 @@ fn main() {
             id int primary key,
             name text
         )
-        ");
+        "
+    );
 }
 ```
 
@@ -1025,8 +1043,9 @@ Differences:
     ```rs
     print!(d"
         a
-        ");
+        "
     ^^^^ // common leading whitespace (will be removed)
+    );
     ```
 
     Prints: `a`
@@ -1039,8 +1058,9 @@ Differences:
     print!(d"
         a
 
-        ");
+        "
     ^^^^ // common leading whitespace (will be removed)
+    );
     ```
 
     The above prints:
@@ -1204,11 +1224,13 @@ That's not a problem for *this* example, however with more involved macros such 
 With this RFC, re-implementing the macros is not going to be necessary anymore, as you can just pass in the dedented string literals:
 
 ```rs
-text!(d"
+text!(
+    d"
     GET {url}
     Accept: {mime}
-")
+"
 ^^^^ // common leading whitespace (will be removed)
+)
 ```
 
 The language feature works with any user-defined macros that pass their arguments to `format_args!` under the hood.
@@ -1243,8 +1265,9 @@ let py = format!(dr#"
         print("{message}")
 
     hello()
-    "#);
+    "#
 //^^ removed
+);
 
 let expected = "def hello():\n    print(\"Hello, world!\")\n\nhello()";
 assert_eq!(py, expected);
@@ -1293,21 +1316,26 @@ Implementing dedented string literals as a macro will significantly limit their 
 Consider a conversion from a regular string literal that prints some HTML:
 
 ```rust
-  writeln!(w, "  \
-        <!-- <link rel=\"shortcut icon\" href=\"{rel}favicon.ico\"> -->\
-    \n</head>\
-    \n<body>\
-    \n  <div class=\"body\">\
-    \n    <h1 class=\"title\">\
-    \n      {h1}\
-    \n      <span class=\"nav\">{nav}</span>\
-    \n    </h1>")
+writeln!(
+  w,
+  "  \
+      <!-- <link rel=\"shortcut icon\" href=\"{rel}favicon.ico\"> -->\
+  \n</head>\
+  \n<body>\
+  \n  <div class=\"body\">\
+  \n    <h1 class=\"title\">\
+  \n      {h1}\
+  \n      <span class=\"nav\">{nav}</span>\
+  \n    </h1>"
+)
 ```
 
 Into a dedented string literal:
 
 ```rust
-  writeln!(w, dr#"
+writeln!(
+    w,
+    dr#"
       <!-- <link rel="shortcut icon" href="{rel}favicon.ico"> -->
     </head>
     <body>
@@ -1316,7 +1344,8 @@ Into a dedented string literal:
           {h1}
           <span class="nav">{nav}</span>
         </h1>
-    "#);
+    "#
+);
 ```
 
 The above conversion is elegant for these reasons:
@@ -1330,21 +1359,25 @@ With a dedented string *macro*, it's a much more involved process. The above wil
 The problem being that we have to re-write all of the captured variables to pass them to the `writeln!` and not the dedented string itself:
 
 ```rust
-  writeln!(w,
-    dedent!(r#"
-          <!-- <link rel="shortcut icon" href="{}favicon.ico"> -->
-        </head>
-        <body>
-          <div class="body">
-            <h1 class="title">
-              {}
-              <span class="nav">{}</span>
-            </h1>
-        "#),
-    rel,
-    h1,
-    nav)
-  );
+writeln!(
+    w,
+    dedent!(
+        r#"
+              <!-- <link rel="shortcut icon" href="{}favicon.ico"> -->
+            </head>
+            <body>
+              <div class="body">
+                <h1 class="title">
+                  {}
+                  <span class="nav">{}</span>
+                </h1>
+            "#
+        ),
+        rel,
+        h1,
+        nav
+    )
+);
 ```
 
 Which is unfortunate.
@@ -1418,12 +1451,14 @@ With dedented string literals:
 
 ```rs
 fn main() {
-   println!(d"
-       create table student(
-           id int primary key,
-           name text
-       )
-       ");
+    println!(
+        d"
+        create table student(
+            id int primary key,
+            name text
+        )
+        "
+    );
 }
 ```
 
@@ -1432,13 +1467,15 @@ With a `dedent!` built-in macro:
 ```rs
 fn main() {
    println!(
-       dedent!("
-           create table student(
-               id int primary key,
-               name text
-           )
-           ")
-       );
+       dedent!(
+            "
+            create table student(
+                id int primary key,
+                name text
+            )
+            "
+       )
+   );
 }
 ```
 
@@ -1446,12 +1483,14 @@ With [postfix macros](https://github.com/rust-lang/rfcs/pull/2442), the situatio
 
 ```rs
 fn main() {
-   println!("
-       create table student(
-           id int primary key,
-           name text
-       )
-       ".dedent!());
+    println!(
+        "
+            create table student(
+                id int primary key,
+                name text
+            )
+            ".dedent!()
+    );
 }
 ```
 
@@ -1544,7 +1583,7 @@ fn main() {
         id int primary key,
         name text
     )
-    ");
+        ");
 ^^^^ // common leading whitespace (will be removed)
 }
 ```
@@ -1553,13 +1592,15 @@ It could be automatically formatted by adding additional leading indentation, in
 
 ```rust
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
         )
-        ");
+        "
 ^^^^^^^^ // common leading whitespace (will be removed)
+    );
 }
 ```
 
