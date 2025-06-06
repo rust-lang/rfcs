@@ -1021,9 +1021,29 @@ Differences:
 
     Additionally, finishing with `-"` instead of `"` is not seen anywhere in the language, and would not fit in.
 
-## Use a macro instead
+## Use a crate instead
 
-What are the benefits over using a macro?
+What are the benefits over using a crate, such as `indoc`?
+
+1. Having dedented strings as a language feature allows them to be used in Rust snippets
+   and examples where said examples would not otherwise have a dependency on the crate.
+
+   This makes the feature more discoverable.
+
+2. Dedented strings are a "nice-to-have", if they were a core language feature they would likely be used
+   much more, but as this functionality is currently only available in a crate, it is unlikely people
+   would want to add a dependency just for dedented strings, especially for one-off usecases.
+
+3. No need to know about the specific crate, which most projects may not depend on.
+
+   Learn the feature once, and use it anywhere.
+
+4. Reduce the entry barrier to contribution to projects
+
+   Crates may be hesitant in adding a dependency on a dedented string crate because it would
+   be *yet another* thing for contributors to learn and be aware of.
+
+### Crate macros
 
 The [`indoc`](https://crates.io/crates/indoc) crate is similar to the feature this RFC proposes.
 
@@ -1039,7 +1059,7 @@ These macros would no longer be necessary, as the dedented string literals compo
 
 The benefits of replacing these, and similar macros with language features are described below.
 
-### Reduces the proliferation of macros
+#### Reduces the proliferation of macros
 
 Macros can make code harder to understand. They can transform the inputs in arbitrary ways. Contributors have to learn them, increasing the entry barrier for a new project.
 
@@ -1161,34 +1181,12 @@ text!(d"
 
 The language feature works with any user-defined macros that pass their arguments to `format_args!` under the hood.
 
-### Improved compile times
+#### Improved compile times
 
-Having dedented strings as a language feature could reduce compile time.
+Having dedented strings as a language feature, instead of relying on a macro provided by a crate could reduce compile time.
 
 - Users do not have to compile the crate *or* its dependencies.
 - There is no need for procedural macro expansion to take place in order to un-indent the macro. This step happens directly in the compiler.
-
-## Use a crate instead
-
-What are the benefits over using a crate, such as `indoc`?
-
-1. Having dedented strings as a language feature allows them to be used in Rust snippets
-   and examples where said examples would not otherwise have a dependency on the crate.
-
-   This makes the feature more discoverable.
-
-2. Dedented strings are a "nice-to-have", if they were a core language feature they would likely be used
-   much more, but as this functionality is currently only available in a crate, it is unlikely people
-   would want to add a dependency just for dedented strings, especially for one-off usecases.
-
-3. No need to know about the specific crate, which most projects may not depend on.
-
-   Learn the feature once, and use it anywhere.
-
-4. Reduce the entry barrier to contribution to projects
-
-   Crates may be hesitant in adding a dependency on a dedented string crate because it would
-   be *yet another* thing for contributors to learn and be aware of.
 
 ## Impact of *not* implementing this RFC
 
