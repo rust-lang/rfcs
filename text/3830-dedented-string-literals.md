@@ -808,9 +808,35 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 
 ### Treatment of literal escapes: `\t`, `\r` and `\n`
 
-- Whitespace escape characters such as `\t`, `\r` and `\n` are treated as literal code when present in the content of the dedented string, therefore the normal dedentation rules apply to them.
-    - This does not apply to `\n` after the opening quote, nor the `\n` before the line containing the closing quote. In this case escaping the newline is not allowed, it has to be a literal newline. (As described previously.)
-- The line containing the closing quote `"` can therefore contain `\t` escapes, as they are considered to be literal tabs.
+`\t` is allowed in the line which contains the closing quote. Writing it is equivalent to inserting a literal tab.
+
+The escaped characters `\t`, `\r` and `\n` are treated as regular characters for the purposes of dedentation.
+
+So the following:
+
+```rs
+println!(
+    d"
+    \ta
+    \tb
+    \tc
+    \t"
+);
+```
+
+Prints, with each indentation being **1 tab**:
+
+```
+    a
+    b
+    c
+```
+
+The indentation is not removed, because common indentation in this example is 0.
+
+Escaped characters at the beginning of the string are interpreted as any other character, and **not** whitespace.
+
+After the dedentation is calculated, the escapes then expand into their literal counterparts.
 
 ### Edge Cases
 
@@ -833,18 +859,6 @@ assert_eq!(
 ^^^^ // common leading whitespace (will be removed)
 
     "hello\n\nworld"
-);
-
-// We make use of whitespace escape characters
-//
-// This might make code more confusing, so one of the future-possibilities
-// is to have a warn-by-default lint to disallow these characters in dedented strings.
-assert_eq!(
-    d"
-\thello\n\t\n\tworld
-\t",
-
-    "hello\nworld"
 );
 
 // line consisting of only spaces is allowed
@@ -1668,19 +1682,6 @@ There could be a lint which detects strings which could be written clearer as de
 
 ## `rustc` warn-by-default lint to disallow whitespace escape characters
 
-In the following example:
+As explained in the [reference level explanation](#reference-level-explanation), using whitespace escapes `\t`, `\n` and `\r` are allowed.
 
-```rs
-assert_eq!(
-    d"
-\thello\n\t\n\tworld
-\t",
-//^^ common leading whitespace (will be removed)
-
-    "hello\nworld"
-);
-```
-
-Using escaped whitespace characters is the same as if the characters were written literally. (in the *content* of the string. This excludes the requirement of a **literal** newline after the double quote and before the line of the closing quote).
-
-This is confusing, and might not work in the way people expect it to work. A warn-by-default lint could be added to disallow `\n`, `\t` and `\r` in dedented strings. (Or for instance, only allow `\t` anytime after the stripped indentation)
+Their behaviour might be surprising, so it is worth to consider a warn-by-default lint for them.
