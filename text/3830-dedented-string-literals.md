@@ -1319,10 +1319,10 @@ The problem being that we have to re-write all of the captured variables to pass
               {}
               <span class="nav">{}</span>
             </h1>
-        "#,
-        rel,
-        h1,
-        nav)
+        "#),
+    rel,
+    h1,
+    nav)
   );
 ```
 
