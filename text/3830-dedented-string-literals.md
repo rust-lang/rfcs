@@ -707,6 +707,33 @@ let py = d"
 // OK
 ```
 
+Both outputs will not contain a newline at the end, since the literal newline is stripped.
+
+If you'd like to have a trailing newline, you can insert a literal newline at the end:
+
+```rust
+let py = d"
+    def hello():
+        print('Hello, world!')
+
+    hello()
+
+    ";
+// OK
+```
+
+You can also use an escaped newline. This is fine, because the string still ends with a literal newline (which cannot be escaped):
+
+```rust
+let py = d"
+    def hello():
+        print('Hello, world!')
+
+    hello()\n
+    ";
+// OK
+```
+
 Benefits the above rules bring include:
 
 - The above rules make all dedented string literals you'll find in Rust consistent.
