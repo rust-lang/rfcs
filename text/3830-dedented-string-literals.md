@@ -227,7 +227,7 @@ But, what if we could have the best of both worlds?
 
 In order to solve these problems, the RFC proposes dedented string literals of the form: `d"string"`.
 
-Common leading whitespace on each line after the closing quote in dedented string literals will be stripped at compile-time.
+Common leading whitespace on each line after the opening quote in dedented string literals will be stripped at compile-time.
 
 This allows us to have a more readable version of the above:
 
