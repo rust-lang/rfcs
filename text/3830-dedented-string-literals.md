@@ -677,29 +677,6 @@ Benefits the above rules bring include:
 - It allows easily changing the indentation level without having to insert a newline sometimes.
 - It gives the ability for us to tell a regular string literal from a dedented string literal at a glance.
 
-### No confusing whitespace escapes
-
-In dedented string literals, using the escapes `\r`, `\n` or `\t` is disallowed.
-
-This helps, making it obvious what will be stripped from the string content.
-
-Consider the following invalid dedented string:
-
-```rust
-let py = d"
-    def hello():\n    \tprint('Hello, world!')\r\n
-    hello()
-    ";
-//       error: ^^ newline escapes are not allowed in dedented strings
-//                                     error: ^^^^ newline escapes are not
-//                                             allowed in dedented strings
-//             error: ^^ tab escapes are not allowed in dedented strings
-```
-
-If that was allowed, it would not be immediately obvious where the whitespace should be stripped.
-
-In fact, it would be quite tricky to figure out. Therefore using these escape characters is disallowed.
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -711,15 +688,12 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 
 |                                              | Example         | `#`&nbsp;sets[^nsets] | Characters  | Escapes             |
 |----------------------------------------------|-----------------|------------|-------------|---------------------|
-| Dedented String                   | `d"\ln EXAMPLE \ln"`       | 0          | All Unicode | [Quote](#quote-escapes) & [ASCII](#ascii-escapes) & [Unicode](#unicode-escapes) <strong>*</strong> |
+| Dedented String                   | `d"\ln EXAMPLE \ln"`       | 0          | All Unicode | [Quote](#quote-escapes) & [ASCII](#ascii-escapes) & [Unicode](#unicode-escapes) |
 | Dedented Raw string           | `dr#"\ln EXAMPLE \ln"#`    | <256       | All Unicode | `N/A`                                                      |
-| Dedented Byte string         | `db"\ln EXAMPLE \ln"`      | 0          | All ASCII   | [Quote](#quote-escapes) & [Byte](#byte-escapes)        <strong>*</strong>                        |
-| Dedented Raw byte string | `dbr#"\ln EXAMPLE \ln"#`   | <256       | All ASCII   | `N/A`                                     <strong>*</strong>                  |
-| Dedented C string               | `dc"\ln EXAMPLE \ln"`      | 0          | All Unicode | [Quote](#quote-escapes) & [Byte](#byte-escapes) & [Unicode](#unicode-escapes)  <strong>*</strong>  |
-| Dedented Raw C string       | `dcr#"\ln EXAMPLE \ln"#`   | <256       | All Unicode | `N/A`                  <strong>*</strong>                                                           |
-
-<strong>*</strong>
-- `\n`, `\r` and `\t` literal escapes are never allowed in dedented strings.
+| Dedented Byte string         | `db"\ln EXAMPLE \ln"`      | 0          | All ASCII   | [Quote](#quote-escapes) & [Byte](#byte-escapes)                               |
+| Dedented Raw byte string | `dbr#"\ln EXAMPLE \ln"#`   | <256       | All ASCII   | `N/A`                                                      |
+| Dedented C string               | `dc"\ln EXAMPLE \ln"`      | 0          | All Unicode | [Quote](#quote-escapes) & [Byte](#byte-escapes) & [Unicode](#unicode-escapes)   |
+| Dedented Raw C string       | `dcr#"\ln EXAMPLE \ln"#`   | <256       | All Unicode | `N/A`                                                                            |
 
 ## Interaction with macros
 
@@ -728,6 +702,12 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 - The `literal` macro fragment specifier accepts all of the 6 new string literals.
 
 ## Algorithm for dedented strings
+
+> [!NOTE]
+> 
+> Whitespace escape characters such as `\t`, `\r` and `\n` are treated as literal code when present in the content of the dedented string, therefore the normal dedentation rules apply to them.
+>
+> This does not apply to `\n` after the opening quote, nor the `\n` before the line containing the closing quote. In this case escaping the newline is not allowed, it has to be a literal newline. (As described previously.)
 
 1. The opening line (the line containing the opening quote `"`)
     - Must only contain a literal newline character after the `"` token
@@ -770,6 +750,19 @@ assert_eq!(
 ••••world
     ",
 ^^^^ // common leading whitespace (will be removed)
+
+    "hello\nworld"
+);
+
+// This example has the same whitespace as the previous example.
+// However, here we make use of whitespace escape characters
+//
+// This might make code more confusing, so one of the future-possibilities
+// is to have a warn-by-default lint to disallow these characters in dedented strings.
+assert_eq!(
+    d"
+\thello\n••\n\tworld
+    ",
 
     "hello\nworld"
 );
@@ -1255,16 +1248,6 @@ let py = d"
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Relax rules around whitespace characters
-
-Currently for the purposes of this RFC, all dedented strings disallow using whitespace escaped characters: `\t`, `\r` and `\n`.
-
-This restriction could be lifted in specific situations in the future by a different RFC. In any version. Without requiring an edition.
-
-In theory it could be possible to employ some more advanced heuristics in order to allow characters like `\t` in some places, such as in a line after non-empty characters.
-
-The above idea is not part of this RFC, just a mere speculation what could be done in the future.
-
 ## More string modifiers
 
 At some point, Rust might gain new types of string modifiers. Such as `o"string"` which would create a `String`, for example. (only speculative)
@@ -1309,6 +1292,25 @@ This would never modify the output, but make the source code more pleasant - and
 
 With regular string literals, this isn't possible - as modifying the whitespace in the string changes the output.
 
-## `clippy` lint
+## `clippy` lint to convert strings into dedented string literals
 
 There could be a lint which detects strings which could be written clearer as dedented string literals.
+
+## `rustc` warn-by-default lint to disallow whitespace escape characters
+
+In the following example:
+
+```rs
+assert_eq!(
+    d"
+\thello\n••\n\tworld
+    ", // note: This is a tab, not 4 spaces.
+//^^ common leading whitespace (will be removed)
+
+    "hello\nworld"
+);
+```
+
+Using escaped whitespace characters is the same as if the characters were written literally. (in the *content* of the string. This excludes the requirement of a **literal** newline after the double quote and before the line of the closing quote).
+
+This is confusing, and might not work in the way people expect it to work. A warn-by-default lint could be added to disallow `\n`, `\t` and `\r` in dedented strings. (Or for instance, only allow `\t` anytime after the stripped indentation)
