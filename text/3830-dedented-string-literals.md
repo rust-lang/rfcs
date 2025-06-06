@@ -1188,6 +1188,251 @@ Having dedented strings as a language feature, instead of relying on a macro pro
 - Users do not have to compile the crate *or* its dependencies.
 - There is no need for procedural macro expansion to take place in order to un-indent the macro. This step happens directly in the compiler.
 
+## Use a built-in macro instead
+
+What about using a compiler built-in macro like `dedent!("string")` instead of a language-built in string modifier such as `d"string"`?
+
+### Advantages
+
+- Will likely have similar performance to the literal itself.
+
+### Disadvantages
+
+#### The macro will be unable to capture variables from the surrounding scope
+
+One of the major benefits of having dedented string literals is that you'll be able to use them in formatting macros:
+
+```rs
+let message = "Hello, world!";
+
+// `{message}` is interpolated
+let py = format!(dr#"
+    def hello():
+        print("{message}")
+
+    hello()
+    "#);
+//^^ removed
+
+let expected = "def hello():\n    print(\"Hello, world!\")\n\nhello()";
+assert_eq!(py, expected);
+```
+
+In the above example, the variable `message` is captured and used directly in the `format!` macro call.
+
+However, this feature would not be possible with a `dedent!` macro.
+
+Consider the following code:
+
+```rs
+fn main() {
+    let foo = "foo";
+    let bar = "bar";
+
+    let x = format!(concat!("{foo}", "bar"));
+}
+```
+
+It attempts to create a string `{foo}bar` which is passed to `format!`. Due to limitations, it does not compile:
+
+```
+error: there is no argument named `foo`
+ --> src/main.rs:5:21
+  |
+5 |     let x = format!(concat!("{foo}", "bar"));
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: did you intend to capture a variable `foo` from the surrounding scope?
+  = note: to avoid ambiguity, `format_args!` cannot capture variables when the format string is expanded from a macro
+
+error: could not compile `dedented` (bin "dedented") due to 1 previous error
+```
+
+Importantly:
+
+> to avoid ambiguity, `format_args!` cannot capture variables when the format string is expanded from a macro
+
+A `dedent!` macro would have the same limitation: Namely the string is created from the expansion of a macro.
+
+The problem with `dedent!` is that we expect it to be largely used with formatting macros such as `format!` and `println!` to make use of string interpolation.
+
+Implementing dedented string literals as a macro will significantly limit their functionality.
+
+Consider a conversion from a regular string literal that prints some HTML:
+
+```rust
+  writeln!(w, "  \
+        <!-- <link rel=\"shortcut icon\" href=\"{rel}favicon.ico\"> -->\
+    \n</head>\
+    \n<body>\
+    \n  <div class=\"body\">\
+    \n    <h1 class=\"title\">\
+    \n      {h1}\
+    \n      <span class=\"nav\">{nav}</span>\
+    \n    </h1>")
+```
+
+Into a dedented string literal:
+
+```rust
+  writeln!(w, dr#"
+      <!-- <link rel="shortcut icon" href="{rel}favicon.ico"> -->
+    </head>
+    <body>
+      <div class="body">
+        <h1 class="title">
+          {h1}
+          <span class="nav">{nav}</span>
+        </h1>
+    "#);
+```
+
+The above conversion is elegant for these reasons:
+- It is a simple modification by prepending `d` before the string literal
+- All of the escaped sequences are removed, the whitespace removal is taken care of by the dedented string literal
+- Since we can now use a raw string, we no longer have to escape the quotes
+- Notably: **All of the interpolated variables continue to work as before**.
+
+With a dedented string *macro*, it's a much more involved process. The above will fail to compile because strings expanded from macros cannot capture variables like that.
+
+The problem being that we have to re-write all of the captured variables to pass them to the `writeln!` and not the dedented string itself:
+
+```rust
+  writeln!(w,
+    dedent!(r#"
+          <!-- <link rel="shortcut icon" href="{}favicon.ico"> -->
+        </head>
+        <body>
+          <div class="body">
+            <h1 class="title">
+              {}
+              <span class="nav">{}</span>
+            </h1>
+        "#,
+        rel,
+        h1,
+        nav)
+  );
+```
+
+Which is unfortunate.
+
+It might lead users to choose not to use this feature.
+
+#### Limits macros
+
+Macro fragment specifier `$lit: literal` is able to accept dedented string literals.
+
+However, it won't be able to accept string literals created from a macro.
+
+Today, the following code:
+
+```rs
+macro_rules! foo {
+    ($lit:literal) => {{}};
+}
+
+fn main() {
+    foo!(concat!("foo", "bar"));
+}
+```
+
+Fails to compile:
+
+```rs
+error: no rules expected `concat`
+ --> src/main.rs:6:10
+  |
+1 | macro_rules! foo {
+  | ---------------- when calling this macro
+...
+6 |     foo!(concat!("foo", "bar"));
+  |          ^^^^^^ no rules expected this token in macro call
+  |
+note: while trying to match meta-variable `$lit:literal`
+ --> src/main.rs:2:6
+  |
+2 |     ($lit:literal) => {{}};
+  |      ^^^^^^^^^^^^
+
+error: could not compile `dedented` (bin "dedented") due to 1 previous error
+```
+
+A `dedent!()` macro will have the same restriction.
+
+This limits yet again where the dedented strings count be used.
+
+#### Consistency
+
+It would be inconsistent to have dedicated syntax for raw string literals `r#"str"#`, but be forced to use a macro for dedented string literals.
+
+The modifiers `b"str"` and `r#"str"#` are placed in front of string literals.
+
+They do *no* allocation, only transforming the string at compile-time.
+
+We do not use macros like `byte!("str")` or `raw!("str")` to use them, so having to use `dedent!("str")` would feel inconsistent.
+
+Dedentation also happens at compile-time, transforming the string literal similar to how raw string literals `r#"str"#` do.
+
+However, macros like `format!("{foo}bar")` allocate. That's one of reasons why there are no `f"{foo}bar"` strings. In Rust, allocation is explicit.
+
+Someone learning about dedented strings, and learning that they're accessible as a macro rather than a string modifier similar to how `r#"string"#` is, may incorrectly assume that the reason why dedented strings require a macro is because allocation happens, and Rust is explicit in this regard.
+
+And when they learn about the actual behaviour, it will be surprising.
+
+#### Wrapping the string in a macro call causes an additional level of indentation
+
+With dedented string literals:
+
+```rs
+fn main() {
+   println!(d"
+       create table student(
+           id int primary key,
+           name text
+       )
+       ");
+}
+```
+
+With a `dedent!` built-in macro:
+
+```rs
+fn main() {
+   println!(
+       dedent!("
+           create table student(
+               id int primary key,
+               name text
+           )
+           ")
+       );
+}
+```
+
+With [postfix macros](https://github.com/rust-lang/rfcs/pull/2442), the situation would be better:
+
+```rs
+fn main() {
+   println!("
+       create table student(
+           id int primary key,
+           name text
+       )
+       ".dedent!());
+}
+```
+
+However, since that RFC currently [does not](https://github.com/rust-lang/rfcs/pull/2442#issuecomment-2567115172) look like it will be included anytime soon, the ergonomics of this feature should not be blocked on postfix macros.
+
+#### Composability
+
+Dedented string literal modifier `d` composes with *all* existing string literal modifiers.
+
+Converting a string literal into a dedented string literal is simple, just add a `d` and fix the compile errors if necessary.
+
+If dedented strings were accessible as a macro `dedent!()` instead, this would be a harder transformation to do - because you now have to wrap the whole string in parenthesis and write `dedent!`.
+
 ## Impact of *not* implementing this RFC
 
 - The Rust ecosystem will continue to rely on third-party crates like `indoc` that provide dedented string literals which only work with the macros provided by the crate.
