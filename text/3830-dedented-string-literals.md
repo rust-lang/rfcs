@@ -931,6 +931,24 @@ fn main() {
 - In the example above, it is not immediately clear where that would be from.
 - It easy to modify the common indentation level of the string in the future, as you do not have to create a new line.
 
+### Allowing the closing line to be indented more than previous lines
+
+Having the quote be indented further than the first non-whitespace character in the
+string content is allowed:
+
+```rs
+fn main() {
+    println!(d"
+        create table student(
+            id int primary key,
+            name text
+        )
+                ");
+}
+```
+
+The reasoning is that turning this into a syntax error is too strict, when it can be auto-fixed by tooling like `rustfmt`.
+
 ## Differences from RFC 3450
 
 The [RFC #3450: Propose code string literals](https://github.com/rust-lang/rfcs/pull/3450) is similar to this one, however this RFC is different and this section explains why.
