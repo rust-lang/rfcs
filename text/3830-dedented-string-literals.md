@@ -1389,8 +1389,7 @@ Consider a conversion from a regular string literal that prints some HTML:
 ```rust
 writeln!(
   w,
-  "  \
-      <!-- <link rel=\"shortcut icon\" href=\"{rel}favicon.ico\"> -->\
+  "  <!-- <link rel=\"shortcut icon\" href=\"{rel}favicon.ico\"> -->\
   \n</head>\
   \n<body>\
   \n  <div class=\"body\">\
@@ -1434,20 +1433,19 @@ writeln!(
     w,
     dedent!(
         r#"
-              <!-- <link rel="shortcut icon" href="{}favicon.ico"> -->
-            </head>
-            <body>
-              <div class="body">
-                <h1 class="title">
-                  {}
-                  <span class="nav">{}</span>
-                </h1>
-            "#
-        ),
-        rel,
-        h1,
-        nav
-    )
+          <!-- <link rel="shortcut icon" href="{}favicon.ico"> -->
+        </head>
+        <body>
+          <div class="body">
+            <h1 class="title">
+              {}
+              <span class="nav">{}</span>
+            </h1>
+        "#
+    ),
+    rel,
+    h1,
+    nav
 );
 ```
 
