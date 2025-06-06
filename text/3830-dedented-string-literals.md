@@ -961,7 +961,7 @@ The syntax of `d"string"` is chosen for the following reasons:
 - Fits with existing string modifiers, such as `b"string"`, `r#"string"#"` and `c"string"`
 - Composes with existing string modifiers: `db"string"`, `dc"string"`, `dr#"string"#`, and `dbr#"string"#`. 
 - Does not introduce a lot of new syntax. Dedented string literals can be explained in terms of existing language features.
-- The acronym `d` for `dedent` is both clear, and not taken by any of the other string modifiers.
+- The acronym `d` for `dedent` is understandable, and not taken by any of the other string modifiers.
 - Adding a single letter `d` before a string literal to turn it into a dedented string literal is an incredibly easy modification.
 - Rust reserves space for additional string modifiers.
 
