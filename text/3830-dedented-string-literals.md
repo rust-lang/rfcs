@@ -1200,7 +1200,7 @@ Having dedented strings as a language feature, instead of relying on a macro pro
 
 ## Use a built-in macro instead
 
-What about using a compiler built-in macro like `dedent!("string")` instead of a language-built in string modifier such as `d"string"`?
+What about using a compiler built-in macro like `dedent!("string")` instead of a language built-in string modifier such as `d"string"`?
 
 ### Advantages
 
