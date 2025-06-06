@@ -751,7 +751,7 @@ assert_eq!(
     ",
 ^^^^ // common leading whitespace (will be removed)
 
-    "hello\nworld"
+    "hello\n\nworld"
 );
 
 // We make use of whitespace escape characters
