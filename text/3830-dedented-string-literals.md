@@ -1370,7 +1370,7 @@ error: could not compile `dedented` (bin "dedented") due to 1 previous error
 
 A `dedent!()` macro will have the same restriction.
 
-This limits yet again where the dedented strings count be used.
+This limits yet again where the dedented strings could be used.
 
 #### Consistency
 
