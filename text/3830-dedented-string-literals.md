@@ -233,7 +233,8 @@ This allows us to have a more readable version of the above:
 
 ```rust
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -258,7 +259,8 @@ Now, consider the example with multiple nested scopes again:
 ```rs
 fn main() {
     {
-        println!(d"
+        println!(
+            d"
             create table student(
                 id int primary key,
                 name text
@@ -266,7 +268,8 @@ fn main() {
             "
         );
     }
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -275,7 +278,8 @@ fn main() {
     );
     {
         {
-            println!(d"
+            println!(
+                d"
                 create table student(
                     id int primary key,
                     name text
@@ -303,7 +307,8 @@ This allows all lines to have a common indentation.
 
 ```rust
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -333,13 +338,14 @@ In order to strip the first level of indentation, the ending quote is aligned to
 
 ```rust
 fn main() {
-    println!(d"
-        create table student(
-            id int primary key,
-            name text
-        )
-    "
-^^^^ // common leading whitespace (will be removed)
+    println!(
+        d"
+            create table student(
+                id int primary key,
+                name text
+            )
+        "
+^^^^^^^^ // common leading whitespace (will be removed)
     );
 }
 ```
@@ -363,7 +369,8 @@ All indentation can be stripped by placing the closing double quote on the same 
 
 ```rust
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -403,7 +410,8 @@ create table student(
 
 ```rs
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -419,7 +427,8 @@ fn main() {
 
 ```rs
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -434,7 +443,8 @@ fn main() {
 
 ```rs
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -470,7 +480,8 @@ The `format_args!` macro, and by extension all wrapper macros that pass argument
 fn main() {
     let table_name = "student";
 
-    println!(d"
+    println!(
+        d"
         create table {table_name}(
             id int primary key,
             name text
@@ -566,7 +577,8 @@ You can use them in formatting macros, such as `println!`, `write!`, `assert_eq!
 ```rs
 let message = "Hello, world!";
 
-let py = format!(dr#"
+let py = format!(
+    dr#"
     def hello():
         print("{message}")
 
@@ -589,7 +601,9 @@ let mut py = String::new();
 
 // Note: Using `writeln!` because the final newline from dedented strings is removed. (more info later)
 
-writeln!(py, d"
+writeln!(
+    py,
+    d"
     def hello():
     "
 //^^ removed
@@ -601,14 +615,18 @@ writeln!(py, d"
 //   to insert the 2nd newline
 
 // Remember, dedented string literals strip the last newline.
-writeln!(py, dr#"
+writeln!(
+    py,
+    dr#"
     print("{message}")
 
 "#
 //^^ kept
 );
 
-write!(py, d"
+write!(
+    py,
+    d"
 hello()
             "
 );
@@ -959,7 +977,8 @@ Consider the following which is invalid:
 ```rs
 fn main() {
     // ERROR
-    println!(d"create table student(
+    println!(
+        d"create table student(
             id int primary key,
             name text
         )
@@ -975,7 +994,8 @@ The following is also incorrect, as there is no newline before the line containi
 
 ```rs
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -995,7 +1015,8 @@ string content is allowed:
 
 ```rs
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -1009,7 +1030,8 @@ Reason: turning this into a syntax error is too strict, when it can be auto-fixe
 
 ```rs
 fn main() {
-    println!(d"
+    println!(
+        d"
         create table student(
             id int primary key,
             name text
@@ -1068,7 +1090,8 @@ Differences:
     However, in this RFC the following:
 
     ```rs
-    print!(d"
+    print!(
+        d"
         a
         "
     ^^^^ // common leading whitespace (will be removed)
@@ -1082,7 +1105,8 @@ Differences:
     In order to add a newline at the end, you have to add a newline in the source code:
 
     ```rs
-    print!(d"
+    print!(
+        d"
         a
 
         "
@@ -1287,7 +1311,8 @@ One of the major benefits of having dedented string literals is that you'll be a
 let message = "Hello, world!";
 
 // `{message}` is interpolated
-let py = format!(dr#"
+let py = format!(
+    dr#"
     def hello():
         print("{message}")
 
@@ -1512,11 +1537,11 @@ With [postfix macros](https://github.com/rust-lang/rfcs/pull/2442), the situatio
 fn main() {
     println!(
         "
-            create table student(
-                id int primary key,
-                name text
-            )
-            ".dedent!()
+        create table student(
+            id int primary key,
+            name text
+        )
+        ".dedent!()
     );
 }
 ```
@@ -1605,13 +1630,15 @@ If indentation of the dedented string does not match the surrounding code:
 
 ```rust
 fn main() {
-    println!(d"
-    create table student(
-        id int primary key,
-        name text
-    )
-        ");
-^^^^ // common leading whitespace (will be removed)
+    println!(
+        d"
+        create table student(
+            id int primary key,
+            name text
+        )
+            "
+^^^^^^^^ // common leading whitespace (will be removed)
+    );
 }
 ```
 
