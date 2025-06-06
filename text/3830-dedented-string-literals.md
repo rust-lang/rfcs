@@ -144,7 +144,7 @@ But the improvement in output comes at a cost:
    }
    ```
 
-   This makes it confusing to tell which scope the string belongs to. This is especially true when there are multile scopes involved:
+   This makes it confusing to tell which scope the string belongs to. This is especially true when there are multiple scopes involved:
 
    ```rs
    fn main() {
