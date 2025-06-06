@@ -193,6 +193,28 @@ But the improvement in output comes at a cost:
 
 As you can see, we have to choose one or the other. In either case we have to give something up.
 
+Another way to format the above would be the following:
+
+```rs
+fn main() {
+    println!(concat!(
+        "create table student(\n",
+        "    id int primary key,\n",
+        "    name text,\n",
+        ")\n",
+    ));
+}
+```
+
+The above:
+- Is formatted nicely by `rustfmt`
+- Produces the correct output
+
+However, it looks very noisy.
+- Each line ends with an escaped `\n`.
+- Requires double-quotes around each line.
+- This does not allow for interpolations, such as `{variable_name}` as the format string is expanded by a macro.
+
 Sometimes, we are *forced* into the first option - sacrificing readability of the source.
 
 In some cases, producing excessive whitespace will change meaning of the output.
