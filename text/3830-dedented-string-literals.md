@@ -927,7 +927,7 @@ assert_eq!(
 //       is removed in all cases
 #[expect_compile_error]
 let _ = d"
-    ",
+    ";
 ````
 
 # Drawbacks
