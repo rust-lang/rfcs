@@ -806,9 +806,14 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
     - Only the amount equal to the closing indentation, or less, will be removed.
     - Never more than the line actually has.
 
-### Treatment of literal escapes: `\t`, `\r` and `\n`
+### Treatment of literal whitespace escapes: `\t`, `\r` and `\n`
 
-`\t` is allowed in the line which contains the closing quote. Writing it is equivalent to inserting a literal tab.
+#### On the line containing the closing quote
+
+- Only whitespace is allowed before the closing quote.
+- Escapes are not permitted even if they are escapes for whitespace (e.g. a tab escape `\t`), because escapes are processed after dedenting, so they are not yet whitespace when the line with the closing quote is processed.
+
+#### In the content of the string
 
 The escaped characters `\t`, `\r` and `\n` are treated as regular characters for the purposes of dedentation.
 
@@ -820,7 +825,7 @@ println!(
     \ta
     \tb
     \tc
-    \t"
+        " // the indent here is a tab
 );
 ```
 
@@ -832,7 +837,7 @@ Prints, with each indentation being **1 tab**:
     c
 ```
 
-The indentation is not removed, because common indentation in this example is 0.
+The indentation is not removed, because common indentation in this example is 0. (closing indentation is 1 tab).
 
 Escaped characters at the beginning of the string are interpreted as any other character, and **not** whitespace.
 
