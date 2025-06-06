@@ -703,12 +703,6 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 
 ## Algorithm for dedented strings
 
-> [!NOTE]
-> 
-> Whitespace escape characters such as `\t`, `\r` and `\n` are treated as literal code when present in the content of the dedented string, therefore the normal dedentation rules apply to them.
->
-> This does not apply to `\n` after the opening quote, nor the `\n` before the line containing the closing quote. In this case escaping the newline is not allowed, it has to be a literal newline. (As described previously.)
-
 1. The opening line (the line containing the opening quote `"`)
     - Must only contain a literal newline character after the `"` token
     - This newline is removed.
@@ -730,6 +724,12 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
     - Even if a line is indented by more than the closing indentation
     - Only the amount equal to the closing indentation, or less, will be removed.
     - Never more than the line actually has.
+
+### Treatment of literal escapes: `\t`, `\r` and `\n`
+
+- Whitespace escape characters such as `\t`, `\r` and `\n` are treated as literal code when present in the content of the dedented string, therefore the normal dedentation rules apply to them.
+    - This does not apply to `\n` after the opening quote, nor the `\n` before the line containing the closing quote. In this case escaping the newline is not allowed, it has to be a literal newline. (As described previously.)
+- The line containing the closing quote `"` can therefore contain `\t` escapes, as they are considered to be literal tabs.
 
 ### Edge Cases
 
@@ -754,15 +754,14 @@ assert_eq!(
     "hello\nworld"
 );
 
-// This example has the same whitespace as the previous example.
-// However, here we make use of whitespace escape characters
+// We make use of whitespace escape characters
 //
 // This might make code more confusing, so one of the future-possibilities
 // is to have a warn-by-default lint to disallow these characters in dedented strings.
 assert_eq!(
     d"
-\thello\n••\n\tworld
-    ",
+\thello\n\t\n\tworld
+\t",
 
     "hello\nworld"
 );
