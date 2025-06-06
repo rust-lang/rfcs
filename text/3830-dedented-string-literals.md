@@ -1557,8 +1557,8 @@ In the following example:
 ```rs
 assert_eq!(
     d"
-\thello\n••\n\tworld
-    ", // note: This is a tab, not 4 spaces.
+\thello\n\t\n\tworld
+\t",
 //^^ common leading whitespace (will be removed)
 
     "hello\nworld"
