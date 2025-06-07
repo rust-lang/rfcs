@@ -1164,6 +1164,65 @@ fn main() {
 - In the example above, it is not immediately clear where that would be from.
 - It easy to modify the common indentation level of the string in the future, as you do not have to create a new line.
 
+### The choice of not ending with a newline
+
+Dedented string literals do not end with a newline.
+
+The following:
+
+```rs
+fn main() {
+    print!(
+        d"
+        create table student(
+            id int primary key,
+            name text
+        )
+        "
+    );
+}
+```
+
+Prints, *without* a newline at the end:
+
+```sh
+create table student(
+    id int primary key,
+    name text
+)
+```
+
+In order to add a final newline, an extra blank line needs to be added at the end:
+
+```rs
+fn main() {
+    print!(
+        d"
+        create table student(
+            id int primary key,
+            name text
+        )
+
+        "
+    );
+}
+```
+
+Removing the final newline is consistent with removing the initial newline.
+
+The line containing the opening quote `"` and the line containing the closing quote `"` can be considered to be fully exempt from the output.
+
+If this *wasn't* the behaviour:
+- It would make less sense to remove the newline from the beginning, but not from the end.
+- Dedented strings would always end with a newline
+- ..But how do you opt-out of the newline?
+
+  Using a special syntax, like closing with a `-"` (as a different RFC proposes) would be too special-cased, it wouldn't fit in with the rest of the language.
+
+  It would be confusing for those that want to end the dedented string with a `-`.
+
+Removing *both* the newline at the start and the end is consistent, and allows maximum flexibility whilst not making additional trade-offs such as having to introduce new special syntax to exclude the newline.
+
 ### Allowing the closing line to be indented more than previous lines
 
 Having the quote be indented further than the first non-whitespace character in the
