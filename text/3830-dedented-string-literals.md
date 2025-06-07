@@ -784,7 +784,8 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 
 ## Algorithm for dedented strings
 
-Whitespace is spaces or horizontal tabs.
+Whitespace is literal spaces or literal horizontal tabs.
+An empty line only consists of literal spaces, literal horizontal tabs or literal newlines
 
 1. The opening line (the line containing the opening quote `"`)
     - Must only contain a literal newline character after the `"` token
@@ -799,7 +800,7 @@ Whitespace is spaces or horizontal tabs.
 
    It is the largest amount of leading whitespace shared by all non-empty lines.
 
-1. For each non-empty line, remove the smallest amount of leading whitespace that satisfies:
+1. For each line, remove the smallest amount of leading whitespace that satisfies:
 
     - `min(common indentation, closing indentation)`
 
