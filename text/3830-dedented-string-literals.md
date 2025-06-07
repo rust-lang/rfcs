@@ -784,6 +784,8 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 
 ## Algorithm for dedented strings
 
+Whitespace is spaces or horizontal tabs.
+
 1. The opening line (the line containing the opening quote `"`)
     - Must only contain a literal newline character after the `"` token
     - This newline is removed.
