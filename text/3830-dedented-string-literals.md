@@ -1087,18 +1087,12 @@ Differences:
     ```
 
     With the `sql` not affecting the output, but can aid in syntax highlighting and such.
-
-   1. This is not necessary, as at the moment you can add a block comment next to the string, which syntax highlighters can use *today* to inject whatever language is specified.
  
-         ```rs
-         let sql = /* sql */ "SELECT * FROM table;";
-         ```
- 
-   2. Is considered out of scope for this RFC to consider.
+   1. Is considered out of scope for this RFC to consider.
  
          It would be a backward-compatible change to make for a future RFC, if it's desired.
 
-   3. [Expression attributes](https://github.com/rust-lang/rust/issues/15701) are likely to be more suitable for this purpose. (not part of this RFC)
+   1. [Expression attributes](https://github.com/rust-lang/rust/issues/15701) are likely to be more suitable for this purpose. (not part of this RFC)
 
          ```rs
          let sql = #[editor::language("sql")] "SELECT * FROM table;";
