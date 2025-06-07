@@ -954,14 +954,151 @@ let _ = d"
 
 ## Design
 
-### The choice of `d"string"` specifically
+### The choice of the letter `d` for "dedent"
+
+When picking a single letter for this feature, we want:
+
+- A letter that represents a mnemonic
+- The mnemonic should make sense
+- And be memorable
+
+The RFC picks `d` as a mnemonic for "dedent".
+
+- Dedentation is a simple atomic operation which removes the leading indentation of the string
+- The transformation is always a dedentation
+
+  If there is no leading indentation, removing the it is still accurately described as a "dedentation" because the nothing is removed.
+- It might help make the acronym more memorable by thinking about the `d` as "**d**eleting" the leading indentation.
+
+#### Why not `u` for "unindent"
+
+Confusion can arise due to the way this string prefix has been used in other languages:
+
+- In Python 2, `u` is a prefix for Unicode strings
+- In C++, `u` is used for UTF-16 strings
+
+The goal a single-letter acronym hopes to accomplish is to be memorable and make sense.
+It can be argued that the word "Unindent" is more complex than the word "Dedent":
+
+- Unindent contains a negation, consisting of two "parts": **un** + **indent**. Undoing an indentation.
+- Dedent represents an atomic operation, which is removal of indentation and is a synonym to unindent.
+
+Using a negated word can be considered to be less desireable, because in order to undo the negation we have to perform an extra "step" when thinking about it.
+
+Consider that instead of a negated `if` condition:
+
+```rs
+if !string.is_empty() {
+   walk()
+} else {
+   run()
+}  
+```
+
+Writing the non-negated version first is often clearer:
+
+```rs
+if string.is_empty() {
+   run()
+} else {
+   walk()
+}  
+```
+
+Using a word with a lower cognitive complexity may make it easier to think about and more memorable.
+
+#### Why not `i` for "indent"
+
+Indent is the opposite of dedent. It could make sense, but from a completely different perspective.
+
+The question is, which one do we value more:
+
+- A word that describes what the string looks like in the source code.
+- A word that describes the transformation that the string goes through when it is evaluated.
+
+"Indent" describes what the string looks like in the source code:
+
+```rs
+fn main() {
+    let table_name = "student";
+
+    println!(
+        d"
+        create table {table_name}(
+            id int primary key,
+            name text
+        )
+        "
+    );
+}
+```
+
+But it does not describe the transformation that it goes through:
+
+```sh
+create table student(
+    id int primary key,
+    name text
+)
+```
+
+When the string is evaluated, the leading indentation is removed. It is **dedented**.
+
+In the source code, the string is **indented**.
+
+- When viewing the string from the source code, the indentation is obvious.
+
+  However, it is *not* obvious what will happen to the string when it is evaluated. "Dedent" can be clearer in this regard, as we already have 1 piece of information and the word "dedent" brings us the other piece.
+
+- The string may not always be considered to be indented:
+
+   ```rs
+   let _ = d"
+   hello world
+   ";
+   ```
+
+  In the above example, there is no indentation for the strings. It would be inaccurate to describe the string as having indentation.
+
+  Once the string is evaluated, it is accurate to describe the removal of the non-existing indentation as still "dedenting" the string.
+
+#### Why not `m` for "multi-line"
+
+- Dedented string literals do not necesserily represent a multi-line string:
+
+```rs
+let _ = d"
+hello world
+";
+```
+
+The above is equivalent to:
+
+```rs
+let _ = "hello world";
+```
+
+Confusion could arise, as people expect it to evaluate to a string spanning multile lines.
+
+#### Why not `h` for "heredoc"
+
+RFC #3450 uses `h` as the modifier instead of `d`, as an acronym for [Here document](https://en.wikipedia.org/wiki/Here_document).
+
+- The term is likely to be less known, and may raise confusion, especially amongst
+  those that don't know what it is.
+- Here documents are more associated with "code blocks", which may associate an "info string"
+  with them (such as in markdown). This RFC does not propose an info string.
+
+While the feature this RFC proposes (dedented string literals) are useful for code
+blocks, it is not just for them.
+
+### The choice of the form `d"string"`
 
 The syntax of `d"string"` is chosen for the following reasons:
 
 - Fits with existing string modifiers, such as `b"string"`, `r#"string"#"` and `c"string"`
 - Composes with existing string modifiers: `db"string"`, `dc"string"`, `dr#"string"#`, and `dbr#"string"#`. 
 - Does not introduce a lot of new syntax. Dedented string literals can be explained in terms of existing language features.
-- The acronym `d` for `dedent` is understandable, and not taken by any of the other string modifiers.
 - Adding a single letter `d` before a string literal to turn it into a dedented string literal is an incredibly easy modification.
 - Rust reserves space for additional string modifiers.
 
@@ -1066,15 +1203,7 @@ The [RFC #3450: Propose code string literals](https://github.com/rust-lang/rfcs/
 
 Differences:
 
-- #3450 uses `h` as the modifier instead of `d`.
-
-    proposes using `h` as acronym for [Here document](https://en.wikipedia.org/wiki/Here_document).
-
-    The term is likely to be less known, and may raise confusion.
-
-    Additionally, here documents are more associated with "code blocks". While this feature is useful for code blocks, it is not just for them.
-
-    While the `d` mnemonic for **dedent** clearly describes what actually happens to the strings.
+- #3450 uses `h` as the modifier instead of `d`. Explained [earlier](#why-not-h-for-heredoc)
 
 - #3450 allows to write an *info string*, like in markdown.
 
