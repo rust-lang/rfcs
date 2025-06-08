@@ -886,14 +886,51 @@ where
 
 # Rationale and alternatives
 
-## Require an attribute to mark the trait as implementable
+## Allow subtrait implementations to include supertrait items directly
+
+You’ll note, in the `Deref`/`Receiver` example, that we had to create a new
+trait called `DerefToTarget`:
+
+```rust
+//! New `Deref`
+
+pub trait Receiver {
+    type Target: ?Sized;
+}
+
+pub trait DerefToTarget: Receiver {
+    fn deref(&self) -> &Self::Target;
+}
+
+pub trait Deref = Receiver + DerefToTarget;
+```
+
+If we “just” allowed implementations of any trait to also implement their
+supertraits, as has been proposed by others, this extra trait would not be
+necessary.
+
+However, this RFC very deliberately does *not* propose that. The reason for this
+is that **a trait `impl` is more than just its items**. This is most apparent with
+marker traits: implementing a trait like `Eq` does not require defining any
+items at all, but it imposes important restrictions on the implementing type
+nevertheless; if those requirements are not upheld, all kinds of bugs could
+occur. If the trait is `unsafe`, an erroneous implementation could even be
+unsound!
+
+Because of these risks, when a code reviewer encounters a new trait `impl`
+block, they should be able to tell, just from the block itself, what new traits
+are being implemented, and therefore what new invariants must be upheld for
+those implementations to be valid. If subtrait `impl` blocks could silently also
+implement supertraits, that would no longer be possible.
+
+## Require an attribute on implementable aliases
 
 We could require an attribute on implementable aliases; e.g. `#[implementable]
 trait Foo = ...`. However, there is not much reason to opt out of
 implementability. On the other hand, users may not want to commit to the primary
 vs secondary trait distinction immediately.
 
-## No trait alias bodies
+## Don’t have trait alias bodies
 
 Not including this part of the proposal would significantly decrease the overall
 complexity of the feature. However, it would also reduce its power: trait
@@ -904,13 +941,13 @@ It's this last issue especially that leads me to not relegate this to a future
 possibility. Adding a defaulted item to a trait should at most require minor
 changes to dependents, and restructuring a large `impl` block is not “minor”.
 
-## No non-implementable `fn`s` in trait alias bodies
+## Don’t have non-implementable `fn`s` in trait alias bodies
 
 Such items don't have much utility from a backward-compatibility perspective,
 and overlap with extension traits. However, the cost of allowing them is very
 low.
 
-## Unconstrained generic parameters
+## Constrain generic parameters
 
 A previous version of this RFC required generic parameters of implementable
 trait aliases to be used as generic parameters of a primary trait of the alias.
@@ -951,7 +988,7 @@ even at the risk of potential confusion.
 It's a forward-compatibility hazard (if the traits gain items with conflicting
 names), with no use-case that I can see.
 
-## Implementing aliases with 0 primary traits
+## Allow implementing aliases with 0 primary traits
 
 We could allow implementing aliases with no primary traits, as a no-op. However,
 I don't see the point in it, and there is a risk of people thinking it does
