@@ -913,7 +913,7 @@ However, this RFC very deliberately does *not* propose that. The reason for this
 is that **a trait `impl` is more than just its items**. This is most apparent with
 marker traits: implementing a trait like `Eq` does not require defining any
 items at all, but it imposes important restrictions on the implementing type
-nevertheless; if those requirements are not upheld, all kinds of bugs could
+nevertheless. If those requirements are not upheld, all kinds of bugs could
 occur. If the trait is `unsafe`, an erroneous implementation could even be
 unsound!
 
@@ -923,12 +923,13 @@ are being implemented, and therefore what new invariants must be upheld for
 those implementations to be valid. If subtrait `impl` blocks could silently also
 implement supertraits, that would no longer be possible.
 
-## Require an attribute on implementable aliases
+## Require an attribute to make aliases implementable
 
 We could require an attribute on implementable aliases; e.g. `#[implementable]
 trait Foo = ...`. However, there is not much reason to opt out of
-implementability. On the other hand, users may not want to commit to the primary
-vs secondary trait distinction immediately.
+implementability. And if the alias definer really wants to make their alias
+inimplementable, they can simply no include any primary traits (make all traits
+secondary).
 
 ## Don’t have trait alias bodies
 
@@ -991,8 +992,9 @@ names), with no use-case that I can see.
 ## Allow implementing aliases with 0 primary traits
 
 We could allow implementing aliases with no primary traits, as a no-op. However,
-I don't see the point in it, and there is a risk of people thinking it does
-something when it does not.
+not allowing this enables users deliberately force an alias to be
+non-implementable, which is far more useful (e.g., if they don’t want to commit
+to which traits to make primary vs secondary).
 
 # Prior art
 
