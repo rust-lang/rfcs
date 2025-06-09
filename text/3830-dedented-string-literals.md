@@ -941,7 +941,9 @@ let _ = d"
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- While the reference specifies `r` as ["not processing ay escapes"](https://doc.rust-lang.org/reference/tokens.html#raw-string-literals), users are less likely familiar with the exact definition and more familiar with the name and the affect: it leaves the string as-is.  This can feel contradictory to `d` which is a specific form of modifying the string content and so a `dr""` could read as something that should be a compilation error.
+- While the reference specifies `r` as ["not processing any escapes"](https://doc.rust-lang.org/reference/tokens.html#raw-string-literals), users are less likely familiar with the exact definition and more familiar with the name and the effect: it leaves the string as-is.
+
+  This can feel contradictory to `d` which is a specific form of modifying the string content and so a `dr""` could read as something that should be a compilation error.
 
 - The more string literal modifiers that are stacked on each other, more work is needed to decipher it and can feel a bit too foreign
 
