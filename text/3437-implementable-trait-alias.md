@@ -1009,6 +1009,9 @@ to which traits to make primary vs secondary).
 - We could allow trait aliases to define their own defaults for `impl`s. One
   possibility is [the `default partial impl` syntax I suggested on
   IRLO](https://internals.rust-lang.org/t/idea-partial-impls/22706/).
+- `default partial impl` would also address the case where one wants to split a
+  trait in two, but the supertrait has methods with default impls in terms of
+  the subtrait.
 - We could allow implementable `fn` aliases in non-alias `trait` definitions.
 - We could allow any `impl` block to implement items from supertraits of its
   primary trait(s).
