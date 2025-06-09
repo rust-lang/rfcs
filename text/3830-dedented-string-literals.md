@@ -941,6 +941,8 @@ let _ = d"
 # Drawbacks
 [drawbacks]: #drawbacks
 
+- The more string literal modifiers that are stacked on each other, more work is needed to decipher it and can feel a bit too foreign
+
 - Contributes to the increase of string literal modifiers by adding a new variant.
 
   While at the moment the variety of string literal modifiers is small, it is worth to think about the implications of exponential increase of them.
