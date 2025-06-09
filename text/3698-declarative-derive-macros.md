@@ -31,6 +31,15 @@ syntax as a proc macro.
 The derive feature of the crate has [various uses in the
 ecosystem](https://github.com/search?q=macro_rules_attribute%3A%3Aderive&type=code).
 
+`derive` macros have a standard syntax that Rust users have come to expect for
+defining traits; this motivates providing users a way to invoke that mechanism
+for declarative macros. An attribute or a `macro_name!` invocation could serve
+the same purpose, but that would be less evocative than `derive(Trait)` for
+the purposes of making the purpose of the macro clear, and would additionally
+give the macro more power to rewrite the underlying definition. Derive macros
+simplify tools like rust-analyzer, which can know that a derive macro will
+never change the underlying item definition.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
