@@ -30,9 +30,6 @@ syntax as a proc macro.
 
 The derive feature of the crate has [various uses in the
 ecosystem](https://github.com/search?q=macro_rules_attribute%3A%3Aderive&type=code).
-That crate likewise offers a `derive_alias` mechanism, which could similarly be
-implemented using exclusively declarative macros given the feature proposed in
-this RFC.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -203,9 +200,6 @@ syntax as a proc macro.
 
 The derive feature of the crate has [various uses in the
 ecosystem](https://github.com/search?q=macro_rules_attribute%3A%3Aderive&type=code).
-That crate likewise offers a `derive_alias` mechanism, which could similarly be
-implemented using exclusively declarative macros given the feature proposed in
-this RFC.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -233,7 +227,9 @@ requests arise.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-We should provide a way for derive macros to invoke other derive macros.
+We should provide a way for derive macros to invoke other derive macros. The
+`macro_rules_attribute` crate includes a `derive_alias` mechanism, which we
+could trivially implement given a means of invoking another derive macro.
 
 We should provide a means to perform a `derive` on a struct without being
 directly attached to that struct. (This would also potentially require
