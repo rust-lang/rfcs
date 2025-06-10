@@ -9,7 +9,7 @@ Extend `#![feature(trait_alias)]` to permit `impl` blocks for most trait aliases
 Also support fully-qualified method call syntax with such aliases.
 
 Additionally, allow trait aliases to have bodies, which can contain `type`s,
-`const`s, and.or `fn`s.
+`const`s, and/or `fn`s.
 
 # Motivation
 
