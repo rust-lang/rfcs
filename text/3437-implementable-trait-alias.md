@@ -359,6 +359,12 @@ You’ll note that `Iterator`’s body does not explicitly define `Item`. Instea
 it’s defined implicitly by the `for<'a> <Self as LendingIterator>::Item<'a> =
 <Self as Iterator>::Item` clause in the alias definition.
 
+(N.B: In today’s Rust, the `for<'a> LendingIterator<Item<'a> = …` bound implies
+`'static`, which is not desired in this case. This is a longstanding issue with
+GATs which this RFC does not aim to address. The real `Iterator` alias may end
+up looking slightly different, depending on how that issue is eventually
+resolved.)
+
 ## Implementing trait aliases for multiple traits
 
 Trait aliases that combine multiple traits with `+` are also implementable:
