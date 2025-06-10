@@ -684,7 +684,8 @@ trait FooBar = Foo + Bar {
 ```
 
 As aliases, `type` and `const` alias items neither require nor accept bounds or
-`where` clauses; these are taken from the things being aliased.
+`where` clauses; these are taken from the things being aliased. (This only
+applies to the definitions of the items, not implementations of them.)
 
 `type` and `const` alias items may appear in implementations of the alias:
 
@@ -702,6 +703,56 @@ trait Alias = Foo {
 impl Alias for () {
     type Associated = i32; // Equivalent to `type Assoc = i32;`
     const ASSOCIATED: i32 = 42; // Equivalent to `const ASSOC: i32 = 42;`
+}
+```
+
+Such implementations are permitted only if the compiler is able to verify that
+they are consistent with the rest of the impl. Notably, the compiler can’t
+invert nontrivial `const` expressions (more complicated than simply setting
+equal to some other constant). For example, given the following trait and alias:
+
+```rust
+trait Foo {
+    const ASSOC: i32;
+}
+
+trait Foo2 = Foo {
+    const ASSOC_TWICE: i32 = Self::ASSOC * 2;
+}
+```
+
+This doesn’t work:
+
+```rust
+impl Foo2 for () {
+    const ASSOC_TWICE: i32 = 18;
+
+    // ERROR, missing definition for `ASSOC`
+    // The compiler will not be able to figure out that `ASSOC` must be 9
+}
+```
+
+However, this does:
+
+```rust
+impl Foo2 for () {
+    const ASSOC: i32 = 9;
+    const ASSOC_TWICE: i32 = 18;
+    // When given `ASSOC`, the compiler is able verify
+    // that the concrete value specified for `ASSOC_TWICE` in the impl
+    // is equivalent to the concrete value it calculates
+    // with `Self::ASSOC * 2`.
+```
+
+But this doesn’t:
+
+```rust
+impl<T: Foo> Foo2 for Box<T> {
+    const ASSOC: i32 = T::ASSOC;
+    const ASSOC_TWICE: i32 = Self::ASSOC * 2; // ERROR
+    // The compiler is not going to perform any symbolic reasoning,
+    // so won't be able to figure out that `Self::ASSOC * 2`
+    // must equal `Self::ASSOC * 2` for all possible `T`.
 }
 ```
 
@@ -782,7 +833,7 @@ you don't have to:
 
 ```rust
 trait Frob {
-    fn frob<T, U>(&self);
+    fn frob<T: Copy, U>(&self);
 }
 
 trait Alias = Frob {
@@ -794,6 +845,17 @@ trait Alias = Frob {
 
 Just like `type` alias items, implementable `fn` alias items neither require nor
 accept `where` clauses or bounds of any sort.
+
+In implementations, these methods look no different from any other:
+
+```rust
+impl Alias for () {
+    #[inline]
+    fn alias2<T: Copy, U>(&self) {
+        todo!()
+    }
+}
+```
 
 #### Non-implementable `fn`s
 
