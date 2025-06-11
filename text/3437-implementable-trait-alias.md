@@ -986,10 +986,11 @@ occur. If the trait is `unsafe`, an erroneous implementation could even be
 unsound!
 
 Because of these risks, when a code reviewer encounters a new trait `impl`
-block, they should be able to tell, just from the block itself, what new traits
-are being implemented, and therefore what new invariants must be upheld for
-those implementations to be valid. If subtrait `impl` blocks could silently also
-implement supertraits, that would no longer be possible.
+block, they should be able to tell, from just the block’s header and the
+definition of the trait it names, what new traits are being implemented, and
+therefore what new invariants must be upheld for those implementations to be
+valid. If subtrait `impl` blocks could silently also implement supertraits, that
+would no longer be possible.
 
 ## Require an attribute to make aliases implementable
 
