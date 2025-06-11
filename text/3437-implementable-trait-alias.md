@@ -978,9 +978,9 @@ supertraits, as has been proposed by others, this extra trait would not be
 necessary.
 
 However, this RFC very deliberately does *not* propose that. The reason for this
-is that **a trait `impl` is more than just its items**. This is most apparent with
-marker traits: implementing a trait like `Eq` does not require defining any
-items at all, but it imposes important restrictions on the implementing type
+is that **a trait `impl` is more than just its items**. This is most apparent
+with marker traits: implementing a trait like `Ord` does not require defining
+any items at all, but it imposes important restrictions on the implementing type
 nevertheless. If those requirements are not upheld, all kinds of bugs could
 occur. If the trait is `unsafe`, an erroneous implementation could even be
 unsound!
