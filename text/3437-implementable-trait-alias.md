@@ -1083,19 +1083,6 @@ to which traits to make primary vs secondary).
   trait in two, but the supertrait has methods with default impls in terms of
   the subtrait.
 - We could allow implementable `fn` aliases in non-alias `trait` definitions.
-- We could allow any `impl` block to implement items from supertraits of its
-  primary trait(s).
-  - This would allow splitting a trait into a supertrait and a subtrait without
-    having to give the subtrait a new name.
-  - However, it would make it more difficult to deduce what traits an `impl`
-    block is implementing.
-  - In addition, it poses a danger if an `unsafe` subtrait depends on an
-    `unsafe` marker supertrait: you could implement the subtrait, carefully
-    checking that you meet its preconditions, while not realizing that you are
-    also implementing the supertrait and need to check its conditions as well.
-  - And even if the traits are not `unsafe`, they could still have preconditions
-    that are important for correctness. Users should never be committing to such
-    things unknowingly.
 - We could add an attribute for trait aliases to opt in to generating their own
   `dyn` type.
   - This could be prototyped as a proc macro.
