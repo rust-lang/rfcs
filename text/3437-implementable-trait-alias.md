@@ -1013,9 +1013,10 @@ changes to dependents, and restructuring a large `impl` block is not “minor”
 
 ## Don’t have non-implementable `fn`s` in trait alias bodies
 
-Such items don't have much utility from a backward-compatibility perspective,
-and overlap with extension traits. However, the cost of allowing them is very
-low.
+Such items don't have much utility for preserving backward compatibility, and
+overlap with extension traits. However, the cost of allowing them is low. This
+RFC is deliberately written to be as expansive as possible, so I chose to
+include them.
 
 ## Constrain generic parameters
 
