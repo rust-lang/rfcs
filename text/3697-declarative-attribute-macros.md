@@ -196,7 +196,7 @@ macro and recommends using it with `macro_rules_attribute::apply`.
 [unresolved-questions]: #unresolved-questions
 
 Is an attribute macro allowed to recursively invoke itself by emitting the
-attriute in its output? If there is no technical issue with allowing this, then
+attribute in its output? If there is no technical issue with allowing this, then
 we should do so, to allow simple recursion (e.g. handling defaults by invoking
 the same rule as if they were explicitly specified).
 
