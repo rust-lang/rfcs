@@ -23,7 +23,7 @@ can make use of such architecture features. High-bit tagged pointers pose a some
 challenge for Rust, as the memory model still considers those high bits to be part of the address.
 Thus, from the memory model's perspective, changing those bits puts the pointer outside of its
 original allocation, despite it not being the case as far as the hardware & OS are concerned.  This
-makes loads and stores using the pointer Undefined Behaviour, despite the fact that if such loads
+makes loads and stores using the pointer undefined behavior, despite the fact that if such loads
 and stores were to be directly done in assembly they would be perfectly safe and valid.
 
 Whenever this RFC refers to a "tagged pointer", it should be taken to mean a pointer that had some
@@ -45,7 +45,7 @@ is no explicit support for this in C/C++, due to there not being Strict Provenan
 is straightforward to write a 'correct' pointer tagging implementation by simply doing a `inttoptr`
 cast inside the memory allocator implementation, be it a custom C `malloc` or using a custom C++
 `Allocator`. The goal of this effort is to create a Rust API for implementing this type of
-functionality that is guaranteed to be free of Undefined Behaviour.
+functionality that is guaranteed to be free of undefined behavior.
 
 There needs to be a low-level helper in the standard library, despite the relatively niche use case
 and relative simplicity, so that there is a single known location where Miri hooks can be called to
@@ -76,7 +76,7 @@ this RFC.
 This RFC adds one associated function to `core::ptr`:
 `pub unsafe fn assume_moved<T>(original: *mut T, new_address: usize) -> *mut T`
 
-```
+```rust
 use core::ptr::assume_moved;
 
 let tag = 63;
@@ -93,7 +93,7 @@ moving is done - the underlying memory does not change, it only changes within t
 model.
 
 Importantly, this is only designed to work on pointers to heap allocations. Trying to tag a
-stack-allocated variable in this way will almost definitely result in Undefined Behaviour because
+stack-allocated variable in this way will almost definitely result in undefined behavior because
 the compiler will not be able to reason about whether writes to the tagged pointer can modify the
 value of the local variable.
 
@@ -102,7 +102,7 @@ value of the local variable.
 
 As previously explained, the memory model we currently have is not fully compatible with memory
 tagging and tagged pointers. Setting the high bits of a pointer must be done with great care in
-order to avoid introducing Undefined Behaviour, which could arise as a result of violating pointer
+order to avoid introducing undefined behavior, which could arise as a result of violating pointer
 aliasing rules - using two 'live' pointers which have different 64-bit addresses but do point to
 the same chunk of memory would weaken alias analysis and related optimisations.
 
@@ -128,7 +128,7 @@ considerations.
 
 Function signature, documentation and implementation:
 
-```
+```rust
 /// Assume that the object pointed to by a pointer has been moved to a new address
 ///
 /// Intended for use with pointer tagging architecture features such as AArch64 TBI.
@@ -142,9 +142,9 @@ Function signature, documentation and implementation:
 /// When used incorrectly, this function can be used to violate the memory model in arbitrary ways.
 /// Furthermore, after using this function, users must ensure that the underlying memory is only ever
 /// accessed through the newly created pointer. Any accesses through the original pointer
-/// (or any pointers derived from it) would be Undefined Behaviour.
+/// (or any pointers derived from it) would be undefined behavior.
 /// Additionally, this function is only designed for use with heap allocations. Trying to use it with
-/// a pointer to a stack-allocated variable will result in Undefined Behaviour and
+/// a pointer to a stack-allocated variable will result in undefined behavior and
 /// should not be done under any circumstances.
 #[inline(never)]
 #[unstable(feature = "ptr_assume_moved", issue = "none")]
@@ -196,7 +196,7 @@ pointer would be a non-trivial endeavour.
 
 Without having a dedicated library helper for modifying the address, users wanting to make use of
 high-bit tagging would have to resort to manually using bitwise operations and would be at risk of
-inadvertently introducing Undefined Behaviour.  Having a helper for doing so in the library creates
+inadvertently introducing undefined behavior.  Having a helper for doing so in the library creates
 a place where e.g. Miri hooks can be called to let Miri know that a pointer's cannonical address has
 been updated. It also makes it possible for the helper to receive special treatment in the codegen
 stage, which is required for it to have the desired behaviour.
@@ -204,6 +204,10 @@ stage, which is required for it to have the desired behaviour.
 It is most likely not feasible to make `assume_moved()` safe to use regardless of the context,
 hence the current approach is to make it an unsafe function with a safety notice about the user's
 responsibilities.
+
+The current working name for the new function is `assume_moved`, but it is not the only candidate.
+Possible alternatives that were discussed were `simulate_realloc` and `simulate_move`. Preferences
+appear to be rather subjective and the function can easily be renamed if need be.
 
 # Prior art
 [prior-art]: #prior-art
@@ -227,11 +231,6 @@ additional concurrency safety considerations that do not apply to pointer taggin
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-What exactly should the helper be called? The main candidates so far have been `simulate_realloc`,
-`simulate_move` and `assume_moved`, alongside some other suggestions, but preferences seem to be
-rather subjective and no clearly most suitable name has emerged as of yet. It can be renamed to
-whichever name the relevant Rust team finds most appropriate.
 
 What is the best way to make this compatible with Strict Provenance? We want to be able to create a
 pointer with an arbitrary address, detached from any existing pointers and with a brand-new
