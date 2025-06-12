@@ -41,18 +41,15 @@ When using the newtype pattern, it is common to implement standard library trait
 struct UserId(u32);
 ```
 
-However, not all standard library traits can be derived in this way, including the `From` trait. While in some cases where the newtype might want to validate its contents (e.g. `struct Email(String)`), an implementation of `From` might not be desirable, in many cases the newtype can accept any value of the inner type, and thus implementing `From` for it is quite natural.
+However, not all standard library traits can be derived in this way, including the `From` trait. Currently, users have to write the boilerplate `From` implementation by hand. If there are many newtypes in a crate, this might lead users to implement a macro, which unnecessarily obfuscates the code, or use an external crate to derive the implementation, which increases code size and compile times.
 
-Currently, users have to write the boilerplate `From` implementation by hand. If there are many newtypes in a crate, this might lead users to implement a macro, which unnecessarily obfuscates the code, or use an external crate to derive the implementation, which increases code size and compile times.
+It should be noted that there are cases where the newtype should not be able to store all possible values of the inner field, e.g. `struct Email(String)`. In that case an implementation of `From` might not be desirable, and the newtype will likely implement its own constructor function that performs validation. For cases where the newtype can represent all values of the inner field, implementing `From` for it is quite natural, as it is the designated Rust trait for performing lossless conversions.
 
 Is `From` really so useful for newtypes? There are two other common alternatives for constructing a value of a newtype apart from using `From`:
-- Using the struct literal syntax directly, such as `UserId(5)` or `UserId { id: 5 }`. This is explicit, but it does not work in generic code (unlike `From`) and it can either only be used in the module of the struct, or the struct field has to become publicly visible, which might not be desirable.
+- Using the struct literal syntax directly, such as `UserId(5)` or `UserId { id: 5 }`. This is explicit, but it does not work in generic code (unlike `From`) and it can either only be used in the module of the struct, or the struct field has to become publicly visible, which is usually not desirable.
 - Using a constructor function, often called `new`. This function cannot be derived (without using custom proc macros) and has to be implemented using a manual `impl` block. It is essentially boilerplate code if the newtype does not need to perform any validation of the field value. If it was possible to easily derive `From`, then it could be used instead of an explicit `new` function, which could reduce the need to create any `impl` blocks for simple newtypes.
 
 To summarize, if `From` was `derive`-able, it could reduce the need for using macros or external crates and increase the number of cases where `#[derive]` takes care of all required `impl`s for a given newtype.
-
-### Simplifying test code
-Apart from the `From` trait being generally useful in various situations, it is especially handy in tests, where various fixture functions can simply receive `T: Into<Newtype>` to avoid test code having to use `.into()` or a newtype struct constructor everywhere.
 
 ## Why does it make sense to derive `From`?
 There are various "standard" traits defined in the Rust standard library that are pervasively used across the ecosystem. Currently, some of these traits can already be automatically derived, for example `Hash` or `Debug`. These traits can be derived automatically because they are composable; an implementation of the trait for a struct can be composed of the trait implementations of its fields.
