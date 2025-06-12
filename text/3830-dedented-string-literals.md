@@ -463,7 +463,7 @@ Dedented string literals `d"string"` are a new modifier for strings.
 
 They are similar to byte strings `b"string"` and raw strings `r#"string"#`.
 
-They compose with other every other string literal modifier.
+They compose with others like every other string literal modifier.
 
 To be precise, the RFC introduces 6 new types of string literals:
 
