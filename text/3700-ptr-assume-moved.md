@@ -107,15 +107,9 @@ aliasing rules - using two 'live' pointers which have different 64-bit addresses
 the same chunk of memory would weaken alias analysis and related optimisations.
 
 We can avoid this issue by assuming that a move from the untagged address to the tagged address has
-happened. To do so, we need the helper function to return a pointer that will be annotated in LLVM
-IR as [noalias](https://llvm.org/docs/LangRef.html#noalias), as per the following excerpt.
-
-> On function return values, the noalias attribute indicates that the function acts like a system
-> memory allocation function, returning a pointer to allocated storage disjoint from the storage for
-> any other object accessible to the caller.
-
-This will result in the new pointer getting a brand new provenance, disjoint from the provenance of
-the original pointer.
+happened. To do so, we need the helper function to return a pointer with a brand new provenance,
+disjoint from the provenance of the original pointer. This can be achieved by the combination of
+using `inttoptr` and an inline asm block.
 
 Every change to the high bits has to at least simulate a move operation and we must ensure the old
 pointers are invalidated. This is due to the aforementioned discrepancy between how Rust & LLVM see
@@ -166,10 +160,15 @@ pub unsafe fn assume_moved<T>(original: *mut T, new_address: usize) -> *mut T {
 }
 ```
 
-To ensure that the function actually has the desired behaviour, we need to make sure that it is
-treated similarly to real allocator functions in the codegen stage. That is to say, the function
-return value must be annotated with `noalias` in LLVM, as explained earlier in this section. One way
-to do so would be through a rustc built-in attribute similar to e.g. `rustc_allocator` -
+In order for the function to behave more like an actual memory allocation function, it can also be
+desirable to annotate it with [noalias](https://llvm.org/docs/LangRef.html#noalias) in LLVM.
+This would enable additional optimisations, as per the LLVM documentation:
+
+> On function return values, the noalias attribute indicates that the function acts like a system
+> memory allocation function, returning a pointer to allocated storage disjoint from the storage for
+> any other object accessible to the caller.
+
+One way to do so would be through a rustc built-in attribute similar to e.g. `rustc_allocator` -
 `rustc_simulate_allocator`. This attribute will be passed down to the codegen stage so that the
 codegen can appropriately annotate the function.
 
@@ -235,9 +234,8 @@ additional concurrency safety considerations that do not apply to pointer taggin
 What is the best way to make this compatible with Strict Provenance? We want to be able to create a
 pointer with an arbitrary address, detached from any existing pointers and with a brand-new
 provenance. From the LLVM side this can be handled through generating `inttoptr` which does not have
-the same aliasing restrictions as `getelementptr` alongside annotating the function return value as
-`noalias` which can be done with the aforementioned new built-in attribute. Is this enough for it to
-fit within the Strict Provenance framework? If not, how can we make it fit?
+the same aliasing restrictions as `getelementptr`, followed by putting it through an inline asm block.
+Is this enough for it to fit within the Strict Provenance framework? If not, how can we make it fit?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
