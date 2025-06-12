@@ -498,8 +498,8 @@ fn main() {
 Any kind of string literal can turn into a "dedented" string literal if it is prefixed with a `d`:
 
 - strings: `"string"` -> `d"string"`
-- Raw strings: `r#"string"` -> `dr#"string"`
-- Byte strings: `b#"string"` -> `db#"string"`
+- Raw strings: `r#"string"#` -> `dr#"string"#`
+- Byte strings: `b"string"` -> `db"string"`
 - ...and others...
 
 > [!NOTE]
