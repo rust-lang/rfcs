@@ -200,6 +200,11 @@ attribute in its output? If there is no technical issue with allowing this, then
 we should do so, to allow simple recursion (e.g. handling defaults by invoking
 the same rule as if they were explicitly specified).
 
+Are there any places where we currently allow an attribute, but where
+implementation considerations make it difficult to allow a `macro_rules`
+attribute? (For instance, places where we currently allow attributes but don't
+allow proc-macro attributes.)
+
 Before stabilizing this feature, we should make sure it doesn't produce wildly
 worse error messages in common cases.
 
