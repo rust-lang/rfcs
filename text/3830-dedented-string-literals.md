@@ -1020,7 +1020,7 @@ Or **only tabs**:
 ```rust
 let py = d"
 →→→→def hello():
-→→→→→→→→print('Hello, world!')
+→→→→••••print('Hello, world!')
 
 →→→→hello()
 →→→→";
