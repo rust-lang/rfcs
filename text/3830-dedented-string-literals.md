@@ -771,6 +771,7 @@ We use these terms throughout the RFC and they are explained in detail in this s
 - **Horizontal whitespace** is spaces or tabs. These are the only `Pattern_White_Space` characters that are *horizontal* space per [UAX#31](https://www.unicode.org/reports/tr31/#Contexts_for_Ignorable_Format_Controls)
 - **EOL (end-of-line) character** is any "end of line" character as classified in [`UAX#R3a-1`](https://www.unicode.org/reports/tr31/#R3a-1)
 - **Indentation** is one or more **horizontal whitespace** at the beginning of a line
+- An **empty line** only consists of literal horizontal whitespace
 
 A "newline" is used as an example of a specific EOL character, however any other valid EOL character can be used.
 
@@ -796,8 +797,6 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 - The `literal` macro fragment specifier accepts all of the 6 new string literals.
 
 ## Algorithm for dedented strings
-
-An empty line only consists of literal whitespace (*not* escaped whitespace such as `\n`)
 
 1. The opening line (the line containing the opening quote `"`)
     - *May* contain 1 or more horizontal whitespace characters. (*trailing* horizontal whitespace)
@@ -986,6 +985,58 @@ let py = d"
 ```
 
 The above example is valid because the invisible characters `U+200F` and `U+200E` after the indentation which will be remain in the output, while the indentation of 4 spaces will be stripped from each line.
+
+## Mixed spaces and tabs
+
+In all examples of this RFC, we only assume that the common indentation of each line (to be stripped) and indentation of the closing quote of the dedented string uses the same character (either literal tabs, or literal spaces)
+
+Mixing these character in a way that is ambiguous is disallowed, and will error. For instance, in the following example with literal tabs (represented by `→`) and literal spaces (represented by `•`) mixed together:
+
+```rust
+// error: ambiguous spaces mixed with tabs
+let py = d"
+→→→→def hello():
+→→→→••••print('Hello, world!')
+
+•→••hello()
+→→••";
+```
+
+The above program is rejected due to ambiguity. The leading indentation must pick a single character.
+
+Choose either **only spaces**:
+
+```rust
+let py = d"
+••••def hello():
+••••••••print('Hello, world!')
+
+••••hello()
+••••";
+```
+
+Or **only tabs**:
+
+```rust
+let py = d"
+→→→→def hello():
+→→→→→→→→print('Hello, world!')
+
+→→→→hello()
+→→→→";
+```
+
+Both of the above valid examples would be the same as:
+
+```rust
+let py = "\
+def hello():
+→→→→print('Hello, world!')
+
+hello()";
+```
+
+Empty lines can safely be mixed with either spaces or tabs, as they do not count for the purposes of dedentation
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -1857,16 +1908,7 @@ In the Rust ecosystem:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-What should happen if we have tabs (represented by `→`) and literal spaces (represented by `•`) mixed together?
-
-```rust
-let py = d"
-→→→→def hello():
-→→→→••••print('Hello, world!')
-
-•→••hello()
-→→••";
-```
+None
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
