@@ -1782,7 +1782,7 @@ In other languages:
 - _Scala_ - [multiline strings](https://docs.scala-lang.org/overviews/scala-book/two-notes-about-strings.html)
   using triple-quotes and `.stripMargin`.
 - _C#_ - [Raw string literals](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/raw-string)
-- _Python_ - [multiline strings](https://docs.python.org/3/library/textwrap.html) using triple-quotes
+- _Python_ - [multiline strings](https://docs.python.org/3/library/textwrap.html) using triple-quotes and [`inspect.cleandoc`](https://docs.python.org/3/library/inspect.html#inspect.cleandoc)
   to avoid escaping and `textwrap.dedent`.
 - _Jsonnet_ - [text blocks](https://jsonnet.org/learning/tutorial.html) with `|||` as a delimiter.
 - _Bash_ - [`<<-` Heredocs](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_07_04).
