@@ -1002,41 +1002,32 @@ let py = d"
 →→••";
 ```
 
-The above program is rejected due to ambiguity. The leading indentation must pick a single character.
+The above program is rejected due to ambiguity. There is no single "common indentation" that is the same on each line.
 
-Choose either **only spaces**:
-
-```rust
-let py = d"
-••••def hello():
-••••••••print('Hello, world!')
-
-••••hello()
-••••";
-```
-
-Or **only tabs**:
+Mixing spaces and tabs in a way such that the common indentation matches, *even if* the indentation consists of both spaces and tabs is allowed:
 
 ```rust
 let py = d"
-→→→→def hello():
-→→→→••••print('Hello, world!')
+→••→•def hello():
+→••→•••••print('Hello, world!')
 
-→→→→hello()
-→→→→";
+→••→hello()
+→••→";
 ```
 
-Both of the above valid examples would be the same as:
+The above is equivalent to:
 
 ```rust
 let py = "\
-def hello():
-••••print('Hello, world!')
+•def hello():
+•••••print('Hello, world!')
 
 hello()";
 ```
 
-Empty lines can safely be mixed with either spaces or tabs, as they do not count for the purposes of dedentation
+Common indentation is `→••→`, which is stripped from each line.
+
+Empty lines can safely be mixed with either spaces or tabs, as they do not count for the purposes of dedentation.
 
 # Drawbacks
 [drawbacks]: #drawbacks
