@@ -1031,7 +1031,7 @@ Both of the above valid examples would be the same as:
 ```rust
 let py = "\
 def hello():
-→→→→print('Hello, world!')
+••••print('Hello, world!')
 
 hello()";
 ```
