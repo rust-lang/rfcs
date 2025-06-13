@@ -800,6 +800,8 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 An empty line only consists of literal whitespace (*not* escaped whitespace such as `\n`)
 
 1. The opening line (the line containing the opening quote `"`)
+    - *May* contain 1 or more horizontal whitespace characters. (*trailing* horizontal whitespace)
+    - These horizontal whitespace characters are removed.
     - Must only contain a literal EOL after the `"` token
     - This EOL is removed.
 1. The closing line (the line containing the closing quote `"`)
@@ -1886,7 +1888,7 @@ If indentation of the dedented string does not match the surrounding code:
 ```rust
 fn main() {
     println!(
-        d"
+        d"   // 4 trailing spaces here
         create table student(
             id int primary key,
             name text
@@ -1902,7 +1904,7 @@ It could be automatically formatted by adding additional leading indentation, in
 ```rust
 fn main() {
     println!(
-        d"
+        d" // 0 trailing spaces here (stripped)
         create table student(
             id int primary key,
             name text
