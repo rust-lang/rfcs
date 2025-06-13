@@ -75,7 +75,7 @@ Which outputs (using `^` to mark the beginning of a line, and `·` to mark a lea
 ^
 ```
 
-The output is formatted in an unconventional way, containing excessive leading whitespace.
+The output is formatted in an unconventional way, containing excessive leading indentation.
 
 The alternative allows for a sane output, but at the cost of making the code less readable:
 
@@ -178,7 +178,7 @@ But the improvement in output comes at a cost:
 
    All of the strings end up on the same level, despite them being in different scopes.
 
-3. The closing double-quote must be put at the beginning of the line, in order not to introduce trailing whitespace:
+3. The closing double-quote must be put at the beginning of the line, in order not to introduce trailing horizontal whitespace:
 
    ```diff
    fn main() {
@@ -227,7 +227,7 @@ But, what if we could have the best of both worlds?
 
 In order to solve these problems, the RFC proposes dedented string literals of the form: `d"string"`.
 
-Common leading whitespace on each line after the opening quote in dedented string literals will be stripped at compile-time.
+Common leading indentation on each line after the opening quote in dedented string literals will be stripped at compile-time.
 
 This allows us to have a more readable version of the above:
 
@@ -241,7 +241,7 @@ fn main() {
         )
         "
     );
-^^^^^^^^ // common leading whitespace (will be removed)
+^^^^^^^^ // common leading indentation (will be removed)
 }
 ```
 
@@ -295,7 +295,7 @@ It is immediately more obvious which string belongs to which scope.
 
 ## Closing quote controls the removed indentation
 
-All of the common whitespace between each line, which has a higher indentation than the indentation of the line of closing quote (contained in the last line) is stripped.
+From the column containing the closing quote `"`, common leading horizontal whitespace is stripped from each line.
 
 Here are a few examples to demonstrate.
 
@@ -314,7 +314,7 @@ fn main() {
             name text
         )
 "
-// no common leading whitespace = nothing to remove
+// no common leading indentation = nothing to remove
     );
 }
 ```
@@ -345,7 +345,7 @@ fn main() {
                 name text
             )
         "
-^^^^^^^^ // common leading whitespace (will be removed)
+^^^^^^^^ // common leading indentation (will be removed)
     );
 }
 ```
@@ -376,12 +376,12 @@ fn main() {
             name text
         )
         "
-^^^^^^^^ // common leading whitespace (will be removed)
+^^^^^^^^ // common leading indentation (will be removed)
     );
 }
 ```
 
-The indentation of the ending double quote is 8 spaces. This common prefix of leading whitespace characters will be removed from the beginning of each line.
+The indentation of the ending double quote is 8 spaces. This common prefix of leading horizontal whitespace characters will be removed from the beginning of each line.
 
 Prints:
 
@@ -395,7 +395,7 @@ create table student(
 Result: **all indentation from source is stripped**.
 
 Indenting the closing double quote further will have zero impact.
-The dedentation will never remove non-whitespace characters.
+The dedentation will never remove non-horizontal-whitespace characters.
 
 Each of the following **examples** print:
 
@@ -417,7 +417,7 @@ fn main() {
             name text
         )
             "
-^^^^^^^^ // common leading whitespace: 8 spaces
+^^^^^^^^ // common leading indentation: 8 spaces
 ^^^^^^^^^^^^ // closing quote indentation: 12 spaces
     );
 }
@@ -434,7 +434,7 @@ fn main() {
             name text
         )
                 "
-^^^^^^^^ // common leading whitespace: 8 spaces
+^^^^^^^^ // common leading indentation: 8 spaces
 ^^^^^^^^^^^^^^^^ // closing quote indentation: 16 spaces
     );
 }
@@ -450,7 +450,7 @@ fn main() {
             name text
         )
                     "
-^^^^^^^^ // common leading whitespace: 8 spaces
+^^^^^^^^ // common leading indentation: 8 spaces
 ^^^^^^^^^^^^^^^^^^^^ // closing quote indentation: 20 spaces
     );
 }
@@ -487,7 +487,7 @@ fn main() {
             name text
         )
         "
-^^^^^^^^ // common leading whitespace (will be removed)
+^^^^^^^^ // common leading indentation (will be removed)
     );
 }
 ```
@@ -521,7 +521,7 @@ assert_eq!(regular, "\n    I am a regular string literal.\n    ");
 let dedented = d"
     I am a dedented string literal!   
     ";                           //^ newline is removed
-//^^ whitespace is removed
+//^^ indentation is removed
 
 assert_eq!(dedented, "I am a dedented string literal!");
 ```
@@ -535,8 +535,8 @@ Indentation present *after* the double-quote is kept:
 let dedented = d"
         I am a dedented string literal!   
     ";                               //^ newline is removed
-//^^ whitespace is removed
-//  ^^^^ indentation after the double quote is kept
+//^^ indentation is removed
+//  ^^^^ horizontal whitespace after the double quote is kept
 
 assert_eq!(dedented, "    I am a dedented string literal!");
 ```
@@ -591,7 +591,7 @@ let expected = "def hello():\n    print(\"Hello, world!\")\n\nhello()";
 assert_eq!(py, expected);
 ```
 
-By placing the ending quote earlier than the first non-whitespace character in any of the lines, you can reduce how much space is removed from the beginning of each line:
+By placing the closing quote `"` earlier than the first non-horizontal-whitespace character in any of the lines, you can reduce how much indentation is removed from each line:
 
 ```rs
 use std::io::Write as _;
@@ -630,10 +630,10 @@ write!(
 hello()
             "
 );
-//^^^^^^^^^^ No whitespace is removed here.
+//^^^^^^^^^^ No indentation is removed here.
 //           If the closing quote is after the common indentation
 //           (in this case there is no common indentation at all),
-//           all of the whitespace is stripped
+//           all of the common indentation is stripped
 
 let expected = "def hello():\n    print(\"Hello, world!\")\n\nhello()";
 assert_eq!(py, expected);
@@ -641,16 +641,16 @@ assert_eq!(py, expected);
 
 ## Rules
 
-### Dedented string literals must begin with a newline
+### Dedented string literals must begin with an end-of-line character (EOL)
 
-All dedented string literals must begin with a newline.
-This newline is removed.
+All dedented string literals must begin with an EOL.
+This EOL is removed.
 
 The following is invalid:
 
 ```rust
-//         ↓ error: expected literal newline.
-//           note: dedented string literals must start with a literal newline
+//         ↓ error: expected literal EOL
+//           note: dedented string literals must start with a literal EOL
 //           help: insert a literal newline here: 
 let py = d"def hello():
         print('Hello, world!')
@@ -659,11 +659,11 @@ let py = d"def hello():
     ";
 ```
 
-Escape-code newline is not supported, it must be a literal newline:
+Escaped EOL such as an escaped newline (`\n`), it must be a literal EOL:
 
 ```rust
-//         ↓ error: expected literal newline, but found escaped newline.
-//           note: dedented string literals must start with a literal newline
+//         ↓ error: expected literal EOL, but found escaped newline.
+//           note: dedented string literals must start with a literal EOL
 let py = d"\ndef hello():
         print('Hello, world!')
 
@@ -683,9 +683,9 @@ let py = d"
     ";
 ```
 
-### Last line must be empty, and preceded by a literal newline
+### Last line must be empty, and preceded by a literal EOL
 
-The line which contains the closing quote `"` must be empty, and the character before the last line must be a literal newline character.
+The line which contains the closing quote `"` can only contain horizontal whitespace, and the character before the last line must be a literal EOL.
 
 This is invalid:
 
@@ -695,12 +695,13 @@ let py = d"
         print('Hello, world!')
 
     hello()";
-//         ^ error: expected literal newline
+//         ^ error: expected literal EOL
 //           note: in dedented string literals, the line
-//                 which contains the closing quote must be empty
+//                 which contains the closing quote can
+//                 only contain horizontal whitespace
 ```
 
-Neither is using an escaped newline `\n` instead of the literal newline:
+Neither is using an escaped EOL (e.g. escaped newline `\n`) instead of the literal EOL:
 
 ```rust
 let py = d"
@@ -708,9 +709,10 @@ let py = d"
         print('Hello, world!')
 
     hello()\n";
-//         ^ error: expected literal newline, but found escaped newline
+//         ^ error: expected literal EOL, but found escaped newline `\n`
 //           note: in dedented string literals, the line
-//                 which contains the closing quote must be empty
+//                 which contains the closing quote can
+//                 only conatin horizontal whitespace
 ```
 
 This is the correct syntax for the last line:
@@ -725,9 +727,9 @@ let py = d"
 // OK
 ```
 
-Both outputs will not contain a newline at the end, since the literal newline is stripped.
+Both outputs will not contain EOL at the end, since the literal EOL is stripped.
 
-If you'd like to have a trailing newline, you can insert a literal newline at the end:
+If you'd like to have a trailing EOL, you can insert a literal newline at the end (or any other EOL):
 
 ```rust
 let py = d"
@@ -740,7 +742,7 @@ let py = d"
 // OK
 ```
 
-You can also use an escaped newline. This is fine, because the string still ends with a literal newline (which cannot be escaped):
+You can also use an escaped newline. This is fine, because the string still ends with a literal EOL (which cannot be escaped):
 
 ```rust
 let py = d"
@@ -755,11 +757,22 @@ let py = d"
 Benefits the above rules bring include:
 
 - The above rules make all dedented string literals you'll find in Rust consistent.
-- It allows easily changing the indentation level without having to insert a newline sometimes.
+- It allows easily changing the indentation level without having to insert an EOL sometimes.
 - It gives the ability for us to tell a regular string literal from a dedented string literal at a glance.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## Terms used
+
+We use these terms throughout the RFC and they are explained in detail in this section.
+
+- **Whitespace** is as defined in the [reference](https://doc.rust-lang.org/reference/whitespace.html) as any character with the [`Pattern_White_Space`](https://www.unicode.org/reports/tr31/) unicode property
+- **Horizontal whitespace** is spaces or tabs. These are the only `Pattern_White_Space` characters that are *horizontal* space per [UAX#31](https://www.unicode.org/reports/tr31/#Contexts_for_Ignorable_Format_Controls)
+- **EOL (end-of-line) character** is any "end of line" character as classified in [`UAX#R3a-1`](https://www.unicode.org/reports/tr31/#R3a-1)
+- **Indentation** is one or more **horizontal whitespace** at the beginning of a line
+
+A "newline" is used as an example of a specific EOL character, however any other valid EOL character can be used.
 
 ## String Literals
 
@@ -784,23 +797,22 @@ Note: **Literal newlines** (*not* escaped newlines: `\n`) are represented with `
 
 ## Algorithm for dedented strings
 
-Whitespace is literal spaces or literal horizontal tabs.
-An empty line only consists of literal spaces, literal horizontal tabs or literal newlines
+An empty line only consists of literal whitespace (*not* escaped whitespace such as `\n`)
 
 1. The opening line (the line containing the opening quote `"`)
-    - Must only contain a literal newline character after the `"` token
-    - This newline is removed.
+    - Must only contain a literal EOL after the `"` token
+    - This EOL is removed.
 1. The closing line (the line containing the closing quote `"`)
-    - Must contain only whitespace before the closing quote
-    - This whitespace is the *closing indentation*.
+    - Must contain only horizontal whitespace before the closing quote
+    - This horizontal whitespace is the *closing indentation*.
     - The closing indentation is removed.
-1. The character immediately before the closing line must be a literal newline character.
-    - This newline is removed.
+1. The character immediately before the closing line must be a literal EOL.
+    - This EOL is removed.
 1. The *common indentation* is calculated.
 
-   It is the largest amount of leading whitespace shared by all non-empty lines.
+   It is the largest amount of leading horizontal whitespace shared by all non-empty lines.
 
-1. For each line, remove the smallest amount of leading whitespace that satisfies:
+1. For each line, remove the smallest amount of leading horizontal whitespace that satisfies:
 
     - `min(common indentation, closing indentation)`
 
@@ -813,8 +825,8 @@ An empty line only consists of literal spaces, literal horizontal tabs or litera
 
 #### On the line containing the closing quote
 
-- Only whitespace is allowed before the closing quote.
-- Escapes are not permitted even if they are escapes for whitespace (e.g. a tab escape `\t`), because escapes are processed after dedenting, so they are not yet whitespace when the line with the closing quote is processed.
+- Only horizontal whitespace is allowed before the closing quote.
+- Escapes are not permitted even if they are escapes for horizontal whitespace (e.g. a tab escape `\t`), because escapes are processed after dedenting, so they are not yet horizontal whitespace when the line with the closing quote is processed.
 
 #### In the content of the string
 
@@ -842,7 +854,7 @@ Prints, with each indentation being **1 tab**:
 
 The indentation is not removed, because common indentation in this example is 0. (closing indentation is 1 tab).
 
-Escaped characters at the beginning of the string are interpreted as any other character, and **not** whitespace.
+Escaped characters at the beginning of the string are interpreted as any other character, and **not** horizontal whitespace.
 
 After the dedentation is calculated, the escapes then expand into their literal counterparts.
 
@@ -864,7 +876,7 @@ assert_eq!(
 ••
 ••••world
     ",
-^^^^ // common leading whitespace (will be removed)
+^^^^ // common leading indentation (will be removed)
 
     "hello\n\nworld"
 );
@@ -938,6 +950,41 @@ let _ = d"
     ";
 ````
 
+## Treatment of special unicode characters
+
+The invisible whitespace characters `U+200E` (left-to-right mark) and `U+200F` (right-to-left mark) cannot appear anywhere inside the indentation to be stripped from a line.
+
+When the compiler encounters these characters, it offers to place them directly *after* the stripped indentation.
+
+Invalid example, `◀` represents `U+200F` and `▶` represents `U+200E`:
+
+```rust
+let py = d"
+ ◀  def hello():
+  ▶     print('Hello, world!')
+
+    hello()\n
+    ";
+//^^ error: U+200E cannot appear in the stripped indentation
+//   help: place them after the stripped indentation
+//^^ error: U+200F cannot appear in the leading indentation
+//   help: place them after the stripped indentation
+```
+
+It should be fixed as follows:
+
+```rust
+let py = d"
+    ◀def hello():
+        ▶print('Hello, world!')
+
+    hello()\n
+    ";
+// OK
+```
+
+The above example is valid because the invisible characters `U+200F` and `U+200E` after the indentation which will be remain in the output, while the indentation of 4 spaces will be stripped from each line.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -973,11 +1020,11 @@ When picking a single letter for this feature, we want:
 
 The RFC picks `d` as a mnemonic for "dedent".
 
-- Dedentation is a simple atomic operation which removes the leading indentation of the string
+- Dedentation is a simple atomic operation which removes the indentation of the string
 - The transformation is always a dedentation
 
-  If there is no leading indentation, removing the it is still accurately described as a "dedentation" because the nothing is removed.
-- It might help make the acronym more memorable by thinking about the `d` as "**d**eleting" the leading indentation.
+  If there is no indentation, removing the it is still accurately described as a "dedentation" because the nothing is removed.
+- It might help make the acronym more memorable by thinking about the `d` as "**d**eleting" the indentation.
 
 #### Why not `u` for "unindent"
 
@@ -1051,7 +1098,7 @@ create table student(
 )
 ```
 
-When the string is evaluated, the leading indentation is removed. It is **dedented**.
+When the string is evaluated, the indentation is removed. It is **dedented**.
 
 In the source code, the string is **indented**.
 
@@ -1128,7 +1175,7 @@ The first example reads in the most natural manner. The other two don't.
     But since this is already in the language, we can't change it.
 -->
 
-### Requirement of first and final newline
+### Requirement of first and final EOL
 
 As mentioned earlier in the RFC:
 
@@ -1153,9 +1200,9 @@ fn main() {
 ```
 
 - The `d"` and `create` in the first `d"create` not being separated by whitespace makes it harder to understand where the code begins. They have to be mentally separated.
-- Additionally, indentation of the `create` does not align with what it will look like in the output, making it less obvious, which we would like to aviod. Therefore it is a **hard error** to not have a literal newline there.
+- Additionally, indentation of the `create` does not align with what it will look like in the output, making it less obvious, which we would like to aviod. Therefore it is a **hard error** to not have a literal EOL.
 
-The following is also incorrect, as there is no newline before the line containing the closing quote:
+The following is also incorrect, as there is no EOL before the line containing the closing quote:
 
 ```rs
 fn main() {
@@ -1173,9 +1220,9 @@ fn main() {
 - In the example above, it is not immediately clear where that would be from.
 - It easy to modify the common indentation level of the string in the future, as you do not have to create a new line.
 
-### The choice of not ending with a newline
+### The choice of not ending with an EOL
 
-Dedented string literals do not end with a newline.
+Dedented string literals do not end with an EOL.
 
 The following:
 
@@ -1201,7 +1248,7 @@ create table student(
 )
 ```
 
-In order to add a final newline, an extra blank line needs to be added at the end:
+In order to add a final newline, insert a newline (literal "\n" or escaped `\n`) (or any EOL) at the end:
 
 ```rs
 fn main() {
@@ -1217,24 +1264,24 @@ fn main() {
 }
 ```
 
-Removing the final newline is consistent with removing the initial newline.
+Removing the final EOL is consistent with removing the initial EOL.
 
 The line containing the opening quote `"` and the line containing the closing quote `"` can be considered to be fully exempt from the output.
 
 If this *wasn't* the behaviour:
-- It would make less sense to remove the newline from the beginning, but not from the end.
-- Dedented strings would always end with a newline
-- ..But how do you opt-out of the newline?
+- It would make less sense to remove the EOL from the beginning, but not from the end.
+- Dedented strings would always end with a EOL
+- ..But how do you opt-out of the EOL?
 
   Using a special syntax, like closing with a `-"` (as a different RFC proposes) would be too special-cased, it wouldn't fit in with the rest of the language.
 
   It would be confusing for those that want to end the dedented string with a `-`.
 
-Removing *both* the newline at the start and the end is consistent, and allows maximum flexibility whilst not making additional trade-offs such as having to introduce new special syntax to exclude the newline.
+Removing *both* the EOL at the start and the end is consistent, and allows maximum flexibility whilst not making additional trade-offs such as having to introduce new special syntax to exclude the EOL.
 
 ### Allowing the closing line to be indented more than previous lines
 
-Having the quote be indented further than the first non-whitespace character in the
+Having the quote be indented further than the first non-horizontal-whitespace character in the
 string content is allowed:
 
 ```rs
@@ -1295,7 +1342,7 @@ Differences:
          let sql = #[editor::language("sql")] "SELECT * FROM table;";
          ```
 
-- RFC #3450 makes the "code strings" always end with a newline, with the ability to prepend a minus before the closing quote in order to remove the final newline.
+- RFC #3450 makes the "code strings" always end with an EOL, with the ability to prepend a minus before the closing quote in order to remove the final EOL.
 
     However, in this RFC the following:
 
@@ -1304,7 +1351,7 @@ Differences:
         d"
         a
         "
-    ^^^^ // common leading whitespace (will be removed)
+    ^^^^ // common leading indentation (will be removed)
     );
     ```
 
@@ -1320,7 +1367,7 @@ Differences:
         a
 
         "
-    ^^^^ // common leading whitespace (will be removed)
+    ^^^^ // common leading indentation (will be removed)
     );
     ```
 
@@ -1389,7 +1436,7 @@ The dedent macros will be possible to replace using the dedented string literals
             GET {url}
             Accept: {mime}
         ",
-        ^^^^ // common leading whitespace (will be removed)
+        ^^^^ // common leading indentation (will be removed)
         url = "http://localhost:8080",
         mime = "application/json",
     }
@@ -1403,7 +1450,7 @@ The dedent macros will be possible to replace using the dedented string literals
             GET {url}
             Accept: {mime}
         ",
-        ^^^^ // common leading whitespace (will be removed)
+        ^^^^ // common leading indentation (will be removed)
         url = "http://localhost:8080",
         mime = "application/json",
     }
@@ -1416,7 +1463,7 @@ The dedent macros will be possible to replace using the dedented string literals
     Accept: application/json
     ```
 
-    Note that `eprintdoc!` does not remove the final line, that's why we use `eprintln` instead of `eprint`.
+    Note that `eprintdoc!` does not remove the final EOL, that's why we use `eprintln` instead of `eprint`.
 
 - `indoc!`: Dedents the passed string.
 
@@ -1429,7 +1476,7 @@ The dedent macros will be possible to replace using the dedented string literals
 
         hello()
     "#}
-    ^^^^ // common leading whitespace (will be removed)
+    ^^^^ // common leading indentation (will be removed)
     ```
 
     With dedented string literals:
@@ -1442,7 +1489,7 @@ The dedent macros will be possible to replace using the dedented string literals
         hello()
 
     "#
-    ^^^^ // common leading whitespace (will be removed)
+    ^^^^ // common leading indentation (will be removed)
     ```
 
     Both snippets evaluate to:
@@ -1454,7 +1501,7 @@ The dedent macros will be possible to replace using the dedented string literals
     hello()
     ```
 
-    Note that `indoc!` does not remove the final line, that's why we add an additional newline after `hello()`.
+    Note that `indoc!` does not remove the final EOL, that's why we add an additional newline after `hello()`.
 
 As a bonus, not only does it unify many macros under a single language feature.
 
@@ -1490,7 +1537,7 @@ text!(
     GET {url}
     Accept: {mime}
 "
-^^^^ // common leading whitespace (will be removed)
+^^^^ // common leading indentation (will be removed)
 )
 ```
 
@@ -1611,7 +1658,7 @@ writeln!(
 
 The above conversion is elegant for these reasons:
 - It is a simple modification by prepending `d` before the string literal
-- All of the escaped sequences are removed, the whitespace removal is taken care of by the dedented string literal
+- All of the escaped sequences are removed, the indentation removal is taken care of by the dedented string literal
 - Since we can now use a raw string, we no longer have to escape the quotes
 - Notably: **All of the interpolated variables continue to work as before**.
 
@@ -1845,7 +1892,7 @@ fn main() {
             name text
         )
             "
-^^^^^^^^ // common leading whitespace (will be removed)
+^^^^^^^^ // common leading indentation (will be removed)
     );
 }
 ```
@@ -1861,7 +1908,7 @@ fn main() {
             name text
         )
         "
-^^^^^^^^ // common leading whitespace (will be removed)
+^^^^^^^^ // common leading indentation (will be removed)
     );
 }
 ```
@@ -1876,6 +1923,6 @@ There could be a lint which detects strings which could be written clearer as de
 
 ## `rustc` warn-by-default lint to disallow whitespace escape characters
 
-As explained in the [reference level explanation](#reference-level-explanation), using whitespace escapes `\t`, `\n` and `\r` are allowed.
+As explained in the [reference level explanation](#reference-level-explanation), using escapes `\t`, `\n` and `\r` is allowed.
 
 Their behaviour might be surprising, so it is worth to consider a warn-by-default lint for them.
