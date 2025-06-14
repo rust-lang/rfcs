@@ -50,7 +50,7 @@ targets.
 
 When working with large values (lookup tables, for example), it is often
 desirable to ensure they cross over as few cache lines as possible. This
-mimimizes the amount of data that is brought into cache when the value is
+minimizes the amount of data that is brought into cache when the value is
 accessed heavily. One way of doing this is to force the alignment of the value
 to be at least the size of the cache line—or, for smaller values,
 `next_power_of_two()` of the value size.
