@@ -110,8 +110,8 @@ with a warn-by-default lint.
 
 ## On ADT fields
 
-The `align` attribute may be applied to any field of any `struct`, `enum`, or
-`union` that is not `#[repr(transparent)]`.
+The `align` attribute may be applied to any field of any
+non-`#[repr(transparent)]` `struct`, `enum`, or `union`.
 
 ```rust
 #[repr(C)]
