@@ -559,6 +559,7 @@ let #[align(…)] mut ref mut x = …;
   example, a way to specify exact field offsets or arbitrary padding.
 - We could add type-safe APIs for over-aligned pointers; for example,
   over-aligned reference types that are subtypes of `&`/`&mut`.
+  - We could also introduce a similar facility for function pointers.
 - We could also add similar APIs for over-aligned function pointers.
 - We could loosen the restriction that fields of a `packed(n)` struct cannot
   specify an alignment greater that `n`. (Apparently, some C compilers allow
