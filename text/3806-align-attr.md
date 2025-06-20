@@ -371,11 +371,11 @@ fn example(#[align(1024)] very_large_value: [u64; 8192]) {
 }
 ```
 
-Calling this function will most likely involve first passing `very_large_value`
-on the stack or by pointer, and then copying the entire array to a new place on
-the stack in order to align it. This implicit extra stack copy is not present
-for `#[align(…)]`ed locals. Forbidding this, and requiring users to make the
-move/copy explicit, avoids the performance footgun.
+On typical platforms, calling this function will involve first passing
+`very_large_value` on the stack or by pointer, and then copying the entire array
+to a new place on the stack in order to align it. This implicit extra stack copy
+is not present for `#[align(…)]`ed locals. Forbidding this, and requiring users
+to make the move/copy explicit, avoids the performance footgun.
 
 We could always lift this limitation in the future.
 
