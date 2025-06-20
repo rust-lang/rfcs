@@ -113,6 +113,11 @@ Multiple instances of the `align` attribute may be present on the same item; the
 highest alignment among them will be used. The compiler may signal this case
 with a warn-by-default lint.
 
+`#[align(…)]` on a public item is part of the item’s public API, and it is a
+semver-breaking change to lower it. (Except where specified otherwise below,
+raising it is not breaking.) In most cases, to avoid making this commitment, one
+can use `#[cfg_attr(not(doc), align(…))]`.
+
 ## On ADT fields
 
 The `align` attribute may be applied to any field of any
@@ -173,6 +178,10 @@ that is being discussed as part of [RFC
 `repr(C_for_real)` to denote “match the system C compiler”, and `repr(linear)`
 to denote “simple, portable layout algorithm”; but those names are not
 normative.
+
+Of course, if a type declaration is using one of these `repr`s to make a public
+API commitement as to the exact layout of a type, then any change to field
+`#[align(…)]`s may be breaking.
 
 ### `repr(C_for_real)`
 
@@ -272,6 +281,13 @@ This replaces `#[repr(align(…))]` on function items, from
 
 On `async fn`, the attribute controls the alignment of the code of the function
 that returns the `Future`.
+
+On function items in trait declarations, `#[align(…)]` specifies the minimum
+alignment that all implementations of the item must have. `impl` blocks
+containing the item must specify an `#[align(…)]` at least as high. The `dyn`
+implementation gemerated by the compiler must also provide this alignment. Any
+change to `#[align(…)]` on a function item in a trait declaration is therefore
+semver-breaking.
 
 The numerical value of a function pointer to a function with an `#[align(n)]`
 attribute is *not* always guaranteed to be a multiple of `n` on all targets. For
