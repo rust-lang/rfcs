@@ -566,5 +566,5 @@ let #[align(…)] mut ref mut x = …;
   something similar.)
 - Once
   [`#![feature(stmt_expr_attributes)]`](https://github.com/rust-lang/rust/issues/15701)
-  is stable, we could allow applying `#![align(…))]` to closures and async
-  blocks as well.
+  is stable, we could allow applying `#[align(…))]` to closures and async blocks
+  as well.
