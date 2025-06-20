@@ -175,6 +175,8 @@ bytes at the start of the file.
 It makes it harder for Rust developers to know whether it's idiomatic to use flags or attributes.
 In practice, this has not be a large drawback for `crate_name` and `crate_type`, although for lints perhaps a little more so since they were only recently stabilized in Cargo.
 
+Using this feature can make code in a crate dependent on attributes provided through the build system, such that the code doesn't build if reorganized or copied to another project.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
