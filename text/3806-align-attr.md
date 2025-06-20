@@ -101,8 +101,13 @@ important for Rust to be able to represent such structures.
 The `align` attribute is a new inert, built-in attribute that can be applied to
 ADT fields, `static` items, function items, and local variable declarations. The
 attribute accepts a single required parameter, which must be a power-of-2
-integer literal from 1 up to 2<sup>29</sup>. (This is the same as
-`#[repr(align(…))]`.)
+positive integer literal.
+
+The maximum alignment is the same as `#[repr(align(…))]`: 2<sup>29</sup>. That
+being said, some targets may not be able to support very high alignments in all
+contexts. In such cases, the compiler must impose a lower limit for those
+specific contexts on those specific targets. The compiler may choose to emit a
+lint warning for high, non-portable alignment specifiers.
 
 Multiple instances of the `align` attribute may be present on the same item; the
 highest alignment among them will be used. The compiler may signal this case
