@@ -180,7 +180,7 @@ to denote “simple, portable layout algorithm”; but those names are not
 normative.
 
 Of course, if a type declaration is using one of these `repr`s to make a public
-API commitement as to the exact layout of a type, then any change to field
+API commitment as to the exact layout of a type, then any change to field
 `#[align(…)]`s may be breaking.
 
 ### `repr(C_for_real)`
