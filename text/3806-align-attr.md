@@ -274,9 +274,9 @@ fn main() {
 
 ## On function items
 
-On function items, `#[align(…)]` sets the alignment of the function’s code. (It
-does not affect the alignment of its function item type, which remains a 1-ZST.)
-This replaces `#[repr(align(…))]` on function items, from
+On function items, `#[align(…)]` sets the alignment of the function’s entry
+symbol. (It does not affect the alignment of its function item type, which
+remains a 1-ZST.) This replaces `#[repr(align(…))]` on function items, from
 `#![feature(fn_align)]`.
 
 On `async fn`, the attribute controls the alignment of the code of the function
