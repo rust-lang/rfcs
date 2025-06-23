@@ -615,10 +615,20 @@ hiding symbols coming from Rust standard library:
       [equivalent `BUILD.gn` rules](https://source.chromium.org/chromium/chromium/src/+/main:build/rust/std/rules/BUILD.gn;drc=35fb76c686b55acc25b53f7e5c9b58e56dca7f4a)),
       which is one reason why this RFC is a viable UB fix for
       https://crbug.com/418073233.
-* Alternative: change the semantics of `#[rustc_std_internal_symbol]`
-    - Drawback: On its own this wouldn't affect
-      visibility of non-`#[rustc_std_internal_symbol]` symbols
-      like `String::new`.
+* Alternative: support in `rustc` emitting a `staticlib` with symbol visibility
+  that matches `cdylib` behavior.
+    - Initially this behavior would be gated behind a new unstable `-Z` flag.
+        - Either a new flag: `-Zhide-rust-level-exports`
+        - Or by ensuring that `-Zdefault-visibility=hidden` also applies
+          to Rust-level exports transitively linked into a `staticlib`
+    - Open question: should this behavior become the default in the future?
+    - Implementation-wise, this behavior can be seen as partial linking or
+      as object file rewriting.
+    - It seems that this behavior makes most sense for `staticlib`s, because
+      `rlib`s don't include transitive dependencies.  So when linking `rlib`s
+      (using an external, non-`rustc` linker) hiding standard library symbols
+      would still require rebuilding it with `-Zdefault-visibility=hidden`
+      as described in the "do nothing" alternative above.
 
 ## Windows and `__declspec(dllexport)`
 [interposable-vs-dllexport]: #windows-and-__declspecdllexport
