@@ -108,8 +108,7 @@ the same chunk of memory would weaken alias analysis and related optimisations.
 
 We can avoid this issue by assuming that a move from the untagged address to the tagged address has
 happened. To do so, we need the helper function to return a pointer with a brand new provenance,
-disjoint from the provenance of the original pointer. This can be achieved by the combination of
-using `inttoptr` and an inline asm block.
+disjoint from the provenance of the original pointer.
 
 Every change to the high bits has to at least simulate a move operation and we must ensure the old
 pointers are invalidated. This is due to the aforementioned discrepancy between how Rust & LLVM see
@@ -120,7 +119,7 @@ high bits are part of the address and changing them means we are now dealing wit
 address altogether.  Having to reconcile those two views necessarily creates some friction and extra
 considerations.
 
-Function signature, documentation and implementation:
+Function signature, documentation and an example implementation:
 
 ```rust
 /// Assume that the object pointed to by a pointer has been moved to a new address
@@ -160,25 +159,13 @@ pub unsafe fn assume_moved<T>(original: *mut T, new_address: usize) -> *mut T {
 }
 ```
 
-In order for the function to behave more like an actual memory allocation function, it can also be
-desirable to annotate it with [noalias](https://llvm.org/docs/LangRef.html#noalias) in LLVM.
-This would enable additional optimisations, as per the LLVM documentation:
-
-> On function return values, the noalias attribute indicates that the function acts like a system
-> memory allocation function, returning a pointer to allocated storage disjoint from the storage for
-> any other object accessible to the caller.
-
-One way to do so would be through a rustc built-in attribute similar to e.g. `rustc_allocator` -
-`rustc_simulate_allocator`. This attribute will be passed down to the codegen stage so that the
-codegen can appropriately annotate the function.
-
 Importantly, this function is very much *not* the same as `ptr.with_addr()`. `ptr.with_addr()`
 internally uses `wrapping_offset()` which in turn uses LLVM's `getelementptr`. This makes it come
 with certain aliasing restrictions which this function would not have. That is to say, it is only
 valid to use `ptr.with_addr()` if the resulting address is still within the bounds of the same
-original allocation, for instance when getting a pointer to a different struct field.  On the other
-hand if we use a pure pointer cast, it will generate `inttoptr` in LLVM which makes it valid to
-access as long the resulting pointer dereferences to *any* allocated object.
+original allocation, for instance when getting a pointer to a different struct field. This function
+is supposed to make it so that it will be valid to access the resulting pointer as long it
+dereferences to *any* allocated object.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -208,6 +195,25 @@ The current working name for the new function is `assume_moved`, but it is not t
 Possible alternatives that were discussed were `simulate_realloc` and `simulate_move`. Preferences
 appear to be rather subjective and the function can easily be renamed if need be.
 
+# Implementation considerations
+
+In order for the function to behave more like an actual memory allocation function, it may also be
+desirable to annotate it with [noalias](https://llvm.org/docs/LangRef.html#noalias) in LLVM.
+This would enable additional optimisations, as per the LLVM documentation:
+
+> On function return values, the noalias attribute indicates that the function acts like a system
+> memory allocation function, returning a pointer to allocated storage disjoint from the storage for
+> any other object accessible to the caller.
+
+One way to do so would be through a rustc built-in attribute similar to e.g. `rustc_allocator` -
+`rustc_simulate_allocator`. This attribute will be passed down to the codegen stage so that the
+codegen can appropriately annotate the function.
+
+In the implementation stage, a discussion should be had on whether it is preferable to use a pure
+pointer cast (LLVM `inttoptr`) or an existing function like `ptr.with_addr()` (LLVM `getelementptr`)
+to create the pointer that will then be passed through an inline asm block. This is however purely
+an implementation detail and not a question that needs to be answered definitively in the RFC stage.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -233,9 +239,7 @@ additional concurrency safety considerations that do not apply to pointer taggin
 
 What is the best way to make this compatible with Strict Provenance? We want to be able to create a
 pointer with an arbitrary address, detached from any existing pointers and with a brand-new
-provenance. From the LLVM side this can be handled through generating `inttoptr` which does not have
-the same aliasing restrictions as `getelementptr`, followed by putting it through an inline asm block.
-Is this enough for it to fit within the Strict Provenance framework? If not, how can we make it fit?
+provenance. Does this proposal fit as-is, or does it need any specific accommodations?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
