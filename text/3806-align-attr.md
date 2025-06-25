@@ -115,9 +115,9 @@ highest alignment among them will be used. The compiler may signal this case
 with a warn-by-default lint.
 
 `#[align(…)]` on a public item is part of the item’s public API, and it is a
-semver-breaking change to lower it. (Except where specified otherwise below,
-raising it is not breaking.) In most cases, to avoid making this commitment, one
-can use `#[cfg_attr(not(doc), align(…))]`.
+semver-breaking change to lower it. As such, it is shown in `rustdoc`-generated
+documentation. To avoid making this commitment, one can use
+`#[cfg_attr(not(doc), align(…))]`.
 
 ## On ADT fields
 
@@ -166,8 +166,6 @@ struct Sardines {
     c: u32,
 }
 ```
-
-`align` attributes on ADT fields are shown in `rustdoc`-generated documentation.
 
 ## Interaction with `repr(C)`
 
@@ -271,8 +269,6 @@ fn main() {
 }
 ```
 
-`align` attributes on `static`s are shown in `rustdoc`-generated documentation.
-
 ## On function items
 
 On function items, `#[align(…)]` sets the alignment of the function’s entry
@@ -297,9 +293,6 @@ attribute is *not* always guaranteed to be a multiple of `n` on all targets. For
 example, on 32-bit ARM, the low bit of the function pointer is set for functions
 using the Thumb instruction set, even though the actual code of the function is
 always aligned to at least 2 bytes.
-
-`align` attributes on function items are shown in `rustdoc`-generated
-documentation.
 
 ## On local variables
 
