@@ -15,21 +15,21 @@ Make trait methods callable in const contexts. This includes the following parts
 Fully contained example ([Playground of currently working example](https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=2ab8d572c63bcf116b93c632705ddc1b)):
 
 ```rust
-const trait Default {
-    (const) fn default() -> Self;
+[const] trait Default {
+    fn default() -> Self;
 }
 
 impl const Default for () {
-    (const) fn default() {}
+    fn default() {}
 }
 
 struct Thing<T>(T);
 
-impl<T: (const) Default> const Default for Thing<T> {
-    (const) fn default() -> Self { Self(T::default()) }
+impl<T: [const] Default> const Default for Thing<T> {
+    fn default() -> Self { Self(T::default()) }
 }
 
-const fn default<T: (const) Default>() -> T {
+const fn default<T: [const] Default>() -> T {
     T::default()
 }
 
@@ -153,16 +153,15 @@ fn compile_time_default<T: const Default>() -> T {
 
 ### Conditionally const traits methods
 
-Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `const` and prefix the methods you want to be const callable with `(const)`.
-Doing this at the same time is not a breaking change. Adding more `(const)` methods later is a breaking change (unless they are entirely new methods with default bodies).
+Traits need to opt-in to allowing their impls to have const methods. Thus you need to mark the trait as `[const]` and all the methods will become const callable.
 
 ```rust
-const trait Trait {
-    (const) fn thing();
+[const] trait Trait {
+    fn thing();
 }
 ```
 
-A `(const)` method's (optional) default body must satisfy everything a `const fn` body must, making them callable in const contexts.
+A method's (optional) default body must satisfy everything a `const fn` body must, making them callable in const contexts.
 Impls can now rely on the default methods being const, too, and don't need to override them with a const body.
 
 Note that on nightly the syntax is
@@ -174,58 +173,34 @@ trait Trait {
 }
 ```
 
-and a result of this RFC would be that we would remove the attribute and add the `(const) fn` syntax for *methods* and the `const trait` syntax
-for trait declarations.
+and a result of this RFC would be to turn `#[const_trait]` into `[const] trait` syntax for trait declarations.
 Free functions are unaffected and will stay as `const fn`.
-
-### Impls for conditionally const methods
-
-Methods that are declared as `(const)` on a trait can now also be made `(const)` in an impl, if that impl is marked as `impl const Trait`:
-
-```rust
-impl const Trait for Type {
-    (const) fn thing() {}
-}
-```
-
-
 
 ### `const` methods and non-`const` methods on the same trait
 
-If there is no `(const)` modifier on a method in a `const trait`, it is treated as any normal method is today.
-So `impl const Trait` blocks cannot mark them as `const` either.
-
-```rust
-const trait Foo {
-    (const) fn foo(&self);
-    fn bar(&self);
-}
-
-impl const Foo for () {
-    (const) fn foo(&self) {}
-    fn bar(&self) {
-        println!("writing to terminal is not possible in const eval");
-    }
-}
-```
+If the trait is marked as `[const] trait Trait`, then all methods under an `impl const Foo for Trait` are assumed
+to be callable in const contexts. Thus the only way to implement a `[const] trait` using non-const operations
+would be to use a non-const `impl`: `impl Foo for Trait`. There is no opt-out from const per-method because it's a
+niche use case that can be trivially worked around.
 
 ### Conditionally-const trait bounds
 
-Many generic `const fn` and especially many `const trait`s do not actually require a const methods in the trait impl for their generic parameters.
+Many generic `const fn` and especially many `[const] trait`s do not actually require a const methods in the trait impl for their generic parameters.
 As `const fn` can also be called at runtime, it would be too strict to require it to only be able to call things with const methods in the trait impls.
 Picking up the example from [the beginning](#summary):
 
 ```rust
-const trait Default {
-    (const) fn default() -> Self;
+[const] trait Default {
+    fn default() -> Self;
 }
 
 impl const Default for () {
-    (const) fn default() {}
+    fn default() {}
 }
 
-impl<T: Default> const Default for Box<T> {
-    (const) fn default() -> Self { Box::new(T::default()) }
+// this is a non-const `impl` as allocating on the heap is not supported in const yet
+impl<T: Default> Default for Box<T> {
+    fn default() -> Self { Box::new(T::default()) }
 }
 
 // This function requires a `const` impl for the type passed for T,
@@ -243,19 +218,19 @@ fn main() {
 ```
 
 What we instead want is that, just like `const fn` can be called at runtime and compile time, we want their trait bounds' constness
-to mirror that behaviour. So we're introducing `(const) Trait` bounds, which mean "const if called from const context" (slight oversimplifcation, but read on).
+to mirror that behaviour. So we're introducing `[const] Trait` bounds, which mean "const if called from const context" (slight oversimplifcation, but read on).
 
-The only thing we need to change in our above example is the `default` function, changing the `const Default` bound to a `(const) Default` one.
+The only thing we need to change in our above example is the `default` function, changing the `const Default` bound to a `[const] Default` one.
 
 ```rust
-const fn default<T: (const) Default>() -> T {
+const fn default<T: [const] Default>() -> T {
     T::default()
 }
 ```
 
-`(const)` means "conditionally" in this context, or specifically "const impl required if called in const context".
+`[const]` means "conditionally" in this context, or specifically "const impl required if called in const context".
 It is the opposite of `?` (preexisting for `?Sized` bounds), which also means "conditionally", but from the other direction: `?const`
-(not proposed here, see  [this alternatives section](#make-all-const-fn-arguments-const-trait-by-default-and-require-an-opt-out-const-trait) for why it was rejected)
+(not proposed here, see [this alternatives section](#make-all-const-fn-arguments-const-trait-by-default-and-require-an-opt-out-const-trait) for why it was rejected)
 would mean "no const impl required, even if called in const context".
 
 ### Const fn
@@ -274,7 +249,7 @@ impl Clone for Foo {
     }
 }
 
-const fn bar<T: (const) Clone>(t: &T) -> T { t.clone() }
+const fn bar<T: [const] Clone>(t: &T) -> T { t.clone() }
 const BAR: Foo = bar(Foo); // ERROR: `Foo`'s `Clone` impl is not for `const Clone`.
 ```
 
@@ -297,24 +272,24 @@ which we definitely do not support and have historically rejected over and over 
 ### Impls with const methods for conditionally const trait methods
 
 `const trait` impls for generic types work similarly to generic `const fn`.
-Any `impl const Trait for Type` is allowed to have `(const)` trait bounds:
+Any `impl const Trait for Type` is allowed to have `[const]` trait bounds:
 
 ```rust
 struct MyStruct<T>(T);
 
-impl<T: (const) Add<Output = T>> const Add for MyStruct<T> {
+impl<T: [const] Add<Output = T>> const Add for MyStruct<T> {
     type Output = MyStruct<T>;
-    (const) fn add(self, other: MyStruct<T>) -> MyStruct<T> {
+    fn add(self, other: MyStruct<T>) -> MyStruct<T> {
         MyStruct(self.0 + other.0)
     }
 }
 
 impl<T> const Add for &MyStruct<T>
 where
-    for<'a> &'a T: (const) Add<Output = T>,
+    for<'a> &'a T: [const] Add<Output = T>,
 {
     type Output = MyStruct<T>;
-    (const) fn add(self, other: &MyStruct<T>) -> MyStruct<T> {
+    fn add(self, other: &MyStruct<T>) -> MyStruct<T> {
         MyStruct(&self.0 + &other.0)
     }
 }
@@ -334,13 +309,13 @@ struct MyStruct<T>(T);
 generates
 
 ```rust
-impl<T: (const) PartialEq> const PartialEq for MyStruct<T> {
-    (const) fn eq(&self, other: &Rhs) -> bool {
+impl<T: [const] PartialEq> const PartialEq for MyStruct<T> {
+    fn eq(&self, other: &Rhs) -> bool {
         self.0 == other.0
     }
 }
 
-impl<T: (const) Eq> const Eq for MyStruct<T> {}
+impl<T: [const] Eq> const Eq for MyStruct<T> {}
 ```
 
 For this RFC, we stick with `derive_const`, because it interacts with other ongoing bits of design work (e.g., RFC 3715)
@@ -348,7 +323,7 @@ and we don't want to have to resolve all design questions at once to do anything
 We encourage another RFC to integrate const/unsafe and potentially other modifiers into the derive syntax in a better way.
 If this lands prior to stabilization, we should implement the const portion of it, otherwise we'll deprecate `derive_const`.
 
-### `(const) Destruct` trait
+### `[const] Destruct` trait
 
 The `Destruct` trait enables dropping types within a const context.
 
@@ -359,7 +334,7 @@ const fn foo<T>(t: T) {
 const fn baz<T: Copy>(t: T) {
     // Fine, `Copy` implies that no `Drop` impl exists
 }
-const fn bar<T: (const) Destruct>(t: T) {
+const fn bar<T: [const] Destruct>(t: T) {
     // Fine, we can safely invoke the destructor of `T`.
 }
 ```
@@ -370,8 +345,8 @@ This situation seems no different from other trait bounds, except that types can
 
 The `Destruct` trait is a bound for whether a type has drop glue. This is trivally true for all types.
 
-`(const) Destruct` trait bounds are satisfied only if the type's `Drop` impl (if any) is `const` and all of the types of
-its components are `(const) Destruct`.
+`[const] Destruct` trait bounds are satisfied only if the type's `Drop` impl (if any) is `const` and all of the types of
+its components are `[const] Destruct`.
 
 While this means that it's a breaking change to add a type with a non-const `Drop` impl to a type,
 that's already true and nothing new:
@@ -410,10 +385,10 @@ unblocked by this feature.
 
 ### `const Fn*` traits
 
-All `const fn` implement the corresponding `const Fn()` trait:
+All `const fn` implement the corresponding `[const] Fn()` trait:
 
 ```rust
-const fn foo<F: (const) Fn()>(f: F) {
+const fn foo<F: [const] Fn()>(f: F) {
     f()
 }
 
@@ -425,65 +400,54 @@ const fn baz() {}
 ```
 
 Arguments and the return type of such functions and bounds follow the same rules as
-their non-const equivalents, so you may have to add `(const)` bounds to other generic
+their non-const equivalents, so you may have to add `[const]` bounds to other generic
 parameters, too:
 
 
 ```rust
-const fn foo<T: (const) Debug, F: (const) Fn(T)>(f: F, arg: T) {
+const fn foo<T: [const] Debug, F: (const) Fn(T)>(f: F, arg: T) {
     f(arg)
 }
 
-const fn bar<T: (const) Debug>(arg: T) {
+const fn bar<T: [const] Debug>(arg: T) {
     foo(baz, arg)
 }
 
-const fn baz<T: (const) Debug>() {}
+const fn baz<T: [const] Debug>() {}
 ```
 
 For closures and them implementing the `Fn` traits, see the [Future possibilities](#future-possibilities) section.
 
 ## Crate authors: Making your own custom types easier to use
 
-You can make trait impls of many standard library traits for your own types have `const` methods.
+You can make trait impls of many standard library traits for your own types `const`.
 While it was often possible to write the same code in inherent methods, operators were
 covered by traits from `std::ops` and thus not avaiable for const contexts.
 Most of the time it suffices to add `const` after the `impl`.
 
 The compiler will then guide you and suggest where to also
-add `const` before methods and
-add `(const)` bounds for trait bounds on generic parameters of methods or the impl.
+add `[const]` bounds for trait bounds on generic parameters of methods or the impl.
 
-Similarly you can make your traits available for users of your crate to implement constly.
-Note that this has two caveats that are actually the same:
-
-* you cannot mark more methods as `(const)` later,
-* you must decide whether to make a new method `(const)` or not when adding a new method with a default body.
-
-This is necessary as otherwise users of your crate may have impls where only some `(const)` methods from the trait
-have been marked as `const`, making that trait unusable in `const Trait` or `(const) Trait` bounds.
-
-Most of the time it suffices to add `(const)` before all methods of your trait `const` before the `trait` keyword.
-The compiler will guide you and suggest where to also add `(const)` bounds for super trait bounds or trait bounds
+Similarly you can make your traits available for users of your crate to implement constly using `[const]`.
+Note that this will make all methods callable from const contexts, thus imposing stricter requirements on default
+method bodies currently and in the future.
+The compiler will guide you and suggest where to also add `[const]` bounds for super trait bounds or trait bounds
 on generic parameters of your trait or your methods.
-
-It should be rare that you are marking some methods as `(const)` and some not, and such unusual cases should
-get some documentation explaining the oddity.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 ## How does this work in the compiler?
 
-These `const` or `(const)` trait bounds desugar to normal trait bounds without modifiers, plus an additional constness bound that has no surface level syntax.
+These `const` or `[const]` trait bounds desugar to normal trait bounds without modifiers, plus an additional constness bound that has no surface level syntax.
 
 A much more detailed explanation can be found in https://hackmd.io/@compiler-errors/r12zoixg1l#What-now
 
 In contrast to other keywords like `unsafe` or `async` (that give you raw pointer derefs or `await` calls respectively),
 the `const` keyword on functions or blocks restricts what you can do within those functions or blocks.
-Thus the compiler historically used `host` as the internal inverse representation of `const` and `(const)` bounds.
+Thus the compiler historically used `host` as the internal inverse representation of `const` and `[const]` bounds.
 
-We generate a `ClauseKind::HostEffect` for every `const` or `(const)` bound.
+We generate a `ClauseKind::HostEffect` for every `const` or `[const]` bound.
 To mirror how some effectful languages represent such effects,
 I'm going to use `<Type as Trait>::k#constness` to allow setting whether the `constness` effect is "const" (disabled) or "conditionally" (generic).
 This is not comparable with other associated bounds like type bounds or const bounds, as the values the associated constness effect can
@@ -492,7 +456,7 @@ take do neither have a usual hierarchy of trait bounds nor subtyping nor a concr
 * There is no "disabled", as that is just the lack of a constness effect, meaning no `<Type as Trait>::k#constness` bound at all.
 * In contrast to other effect systems, we do not track the effect as a true generic parameter in the type system,
   but instead explicitly convert all requirements of `Conditionally` bounds in always-const environments to `Const`.
-  * in other words: calling a `const fn<T: (const) Trait>()` in a const item or const block requires proving that the type used for `T` is `const`, as `(const)` can't refer to any conditionally const bound like it can within other const fns.
+  * in other words: calling a `const fn<T: [const] Trait>()` in a const item or const block requires proving that the type used for `T` is `const`, as `[const]` can't refer to any conditionally const bound like it can within other const fns.
 
 While this could be modelled with generic parameters in the type system, that:
 
@@ -506,15 +470,14 @@ Thus that approach was abandoned after proponents and opponents cooperated in tr
 
 ### Sites where `const Trait` bounds can be used
 
-Everywhere where non-const trait bounds can be written, but only for traits that have `(const)` methods.
+Everywhere where non-const trait bounds can be written.
 
 ### Sites where `(const) Trait` bounds can be used
 
 * `const fn`
-* `(const) fn`
 * `impl const Trait` blocks
 * NOT in inherent impls, the individual `const fn` need to be annotated instead
-* `const trait` declarations
+* `[const] trait` declarations
     * super trait bounds
     * where bounds
     * associated type bounds
@@ -541,12 +504,12 @@ where
 }
 ```
 
-### `(const)` desugaring
+### `[const]` desugaring
 
 In a-mir-formality
 
 ```rust
-const fn default<T: (const) Default>() -> T {
+const fn default<T: [const] Default>() -> T {
     T::default()
 }
 ```
@@ -570,8 +533,8 @@ where
 const fn checked_default<T>() -> T
 where
     T: const Default,
-    T: (const) Default,
-    T: (const) PartialEq,
+    T: [const] Default,
+    T: [const] PartialEq,
 {
     let a = const { T::default() };
     let b = T::default();
@@ -583,14 +546,10 @@ where
 }
 ```
 
-Has a redundant bound. `T: const Default` implies `T: (const) Default`, so while the desugaring will include both (but may filter them out if we deem it useful on the impl side),
+Has a redundant bound. `T: const Default` implies `T: [const] Default`, so while the desugaring will include both (but may filter them out if we deem it useful on the impl side),
 there is absolutely no difference (just like specifying `Fn() + FnOnce()` has a redundant `FnOnce()` bound).
 
-## Why do traits methods need to be marked as `(const)`
-
-
-
-## `(const) Destruct` super trait
+## `[const] Destruct` super trait
 
 The `Destruct` marker trait is used to name the previously unnameable drop glue that every type has.
 It has no methods, as drop glue is handled entirely by the compiler,
@@ -603,9 +562,9 @@ The following never drops `T`, because it's the job of `<T as Add>` to handle dr
 ```rust
 struct NewType<T>(T);
 
-impl<T: (const) Add<Output = T>> const Add for NewType<T> {
+impl<T: [const] Add<Output = T>> const Add for NewType<T> {
     type Output = Self;
-    (const) fn add(self, other: Self) -> Self::Output {
+    fn add(self, other: Self) -> Self::Output {
         NewType(self.0 + other.0)
     }
 }
@@ -618,9 +577,9 @@ struct NewType<T>(T, bool);
 
 struct Error;
 
-impl<T: (const) Add<Output = T>> const Add for NewType<T> {
+impl<T: [const] Add<Output = T>> const Add for NewType<T> {
     type Output = Result<Self, Error>;
-    (const) fn add(self, other: Self) -> Self::Output {
+    fn add(self, other: Self) -> Self::Output {
         if self.1 {
             Ok(NewType(self.0 + other.0, other.1))
         } else {
@@ -631,13 +590,13 @@ impl<T: (const) Add<Output = T>> const Add for NewType<T> {
 }
 ```
 
-... then we need to add a `(const) Destruct` bound to `T`, to ensure
+... then we need to add a `[const] Destruct` bound to `T`, to ensure
 `NewType<T>` can be dropped.
 
 This bound in turn will be infectious to all generic users of `NewType` like
 
 ```rust
-const fn add<T: (const) Add>(
+const fn add<T: [const] Add>(
     a: NewType<T>,
     b: NewType<T>,
 ) -> Result<NewType<T::Output>, Error> {
@@ -645,51 +604,51 @@ const fn add<T: (const) Add>(
 }
 ```
 
-which now need a `T: (const) Destruct` bound, too.
-In practice we have noticed that a large portion of APIs will have a `(const) Destruct` bound.
+which now need a `T: [const] Destruct` bound, too.
+In practice we have noticed that a large portion of APIs will have a `[const] Destruct` bound.
 This bound has little value as an explicit bound that appears almost everywhere.
 Especially since it is a fairly straight forward assumption that a type that has trait impls with `const` methods will also have a `Drop::drop` method that is `const` or only contain `const Destruct` types.
 
-In the future we will also want to support `dyn (const) Trait` bounds, which invariably will require the type to implement `(const) Destruct` in order to fill in the function pointer for the `drop` slot in the vtable.
-While that can in generic contexts always be handled by adding more `(const) Destruct` bounds, it would be more similar to how normal `dyn` safety
-works if there were implicit `(const) Destruct` bounds for (most?) `(const) Trait` bounds.
+In the future we will also want to support `dyn [const] Trait` bounds, which invariably will require the type to implement `[const] Destruct` in order to fill in the function pointer for the `drop` slot in the vtable.
+While that can in generic contexts always be handled by adding more `[const] Destruct` bounds, it would be more similar to how normal `dyn` safety
+works if there were implicit `[const] Destruct` bounds for (most?) `[const] Trait` bounds.
 
-Thus we lint all `const trait`s with `(const)` methods that take `self` by value to also have a `(const) Destruct` super trait bound to ensure users don't need to add `(const) Destruct` bounds everywhere.
+Thus we lint all `[const] trait`s with methods that take `self` by value to also have a `(const) Destruct` super trait bound to ensure users don't need to add `[const] Destruct` bounds everywhere.
 Other traits may want to add them, and some traits with `self` by value methods may not want to add them. Since it is not backwards compatible to require or relax that super trait bound later,
 we aren't requiring users to choose either, but are suggesting good defaults via lints.
 
-## `(const)` bounds on `Drop` impls
+## `[const]` bounds on `Drop` impls
 
-It is legal to add `(const)` to `Drop` impls' bounds, even though the struct doesn't have them:
+It is legal to add `[const]` to `Drop` impls' bounds, even though the struct doesn't have them:
 
 ```rust
-const trait Bar {
-    (const) fn thing(&mut self);
+[const] trait Bar {
+    fn thing(&mut self);
 }
 
 struct Foo<T: Bar>(T);
 
-impl<T: (const) Bar> const Drop for Foo<T> {
-    (const) fn drop(&mut self) {
+impl<T: [const] Bar> const Drop for Foo<T> {
+    fn drop(&mut self) {
         self.0.thing();
     }
 }
 ```
 
-There is currently no reason (and no coherent representation) of adding `(const)` trait bounds to a type.
+There is currently no reason (and no coherent representation) of adding `[const]` trait bounds to a type.
 Our usual `Drop` rules enforce that an impl must have the same bounds as the type.
-`(const)` modifiers are special here, because they are only needed in const contexts.
+`[const]` modifiers are special here, because they are only needed in const contexts.
 While they cause exactly the divergence that we want to prevent with the `Drop` impl rules:
 a type can be declared, but not dropped, because bounds are unfulfilled, this is:
 
 * Already the case in const contexts, just for all types that aren't trivially free of `Drop` types.
 * Exactly the behaviour we want.
 
-Extraneous `(const) Trait` bounds where `Trait` isn't a bound on the type at all are still rejected:
+Extraneous `[const] Trait` bounds where `Trait` isn't a bound on the type at all are still rejected:
 
 ```rust
-impl<T: (const) Bar + (const) Baz> const Drop for Foo<T> {
-    (const) fn drop(&mut self) {
+impl<T: [const] Bar + [const] Baz> const Drop for Foo<T> {
+    fn drop(&mut self) {
         self.0.thing();
     }
 }
@@ -701,8 +660,8 @@ errors with
 error[E0367]: `Drop` impl requires `T: Baz` but the struct it is implemented for does not
   --> src/lib.rs:13:22
    |
-13 | impl<T: (const) Bar + (const) Baz> Drop for Foo<T> {
-   |                      ^^^^^^^^^^
+13 | impl<T: [const] Bar + [const] Baz> const Drop for Foo<T> {
+   |                       ^^^^^^^^^^^
    |
 note: the implementor must specify the same requirement
   --> src/lib.rs:8:1
@@ -726,7 +685,7 @@ presence of many effects, we'll want the syntax from this RFC as sugar for the v
 ## It's hard to make constness optional with `#[cfg]`
 
 One cannot `#[cfg]` just the `const` keyword in `const Trait`, and even if we made it possible by sticking with `#[const_trait]` attributes, and also adding the equivalent for impls and functions,
-`(const) Trait` bounds cannot be made conditional with `#[cfg]`. The only real useful reason to have this is to support newer Rust versions with a cfg, and allow older Rust versions to compile
+`[const] Trait` bounds cannot be made conditional with `#[cfg]`. The only real useful reason to have this is to support newer Rust versions with a cfg, and allow older Rust versions to compile
 the traits, just without const support. This is surmountable with proc macros that either generate two versions or just generate a different version depending on the Rust version.
 Since it's only necessary for a transition period while a crate wants to support both pre-const-trait Rust and
 newer Rust versions, this doesn't seem too bad. With a MSRV bump the proc macro usage can be removed again.
@@ -782,7 +741,7 @@ const fn add(a: u32, b: u32) -> u32 { a + b }
 
 struct Add<const A: u32, const B: u32>;
 
-impl<const A: u32, const B:u32> Add<A, B> {
+impl<const A: u32, const B: u32> Add<A, B> {
     const RESULT: u32 = A + B;
 }
 
@@ -792,7 +751,7 @@ const BAR: u32 = Add<5, 6>::RESULT;
 
 ## use `const Trait` bounds for conditionally-const, invent new syntax for always-const
 
-It may seem tempting to use `const fn foo<T: const Trait>` to mean what in this RFC is `(const) Trait`, and then add new syntax for bounds that allow using trait methods in const blocks.
+It may seem tempting to use `const fn foo<T: const Trait>` to mean what in this RFC is `[const] Trait`, and then add new syntax for bounds that allow using trait methods in const blocks.
 
 Examples of possible always const syntax:
 
@@ -806,11 +765,11 @@ Examples of possible always const syntax:
 
 To avoid new syntax before paths referring to traits, we could treat the constness as a generic parameter or an associated type.
 While an associated type is very close to how the implementation works, neither `effect = const` nor `effect: const` are representing the logic correctly,
-as `const` implies `(const)`, but `(const)` is nothing concrete, it's more like a generic parameter referring to the constness of the function.
+as `const` implies `[const]`, but `[const]` is nothing concrete, it's more like a generic parameter referring to the constness of the function.
 Fully expanded one can think of
 
 ```rust
-const fn foo<T: (const) Trait + const OtherTrait>(t: T) { ... }
+const fn foo<T: [const] Trait + const OtherTrait>(t: T) { ... }
 ```
 
 to be like
@@ -848,7 +807,7 @@ or
 const fn foo<T: Trait<bikeshed#effect = (const)> + OtherTrait<bikeshed#effect = const>>(t: T) { ... }
 ```
 
-## Make all `const fn` arguments `(const) Trait` by default and require an opt out `?const Trait`
+## Make all `const fn` arguments `[const] Trait` by default and require an opt out `?const Trait`
 
 We could default to making all `T: Trait` bounds be const if the function is called from a const context, and require a `T: ?const Trait` opt out
 for when a trait bound is only used for its associated types and consts.
@@ -861,17 +820,15 @@ An example from libstd today is [the impl block of Vec::new](https://github.com/
 A full example:
 
 ```rust
-trait Foo: (const) Bar + Baz {
-    (const) fn baz();
-    fn buz();
+trait Foo: [const] Bar + Baz {
+    fn baz();
 }
 
-impl Foo for () {
-    const fn baz() {}
-    fn buz() {}
+impl const Foo for () {
+    fn baz() {}
 }
 
-const fn foo<T: (const) Foo>() -> T {
+const fn foo<T: [const] Foo>() -> T {
     // cannot call `Baz` methods
     <T as Bar>::bar()
 }
@@ -884,12 +841,10 @@ can be represented as
 ```rust
 trait Foo: Bar + ?const Baz {
     fn baz();
-    ?const fn buz();
 }
 
 impl const Foo for () {
     fn baz() {}
-    ?const fn buz() {}
 }
 
 #[next_const_fn]
@@ -922,7 +877,7 @@ The alternative proposed above (and the one folks are used to for a few years no
 body to compile and thus requiring as little as possible from their callers,
 * ensuring our implementation is correct by default.
 
-The implementation correctness argument is partially due to our history with `cosnt fn` trait bounds (see https://github.com/rust-lang/rust/issues/83452 for where we got "reject all trait bounds" wrong and thus decided to stop using opt-out), and partially with our history with `?` bounds not being great either (https://github.com/rust-lang/rust/issues/135229, https://github.com/rust-lang/rust/pull/132209). An opt-in is much easier to make sound and keep sound.
+The implementation correctness argument is partially due to our history with `const fn` trait bounds (see https://github.com/rust-lang/rust/issues/83452 for where we got "reject all trait bounds" wrong and thus decided to stop using opt-out), and partially with our history with `?` bounds not being great either (https://github.com/rust-lang/rust/issues/135229, https://github.com/rust-lang/rust/pull/132209). An opt-in is much easier to make sound and keep sound.
 
 To get more capabilities, you add more syntax. Thus the opt-out approach was not taken.
 
@@ -949,17 +904,17 @@ To get more capabilities, you add more syntax. Thus the opt-out approach was not
         * If we get an effect system, we will still want this shorthand, just like we allow you to write:
             * `T: Iterator<Item = U>` and don't require `where T: Iterator, <T as Iterator>::Item = U`.
             * `T: Iterator<Item: Debug>` and don't require `where T: Iterator, <T as Iterator>::Item: Debug`.
-    * RTN for per-method bounds: `T: Trait<some_fn(..): (const) Fn(A, B) -> C>` could supplement this feature in the future.
-        * Alternatively `where <T as Trait>::some_fn(..): (const)` or `where <T as Trait>::some_fn \ {const}`.
+    * RTN for per-method bounds: `T: Trait<some_fn(..): [const] Fn(A, B) -> C>` could supplement this feature in the future.
+        * Alternatively `where <T as Trait>::some_fn(..): [const]` or `where <T as Trait>::some_fn \ {const}`.
         * Very verbose (need to specify arguments and return type).
         * Want short hand sugar anyway to make it trivial to change a normal function to a const function by just adding some minor annotations.
         * Significantly would delay const trait stabilization (by years).
         * Usually requires editing the trait anyway, so there's no "can constify impls without trait author opt in" silver bullet.
-    * New RTN-like per-method bounds: `T: Trait<some_fn(_): (const)>`.
+    * New RTN-like per-method bounds: `T: Trait<some_fn(_): [const]>`.
         * Unclear if soundly possible.
         * Unclear if possible without incurring significant performance issues for all code (may need tracking new information for all functions out there).
         * Still requires editing traits.
-        * Still want the `(const) Trait` sugar anyway.
+        * Still want the `[const] Trait` sugar anyway.
 
 ## Should we start out without `const Trait` bounds
 
@@ -996,7 +951,7 @@ Once `unsafe` derives have been finalized, we can separately design const derive
 deprecate `derive_const` at that time (mostly by just removing it from any documents explaining it,
 so that the ecosystem slowly migrates, maybe with an actual deprecation warning later).
 
-## Migrate to `(const) fn`
+## Migrate to `[const] fn`
 
 `const fn` and `const` items have slightly different meanings for `const`:
 
@@ -1008,11 +963,11 @@ Additionally `const Trait` bounds have a third meaning (the same as `const Trait
 They can be invoked at compile time, but also in `const fn`.
 
 While all these meanings are subtly different, making their differences more obvious will not make them easier to understand.
-All that changing to `(const) fn` would achieve is that folk will add the sigil when told by the compiler, and complain about
+All that changing to `[const] fn` would achieve is that folk will add the sigil when told by the compiler, and complain about
 having to type a sigil, when there is no meaning for `const fn` without a sigil.
 
 While I see the allure from a language nerd perspective to give every meaning its own syntax, I believe it is much more practical to
-just call all of these `const` and only separate the `(const) Trait` bounds from `const Trait` bounds.
+just call all of these `const` and only separate the `[const] Trait` bounds from `const Trait` bounds.
 
 ## `const fn()` pointers
 
@@ -1020,7 +975,7 @@ Just like `const fn foo(x: impl (const) Trait) { x.method() }` and `const fn foo
 `const fn foo(f: (const) fn()) { f() }`.
 
 These require changing the type system, making the constness of a function pointer part of the type.
-This in turn implies that a `const fn()` function pointer, a `(const) fn()` function pointer and a `fn()` function pointer could have
+This in turn implies that a `const fn()` function pointer, a `[const] fn()` function pointer and a `fn()` function pointer could have
 different `TypeId`s, which is something that requires more design and consideration to clarify whether supporting downcasting with `Any`
 or just supporting `TypeId` equality checks detecting constness is desirable.
 
@@ -1034,7 +989,7 @@ Closures need explicit opt-in to be callable in const contexts.
 You can already use closures in const contexts today to e.g. declare consts of function pointer type.
 So what we additionally need is some syntax like `const || {}` to declare a closure that implements
 `const Fn()`. See also [this tracking issue](https://github.com/rust-lang/project-const-traits/issues/10)
-While it may seem tempting to just automatically implement `const Fn()` (or `(const) Fn()`) where applicable,
+While it may seem tempting to just automatically implement `const Fn()` (or `[const] Fn()`) where applicable,
 it's not clear that this can be done, and there are definite situations where it can't be done.
 As further experimentation is needed here, const closures are not part of this RFC.
 
