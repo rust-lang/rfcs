@@ -444,6 +444,10 @@ This makes no semantic sense. Just as binding modes can only be applied to
 bindings, `#[align(…)]` also can only be applied to bindings. `_` patterns are
 not bindings; they are a completely separate element in the grammar.
 
+## `#[align(…)]` function item types being 1-ZSTs
+
+Anything else would pessimize memory usage for no reason.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -477,7 +481,7 @@ matter in practice today?
 What should the syntax be for applying the `align` attribute to `ref`/`ref mut`
 bindings?
 
-  - Option A: the attribute goes inside the `ref`/`ref mut`.
+- Option A: the attribute goes inside the `ref`/`ref mut`.
 
 ```rust
 fn foo(x: &u8) {
@@ -485,7 +489,7 @@ fn foo(x: &u8) {
 }
 ```
 
-  - Option B: the attribute goes outside the `ref`/`ref mut`.
+- Option B: the attribute goes outside the `ref`/`ref mut`.
 
 ```rust
 fn foo(x: &u8) {
