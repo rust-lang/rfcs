@@ -98,10 +98,11 @@ important for Rust to be able to represent such structures.
 # Explanation
 [explanation]: #explanation
 
-The `align` attribute is a new inert, built-in attribute that can be applied to
-ADT fields, `static` items, function items, and local variable declarations. The
-attribute accepts a single required parameter, which must be a power-of-2
-positive integer literal.
+The `align` attribute is a new
+[inert](https://doc.rust-lang.org/reference/attributes.html#r-attributes.activity),
+built-in attribute that can be applied to ADT fields, `static` items, function
+items, and local variable declarations. The attribute accepts a single required
+parameter, which must be a power-of-2 positive integer literal.
 
 The maximum alignment is the same as `#[repr(align(…))]`: 2<sup>29</sup>. That
 being said, some targets may not be able to support very high alignments in all
