@@ -568,3 +568,6 @@ let #[align(…)] mut ref mut x = …;
   [`#![feature(stmt_expr_attributes)]`](https://github.com/rust-lang/rust/issues/15701)
   is stable, we could allow applying `#[align(…))]` to closures and async blocks
   as well.
+- We could add tools to make it easier to implement function pointer tagging in
+  a way that’s resilient to the ARM Thumb issue (and similar strangeness on
+  hypothetical future targets).
