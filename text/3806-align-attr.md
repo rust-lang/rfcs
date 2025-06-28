@@ -294,6 +294,8 @@ example, on 32-bit ARM, the low bit of the function pointer is set for functions
 using the Thumb instruction set, even though the actual code of the function is
 always aligned to at least 2 bytes.
 
+`#[align(…)]` is compatible with `#[naked]`.
+
 ## On local variables
 
 The `align` attribute may also be applied to local variable declarations inside
