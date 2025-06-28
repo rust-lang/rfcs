@@ -228,7 +228,7 @@ pub struct foo2 {
 }
 ```
 
-## On `static`s
+## On `static` items
 
 Any `static` item (including `static`s inside `extern` blocks) may have an
 `align` attribute applied:
@@ -295,6 +295,11 @@ using the Thumb instruction set, even though the actual code of the function is
 always aligned to at least 2 bytes.
 
 `#[align(…)]` is compatible with `#[naked]`.
+
+`#[align(…)]` may be used on function items inside `extern` blocks. This imposes
+a requirement on the symbol being linked to. The UB that can result if this
+alignment is not satisfied, follows the same rules as the UB that can result
+from an incorrect function signature.
 
 ## On local variables
 
