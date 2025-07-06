@@ -1,7 +1,7 @@
-- Feature Name: `declarative_derive_macros`
+- Feature Name: `macro_derive`
 - Start Date: 2024-09-20
 - RFC PR: [rust-lang/rfcs#3698](https://github.com/rust-lang/rfcs/pull/3698)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#143549](https://github.com/rust-lang/rust/issues/143549)
 
 # Summary
 [summary]: #summary
