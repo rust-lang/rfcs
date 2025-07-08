@@ -521,8 +521,7 @@ of.
 Similarly, as mentioned [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1190464739), an approach used by Chicken Scheme is to do normal calls and handle stack overflows by cleaning up the stack.
 
 ### Principled Local Goto
-One alternative would be to support some kind of local goto natively, indeed there exists a
-[pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)) or another (LLVM specific idea)[https://internals.rust-lang.org/t/idea-for-safe-computed-goto-using-enums/21787?u=programmerjake]. These designs should be able to achieve the targeted performance and stack usage, though they seem to be quite difficult to implement or are backend specific. Also they do not seem to be as flexible as the chosen design, especially implementing tail calls to indirect or external functions do not seem to be feasible.
+One partial alternative would be to support some kind of local goto, indeed there already exists work in this direction: [pre-RFC](https://internals.rust-lang.org/t/pre-rfc-safe-goto-with-value/14470/9?u=scottmcm) ([comment](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1458604986)) or another simililar [approach](https://internals.rust-lang.org/t/idea-for-safe-computed-goto-using-enums/21787?u=programmerjake). These designs should be able to achieve the targeted performance characteristics. Also, similar to this RFC, these approaches require backend support for computed gotos (that is jumping to an address in a variable not just a label), instead of guaranteed tail calls. However, crucially, a local goto does not replace tail calls, as it is purely a function local optimization. So while this alternative could be used in some situations instead of guaranteed tail calls they fundamentally cannot replace each other.
 
 ### Attribute on Function Declaration
 [attribute-on-function-declaration]: #attribute-on-function-declaration
@@ -827,11 +826,11 @@ Mismatches in mutability (like `&T` <-> `&mut T`) for arguments and return type 
 
 ## Performance Guarantee
 
-First of all, performance is ambiguous. As the stand in we use the requirement that no new stack frame is created for a tail call. The reason for this choice is that creating a new stack frame can be a large part of computation time in hot loops that do calls, this is a code construct that can likely be optimized with tail calls.
+First of all, performance is ambiguous. As a stand in, we could instead require that no new stack frame is created for a tail call. The reason for this choice is that creating a new stack frame can be the cause slowdowns in hot loops that do many calls, which is a code pattern that can likely be optimized with tail calls.
 
 Can the requirement to not create new stack frames when using tail calls be imposed on backends? This answer seems to be no, even for LLVM. LLVM provides some [guarantees](https://llvm.org/docs/LangRef.html#call-instruction) for tail calls, however, none do ensure that no new stack frame is created (as of 24-05-2023).
 
-If it turns out that in practice the no new stack frame requirement is not already kept it might be worthwhile to revisit this performance requirement.
+If it turns out that in practice the "no new stack frame requirement" is not guaranteed by backends it might be worthwhile to revisit this performance requirement.
 
 ## Functional Programming
 
