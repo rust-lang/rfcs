@@ -220,6 +220,24 @@ The `derive_more` crate allows opting into the blanket implementation using a cu
 
 [^blanket]: Noted [here](https://internals.rust-lang.org/t/pre-rfc-derive-from-for-newtypes/22567/6).
 
+## Direction of the `From` impl
+In theory, someone could be confused if this code:
+```rust
+#[derive(From)]
+struct Newtype(Inner);
+```
+generates this impl:
+```rust
+impl From<Inner> for Newtype { ... }
+```
+or this impl:
+```rust
+impl From<Newtype> for Inner { ... }
+```
+However, `impl From<Inner> for Newtype` is consistent with all other standard traits that can currently be derived, as they all generate code in the form of `impl Trait for Type`. It should thus not be very surprising that `#[derive(From)]` provides the impl for the outer type, not the inner type. This will also be clearly documented.
+
+Generating the other direction of the impl is best left as a separate feature, which is briefly discussed in [Future possibilities][future-possibilities].
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -274,24 +292,6 @@ The `Default` trait actually shares a similarity with `From`, in that they are b
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
-
-## Direction of the `From` impl
-In theory, someone could be confused if this code:
-```rust
-#[derive(From)]
-struct Newtype(Inner);
-```
-generates this impl:
-```rust
-impl From<Inner> for Newtype { ... }
-```
-or this impl:
-```rust
-impl From<Newtype> for Inner { ... }
-```
-However, `impl From<Inner> for Newtype` is consistent with all other standard traits that can currently be derived, as they all generate code in the form of `impl Trait for Type`. It should thus not be very surprising that `#[derive(From)]` provides the impl for the outer type, not the inner type.
-
-This concern was presented [here](https://internals.rust-lang.org/t/pre-rfc-derive-from-for-newtypes/22567/2), with a suggestion to properly document this behavior. The [Guide-level explanation](#guide-level-explanation) discusses this topic.
 
 ## Enum support
 Should we also support enums? The design space there is more complex than for structs. For example, `derive_more` generates a separate `From` impl for each enum variant by default, which means that the individual variants must not contain the same inner type, otherwise an impl conflict happens:
@@ -359,6 +359,10 @@ impl From<u16> for Port {
 ```
 
 This is similar to how [RFC#3107](https://rust-lang.github.io/rfcs/3107-derive-default-enum.html) extended the deriving of the `Default` trait using the `#[default]` attribute.
+
+## Deriving From in the other direction
+
+It is also quite useful to generate `From<InnerType> for Struct`, i.e. generating `From` in the other direction. This could be done in the future using e.g. `#[derive(Into)]`.
 
 ## Enum support
 We could add support for enums in a similar way, where users could mark the variant that should be constructed using `#[from]`.
