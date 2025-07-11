@@ -434,6 +434,7 @@ Some behaviors are different, for example:
 - Ruby's `gets` returns `nil` if the input is EOF.
 - C#'s `Console.ReadLine()` returns `null` if the input is EOF.
 - Go's `bufio.Reader.ReadString()` returns an error if the input is EOF.
+- Java's `readln` returns an `null` if the input is EOF.
 
 Maybe a thing to have in mind is that in JavaScript we have the `prompt` function
 but this function in the case of the browser enable a little dialog when we 
@@ -474,6 +475,7 @@ Once this RFC is implemented:
 
   ```rust
   let guess: u8 = input!().expect("Please type a number!");
+  println!("You guessed: {guess}");
   ```
 
 * Clippy might also introduce a lint to tell users to avoid unnecessary
