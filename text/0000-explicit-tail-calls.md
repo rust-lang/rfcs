@@ -458,10 +458,10 @@ Further confusion could result from the same-signature restriction where the Rus
 <!-- Why should we *not* do this? -->
 As this feature should be mostly independent of other features the main drawback lies in the implementation and
 maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other
-tooling. The primary effort, however, lies in supporting this feature in the backends:
+tooling. However, the primary effort is in correctly interacting with the backends, some of which might not support guaranteeing a tail call (and failing if this not possible):
 - LLVM supports a `musttail` marker to indicate that TCE should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 2023-03-30).
-- GCC does seem to support an equivalent `musttail` marker, though it is only accessible via the [libgccjit API](https://gcc.gnu.org/onlinedocs/gcc-7.3.0/jit/topics/expressions.html#gcc_jit_rvalue_set_bool_require_tail_call) ([source](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1160013809)).
-- For WebAssembly see the discussion [here](https://github.com/rust-lang/rfcs/pull/3407#discussion_r1186003262). While general tail calls seem far off, supporting only matching function signatures seems more feasible. Also note that WebAssembly accepted tail calls into the [standard](https://github.com/WebAssembly/proposals/pull/157/) and Cranelift is now [working](https://github.com/bytecodealliance/rfcs/pull/29) towards supporting it.
+- [GCC supports](https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html#index-musttail-statement-attribute) an (mostly) equivalent `musttail` marker.
+- WebAssembly also supports guaranteed tail calls as a [standardized feature](https://webassembly.org/features/#table-row-tailcall).
 
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
@@ -679,8 +679,19 @@ There is also a [proposal](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n292
 
 
 ## GCC
-GCC does not support a feature equivalent to Clang's `musttail`, there also does not seem to be a push to implement it ([pipermail](https://gcc.gnu.org/pipermail/gcc/2021-April/235882.html)) (as of 2021). However, there also exists an experimental [plugin](https://github.com/pietro/gcc-musttail-plugin) for GCC last updated in 2021.
+As of 2024, GCC supports a [mostly LLVM compatible](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=83324#c27) version of `musttail`, documented here: https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html#index-musttail-statement-attribute.
 
+> The gnu::musttail or clang::musttail standard attribute or musttail GNU attribute can be applied to a return statement with a return-value expression that is a function call. It asserts that the call must be a tail call that does not allocate extra stack space, so it is safe to use tail recursion to implement long-running loops.
+> 
+> `[[gnu::musttail]] return foo();`
+> 
+> `__attribute__((musttail)) return bar();`
+> 
+> If the compiler cannot generate a musttail tail call it reports an error. On some targets, tail calls may not be supported at all. The musttail attribute asserts that the lifetime of automatic variables, function parameters and temporaries (unless they have non-trivial destruction) can end before the actual call instruction, and that any access to those from inside of the called function results is considered undefined behavior. Enabling -O1 or -O2 can improve the success of tail calls. 
+
+
+## WebAssembly
+The [proposal](https://github.com/WebAssembly/tail-call/blob/master/proposals/tail-call/Overview.md) for tail calls in WebAssembly has been accepted and has been [implemented](https://webassembly.org/features/#table-row-tailcall) by all major browsers and the Wasmtime runtime (as of 11-07-2025).
 
 ## Zig
 Zig provides separate syntax to allow more flexibility than normal function calls. There are options for async calls, inlining, compile-time evaluation of the called function, or specifying TCE on the call.
