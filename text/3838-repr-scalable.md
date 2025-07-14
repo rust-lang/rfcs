@@ -7,11 +7,11 @@
 [summary]: #summary
 
 Extends Rust's existing SIMD infrastructure, `#[repr(simd)]`, with a
-complementary scalable representation, `#[repr(scalable)]`, to support scalable
-vector types, such as Arm's Scalable Vector Extension (SVE), or RISC-V's Vector
-Extension (RVV).
+complementary scalable representation, `#[repr(scalable(N)]`, to support
+scalable vector types, such as Arm's Scalable Vector Extension (SVE), or
+RISC-V's Vector Extension (RVV).
 
-Like the existing `repr(simd)` representation, `repr(scalable)` is internal
+Like the existing `repr(simd)` representation, `repr(scalable(N))` is internal
 compiler infrastructure that will be used only in the standard library to
 introduce scalable vector types which can then be stablised. Only the
 infrastructure to define these types are introduced in this RFC, not the types
@@ -39,7 +39,7 @@ Instead of releasing more extensions with ever increasing register bit widths,
 AArch64 has introduced a Scalable Vector Extension (SVE). Similarly, RISC-V has
 a Vector Extension (RVV). These extensions have vector registers whose width
 depends on the CPU implementation and bit-width-agnostic intrinsics for
-operating on these registers. By using scalale vectors, code won't need to be
+operating on these registers. By using scalable vectors, code won't need to be
 re-written using new architecture extensions with larger registers, new types
 and intrinsics, but instead will work on newer processors with different vector
 register lengths and performance characteristics.
@@ -132,9 +132,9 @@ Types annotated with the `#[repr(simd)]` attribute contains either an array
 field or multiple fields to indicate the intended size of the SIMD vector that
 the type represents.
 
-Similarly, a `scalable` repr is introduced to define a scalable vector type.
-`scalable` accepts an integer to determine the minimum number of elements the
-vector contains. For example:
+Similarly, a `scalable(N)` representation is introduced to define a scalable
+vector type. `scalable(N)` accepts an integer to determine the minimum number of
+elements the vector contains. For example:
 
 ```rust
 #[repr(simd, scalable(4))]
@@ -143,6 +143,37 @@ pub struct svfloat32_t { _ty: [f32], }
 
 As with the existing `repr(simd)`, `_ty` is purely a type marker, used to get
 the element type for the codegen backend.
+
+`svfloat32_t` is a scalable vector with a minimum of four `f32` elements and
+potentially more depending on the length of the vector register at runtime.
+
+## Choosing `N`
+[choosing-n]: #choosing-n
+
+Many intrinsics using scalable vectors accept both a predicate vector argument
+and data vector arguments. Predicate vectors determine whether a lane is on or
+off for the operation performed by any given intrinsic. Predicate vectors may
+use different registers of sizes to the vectors containing data.
+`repr(scalable)` is used to define vectors containing both data and predicates.
+
+As `repr(scalable(N))` is intended to be a permanently unstable attribute, any
+value of `N` is accepted by the attribute and it is the responsibility of
+whomever is defining the type to provide a valid value. A correct value for `N`
+depends on the purpose of the specific scalable vector type and the
+architecture.
+
+For example, with SVE, the scalable vector register length is a minimum of 128
+bits, must be a multiple of 128 bits and a power of 2; and predicate registers
+have one bit for each byte in the vector registers. So, for `svfloat32_t`
+defined shown above, an `f32` is 32-bits and with `N=4`, the entire minimum
+register length of 128 bits is used (4 x 32 = 128). An intrinsic that takes a
+`svfloat32_t` may also want to accept as an argument a predicate vector with a
+matching four elements (`N=4`), which would only use 4 bits of the predicate
+register rather than the full 16 bits.
+
+See
+[*Manually-chosen or compiler-calculated element count*][manual-or-calculated-element-count]
+for a discussion on why `N` is not calculated by the compiler.
 
 ## Properties of scalable vectors
 [properties-of-scalable-vector-types]: #properties-of-scalable-vectors
@@ -217,28 +248,17 @@ Most of the complexity of SVE is handled by LLVM: lowering Rust's scalable
 vectors to the correct type in LLVM and the `vscale` modifier that is applied to
 LLVM's vector types.
 
-LLVM's scalable vector type is of the form `<vscale x elements x type>`:
+LLVM's scalable vector type is of the form `<vscale x element_count x type>`.
+`vscale` is the scaling factor determined by the hardware at runtime, it can be
+any value providing it gives a legal vector register size for the architecture.
 
-- `elements` multiplied by `size_of::<$ty>` gives the smallest allowed register
-  size and the increment size
-- `vscale` is a runtime constant that is used to determine the actual vector
-  register size
+For example, a `<vscale x 4 x f32>` is a scalable vector with a minimum of four
+`f32` elements and with SVE, `vscale` could then be any power of two which would
+result in register sizes of 128, 256, 512, 1024 or 2048 and 4, 8, 16, 32, or 64
+`f32` elements respectively.
 
-For example, with SVE, the scalable vector register (`Z` register) size has to
-be a multiple of 128 bits and a power of 2. Only the value of `elements` can be
-chosen by compiler. For `f32`, `elements` must always be four, as with the
-minimum `vscale` of one, `1 * 4 * sizeof(f32)` is the 128-bit minimum register
-size.
-
-At runtime `vscale` could then be any power of two which would result in
-register sizes of 128, 256, 512, 1024 and 2048. `vscale` could be any value
-providing it gives a legal vector register size for the architecture.
-
-`repr(scalable)` expects the number of `elements` to be provided rather than
-calculating it. This avoids needing to teach the compiler how to calculate the
-required `element` count, particularly as some of these scalable types can have
-different element counts. For instance, the predicates used in SVE have
-different element counts depending on the types they are a predicate for.
+The `N` in the `#[repr(scalable(N))]` determines the `element_count` used in the
+LLVM type for a scalable vector.
 
 While it is possible to change the vector length at runtime using a
 [`prctl()`][prctl] call to the kernel, this would require that `vscale` change,
@@ -250,8 +270,8 @@ behaviour, consistent with C and C++.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- `repr(scalable)` is inherently additional complexity to the language, despite
-  being largely hidden from users.
+- `repr(scalable(N))` is inherently additional complexity to the language,
+  despite being largely hidden from users.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -266,6 +286,39 @@ languages.
 By aligning with the approach taken by C (discussed in the
 [*Prior art*][prior-art] below), most of the documentation that already exists
 for scalable vector intrinsics in C should still be applicable to Rust.
+
+## Manually-chosen or compiler-calculated element count
+[manual-or-calculated-element-count]: #manually-chosen-or-compiler-calculated-element-count
+
+`repr(scalable(N))` expects `N` to be provided rather than calculating it. This
+avoids needing to teach the compiler how to calculate the required `element`
+count, which isn't always trivial.
+
+Many of the intrinsics which accept scalable vectors as an argument also accept
+a predicate vector. Predicate vectors decide which lanes are on or off for an
+operation (i.e. which elements in the vector are operated on). Predicate vectors
+can be in different and smaller registers than the data. For example,
+`<vscale x 16 x i1>` could be the predicate vector for a `<vscale x 16 x u8>`
+vector
+
+For non-predicate scalable vectors, it will be typical that `N` will be
+`$minimum_register_length / $type_size` (e.g. `4` for `f32` or `8` for `f16`
+with a minimum 128-bit register length). In this circumstance, `N` could be
+trivially calculated by the compiler.
+
+For predicate vectors, it is desirable to be able to to define types where `N`
+matches the number of elements in the non-predicate vector, i.e. a
+`<vscale x 4 x i1>` to match a `<vscale x 4 x f32>`, `<vscale x 8 x i1>` to
+match `<vscale x 8 x u16>`, or `<vscale x 16 x i1>` to match
+`<vscale x 16 x u8>`. In this circumstance, it might still be possible to give
+rustc all of the relevant information such that it could compute `N`, but it
+would add extra complexity.
+
+This RFC takes the position that the additional complexity required to have the
+compiler always be able to calculate `N` isn't justified given the permanently
+unstable nature of the `repr(scalable(N))` attribute and the scalable vector
+types defined in `std::arch` are likely to be few in number, automatically
+generated and well-tested.
 
 # Prior art
 [prior-art]: #prior-art
