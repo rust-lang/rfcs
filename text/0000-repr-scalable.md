@@ -237,8 +237,10 @@ different element counts depending on the types they are a predicate for.
 
 While it is possible to change the vector length at runtime using a
 [`prctl()`][prctl] call to the kernel, this would require that `vscale` change,
-which is unsupported. As Rust cannot prevent users from doing this, it will be
-documented as undefined behaviour, consistent with C and C++.
+which is unsupported. `prctl` must only be used to set up the vector length for
+child processes, not to change the vector length of the current process. As Rust
+cannot prevent users from doing this, it will be documented as undefined
+behaviour, consistent with C and C++.
 
 # Drawbacks
 [drawbacks]: #drawbacks
