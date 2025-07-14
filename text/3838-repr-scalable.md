@@ -157,9 +157,14 @@ Scalable vector types have some further restrictions due to limitations of the
 codegen backend:
 
 - Cannot be stored in compound types (structs, enums, etc) 
-    - Including coroutines, so these types cannot be held across
-      an await boundary in async functions.
+
+    - Including coroutines, so these types cannot be held across an await
+      boundary in async functions
+
+    - `repr(transparent)` newtypes could be permitted with scalable vectors
+
 - Cannot be used in arrays
+
 - Cannot be the type of a static variable.
 
 Some of these limitations may be able to be lifted in future depending on what
