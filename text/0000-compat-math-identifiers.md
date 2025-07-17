@@ -63,7 +63,7 @@ similarly to how characters like `𝑥` (instead of `x`) or `𝑓` (instead of `
 This follows the guidelines from the [Unicode Technical Standard #55 - Source Code Handling (UTS55)](https://www.unicode.org/reports/tr55/#General-Security-Profile) which recommends that "implementations should provide a mechanism to warn about identifiers that are not in the General Security Profile for Identifiers" as defined in the [Unicode Technical Standard #39 - Unicode Security Mechanisms (UTS39)](https://www.unicode.org/reports/tr39/#General_Security_Profile).
 In particular the characters in 5) are identified as "Not_NFKC", i.e. characters that cannot occur in strings normalized to [NFKC](https://unicode.org/reports/tr15/#Norm_Forms).
 
-It shall be pointed out that Unicode specifically [mentions Rust as a positive industry example](https://www.unicode.org/reports/tr55/#General-Security-Profile) following the recommendations from the General Security Profile
+Note that Unicode specifically [mentions Rust as a positive industry example](https://www.unicode.org/reports/tr55/#General-Security-Profile) that follows the recommendations from the General Security Profile.
 
 # Drawbacks
 [drawbacks]: #drawbacks
