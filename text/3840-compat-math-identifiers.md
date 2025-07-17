@@ -1,6 +1,6 @@
 - Feature Name: `compat_math_identifiers`
 - Start Date: 2025-07-16
-- RFC PR: [TODO rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3840](https://github.com/rust-lang/rfcs/pull/3840)
 - Rust Issue: [TODO rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
