@@ -84,11 +84,14 @@ The Unicode sets [`ID_Compat_Math_Start`](https://util.unicode.org/UnicodeJsps/l
 
 The characters 1) - 4) are added to the set of characters allowed in Rust identifiers.
 [UAX31](https://www.unicode.org/reports/tr31/#Standard_Profiles) notes that "supporting these characters is recommended for some computer languages because they can be beneficial in some applications".
-These characters will not have syntactic use and are only added to the set of characters allowed in identifiers following the recommendations of [UAX31-R3b](https://www.unicode.org/reports/tr31/#R3b).
+
+In other words this RFC proposes to adopt the "Mathematical Compatibility Notation Profile" which in accordance with [UAX31-R3b](https://www.unicode.org/reports/tr31/#R3b) allows these characters in identifiers and in turn prevents syntactic use.
 For example `let a = 2.0; let b = a²;` will naturally give a compiler error that `a²` is an unknown identifier and not be interpreted as `let b = a * a;`.
 Similarly `let a = [2, 0]; let b = a₁;` will naturally give a compiler error that `a₁` is an unknown identifier and not be interpreted as `let b = a[0];`.
+`∞` will just be a character usable in identifiers and not be a synonym to the likes of `f32::INFINITY`.
 
-The characters 5) are added to the set of Rust identifiers, but will trigger an NFKC warning when used:
+The characters 5) are added to the set of Rust identifiers, but will trigger an NFKC or `uncommon_codepoints` warning when used depending on their Unicode classification.
+For example using `𝛁` in an identifier will trigger:
 ```
 warning: identifier contains a non normalized (NFKC) character: '𝛁'
 ```
@@ -97,6 +100,7 @@ This follows the guidelines from the [Unicode Technical Standard #55 - Source Co
 In particular the characters in 5) are identified as "Not_NFKC", i.e. characters that cannot occur in strings normalized to [NFKC](https://unicode.org/reports/tr15/#Norm_Forms).
 
 Note that Unicode specifically [mentions Rust as a positive industry example](https://www.unicode.org/reports/tr55/#General-Security-Profile) that follows the recommendations from the General Security Profile.
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -111,14 +115,25 @@ Note that Unicode specifically [mentions Rust as a positive industry example](ht
 
 * Some people might find it difficult to read superscript and subscript letters on lower resolution screens or when using small font sizes.
 
-* Rust might want to decide in the future to give certain superscripts and subscripts syntactic meaning. For example they might want to interpret `a²` as `a * a` or `a₁` as `a[0]`. The latter sounds espcially unlikely though due to the general disagreement of 0-based vs 1-based indexing.
-
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 If this RFC is not implemented then everyone has to keep using ASCII characters for identifier in scientific code, for example `gradient_energy` or `a_12`.
 
 The impact of not implementing it should be fairly small, but implementing it could invite more scientific oriented people to the Rust language and make it easier for them to implement complex concepts.
+
+Alternatively Rust could decide to give the proposed characters syntatic meaning.
+
+Superscript characters could be interpreted as potentiation, for example `let a = 2; let b = a²;` could be a synonym to `let a = 2; let b = a * a;`.
+This would open up a host of questions and potential issues, like:
+- Should `a²⁻³` be interpreted as `1/a`?
+- There is no superscript character for multiplication `*`.
+
+`∞` could be a synonym or replacement to `f32::INIFITY`, however there is no precedence for using non-ASCII characters in `core`/`std` and this would likely meet considerable opposition.
+
+Derivatives could be added as a language features via auto-differentiation techniques thus giving `∇` and `∂` syntactic meaning, however there is no precedence of this in other languages and similar features are usually provided by libraries.
+
+Subscript characters could be given syntatic meaning, for example `a₁` could be a synonym to `a[1]`, however this would be highly contentious and error prone due to the general disagreement between 0-based vs 1-based indexing and would suffer from similar problems as using superscript for potentiation.
 
 # Prior art
 [prior-art]: #prior-art
@@ -170,6 +185,8 @@ fn main() {
     ᅟ();  // dito
 }
 ```
+
+[C++ P3658R0](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p3658r0.pdf) is a similar proposal with similar reasoning for the C++ language. In particular it states that the characters suggested in this RFC where allowed in C++11 to C++20 as originally published.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
