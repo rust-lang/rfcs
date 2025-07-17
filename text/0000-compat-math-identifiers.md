@@ -30,6 +30,39 @@ let ∇E₁ = 2.0 * (p₁ - c₁);
 let ∇E₂ = 2.0 * (p₂ - c₂);
 ```
 
+A longer example from the "wilds":
+```
+fn strain_energy_hessian_coeffs(l0: f64, l: f64) -> [f64; 4] {
+    let l02 = l0.powi(2);
+    let l03 = l0 * l02;
+    let l04 = l0 * l03;
+    let l05 = l0 * l04;
+    let l2 = l.powi(2);
+    let l3 = l * l2;
+
+    let h = (l02 - l2) / (2.0 * l03);
+    let dh = (3.0 * l2 - l02) / (2.0 * l05);
+
+    [1.0 / l3, -1.0 / l03, dh, 1.0 / l0 - 1.0 / l + h]
+}
+```
+With this RFC one could write:
+```
+fn strain_energy_hessian_coeffs(l₀: f64, l: f64) -> [f64; 4] {
+    let l₀² = l₀.powi(2);
+    let l₀³ = l₀ * l₀²;
+    let l₀⁴ = l₀ * l₀³;
+    let l₀⁵ = l₀ * l₀⁴;
+    let l² = l.powi(2);
+    let l³ = l * l²;
+
+    let h = (l₀² - l²) / (2.0 * l₀³);
+    let dh = (3.0 * l² - l₀²) / (2.0 * l₀⁵);
+
+    [1.0 / l³, -1.0 / l₀³, dh, 1.0 / l₀ - 1.0 / l + h]
+}
+```
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -112,7 +145,6 @@ fn main() {
     println!("鳯 = {}, 鳳 = {}", 鳯, 鳳);
     println!("隱 = {}, 隠 = {}", 隱, 隠);
 }
-
 ```
 
 A vast set of characters added as part of Unicode character sets are easily confusable with other characters.
