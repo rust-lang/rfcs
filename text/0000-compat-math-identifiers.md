@@ -124,16 +124,19 @@ The impact of not implementing it should be fairly small, but implementing it co
 
 Alternatively Rust could decide to give the proposed characters syntatic meaning.
 
-Superscript characters could be interpreted as potentiation, for example `let a = 2; let b = a²;` could be a synonym to `let a = 2; let b = a * a;`.
+Superscript characters could be interpreted as exponentiation, for example `let a = 2; let b = a²;` could be a synonym to `let a = 2; let b = a * a;`.
 This would open up a host of questions and potential issues, like:
 - Should `a²⁻³` be interpreted as `1/a`?
-- There is no superscript character for multiplication `*`.
+- There is no superscript character for multiplication `*` or division `/`.
 
 `∞` could be a synonym or replacement to `f32::INIFITY`, however there is no precedence for using non-ASCII characters in `core`/`std` and this would likely meet considerable opposition.
 
-Derivatives could be added as a language features via auto-differentiation techniques thus giving `∇` and `∂` syntactic meaning, however there is no precedence of this in other languages and similar features are usually provided by libraries.
+Derivatives could be added as a language feature using auto-differentiation techniques and `∇` and `∂` could be given syntactic meaning.
+For example Mathematica supports the syntax `∂ₓf` for a partial derivative of `f` with respect to `x` and the syntax `∇ₓf` for the gradient with respect to `x`.
+Moreover there is [experimental support for automatic differentiation](https://github.com/rust-lang/rust/issues/124509) being worked on for rustc which uses an attribute `#[autodiff(df, ..)]` with a user-provided function name (`df` in this case) for the automatically generated derivative.
+A potential synergy with this RFC would be that the developer can choose `∇f` as the function name of the automatically created derivative via `#[autodiff(∇f, ..)]`, however Rust could also decide to automatically use `∇f` as the name of such derivatives and thus giving `∇f` syntactic meaning.
 
-Subscript characters could be given syntatic meaning, for example `a₁` could be a synonym to `a[1]`, however this would be highly contentious and error prone due to the general disagreement between 0-based vs 1-based indexing and would suffer from similar problems as using superscript for potentiation.
+Subscript characters could be given syntatic meaning, for example `a₁` could be a synonym to `a[1]`, however this would be highly contentious and error prone due to the general disagreement between 0-based versus 1-based indexing and would suffer from similar problems as using superscripts for exponentiation.
 
 # Prior art
 [prior-art]: #prior-art
