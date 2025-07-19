@@ -342,25 +342,6 @@ fn bar(n: i32) {
 }
 ```
 
-### Pitfall 4: Caller location aka [`panic::Location::caller`](https://doc.rust-lang.org/std/panic/struct.Location.html#method.caller) and `#[track_caller]`
-
-Since `#[track_caller]` adds an argument, `#[track_caller]` functions can only tail call other `#[track_caller]` functions. So the following example will not compile.
-
-```rust
-use std::panic::Location;
-
-/// Returns the [`Location`] at which it is called.
-#[track_caller]
-fn get_caller_location() -> &'static Location<'static> {
-    Location::caller()
-}
-
-/// Returns a [`Location`] from within this function's definition.
-fn get_just_one_location() -> &'static Location<'static> {
-    become get_caller_location();
-}
-```
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 <!-- This is the technical portion of the RFC. Explain the design in sufficient detail that:
@@ -452,6 +433,27 @@ pub fn fibonacci(n: u64) -> u64 {
 In this case, a naive author might assume that this is going to be a stack space-efficient implementation since it uses tail recursion instead of normal recursion. However, the outcome is more or less the same since the critical recursive calls are not actually in tail call position.
 
 Further confusion could result from the same-signature restriction where the Rust compiler raises an error since fibonacci and `<u64 as Add>::add` do not share a common signature.
+
+### Caller location ([`panic::Location::caller`](https://doc.rust-lang.org/std/panic/struct.Location.html#method.caller) and `#[track_caller]`) are not supported
+
+Since `#[track_caller]` adds an argument, `#[track_caller]` functions can only tail call other `#[track_caller]` functions. So the following example would not compile.
+However, removing `#[track_caller]` should not be a breaking change, as [it is not part of the stable API surface](https://github.com/rust-lang/rust/issues/87401#issuecomment-910628405) for Rust.
+For tail calls, however, removing an argument is a breaking change, so functions with `#[track_caller]` are **not** allowed to use `become`. ([Though, loosening this restriction might be possible.](https://github.com/rust-lang/rfcs/pull/3407/files/3304fee7542a56e3c671b8ce8a85070904cbf2ba#r2202286180)). Additionally, tail calling into a `#[track_caller]` function from a non-tracking function [might require growing the stack](https://github.com/rust-lang/rfcs/pull/3407/files/3304fee7542a56e3c671b8ce8a85070904cbf2ba#r2202286180), as this would defeat the purpose of tail calling, this is also **not** allowed.
+
+```rust
+use std::panic::Location;
+
+/// Returns the [`Location`] at which it is called.
+#[track_caller]
+fn get_caller_location() -> &'static Location<'static> {
+    Location::caller()
+}
+
+/// Returns a [`Location`] from within this function's definition.
+fn get_just_one_location() -> &'static Location<'static> {
+    become get_caller_location();
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
