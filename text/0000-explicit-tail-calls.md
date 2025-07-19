@@ -463,7 +463,7 @@ maintenance effort. This feature adds a new keyword which will need to be implem
 tooling. However, the primary effort is in correctly interacting with the backends, some of which might not support guaranteeing a tail call (and failing if this not possible):
 - LLVM supports a `musttail` marker to indicate that TCE should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 2023-03-30).
 - [GCC supports](https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html#index-musttail-statement-attribute) an (mostly) equivalent `musttail` marker.
-- WebAssembly also supports guaranteed tail calls as a [standardized feature](https://webassembly.org/features/#table-row-tailcall).
+- WebAssembly also supports guaranteed tail calls as a [standardized feature](https://webassembly.org/features/#table-row-tailcall). However, `tailcall` is currently (July 2025) [not enabled by default](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html#enabled-webassembly-features) for `wasm32-unknown-unknown`. 
 
 Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
 
