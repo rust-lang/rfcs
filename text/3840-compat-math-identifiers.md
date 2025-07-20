@@ -20,18 +20,18 @@ Variables are often adorned with subscripts like `x₁₂` or superscripts like 
 Having these symbols available as Rust identifiers could simplify the implementation of these concepts and stay closer to a reference publication, thus reducing confusing and implementation errors.
 
 For example instead of:
-```
+```rust
 let gradient_energy_1 = 2.0 * (position_1 - center_1);
 let gradient_energy_2 = 2.0 * (position_2 - center_2);
 ```
 one could write:
-```
+```rust
 let ∇E₁ = 2.0 * (p₁ - c₁);
 let ∇E₂ = 2.0 * (p₂ - c₂);
 ```
 
 A longer example from the "wilds":
-```
+```rust
 fn strain_energy_hessian_coeffs(l0: f64, l: f64) -> [f64; 4] {
     let l02 = l0.powi(2);
     let l03 = l0 * l02;
@@ -47,7 +47,7 @@ fn strain_energy_hessian_coeffs(l0: f64, l: f64) -> [f64; 4] {
 }
 ```
 With this RFC one could write:
-```
+```rust
 fn strain_energy_hessian_coeffs(l₀: f64, l: f64) -> [f64; 4] {
     let l₀² = l₀.powi(2);
     let l₀³ = l₀ * l₀²;
@@ -143,7 +143,7 @@ Subscript characters could be given syntatic meaning, for example `a₁` could b
 
 Rust has the philosophy to be open to various cultures and languages and allow them use their native symbols as identifiers.
 Example which compiles in stable Rust without warning:
-```
+```rust
 fn main() {
     let λ = 2.718_f32;  // Greek letter lambda
     let 파이 = 3.141_f32;  // Korean word for "pie"
@@ -154,7 +154,7 @@ fn main() {
 
 Many of these characters are easily confusable if not attuned to the corresponding language or culture.
 Example which compiles in stable Rust without warning:
-```
+```rust
 fn main() {
     let 鳯 = 3;  // U+9CF5: "phoenix" (old variant)
     let 鳳 = 4;  // U+9CF4: modern simplified/traditional
@@ -167,7 +167,7 @@ fn main() {
 
 A vast set of characters added as part of Unicode character sets are easily confusable with other characters.
 Example which compiles in stable Rust and triggers a "warning: identifier contains a non normalized (NFKC) character":
-```
+```rust
 fn main() {
     let l = 1.0;
     let ℓ = l + 2.0;
@@ -179,7 +179,7 @@ fn main() {
 
 There are characters which one might argue should never have been added but are part of allowed Unicode sets.
 Example which compiles in stable Rust and triggers a "warning: identifier contains an uncommon character":
-```
+```rust
 fn ᅟ() {  // U+115F (Hangul Choseong Filler) renders as blank
     println!("boo");
 }
