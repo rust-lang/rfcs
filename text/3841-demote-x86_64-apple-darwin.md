@@ -137,7 +137,7 @@ These users will be stuck on an old compiler version.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-`aarch64-apple-darwin` could be demoted to Tier 3 or support completely removed.
+`x86_64-apple-darwin` could be demoted to Tier 3 or support completely removed.
 There's no strong technical or financial reason to do this at this point in time.
 Should further demotions be proposed,
 those will be evaluated separately and on thier own merits,
