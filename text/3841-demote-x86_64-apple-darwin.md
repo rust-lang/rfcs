@@ -21,6 +21,9 @@ The `x86_64-apple-darwin` target has no long-term future.
 Upcoming changes will affect Rust's ability to ensure that the target meets the Tier 1 requirements,
 so we should demote it to Tier 2 with host tools in a controlled fashion.
 
+The most immediate critical change is that the free GitHub Actions macOS x86\_64 runners that the Rust project relies on will be discontinued soon.
+There is no known long-term replacement for these runners.
+
 ## A brief timeline
 
 - 2020-06-22: Apple [announced plans][trans] to shift away from the x86\_64 architecture.
