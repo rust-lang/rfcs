@@ -72,7 +72,7 @@ Named groups can be used to create code that depends on nested repetitions:
 
 ```rust
 macro_rules! make_functions {
-    ( 
+    (
         // Create a function for each name
         names: [ $names($name:ident),+ ],
         // Optionally specify a greeting
@@ -119,7 +119,7 @@ let mut ret = TokenStream::new();
 for NamesCaptures { name } in greetings {
     let mut fn_body = quote! { println!("function {} called", stringify!($name)); };
 
-    // Append the greeting for each 
+    // Append the greeting for each
     for GreetingCaptures { greeting } in greetings {
         fn_body += quote! { println!("{}", #greeting) };
     }
@@ -146,6 +146,10 @@ macro_rules! rename_fn {
     }
 }
 ```
+
+_TODO: as pointed out in the comments, this syntax is ambivuous between `$group
+()` (recreate the group, add `()` after ) and `$group()` (expand the group).
+`$...group` was proposed as an alterantive._
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -225,7 +229,7 @@ macro_rules! count {
         // Error: attempted to repeat an expression containing no syntax variables
         //↓  the compiler does not know which group this refers to (here there
         //   is only one choice, but that is not always the case).
-        0 $( + 1 )* 
+        0 $( + 1 )*
     }};
 }
 ```
@@ -375,13 +379,13 @@ This can be thought of as a tree structure that loosely matches the token
                 |
                 |-- $outer_a[1]
                 |    `oa[...]`
-    $root      -|            
+    $root      -|
 (entire macro)  |                /- $middle[2,0]
                 |-- $outer_a[2] -|   `m[..]`
                 |    `oa[...]`   |
                 |                \- $middle[2,1]
                 |                    `m[..]`
-                |   
+                |
                 |-- $outer_b[0] --- $y[0,0,0,1]
                     `ob[...]`        `y0`
 
@@ -396,7 +400,7 @@ Summary of captures:
 ```
 
 In the above diagram, `$metavar[i_n, ..., i_1, i_0]` shows that this is the
-`i`th 
+`i`th
 
 
 the `i`th
@@ -618,7 +622,7 @@ need to change slightly._
   _captured_.
 - `${len($metavar)}`: Because `count` becomes more flexible, `len` is no longer
   needed and can be removed.
-- `${ignore($metavar)}`: if this RFC is accepted than `$ignore` can be removed.
+- `${ignore($metavar)}`: if this RFC is accepted then `ignore` can be removed.
   It is used to specify which capture group an expansion group belongs to when
   no metavariables are used in the expansion; with named groups, however, this
   is specified by the group name rather than by contained metavariables.
@@ -701,6 +705,11 @@ determines where to start, and then the following rules are applied:
 - If `level($name) < `level(expression)` (less deeply nested):
   - Walk the entire tree and count each `$name`
   - Reject code with an error if `$name` is not an ancestor
+
+_TODO: this was meant to be compatible with the existing metavariable
+expressions, but after talking to Josh, this should probably be split to
+two separate MVEs. Maybe something along the lines of `count_parents` and
+`count_children` could work._
 
 ```rust
 /* looking at descendents */
