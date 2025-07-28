@@ -67,7 +67,7 @@ by Rust users.
 
 `rustc_scalable_vector` as described later in
 [*Reference-level explanation*][reference-level-explanation] is perma-unstable
-and exists only enables scalable vector types to be defined in the standard
+and exists only to enable scalable vector types to be defined in the standard
 library. The specific vector types are intended to eventually be stabilised, but
 none are proposed in this RFC.
 
@@ -355,8 +355,8 @@ A more general mechanism for enforcing that SIMD types are only used in
 types to have fewer distinct restrictions than other SIMD types, and would
 enable SIMD vectors to be passed by-register, a performance improvement.
 
-Such a mechanism would need be introduced gradually to existing SIMD types with
-a forward compatibility lint. This will be addressed in a forthcoming RFC.
+Such a mechanism would need to be introduced gradually to existing SIMD types
+with a forward compatibility lint. This will be addressed in a forthcoming RFC.
 
 ## Relaxed restrictions
 [relaxed-restrictions]: #relaxed-restrictions
