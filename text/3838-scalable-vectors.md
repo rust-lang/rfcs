@@ -101,12 +101,16 @@ fn sve_add(in_a: Vec<f32>, in_b: Vec<f32>, out_c: &mut Vec<f32>) {
             let c = out_c as *mut f32;
             let c = c.add(i);
 
-            // `svwhilelt_b32` generates a mask based on comparing the current
-            // index against the `len`
+            // `svwhilelt_b32` generates a predicate vector that deals with
+            // the tail of the iteration - it enables the operations which
+            // follow for the first `len` elements overall, but disables
+            // the last `len % step` elements in the last iteration
             let pred = svwhilelt_b32(i as _, len as _);
 
             // `svld1_f32` loads a vector register with the data from address
             // `a`, zeroing any elements in the vector that are masked out
+            //
+            // Does not access memory for inactive elements
             let sva = svld1_f32(pred, a);
             let svb = svld1_f32(pred, b);
 
