@@ -142,7 +142,7 @@ the minimum number of elements the vector contains. For example:
 
 ```rust
 #[rustc_scalable_vector(4)]
-pub struct svfloat32_t { _ty: [f32], }
+pub struct svfloat32_t { _ty: &[f32], }
 ```
 
 As with the existing `repr(simd)`, `_ty` is purely a type marker, used to get
@@ -150,6 +150,17 @@ the element type for the codegen backend.
 
 `svfloat32_t` is a scalable vector with a minimum of four `f32` elements and
 potentially more depending on the length of the vector register at runtime.
+
+`_ty` is purely a type marker, used to get the element type for the codegen
+backend. It must be an array slice containing one of the following types:
+
+- `u8`, `u16`, `u32` or `u64`
+- `i8`, `i16`, `i32` or `i64`
+- `f16`, `f32` or `f64`
+- `bool`
+
+It is not permitted to project into scalable vector types and access the type
+marker field.
 
 ## Choosing `N`
 [choosing-n]: #choosing-n
