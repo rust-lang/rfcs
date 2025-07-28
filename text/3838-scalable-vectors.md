@@ -74,19 +74,17 @@ none are proposed in this RFC.
 ## Using scalable vectors
 [using-scalable-vectors]: #using-scalable-vectors
 
-Scalable vector types correspond to vector registers in hardware with unknown
-size at compile time. However, it will be a known and fixed size at runtime.
-Additional properties could be known during compilation, depending on the
-architecture, such as a minimum or maximum size or that the size must be a
-multiple of some factor.
-
-As previously described, users will not define their own scalable vector types
-and instead use intrinsics from `std::arch`, and this RFC is not proposing any
-such intrinsics, just the infrastructure. However, to illustrate how the types
-and intrinsics that this infrastructure will enable can be used, consider the
+From a user's perspective, writing code for scalable vectors isn't too different
+from when writing code with a fixed sized vector. To illustrate how the types
+and intrinsics that this infrastructure will enable could be used, consider the
 following example that sums two input vectors:
 
 ```rust
+use std::arch::aarch64::{
+    // These intrinsics and types are not proposed by this RFC
+    svcntw, svwhilelt_b32, svld1_f32, svadd_f32_m, svst1_f32
+};
+
 fn sve_add(in_a: Vec<f32>, in_b: Vec<f32>, out_c: &mut Vec<f32>) {
     assert_eq!(in_a.len(), in_b.len());
     assert_eq!(in_a.len(), out_c.len());
@@ -125,9 +123,6 @@ fn sve_add(in_a: Vec<f32>, in_b: Vec<f32>, out_c: &mut Vec<f32>) {
     }
 }
 ```
-
-From a user's perspective, writing code for scalable vectors isn't too different
-from when writing code with a fixed sized vector.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
