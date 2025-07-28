@@ -1,4 +1,4 @@
-- Feature Name: `repr_scalable`
+- Feature Name: `rustc_scalable_vector`
 - Start Date: 2025-07-07
 - RFC PR: [rust-lang/rfcs#3838](https://github.com/rust-lang/rfcs/pull/3838)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -6,16 +6,14 @@
 # Summary
 [summary]: #summary
 
-Extends Rust's existing SIMD infrastructure, `#[repr(simd)]`, with a
-complementary scalable representation, `#[repr(scalable(N)]`, to support
-scalable vector types, such as Arm's Scalable Vector Extension (SVE), or
-RISC-V's Vector Extension (RVV).
+Introduces a new attribute, `#[rustc_scalable_vector(N)]`, which can be used to
+define new scalable vector types, such as those in Arm's Scalable Vector
+Extension (SVE), or RISC-V's Vector Extension (RVV).
 
-Like the existing `repr(simd)` representation, `repr(scalable(N))` is internal
-compiler infrastructure that will be used only in the standard library to
-introduce scalable vector types which can then be stablised. Only the
-infrastructure to define these types are introduced in this RFC, not the types
-or intrinsics that use it.
+`rustc_scalable_vector(N)` is internal compiler infrastructure that will be used
+only in the standard library to introduce scalable vector types which can then
+be stablised. Only the infrastructure to define these types are introduced in
+this RFC, not the types or intrinsics that use it.
 
 This RFC builds on Rust's existing SIMD infrastructure, introduced in
 [rfcs#1199: SIMD Infrastructure][rfcs#1199]. It depends on
@@ -67,7 +65,7 @@ introduce intrinsics and types exposing the scalable vector support in hardware.
 None of the infrastructure proposed in this RFC is intended to be used directly
 by Rust users.
 
-`repr(scalable)` as described later in
+`rustc_scalable_vector` as described later in
 [*Reference-level explanation*][reference-level-explanation] is perma-unstable
 and exists only enables scalable vector types to be defined in the standard
 library. The specific vector types are intended to eventually be stabilised, but
@@ -132,12 +130,12 @@ Types annotated with the `#[repr(simd)]` attribute contains either an array
 field or multiple fields to indicate the intended size of the SIMD vector that
 the type represents.
 
-Similarly, a `scalable(N)` representation is introduced to define a scalable
-vector type. `scalable(N)` accepts an integer to determine the minimum number of
-elements the vector contains. For example:
+Similarly, a `rustc_scalable_vector(N)` representation is introduced to define a
+scalable vector type. `rustc_scalable_vector(N)` accepts an integer to determine
+the minimum number of elements the vector contains. For example:
 
 ```rust
-#[repr(simd, scalable(4))]
+#[rustc_scalable_vector(4)]
 pub struct svfloat32_t { _ty: [f32], }
 ```
 
@@ -154,13 +152,14 @@ Many intrinsics using scalable vectors accept both a predicate vector argument
 and data vector arguments. Predicate vectors determine whether a lane is on or
 off for the operation performed by any given intrinsic. Predicate vectors may
 use different registers of sizes to the vectors containing data.
-`repr(scalable)` is used to define vectors containing both data and predicates.
+`rustc_scalable_vector` is used to define vectors containing both data and
+predicates.
 
-As `repr(scalable(N))` is intended to be a permanently unstable attribute, any
-value of `N` is accepted by the attribute and it is the responsibility of
-whomever is defining the type to provide a valid value. A correct value for `N`
-depends on the purpose of the specific scalable vector type and the
-architecture.
+As `rustc_scalable_vector(N)` is intended to be a permanently unstable
+attribute, any value of `N` is accepted by the attribute and it is the
+responsibility of whomever is defining the type to provide a valid value. A
+correct value for `N` depends on the purpose of the specific scalable vector
+type and the architecture.
 
 For example, with SVE, the scalable vector register length is a minimum of 128
 bits, must be a multiple of 128 bits and a power of 2; and predicate registers
@@ -235,14 +234,14 @@ For example, when instantiating `std::mem::size_of_val` with a scalable vector
 during monomorphisation, the relevant target feature will be added to `size_of_val`
 for codegen.
 
-## Implementing `repr(scalable)`
+## Implementing `rustc_scalable_vector`
 [implementing-repr-scalable]: #implementing-reprscalable
 
-Implementing `repr(scalable)` largely involves lowering scalable vectors to the
-appropriate type in the codegen backend. LLVM has robust support for scalable
-vectors and is the default backend, so this section will focus on implementation
-in the LLVM codegen backend. Other codegen backends can implement support when
-scalable vectors are supported by the backend.
+Implementing `rustc_scalable_vector` largely involves lowering scalable vectors
+to the appropriate type in the codegen backend. LLVM has robust support for
+scalable vectors and is the default backend, so this section will focus on
+implementation in the LLVM codegen backend. Other codegen backends can implement
+support when scalable vectors are supported by the backend.
 
 Most of the complexity of SVE is handled by LLVM: lowering Rust's scalable
 vectors to the correct type in LLVM and the `vscale` modifier that is applied to
@@ -257,8 +256,8 @@ For example, a `<vscale x 4 x f32>` is a scalable vector with a minimum of four
 result in register sizes of 128, 256, 512, 1024 or 2048 and 4, 8, 16, 32, or 64
 `f32` elements respectively.
 
-The `N` in the `#[repr(scalable(N))]` determines the `element_count` used in the
-LLVM type for a scalable vector.
+The `N` in the `#[rustc_scalable_vector(N)]` determines the `element_count` used
+in the LLVM type for a scalable vector.
 
 While it is possible to change the vector length at runtime using a
 [`prctl()`][prctl] call to the kernel, this would require that `vscale` change,
@@ -270,8 +269,8 @@ behaviour, consistent with C and C++.
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- `repr(scalable(N))` is inherently additional complexity to the language,
-  despite being largely hidden from users.
+- `rustc_scalable_vector(N)` is inherently additional complexity to the
+  language, despite being largely hidden from users.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -290,9 +289,9 @@ for scalable vector intrinsics in C should still be applicable to Rust.
 ## Manually-chosen or compiler-calculated element count
 [manual-or-calculated-element-count]: #manually-chosen-or-compiler-calculated-element-count
 
-`repr(scalable(N))` expects `N` to be provided rather than calculating it. This
-avoids needing to teach the compiler how to calculate the required `element`
-count, which isn't always trivial.
+`rustc_scalable_vector(N)` expects `N` to be provided rather than calculating
+it. This avoids needing to teach the compiler how to calculate the required
+`element` count, which isn't always trivial.
 
 Many of the intrinsics which accept scalable vectors as an argument also accept
 a predicate vector. Predicate vectors decide which lanes are on or off for an
@@ -316,9 +315,9 @@ would add extra complexity.
 
 This RFC takes the position that the additional complexity required to have the
 compiler always be able to calculate `N` isn't justified given the permanently
-unstable nature of the `repr(scalable(N))` attribute and the scalable vector
-types defined in `std::arch` are likely to be few in number, automatically
-generated and well-tested.
+unstable nature of the `rustc_scalable_vector(N)` attribute and the scalable
+vector types defined in `std::arch` are likely to be few in number,
+automatically generated and well-tested.
 
 # Prior art
 [prior-art]: #prior-art
