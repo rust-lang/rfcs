@@ -12,7 +12,7 @@ Extension (SVE), or RISC-V's Vector Extension (RVV).
 
 `rustc_scalable_vector(N)` is internal compiler infrastructure that will be used
 only in the standard library to introduce scalable vector types which can then
-be stablised. Only the infrastructure to define these types are introduced in
+be stabilised. Only the infrastructure to define these types are introduced in
 this RFC, not the types or intrinsics that use it.
 
 This RFC builds on Rust's existing SIMD infrastructure, introduced in
