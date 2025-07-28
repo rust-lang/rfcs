@@ -71,7 +71,7 @@ we can see that `x86_64-apple-darwin` has substantially fewer downloads than `aa
 
 The first release after this RFC is merged will be the last one with Tier 1 support for the `x86_64-apple-darwin` target.
 The release after that will demote the target to Tier 2 with host tools,
-which means it will not be tested by CI.
+which means we no longer guarantee that it will be tested by CI.
 
 Once this RFC is merged,
 a blog post will be published on the main Rust Blog announcing the change to alert users of the demotion.
