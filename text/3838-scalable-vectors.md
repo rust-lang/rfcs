@@ -88,6 +88,8 @@ following example that sums two input vectors:
 
 ```rust
 fn sve_add(in_a: Vec<f32>, in_b: Vec<f32>, out_c: &mut Vec<f32>) {
+    assert_eq!(in_a.len(), in_b.len());
+    assert_eq!(in_a.len(), out_c.len());
     let len = in_a.len();
     unsafe {
         // `svcntw` returns the actual number of elements that are in a 32-bit
