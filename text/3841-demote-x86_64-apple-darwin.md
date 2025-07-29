@@ -106,6 +106,11 @@ These users will be stuck on an old compiler version.
   This would be a temporary solution,
   as eventually Apple will [sunset Rosetta 2][trans].
 
+  We may choose to run tests in emulation even after the target is demoted to Tier 2 with host tools.
+  That change would be evaluated independently from this RFC and in a similar fashion to other non-Tier-1 targets with extra testing.
+  This evaluation would include aspects like CI complexity, test flakiness, test execution time, ability of contributors to have access to the hardware to fix issues, etc.
+  Any extra testing would be at the whim of various Rust teams to reduce or remove at any point with no prior notice.
+
 - The Rust Foundation could pay for GitHub Actions runners that will continue to use the x86\_64 architecture,
   such as `macos-13-large`, `macos-14-large`, or `macos-15-large`.
   This would be a temporary solution,
