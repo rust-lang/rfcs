@@ -305,6 +305,48 @@ See "Open questions" section.
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
+## Alternative: `#[rust_symbol_export_level]`
+
+The `#[export_visibility = ...]` proposed in this RFC supports directly
+controlling an exact visibility level of a symbol.  One alternative is
+to control the visibility indirectly, levereging the fact that `#[no_mangle]`
+and `#[export_name = ...]` symbols are currently public only because:
+
+* Such symbols are treated as `SymbolExportLevel::C`:
+  https://github.com/rust-lang/rust/blob/3048886e59c94470e726ecaaf2add7242510ac11/compiler/rustc_codegen_ssa/src/back/symbol_export.rs#L593-L605
+* `SymbolExportLevel::C` translates into public visibility, but
+  visibility of `SymbolExportLevel::Rust` may be controlled via
+  `-Zdefault-visibility=...`:
+  https://github.com/rust-lang/rust/blob/3048886e59c94470e726ecaaf2add7242510ac11/compiler/rustc_monomorphize/src/partitioning.rs#L941-L948
+
+Special thanks to @bjorn3 for proposing this alternative in
+https://github.com/rust-lang/rfcs/pull/3834#issuecomment-2978073435
+
+This alternative has been prototyped in
+https://github.com/rust-lang/rust/commit/9dd4d3f6b2beecb85ff4220502a8c7f61edca839
+and tested to verify that it also addresses https://crbug.com/418073233
+(with similar test/repro steps as in #comment12 of that bug, but using
+https://crrev.com/c/6580611/3).
+
+Other notes:
+
+* Pros:
+    - It is simpler
+      (`#[rust_symbol_export_level]` vs `#[export_visibility = "<some value>"]`)
+      both for users and for implementation.
+    - It avoids some problems and open questions associated with
+      `#[export_visibility = ...]`:
+        - No `dylib` trouble (see [hidden-vs-dylibs])
+        - No need to define behavior of specific visibilities - this question
+          is punted to `-Zdefault-visibility=...`.
+          See also [cross-platform-behavior], [interposable-vs-dllexport]
+          and [interposable-vs-llvm].
+* Cons:
+    - Doesn't give the same level of control as C++ attributes
+* Open questions:
+    - The name of the attribute proposed in this alternative is subject to
+      change if a better name is proposed.
+
 ## Alternative: version scripts
 
 Using
@@ -505,6 +547,7 @@ answering the `dylib`-vs-`hidden`-visibility problem:
   code ends up calling a hidden symbol from the other crate.
 
 ## Cross-platform behavior
+[cross-platform-behavior]: #cross-platform-behavior
 
 We don't really know
 whether the `hidden` / `protected` / `interposable` visibilities
