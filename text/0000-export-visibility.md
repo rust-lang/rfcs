@@ -346,6 +346,11 @@ Other notes:
 * Open questions:
     - The name of the attribute proposed in this alternative is subject to
       change if a better name is proposed.
+* Possible follow-ups (but probably out-of-scope for this RFC):
+    - @chorman0773 pointed out in
+      https://github.com/rust-lang/rfcs/pull/3834#issuecomment-2981459636
+      that an inverse attribute may also be desirable in some scenarios
+      (e.g. `c_symbol_export_level`).
 
 ## Alternative: version scripts
 
