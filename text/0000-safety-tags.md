@@ -278,8 +278,9 @@ There are alternative discussion or Pre-RFCs on IRLO:
   * It’s a good idea to embed safety requirements into doc comments, which aligns with one of the
     goals in our RFC.
 * 2025-07: [Pre-RFC: Safety Property System](https://internals.rust-lang.org/t/pre-rfc-safety-property-system/23252) proposed by vague
-  * It's a draft of our current proposal, but more focused on custom linter's design.
-  * The critical parts have already been refined from Clippy’s perspective.
+  * It's a draft of our current proposal, but more focused on custom linter's design. Also see 
+    [this thread in opsem channel](https://rust-lang.zulipchat.com/#narrow/channel/136281-t-opsem/topic/Safety.20Property.20System/with/530679491).
+  * The critical parts have already been refined from Clippy’s perspective in current proposal.
 
 ## Alternatives from Rust for Linux
 
