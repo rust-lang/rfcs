@@ -138,10 +138,10 @@ LLL | unsafe { ptr::read(ptr) }
     = NOTE: See core::ptr::invariants::Initialized
 ```
 
-The process of verifying whether a tag is absent is referred to as tag discharge.
+The process of verifying whether a tag is present is referred to as tag discharge.
 
 Note that it's allowed to discharge tags of unsafe callees onto the unsafe caller for unsafe
-encapsulation:
+delegation or propogation:
 
 ```rust
 #[clippy::safety { ValidPtr, Aligned, Initialized }] // ✅
