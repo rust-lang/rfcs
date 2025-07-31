@@ -140,6 +140,16 @@ LLL | unsafe { ptr::read(ptr) }
 
 The process of verifying whether a tag is absent is referred to as tag discharge.
 
+Note that it's allowed to discharge tags of unsafe callees onto the unsafe caller for unsafe
+encapsulation:
+
+```rust
+#[clippy::safety { ValidPtr, Aligned, Initialized }] // ✅
+unsafe fn constructor<T>() -> T {
+    unsafe { read(...) }
+}
+```
+
 ## Safety Tags as Ordinary Items
 
 Before tagging a function, we must declare them as ordinary items with `#[clippy::safety::tag]` such
@@ -209,7 +219,7 @@ Currently, safety tags requires the following unstable features
 Since the safety-tag mechanism is implemented primarily in Clippy and rust-analyzer, no additional
 support is required from rustc.
 
-But We ask the libs team to adopt safety tags for all public `unsafe` APIs in libstd, along with
+But we ask the libs team to adopt safety tags for all public `unsafe` APIs in libstd, along with
 their call sites. To enable experimentation, a nightly-only library feature
 `#![feature(safety_tags)]` should be introduced and remain unstable until the design is finalized.
 
