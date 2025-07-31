@@ -21,7 +21,6 @@ and provide first-class IDE support.
 #![feature(custom_inner_attributes)]
 #![clippy::safety(invariant::ValidPtr)] // 💡
 
-
 pub mod invariant {
     #[clippy::safety::tag]
     pub fn ValidPtr() {}
@@ -239,14 +238,16 @@ Safety-tag analysis requirements:
 
 * Harvest every item marked `#[clippy::safety::tag]`, including those pulled in from dependencies.  
 * Offer path completion for `#![clippy::safety { ... }]`.  
-* Offer tag-name completion for `#[clippy::safety]` on unsafe functions, let-statements, or expressions.  
-* Validate all tags inside `#[clippy::safety]`, and support “go-to-definition” plus inline documentation hover.
+* Offer tag-name completion for `#[clippy::safety]` on unsafe functions, let-statements, or
+  expressions.  
+* Validate all tags inside `#[clippy::safety]`, and support “go-to-definition” plus inline
+  documentation hover.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 Even though safety tags are machine-readable, their correctness still hinges on human review:
-developers can silence Clippy by discharging tags without verifying the underlying obligations.
+developers can silence Clippy by discharging tags without verifying underlying safety requirements.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -318,7 +319,7 @@ Currently, there are efforts on introducing contracts and formal verification in
 * [verify-rust-std] pursues applying formal verification tools to libstd. Also see Rust Foundation
   [announcement][vrs#ann], project goals during [2024h2] and [2025h1].
 
-While safety tags are less formally verified, intended to be a check list on safety requirements.
+While safety tags are less formally verified and intended to be a check list on safety requirements.
 
 [verify-rust-std]: https://github.com/model-checking/verify-rust-std
 [vrs#ann]: https://foundation.rust-lang.org/news/rust-foundation-collaborates-with-aws-initiative-to-verify-rust-standard-libraries/
@@ -336,7 +337,7 @@ Crates with heavy unsafe-trait usage will likely need. We’d welcome more minds
 
 ## Tagging on Datastructures
 
-We believe safety obligations are almost always imposed by unsafe functions, so tagging a struct,
+We believe safety requirements are almost always imposed by unsafe functions, so tagging a struct,
 enum, or union is neither needed nor permitted.
 
 ## Tagging on Unsafe Fields
