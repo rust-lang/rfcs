@@ -12,7 +12,7 @@ tag every unsafe function and call with `#[safety { SP1, SP2 }]`.
 Safety tags refine today’s safety-comment habits: a featherweight syntax that condenses every
 requirement into a single, check-off reminder.
 
-The following snippet [compiles] today, but we expect Clippy and rust-analyzer to enforce tag checks
+The following snippet [compiles] today, but we expect Clippy and Rust-Analyzer to enforce tag checks
 and provide first-class IDE support.
 
 [compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=056cbe626a7cc92a317e38e9f54cb1fb
@@ -105,7 +105,7 @@ We can also attach comments for a tag or a group of tags to clarify how safety r
 ```rust
 #[clippy::safety {
   InBounded, ValidNum: "`n` won't exceed isize::MAX here, so `p.add(n)` is fine";
-  ValidPtr, Aligned, Initialized: "addr range p..p+n is property initialized"
+  ValidPtr, Aligned, Initialized: "addr range p..p+n is properly initialized from aligned memory"
 }]
 for _ in 0..n {
     unsafe {
@@ -189,12 +189,12 @@ That's to say:
 
 [uninhabited]: https://doc.rust-lang.org/reference/glossary.html#uninhabited
 [type namespace]: https://doc.rust-lang.org/reference/names/namespaces.html
-[item scopes]: https://doc.rust-lang.org/reference/names/scopes.html#item-scopes
+[scopes]: https://doc.rust-lang.org/reference/names/scopes.html#item-scopes
 [visibility]: https://doc.rust-lang.org/reference/visibility-and-privacy.html
 [`UseTree`]: https://doc.rust-lang.org/reference/items/use-declarations.html
 
 Tags are treated as items so rustdoc can render their documentation and hyperlink tag references.
-And rust-analyzer can offer **full IDE support**: completion, go-to-definition/declaration, and
+And Rust-Analyzer can offer **full IDE support**: completion, go-to-definition/declaration, and
 doc-hover.
 
 Tags constitute a public API; therefore, any alteration to their declaration or definition must be
@@ -216,7 +216,7 @@ Currently, safety tags requires the following unstable features
 * `#![feature(proc_macro_hygiene, stmt_expr_attributes)]` for tagging statements or expressions.
 * `#![feature(custom_inner_attributes)]` for `#![clippy::safety {}]` imports
 
-Since the safety-tag mechanism is implemented primarily in Clippy and rust-analyzer, no additional
+Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
 support is required from rustc.
 
 But we ask the libs team to adopt safety tags for all public `unsafe` APIs in libstd, along with
@@ -308,9 +308,9 @@ more about:
     discharges, and the careful handling of soundness hazards when safety rules evolve. Most are
     compatible with our proposal.
   * The principal divergence is syntactic: Predrag embeds the rules in doc- and line-comments, which
-    remain highly readable for both humans and tools, yet are discarded early by the compiler. This
-    makes retrieving a rule for a specific expression far harder than with 
-    [`stmt_expr_attributes`](https://github.com/rust-lang/rust/issues/15701).
+    remain highly readable for humans, but not so much for tools, because line-comments are 
+    discarded early by the compiler. This makes retrieving a rule for a specific expression far 
+    harder than with [`stmt_expr_attributes`](https://github.com/rust-lang/rust/issues/15701).
 
 Originally, we only focus on libstd's common safety propeties ([paper]), but noticed the RustWeek
 [meeting note] in zulipchat. Thus [tag-std#3](https://github.com/Artisan-Lab/tag-std/issues/3) is
@@ -403,18 +403,18 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 Sometimes it’s useful to declare a set of safety tags on an unsafe function while discharging only
 one of them.
 
-For instance, `ptr::read` could expose the group `any { DropCheck, CopyType }` and then discharge
-either `DropCheck` or `CopyType` at the call site, depending on the concrete type `T`.
+For instance, `ptr::read` could expose the grouped tag `any { DropCheck, CopyType }` and then
+discharge either `DropCheck` or `CopyType` at the call site, depending on the concrete type `T`.
 
 Another instance is `<*const T>::as_ref`, whose safety doc states that the caller must guarantee
-“the pointer is either null or safely convertible to a reference.” This can be expressed as
+“the pointer is either null or safely convertible to a reference”. This can be expressed as
 `#[clippy::safety { any { Null, ValidPtr2Ref } }]`, allowing the caller to discharge whichever tag
 applies.
 
 ## Entity References and Code Review Enhancement
 
-To cut boilerplate or link related code locations, we introduce `#[clippy::safety::ref(...)]`, which
-establishes a two-way reference:
+To cut boilerplate or link related code locations, we introduce `#[clippy::safety::ref(...)]` which
+establishes a two-way reference.
 
 An example of this is [IntoIter::try_fold][vec_deque] of VecDeque, using `#[ref]` for short:
 
