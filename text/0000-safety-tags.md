@@ -19,7 +19,7 @@ and provide first-class IDE support.
 
 ```rust
 #![feature(custom_inner_attributes)]
-#![clippy::safety(invariant::ValidPtr)] // 💡
+#![clippy::safety::use(invariant::*)] // 💡
 
 pub mod invariant {
     #[clippy::safety::tag]
@@ -165,19 +165,22 @@ fn Aligned() {}
 
 Tags live in their own [type namespace] carry item-level [scopes] and obey [visibility] rules,
 keeping the system modular and collision-free. Since they are never referenced directly as real
-items inside the safety-macro, importing them uses a dedicated syntax:
+items, we propose importing them uses a dedicated syntax: inner-styled or outer-styled 
+`clippy::safety::use` tool attribute on modules:
 
 ```rust
-#![clippy::safety { UseTree })]
+#![clippy::safety::use { UseTree })] // {} signifies a delimiter here, thus () also works
 ```
 
 [`UseTree`] follows the exact grammar of the `use` declaration. Some examples:
 
 ```rust
-// at the top of module:
-#![clippy::safety { core::ptr::invariants::* }]
-#![clippy::safety { core::ptr::invariants::ValidPtr }]
-#![clippy::safety { core::ptr::invariants::{ValidPtr, Aligned} }]
+#[clippy::safety::use { core::ptr::invariants::* }]
+mod foo;
+
+mod bar {
+    #![clippy::safety::use { core::ptr::invariants::{ValidPtr, Aligned} }]
+}
 ```
 
 That's to say:
@@ -214,7 +217,7 @@ surface the deprecation warning whenever the tag is used w.r.t definitions and d
 
 Currently, safety tags requires the following unstable features
 * `#![feature(proc_macro_hygiene, stmt_expr_attributes)]` for tagging statements or expressions.
-* `#![feature(custom_inner_attributes)]` for `#![clippy::safety {}]` imports
+* `#![feature(custom_inner_attributes)]` for `#![clippy::safety::use(...)]` imports
 
 Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
 support is required from rustc.
@@ -233,7 +236,7 @@ Procedure:
    referenced tag is defined and accessible.
 3. Verify that every unsafe call carries the required safety tags:
    * Resolve the callee, collect its declared tags, then walk outward from the call site until the
-     function’s own signature confirms these tags are listed in its `#![clippy::safety { ... }]`
+     function’s own signature confirms these tags are listed in its `#![clippy::safety::use(...)]`
      attribute.
    * Tags are only discharged inside or onto an `unsafe fn`; it's an error to tag a safe function.
    * If an unsafe call lacks any required tag, emit a diagnostic whose severity (warning or error)
@@ -246,11 +249,11 @@ definition and discharge is strictly valid.
 
 Safety-tag analysis requirements:
 
-* Harvest every item marked `#[clippy::safety::tag]`, including those pulled in from dependencies.  
-* Offer path completion for `#![clippy::safety { ... }]`.  
-* Offer tag-name completion for `#[clippy::safety]` on unsafe functions, let-statements, or
-  expressions.  
-* Validate all tags inside `#[clippy::safety]`, and support “go-to-definition” plus inline
+* Harvest every item marked `#[clippy::safety::tag]`, including those pulled in from dependencies.
+* Offer tag path completion for `#![clippy::safety::use(...)]`.
+* Offer tag name completion for `#[clippy::safety { ... }]` on unsafe functions, let-statements, or
+  expressions.
+* Validate all tags inside `#[clippy::safety { ... }]`, and support “go-to-definition” plus inline
   documentation hover.
 
 # Drawbacks
@@ -299,7 +302,7 @@ more about:
 * 2024-09: [Rust Safety Standard: Increasing the Correctness of unsafe Code][Rust Safety Standard]
   proposed by Benno Lossin
   * These slides outline the motivations and objectives of safety-documentation standardization —
-    exactly what our proposal aims to deliver.  
+    exactly what our proposal aims to deliver.
   * They omit implementation details; nevertheless, Predrag (see next line) and we remain faithful
     to their intent.
 * 2024-10: [Automated checking of unsafe code requirements](https://hackmd.io/@predrag/ByVBjIWlyx)
