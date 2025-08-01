@@ -722,14 +722,14 @@ applies.
 To cut boilerplate or link related code locations, we introduce `#[safety::ref(...)]` which
 establishes a two-way reference.
 
-An example of this is [IntoIter::try_fold][vec_deque] of VecDeque, using `#[ref]` for short:
+An example of this is [`IntoIter::try_fold`][vec_deque] of VecDeque, using `#[ref]` for short:
 
 [vec_deque]: https://github.com/rust-lang/rust/blob/ebd8557637b33cc09b6ee8273f3154d5d3af6a15/library/alloc/src/collections/vec_deque/into_iter.rs#L104
 
 ```rust
 fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
     impl<'a, T, A: Allocator> Drop for Guard<'a, T, A> {
-        #[ref(try_fold)] // 💡 ptr::read below relies on this drop impl
+        #[ref(try_fold)] // 💡 unsafety of ptr::read below relies on this drop impl
         fn drop(&mut self) { ... }
     }
     ...
@@ -739,7 +739,7 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
 
         #[ref(try_fold)] // 💡
         #[safety {
-            ValidPtr, Aligned, Initialized,
+            ValidPtr, Aligned, Initialized;
             DropCheck: "Because we incremented `guard.consumed`, the deque \
               effectively forgot the element, so we can take ownership."
         }]
@@ -781,8 +781,10 @@ fn try_rfold<B, F, R>(&mut self, mut init: B, mut f: F) -> R {
 }
 ```
 
-These `#[ref]` annotations act as cross-references that nudge developers to inspect every linked
-site. When either end or the code around it changes, reviewers are instantly aware of all affected
-locations that Clippy reports and thus can assess if every referenced safety requirement is still
-satisfied.
+These `#[ref]` tags act as cross-references that nudge developers to inspect every linked site. When
+either end or the code around it changes, reviewers are instantly aware of all affected locations
+and thus can assess if every referenced safety requirement is still satisfied.
 
+Clippy can generate a diff-style report that pinpoints every location where changes to referenced
+HIR nodes occur between two commits or crate versions, enabling more focused code reviews. To
+improve dev experiences, Rust-Analyzer can retrieve every ref sites from a given ref tag object.
