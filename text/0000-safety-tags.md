@@ -343,6 +343,39 @@ While safety tags are less formally verified and intended to be a check list on 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+## Should Tags Take Arguments?
+
+If a tag takes arguments, how should the tag declared? An uninhabited enum doesn't express 
+correct semantics anymore. The closest item is a function with arguments. But it's brings
+many problems, like 
+* What argument types should be on such tag declaration functions? Do we need to declare extra 
+types specifically for such tag declaration?
+* Is there a argument check on tag definitions on unsafe functions? Are we reinventing contracts
+system again?
+* Or just only keep uninhabited enums as tag declaration, and allow any arguments for all tags,
+but don't check the validity arguments. Tag arguments enhance precision of safety operation,
+but no checks on them avoid any complicated interaction with type system. We can make a compromise.
+
+When a tag needs parameters, we must decide what its declaration looks like.  An uninhabited enum
+can no longer express “this tag carries data”, so the nearest legal item is a function whose
+parameters represent the tag’s arguments.  Unfortunately, this immediately raises design questions:
+
+1. **Argument types**  Which types are allowed in the declaration?  Do we have to introduce new,
+   purpose-built types just so the compiler can see them at the use-site?
+
+2. **Definition-side checking**  Will `unsafe fn` definitions be obliged to supply arguments that
+   type-check against the declaration?  If so, are we quietly reinventing a full contract system?
+
+I'd like to propose a solution or rather compromise here by trading strict precision for simplicity:
+
+We could keep uninhabited enums as the only formal declaration and allow *any* arguments at use
+sites, skipping all validation. Tag arguments would still refine the description of an unsafe
+operation, but they are never type checked.
+
+Also see [this][tag-args] RFC discussion for our thoughts.
+
+[tag-args]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2246551643
+
 ## Tagging on Unsafe Traits and Impls
 
 We can extend safety definitions to unsafe traits and require discharges in unsafe trait impls.
