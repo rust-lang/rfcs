@@ -104,13 +104,13 @@ We can also attach comments for a tag or a group of tags to clarify how safety r
 
 ```rust
 #[clippy::safety {
-  InBounded, ValidNum: "`n` won't exceed isize::MAX here, so `p.add(n)` is fine";
   ValidPtr, Aligned, Initialized: "addr range p..p+n is properly initialized from aligned memory"
+  InBounded, ValidNum: "`n` won't exceed isize::MAX here, so `p.add(n)` is fine";
 }]
 for _ in 0..n {
     unsafe {
-        p = p.add(1);
         c ^= p.read();
+        p = p.add(1);
     }
 }
 ```
