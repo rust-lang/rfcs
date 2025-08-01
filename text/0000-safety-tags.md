@@ -344,7 +344,7 @@ While safety tags are less formally verified and intended to be a check list on 
 
 We can extend safety definitions to unsafe traits and require discharges in unsafe trait impls.
 
-Crates with heavy unsafe-trait usage will likely need. We’d welcome more minds on this.
+Crates with heavy unsafe-trait usage likely needs the extension. We’d welcome more minds on this.
 
 ## Tagging on Datastructures
 
@@ -353,11 +353,11 @@ enum, or union is neither needed nor permitted.
 
 ## Tagging on Unsafe Fields
 
-Unsafe fields are already declared and accessed with the `unsafe` keyword, often accompanied by
-safety comments. We could extend safety tags to cover unsafe fields as well, both in their
-definitions and at every access point they are discharged.
+[Unsafe fields] are declared and accessed with the `unsafe` keyword, often accompanied by safety
+comments. We could extend safety tags to cover unsafe fields as well, both in their definitions and
+at every access point they are discharged.
 
-[unsafe field]: https://github.com/rust-lang/rfcs/pull/3458
+[Unsafe fields]: https://github.com/rust-lang/rfcs/pull/3458
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
