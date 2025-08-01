@@ -38,27 +38,76 @@ fn main() {
 # Motivation
 [motivation]: #motivation
 
+## Safety Invariants: Forgotten by Authors, Hidden from Reviewers
+
 To avoid the misuse of unsafe code, Rust developers are encouraged to provide clear safety comments
-for unsafe APIs. While these comments are generally human-readable, they can be ambiguous and
-laborious to write. Even the current best practices in the Rust standard library are somewhat ad hoc
-and informal. Moreover, safety comments are often repetitive and may be perceived as less important
+for unsafe APIs. Safety comments are often repetitive and may be perceived as less important
 than the code itself, which makes them error-prone and increases the risk that reviewers may
 overlook inaccuracies or missing safety requirements.
 
-For instance, a severe problem may arise if the safety requirements of an API change over time:
-downstream users may be unaware of such changes and thus be exposed to security risks. Therefore, we
-propose to improve the current practice of writing safety comments by making them checkable through
-a system of safety tags. These tags are designed to be:
+Recent Rust issues [#134496],[#135805], and [#135009] illustrate the problem: several libstd APIs
+silently rely on the global allocator, yet their safety comments never state the crucial invariant
+that any raw pointer passed to them must refer to memory allocated by that same global allocator.
+The pattern is always the same.
 
-* Compatible with existing safety documentation: Safety tags should be expressive enough to
-  represent current safety comments, especially as rendered in today's rustdoc HTML pages.
-* Usable by compiler tools for safety checking: If no safety tags are provided for an unsafe API,
-  lints should be emitted to remind developers to provide safety requirements. If a safety tag is
-  declared for an unsafe API but not discharged at a callsite, lints should be emitted to alert
-  developers about potentially overlooked safety requirements.
+```rust
+// Ptr is possibly from another allocation.
+pub unsafe fn from_raw(ptr: *const T) -> Self {
+    // SmartPoiner can be Box, Arc, Rc, and Weak.
+    unsafe { SmartPoiner::from_raw_in(ptr, Global) }
+}
+```
+
+[#134496]: https://github.com/rust-lang/rust/pull/134496
+[#135805]: https://github.com/rust-lang/rust/pull/135805
+[#135009]: https://github.com/rust-lang/rust/pull/135009
+
+Even if the safety documentation is complete, two problems remain:
+
+- When *writing* the call, the author may forget the inline safety comment that proves every
+  invariant has been identified and upheld.  
+- When *reviewing* the call, the absence of such a comment forces the auditor to reconstruct the
+  required invariants from scratch, with no assurance that the author considered them at all.
+
+## Granular Unsafe: How Small Is Too Small?
+
+The unsafe block faces a built-in tension:
+- **Precision** demands the smallest possible scope—hence proposals for prefix or postfix `unsafe`
+  operators that wrap a single unsafe call (see “[Alternatives from IRLO]” for such proposals).  
+- **Completeness** demands the opposite: unsafe code often depends on surrounding safe (or other
+  unsafe) code to satisfy its safety invariants, so the scope that must be considered “safe” 
+  balloons outward.
+
+[Alternatives from IRLO]: #IRLO
+
+## Safety Invariants Have No Semver
+
+A severe problem may arise if the safety requirements of an API change over time: downstream users
+may be unaware of such changes and thus be exposed to security risks. 
+
+## Formal Contracts, Casual Burden
+
+[Contracts][contracts] excel at enforcing safety invariants rigorously, but they demand the
+precision as well as overhead of formal verification, making them too heavy for everyday projects.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
+
+We propose **checkable safety comments** via Clippy’s new **safety-tag** system, addressing today’s
+ad-hoc practice with four concrete gains:
+
+1. **Shared clarity**. Authors attach a short tag above every unsafe operation; reviewers instantly
+   see which invariant must hold and where it is satisfied.
+
+2. **Semantic granularity**. Tags can label a single unsafe call, a loop body, or the entire
+   caller - no longer constrained by the visual boundaries of `unsafe {}`.
+
+3. **Versioned contracts**. Tags are crate-level items; any change to their declaration or
+   definition is a **semver-breaking** API change, so safety invariants evolve explicitly.
+
+4. **Lightweight checking**. Clippy only matches tag paths. No heavyweight formal proofs, keeping
+   the system easy to adopt and understand.
+
 
 ## Syntax of Safety Tags
 
@@ -267,6 +316,8 @@ developers can silence Clippy by discharging tags without verifying underlying s
 
 ## Alternatives from IRLO
 
+<a id="IRLO"></a>
+
 There are alternative discussion or Pre-RFCs on IRLO:
 
 * 2023-10: [Ability to call unsafe functions without curly brackets](https://internals.rust-lang.org/t/ability-to-call-unsafe-functions-without-curly-brackets/19635/22)
@@ -327,14 +378,14 @@ opened to support Rust for Linux on safety standard.
 [prior-art]: #prior-art
 
 Currently, there are efforts on introducing contracts and formal verification into Rust:
-* [contracts](https://rust-lang.github.io/rust-project-goals/2024h2/Contracts-and-invariants.html):
-  the lang experiment has been implemented since
-  [rust#128044](https://github.com/rust-lang/rust/issues/128044).
+* [contracts]: the lang experiment has been implemented since [rust#128044].
 * [verify-rust-std] pursues applying formal verification tools to libstd. Also see Rust Foundation
   [announcement][vrs#ann], project goals during [2024h2] and [2025h1].
 
 While safety tags are less formally verified and intended to be a check list on safety requirements.
 
+[contracts]: https://rust-lang.github.io/rust-project-goals/2024h2/Contracts-and-invariants.html
+[rust#128044]: https://github.com/rust-lang/rust/issues/128044
 [verify-rust-std]: https://github.com/model-checking/verify-rust-std
 [vrs#ann]: https://foundation.rust-lang.org/news/rust-foundation-collaborates-with-aws-initiative-to-verify-rust-standard-libraries/
 [2024h2]: https://rust-lang.github.io/rust-project-goals/2024h2/std-verification.html
