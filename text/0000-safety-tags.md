@@ -15,11 +15,11 @@ requirement into a single, check-off reminder.
 The following snippet [compiles] today, but we expect Clippy and Rust-Analyzer to enforce tag checks
 and provide first-class IDE support.
 
-[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=056cbe626a7cc92a317e38e9f54cb1fb
+[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=2f49a8b255b8c066ffd5e3157a70b821
 
 ```rust
 #![feature(custom_inner_attributes)]
-#![clippy::safety::use(invariant::*)] // 💡
+#![clippy::safety::r#use(invariant::*)] // 💡
 
 pub mod invariant {
     #[clippy::safety::tag]
@@ -166,20 +166,20 @@ fn Aligned() {}
 Tags live in their own [type namespace] carry item-level [scopes] and obey [visibility] rules,
 keeping the system modular and collision-free. Since they are never referenced directly as real
 items, we propose importing them uses a dedicated syntax: inner-styled or outer-styled 
-`clippy::safety::use` tool attribute on modules:
+`clippy::safety::r#use` tool attribute on modules:
 
 ```rust
-#![clippy::safety::use { UseTree })] // {} signifies a delimiter here, thus () also works
+#![clippy::safety::r#use { UseTree })] // {} signifies a delimiter here, thus () also works
 ```
 
 [`UseTree`] follows the exact grammar of the `use` declaration. Some examples:
 
 ```rust
-#[clippy::safety::use { core::ptr::invariants::* }]
+#[clippy::safety::r#use { core::ptr::invariants::* }]
 mod foo;
 
 mod bar {
-    #![clippy::safety::use { core::ptr::invariants::{ValidPtr, Aligned} }]
+    #![clippy::safety::r#use { core::ptr::invariants::{ValidPtr, Aligned} }]
 }
 ```
 
@@ -217,7 +217,7 @@ surface the deprecation warning whenever the tag is used w.r.t definitions and d
 
 Currently, safety tags requires the following unstable features
 * `#![feature(proc_macro_hygiene, stmt_expr_attributes)]` for tagging statements or expressions.
-* `#![feature(custom_inner_attributes)]` for `#![clippy::safety::use(...)]` imports
+* `#![feature(custom_inner_attributes)]` for `#![clippy::safety::r#use(...)]` imports
 
 Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
 support is required from rustc.
@@ -236,7 +236,7 @@ Procedure:
    referenced tag is defined and accessible.
 3. Verify that every unsafe call carries the required safety tags:
    * Resolve the callee, collect its declared tags, then walk outward from the call site until the
-     function’s own signature confirms these tags are listed in its `#![clippy::safety::use(...)]`
+     function’s own signature confirms these tags are listed in its `#![clippy::safety::r#use(...)]`
      attribute.
    * Tags are only discharged inside or onto an `unsafe fn`; it's an error to tag a safe function.
    * If an unsafe call lacks any required tag, emit a diagnostic whose severity (warning or error)
@@ -250,7 +250,7 @@ definition and discharge is strictly valid.
 Safety-tag analysis requirements:
 
 * Harvest every item marked `#[clippy::safety::tag]`, including those pulled in from dependencies.
-* Offer tag path completion for `#![clippy::safety::use(...)]`.
+* Offer tag path completion for `#![clippy::safety::r#use(...)]`.
 * Offer tag name completion for `#[clippy::safety { ... }]` on unsafe functions, let-statements, or
   expressions.
 * Validate all tags inside `#[clippy::safety { ... }]`, and support “go-to-definition” plus inline
