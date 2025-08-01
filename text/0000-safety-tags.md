@@ -199,11 +199,11 @@ doc-hover.
 
 Tags constitute a public API; therefore, any alteration to their declaration or definition must be
 evaluated against [Semantic Versioning][semver].
-* Adding a tag is a **minor** change.
-* Removing a tag is a **major** change.
+* Adding a tag declaration or definition is a **minor** change.
+* Removing a tag declaration or definition is a **major** change.
 
 To give dependent crates time to migrate, mark obsolete tag items with `#[deprecated]`. Clippy will
-surface the deprecation warning whenever the tag is used.
+surface the deprecation warning whenever the tag is used w.r.t definitions and discharges.
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
 
