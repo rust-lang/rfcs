@@ -477,5 +477,6 @@ fn try_rfold<B, F, R>(&mut self, mut init: B, mut f: F) -> R {
 
 These `#[ref]` annotations act as cross-references that nudge developers to inspect every linked
 site. When either end or the code around it changes, reviewers are instantly aware of all affected
-locations and can verify that every referenced safety requirement is still satisfied.
+locations that Clippy reports and thus can assess if every referenced safety requirement is still
+satisfied.
 
