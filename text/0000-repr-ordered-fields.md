@@ -140,7 +140,10 @@ The warning should come with a machine-applicable fix to switch `repr(C)` to `re
 # Prior art
 [prior-art]: #prior-art
 
-This is discussed in Rationale and Alternatives
+See Rationale and Alternatives as well
+
+* https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/expand.2Frevise.20repr.28.7BC.2Clinear.2C.2E.2E.2E.7D.29.20for.202024.20edition
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
