@@ -573,6 +573,14 @@ By comparison, our proposed syntax is
 [named arguments]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2247342603
 [Lint reasons]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons
 
+## Encapsulate Tag Item Declaration with `define_safety_tag!`
+
+@clarfonthey [suggested][tool macro] a `define_safety_tag!` tool macro which will unlikely happen.
+
+But I think it'd be necessary and handy to hide tag declarations in some cases.
+
+[tool macro]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2245923920
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
