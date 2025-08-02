@@ -17,7 +17,7 @@ Programming languages have historically focused on the quite narrow set of ASCII
 The vast body of scientific literature uses a variety of characters to express concepts from physics, mathematics, biology, robotics and many others.
 Symbols often appearing in equations are Roman letters like `x`, Greek letters like `θ`, and differentiation operators like `∂` and `∇`.
 Variables are often adorned with subscripts like `x₁₂` or superscripts like `x⁺` or `x⁽²⁾`.
-Having these symbols available as Rust identifiers could simplify the implementation of these concepts and stay closer to a reference publication, thus reducing confusing and implementation errors.
+Having these symbols available as Rust identifiers could simplify the implementation of these concepts and stay closer to a reference publication, thus reducing confusion and implementation errors.
 
 For example instead of:
 ```rust
@@ -105,7 +105,7 @@ Note that Unicode specifically [mentions Rust as a positive industry example](ht
 # Drawbacks
 [drawbacks]: #drawbacks
 
-* Characters like `𝛁𝛛𝛻𝜕𝜵𝝏𝝯𝞉𝞩𝟃` are easily confusable with their base versions `∂∇` and can lead to subtle bugs. However the precedence in Rust seems to be to add them alongside their base version but trigger the NFKC warning.
+* Characters like `𝛁𝛛𝛻𝜕𝜵𝝏𝝯𝞉𝞩𝟃` are easily confusable with their base versions `∂∇` and can lead to subtle bugs. However the precedent in Rust is to add them alongside their base version, but trigger the NFKC warning.
 
 * Some developers prefer to only use ASCII characters for programming. This paradigm can be enforced today via `deny(non_ascii_idents)`. This would disallow all characters added by this RFC.
 
@@ -118,7 +118,7 @@ Note that Unicode specifically [mentions Rust as a positive industry example](ht
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-If this RFC is not implemented then everyone has to keep using ASCII characters for identifier in scientific code, for example `gradient_energy` or `a_12`.
+If this RFC is not implemented then everyone has to keep using ASCII characters for identifiers in scientific code, for example `gradient_energy` or `a_12`.
 
 The impact of not implementing it should be fairly small, but implementing it could invite more scientific oriented people to the Rust language and make it easier for them to implement complex concepts.
 
@@ -129,12 +129,12 @@ This would open up a host of questions and potential issues, like:
 - Should `a²⁻³` be interpreted as `1/a`?
 - There is no superscript character for multiplication `*` or division `/`.
 
-`∞` could be a synonym or replacement to `f32::INIFITY`, however there is no precedence for using non-ASCII characters in `core`/`std` and this would likely meet considerable opposition.
+`∞` could be a synonym or replacement to `f32::INIFITY`, however there is no precedent for using non-ASCII characters in `core`/`std` and this would likely meet considerable opposition.
 
 Derivatives could be added as a language feature using auto-differentiation techniques and `∇` and `∂` could be given syntactic meaning.
 For example Mathematica supports the syntax `∂ₓf` for a partial derivative of `f` with respect to `x` and the syntax `∇ₓf` for the gradient with respect to `x`.
-Moreover there is [experimental support for automatic differentiation](https://github.com/rust-lang/rust/issues/124509) being worked on for rustc which uses an attribute `#[autodiff(df, ..)]` with a user-provided function name (`df` in this case) for the automatically generated derivative.
-A potential synergy with this RFC would be that the developer can choose `∇f` as the function name of the automatically created derivative via `#[autodiff(∇f, ..)]`, however Rust could also decide to automatically use `∇f` as the name of such derivatives and thus giving `∇f` syntactic meaning.
+Moreover there is [an experimental feature](https://doc.rust-lang.org/nightly/std/autodiff/attr.autodiff_forward.html) for Rust which provides auto-differentiation via an attribute macro `#[autodiff_forward(name, ..)]` with a user-provided function name for the automatically generated derivative.
+With this RFC `∇f` could be used as the function name, i.e. `#[autodiff_forward(∇foo, ..)]`. However Rust could also decide to automatically use `∇foo` as the derivatives of `foo`, and give `∇` syntactic meaning.
 
 Subscript characters could be given syntatic meaning, for example `a₁` could be a synonym to `a[1]`, however this would be highly contentious and error prone due to the general disagreement between 0-based versus 1-based indexing and would suffer from similar problems as using superscripts for exponentiation.
 
@@ -188,6 +188,7 @@ fn main() {
     ᅟ();  // dito
 }
 ```
+Note that the character is the name of the function, even though it renders inside the parentheses in some browsers.
 
 [C++ P3658R0](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2025/p3658r0.pdf) is a similar proposal with similar reasoning for the C++ language. In particular it states that the characters suggested in this RFC where allowed in C++11 to C++20 as originally published.
 
