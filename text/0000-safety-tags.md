@@ -416,7 +416,7 @@ There are alternative discussion or Pre-RFCs on IRLO:
     [this thread in opsem channel](https://rust-lang.zulipchat.com/#narrow/channel/136281-t-opsem/topic/Safety.20Property.20System/with/530679491).
   * The critical parts have already been refined from Clippy’s perspective in current proposal.
 
-## Alternatives from Rust for Linux
+## Safety Standard Proposal from Rust for Linux
 
 More importantly, our proposal is a big improvement to these proposals, which Rust for Linux care
 more about:
@@ -424,8 +424,14 @@ more about:
   proposed by Benno Lossin
   * These slides outline the motivations and objectives of safety-documentation standardization —
     exactly what our proposal aims to deliver.
-  * They omit implementation details; nevertheless, Predrag (see next line) and we remain faithful
-    to their intent.
+  * They omit implementation details; nevertheless, Predrag (see next section) and we remain
+    faithful to their intent.
+
+[meeting note]: https://hackmd.io/@qnR1-HVLRx-dekU5dvtvkw/SyUuR6SZgx
+[Rust Safety Standard]: https://kangrejos.com/2024/Rust%20Safety%20Standard.pdf
+
+## Why Not Structured Safety Comments?
+
 * 2024-10: [Automated checking of unsafe code requirements](https://hackmd.io/@predrag/ByVBjIWlyx)
   proposed by Predrag
   * Predrag’s proposal focuses on structured safety comments, entity references, requirement
@@ -435,14 +441,24 @@ more about:
     remain highly readable for humans, but not so much for tools, because line-comments are 
     discarded early by the compiler. This makes retrieving a rule for a specific expression far 
     harder than with [`stmt_expr_attributes`](https://github.com/rust-lang/rust/issues/15701).
+* 2025-07: [Reddit Post: Safety Property System](https://internals.rust-lang.org/t/pre-rfc-safety-property-system/23252/22)
+  discussed by Matthieum 
 
-Originally, we only focus on libstd's common safety propeties ([paper]), but noticed the RustWeek
-[meeting note] in zulipchat. Thus [tag-std#3](https://github.com/Artisan-Lab/tag-std/issues/3) is
-opened to support Rust for Linux on safety standard.
+Our proposed syntax looks closer to structured comments:
 
-[meeting note]: https://hackmd.io/@qnR1-HVLRx-dekU5dvtvkw/SyUuR6SZgx
-[Rust Safety Standard]: https://kangrejos.com/2024/Rust%20Safety%20Standard.pdf
-[paper]: https://arxiv.org/abs/2504.21312
+```rust
+#[safety {
+  ValidPtr, Align, Initialized: "`self.head_tail()` returns two slices to live elements.";
+  NotOwned: "because we incremented...";
+}]
+unsafe { ptr::read(elem) }
+```
+
+```rust
+//  SAFETY
+//  - ValidPtr, Aligned, Initialized: `self.head_tail()` returns two slices to live elements.
+//  - NotOwned: because we incremented...
+```
 
 # Prior art
 [prior-art]: #prior-art
