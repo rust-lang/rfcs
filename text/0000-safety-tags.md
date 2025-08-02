@@ -307,7 +307,7 @@ Currently, safety tags requires the following unstable features
 * `#![feature(custom_inner_attributes)]` for `#![safety::import(...)]`.
 
 Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
-support is required from rustc.
+support is required from rustc except registering `safety` tool in every crate.
 
 But we ask the libs team to adopt safety tags for all public `unsafe` APIs in libstd, along with
 their call sites. To enable experimentation, a nightly-only library feature
@@ -350,6 +350,29 @@ developers can silence Clippy by discharging tags without verifying underlying s
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Rationale for the Proposed Implementation
+
+We argued in the [guide-level-explanation] why safety tags are necessary; here we justify the *way*
+they are proposed to implemente.
+
+1. Keep the compiler untouched. Tag checking is an API-style lint, not a language feature. All the
+   `#[safety::*]` information is available in the HIR, so a linter (rather than the compiler) is the
+   right place to enforce the rules.
+
+2. Re-use the existing linter. We prototyped the checks in [safety-tool], but a stand-alone tool
+   cannot scale: project may pin its own toolchain, so we would need one binary per toolchain. We
+   already maintain three separate feature-gated builds just for verify-rust-std, rust-for-linux,
+   and Asterinas. Once the proposal is standardised, the only sustainable path is to upstream the
+   lint pass into Clippy. Project building on stable or nightly toolchains since then will get the
+   checks automatically whenever it runs Clippy. Moreover, if `rust-lang/rust` repo has already
+   undergone Clippy CI, so no extra tooling is required for tag checking on the standard libraries.
+
+3. IDE integration. The same reasoning applies to the language server. A custom server would again
+   be tied to internal APIs and specific toolchains. Extending rust-analyzer is therefore the only
+   practical way to give users first-class IDE support.
+
+[safety-tool]: https://github.com/Artisan-Lab/tag-std/blob/main/safety-tool
 
 ## Alternatives from IRLO
 
@@ -496,8 +519,8 @@ at every access point they are discharged.
 #[safety::checked(Tag1, Tag2 = "reason for what???", Tag3(arg3))] 
 ```
 
-The improved version groups tags within single attribute and uses the `reason` field to explain why
-invariants are satisfied. The idea is from [lint reasons]
+[Lint reasons] inspires the following improved form that groups tags within single attribute and
+uses the `reason` field to explain why invariants are satisfied.
 
 ```rust
 // Alternative2: each groupe of tags is in single attribute
@@ -522,10 +545,16 @@ By comparison, our proposed syntax is
 ```
 
 [named arguments]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2247342603
-[lint reasons]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons
+[Lint reasons]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Better Rustdoc Rendering
+
+Because tags are surfaced as real API items, rustdoc can give `#[safety::declare_tag]`–annotated,
+uninhabited enums (the tag items) special treatment: it renders compact pages for them and
+establishes bidirectional links between tag items and unsafe functions requiring the tags.
 
 ## Generate Safety Docs from Tags
 
@@ -562,6 +591,9 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 #[safety::requires { ValidPtr, Aligned, Initialized }]
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
+
+With support for tag arguments, safety documentation can be made more precise and contextual by
+dynamically injecting the argument values into the reason strings.
 
 ## `any { Option1, Option2 }` Tags
 
