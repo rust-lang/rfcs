@@ -7,30 +7,29 @@
 [summary]: #summary
 
 This RFC introduces a concise safety-comment convention for unsafe code in libstd-adjacent crates:
-tag every unsafe function and call with `#[safety { SP1, SP2 }]`.
+tag every public unsafe function with `#[safety::requires]` and call with `#[safety::checked]`.
 
 Safety tags refine today’s safety-comment habits: a featherweight syntax that condenses every
 requirement into a single, check-off reminder.
 
-The following snippet [compiles] today, but we expect Clippy and Rust-Analyzer to enforce tag checks
-and provide first-class IDE support.
+The following snippet [compiles] today if we enable enough nightly features, but we expect Clippy
+and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 
-[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=2f49a8b255b8c066ffd5e3157a70b821
+[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=8b22aebccf910428008c4423c436d81e
 
 ```rust
-#![feature(custom_inner_attributes)]
-#![clippy::safety::r#use(invariant::*)] // 💡
+#![safety::import(invariant::*)] // 💡
 
 pub mod invariant {
-    #[clippy::safety::tag]
-    pub fn ValidPtr() {}
+    #[safety::declare_tag] // 💡
+    pub enum ValidPtr() {}
 }
 
-#[clippy::safety { ValidPtr }] // 💡
+#[safety::requires { ValidPtr }] // 💡
 pub unsafe fn read<T>(ptr: *const T) {}
 
 fn main() {
-    #[clippy::safety { ValidPtr }] // 💡
+    #[safety::checked { ValidPtr }] // 💡
     unsafe { read(&()) };
 }
 ```
@@ -72,7 +71,7 @@ Even if the safety documentation is complete, two problems remain:
 ## Granular Unsafe: How Small Is Too Small?
 
 The unsafe block faces a built-in tension:
-- **Precision** demands the smallest possible scope—hence proposals for prefix or postfix `unsafe`
+- **Precision** demands the smallest possible scope, hence proposals for prefix or postfix `unsafe`
   operators that wrap a single unsafe call (see “[Alternatives from IRLO]” for such proposals).  
 - **Completeness** demands the opposite: unsafe code often depends on surrounding safe (or other
   unsafe) code to satisfy its safety invariants, so the scope that must be considered “safe” 
@@ -102,19 +101,32 @@ ad-hoc practice with four concrete gains:
 2. **Semantic granularity**. Tags can label a single unsafe call, a loop body, or the entire
    caller - no longer constrained by the visual boundaries of `unsafe {}`.
 
-3. **Versioned contracts**. Tags are crate-level items; any change to their declaration or
-   definition is a **semver-breaking** API change, so safety invariants evolve explicitly.
+3. **Versioned invariants**. Tags are real items; any change to their declaration or definition is a
+   **semver-breaking** API change, so safety invariants evolve explicitly.
 
 4. **Lightweight checking**. Clippy only matches tag paths. No heavyweight formal proofs, keeping
    the system easy to adopt and understand.
 
+## `#[safety]` Tool Attribute and Namespace
+
+Safety tags have no effect on compilation; they merely document safety invariants. Therefore, we
+propose that `#[safety]` be implicitly registered for every crate.
+
+```rust
+#![feature(register_tool)]
+#![register_tool(safety)]
+```
 
 ## Syntax of Safety Tags
 
 Syntax of a safety tag is defined as follows:
 
 ```text
-SafetyTag -> `#` `[` `clippy::safety` `{` Tags `}` `]`
+SafetyTag -> `#` `[` `safety::` Operation Object `]`
+
+Operation -> requires | checked
+
+Object -> `[` Tags `]` | `(` Tags `)` | `{` Tags `}`
 
 Tags -> Tag (`;` Tag)*
 
@@ -126,33 +138,37 @@ ID -> SingleIdent | SimplePath
 Here are some tag examples:
 
 ```rust
-#[clippy::safety { SP }]
-#[clippy::safety { SP1, SP2 }]
+#[safety::requires { SP }]
+#[safety::requires { SP1, SP2 }]
 
-#[clippy::safety { SP1: "reason" }]
-#[clippy::safety { SP1: "reason"; SP2: "reason" }]
+#[safety::checked { SP1: "reason" }]
+#[safety::checked { SP1: "reason"; SP2: "reason" }]
 
-#[clippy::safety { SP1, SP2: "shared reason for the two SPs" }]
-#[clippy::safety { SP1, SP2: "shared reason for the two SPs"; SP3 }]
-#[clippy::safety { SP3; SP1, SP2: "shared reason for the two SPs" }]
+#[safety::checked { SP1, SP2: "shared reason for the two SPs" }]
+#[safety::checked { SP1, SP2: "shared reason for the two SPs"; SP3 }]
+#[safety::checked { SP3; SP1, SP2: "shared reason for the two SPs" }]
 ```
 
-`#[clippy::safety]` is a [tool attribute] that you attach to an unsafe function (or to an expression
-that performs unsafe calls). Take [`ptr::read`]: its safety comment lists three requirements, so we
-create three corresponding tags on the function declaration and mark each one off at the call site.
+`#[safety]` is a tool attribute with two forms to operate on safety invariants:
+* `safety::requires` is placed on an unsafe function’s signature to state the safety invariants that
+callers must uphold;
+* `safety::checked` is placed on an expression or let-statement that wraps an unsafe call.
+
+Take [`ptr::read`] as an example: its safety comment lists three requirements, so we create three
+corresponding tags on the function declaration and mark each one off at the call site.
 
 ```rust
-#[clippy::safety { ValidPtr, Aligned, Initialized }] // defsite
+#[safety::requires { ValidPtr, Aligned, Initialized }] // defsite
 pub unsafe fn read<T>(ptr: *const T) -> T { ... }
 
-#[clippy::safety { ValidPtr, Aligned, Initialized }] // callsite
+#[safety::checked { ValidPtr, Aligned, Initialized }] // callsite
 unsafe { read(ptr) };
 ```
 
 We can also attach comments for a tag or a group of tags to clarify how safety requirements are met:
 
 ```rust
-#[clippy::safety {
+#[safety::checked {
   ValidPtr, Aligned, Initialized: "addr range p..p+n is properly initialized from aligned memory";
   InBounded, ValidNum: "`n` won't exceed isize::MAX here, so `p.add(n)` is fine";
 }]
@@ -167,16 +183,17 @@ for _ in 0..n {
 [tool attribute]: https://doc.rust-lang.org/reference/attributes.html#tool-attributes
 [`ptr::read`]: https://doc.rust-lang.org/std/ptr/fn.read.html
 
-Every safety tag declared on a function must appear in `#[clippy::safety { ... }]` together with an
-optional reason; any omission triggers a warning-by-default diagnostic that lists the missing tags
-and explains each one:
+When calling an unsafe function, tags defined on it must be present in `#[safety::checked]` or
+`#[safety::requires]` together with an optional reason; any omission triggers a warning-by-default
+diagnostic that lists the missing tags and explains each one:
 
 ```rust
 unsafe { ptr::read(ptr) }
 ```
 
 ```rust
-warning: `ValidPtr`, `Aligned`, `Initialized` tags are missing. Add them to `#[clippy::safety { }]`.
+warning: `ValidPtr`, `Aligned`, `Initialized` tags are missing. Add them to `#[safety::checked]` or
+         `#[safety::requires]` if you're sure these invariants are satisfied.
    --> file.rs:xxx:xxx
     |
 LLL | unsafe { ptr::read(ptr) }
@@ -193,42 +210,62 @@ Note that it's allowed to discharge tags of unsafe callees onto the unsafe calle
 delegation or propogation:
 
 ```rust
-#[clippy::safety { ValidPtr, Aligned, Initialized }] // ✅
-unsafe fn constructor<T>() -> T {
-    unsafe { read(...) }
+#[safety::requires { ValidPtr, Aligned, Initialized }] // ✅
+unsafe fn delegation<T>(ptr: *const T) -> T {
+    unsafe { read(ptr) }
+}
+```
+
+Partial discharges are also allowed:
+
+```rust
+#[safety::requires {
+  ValidPtr, Initialized: "ensure the allocation spans at least size_of::<T>() bytes past ptr"
+}]
+unsafe fn propogation<T>(ptr: *const T) -> T {
+    let align = mem::align_of::<T>();
+    let addr = ptr as usize;
+    let aligned_addr = (addr + align - 1) & !(align - 1);
+
+    #[safety::checked { Aligned: "alignment of ptr has be adjusted" }]
+    unsafe { read(ptr) }
 }
 ```
 
 ## Safety Tags as Ordinary Items
 
-Before tagging a function, we must declare them as ordinary items with `#[clippy::safety::tag]` such
-as [uninhabited] types or plain functions:
+Before tagging a function, we must declare them using `#[safety::declare_tag]` as an [uninhabited]
+enum whose value is never constructed:
 
 ```rust
-#[clippy::safety::tag]
+#[safety::declare_tag]
 enum ValidPtr {}
-
-#[clippy::safety::tag]
-fn Aligned() {}
 ```
 
 Tags live in their own [type namespace] carry item-level [scopes] and obey [visibility] rules,
-keeping the system modular and collision-free. Since they are never referenced directly as real
-items, we propose importing them uses a dedicated syntax: inner-styled or outer-styled 
-`clippy::safety::r#use` tool attribute on modules:
+keeping the system modular and collision-free.
+
+However, tag items are only used in safety tool attribute and never really used in user own code, we
+propose importing them uses a dedicated syntax: inner-styled or outer-styled `safety::import` tool
+attribute on modules and takes [`UseTree`] whose grammar is shared with that in `use` declaration.
+Some examples:
 
 ```rust
-#![clippy::safety::r#use { UseTree })] // {} signifies a delimiter here, thus () also works
-```
+// outer-styled import: import tag Bar to foo module
+#[safety::import(crate::invariants::Bar)]
+mod foo;
 
-[`UseTree`] follows the exact grammar of the `use` declaration. Some examples:
+// inner-styled import: equivalent to the above,
+// but must enable #![feature(custom_inner_attributes)]
+mod foo { #![safety::import(crate::invariants::Bar)] }
 
-```rust
-#[clippy::safety::r#use { core::ptr::invariants::* }]
+// Below are examples to import multiple tags into scope.
+
+#[safety::import { core::ptr::invariants::* }]
 mod foo;
 
 mod bar {
-    #![clippy::safety::r#use { core::ptr::invariants::{ValidPtr, Aligned} }]
+    #![safety::import { core::ptr::invariants::{ValidPtr, Aligned} }]
 }
 ```
 
@@ -266,7 +303,7 @@ surface the deprecation warning whenever the tag is used w.r.t definitions and d
 
 Currently, safety tags requires the following unstable features
 * `#![feature(proc_macro_hygiene, stmt_expr_attributes)]` for tagging statements or expressions.
-* `#![feature(custom_inner_attributes)]` for `#![clippy::safety::r#use(...)]` imports
+* `#![feature(custom_inner_attributes)]` for `#![safety::import(...)]`.
 
 Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
 support is required from rustc.
@@ -279,14 +316,13 @@ their call sites. To enable experimentation, a nightly-only library feature
 
 Procedure:
 
-1. Scan the crate for every item marked `#[clippy::safety::tag]`; cache the compiled tag metadata of
+1. Scan the crate for every item marked `#[safety::declare_tag]`; cache the compiled tag metadata of
    upstream dependencies under `target/` for later queries.
-2. Validate every `#![clippy::safety { ... }]` import by a reachability analysis that ensures every
-   referenced tag is defined and accessible.
+2. Validate every tags in `#![safety::import]` through a reachability analysis to ensure the paths
+   are accessible.
 3. Verify that every unsafe call carries the required safety tags:
    * Resolve the callee, collect its declared tags, then walk outward from the call site until the
-     function’s own signature confirms these tags are listed in its `#![clippy::safety::r#use(...)]`
-     attribute.
+     function’s own signature confirms these tags are listed in `#[safety::requires]`.
    * Tags are only discharged inside or onto an `unsafe fn`; it's an error to tag a safe function.
    * If an unsafe call lacks any required tag, emit a diagnostic whose severity (warning or error)
      is governed by the configured Clippy lint level.
@@ -298,12 +334,12 @@ definition and discharge is strictly valid.
 
 Safety-tag analysis requirements:
 
-* Harvest every item marked `#[clippy::safety::tag]`, including those pulled in from dependencies.
-* Offer tag path completion for `#![clippy::safety::r#use(...)]`.
-* Offer tag name completion for `#[clippy::safety { ... }]` on unsafe functions, let-statements, or
-  expressions.
-* Validate all tags inside `#[clippy::safety { ... }]`, and support “go-to-definition” plus inline
-  documentation hover.
+* Harvest every item marked `#[safety::declare_tag]`, including those pulled in from dependencies.
+* Offer tag path completion for `#![safety::import]`.
+* Offer tag name and path completion for `#[safety::requires]` on unsafe functions, and
+  `#[safety::checked]` on let-statements, or expressions.
+* Validate all tags inside `#[safety::{requires,checked}]`, and support “go-to-definition” plus
+  inline documentation hover.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -473,7 +509,7 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
 
 `#[safety]` becomes a procedural macro that expands to both `#[doc]` attributes and the
-`#[clippy::safety]` attribute.
+`#[safety::requires]` attribute.
 
 ```rust
 /// # Safety
@@ -481,7 +517,7 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 /// - ValidPtr: `src` must be [valid] for reads
 /// - Aligned: `src` must be properly aligned. Use [`read_unaligned`] if this is not the case
 /// - Initialized: `src` must point to a properly initialized value of type `T`
-#[clippy::safety { ValidPtr, Aligned, Initialized }]
+#[safety::requires { ValidPtr, Aligned, Initialized }]
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
 
@@ -495,12 +531,12 @@ discharge either `DropCheck` or `CopyType` at the call site, depending on the co
 
 Another instance is `<*const T>::as_ref`, whose safety doc states that the caller must guarantee
 “the pointer is either null or safely convertible to a reference”. This can be expressed as
-`#[clippy::safety { any { Null, ValidPtr2Ref } }]`, allowing the caller to discharge whichever tag
+`#[safety::requires { any { Null, ValidPtr2Ref } }]`, allowing the caller to discharge whichever tag
 applies.
 
 ## Entity References and Code Review Enhancement
 
-To cut boilerplate or link related code locations, we introduce `#[clippy::safety::ref(...)]` which
+To cut boilerplate or link related code locations, we introduce `#[safety::ref(...)]` which
 establishes a two-way reference.
 
 An example of this is [IntoIter::try_fold][vec_deque] of VecDeque, using `#[ref]` for short:
