@@ -271,7 +271,8 @@ mod bar {
 
 That's to say:
 * Tags declared or re-exported in the current module are automatically in scope: no import required.
-* Tags from other modules must be brought in with the inner-tool attribute shown above.
+* To use tags defined in other modules or crates, attach the `safety::import` attribute to current
+  module.
 * Tags are visible and available to downstream crates whenever their declaration paths are public.
 * Attempting to import a tag from a private module is a **hard error**.
 * Referencing a tag that has never been declared is also a **hard error**.
@@ -481,6 +482,47 @@ comments. We could extend safety tags to cover unsafe fields as well, both in th
 at every access point they are discharged.
 
 [Unsafe fields]: https://github.com/rust-lang/rfcs/pull/3458
+
+## Alternatives of Syntax for `requires` and `checked`
+
+@kennytm suggested [named arguments] in such tags:
+
+```rust
+// Alternative1: change our `:` to `=` before reasons.
+#[safety::checked(Tag1 = "reason1", Tag2 = "reason2", Tag3)]
+// This would be ugly for tag arguments (if we allow them) and grouped tags.
+#[safety::checked(Tag1(arg1) = "reason1", Tag2(arg2) = "reason2", Tag3(arg3))]
+// Ambiguous here: reason for Tag2 or (Tag1, Tag2)?
+#[safety::checked(Tag1, Tag2 = "reason for what???", Tag3(arg3))] 
+```
+
+The improved version groups tags within single attribute and uses the `reason` field to explain why
+invariants are satisfied. The idea is from [lint reasons]
+
+```rust
+// Alternative2: each groupe of tags is in single attribute
+#[safety::checked(Tag1, reason = "reason1")]
+#[safety::checked(Tag1, Tag2, reason = "reason for Tag1 and Tag2")]
+#[safety::checked(Tag1(arg1), reason = "reason for Tag1 and Tag2")]
+```
+
+Downside of alternative2 is discharge of single tag results in verbose syntax and lines of code:
+
+```rust
+// Must discharge separate tags in separate attributes:
+#[safety::checked(Tag1, reason = "reason1")]
+#[safety::checked(Tag2, reason = "reason2")]
+#[safety::checked(Tag3, reason = "reason3")]
+```
+
+By comparison, our proposed syntax is
+
+```rust
+#[safety::checked { Tag1: "reason1", Tag2: "reason2", Tag3: "reason3" }]
+```
+
+[named arguments]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2247342603
+[lint reasons]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
