@@ -302,12 +302,13 @@ surface the deprecation warning whenever the tag is used w.r.t definitions and d
 
 ## Unstable Features
 
-Currently, safety tags requires the following unstable features
+Currently, safety tags requires the following features
 * `#![feature(proc_macro_hygiene, stmt_expr_attributes)]` for tagging statements or expressions.
 * `#![feature(custom_inner_attributes)]` for `#![safety::import(...)]`.
+* registering `safety` tool in every crate to create safety namespace.
 
 Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
-support is required from rustc except registering `safety` tool in every crate.
+significant support is required from rustc.
 
 But we ask the libs team to adopt safety tags for all public `unsafe` APIs in libstd, along with
 their call sites. To enable experimentation, a nightly-only library feature
@@ -356,7 +357,7 @@ developers can silence Clippy by discharging tags without verifying underlying s
 We argued in the [guide-level-explanation] why safety tags are necessary; here we justify the *way*
 they are proposed to implemente.
 
-1. Keep the compiler untouched. Tag checking is an API-style lint, not a language feature. All the
+1. It's linter's work. Tag checking is an API-style lint, not a language feature. All the
    `#[safety::*]` information is available in the HIR, so a linter (rather than the compiler) is the
    right place to enforce the rules.
 
@@ -371,6 +372,15 @@ they are proposed to implemente.
 3. IDE integration. The same reasoning applies to the language server. A custom server would again
    be tied to internal APIs and specific toolchains. Extending rust-analyzer is therefore the only
    practical way to give users first-class IDE support.
+
+We therefore seek approvals from the following teams:
+
+1. **Library team** – to allow the tagging of unsafe operations and to expose tag items as public
+   APIs.
+2. **Clippy team** – to integrate tag checking into the linter.  
+3. **Rust-Analyzer team** – to add IDE support for tags.  
+4. **Compiler team** – to reserve the `safety` namespace and gate the feature via
+   `#![feature(safety_tags)]`.
 
 [safety-tool]: https://github.com/Artisan-Lab/tag-std/blob/main/safety-tool
 
