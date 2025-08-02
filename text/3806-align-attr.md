@@ -301,6 +301,12 @@ a requirement on the symbol being linked to. The UB that can result if this
 alignment is not satisfied, follows the same rules as the UB that can result
 from an incorrect function signature.
 
+When `#[align(…)]` is combined with `#[track_caller]`, the attribute applies to
+the shim that is generated for calls via function pointer.
+
+WASM targets will most likely not support function alignments above 1, at least
+initially.
+
 ## On local variables
 
 The `align` attribute may also be applied to local variable declarations inside
