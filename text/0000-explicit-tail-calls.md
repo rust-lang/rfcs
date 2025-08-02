@@ -434,41 +434,54 @@ In this case, a naive author might assume that this is going to be a stack space
 
 Further confusion could result from the same-signature restriction where the Rust compiler raises an error since fibonacci and `<u64 as Add>::add` do not share a common signature.
 
-### Caller location ([`panic::Location::caller`](https://doc.rust-lang.org/std/panic/struct.Location.html#method.caller) and `#[track_caller]`) are not supported
-
-Since `#[track_caller]` adds an argument, `#[track_caller]` functions can only tail call other `#[track_caller]` functions. So the following example would not compile.
-However, removing `#[track_caller]` should not be a breaking change, as [it is not part of the stable API surface](https://github.com/rust-lang/rust/issues/87401#issuecomment-910628405) for Rust.
-For tail calls, however, removing an argument is a breaking change, so functions with `#[track_caller]` are **not** allowed to use `become`. ([Though, loosening this restriction might be possible.](https://github.com/rust-lang/rfcs/pull/3407/files/3304fee7542a56e3c671b8ce8a85070904cbf2ba#r2202286180)). Additionally, tail calling into a `#[track_caller]` function from a non-tracking function [might require growing the stack](https://github.com/rust-lang/rfcs/pull/3407/files/3304fee7542a56e3c671b8ce8a85070904cbf2ba#r2202286180), as this would defeat the purpose of tail calling, this is also **not** allowed.
-
-```rust
-use std::panic::Location;
-
-/// Returns the [`Location`] at which it is called.
-#[track_caller]
-fn get_caller_location() -> &'static Location<'static> {
-    Location::caller()
-}
-
-/// Returns a [`Location`] from within this function's definition.
-fn get_just_one_location() -> &'static Location<'static> {
-    become get_caller_location();
-}
-```
-
 # Drawbacks
 [drawbacks]: #drawbacks
 <!-- Why should we *not* do this? -->
+
+## Does Not Support General Tail Calls
+
+This proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
+
+## Implementation Effort and Backend Support
+
 As this feature should be mostly independent of other features the main drawback lies in the implementation and
 maintenance effort. This feature adds a new keyword which will need to be implemented not only in Rust but also in other
-tooling. However, the primary effort is in correctly interacting with the backends, some of which might not support guaranteeing a tail call (and failing if this not possible):
+tooling. However, the primary effort is in correctly interacting with the backends, some of which might not support guaranteeing a tail call (nor guarantee to fail if one is not possible).
+Though, support for guaranteed tail calls is improving in common backends:
+
 - LLVM supports a `musttail` marker to indicate that TCE should be performed [docs](https://llvm.org/docs/LangRef.html#id327). Clang which already depends on this feature seems to only generate correct code for the x86 backend [source](https://github.com/rust-lang/rfcs/issues/2691#issuecomment-1490009983) (as of 2023-03-30).
 - [GCC supports](https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html#index-musttail-statement-attribute) an (mostly) equivalent `musttail` marker.
-- WebAssembly also supports guaranteed tail calls as a [standardized feature](https://webassembly.org/features/#table-row-tailcall). However, `tailcall` is currently (July 2025) [not enabled by default](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html#enabled-webassembly-features) for `wasm32-unknown-unknown`. 
+- WebAssembly also supports guaranteed tail calls as a [standardized feature](https://webassembly.org/features/#table-row-tailcall). However, `tailcall` is currently (July 2025) [not enabled by default](https://doc.rust-lang.org/rustc/platform-support/wasm32-unknown-unknown.html#enabled-webassembly-features) for `wasm32-unknown-unknown`.
 
-Additionally, this proposal is limited to exactly matching function signatures which will *not* allow general tail-calls, however, the work towards this initial version is likely to be useful for a more comprehensive version.
+## Lost Debug Information
 
-There is also an unwanted interaction between TCE and debugging. As TCE by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCE provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCE for debugging builds as then the stack could overflow. (Still, maybe a compiler flag could be provided to temporarily disable TCE for debugging builds. As suggested [here](https://github.com/rust-lang/rfcs/pull/3407/files#r1159817279), another option would be special support for `become` by a debugger. With this support the debugger would keep track of the N most recent calls providing at least some context to the bug.)
+There is an unwanted interaction between TCE and debugging. As TCE by design elides stack frames this information is lost during debugging, that is the parent functions and their local variable values are incomplete. As TCE provides a semantic guarantee of constant stack usage it is also not generally possible to disable TCE for debugging builds as then the stack could overflow. (Still, maybe a compiler flag could be provided to temporarily disable TCE for debugging builds. As suggested [here](https://github.com/rust-lang/rfcs/pull/3407/files#r1159817279), another option would be special support for `become` by a debugger. With this support the debugger would keep track of the N most recent calls providing at least some context to the bug.)
 
+## Requires Special Handling of the `track_caller` Attribute
+
+Since `#[track_caller]` adds an argument, the caller location, `#[track_caller]` functions can in theory only tail call other `#[track_caller]` functions.
+However, adding or removing `#[track_caller]` is [guaranteed to not cause a breaking change](https://github.com/rust-lang/rust/issues/88302#issuecomment-910614687).
+This creates a conflict as adding and removing would cause a breaking change for tail calling functions.
+
+Since the whole goal of this RFC is to support tail calls with the restriction of matching function signatures, there are two options.
+Either disallow `#[track_caller]` and tail calling in one function or alternatively build custom support.
+Adding custom support will be more feasible when the limitation on exactly matching function signatures can be lifted. 
+Thus, since this RFC targets a minimal initial extendable support for guaranteed tail calls, the first option seems appropriate.
+
+Still we need to support interaction with normal functions (non tail calling functions).
+Luckily, support for a tail calling function to call a normal function with `#[track_caller]` is easy as it is just a normal call.
+However, a more complicated case exists. Tail calling a normal `#[track_caller]` function, from a non `#[track_caller]` function.
+As the caller needs to have a matching ABI with the callee, as it is a tail call, this requires a special case adding the location argument without changing the ABI.
+
+A similar issue exists for `#[track_caller]` functions that are [coerced to function pointers](https://doc.rust-lang.org/reference/attributes/codegen.html#r-attributes.codegen.track_caller.decay).
+Their support requires appending an implicit parameter to the function ABI, which would be unsound for an indirect call as the location parameter is not part of the function's type.
+To resolve this issue a shim is used to sidestep actually passing the extra argument and instead supplying the attributed function’s definition site.
+This shim approach seems to be a reasonable choice for this issue as well.
+
+[Alternatively](https://github.com/rust-lang/rust/pull/144762#issuecomment-3146404568),
+a calling convention needs to be used
+that either ensures all arguments stay in registers, or use a callee-pop convention.
+The first being unrealistically restrictive while the second is not supported by backends.
 
 # Rationale and alternatives
 
