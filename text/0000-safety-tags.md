@@ -101,12 +101,16 @@ ad-hoc practice with four concrete gains:
 2. **Semantic granularity**. Tags must label a single unsafe call, or an expression contains single 
    unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps the
    precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
+   * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
+     traces every unsafe operation that could break an invariant in source code.
 
 3. **Versioned invariants**. Tags are real items; any change to their declaration or definition is a
-   **semver-breaking** API change, so safety invariants evolve explicitly.
+   *semver-breaking* API change, so safety invariants evolve explicitly.
 
 4. **Lightweight checking**. Clippy only matches tag paths. No heavyweight formal proofs, keeping
    the system easy to adopt and understand.
+
+[entity-reference]: #entity-reference
 
 ## `#[safety]` Tool Attribute and Namespace
 
@@ -473,6 +477,8 @@ There are alternative discussion or Pre-RFCs on IRLO:
   * The practice of using a single unsafe call is good, but the postfix `.unsafe` requires more
     compiler support and does not offer suggestions for improving safe comments.
   * Our RFC, however, supports annotating safety tags on any expression, including single calls.
+* 2025-01: [RFC: Add safe blocks](https://github.com/rust-lang/rfcs/pull/3768)
+  * This is a continum of discussion of 2024-10, focusing on visual granularity.
 * 2025-05: [Pre-RFC: Granular Unsafe Blocks - A more explicit and auditable approach](https://internals.rust-lang.org/t/pre-rfc-granular-unsafe-blocks-a-more-explicit-and-auditable-approach/23022) proposed by Redlintles
   * The safety categories suggested are overly broad. In contrast, the safety properties outlined in
     our RFC are more granular and semantics-specific.
@@ -721,6 +727,8 @@ Another instance is `<*const T>::as_ref`, whose safety doc states that the calle
 applies.
 
 ## Entity References and Code Review Enhancement
+
+<a id="entity-reference"></a>
 
 To cut boilerplate or link related code locations, we introduce `#[safety::ref(...)]` which
 establishes a two-way reference.
