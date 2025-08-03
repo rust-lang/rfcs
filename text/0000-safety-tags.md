@@ -355,7 +355,7 @@ developers can silence Clippy by discharging tags without verifying underlying s
 ## Rationale for the Proposed Implementation
 
 We argued in the [guide-level-explanation] why safety tags are necessary; here we justify the *way*
-they are proposed to implemente.
+to implement them.
 
 1. It's linter's work. Tag checking is an API-style lint, not a language feature. All the
    `#[safety::*]` information is available in the HIR, so a linter (rather than the compiler) is the
@@ -367,10 +367,10 @@ they are proposed to implemente.
    and Asterinas. Once the proposal is standardised, the only sustainable path is to upstream the
    lint pass into Clippy. Project building on stable or nightly toolchains since then will get the
    checks automatically whenever it runs Clippy. Moreover, if `rust-lang/rust` repo has already
-   undergone Clippy CI, so no extra tooling is required for tag checking on the standard libraries.
+   undergone Clippy CI, no extra tooling is required for tag checking on the standard libraries.
 
 3. IDE integration. The same reasoning applies to the language server. A custom server would again
-   be tied to internal APIs and specific toolchains. Extending rust-analyzer is therefore the only
+   be tied to internal APIs and specific toolchains. Extending Rust-Analyzer is therefore the only
    practical way to give users first-class IDE support.
 
 We therefore seek approvals from the following teams:
@@ -380,7 +380,7 @@ We therefore seek approvals from the following teams:
 2. **Clippy team** – to integrate tag checking into the linter.  
 3. **Rust-Analyzer team** – to add IDE support for tags.  
 4. **Compiler team** – to reserve the `safety` namespace and gate the feature via
-   `#![feature(safety_tags)]`.
+   `#![feature(safety_tags)]` for the namespace and tag APIs in standard libraries.
 
 [safety-tool]: https://github.com/Artisan-Lab/tag-std/blob/main/safety-tool
 
@@ -418,8 +418,6 @@ There are alternative discussion or Pre-RFCs on IRLO:
 
 ## Safety Standard Proposal from Rust for Linux
 
-More importantly, our proposal is a big improvement to these proposals, which Rust for Linux care
-more about:
 * 2024-09: [Rust Safety Standard: Increasing the Correctness of unsafe Code][Rust Safety Standard]
   proposed by Benno Lossin
   * These slides outline the motivations and objectives of safety-documentation standardization —
@@ -458,6 +456,7 @@ unsafe { ptr::read(elem) }
 //  SAFETY
 //  - ValidPtr, Aligned, Initialized: `self.head_tail()` returns two slices to live elements.
 //  - NotOwned: because we incremented...
+unsafe { ptr::read(elem) }
 ```
 
 # Prior art
@@ -495,19 +494,19 @@ but no checks on them avoid any complicated interaction with type system. We can
 
 When a tag needs parameters, we must decide what its declaration looks like.  An uninhabited enum
 can no longer express “this tag carries data”, so the nearest legal item is a function whose
-parameters represent the tag’s arguments.  Unfortunately, this immediately raises design questions:
+parameters represent the tag’s arguments. Unfortunately, this immediately raises design questions:
 
-1. **Argument types**  Which types are allowed in the declaration?  Do we have to introduce new,
-   purpose-built types just so the compiler can see them at the use-site?
+1. **Argument types**. Which types are allowed in the declaration? Do we have to introduce new
+   arguments types for each tag declaration?
 
-2. **Definition-side checking**  Will `unsafe fn` definitions be obliged to supply arguments that
-   type-check against the declaration?  If so, are we quietly reinventing a full contract system?
+2. **Definition-side checking**. Will tag operations `safety::requires` and `safety::checked`
+   type-check against these arguments? If so, are we quietly reinventing a full contract system?
 
 I'd like to propose a solution or rather compromise here by trading strict precision for simplicity:
 
-We could keep uninhabited enums as the only formal declaration and allow *any* arguments at use
-sites, skipping all validation. Tag arguments would still refine the description of an unsafe
-operation, but they are never type checked.
+We could keep uninhabited enums as the only tag declaration and allow *any* arguments at use sites
+without validation. Tag arguments would still refine the description of an unsafe operation, but
+they are never type checked.
 
 Also see [this][tag-args] RFC discussion for our thoughts.
 
@@ -577,7 +576,8 @@ By comparison, our proposed syntax is
 
 @clarfonthey [suggested][tool macro] a `define_safety_tag!` tool macro which will unlikely happen.
 
-But I think it'd be necessary and handy to hide tag declarations in some cases.
+But I think it'd be good and handy to hide tag declaration details. But this means
+there is a `define_safety_tag!` in libcore for any crate to use.
 
 [tool macro]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2245923920
 
