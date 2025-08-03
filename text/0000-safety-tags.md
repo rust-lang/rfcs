@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC introduces a concise safety-comment convention for unsafe code in libstd-adjacent crates:
+This RFC introduces a concise safety-comment convention for unsafe code in standard libraries:
 tag every public unsafe function with `#[safety::requires]` and call with `#[safety::checked]`.
 
 Safety tags refine today’s safety-comment habits: a featherweight syntax that condenses every
@@ -102,7 +102,7 @@ ad-hoc practice with four concrete gains:
    unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps the
    precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
    * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
-     traces every unsafe operation that could break an invariant in source code.
+     traces every unsafe related operation that could break an invariant in source code.
 
 3. **Versioned invariants**. Tags are real items; any change to their declaration or definition is a
    *semver-breaking* API change, so safety invariants evolve explicitly.
@@ -477,7 +477,7 @@ There are alternative discussion or Pre-RFCs on IRLO:
   * The practice of using a single unsafe call is good, but the postfix `.unsafe` requires more
     compiler support and does not offer suggestions for improving safe comments.
   * Our RFC, however, supports annotating safety tags on any expression, including single calls.
-* 2025-01: [RFC: Add safe blocks](https://github.com/rust-lang/rfcs/pull/3768)
+* 2025-01: [RFC: Add safe blocks](https://github.com/rust-lang/rfcs/pull/3768) by Aversefun
   * This is a continum of discussion of 2024-10, focusing on visual granularity.
 * 2025-05: [Pre-RFC: Granular Unsafe Blocks - A more explicit and auditable approach](https://internals.rust-lang.org/t/pre-rfc-granular-unsafe-blocks-a-more-explicit-and-auditable-approach/23022) proposed by Redlintles
   * The safety categories suggested are overly broad. In contrast, the safety properties outlined in
@@ -555,17 +555,6 @@ While safety tags are less formally verified and intended to be a check list on 
 
 ## Should Tags Take Arguments?
 
-If a tag takes arguments, how should the tag declared? An uninhabited enum doesn't express 
-correct semantics anymore. The closest item is a function with arguments. But it's brings
-many problems, like 
-* What argument types should be on such tag declaration functions? Do we need to declare extra 
-types specifically for such tag declaration?
-* Is there a argument check on tag definitions on unsafe functions? Are we reinventing contracts
-system again?
-* Or just only keep uninhabited enums as tag declaration, and allow any arguments for all tags,
-but don't check the validity arguments. Tag arguments enhance precision of safety operation,
-but no checks on them avoid any complicated interaction with type system. We can make a compromise.
-
 When a tag needs parameters, we must decide what its declaration looks like.  An uninhabited enum
 can no longer express “this tag carries data”, so the nearest legal item is a function whose
 parameters represent the tag’s arguments. Unfortunately, this immediately raises design questions:
@@ -583,7 +572,7 @@ without validation. Tag arguments would still refine the description of an unsaf
 they are never type checked. An example:
 
 ```rust
-#[safety::define_safety_tag(
+#[safety::declare_tag(
   args = [ "p", "T", "len" ],
   desc = "pointer `{p}` must be valid for reading and writing the `sizeof({T})*{n}` memory from it"
 )]
