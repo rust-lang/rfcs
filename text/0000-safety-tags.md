@@ -18,18 +18,18 @@ and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 [compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=8b22aebccf910428008c4423c436d81e
 
 ```rust
-#![safety::import(invariant::*)] // 💡
+#![safety::import(invariant::*)] // 💡 import tag items
 
 pub mod invariant {
-    #[safety::declare_tag] // 💡
+    #[safety::declare_tag] // 💡 declare a tag item only on uninhabited enum
     pub enum ValidPtr() {}
 }
 
-#[safety::requires { ValidPtr }] // 💡
+#[safety::requires { ValidPtr }] // 💡 define tags on unsafe functions
 pub unsafe fn read<T>(ptr: *const T) {}
 
 fn main() {
-    #[safety::checked { ValidPtr }] // 💡
+    #[safety::checked { ValidPtr }] // 💡 discharge tags on unsafe calls
     unsafe { read(&()) };
 }
 ```
@@ -506,11 +506,18 @@ I'd like to propose a solution or rather compromise here by trading strict preci
 
 We could keep uninhabited enums as the only tag declaration and allow *any* arguments at use sites
 without validation. Tag arguments would still refine the description of an unsafe operation, but
-they are never type checked.
+they are never type checked. An example:
 
-Also see [this][tag-args] RFC discussion for our thoughts.
+```rust
+#[safety::define_safety_tag(
+  args = [ "p", "T", "len" ],
+  desc = "pointer `{p}` must be valid for reading and writing the `sizeof({T})*{n}` memory from it"
+)]
+enum ValidPtr {}
 
-[tag-args]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2246551643
+#[safety::requires { ValidPtr(ptr) }]
+unsafe fn foo<T>(ptr: *const T) -> T { ... }
+```
 
 ## Tagging on Unsafe Traits and Impls
 
