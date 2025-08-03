@@ -98,8 +98,9 @@ ad-hoc practice with four concrete gains:
 1. **Shared clarity**. Authors attach a short tag above every unsafe operation; reviewers instantly
    see which invariant must hold and where it is satisfied.
 
-2. **Semantic granularity**. Tags can label a single unsafe call, a loop body, or the entire
-   caller - no longer constrained by the visual boundaries of `unsafe {}`.
+2. **Semantic granularity**. Tags must label a single unsafe call, or an expression contains single 
+   unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps the
+   precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
 
 3. **Versioned invariants**. Tags are real items; any change to their declaration or definition is a
    **semver-breaking** API change, so safety invariants evolve explicitly.
@@ -146,7 +147,6 @@ Here are some tag examples:
 
 #[safety::checked { SP1, SP2: "shared reason for the two SPs" }]
 #[safety::checked { SP1, SP2: "shared reason for the two SPs"; SP3 }]
-#[safety::checked { SP3; SP1, SP2: "shared reason for the two SPs" }]
 ```
 
 `#[safety]` is a tool attribute with two forms to operate on safety invariants:
@@ -168,13 +168,16 @@ unsafe { read(ptr) };
 We can also attach comments for a tag or a group of tags to clarify how safety requirements are met:
 
 ```rust
-#[safety::checked {
-  ValidPtr, Aligned, Initialized: "addr range p..p+n is properly initialized from aligned memory";
-  InBounded, ValidNum: "`n` won't exceed isize::MAX here, so `p.add(n)` is fine";
-}]
 for _ in 0..n {
     unsafe {
+        #[safety::checked { ValidPtr, Aligned, Initialized:
+            "addr range p..p+n is properly initialized from aligned memory"
+        }]
         c ^= p.read();
+
+        #[safety::checked { InBounded, ValidNum:
+            "`n` won't exceed isize::MAX here, so `p.add(n)` is fine"
+        }]
         p = p.add(1);
     }
 }
@@ -183,8 +186,19 @@ for _ in 0..n {
 [tool attribute]: https://doc.rust-lang.org/reference/attributes.html#tool-attributes
 [`ptr::read`]: https://doc.rust-lang.org/std/ptr/fn.read.html
 
-When calling an unsafe function, tags defined on it must be present in `#[safety::checked]` or
-`#[safety::requires]` together with an optional reason; any omission triggers a warning-by-default
+
+NOTE: the follwing syntax is valid, but probably bad in practice, since people may leave a typo `,`
+to accidentally group tags when they mean `;` to separate them. Thus I'd just suggest forbiding
+such syntax to avoid surprising unsafe delegation which will be disscused in next section.
+
+```rust
+#[safety::checked { SP3; SP1, SP2: "shared reason for the two SPs" }]
+```
+
+## Discharge Tags
+
+When calling an unsafe function, tags defined by `#[safety::requires]` on it must be present in
+`#[safety::checked]` together with an optional reason; any omission triggers a warning-by-default
 diagnostic that lists the missing tags and explains each one:
 
 ```rust
@@ -210,27 +224,66 @@ Note that it's allowed to discharge tags of unsafe callees onto the unsafe calle
 delegation or propogation:
 
 ```rust
-#[safety::requires { ValidPtr, Aligned, Initialized }] // ✅
-unsafe fn delegation<T>(ptr: *const T) -> T {
+#[safety::requires { ValidPtr, Aligned, Initialized }]
+unsafe fn propogation<T>(ptr: *const T) -> T {
+    #[safety::checked { ValidPtr, Aligned, Initialized }]
     unsafe { read(ptr) }
 }
 ```
 
-Partial discharges are also allowed:
+Tags defined on an unsafe function must be fully discharged at callsites. No partial discharge:
+
+```rust
+#[safety::requires { ValidPtr, Initialized }]
+unsafe fn delegation<T>(ptr: *const T) -> T {
+    #[safety::checked { Aligned }] // 💥 Error: Tags are not fully discharged. 
+    unsafe { read(ptr) }
+}
+```
+
+For such partial unsafe delegations, please fully discharge tags on the callee and define needed
+tags on the caller.
 
 ```rust
 #[safety::requires {
   ValidPtr, Initialized: "ensure the allocation spans at least size_of::<T>() bytes past ptr"
 }]
-unsafe fn propogation<T>(ptr: *const T) -> T {
+unsafe fn delegation<T>(ptr: *const T) -> T {
     let align = mem::align_of::<T>();
     let addr = ptr as usize;
     let aligned_addr = (addr + align - 1) & !(align - 1);
 
-    #[safety::checked { Aligned: "alignment of ptr has be adjusted" }]
+    #[safety::checked {
+        Aligned: "alignment of ptr has be adjusted";
+        ValidPtr, Initialized: "delegated to the caller"
+    }]
     unsafe { read(ptr) }
 }
 ```
+
+In this delegation case, you're able to declare a new meaningful tag for ValidPtr and Initialized
+invariants, and define the new tag on `delegation` function. This practice extends to partial unsafe
+delegation of multiple tag discharges:
+
+```rust
+#[safety::declare_tag]
+enum MyInvaraint {} // Invariants of A and C, but could be a more contextual name.
+
+#[safety::requires { MyInvaraint }]
+unsafe fn delegation() {
+    unsafe {
+        #[safety::checked { A: "delegated to the caller"; B }]
+        foo();
+        #[safety::checked { C: "delegated to the caller"; D }]
+        bar();
+    }
+}
+```
+
+Note that the tag group matters here, because we want to convey `MyInvaraint` represents A and C. If
+someone doesn't pay attention to the group and writes `B, A: "..."` instead of separating B from A
+with `B; A: "..."`, the `MyInvaraint` will be inaccurate. So I'd just propose grouped tags precede 
+tags without reasons.
 
 ## Safety Tags as Ordinary Items
 
@@ -318,16 +371,31 @@ their call sites. To enable experimentation, a nightly-only library feature
 
 Procedure:
 
-1. Scan the crate for every item marked `#[safety::declare_tag]`; cache the compiled tag metadata of
-   upstream dependencies under `target/` for later queries.
-2. Validate every tags in `#![safety::import]` through a reachability analysis to ensure the paths
-   are accessible.
-3. Verify that every unsafe call carries the required safety tags:
-   * Resolve the callee, collect its declared tags, then walk outward from the call site until the
-     function’s own signature confirms these tags are listed in `#[safety::requires]`.
-   * Tags are only discharged inside or onto an `unsafe fn`; it's an error to tag a safe function.
-   * If an unsafe call lacks any required tag, emit a diagnostic whose severity (warning or error)
-     is governed by the configured Clippy lint level.
+1. Scan the crate for uninhabited enums marked `#[safety::declare_tag]`; cache the compiled tag
+   metadata of upstream dependencies under `target/` for later queries.
+   * Raise an error if `declare_tag` is on other items, and ask readers to tag uninhabited enum.
+2. Resolve and validate tags in `#![safety::import]` through a reachability analysis to ensure the
+   paths are accessible.
+3. Validate `#[safety::requires]` only appears on unsafe functions if the attribute exists.
+
+4. Validate `#[safety::checked]` on HIR nodes whose `ExprKind` is one of
+   - **direct unsafe nodes**: `Call`, `MethodCall` that invoke an unsafe function/method, or
+   - **indirect unsafe nodes**: `Block` (unsafe), `Let`, `Assign`, `AssignOp`.
+
+   Algorithm for every function body:
+   1. Walk the HIR; whenever an unsafe `Call`/`MethodCall` is encountered, record the unsafe callee
+      and its nearest ancestor that is an *indirect unsafe node*.
+   2. If the callee is annotated with safety tags, require that **either** the call itself **or**
+      its recorded ancestor carries `#[safety::checked]`.
+   3. Any node that carries `#[safety::checked]` must contain **exactly one** unsafe call/method;
+      otherwise emit a diagnostic. *(We intentionally stop at this simple rule; splitting complex
+      unsafe expressions into separate annotated nodes is considered good style.)*
+   4. Diagnostics are emitted at the current Clippy lint level (warning or error).
+
+5. Resolve and validate tags in `#[safety::requires]` correspond to tag declarations.
+6. Resolve and validate tags in `#[safety::checked]` correspond to tag declarations and definitions.
+
+[HIR ExprKind]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_hir/hir/enum.ExprKind.html
 
 Libraries in `rust-lang/rust` must enforce tag checking as a hard error, guaranteeing that every tag
 definition and discharge is strictly valid.
