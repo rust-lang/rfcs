@@ -220,8 +220,8 @@ LLL | unsafe { ptr::read(ptr) }
 
 The process of verifying whether a tag is present is referred to as tag discharge.
 
-Note that it's allowed to discharge tags of unsafe callees onto the unsafe caller for unsafe
-delegation or propogation:
+Now consider forwarding invariants of unsafe callees onto the unsafe caller for unsafe delegation or
+propogation:
 
 ```rust
 #[safety::requires { ValidPtr, Aligned, Initialized }]
@@ -231,7 +231,7 @@ unsafe fn propogation<T>(ptr: *const T) -> T {
 }
 ```
 
-Tags defined on an unsafe function must be fully discharged at callsites. No partial discharge:
+Tags defined on an unsafe function must be **fully** discharged at callsites. No partial discharge:
 
 ```rust
 #[safety::requires { ValidPtr, Initialized }]
@@ -567,12 +567,12 @@ parameters represent the tag’s arguments. Unfortunately, this immediately rais
 1. **Argument types**. Which types are allowed in the declaration? Do we have to introduce new
    arguments types for each tag declaration?
 
-2. **Definition-side checking**. Will tag operations `safety::requires` and `safety::checked`
-   type-check against these arguments? If so, are we quietly reinventing a full contract system?
+2. **Type checking**. Will tag operations `safety::requires` and `safety::checked` type-check
+   against these arguments? If so, are we quietly reinventing a full contract system?
 
 I'd like to propose a solution or rather compromise here by trading strict precision for simplicity:
 
-We could keep uninhabited enums as the only tag declaration and allow *any* arguments at use sites
+We could keep uninhabited enums as the only tag declaration and allow *any* arguments in tag usage
 without validation. Tag arguments would still refine the description of an unsafe operation, but
 they are never type checked. An example:
 
@@ -585,6 +585,9 @@ enum ValidPtr {}
 
 #[safety::requires { ValidPtr(ptr) }]
 unsafe fn foo<T>(ptr: *const T) -> T { ... }
+
+#[safety::checked { ValidPtr(p) }]
+unsafe { bar(p) }
 ```
 
 ## Tagging on Unsafe Traits and Impls
