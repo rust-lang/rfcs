@@ -1,4 +1,4 @@
-- Feature Name:
+- Feature Name: Include Clang in llvm-tools
 - Start Date: 2025-08-04
 - RFC PR: [rust-lang/rfcs#0000]()
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
@@ -13,9 +13,11 @@ Include a version of `clang` and `clang++` compiled against rust LLVM in the `ll
 
 Allowing user-access to the LLVM pipeline allows for many user-built features, such as cross-language inlining. However, LLVM version mismatching between tools can lead to frustrating problems. Including `clang` and `clang++` in `llvm-tools` allows users to use only the tools that rust ships with, ensuring consistent versioning.
 
+In future versions of Rust, including a compiler with Rustup could also improve ergonomics for FFI crates, as it could avoid depending on system compilers. See how [Zed's implementation](https://actually.fyi/posts/zig-makes-rust-cross-compilation-just-work/) led to easy cross-compiles in rust to Macos.
+
 ## Background
 
-`clang` and `clang++` are LLVM-based C and C++ compilers mentioned in [official documentation](https://dev-doc.rust-lang.org/beta/rustc/linker-plugin-lto.html)
+`clang` and `clang++` are LLVM-based C and C++ compilers mentioned in [official documentation](https://doc.rust-lang.org/rustc/linker-plugin-lto.html)
 ```bash
 # Compile the Rust staticlib
 RUSTFLAGS="-Clinker-plugin-lto" cargo build --release
@@ -26,7 +28,7 @@ clang -flto=thin -fuse-ld=lld -L . -l"name-of-your-rust-lib" -o main -O2 ./cmain
 ```
 Unfortunately, this example does not always work, because it calls system `clang`, which may use a different version of LLVM than Rust. Additionally, even at the same version, there is a potential for problems from mixing base LLVM tools with the Rust fork of LLVM.
 
-Rustup has the ability to install a component called `llvm-tools`, which exposes the llvm tools used by Rust, including `llvm-link` and `llc` - notably, it does not contain a build of `clang` or `clang++`
+Rustup has the ability to install a component called `llvm-tools`, which exposes the llvm tools used by Rust, including `llvm-link` and `llc` - notably, it does not contain a build of `clang` or `clang++`.
 
 ## Conclusion
 
@@ -48,6 +50,10 @@ Users can opt for system `clang` and `clang++` when building projects with LLVM,
 [prior-art]: #prior-art
 
 This may help in the goal [Expose experimental LLVM features for GPU offloading](https://rust-lang.github.io/rust-project-goals/2025h1/GPU-Offload.html), as raw LLVM access is particularly useful for GPU compilation libraries.
+
+This was mentioned in [Shipping clang as a rustup component](https://github.com/rust-lang/rust/issues/56371)
+
+See also the issues for [`llvm-dis`, `llc` and `opt`](https://github.com/rust-lang/rust/issues/55890)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
