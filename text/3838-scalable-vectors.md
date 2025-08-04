@@ -127,27 +127,84 @@ fn sve_add(in_a: Vec<f32>, in_b: Vec<f32>, out_c: &mut Vec<f32>) {
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Types annotated with the `#[repr(simd)]` attribute contains either an array
-field or multiple fields to indicate the intended size of the SIMD vector that
-the type represents.
+Scalable vectors are similar to fixed length vectors already supported by Rust,
+enabling operations to be performed on multiple values at once in a single
+instruction. Unlike fixed length vectors, the length of scalable vectors is not
+fixed, and intrinsics which operate on scalable vectors are length-agnostic.
 
-Similarly, a `rustc_scalable_vector(N)` representation is introduced to define a
-scalable vector type. `rustc_scalable_vector(N)` accepts an integer to determine
-the minimum number of elements the vector contains. For example:
+Scalable vectors types supported by the `rustc_scalable_vector(N)` attribute can
+be thought of as having the form `vscale × N × ty`, where `vscale` is a single,
+global, fixed-for-the-runtime-of-the-program "scaling factor" of the CPU.
+
+Vector registers are of the length `vscale × vunit`, with `vunit` being an
+architecture-specific value:
+
+- ARM SVE: `vunit` is the minimum length of the vector register in the
+  architecture - [128 bits][sve_minlength].
+- RISC-V V: `vunit` is the least common multiple of the supported element
+  widths - [64 bits][rvv_bitsperblock].
+
+> [!TIP]
+>
+> While the `vscale` terminology is borrowed from LLVM, `vunit` is invented for
+> the purposes of aiding this explanation.
+
+`N` in `rustc_scalable_vector(N)` defines the value of `N` in a scalable vector
+type. Any value of `N` is accepted by the attribute and it is the responsibility
+of whomever is defining the type to provide a valid value. A correct value for
+`N` depends on the purpose of the specific scalable vector type and the
+architecture. See
+[*Manually-chosen or compiler-calculated element count*][manual-or-calculated-element-count]
+for rationale.
+
+In the simplest case, a scalable vector register could be depicted as follows:
+
+```text
+ ◁────── vscale x vunit ──────▷ ◁─── vunit ───▷
+ ◁────── vscale x ty x N ─────▷ ◁─── ty x N ──▷
+┌──────────────────────────────┬───────────────┐
+│              ...             │ ty │ ty │ ... │ ← a vector register
+└──────────────────────────────┴───────────────┘
+```
+
+Scalable vector types contain a single field which is used to determine `ty`:
 
 ```rust
 #[rustc_scalable_vector(4)]
-pub struct svfloat32_t { _ty: &[f32], }
+pub struct svfloat32_t(f32);
 ```
 
-As with the existing `repr(simd)`, `_ty` is purely a type marker, used to get
-the element type for the codegen backend.
+In the example above, `svfloat32_t` is a scalable vector with a minimum of four
+`f32` elements when `vscale = 1` and more when `vscale > 1`. `svfloat32_t` could
+be depicted as..
 
-`svfloat32_t` is a scalable vector with a minimum of four `f32` elements and
-potentially more depending on the length of the vector register at runtime.
+```text
+ ◁───────────── vscale x f32 x 4 ─────────────▷ ◁────── f32 x 4 ──────▷
+┌──────────────────────────────────────────────┬───────────────────────┐
+│                      ...                     │ f32 │ f32 │ f32 │ f32 │ ← `svfloat32_t`
+└──────────────────────────────────────────────┴───────────────────────┘
+```
 
-`_ty` is purely a type marker, used to get the element type for the codegen
-backend. It must be an array slice containing one of the following types:
+..and when running on hardware with `vscale=2`..
+
+```text
+ ◁──── 2 x f32 x 4 ────▷ ◁────── f32 x 4 ──────▷
+┌───────────────────────┬───────────────────────┐
+│ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ ← `svfloat32_t`
+└───────────────────────┴───────────────────────┘
+```
+
+..or `vscale=3`:
+
+```text
+ ◁──────────────── 3 x f32 x 4 ────────────────▷ ◁────── f32 x 4 ──────▷
+┌───────────────────────┬───────────────────────┬───────────────────────┐
+│ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ f32 │ ← `svfloat32_t`
+└───────────────────────┴───────────────────────┴───────────────────────┘
+```
+
+The type marker field is solely used to get the element type for the codegen
+backend. It must one of the following types:
 
 - `u8`, `u16`, `u32` or `u64`
 - `i8`, `i16`, `i32` or `i64`
@@ -156,35 +213,6 @@ backend. It must be an array slice containing one of the following types:
 
 It is not permitted to project into scalable vector types and access the type
 marker field.
-
-## Choosing `N`
-[choosing-n]: #choosing-n
-
-Many intrinsics using scalable vectors accept both a predicate vector argument
-and data vector arguments. Predicate vectors determine whether a lane is on or
-off for the operation performed by any given intrinsic. Predicate vectors may
-use different registers of sizes to the vectors containing data.
-`rustc_scalable_vector` is used to define vectors containing both data and
-predicates.
-
-As `rustc_scalable_vector(N)` is intended to be a permanently unstable
-attribute, any value of `N` is accepted by the attribute and it is the
-responsibility of whomever is defining the type to provide a valid value. A
-correct value for `N` depends on the purpose of the specific scalable vector
-type and the architecture.
-
-For example, with SVE, the scalable vector register length is a minimum of 128
-bits, must be a multiple of 128 bits and a power of 2; and predicate registers
-have one bit for each byte in the vector registers. So, for `svfloat32_t`
-defined shown above, an `f32` is 32-bits and with `N=4`, the entire minimum
-register length of 128 bits is used (4 x 32 = 128). An intrinsic that takes a
-`svfloat32_t` may also want to accept as an argument a predicate vector with a
-matching four elements (`N=4`), which would only use 4 bits of the predicate
-register rather than the full 16 bits.
-
-See
-[*Manually-chosen or compiler-calculated element count*][manual-or-calculated-element-count]
-for a discussion on why `N` is not calculated by the compiler.
 
 ## Properties of scalable vectors
 [properties-of-scalable-vector-types]: #properties-of-scalable-vectors
@@ -247,7 +275,7 @@ during monomorphisation, the relevant target feature will be added to `size_of_v
 for codegen.
 
 ## Implementing `rustc_scalable_vector`
-[implementing-repr-scalable]: #implementing-reprscalable
+[implementing-rustc_scalable_vector]: #implementing-rustc_scalable_vector
 
 Implementing `rustc_scalable_vector` largely involves lowering scalable vectors
 to the appropriate type in the codegen backend. LLVM has robust support for
@@ -278,6 +306,11 @@ child processes, not to change the vector length of the current process. As Rust
 cannot prevent users from doing this, it will be documented as undefined
 behaviour, consistent with C and C++.
 
+Tuples in RISC-V's V Extension lower to target-specific types in LLVM rather
+than generic scalable vector types, so `rustc_scalable_vector` will not
+initially support RVV tuples (see
+[*RISC-V Vector Extension's tuple types*][rvv-tuples]).
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -294,6 +327,10 @@ recommended way to do SIMD, lack of support in Rust would severely limit Rust's
 suitability on these architectures compared to other systems programming
 languages.
 
+`rustc_scalable_vector` is preferred over a `repr(scalable)` attribute as there
+is existing dissatisfaction with fixed-length vectors being defined using the
+`repr(simd)` attribute ([rust#63633]).
+
 By aligning with the approach taken by C (discussed in the
 [*Prior art*][prior-art] below), most of the documentation that already exists
 for scalable vector intrinsics in C should still be applicable to Rust.
@@ -302,34 +339,298 @@ for scalable vector intrinsics in C should still be applicable to Rust.
 [manual-or-calculated-element-count]: #manually-chosen-or-compiler-calculated-element-count
 
 `rustc_scalable_vector(N)` expects `N` to be provided rather than calculating
-it. This avoids needing to teach the compiler how to calculate the required
-`element` count, which isn't always trivial.
+it. Calculating `N` would make this attribute more robust and decrease the
+likelihood of it being used incorrectly - even for permanently unstable internal
+attributes like `rustc_scalable_vector`, this would be worthwhile if feasible.
 
-Many of the intrinsics which accept scalable vectors as an argument also accept
-a predicate vector. Predicate vectors decide which lanes are on or off for an
-operation (i.e. which elements in the vector are operated on). Predicate vectors
-can be in different and smaller registers than the data. For example,
-`<vscale x 16 x i1>` could be the predicate vector for a `<vscale x 16 x u8>`
-vector
+In the simplest case, calculating `N` is a simple division: `vunit` (as
+previously above) divided by the `element_size`. For example, with ARM SVE,
+`vunit=128` so with an `f32` element, `N = 128/32 = 4`; and with RISC-V RVV,
+`vunit=64` so with an `f32` element, `N = 64/32 = 2` (assuming `LMUL=1`, but
+more on that later).
 
-For non-predicate scalable vectors, it will be typical that `N` will be
-`$minimum_register_length / $type_size` (e.g. `4` for `f32` or `8` for `f16`
-with a minimum 128-bit register length). In this circumstance, `N` could be
-trivially calculated by the compiler.
+There are more complicated scalable vector definitions than those presented in
+the [*Reference-level explanation*][reference-level-explanation], which
+`rustc_scalable_vector` can support, but that would require more complicated
+calculations for `N` or architecture-specific knowledge:
 
-For predicate vectors, it is desirable to be able to to define types where `N`
-matches the number of elements in the non-predicate vector, i.e. a
-`<vscale x 4 x i1>` to match a `<vscale x 4 x f32>`, `<vscale x 8 x i1>` to
-match `<vscale x 8 x u16>`, or `<vscale x 16 x i1>` to match
-`<vscale x 16 x u8>`. In this circumstance, it might still be possible to give
-rustc all of the relevant information such that it could compute `N`, but it
-would add extra complexity.
+1. With Arm SVE, each intrinsic that takes a predicate takes a `svbool_t`
+   (`vscale x i1 x 16`). `svbool_t` could have its `N` calculated as above with
+   simple division.
 
-This RFC takes the position that the additional complexity required to have the
-compiler always be able to calculate `N` isn't justified given the permanently
-unstable nature of the `rustc_scalable_vector(N)` attribute and the scalable
-vector types defined in `std::arch` are likely to be few in number,
-automatically generated and well-tested.
+   `svbool_t` is used even when the data arguments have fewer elements, e.g. an
+   `svfloat32_t` (`vscale x f32 x 4`). `svbool_t` has predicates for sixteen
+   lanes but there are only four lanes in the `svfloat32_t` arguments to enable
+   or disable. This is slightly unintuitive but matches the definitions of the
+   intrinsics in the Arm ACLE.
+
+   Within the definition of those intrinsics, the `svbool_t` is cast to a
+   private `svboolN_t` type which has a number of lanes matching the data
+   argument (e.g. a `svbool4_t`/`vscale x i1 x 4` for
+   `svfloat32_t`/`vscale x f32 x 4`).
+
+   ```text
+    ├──────── vscale x i32 x 4 ───────┤ ├──────────── i32 x 4 ────────────┤
+   ┌───────────────────────────────────┬───────────────────────────────────┐
+   │                ...                │ 0x0000 │ 0x0000 │ 0x0000 │ 0x0000 │
+   └───────────────────────────────────┴───────────────────────────────────┘
+                     △                   △        △        △        △
+                     │       ┌───────────┘        │        │        │
+                     │       │     ┌──────────────┘        │        │
+                     │       │     │     ┌─────────────────┘        │
+               ┌─────┘       │     │     │    ┌─────────────────────┘
+   ┌───────────────────────┬───────────────────────┐
+   │          ...          │ 0x0 │ 0x0 │ 0x0 │ 0x0 │ + unused space for 12x `i1`s
+   └───────────────────────┴───────────────────────┘
+   ├── vscale x i1 x 4 ──┤ ├─────── i1 x 4 ──────┤
+   ```
+
+   Defining a `svboolN_t` is more complicated than trivial division, requiring
+   the attribute accept either arbitrary specification of `N` or a type to
+   calculate `N` with, for example:
+
+   ```rust
+   // alternative: user-provided arbitrary `N`
+   #[rustc_scalable_vector(4)]
+   struct svbool4_t(bool);
+
+   // alternative: add `predicate_of` to attribute
+   #[rustc_scalable_vector(predicate_of = "u32")]
+   struct svbool4_t(bool);
+
+   // alternative: use another field to separate element type and size to use for `N`
+   #[rustc_scalable_vector]
+   struct svbool4_t(bool, u32);
+   ```
+
+2. Similarly, with Arm SVE, the sign extending intrinsics will internally use
+   LLVM intrinsics which return vectors with fewer elements than
+   `vunit / element_size` (similar to `svboolN_t` but for other types).
+
+   For example, the `svldnt1sb_gather_s64offset_s64` intrinsic wraps the
+   `llvm.aarch64.sve.ldnt1.gather.nxv2i8` intrinsic in LLVM. It returns
+   `nxv2i8`, which is a `vscale x i8 x 2` that is then cast to `svint64_t`.
+
+   Like in the previous case, `vscale x i8 x 2` cannot be defined without the
+   attribute accepting arbitrary specification of `N` or a type to calculate `N`
+   with.
+
+3. Also with Arm SVE, some load and store intrinsics take tuples of vectors,
+   such as `svfloat32x2_t`:
+
+   ```text
+    ◁───────────── vscale x f32 x 4 ─────────────▷ ◁────── f32 x 4 ──────▷
+   ┌──────────────────────────────────────────────┬───────────────────────┐  ┐
+   │                      ...                     │ f32 │ f32 │ f32 │ f32 │  │
+   └──────────────────────────────────────────────┴───────────────────────┘  ├─ svfloat32x2_t
+   ┌──────────────────────────────────────────────┬───────────────────────┐  │  vscale x f32 x 8
+   │                      ...                     │ f32 │ f32 │ f32 │ f32 │  │
+   └──────────────────────────────────────────────┴───────────────────────┘  ┘
+   ```
+
+   These types are the opposite of the previous complicating case, containing
+   more elements than `vunit / element_size`. These use two or more registers to
+   represent the vector.
+
+   `vscale x f32 x 8` cannot be defined without the attribute accepting
+   arbitrary specification of `N` or an argument to the attribute to specify the
+   number of registers used:
+
+   ```rust
+   // alternative: user-provided arbitrary `N`
+   #[rustc_scalable_vector(8)]
+   struct svfloat32x2_t(f32);
+
+   // alternative: add `tuple_of` to attribute
+   #[rustc_scalable_vector(tuple_of = "2")] // either `1` (default), `2`, `3` or `4`
+   struct svfloat32x2_t(f32);
+   ```
+
+4. RISC-V RVV's scalable vectors are quite different from Arm's SVE, while
+   sharing the same underlying infrastructure in LLVM.
+
+   SVE's scalable vector types map directly onto LLVM scalable vector types, and
+   all of the dynamic parts of the vectors are abstracted by `vscale`:
+
+   ```text
+    ├───────── vscale x 128 ────────┤ ├── 128 ──┤
+   ┌─────────────────────────────────┬───────────┐
+   │               ...               │           │
+   └─────────────────────────────────┴───────────┘
+   ```
+
+   RVV's scalable vector types have an extra dimensions of flexibility, the
+   "register grouping factor" or `LMUL`, and `SEW`:
+
+   - `SEW` is the "selected element width", and corresponds to the size of the
+     element type of the vector (`element_size`).
+
+     RVV uses the least common multiple of the supported element types as
+     `vunit` so that the overall vector length is `VLEN = vscale * vunit`, which
+     is a constant, rather than `VLEN = vscale * element_size`, which is not a
+     constant.
+
+   - `LMUL` configures how many vector registers are grouped together to form a
+     larger logical vector register. `LMUL` can be 1/8, 1/4, 1/2, 1, 2, 4, or 8.
+     Not all `LMUL` values are valid for each type.
+
+   `LMUL` and `SEW` are part of the processor state and are changed by
+   compiler-inserted `vsetli` instructions depending on the vector types being
+   used.
+
+   `LMUL` is distinct from tuple types, which are a separate variable named
+   `NFIELD` (which is not part of the processor state, as with SVE tuples).
+   `NFIELD` can be 1, 2, 3, 4, 5, 6, 7 or 8. Not all `NFIELD` values are valid
+   for each type.
+
+   Scalable vector types which vary in both `LMUL` and `NFIELD` could be exposed
+   to the user (see [RVV Type System Documentation][rvv_typesystem]). For
+   example, consider the following types:
+
+   - `vint8mf2_t` has `NFIELD=1`, `LMUL=1/2` and `ty=i8`
+   - `vuint32m4_t` has `NFIELD=1`, `LMUL=4` and `ty=i32`
+   - `vint16mf4x6_t` has `NFIELD=6`, `LMUL=1/4` and `ty=i16`
+   - `vint64m2x3_t` has `NFIELD=3`, `LMUL=2` and `ty=i64`
+
+   This can include types which have different representation but have the same
+   `N`:
+
+   - `vint32m1x2_t` has `NFIELD=2`, `LMUL=1` and `ty=i32` (`N=4` elements)
+   - `vint32m2_t` has `NFIELD=1`, `LMUL=2` and `ty=i32` (`N=4` elements)
+
+   When `NFIELD=1`, `LMUL=4` and `ty=i64`, four registers are grouped together
+   to form a logical vector register, and this has the type
+   `<vscale x 4 x i64>`:
+
+   ```text
+   ├────────────────────── VLEN ────────────────────┤
+    ├── vscale x 64 bits ──┤ ├────── 64 bits ──────┤
+                          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+   ┌──────────────────────╋─┬───────────────────────┐ ┃  ┬
+   │          ...         ┃ │          i64          │ ┃  │
+   └──────────────────────╋─┴───────────────────────┘ ┃  │
+   ┌──────────────────────╋─┬───────────────────────┐ ┃  │
+   │          ...         ┃ │          i64          │ ┃  │
+   └──────────────────────╋─┴───────────────────────┘ ┃  │ LMUL=4 (vint64m4_t)
+   ┌──────────────────────╋─┬───────────────────────┐ ┃  │ vscale x 4 x i64
+   │          ...         ┃ │          i64          │ ┃  │
+   └──────────────────────╋─┴───────────────────────┘ ┃  │
+   ┌──────────────────────╋─┬───────────────────────┐ ┃  │
+   │          ...         ┃ │          i64          │ ┃  │
+   └──────────────────────╋─┴───────────────────────┘ ┃  ┴
+                          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+   ```
+
+   Similarly, when `NFIELD=1`, `LMUL=4` and `ty=i32`, the smaller element type
+   results in each register containing more elements to add up to `vunit` and
+   this is repeated across all four registers:
+
+   ```text
+   ├────────────────────── VLEN ────────────────────┤
+    ├── vscale x 64 bits ──┤ ├────── 64 bits ──────┤
+                          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  ┬
+   │          ...         ┃ │    i32    │    i32    │ ┃  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  │
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  │
+   │          ...         ┃ │    i32    │    i32    │ ┃  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  │ LMUL=4 (vint32m4_t)
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  │ vscale x 8 x i32
+   │          ...         ┃ │    i32    │    i32    │ ┃  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  │
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  │
+   │          ...         ┃ │    i32    │    i32    │ ┃  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  ┴
+                          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+   ```
+
+   It is possible for different scalable vector types with RVV to have the same
+   value of `N`, consider `NFIELD=1`, `LMUL=2` and `ty=i32`..
+
+   ```text
+   ├────────────────────── VLEN ────────────────────┤
+    ├── vscale x 64 bits ──┤ ├────── 64 bits ──────┤
+                          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  ┬
+   │          ...         ┃ │    i32    │    i32    │ ┃  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  │ LMUL=2 (vint32m2_t)
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  │ vscale x 4 x i32
+   │          ...         ┃ │    i32    │    i32    │ ┃  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  ┴
+                          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+   ```
+
+   ..and `NFIELD=2`, `LMUL=1` and `ty=i32`:
+
+   ```text
+   ├────────────────────── VLEN ────────────────────┤
+    ├── vscale x 64 bits ──┤ ├────── 64 bits ──────┤
+                          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓            ┐
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  ┬         │
+   │          ...         ┃ │    i32    │    i32    │ ┃  │ LMUL=1  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  ┴         │
+                          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛            ├─ vint32m1x2_t
+                          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓            │  vscale x 4 x i32
+   ┌──────────────────────╋─┬───────────┬───────────┐ ┃  ┬         │
+   │          ...         ┃ │    i32    │    i32    │ ┃  │ LMUL=1  │
+   └──────────────────────╋─┴───────────┴───────────┘ ┃  ┴         │
+                          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛            ┘
+   ```
+
+   Despite `vint32m2_t` and `vint32m1x2_t` having the same value of `N`, and
+   hence same LLVM type, `vscale x 4 x i32`, the value of `LMUL` in the
+   processor state will be different when each are used. In practice, RVV tuples
+   lower to target-specific types in LLVM rather than generic scalable vector
+   types, so `rustc_scalable_vector` will not initially support RVV tuples (see
+   [*RISC-V Vector Extension's tuple types*][rvv-tuples]).
+
+   RVV's scalable vectors cannot be defined without the attribute accepting
+   arbitrary specification of `N` or an argument to the attribute to specify the
+   `lmul` used:
+
+   ```rust
+   // alternative: user-provided arbitrary `N`
+   #[rustc_scalable_vector(4)]
+   struct vint32m2_t(i32);
+
+   #[rustc_scalable_vector(1)]
+   struct vint16mf4_t(i16);
+
+   // alternative: user-provided `LMUL`
+   #[rustc_scalable_vector(lmul = "2")]
+   struct vint32m2_t(i32);
+
+   #[rustc_scalable_vector(lmul = "1/4")]
+   struct vint16mf4_t(i16);
+   ```
+
+It is technically possible to calculate `N`, requiring lots of additional
+machinery in the `rustc_scalable_vector` attribute, much of which would be
+mutually exclusive or produce invalid types with many values of the parameters.
+
+There will be a fixed number of scalable vector types that will be defined in
+the standard library alongside their intrinsics and well-tested. It is very
+likely that their implementations will be automatically generated. For example,
+while not being proposed in this RFC, it is expected Arm SVE will define 55
+scalable vector types, exhaustively covering the possible vector types enabled
+by the architecture extension (it is assumed that the same will be true for
+RISC-V RVV):
+
+- `svbool_t`
+- `sv{int8,uint8}{,x2,x3,x4}_t`
+- `sv{int16,uint16}{,x2,x3,x4}_t`
+- `sv{float32,int32,uint32}{,x2,x3,x4}_t`
+- `sv{float64,int64,uint64}{,x2,x3,x4}_t`
+- `svbool{2,4,8}_t` for internal use
+- `nxv{2,4,8}{i8,u8}` for internal use
+- `nxv{2,4}{i16,u16}` for internal use
+- `nxv2{i32,u32}` for internal use
+
+Given the complexity required in `rustc_scalable_vector` to be able to calculate
+`N`, that it would still be possible to use the attribute incorrectly, that the
+attribute is permanently unstable, and the low risk of misuse given the intended
+use, this proposal argues that allowing arbitrary specification of `N` is
+reasonable.
 
 # Prior art
 [prior-art]: #prior-art
@@ -388,10 +689,28 @@ experimenting with architecture-specific support and implementation initially.
 Later, there are a variety of approaches that could be taken to incorporate
 support for scalable vectors into Portable SIMD.
 
+## RISC-V Vector Extension's tuple types
+[rvv-tuples]: #risc-v-vector-extensions-tuple-types
+
+As explained in
+[*Manually-chosen or compiler-calculated element count*][manual-or-calculated-element-count],
+there is a distinction in RVV between vectors which would have the same `N` in a
+scalable vector type, but which vary in `LMUL` and `NFIELD`.
+
+For example, `vint32m2_t` and `vint32m1x2_t`, if lowered to scalable vector
+types in LLVM, would both be `<vscale x 4 x i32>`.
+
+RVV's tuple types need to be lowered to target-specific types in the backend
+which is out-of-scope of this general infrastructure for scalable vectors.
+
 [acle_sizeless]: https://arm-software.github.io/acle/main/acle.html#formal-definition-of-sizeless-types
 [dotnet]: https://github.com/dotnet/runtime/issues/93095
 [prctl]: https://www.kernel.org/doc/Documentation/arm64/sve.txt
+[quote_amanieu]: https://github.com/rust-lang/rust/pull/118917#issuecomment-2202256754
 [rfcs#1199]: https://rust-lang.github.io/rfcs/1199-simd-infrastructure.html
 [rfcs#3268]: https://github.com/rust-lang/rfcs/pull/3268
 [rfcs#3729]: https://github.com/rust-lang/rfcs/pull/3729
-[quote_amanieu]: https://github.com/rust-lang/rust/pull/118917#issuecomment-2202256754
+[rust#63633]: https://github.com/rust-lang/rust/issues/63633
+[rvv_bitsperblock]: https://github.com/llvm/llvm-project/blob/837b2d464ff16fe0d892dcf2827747c97dd5465e/llvm/include/llvm/TargetParser/RISCVTargetParser.h#L51
+[rvv_typesystem]: https://github.com/riscv-non-isa/rvv-intrinsic-doc/blob/main/doc/rvv-intrinsic-spec.adoc#type-system
+[sve_minlength]: https://developer.arm.com/documentation/102476/0101/Introducing-SVE#:~:text=a%20minimum%20of%20128%20bits
