@@ -519,24 +519,27 @@ unsafe fn foo<T>(ptr: *const T) -> T { ... }
 unsafe { bar(p) }
 ```
 
-## Tagging on Unsafe Traits and Impls
+## Tagging More Unsafe Operations
 
-We can extend safety definitions to unsafe traits and require discharges in unsafe trait impls.
+There are several other unsafe operations other than unsafe calls. We can extend safety tags in the
+following cases:
 
-Crates with heavy unsafe-trait usage likely needs the extension. We’d welcome more minds on this.
+1. Dereferencing a raw pointer: we can define such operation to have `Deref` tag, thus users will 
+   have to discharge `Deref` when this operation happens. (Is Deref tag enough?)
+2. Reading or writing a mutable or external static variable: we can relax `requires` to such static
+   items, so tags can be defined on them as well as be discharged on such operation happens.
+3. Accessing a field of a union or an [unsafe field]:  we can extend tag definitions to such field,
+   so tags must be discharged at every access point.
+4. Calling some kinds of safe functions like ones marked with a target_feature or an unsafe
+   attribute or in an extern block: the definition and discharge rules is the same as that of
+   ordinary unsafe functions.
+5. Implementing an unsafe trait: we can extend safety definitions to unsafe traits and require
+   discharges in unsafe trait impls.
 
-## Tagging on Datastructures
+[unsafe fields]: https://github.com/rust-lang/rfcs/pull/3458
 
-We believe safety requirements are almost always imposed by unsafe functions, so tagging a struct,
-enum, or union is neither needed nor permitted.
-
-## Tagging on Unsafe Fields
-
-[Unsafe fields] are declared and accessed with the `unsafe` keyword, often accompanied by safety
-comments. We could extend safety tags to cover unsafe fields as well, both in their definitions and
-at every access point they are discharged.
-
-[Unsafe fields]: https://github.com/rust-lang/rfcs/pull/3458
+But we believe safety requirements are almost mostly imposed by unsafe functions, so tagging a
+struct, enum, or union is neither needed nor permitted.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
