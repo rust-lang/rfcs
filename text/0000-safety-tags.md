@@ -15,21 +15,21 @@ requirement into a single, check-off reminder.
 The following snippet [compiles] today if we enable enough nightly features, but we expect Clippy
 and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 
-[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=8b22aebccf910428008c4423c436d81e
+[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=6eb0e47c416953da1f2470b11417e69a
 
 ```rust
-#![safety::import(invariant::*)] // 💡 import tag items
+#[safety::requires { // 💡 define safety tags on an unsafe function
+    ValidPtr = "src must be valid for reads",
+    Aligned = "src must be properly aligned, even if T has size 0",
+    Initialized = "src must point to a properly initialized value of type T"
+}]
+pub unsafe fn read<T>(ptr: *const T) { }
 
-pub mod invariant {
-    #[safety::declare_tag] // 💡 declare a tag item only on uninhabited enum
-    pub enum ValidPtr() {}
-}
-
-#[safety::requires { ValidPtr }] // 💡 define tags on unsafe functions
-pub unsafe fn read<T>(ptr: *const T) {}
 
 fn main() {
-    #[safety::checked { ValidPtr }] // 💡 discharge tags on unsafe calls
+    #[safety::checked { // 💡 discharge safety tags on an unsafe call
+        ValidPtr, Aligned, Initialized = "optional reason"
+    }]
     unsafe { read(&()) };
 }
 ```
@@ -133,39 +133,36 @@ Operation -> requires | checked
 
 Object -> `[` Tags `]` | `(` Tags `)` | `{` Tags `}`
 
-Tags -> Tag (`;` Tag)*
+Tags -> Tag (`,` Tag)* `,`?
 
-Tag -> ID (`,` ID)* (`:` LiteralString)?
+Tag -> ID (`=` LiteralString)?
 
-ID -> SingleIdent | SimplePath
+ID -> SingleIdent
 ```
 
 Here are some tag examples:
 
 ```rust
 #[safety::requires { SP }]
-#[safety::requires { SP1, SP2 }]
+#[safety::requires { SP1 = "description1", SP2 = "description2" }]
 
-#[safety::checked { SP1: "reason" }]
-#[safety::checked { SP1: "reason"; SP2: "reason" }]
-
-#[safety::checked { SP1, SP2: "shared reason for the two SPs" }]
-#[safety::checked { SP1, SP2: "shared reason for the two SPs"; SP3 }]
+#[safety::checked { SP }]
+#[safety::checked { SP1 = "description1", SP2 = "description2" }]
 ```
 
 `#[safety]` is a tool attribute with two forms to operate on safety invariants:
 * `safety::requires` is placed on an unsafe function’s signature to state the safety invariants that
-callers must uphold;
-* `safety::checked` is placed on an expression or let-statement that wraps an unsafe call.
+  callers must uphold;
+* `safety::checked` is placed on an expression that wraps an unsafe call.
 
 Take [`ptr::read`] as an example: its safety comment lists three requirements, so we create three
 corresponding tags on the function declaration and mark each one off at the call site.
 
 ```rust
-#[safety::requires { ValidPtr, Aligned, Initialized }] // defsite
+#[safety::requires { ValidPtr, Aligned, Initialized }] // defsite or definition
 pub unsafe fn read<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked { ValidPtr, Aligned, Initialized }] // callsite
+#[safety::checked  { ValidPtr, Aligned, Initialized }] // callsite or discharge
 unsafe { read(ptr) };
 ```
 
@@ -174,12 +171,12 @@ We can also attach comments for a tag or a group of tags to clarify how safety r
 ```rust
 for _ in 0..n {
     unsafe {
-        #[safety::checked { ValidPtr, Aligned, Initialized:
+        #[safety::checked { ValidPtr, Aligned, Initialized =
             "addr range p..p+n is properly initialized from aligned memory"
         }]
         c ^= p.read();
 
-        #[safety::checked { InBounded, ValidNum:
+        #[safety::checked { InBounded, ValidNum =
             "`n` won't exceed isize::MAX here, so `p.add(n)` is fine"
         }]
         p = p.add(1);
@@ -189,15 +186,6 @@ for _ in 0..n {
 
 [tool attribute]: https://doc.rust-lang.org/reference/attributes.html#tool-attributes
 [`ptr::read`]: https://doc.rust-lang.org/std/ptr/fn.read.html
-
-
-NOTE: the follwing syntax is valid, but probably bad in practice, since people may leave a typo `,`
-to accidentally group tags when they mean `;` to separate them. Thus I'd just suggest forbiding
-such syntax to avoid surprising unsafe delegation which will be disscused in next section.
-
-```rust
-#[safety::checked { SP3; SP1, SP2: "shared reason for the two SPs" }]
-```
 
 ## Discharge Tags
 
@@ -222,7 +210,7 @@ LLL | unsafe { ptr::read(ptr) }
     = NOTE: See core::ptr::invariants::Initialized
 ```
 
-The process of verifying whether a tag is present is referred to as tag discharge.
+The process of verifying whether a tag is checked is referred to as tag discharge.
 
 Now consider forwarding invariants of unsafe callees onto the unsafe caller for unsafe delegation or
 propogation:
@@ -258,8 +246,8 @@ unsafe fn delegation<T>(ptr: *const T) -> T {
     let aligned_addr = (addr + align - 1) & !(align - 1);
 
     #[safety::checked {
-        Aligned: "alignment of ptr has be adjusted";
-        ValidPtr, Initialized: "delegated to the caller"
+      Aligned: "alignment of ptr has be adjusted";
+      ValidPtr, Initialized: "delegated to the caller"
     }]
     unsafe { read(ptr) }
 }
@@ -276,83 +264,45 @@ enum MyInvaraint {} // Invariants of A and C, but could be a more contextual nam
 #[safety::requires { MyInvaraint }]
 unsafe fn delegation() {
     unsafe {
-        #[safety::checked { A: "delegated to the caller"; B }]
+        #[safety::checked { A: "delegated to the caller's MyInvaraint"; B }]
         foo();
-        #[safety::checked { C: "delegated to the caller"; D }]
+        #[safety::checked { C: "delegated to the caller's MyInvaraint"; D }]
         bar();
     }
 }
 ```
 
-Note that the tag group matters here, because we want to convey `MyInvaraint` represents A and C. If
-someone doesn't pay attention to the group and writes `B, A: "..."` instead of separating B from A
-with `B; A: "..."`, the `MyInvaraint` will be inaccurate. So I'd just propose grouped tags precede 
-tags without reasons.
+Note that discharing a tag that is not defined will raise a hard error.
 
-## Safety Tags as Ordinary Items
+## Safety Tags are Part of an Unsafe Function
 
-Before tagging a function, we must declare them using `#[safety::declare_tag]` as an [uninhabited]
-enum whose value is never constructed:
+Tags are extra information of unsafe functions, so rustdoc can render documentation of tags,
+displaying each tag and its optional description below function's doc. Rust-Analyzer can also offer
+**full IDE support**: completion, go-to-definition, and doc-hover.
 
-```rust
-#[safety::declare_tag]
-enum ValidPtr {}
-```
-
-Tags live in their own [type namespace] carry item-level [scopes] and obey [visibility] rules,
-keeping the system modular and collision-free.
-
-However, tag items are only used in safety tool attribute and never really used in user own code, we
-propose importing them uses a dedicated syntax: inner-styled or outer-styled `safety::import` tool
-attribute on modules and takes [`UseTree`] whose grammar is shared with that in `use` declaration.
-Some examples:
-
-```rust
-// outer-styled import: import tag Bar to foo module
-#[safety::import(crate::invariants::Bar)]
-mod foo;
-
-// inner-styled import: equivalent to the above,
-// but must enable #![feature(custom_inner_attributes)]
-mod foo { #![safety::import(crate::invariants::Bar)] }
-
-// Below are examples to import multiple tags into scope.
-
-#[safety::import { core::ptr::invariants::* }]
-mod foo;
-
-mod bar {
-    #![safety::import { core::ptr::invariants::{ValidPtr, Aligned} }]
-}
-```
-
-That's to say:
-* Tags declared or re-exported in the current module are automatically in scope: no import required.
-* To use tags defined in other modules or crates, attach the `safety::import` attribute to current
-  module.
-* Tags are visible and available to downstream crates whenever their declaration paths are public.
-* Attempting to import a tag from a private module is a **hard error**.
-* Referencing a tag that has never been declared is also a **hard error**.
-
-[uninhabited]: https://doc.rust-lang.org/reference/glossary.html#uninhabited
-[type namespace]: https://doc.rust-lang.org/reference/names/namespaces.html
-[scopes]: https://doc.rust-lang.org/reference/names/scopes.html#item-scopes
-[visibility]: https://doc.rust-lang.org/reference/visibility-and-privacy.html
-[`UseTree`]: https://doc.rust-lang.org/reference/items/use-declarations.html
-
-Tags are treated as items so rustdoc can render their documentation and hyperlink tag references.
-And Rust-Analyzer can offer **full IDE support**: completion, go-to-definition/declaration, and
-doc-hover.
-
-Tags constitute a public API; therefore, any alteration to their declaration or definition must be
-evaluated against [Semantic Versioning][semver].
-* Adding a tag declaration or definition is a **minor** change.
-* Removing a tag declaration or definition is a **major** change.
-
-To give dependent crates time to migrate, mark obsolete tag items with `#[deprecated]`. Clippy will
-surface the deprecation warning whenever the tag is used w.r.t definitions and discharges.
+Tags constitute a public API; therefore, any alteration to their definition must be evaluated
+against [Semantic Versioning][semver].
+* Adding a tag definition is a **minor** change.
+* Removing a tag definition is a **major** change. Renaming a tag definition is a two-step
+  operation of removal and addition, bringing a major change due to removal. 
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
+
+To give dependent crates time to migrate an outdated tag definition, use `@deprecated` in tag
+description. Clippy will emit a deprecation warning whenever the tag is used in `safety::checked`.
+
+```rust
+#[safety::requires {
+  NewTag = "description",
+  Tag = "@deprecated explain why this tag is discouraged or what tag shoud be used instead",
+}]
+unsafe fn deprecate_a_tag() {}
+
+// warning: Tag is deprecated, copy description to here.
+// error: NewTag is not discharged.
+#[safety::requires { Tag }]
+unsafe { deprecate_a_tag() }
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -361,7 +311,6 @@ surface the deprecation warning whenever the tag is used w.r.t definitions and d
 
 Currently, safety tags requires the following features
 * `#![feature(proc_macro_hygiene, stmt_expr_attributes)]` for tagging statements or expressions.
-* `#![feature(custom_inner_attributes)]` for `#![safety::import(...)]`.
 * registering `safety` tool in every crate to create safety namespace.
 
 Since the safety-tag mechanism is implemented primarily in Clippy and Rust-Analyzer, no additional
@@ -375,14 +324,8 @@ their call sites. To enable experimentation, a nightly-only library feature
 
 Procedure:
 
-1. Scan the crate for uninhabited enums marked `#[safety::declare_tag]`; cache the compiled tag
-   metadata of upstream dependencies under `target/` for later queries.
-   * Raise an error if `declare_tag` is on other items, and ask readers to tag uninhabited enum.
-2. Resolve and validate tags in `#![safety::import]` through a reachability analysis to ensure the
-   paths are accessible.
-3. Validate `#[safety::requires]` only appears on unsafe functions if the attribute exists.
-
-4. Validate `#[safety::checked]` on HIR nodes whose `ExprKind` is one of
+1. Validate `#[safety::requires]` only appears on unsafe functions if the attribute exists.
+2. Validate `#[safety::checked]` on HIR nodes whose `ExprKind` is one of
    - **direct unsafe nodes**: `Call`, `MethodCall` that invoke an unsafe function/method, or
    - **indirect unsafe nodes**: `Block` (unsafe), `Let`, `Assign`, `AssignOp`.
 
@@ -394,10 +337,8 @@ Procedure:
    3. Any node that carries `#[safety::checked]` must contain **exactly one** unsafe call/method;
       otherwise emit a diagnostic. *(We intentionally stop at this simple rule; splitting complex
       unsafe expressions into separate annotated nodes is considered good style.)*
-   4. Diagnostics are emitted at the current Clippy lint level (warning or error).
-
-5. Resolve and validate tags in `#[safety::requires]` correspond to tag declarations.
-6. Resolve and validate tags in `#[safety::checked]` correspond to tag declarations and definitions.
+   4. Make sure tags in `#[safety::checked]` correspond to their definitions.
+   5. Diagnostics are emitted at the current Clippy lint level (warning or error).
 
 [HIR ExprKind]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_hir/hir/enum.ExprKind.html
 
@@ -406,14 +347,11 @@ definition and discharge is strictly valid.
 
 ## Implementation in Rust Analyzer
 
-Safety-tag analysis requirements:
+Safety-tag analysis requirements: offer tag name completion, go-to-definition and inline
+documentation hover in `#[safety::checked]` as per tag definitions on unsafe calls.
 
-* Harvest every item marked `#[safety::declare_tag]`, including those pulled in from dependencies.
-* Offer tag path completion for `#![safety::import]`.
-* Offer tag name and path completion for `#[safety::requires]` on unsafe functions, and
-  `#[safety::checked]` on let-statements, or expressions.
-* Validate all tags inside `#[safety::{requires,checked}]`, and support “go-to-definition” plus
-  inline documentation hover.
+Maybe some logics on safety tags like collecting tag definitions need to be extracted to a shared
+crate for both Clippy and Rust-Analyzer to use. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -555,33 +493,29 @@ While safety tags are less formally verified and intended to be a check list on 
 
 ## Should Tags Take Arguments?
 
-When a tag needs parameters, we must decide what its declaration looks like.  An uninhabited enum
-can no longer express “this tag carries data”, so the nearest legal item is a function whose
-parameters represent the tag’s arguments. Unfortunately, this immediately raises design questions:
+When a tag needs arguments to refine context in discharging, we must decide what its definition
+looks like. Unfortunately, this immediately raises design questions:
 
-1. **Argument types**. Which types are allowed in the declaration? Do we have to introduce new
-   arguments types for each tag declaration?
-
+1. **Argument types**. Which types are allowed in the definition?
 2. **Type checking**. Will tag operations `safety::requires` and `safety::checked` type-check
    against these arguments? If so, are we quietly reinventing a full contract system?
 
 I'd like to propose a solution or rather compromise here by trading strict precision for simplicity:
 
-We could keep uninhabited enums as the only tag declaration and allow *any* arguments in tag usage
-without validation. Tag arguments would still refine the description of an unsafe operation, but
-they are never type checked. An example:
+We could allow *any* arguments in tag usage without validation. Tag arguments would still refine the
+description of an unsafe operation, but they are never type checked. An example:
 
 ```rust
-#[safety::declare_tag(
-  args = [ "p", "T", "len" ],
-  desc = "pointer `{p}` must be valid for reading and writing the `sizeof({T})*{n}` memory from it"
-)]
-enum ValidPtr {}
-
-#[safety::requires { ValidPtr(ptr) }]
+#[safety::requires {
+  ValidPtr = {
+    args = [ "p", "T", "len" ],
+    desc = "pointer `{p}` must be valid for \
+      reading and writing the `sizeof({T})*{n}` memory from it"
+  }
+}]
 unsafe fn foo<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked { ValidPtr(p) }]
+#[safety::checked { ValidPtr(p) }] // p will not be type-checked
 unsafe { bar(p) }
 ```
 
@@ -603,56 +537,6 @@ comments. We could extend safety tags to cover unsafe fields as well, both in th
 at every access point they are discharged.
 
 [Unsafe fields]: https://github.com/rust-lang/rfcs/pull/3458
-
-## Alternatives of Syntax for `requires` and `checked`
-
-@kennytm suggested [named arguments] in such tags:
-
-```rust
-// Alternative1: change our `:` to `=` before reasons.
-#[safety::checked(Tag1 = "reason1", Tag2 = "reason2", Tag3)]
-// This would be ugly for tag arguments (if we allow them) and grouped tags.
-#[safety::checked(Tag1(arg1) = "reason1", Tag2(arg2) = "reason2", Tag3(arg3))]
-// Ambiguous here: reason for Tag2 or (Tag1, Tag2)?
-#[safety::checked(Tag1, Tag2 = "reason for what???", Tag3(arg3))] 
-```
-
-[Lint reasons] inspires the following improved form that groups tags within single attribute and
-uses the `reason` field to explain why invariants are satisfied.
-
-```rust
-// Alternative2: each groupe of tags is in single attribute
-#[safety::checked(Tag1, reason = "reason1")]
-#[safety::checked(Tag1, Tag2, reason = "reason for Tag1 and Tag2")]
-#[safety::checked(Tag1(arg1), reason = "reason for Tag1 and Tag2")]
-```
-
-Downside of alternative2 is discharge of single tag results in verbose syntax and lines of code:
-
-```rust
-// Must discharge separate tags in separate attributes:
-#[safety::checked(Tag1, reason = "reason1")]
-#[safety::checked(Tag2, reason = "reason2")]
-#[safety::checked(Tag3, reason = "reason3")]
-```
-
-By comparison, our proposed syntax is
-
-```rust
-#[safety::checked { Tag1: "reason1", Tag2: "reason2", Tag3: "reason3" }]
-```
-
-[named arguments]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2247342603
-[Lint reasons]: https://doc.rust-lang.org/reference/attributes/diagnostics.html#lint-reasons
-
-## Encapsulate Tag Item Declaration with `define_safety_tag!`
-
-@clarfonthey [suggested][tool macro] a `define_safety_tag!` tool macro which will unlikely happen.
-
-But I think it'd be good and handy to hide tag declaration details. But this means
-there is a `define_safety_tag!` in libcore for any crate to use.
-
-[tool macro]: https://github.com/rust-lang/rfcs/pull/3842#discussion_r2245923920
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -702,7 +586,7 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 With support for tag arguments, safety documentation can be made more precise and contextual by
 dynamically injecting the argument values into the reason strings.
 
-## `any { Option1, Option2 }` Tags
+## Discharge One Tag from `any = { Option1, Option2 }`
 
 Sometimes it’s useful to declare a set of safety tags on an unsafe function while discharging only
 one of them.
@@ -712,8 +596,8 @@ discharge either `DropCheck` or `CopyType` at the call site, depending on the co
 
 Another instance is `<*const T>::as_ref`, whose safety doc states that the caller must guarantee
 “the pointer is either null or safely convertible to a reference”. This can be expressed as
-`#[safety::requires { any { Null, ValidPtr2Ref } }]`, allowing the caller to discharge whichever tag
-applies.
+`#[safety::requires { any = { Null, ValidPtr2Ref } }]`, allowing the caller to discharge whichever
+tag applies.
 
 ## Entity References and Code Review Enhancement
 
@@ -738,10 +622,9 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
         guard.consumed += 1;
 
         #[ref(try_fold)] // 💡
-        #[safety {
-            ValidPtr, Aligned, Initialized;
-            DropCheck: "Because we incremented `guard.consumed`, the deque \
-              effectively forgot the element, so we can take ownership."
+        #[safety { ValidPtr, Aligned, Initialized, DropCheck =
+            "Because we incremented `guard.consumed`, the deque \
+             effectively forgot the element, so we can take ownership."
         }]
         unsafe { ptr::read(elem) }
     })
