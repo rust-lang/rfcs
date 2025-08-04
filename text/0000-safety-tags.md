@@ -274,11 +274,7 @@ unsafe fn delegation() {
 
 Note that discharing a tag that is not defined will raise a hard error.
 
-## Safety Tags are Part of an Unsafe Function
-
-Tags are extra information of unsafe functions, so rustdoc can render documentation of tags,
-displaying each tag and its optional description below function's doc. Rust-Analyzer can also offer
-**full IDE support**: completion, go-to-definition, and doc-hover.
+## Safety Tags are a Part of an Unsafe Function
 
 Tags constitute a public API; therefore, any alteration to their definition must be evaluated
 against [Semantic Versioning][semver].
@@ -528,15 +524,15 @@ following cases:
    have to discharge `Deref` when this operation happens. (Is Deref tag enough?)
 2. Reading or writing a mutable or external static variable: we can relax `requires` to such static
    items, so tags can be defined on them as well as be discharged on such operation happens.
-3. Accessing a field of a union or an [unsafe field]:  we can extend tag definitions to such field,
-   so tags must be discharged at every access point.
+3. Accessing a union field or an [unsafe field]:  we can extend tag definitions to such field, so
+   tags must be discharged at every access point.
 4. Calling some kinds of safe functions like ones marked with a target_feature or an unsafe
    attribute or in an extern block: the definition and discharge rules is the same as that of
    ordinary unsafe functions.
 5. Implementing an unsafe trait: we can extend safety definitions to unsafe traits and require
    discharges in unsafe trait impls.
 
-[unsafe fields]: https://github.com/rust-lang/rfcs/pull/3458
+[unsafe field]: https://github.com/rust-lang/rfcs/pull/3458
 
 But we believe safety requirements are almost mostly imposed by unsafe functions, so tagging a
 struct, enum, or union is neither needed nor permitted.
@@ -546,9 +542,9 @@ struct, enum, or union is neither needed nor permitted.
 
 ## Better Rustdoc Rendering
 
-Because tags are surfaced as real API items, rustdoc can give `#[safety::declare_tag]`–annotated,
-uninhabited enums (the tag items) special treatment: it renders compact pages for them and
-establishes bidirectional links between tag items and unsafe functions requiring the tags.
+Because tags are surfaced as a part of API, rustdoc can render documentation of tags by displaying
+each tag name, its optional description, and possible deprecated state below the tagged function or
+other unsafe item.
 
 ## Generate Safety Docs from Tags
 
