@@ -1,7 +1,7 @@
 - Feature Name: `derive_from`
 - Start Date: 2025-05-06
 - RFC PR: [rust-lang/rfcs#3809](https://github.com/rust-lang/rfcs/pull/3809)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Tracking Issue: [rust-lang/rust#144889](https://github.com/rust-lang/rust/issues/144889)
 
 # Summary
 [summary]: #summary
