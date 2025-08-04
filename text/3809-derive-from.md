@@ -180,7 +180,7 @@ The question then becomes what would be generated under this design when the str
 
 - We could either generate `From<T> for Type`, which would be compatible with this RFC. It would also be slightly inconsistent though, as it would generate something different only for the case with a single field.
     - This is how the `derive_more::From` macro behaves.
-- Or, we could generate `From<(T, )> for Type`, which would be consistent with the logic of generating `From<tuple>`. However, single-field tuples are not idiomatic and it would be awkward having to write e.g. `(value, ).into()` to make use of the impl. 
+- Or, we could generate `From<(T, )> for Type`, which would be consistent with the logic of generating `From<tuple>`. However, single-field tuples are not idiomatic and it would be awkward having to write e.g. `(value, ).into()` to make use of the impl.
 
 I think that the second approach is not a good idea, and I find it unlikely that we would want to use it.
 
