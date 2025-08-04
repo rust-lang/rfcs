@@ -1,0 +1,55 @@
+- Feature Name:
+- Start Date: 2025-08-04
+- RFC PR: [rust-lang/rfcs#0000]()
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+Include a version of `clang` and `clang++` compiled against rust LLVM in the `llvm-tools` component in nightly.
+
+# Motivation
+[motivation]: #motivation
+
+Allowing user-access to the LLVM pipeline allows for many user-built features, such as cross-language inlining. However, LLVM version mismatching between tools can lead to frustrating problems. Including `clang` and `clang++` in `llvm-tools` allows users to use only the tools that rust ships with, ensuring consistent versioning.
+
+## Background
+
+`clang` and `clang++` are LLVM-based C and C++ compilers mentioned in [official documentation](https://dev-doc.rust-lang.org/beta/rustc/linker-plugin-lto.html)
+```bash
+# Compile the Rust staticlib
+RUSTFLAGS="-Clinker-plugin-lto" cargo build --release
+# Compile the C code with `-flto=thin`
+clang -c -O2 -flto=thin -o cmain.o ./cmain.c
+# Link everything, making sure that we use an appropriate linker
+clang -flto=thin -fuse-ld=lld -L . -l"name-of-your-rust-lib" -o main -O2 ./cmain.o
+```
+Unfortunately, this example does not always work, because it calls system `clang`, which may use a different version of LLVM than Rust. Additionally, even at the same version, there is a potential for problems from mixing base LLVM tools with the Rust fork of LLVM.
+
+Rustup has the ability to install a component called `llvm-tools`, which exposes the llvm tools used by Rust, including `llvm-link` and `llc` - notably, it does not contain a build of `clang` or `clang++`
+
+## Conclusion
+
+Builds of `clang` and `clang++` should be added to the `llvm-tools` component to enable version matching when working with base LLVM tools
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+This will increase compile times and require more storage on devices with the `llvm-tools` component installed
+
+It may also drive more people to use manual compilation processes, which may cause fragmentation or be at odds with the Rust vision
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+Users can opt for system `clang` and `clang++` when building projects with LLVM, however there is no guarantee that users will have an appropriate version of the system tools, or that the Rust fork of LLVM won't contain any breaking changes.
+
+# Prior art
+[prior-art]: #prior-art
+
+This may help in the goal [Expose experimental LLVM features for GPU offloading](https://rust-lang.github.io/rust-project-goals/2025h1/GPU-Offload.html), as raw LLVM access is particularly useful for GPU compilation libraries.
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+Should `clang` and `clang++` be part of the `llvm-tools` component or added as their own component?
