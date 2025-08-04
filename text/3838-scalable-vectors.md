@@ -198,7 +198,7 @@ behave like value types but the exact size cannot be known at compilation time.
 Scalable vector types have some further restrictions due to limitations of the
 codegen backend:
 
-- Cannot be stored in compound types (structs, enums, etc) 
+- Cannot be stored in compound types (structs, enums, etc)
 
     - Including coroutines, so these types cannot be held across an await
       boundary in async functions
@@ -259,11 +259,11 @@ Most of the complexity of SVE is handled by LLVM: lowering Rust's scalable
 vectors to the correct type in LLVM and the `vscale` modifier that is applied to
 LLVM's vector types.
 
-LLVM's scalable vector type is of the form `<vscale x element_count x type>`.
+LLVM's scalable vector type is of the form `<vscale × element_count × type>`.
 `vscale` is the scaling factor determined by the hardware at runtime, it can be
 any value providing it gives a legal vector register size for the architecture.
 
-For example, a `<vscale x 4 x f32>` is a scalable vector with a minimum of four
+For example, a `<vscale × 4 × f32>` is a scalable vector with a minimum of four
 `f32` elements and with SVE, `vscale` could then be any power of two which would
 result in register sizes of 128, 256, 512, 1024 or 2048 and 4, 8, 16, 32, or 64
 `f32` elements respectively.
