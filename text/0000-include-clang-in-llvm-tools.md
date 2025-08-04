@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Include a version of `clang` and `clang++` compiled against rust LLVM in the `llvm-tools` component in nightly.
+Include a version of `clang` and `clang++` compiled against Rust LLVM in the `llvm-tools` component in nightly.
 
 # Motivation
 [motivation]: #motivation
@@ -17,7 +17,7 @@ In future versions of Rust, including a compiler with Rustup could also improve 
 
 ## Background
 
-`clang` and `clang++` are LLVM-based C and C++ compilers mentioned in [official documentation](https://doc.rust-lang.org/rustc/linker-plugin-lto.html)
+`clang` and `clang++` are LLVM-based C and C++ compilers mentioned in [official documentation](https://doc.rust-lang.org/rustc/linker-plugin-lto.html):
 ```bash
 # Compile the Rust staticlib
 RUSTFLAGS="-Clinker-plugin-lto" cargo build --release
@@ -32,14 +32,14 @@ Rustup has the ability to install a component called `llvm-tools`, which exposes
 
 ## Conclusion
 
-Builds of `clang` and `clang++` should be added to the `llvm-tools` component to enable version matching when working with base LLVM tools
+Builds of `clang` and `clang++` should be added to the `llvm-tools` component to enable version matching when working with base LLVM tools.
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-This will increase compile times and require more storage on devices with the `llvm-tools` component installed
+This will increase compile times and require more storage on devices with the `llvm-tools` component installed.
 
-It may also drive more people to use manual compilation processes, which may cause fragmentation or be at odds with the Rust vision
+It may also drive more people to use manual compilation processes, which may cause fragmentation or be at odds with the Rust vision.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
