@@ -1,6 +1,6 @@
-- Feature Name: (fill me in with a unique ident, `repr_ordered_fields`)
-- Start Date: (fill me in with today's date, 2025-08-01)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Feature Name: `repr_ordered_fields`
+- Start Date: 2025-08-05
+- RFC PR: [rust-lang/rfcs#3845](https://github.com/rust-lang/rfcs/pull/3845)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
