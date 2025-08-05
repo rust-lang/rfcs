@@ -267,6 +267,9 @@ Therefore, there is an additional restriction that these types cannot be used in
 the argument or return types of functions unless those functions are annotated
 with the relevant target feature.
 
+As scalable vectors will always be passed as immediates, they will therefore
+have the same ABI as in C, so should be considered FFI-safe.
+
 ### Target features
 [target-features]: #target-features
 
