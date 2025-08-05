@@ -81,10 +81,10 @@ And their alignment would be the same as their most aligned field.
 // size 16, align 4
 #[repr(ordered_fields)]
 struct FooStruct {
-	a: u8,
-	b: u32,
-	c: u16,
-	d: u32,
+    a: u8,
+    b: u32,
+    c: u16,
+    d: u32,
 }
 ```
 
@@ -100,10 +100,10 @@ Unions would be laid out with the same size as their largest field, and the same
 // size 4, align 4
 #[repr(ordered_fields)]
 union FooUnion {
-	a: u8,
-	b: u32,
-	c: u16,
-	d: u32,
+    a: u8,
+    b: u32,
+    c: u16,
+    d: u32,
 }
 ```
 
@@ -117,20 +117,20 @@ If an enum doesn't have any fields, then it is represented exactly by it's discr
 // represented as i16
 #[repr(ordered_fields)]
 enum FooEnum {
-	VarA = 1,
-	VarB, // discriminant = 2
-	VarC = 500,
-	VarD, // discriminant = 501
+    VarA = 1,
+    VarB, // discriminant = 2
+    VarC = 500,
+    VarD, // discriminant = 501
 }
 
 // discriminant = u16
 // represented as u16
 #[repr(ordered_fields, u16)]
 enum FooEnumUnsigned {
-	VarA = 1,
-	VarB, // discriminant = 2
-	VarC = 500,
-	VarD, // discriminant = 501
+    VarA = 1,
+    VarB, // discriminant = 2
+    VarC = 500,
+    VarD, // discriminant = 501
 }
 ```
 
@@ -140,33 +140,33 @@ For example, this would be laid out the same as the union below
 ```rust
 #[repr(ordered_fields)]
 enum BarEnum {
-	VarFieldless,
-	VarTuple(u8, u32),
-	VarStruct {
-		a: u16,
-		b: u32,
-	},
+    VarFieldless,
+    VarTuple(u8, u32),
+    VarStruct {
+        a: u16,
+        b: u32,
+    },
 }
 ```
 
 ```rust
 #[repr(ordered_fields)]
 union BarUnion {
-	var1: VarFieldless,
-	var2: VarTuple,
-	var3: VarStruct,
+    var1: VarFieldless,
+    var2: VarTuple,
+    var3: VarStruct,
 }
 
 #[repr(ordered_fields)]
 enum BarDiscriminant {
-	VarFieldless,
-	VarTuple,
-	VarStruct,
+    VarFieldless,
+    VarTuple,
+    VarStruct,
 }
 
 #[repr(ordered_fields)]
 struct VarFieldless {
-	disc: BarDiscriminant,
+    disc: BarDiscriminant,
 }
 
 #[repr(ordered_fields)]
@@ -182,89 +182,89 @@ In Rust, the algorithm for calculating the layout is defined precisely as follow
 /// Takes in the layout of each field (in declaration order)
 /// and returns the offsets of each field, and layout of the entire struct
 fn get_layout_for_struct(field_layouts: &[Layout]) -> Result<(Vec<usize>, Layout), LayoutError> {
-	let mut layout = Layout::new::<()>();
-	let mut field_offsets = Vec::new();
-	
-	for &field in field_layouts {
-		let (next_layout, offset) = layout.extend(field)?;
-		
-		field_offsets.push(offset);
-		layout = next_layout;
-	}
-	
-	Ok((field_offsets, layout.pad_to_align()))
+    let mut layout = Layout::new::<()>();
+    let mut field_offsets = Vec::new();
+    
+    for &field in field_layouts {
+        let (next_layout, offset) = layout.extend(field)?;
+        
+        field_offsets.push(offset);
+        layout = next_layout;
+    }
+    
+    Ok((field_offsets, layout.pad_to_align()))
 }
 
 fn layout_max(a: Layout, b: Layout) -> Result<Layout, LayoutError> {
-	Layout::from_size_align(
-		a.size().max(b.size()),
-		a.align().max(b.align()),
-	)
+    Layout::from_size_align(
+        a.size().max(b.size()),
+        a.align().max(b.align()),
+    )
 }
 
 /// Takes in the layout of each field (in declaration order)
 /// and returns the layout of the entire union
 /// NOTE: all fields of the union are located at offset 0
 fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError> {
-	let mut layout = Layout::new::<()>();
-	
-	for &field in field_layouts {
-		layout = layout_max(layout, field)?;
-	}
-	
-	Ok(layout.pad_to_align())
+    let mut layout = Layout::new::<()>();
+    
+    for &field in field_layouts {
+        layout = layout_max(layout, field)?;
+    }
+    
+    Ok(layout.pad_to_align())
 }
 
 /// Takes in the layout of each variant (and their fields) (in declaration order)
 /// and returns the offsets of all fields of the enum, and the layout of the entire enum
 /// NOTE: all fields of the enum discriminant is always at offset 0
 fn get_layout_for_enum(
-	// the discriminants may be negative for some enums
-	// or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
-	discriminants: &[BigInteger],
-	variant_layouts: &[&[Layout]]
+    // the discriminants may be negative for some enums
+    // or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
+    discriminants: &[BigInteger],
+    variant_layouts: &[&[Layout]]
 ) -> Result<(Vec<Vec<usize>>, Layout), LayoutError> {
-	assert_eq!(discriminants.len(), variant_layouts.len());
-	
+    assert_eq!(discriminants.len(), variant_layouts.len());
+    
     let mut layout = Layout::new::<()>();
-	let mut variant_field_offsets = Vec::new();
-	
-	let mut variant_with_disc = Vec::new();
-	// gives the smallest integer type which can represent the variants and the specified discriminants
+    let mut variant_field_offsets = Vec::new();
+    
+    let mut variant_with_disc = Vec::new();
+    // gives the smallest integer type which can represent the variants and the specified discriminants
     let disc_layout = get_layout_for_discriminant(discriminants);
-	// ensure that the discriminant is the first field
+    // ensure that the discriminant is the first field
     variant_with_disc.push(disc_layout);
 
-	for &variant in variant_layouts {
-	    variant_with_disc.truncate(1);
-	    // put all other fields of the variant after this one
-	    variant_with_disc.extend_from_slice(variant);
-		let (mut offsets, variant_layout) = get_layout_for_struct(&variant_with_disc)?;
-		// remove the discriminant so the caller only gets the fields they provided in order
-		offsets.remove(0);
-		
-		variant_field_offsets.push(offsets);
-		layout = layout_max(layout, variant_layout)?;
-	}
-	
-	Ok((variant_field_offsets, layout))
+    for &variant in variant_layouts {
+        variant_with_disc.truncate(1);
+        // put all other fields of the variant after this one
+        variant_with_disc.extend_from_slice(variant);
+        let (mut offsets, variant_layout) = get_layout_for_struct(&variant_with_disc)?;
+        // remove the discriminant so the caller only gets the fields they provided in order
+        offsets.remove(0);
+        
+        variant_field_offsets.push(offsets);
+        layout = layout_max(layout, variant_layout)?;
+    }
+    
+    Ok((variant_field_offsets, layout))
 }
 ```
 ### Migration to `repr(ordered_fields)`
 
 The migration will be handled as follows:
 * after `repr(ordered_fields)` is implemented
-	* add a future compatibility warning for `repr(C)` in all current editions
-	* at this point both `repr(ordered_fields)` and `repr(C)` will have identical behavior
-	* the warning will come with a machine-applicable fix
-		* Any crate which does no FFI can just apply the autofix
-		* Any crate which uses `repr(C)` for FFI can ignore the warning crate-wide
-		* Any crate which mixes both must do extra work to figure out which is which. (This is likely a tiny minority of crate)
+    * add a future compatibility warning for `repr(C)` in all current editions
+    * at this point both `repr(ordered_fields)` and `repr(C)` will have identical behavior
+    * the warning will come with a machine-applicable fix
+        * Any crate which does no FFI can just apply the autofix
+        * Any crate which uses `repr(C)` for FFI can ignore the warning crate-wide
+        * Any crate which mixes both must do extra work to figure out which is which. (This is likely a tiny minority of crate)
 * Once the next edition rolls around (2027?), `repr(C)` on the new edition will *not* warn. Instead the meaning will have changed to mean *only* compatibility with C. The docs should be adjusted to mention this edition wrinkle.
-	* The warning for previous editions will continue to be in effect
+    * The warning for previous editions will continue to be in effect
 * In some future edition (2033+), when it is deemed safe enough, the future compatibility warnings may be removed in editions <= 2024
-	* This should have given plenty of time for anyone who was going to update their code to do so. And doesn't burden the language indefinitely
-	* This part isn't strictly necessary, and can be removed if needed
+    * This should have given plenty of time for anyone who was going to update their code to do so. And doesn't burden the language indefinitely
+    * This part isn't strictly necessary, and can be removed if needed
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -275,13 +275,13 @@ The migration will be handled as follows:
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * `crabi`: http://github.com/rust-lang/rfcs/pull/3470
-	* Currently stuck in limbo since it has a much larger scope. doesn't actually serve to give a consistent cross-platform layout, since it defers to `repr(C)` (and it must, for its stated goals)
+    * Currently stuck in limbo since it has a much larger scope. doesn't actually serve to give a consistent cross-platform layout, since it defers to `repr(C)` (and it must, for its stated goals)
 * https://internals.rust-lang.org/t/consistent-ordering-of-struct-fileds-across-all-layout-compatible-generics/23247
-	* This doesn't give a predictable layout that can be used to match the layouts (or prefixes) of different structs
+    * This doesn't give a predictable layout that can be used to match the layouts (or prefixes) of different structs
 * https://github.com/rust-lang/rfcs/pull/3718
-	* This one is currently stuck due to a larger scope than this RFC
+    * This one is currently stuck due to a larger scope than this RFC
 * do nothing
-	* We keep getting bug reports on Windows (and other platforms), where `repr(C)` doesn't actually match the target C compiler, or we break a bunch of subtle unsafe code to match the target C compiler.
+    * We keep getting bug reports on Windows (and other platforms), where `repr(C)` doesn't actually match the target C compiler, or we break a bunch of subtle unsafe code to match the target C compiler.
 # Prior art
 [prior-art]: #prior-art
 
@@ -293,26 +293,26 @@ See Rationale and Alternatives as well
 [unresolved-questions]: #unresolved-questions
 
 * The migration plan, as a whole, needs to be ironed out
-	* Currently, it is just a sketch, but we need timelines, dates, and guarantees to switch `repr(C)` to match the layout algorithm of the target C compiler.
-	* Before this RFC is accepted, t-compiler will need to commit to fixing the layout algorithm sometime in the next edition.
+    * Currently, it is just a sketch, but we need timelines, dates, and guarantees to switch `repr(C)` to match the layout algorithm of the target C compiler.
+    * Before this RFC is accepted, t-compiler will need to commit to fixing the layout algorithm sometime in the next edition.
 * The name of the new repr `repr(ordered_fields)` is a mouthful (intentionally for this RFC), maybe we could pick a better name? This could be done after the RFC is accepted.
-	* `repr(linear)`
-	* `repr(ordered)`
-	* `repr(sequential)`
-	* `repr(consistent)`
-	* something else?
+    * `repr(linear)`
+    * `repr(ordered)`
+    * `repr(sequential)`
+    * `repr(consistent)`
+    * something else?
 * Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
 * Should unions expose some niches?
-	* For example, if all variants of the union are structs which have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making union of structs behave more like an enum).
-	* This must be answered before stabilization, as it is set in stone after that
+    * For example, if all variants of the union are structs which have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making union of structs behave more like an enum).
+    * This must be answered before stabilization, as it is set in stone after that
 * Should this `repr` be versioned?
-	* This way we can evolve the repr (for example, by adding new niches)
+    * This way we can evolve the repr (for example, by adding new niches)
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change, but at that point it will likely only be breaking code no one uses.
-	* Leaning towards no
+    * Leaning towards no
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
 * Add more reprs for each target C compiler, for example `repr(C_gcc)` or  `repr(C_msvc)`, etc.
-	* This would allow a single Rust app to target multiple compilers robustly, and would make it easier to specify `repr(C)`
-	* This would also allow fixing code in older editions
+    * This would allow a single Rust app to target multiple compilers robustly, and would make it easier to specify `repr(C)`
+    * This would also allow fixing code in older editions
 * https://internals.rust-lang.org/t/consistent-ordering-of-struct-fileds-across-all-layout-compatible-generics/23247
