@@ -19,12 +19,11 @@ and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 
 ```rust
 #[safety::requires { // 💡 define safety tags on an unsafe function
-    ValidPtr = "src must be valid for reads",
+    ValidPtr = "src must be [valid](https://doc.rust-lang.org/std/ptr/index.html#safety) for reads",
     Aligned = "src must be properly aligned, even if T has size 0",
     Initialized = "src must point to a properly initialized value of type T"
 }]
 pub unsafe fn read<T>(ptr: *const T) { }
-
 
 fn main() {
     #[safety::checked { // 💡 discharge safety tags on an unsafe call
@@ -104,7 +103,7 @@ ad-hoc practice with four concrete gains:
    * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
      traces every unsafe related operation that could break an invariant in source code.
 
-3. **Versioned invariants**. Tags are real items; any change to their declaration or definition is a
+3. **Versioned invariants**. Tags are real items; any change to their definition is a
    *semver-breaking* API change, so safety invariants evolve explicitly.
 
 4. **Lightweight checking**. Clippy only matches tag paths. No heavyweight formal proofs, keeping
@@ -135,19 +134,7 @@ Object -> `[` Tags `]` | `(` Tags `)` | `{` Tags `}`
 
 Tags -> Tag (`,` Tag)* `,`?
 
-Tag -> ID (`=` LiteralString)?
-
-ID -> SingleIdent
-```
-
-Here are some tag examples:
-
-```rust
-#[safety::requires { SP }]
-#[safety::requires { SP1 = "description1", SP2 = "description2" }]
-
-#[safety::checked { SP }]
-#[safety::checked { SP1 = "description1", SP2 = "description2" }]
+Tag -> SingleIdent (`=` LiteralString)?
 ```
 
 `#[safety]` is a tool attribute with two forms to operate on safety invariants:
@@ -158,15 +145,20 @@ Here are some tag examples:
 Take [`ptr::read`] as an example: its safety comment lists three requirements, so we create three
 corresponding tags on the function declaration and mark each one off at the call site.
 
+Note that a tag definition must contain human text to describe safety requirements for readers to
+understand them and Clippy to emit good error messages.
+
 ```rust
-#[safety::requires { ValidPtr, Aligned, Initialized }] // defsite or definition
+#[safety::requires { // defsite or definition
+  ValidPtr = "definition1", Aligned = "definition2", Initialized = "definition3"
+}] 
 pub unsafe fn read<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked  { ValidPtr, Aligned, Initialized }] // callsite or discharge
+#[safety::checked { ValidPtr, Aligned, Initialized }] // callsite or discharge
 unsafe { read(ptr) };
 ```
 
-We can also attach comments for a tag or a group of tags to clarify how safety requirements are met:
+We can also attach comments for a tag to clarify how safety requirements are met in callsites:
 
 ```rust
 for _ in 0..n {
@@ -199,15 +191,15 @@ unsafe { ptr::read(ptr) }
 
 ```rust
 warning: `ValidPtr`, `Aligned`, `Initialized` tags are missing. Add them to `#[safety::checked]` or
-         `#[safety::requires]` if you're sure these invariants are satisfied.
+         once these invariants are confirmed to be satisfied.
    --> file.rs:xxx:xxx
     |
 LLL | unsafe { ptr::read(ptr) }
     | ^^^^^^^^^^^^^^^^^^^^^^^^^ This unsafe call requires these safety tags.
     |
-    = NOTE: See core::ptr::invariants::ValidPtr
-    = NOTE: See core::ptr::invariants::Aligned
-    = NOTE: See core::ptr::invariants::Initialized
+    = NOTE: ValidPtr = "definition1"
+    = NOTE: Aligned = "definition2"
+    = NOTE: Initialized = "definition3"
 ```
 
 The process of verifying whether a tag is checked is referred to as tag discharge.
@@ -216,7 +208,7 @@ Now consider forwarding invariants of unsafe callees onto the unsafe caller for 
 propogation:
 
 ```rust
-#[safety::requires { ValidPtr, Aligned, Initialized }]
+#[safety::requires { ValidPtr = "...", Aligned = "...", Initialized = "..." }]
 unsafe fn propogation<T>(ptr: *const T) -> T {
     #[safety::checked { ValidPtr, Aligned, Initialized }]
     unsafe { read(ptr) }
@@ -226,7 +218,7 @@ unsafe fn propogation<T>(ptr: *const T) -> T {
 Tags defined on an unsafe function must be **fully** discharged at callsites. No partial discharge:
 
 ```rust
-#[safety::requires { ValidPtr, Initialized }]
+#[safety::requires { ValidPtr = "...", Aligned = "...", Initialized = "..." }]
 unsafe fn delegation<T>(ptr: *const T) -> T {
     #[safety::checked { Aligned }] // 💥 Error: Tags are not fully discharged. 
     unsafe { read(ptr) }
@@ -237,17 +229,15 @@ For such partial unsafe delegations, please fully discharge tags on the callee a
 tags on the caller.
 
 ```rust
-#[safety::requires {
-  ValidPtr, Initialized: "ensure the allocation spans at least size_of::<T>() bytes past ptr"
-}]
+#[safety::requires { ValidPtr = "...", Initialized = "..." }]
 unsafe fn delegation<T>(ptr: *const T) -> T {
     let align = mem::align_of::<T>();
     let addr = ptr as usize;
     let aligned_addr = (addr + align - 1) & !(align - 1);
 
     #[safety::checked {
-      Aligned: "alignment of ptr has be adjusted";
-      ValidPtr, Initialized: "delegated to the caller"
+      Aligned = "alignment of ptr has be adjusted",
+      ValidPtr, Initialized = "delegated to the caller"
     }]
     unsafe { read(ptr) }
 }
@@ -258,15 +248,12 @@ invariants, and define the new tag on `delegation` function. This practice exten
 delegation of multiple tag discharges:
 
 ```rust
-#[safety::declare_tag]
-enum MyInvaraint {} // Invariants of A and C, but could be a more contextual name.
-
-#[safety::requires { MyInvaraint }]
+#[safety::requires { MyInvaraint = "Invariants of A and C, but could be a more contextual name." }]
 unsafe fn delegation() {
     unsafe {
-        #[safety::checked { A: "delegated to the caller's MyInvaraint"; B }]
+        #[safety::checked { A = "delegated to the caller's MyInvaraint", B }]
         foo();
-        #[safety::checked { C: "delegated to the caller's MyInvaraint"; D }]
+        #[safety::checked { C = "delegated to the caller's MyInvaraint", D }]
         bar();
     }
 }
@@ -290,7 +277,7 @@ description. Clippy will emit a deprecation warning whenever the tag is used in 
 ```rust
 #[safety::requires {
   NewTag = "description",
-  Tag = "@deprecated explain why this tag is discouraged or what tag shoud be used instead",
+  Tag = "@deprecated Explain why this tag is discouraged or what tag shoud be used instead",
 }]
 unsafe fn deprecate_a_tag() {}
 
@@ -527,7 +514,7 @@ following cases:
 3. Accessing a union field or an [unsafe field]:  we can extend tag definitions to such field, so
    tags must be discharged at every access point.
 4. Calling some kinds of safe functions like ones marked with a target_feature or an unsafe
-   attribute or in an extern block: the definition and discharge rules is the same as that of
+   attribute or in an extern block: the definition and discharge rules is the same as those of
    ordinary unsafe functions.
 5. Implementing an unsafe trait: we can extend safety definitions to unsafe traits and require
    discharges in unsafe trait impls.
@@ -562,9 +549,9 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 
 ```rust
 #[safety {
-    ValidPtr: "`src` must be [valid] for reads";
-    Aligned: "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
-    Initialized: "`src` must point to a properly initialized value of type `T`"
+    ValidPtr =  "`src` must be [valid] for reads";
+    Aligned = "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
+    Initialized = "`src` must point to a properly initialized value of type `T`"
 }]
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
@@ -578,7 +565,7 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 /// - ValidPtr: `src` must be [valid] for reads
 /// - Aligned: `src` must be properly aligned. Use [`read_unaligned`] if this is not the case
 /// - Initialized: `src` must point to a properly initialized value of type `T`
-#[safety::requires { ValidPtr, Aligned, Initialized }]
+#[safety::requires { ValidPtr = "...", Aligned = "...", Initialized = "..." }]
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
 
@@ -605,14 +592,14 @@ tag applies.
 To cut boilerplate or link related code locations, we introduce `#[safety::ref(...)]` which
 establishes a two-way reference.
 
-An example of this is [`IntoIter::try_fold`][vec_deque] of VecDeque, using `#[ref]` for short:
+An example of this is [`IntoIter::try_fold`][vec_deque] of VecDeque:
 
 [vec_deque]: https://github.com/rust-lang/rust/blob/ebd8557637b33cc09b6ee8273f3154d5d3af6a15/library/alloc/src/collections/vec_deque/into_iter.rs#L104
 
 ```rust
 fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
     impl<'a, T, A: Allocator> Drop for Guard<'a, T, A> {
-        #[ref(try_fold)] // 💡 unsafety of ptr::read below relies on this drop impl
+        #[safety::ref(try_fold)] // 💡 unsafety of ptr::read below relies on this drop impl
         fn drop(&mut self) { ... }
     }
     ...
@@ -620,8 +607,8 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
     init = head.iter().map(|elem| {
         guard.consumed += 1;
 
-        #[ref(try_fold)] // 💡
-        #[safety { ValidPtr, Aligned, Initialized, DropCheck =
+        #[safety::ref(try_fold)] // 💡
+        #[safety::checked { ValidPtr, Aligned, Initialized, DropCheck =
             "Because we incremented `guard.consumed`, the deque \
              effectively forgot the element, so we can take ownership."
         }]
@@ -632,7 +619,7 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
     tail.iter().map(|elem| {
         guard.consumed += 1;
 
-        #[ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
+        #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
         unsafe { ptr::read(elem) }
     })
     .try_fold(init, &mut f)
@@ -640,7 +627,7 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
 
 fn try_rfold<B, F, R>(&mut self, mut init: B, mut f: F) -> R {
     impl<'a, T, A: Allocator> Drop for Guard<'a, T, A> {
-        #[ref(try_fold)] // 💡
+        #[safety::ref(try_fold)] // 💡
         fn drop(&mut self) { ... }
     }
     ...
@@ -648,7 +635,7 @@ fn try_rfold<B, F, R>(&mut self, mut init: B, mut f: F) -> R {
     init = tail.iter().map(|elem| {
             guard.consumed += 1;
 
-            #[ref(try_fold)] // 💡 No longer to write SAFETY: See `try_fold`'s safety comment.
+            #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: See `try_fold`'s safety comment.
             unsafe { ptr::read(elem) }
         })
         .try_rfold(init, &mut f)?;
@@ -656,16 +643,16 @@ fn try_rfold<B, F, R>(&mut self, mut init: B, mut f: F) -> R {
     head.iter().map(|elem| {
             guard.consumed += 1;
 
-            #[ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
+            #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
             unsafe { ptr::read(elem) }
         })
         .try_rfold(init, &mut f)
 }
 ```
 
-These `#[ref]` tags act as cross-references that nudge developers to inspect every linked site. When
-either end or the code around it changes, reviewers are instantly aware of all affected locations
-and thus can assess if every referenced safety requirement is still satisfied.
+These `#[safety::ref]` tags act as cross-references that nudge developers to inspect every linked
+site. When either end or the code around it changes, reviewers are instantly aware of all affected
+locations and thus can assess if every referenced safety requirement is still satisfied.
 
 Clippy can generate a diff-style report that pinpoints every location where changes to referenced
 HIR nodes occur between two commits or crate versions, enabling more focused code reviews. To
