@@ -226,6 +226,9 @@ behave like value types but the exact size cannot be known at compilation time.
 Scalable vector types have some further restrictions due to limitations of the
 codegen backend:
 
+- Can only be in the signature of a function if it is annotated with the
+  appropriate target feature (see [*ABI*][abi])
+
 - Cannot be stored in compound types (structs, enums, etc)
 
     - Including coroutines, so these types cannot be held across an await
@@ -235,12 +238,20 @@ codegen backend:
 
 - Cannot be used in arrays
 
-- Cannot be the type of a static variable.
+- Cannot be the type of a static variable
+
+- Cannot be instantiated into generic functions (see
+  [*Target features*][target-features])
+
+- Cannot have trait implementations (see [*Target features*][target-features])
+
+  - Including blanket implementations (i.e. `impl<T> Foo for T` is not a valid
+    candidate for a scalable vector)
 
 Some of these limitations may be able to be lifted in future depending on what
-is supported by rustc's codegen backends.
+is supported by rustc's codegen backends or with evolution of the language.
 
-## ABI
+### ABI
 [abi]: #abi
 
 Rust currently always passes SIMD vectors on the stack to avoid ABI mismatches
@@ -256,23 +267,24 @@ Therefore, there is an additional restriction that these types cannot be used in
 the argument or return types of functions unless those functions are annotated
 with the relevant target feature.
 
-## Target features
+### Target features
 [target-features]: #target-features
 
-Similarly to the issues with the ABI of scalable vectors, without the relevant
-target features, few operations can actually be performed on scalable vectors -
-causing issues for the use of scalable vectors in generic code and with traits.
+Similarly to the challenges with the ABI of scalable vectors, without the
+relevant target features, few operations can actually be performed on scalable
+vectors - causing issues for the use of scalable vectors in generic code and
+with traits implementations.
+
 For example, implementations of traits like `Clone` would not be able to
 actually perform a clone, and generic functions that are instantiated with
 scalable vectors would during instruction selection in the codegen backend.
 
-When a scalable vector is instantiated into a generic function during
-monomorphisation, or a trait method is being implemented for a scalable vector,
-then the relevant target feature will be added to the function.
+Without a mechanism for a generic function to be able to inherit target features
+from its instantiated types or for trait methods to have target features, it is
+not possible for these types to be used with generic functions or traits.
 
-For example, when instantiating `std::mem::size_of_val` with a scalable vector
-during monomorphisation, the relevant target feature will be added to `size_of_val`
-for codegen.
+See
+[*Trait implementations and generic instantiation*][trait-implementations-and-generic-instantiation].
 
 ## Implementing `rustc_scalable_vector`
 [implementing-rustc_scalable_vector]: #implementing-rustc_scalable_vector
@@ -651,43 +663,47 @@ There are not many languages with support for scalable vectors:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-There are currently no unresolved questions.
+There is one outstanding unresolved question for scalable vectors:
+
+- How to support trait implementations and generic instantiation for scalable vectors?
+
+  - See [*Target features*][target-features] and
+    [*Trait implementations and generic instantiation*][trait-implementations-and-generic-instantiation]
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-There are a handful of future possibilities enabled by this RFC:
+There are a handful of future possibilities enabled by this RFC - relaxing
+restrictions, architecture-agnostic use or extending the feature to support more
+features of the architecture extensions:
 
-## General mechanism for target-feature-affected types
-[general-mechanism-target-feature-types]: #general-mechanism-for-target-feature-affected-types
+## Trait implementations and generic instantiation
+[trait-implementations-and-generic-instantiation]: #trait-implementations-and-generic-instantiation
 
-A more general mechanism for enforcing that SIMD types are only used in
-`target_feature`-annotated functions would be useful, as this would enable SVE
-types to have fewer distinct restrictions than other SIMD types, and would
-enable SIMD vectors to be passed by-register, a performance improvement.
+Improvements to the language's `target_feature` infrastructure could enable the
+restrictions on trait implementations and generic instantiation to be lifted:
 
-Such a mechanism would need to be introduced gradually to existing SIMD types
-with a forward compatibility lint. This will be addressed in a forthcoming RFC.
+- Some variety of [rfcs#3820: `target_feature_traits`][rfcs#3280] could help
+  traits be implemented on scalable vectors
 
-## Relaxed restrictions
-[relaxed-restrictions]: #relaxed-restrictions
+- Efforts to integrate target features with the effect system ([rust#143352])
+  may help enable generic instantiation of scalable vectors
 
-Some of the restrictions on these types (e.g. use in compound types) could be
+  - Any mechanism that could be applied to scalable vector types could also be
+    used to enforce that existing SIMD types are only used in
+    `target_feature`-annotated functions, which would enable fixed-length
+    vectors to be passed by-register, improving performance
+
+## Compound types
+[compound-types]: #compound-types
+
+The restriction that scalable vectors cannot be used in compound types could be
 relaxed at a later time either by extending rustc's codegen or leveraging newly
 added support in LLVM.
 
-However, as C also has restriction and scalable vectors are nevertheless used in
-production code, it is unlikely there will be much demand for those restrictions
-to be relaxed.
-
-## Portable SIMD
-[portable-simd]: #portable-simd
-
-Given that there are significant differences between scalable vectors and
-fixed-length vectors, and that `std::simd` is unstable, it is worth
-experimenting with architecture-specific support and implementation initially.
-Later, there are a variety of approaches that could be taken to incorporate
-support for scalable vectors into Portable SIMD.
+However, as C also has thus restriction and scalable vectors are nevertheless
+used in production code, it is unlikely there will be much demand for those
+restrictions to be relaxed in LLVM.
 
 ## RISC-V Vector Extension's tuple types
 [rvv-tuples]: #risc-v-vector-extensions-tuple-types
@@ -703,6 +719,15 @@ types in LLVM, would both be `<vscale x 4 x i32>`.
 RVV's tuple types need to be lowered to target-specific types in the backend
 which is out-of-scope of this general infrastructure for scalable vectors.
 
+## Portable SIMD
+[portable-simd]: #portable-simd
+
+Given that there are significant differences between scalable vectors and
+fixed-length vectors, and that `std::simd` is unstable, it is worth
+experimenting with architecture-specific support and implementation initially.
+Later, there are a variety of approaches that could be taken to incorporate
+support for scalable vectors into Portable SIMD.
+
 [acle_sizeless]: https://arm-software.github.io/acle/main/acle.html#formal-definition-of-sizeless-types
 [dotnet]: https://github.com/dotnet/runtime/issues/93095
 [prctl]: https://www.kernel.org/doc/Documentation/arm64/sve.txt
@@ -710,7 +735,9 @@ which is out-of-scope of this general infrastructure for scalable vectors.
 [rfcs#1199]: https://rust-lang.github.io/rfcs/1199-simd-infrastructure.html
 [rfcs#3268]: https://github.com/rust-lang/rfcs/pull/3268
 [rfcs#3729]: https://github.com/rust-lang/rfcs/pull/3729
+[rfcs#3280]: https://github.com/rust-lang/rfcs/pull/3280
 [rust#63633]: https://github.com/rust-lang/rust/issues/63633
+[rust#143352]: https://github.com/rust-lang/rust/issues/143352
 [rvv_bitsperblock]: https://github.com/llvm/llvm-project/blob/837b2d464ff16fe0d892dcf2827747c97dd5465e/llvm/include/llvm/TargetParser/RISCVTargetParser.h#L51
 [rvv_typesystem]: https://github.com/riscv-non-isa/rvv-intrinsic-doc/blob/main/doc/rvv-intrinsic-spec.adoc#type-system
 [sve_minlength]: https://developer.arm.com/documentation/102476/0101/Introducing-SVE#:~:text=a%20minimum%20of%20128%20bits
