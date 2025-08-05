@@ -20,6 +20,17 @@ But in some cases, these two cases are in tension due to platform weirdness (eve
 * https://github.com/rust-lang/rust/issues/81996
 
 Providing any fix for case 2 would subtly break any users of case 1, which makes this difficult to fix within a single edition. 
+
+As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for  ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
+
+```rust
+// should have size 8, but has size 0
+#[repr(C)]
+struct SomeFFI([i64; 0]);
+```
+
+Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
