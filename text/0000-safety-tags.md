@@ -285,7 +285,7 @@ unsafe fn deprecate_a_tag() {}
 
 // warning: Tag is deprecated, copy description to here.
 // error: NewTag is not discharged.
-#[safety::requires { Tag }]
+#[safety::checked { Tag }]
 unsafe { deprecate_a_tag() }
 ```
 
@@ -443,9 +443,9 @@ There are alternative discussion or Pre-RFCs on IRLO:
 Our proposed syntax looks closer to structured comments:
 
 ```rust
-#[safety {
-  ValidPtr, Align, Initialized: "`self.head_tail()` returns two slices to live elements.";
-  NotOwned: "because we incremented...";
+#[safety::checked {
+  ValidPtr, Align, Initialized = "`self.head_tail()` returns two slices to live elements.",
+  NotOwned = "because we incremented...",
 }]
 unsafe { ptr::read(elem) }
 ```
