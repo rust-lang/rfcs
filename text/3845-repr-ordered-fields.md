@@ -34,16 +34,12 @@ Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for c
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-Introduce a new `repr(ordered_fields)` which can be applied to `struct`, `enum`, and `union`. On all editions, `repr(ordered_fields)` would behave the same as `repr(C)` on edition 2024. (see reference level explanation for details). 
+`repr(ordered_fields)` is a new representation that can be applied to `struct`, `enum`, and `union` to give them a consistent, cross-platform, and predictable in memory layout.
 
-In editions 2024 (maybe <= 2024), any use of `repr(C)` will trigger a new warning, `edition_2024_repr_c` which will be warn by default.
-This warning suggests a machine-applicable fix to switch `repr(C)` to `repr(ordered_fields)`, which is a no-op in the current edition, but helps prepare for changes to `repr(C)` early. This gives time for the community to update their code as needed.
+`repr(C)` in edition <= 2024 is an alias for `repr(ordered_fields)` and in all other editions, it matches the default C compiler for the given target for structs, unions, and field-less enums. Enums with fields will be laid out as if they are a union of structs with the corresponding fields.
 
-For the FFI crates, they can safely ignore the warning by applying `#![allow(edition_2024_repr_c)]` to their crate root.
-For crates without any FFI, they can simply run the machine-applicable fix.
-For crates with a mix, they will need to do some work to figure out which is which. But this is unavoidable to solve the stated motivation.
+Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as a future compatibility lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
 
-For example, the warning could look like this:
 ```
 warning: use of `repr(C)` in type `Foo`
   --> src/main.rs:14:10
@@ -56,82 +52,217 @@ warning: use of `repr(C)` in type `Foo`
    = note: `repr(C)` is planned to change meaning in the next edition to match the target platform's layout algorithm. This may change the layout of this type on certain platforms. To keep the current layout, switch to `repr(ordered_fields)`
 ```
 
-
-On editions > 2024, `repr(ordered_fields)` may differ from `repr(C)`, so that `repr(C)` can match the platform's layout algorithm.
-
-On all editions, once people have made the switch, this will make it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout. This is more clear than today, where `repr(C)` fills both roles.
-
+After enough time has passed, and the community has switched over:
+This makes it easier to tell *why* the `repr` was applied to a given struct. If `repr(C)`, it's about FFI and interop. If `repr(ordered_fields)`, then it's for a dependable layout.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This feature only touches `repr(C)`, other reprs are left as is. It introduces exactly one new repr, `repr(ordered_fields)`, to take on one of the roles that `repr(C)` used to take.
+## `repr(C)`
 
-`repr(ordered_fields)` will use the same layout algorithm that `repr(C)` currently uses. Details can be found in the [reference](https://doc.rust-lang.org/reference/type-layout.html?highlight=repr#reprc-structs). I will give an informal overview here.
+> The `C` representation is designed for one purpose: creating types that are interoperable with the C Language.
+> 
+> This representation can be applied to structs, unions, and enums. The exception is [zero-variant enums](https://doc.rust-lang.org/stable/reference/items/enumerations.html#zero-variant-enums) for which the `C` representation is an error.
+> 
+> - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 
-For structs, `repr(ordered_fields)` lays out each field in memory according to the declaration order of the fields.
+The exact algorithm is deferred to whatever the default target C compiler does with default settings (or if applicable, the most commonly used settings). 
+## `repr(ordered_fields)` 
+
+> The `ordered_fields` representation is designed for one purpose: create types that you can soundly perform operations on that rely on data layout such as reinterpreting values as a different type
+> 
+> This representation can be applied to structs, unions, and enums.
+> 
+> - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
+### struct
+Structs are laid out in memory in declaration order.
+
+```rust
+// size 16, align 4
+#[repr(ordered_fields)]
+struct FooStruct {
+	a: u8,
+	b: u32,
+	c: u16,
+	d: u32,
+}
+```
+
+Would be laid out in memory like so
+
+```
+a...bbbbcc..dddd
+```
+### union
+```rust
+// size 4, align 4
+#[repr(ordered_fields)]
+union FooUnion {
+	a: u8,
+	b: u32,
+	c: u16,
+	d: u32,
+}
+```
+
+Would have the same layout as `u32`.
+### enum
+The enum discriminant will be the smallest signed integer type which can hold all of the discriminant values (unless otherwise specified). The discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order. 
+
+If an enum doesn't have any fields, then it is represented exactly by it's discriminant. 
+```rust
+// discriminant = i16
+// represented as i16
+#[repr(ordered_fields)]
+enum FooEnum {
+	VarA = 1,
+	VarB, // discriminant = 2
+	VarC = 500,
+	VarD, // discriminant = 501
+}
+
+// discriminant = u16
+// represented as u16
+#[repr(ordered_fields, u16)]
+enum FooEnumUnsigned {
+	VarA = 1,
+	VarB, // discriminant = 2
+	VarC = 500,
+	VarD, // discriminant = 501
+}
+```
+
+Enums with fields will be laid out as if they were a union of structs.
+
+For example, this would be laid out the same as the union below
+```rust
+#[repr(ordered_fields)]
+enum BarEnum {
+	VarFieldless,
+	VarTuple(u8, u32),
+	VarStruct {
+		a: u16,
+		b: u32,
+	},
+}
+```
 
 ```rust
 #[repr(ordered_fields)]
-struct Foo {
-	a: u32,
-	b: u8,
-	c: u32,
-	d: u16,
+union BarUnion {
+	var1: VarFieldless,
+	var2: VarTuple,
+	var3: VarStruct,
 }
+
+#[repr(ordered_fields)]
+enum BarDiscriminant {
+	VarFieldless,
+	VarTuple,
+	VarStruct,
+}
+
+#[repr(ordered_fields)]
+struct VarFieldless {
+	disc: BarDiscriminant,
+}
+
+#[repr(ordered_fields)]
+struct VarTuple(BarDiscriminant, u8, u32);
+
+#[repr(ordered_fields)]
+struct VarStruct(BarDiscriminant, u16, u32);
 ```
-Would be laid out like so (where `.` are padding bytes)
-```
-#####...######..
-a   b   c   d
-```
 
-For unions, each field is laid out at offset 0, and never has niches.
-
-For enums, the discriminant size is left unspecified (unless another repr specifies it like `repr(ordered_fields, u8)`), but is guaranteed to be stable across Rust versions for a given set of variants and fields in each variant.
-
-Enums are defined as a union of structs, where each struct corresponds to each variant of the enum, with the discriminant prepended as the first field.
-
-For example, `Foo` and `Bar` have the same layout in the example below modulo niches.
+In Rust, the algorithm for calculating the layout is defined precisely as follows
 
 ```rust
-#[repr(ordered_fields, u32)]
-enum Foo {
-	Variant1,
-	Variant2(u8, u64),
-	Variant3 {
-		name: String,
+/// Takes in the layout of each field (in declaration order)
+/// and returns the offsets of each field, and layout of the entire struct
+fn get_layout_for_struct(field_layouts: &[Layout]) -> Result<(Vec<usize>, Layout), LayoutError> {
+	let mut layout = Layout::new::<()>();
+	let mut field_offsets = Vec::new();
+	
+	for &field in field_layouts {
+		let (next_layout, offset) = layout.extend(field)?;
+		
+		field_offsets.push(offset);
+		layout = next_layout;
 	}
+	
+	Ok((field_offsets, layout.pad_to_align()))
 }
 
-#[repr(ordered_fields)]
-union Bar {
-    variant1: BarVariant1,
-    variant2: BarVariant2,
-    variant3: BarVariant3,
+fn layout_max(a: Layout, b: Layout) -> Result<Layout, LayoutError> {
+	Layout::from_size_align(
+		a.size().max(b.size()),
+		a.align().max(b.align()),
+	)
 }
 
-#[repr(ordered_fields)]
-struct BarVariant1 {
-    discr: u32,
+/// Takes in the layout of each field (in declaration order)
+/// and returns the layout of the entire union
+/// NOTE: all fields of the union are located at offset 0
+fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError> {
+	let mut layout = Layout::new::<()>();
+	
+	for &field in field_layouts {
+		layout = layout_max(layout, field)?;
+	}
+	
+	Ok(layout.pad_to_align())
 }
 
-#[repr(ordered_fields)]
-struct BarVariant2(u32, u8, u64);
+/// Takes in the layout of each variant (and their fields) (in declaration order)
+/// and returns the offsets of all fields of the enum, and the layout of the entire enum
+/// NOTE: all fields of the enum discriminant is always at offset 0
+fn get_layout_for_enum(
+	// the discriminants may be negative for some enums
+	// or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
+	discriminants: &[BigInteger],
+	variant_layouts: &[&[Layout]]
+) -> Result<(Vec<Vec<usize>>, Layout), LayoutError> {
+	assert_eq!(discriminants.len(), variant_layouts.len());
+	
+    let mut layout = Layout::new::<()>();
+	let mut variant_field_offsets = Vec::new();
+	
+	let mut variant_with_disc = Vec::new();
+	// gives the smallest integer type which can represent the variants and the specified discriminants
+    let disc_layout = get_layout_for_discriminant(discriminants);
+	// ensure that the discriminant is the first field
+    variant_with_disc.push(disc_layout);
 
-#[repr(ordered_fields)]
-struct BarVariant3 {
-    discr: u32,
-    name: String,
+	for &variant in variant_layouts {
+	    variant_with_disc.truncate(1);
+	    // put all other fields of the variant after this one
+	    variant_with_disc.extend_from_slice(variant);
+		let (mut offsets, variant_layout) = get_layout_for_struct(&variant_with_disc)?;
+		// remove the discriminant so the caller only gets the fields they provided in order
+		offsets.remove(0);
+		
+		variant_field_offsets.push(offsets);
+		layout = layout_max(layout, variant_layout)?;
+	}
+	
+	Ok((variant_field_offsets, layout))
 }
 ```
+### Migration to `repr(ordered_fields)`
 
-Introduce a new `repr(ordered_fields)` which can be applied to `struct`, `enum`, and `union`. On all editions, `repr(ordered_fields)` would behave the same as `repr(C)` on edition 2024. 
+The migration will be handled as follows:
+* after `repr(ordered_fields)` is implemented
+	* add a future compatibility warning for `repr(C)` in all current editions
+	* at this point both `repr(ordered_fields)` and `repr(C)` will have identical behavior
+	* the warning will come with a machine-applicable fix
+		* Any crate which does no FFI can just apply the autofix
+		* Any crate which uses `repr(C)` for FFI can ignore the warning crate-wide
+		* Any crate which mixes both must do extra work to figure out which is which. (This is likely a tiny minority of crate)
+* Once the next edition rolls around (2027?), `repr(C)` on the new edition will *not* warn. Instead the meaning will have changed to mean *only* compatibility with C. The docs should be adjusted to mention this edition wrinkle.
+	* The warning for previous editions will continue to be in effect
+* In some future edition (2033+), when it is deemed safe enough, the future compatibility warnings may be removed in editions <= 2024
+	* This should have given plenty of time for anyone who was going to update their code to do so. And doesn't burden the language indefinitely
+	* This part isn't strictly necessary, and can be removed if needed
 
-On editions > 2024, `repr(ordered_fields)` may differ from `repr(C)`, so that `repr(C)` can match the platform's layout algorithm. For an extreme example, we could stop compiling `repr(C)` for ZST if the target C compiler doesn't allow ZSTs, or we could bump the size to 1 byte if the target C compiler does that by default (this is just an illustrative example, and not endorsed by RFC).
-
-As mentioned in the guide-level explanation, in edition 2024 (maybe <= 2024), any use of `repr(C)` would trigger a new warn by default diagnostic, `edition_2024_repr_c`. This warning could be phased out after at least two editions have passed. This gives the community enough time to migrate any code over to `repr(ordered_fields)` before the next edition after 2024, but doesn't burden Rust forever.
-
-The warning should come with a machine-applicable fix to switch `repr(C)` to `repr(ordered_fields)`, and this fix should be part of `cargo fix`. 
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -165,8 +296,16 @@ See Rationale and Alternatives as well
 	* `repr(linear)`
 	* `repr(ordered)`
 	* `repr(sequential)`
+	* `repr(consistent)`
 	* something else?
-
+* Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
+* Should unions expose some niches?
+	* For example, if all variants of the union are structs which have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making union of structs behave more like an enum).
+	* This must be answered before stabilization, as it is set in stone after that
+* Should this `repr` be versioned?
+	* This way we can evolve the repr (for example, by adding new niches)
+* Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change, but at that point it will likely only be breaking code no one uses.
+	* Leaning towards no
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
