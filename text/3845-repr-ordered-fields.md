@@ -34,7 +34,7 @@ Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for c
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-`repr(ordered_fields)` is a new representation that can be applied to `struct`, `enum`, and `union` to give them a consistent, cross-platform, and predictable in memory layout.
+`repr(ordered_fields)` is a new representation that can be applied to `struct`, `enum`, and `union` to give them a consistent, cross-platform, and predictable in-memory layout.
 
 `repr(C)` in edition <= 2024 is an alias for `repr(ordered_fields)` and in all other editions, it matches the default C compiler for the given target for structs, unions, and field-less enums. Enums with fields will be laid out as if they are a union of structs with the corresponding fields.
 
@@ -109,11 +109,11 @@ union FooUnion {
 
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 ### enum
-The enum discriminant is the smallest signed integer type which can hold all of the discriminant values (unless otherwise specified). The discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order. 
+The enum's tag is the smallest signed integer type which can hold all of the discriminant values (unless otherwise specified). The discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
 
 If an enum doesn't have any fields, then it is represented exactly by it's discriminant. 
 ```rust
-// discriminant = i16
+// tag = i16
 // represented as i16
 #[repr(ordered_fields)]
 enum FooEnum {
@@ -123,7 +123,7 @@ enum FooEnum {
     VarD, // discriminant = 501
 }
 
-// discriminant = u16
+// tag = u16
 // represented as u16
 #[repr(ordered_fields, u16)]
 enum FooEnumUnsigned {
@@ -158,7 +158,7 @@ union BarUnion {
 }
 
 #[repr(ordered_fields)]
-enum BarDiscriminant {
+enum BarTag {
     VarFieldless,
     VarTuple,
     VarStruct,
@@ -166,14 +166,18 @@ enum BarDiscriminant {
 
 #[repr(ordered_fields)]
 struct VarFieldless {
-    disc: BarDiscriminant,
+    tag: BarTag,
 }
 
 #[repr(ordered_fields)]
-struct VarTuple(BarDiscriminant, u8, u32);
+struct VarTuple(BarTag, u8, u32);
 
 #[repr(ordered_fields)]
-struct VarStruct(BarDiscriminant, u16, u32);
+struct VarStruct {
+	tag: BarTag,
+	a: u16,
+	b: u32
+}
 ```
 
 In Rust, the algorithm for calculating the layout is defined precisely as follows:
@@ -217,7 +221,7 @@ fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError>
 
 /// Takes in the layout of each variant (and their fields) (in declaration order)
 /// and returns the offsets of all fields of the enum, and the layout of the entire enum
-/// NOTE: the enum discriminant is always at offset 0
+/// NOTE: the enum tag is always at offset 0
 fn get_layout_for_enum(
     // the discriminants may be negative for some enums
     // or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
@@ -229,18 +233,18 @@ fn get_layout_for_enum(
     let mut layout = Layout::new::<()>();
     let mut variant_field_offsets = Vec::new();
     
-    let mut variant_with_disc = Vec::new();
+    let mut variant_with_tag = Vec::new();
     // gives the smallest integer type which can represent the variants and the specified discriminants
-    let disc_layout = get_layout_for_discriminant(discriminants);
-    // ensure that the discriminant is the first field
-    variant_with_disc.push(disc_layout);
+    let tag_layout = get_layout_for_tag(discriminants);
+    // ensure that the tag is the first field
+    variant_with_tag.push(tag_layout);
 
     for &variant in variant_layouts {
-        variant_with_disc.truncate(1);
+        variant_with_tag.truncate(1);
         // put all other fields of the variant after this one
-        variant_with_disc.extend_from_slice(variant);
-        let (mut offsets, variant_layout) = get_layout_for_struct(&variant_with_disc)?;
-        // remove the discriminant so the caller only gets the fields they provided in order
+        variant_with_tag.extend_from_slice(variant);
+        let (mut offsets, variant_layout) = get_layout_for_struct(&variant_with_tag)?;
+        // remove the tag so the caller only gets the fields they provided in order
         offsets.remove(0);
         
         variant_field_offsets.push(offsets);
@@ -309,6 +313,8 @@ See Rationale and Alternatives as well
     * This way we can evolve the repr (for example, by adding new niches)
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change, but at that point it will likely only be breaking code no one uses.
     * Leaning towards no
+* Should we warn on `repr(ordered_fields)` when explicit tag type is specified (i.e. no `repr(u8)`/`repr(i32)`)
+	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
