@@ -13,7 +13,7 @@ Include a version of `clang` and `clang++` compiled against Rust LLVM in the `ll
 
 Allowing user-access to the LLVM pipeline allows for many user-built features, such as cross-language inlining. However, LLVM version mismatching between tools can lead to frustrating problems. Including `clang` and `clang++` in `llvm-tools` allows users to use only the tools that Rust ships with, ensuring consistent versioning.
 
-In future versions of Rust, including a compiler with Rustup could also improve ergonomics for FFI crates, as it could avoid depending on system compilers. See how [Zed's implementation](https://actually.fyi/posts/zig-makes-rust-cross-compilation-just-work/) led to easy cross-compiles in rust to Macos.
+In future versions of Rust, including a compiler with Rustup could also improve ergonomics for FFI crates, as it could avoid depending on system compilers. See how [Zig's implementation](https://actually.fyi/posts/zig-makes-rust-cross-compilation-just-work/) led to easy cross-compiles in rust to Macos.
 
 ## Background
 
