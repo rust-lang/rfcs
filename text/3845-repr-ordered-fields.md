@@ -74,7 +74,8 @@ The exact algorithm is deferred to whatever the default target C compiler does w
 > 
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 ### struct
-Structs are laid out in memory in declaration order.
+Structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
+And their alignment would be the same as their most aligned field.
 
 ```rust
 // size 16, align 4
@@ -93,6 +94,8 @@ Would be laid out in memory like so
 a...bbbbcc..dddd
 ```
 ### union
+Unions would be laid out with the same size as their largest field, and the same alignment as their most aligned field. 
+
 ```rust
 // size 4, align 4
 #[repr(ordered_fields)]
