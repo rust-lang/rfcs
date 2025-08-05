@@ -75,7 +75,7 @@ The exact algorithm is deferred to whatever the default target C compiler does w
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 ### struct
 Structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
-And their alignment would be the same as their most aligned field.
+And their alignment is the same as their most aligned field.
 
 ```rust
 // size 16, align 4
@@ -107,9 +107,9 @@ union FooUnion {
 }
 ```
 
-Would have the same layout as `u32`.
+`FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 ### enum
-The enum discriminant will be the smallest signed integer type which can hold all of the discriminant values (unless otherwise specified). The discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order. 
+The enum discriminant is the smallest signed integer type which can hold all of the discriminant values (unless otherwise specified). The discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order. 
 
 If an enum doesn't have any fields, then it is represented exactly by it's discriminant. 
 ```rust
@@ -176,11 +176,11 @@ struct VarTuple(BarDiscriminant, u8, u32);
 struct VarStruct(BarDiscriminant, u16, u32);
 ```
 
-In Rust, the algorithm for calculating the layout is defined precisely as follows
+In Rust, the algorithm for calculating the layout is defined precisely as follows:
 
 ```rust
 /// Takes in the layout of each field (in declaration order)
-/// and returns the offsets of each field, and layout of the entire struct
+/// and returns the offsets of each field, and the layout of the entire struct
 fn get_layout_for_struct(field_layouts: &[Layout]) -> Result<(Vec<usize>, Layout), LayoutError> {
     let mut layout = Layout::new::<()>();
     let mut field_offsets = Vec::new();
@@ -217,7 +217,7 @@ fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError>
 
 /// Takes in the layout of each variant (and their fields) (in declaration order)
 /// and returns the offsets of all fields of the enum, and the layout of the entire enum
-/// NOTE: all fields of the enum discriminant is always at offset 0
+/// NOTE: the enum discriminant is always at offset 0
 fn get_layout_for_enum(
     // the discriminants may be negative for some enums
     // or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
