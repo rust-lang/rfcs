@@ -78,6 +78,7 @@ Structs are laid out in memory in declaration order, with padding bytes added as
 And their alignment is the same as their most aligned field.
 
 ```rust
+// assuming that u32 is aligned to 4 bytes
 // size 16, align 4
 #[repr(ordered_fields)]
 struct FooStruct {
@@ -97,6 +98,7 @@ a...bbbbcc..dddd
 Unions would be laid out with the same size as their largest field, and the same alignment as their most aligned field. 
 
 ```rust
+// assuming that u32 is aligned to 4 bytes
 // size 4, align 4
 #[repr(ordered_fields)]
 union FooUnion {
