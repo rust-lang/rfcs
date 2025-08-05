@@ -265,13 +265,15 @@ Note that discharing a tag that is not defined will raise a hard error.
 
 Tags constitute a public API; therefore, any alteration to their definition must be evaluated
 against [Semantic Versioning][semver].
-* Adding a tag definition is a **minor** change.
-* Removing a tag definition is a **major** change. Renaming a tag definition is a two-step
-  operation of removal and addition, bringing a major change due to removal. 
+* Adding a tag definition is a **major** change, because new tag is missing. 
+* Removing a tag definition is a **major** change, because the tag doesn't exist.
+* Renaming a tag definition is a **major** change, because it's the result of removal and addition.
+* Marking or cancelling `@deprecated` in tag definition description is a *minor* change, because
+  the tag is still able to be checked.
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
 
-To give dependent crates time to migrate an outdated tag definition, use `@deprecated` in tag
+To grant dependent crates time to migrate an outdated tag definition, use `@deprecated` in tag
 description. Clippy will emit a deprecation warning whenever the tag is used in `safety::checked`.
 
 ```rust
@@ -321,7 +323,8 @@ Procedure:
       otherwise emit a diagnostic. *(We intentionally stop at this simple rule; splitting complex
       unsafe expressions into separate annotated nodes is considered good style.)*
    4. Make sure tags in `#[safety::checked]` correspond to their definitions.
-   5. Diagnostics are emitted at the current Clippy lint level (warning or error).
+   5. If tags marked `@deprecated` in definitions are successfully checked, emit diagnostics. 
+   6. Diagnostics are emitted at the current Clippy lint level (warning or error).
 
 [HIR ExprKind]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_hir/hir/enum.ExprKind.html
 
