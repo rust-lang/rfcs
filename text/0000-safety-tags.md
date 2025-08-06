@@ -107,7 +107,7 @@ ad-hoc practice with four concrete gains:
    * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
      traces every unsafe related operation that could break an invariant in source code.
 
-4. **Lightweight checking**. Clippy only matches tag paths. No heavyweight formal proofs, keeping
+4. **Lightweight checking**. Clippy only matches tags. No heavyweight formal proofs, keeping
    the system easy to adopt and understand.
 
 [more unsafe operations]: #tagging-more-unsafe-ops
