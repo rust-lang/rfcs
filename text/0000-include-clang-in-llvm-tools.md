@@ -1,6 +1,6 @@
 - Feature Name: Include Clang in llvm-tools
 - Start Date: 2025-08-04
-- RFC PR: [rust-lang/rfcs#0000]()
+- RFC PR: [rust-lang/rfcs#3847]()
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
