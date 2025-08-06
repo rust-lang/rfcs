@@ -214,6 +214,33 @@ backend. It must one of the following types:
 It is not permitted to project into scalable vector types and access the type
 marker field.
 
+## Tuples of vectors
+[tuples-of-vectors]: #tuples-of-vectors
+
+Structs of scalable vectors are supported, but every element of the struct must
+have the same scalable vector type. This will enable definition of "tuple of
+vector" types, such as `svfloat32x2_t` below, that are used in some load and
+store intrinsics.
+
+```rust
+#[rustc_scalable_vector]
+pub struct svfloat32x2_t(svfloat32_t, svfloat32_t);
+```
+
+```text
+◁───────────── vscale x f32 x 4 ─────────────▷ ◁────── f32 x 4 ──────▷
+┌──────────────────────────────────────────────┬───────────────────────┐  ┐
+│                      ...                     │ f32 │ f32 │ f32 │ f32 │  │
+└──────────────────────────────────────────────┴───────────────────────┘  ├─ svfloat32x2_t
+┌──────────────────────────────────────────────┬───────────────────────┐  │
+│                      ...                     │ f32 │ f32 │ f32 │ f32 │  │
+└──────────────────────────────────────────────┴───────────────────────┘  ┘
+```
+
+Structs must be still be annotated with `#[rustc_scalable_vector]`, so end-users
+cannot define their own structs of scalable vectors. It is not permitted to
+project into structs and access the individual vectors.
+
 ## Properties of scalable vectors
 [properties-of-scalable-vector-types]: #properties-of-scalable-vectors
 
@@ -235,6 +262,12 @@ codegen backend:
       boundary in async functions
 
     - `repr(transparent)` newtypes could be permitted with scalable vectors
+
+    - **Exception:** Scalable vectors can be stored in arrays
+
+    - **Exception:** Scalable vectors can be stored in structs with every
+      element of the same type (but only if that struct is annotated with
+      `#[rustc_scalable_vector]`)
 
 - Cannot be used in arrays
 
@@ -309,12 +342,12 @@ behaviour, consistent with C and C++.
 Implementing `rustc_scalable_vector` largely involves lowering scalable vectors
 to the appropriate type in the codegen backend. LLVM has robust support for
 scalable vectors and is the default backend, so this section will focus on
-implementation in the LLVM codegen backend. Other codegen backends can implement
-support when scalable vectors are supported by the backend.
+implementation in the LLVM codegen backend. Other backends should be able to
+support scalable vectors in Rust once they support scalable vectors in general.
 
-Most of the complexity of SVE is handled by LLVM: lowering Rust's scalable
-vectors to the correct type in LLVM and the `vscale` modifier that is applied to
-LLVM's vector types.
+Most of the complexity of scalable vectors are handled by LLVM: lowering Rust's
+scalable vectors to the correct type in LLVM and the `vscale` modifier that is
+applied to LLVM's vector types.
 
 LLVM's scalable vector type is of the form `<vscale × element_count × type>`.
 `vscale` is the scaling factor determined by the hardware at runtime, it can be
@@ -327,6 +360,14 @@ result in register sizes of 128, 256, 512, 1024 or 2048 and 4, 8, 16, 32, or 64
 
 The `N` in the `#[rustc_scalable_vector(N)]` determines the `element_count` used
 in the LLVM type for a scalable vector.
+
+Structs of vectors are lowered to LLVM as struct types containing scalable
+vector types. This is supported since the
+[*Permit load/store/alloca for struct of the same scalable vector type* LLVM RFC][llvm-rfc-structs].
+
+Arrays of vectors are lowered to LLVM as array types containing scalable vector
+types. Arrays of vectors are also supported by LLVM since the
+[*Enable arrays of scalable vector types* LLVM RFC][llvm-rfc-arrays].
 
 Tuples in RISC-V's V Extension lower to target-specific types in LLVM rather
 than generic scalable vector types, so `rustc_scalable_vector` will not
@@ -437,38 +478,7 @@ calculations for `N` or architecture-specific knowledge:
    attribute accepting arbitrary specification of `N` or a type to calculate `N`
    with.
 
-3. Also with Arm SVE, some load and store intrinsics take tuples of vectors,
-   such as `svfloat32x2_t`:
-
-   ```text
-    ◁───────────── vscale x f32 x 4 ─────────────▷ ◁────── f32 x 4 ──────▷
-   ┌──────────────────────────────────────────────┬───────────────────────┐  ┐
-   │                      ...                     │ f32 │ f32 │ f32 │ f32 │  │
-   └──────────────────────────────────────────────┴───────────────────────┘  ├─ svfloat32x2_t
-   ┌──────────────────────────────────────────────┬───────────────────────┐  │  vscale x f32 x 8
-   │                      ...                     │ f32 │ f32 │ f32 │ f32 │  │
-   └──────────────────────────────────────────────┴───────────────────────┘  ┘
-   ```
-
-   These types are the opposite of the previous complicating case, containing
-   more elements than `vunit / element_size`. These use two or more registers to
-   represent the vector.
-
-   `vscale x f32 x 8` cannot be defined without the attribute accepting
-   arbitrary specification of `N` or an argument to the attribute to specify the
-   number of registers used:
-
-   ```rust
-   // alternative: user-provided arbitrary `N`
-   #[rustc_scalable_vector(8)]
-   struct svfloat32x2_t(f32);
-
-   // alternative: add `tuple_of` to attribute
-   #[rustc_scalable_vector(tuple_of = "2")] // either `1` (default), `2`, `3` or `4`
-   struct svfloat32x2_t(f32);
-   ```
-
-4. RISC-V RVV's scalable vectors are quite different from Arm's SVE, while
+3. RISC-V RVV's scalable vectors are quite different from Arm's SVE, while
    sharing the same underlying infrastructure in LLVM.
 
    SVE's scalable vector types map directly onto LLVM scalable vector types, and
@@ -1146,7 +1156,7 @@ The restriction that scalable vectors cannot be used in compound types could be
 relaxed at a later time either by extending rustc's codegen or leveraging newly
 added support in LLVM.
 
-However, as C also has thus restriction and scalable vectors are nevertheless
+However, as C also has this restriction and scalable vectors are nevertheless
 used in production code, it is unlikely there will be much demand for those
 restrictions to be relaxed in LLVM.
 
@@ -1182,6 +1192,8 @@ support for scalable vectors into Portable SIMD.
 [lang-team#309]: https://github.com/rust-lang/lang-team/issues/309
 [lang-team#317-notes]: https://hackmd.io/xydafCtMQ1aqUbm6wqmEmA?view
 [lang-team#317]: https://github.com/rust-lang/lang-team/issues/317
+[llvm-rfc-arrays]: https://discourse.llvm.org/t/rfc-enable-arrays-of-scalable-vector-types/72935
+[llvm-rfc-structs]: https://discourse.llvm.org/t/rfc-ir-permit-load-store-alloca-for-struct-of-the-same-scalable-vector-type/69527
 [llvm#70563]: https://github.com/llvm/llvm-project/issues/70563
 [portable-simd#339]: https://github.com/rust-lang/portable-simd/issues/339
 [prctl]: https://www.kernel.org/doc/Documentation/arm64/sve.txt
