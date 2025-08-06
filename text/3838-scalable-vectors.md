@@ -300,6 +300,13 @@ Therefore, there is an additional restriction that these types cannot be used in
 the argument or return types of functions unless those functions are annotated
 with the relevant target feature.
 
+It is permitted to create pointers to function that have scalable vector types
+in their arguments or return types, even though function pointers themselves
+cannot be annotated as having the target feature. When the function pointer was
+created, the user must have made the unsafe promise that it was okay to call the
+`#[target_feature]`-annotated function, so it is sound to permit function
+pointers.
+
 As scalable vectors will always be passed as immediates, they will therefore
 have the same ABI as in C, so should be considered FFI-safe.
 
