@@ -306,6 +306,7 @@ See Rationale and Alternatives as well
     * `repr(ordered)`
     * `repr(sequential)`
     * `repr(consistent)`
+    * `repr(declaration_order)`
     * something else?
 * Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
 * Should unions expose some niches?
