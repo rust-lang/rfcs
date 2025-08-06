@@ -1149,6 +1149,19 @@ restrictions on trait implementations and generic instantiation to be lifted:
     `target_feature`-annotated functions, which would enable fixed-length
     vectors to be passed as immediates, improving performance
 
+- It may be possible to support scalable vector types without the target feature
+  being enabled by using an indirect ABI similarly to fixed length vectors.
+
+  - This would enable these restrictions to be lifted and for scalable vector
+    types to be the same as fixed length vectors with respect to interactions
+    with the `target_feature` attribute.
+
+    - As with fixed length vectors, it would still be desirable for them to
+      avoid needing to be passed indirectly between annotated functions, but
+      this could be addressed in a follow-up.
+
+  - Experimentation is required to determine if this is feasible.
+
 ## Compound types
 [compound-types]: #compound-types
 
