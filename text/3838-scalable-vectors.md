@@ -392,10 +392,9 @@ initially support RVV tuples (see
 
 Without support for scalable vectors in the language and compiler, it is not
 possible to leverage hardware with scalable vectors from Rust. As extensions
-with scalable vectors are available in architectures as either the only or
-recommended way to do SIMD, lack of support in Rust would severely limit Rust's
-suitability on these architectures compared to other systems programming
-languages.
+with scalable vectors are available in architectures as the recommended way to
+do SIMD, lack of support in Rust would limit Rust's suitability on these
+architectures compared to other systems programming languages.
 
 `rustc_scalable_vector` is preferred over a `repr(scalable)` attribute as there
 is existing dissatisfaction with fixed-length vectors being defined using the
