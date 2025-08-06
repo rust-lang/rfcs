@@ -279,6 +279,54 @@ against [Semantic Versioning][semver].
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
 
+NOTE:
+* `requires` or `checked` can be specified multiple times, and they will be merged together.
+  * Duplicate tags in `requires` will trigger errors.
+  * Duplicate tags in `checked` will trigger warning-by-default diagnostics.
+* the scope of a tag is limited to the defined unsafe function, so identical tag name on different
+  unsafe functions won't affect with each other.
+
+## Auto Generate Safety Docs from Tags
+
+Since tag definitions duplicate safety comments, we propose `rustdoc` can recognize
+`#[safety::requires]` attributes and render them into safety docs.
+
+For `ptr::read`, the existing comments are replaced with safety tags:
+
+```rust
+/// # Safety
+/// Behavior is undefined if any of the following conditions are violated:
+/// * `src` must be [valid] for reads.
+/// * `src` must be properly aligned. Use [`read_unaligned`] if this is not the case.
+/// * `src` must point to a properly initialized value of type `T`.
+/// # Examples
+pub const unsafe fn read<T>(src: *const T) -> T { ... }
+```
+
+```rust
+/// # Safety
+/// Behavior is undefined if any of the following conditions are violated:
+#[safety::requires {
+    ValidPtr =  "`src` must be [valid] for reads";
+    Aligned = "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
+    Initialized = "`src` must point to a properly initialized value of type `T`"
+}]
+/// # Examples
+pub const unsafe fn read<T>(src: *const T) -> T { ... }
+```
+
+Each `Tag = "desc"` item is rendered as `` `Tag`: desc `` list item.
+
+```rust
+/// # Safety
+/// Behavior is undefined if any of the following conditions are violated:
+/// * `ValidPtr`: `src` must be [valid] for reads.
+/// * `Aligned`: `src` must be properly aligned. Use [`read_unaligned`] if this is not the case.
+/// * `Initialized`: `src` must point to a properly initialized value of type `T`.
+/// # Examples
+pub const unsafe fn read<T>(src: *const T) -> T { ... }
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -300,6 +348,7 @@ their call sites. To enable experimentation, a nightly-only library feature
 Procedure:
 
 1. Validate `#[safety::requires]` only appears on unsafe functions if the attribute exists.
+   - Merge tags in multiple `requires` on the same function. Emit error if tag name duplicates.
 2. Validate `#[safety::checked]` on HIR nodes whose `ExprKind` is one of
    - **direct unsafe nodes**: `Call`, `MethodCall` that invoke an unsafe function/method, or
    - **indirect unsafe nodes**: `Block` (unsafe), `Let`, `Assign`, `AssignOp`.
@@ -312,8 +361,10 @@ Procedure:
    3. Any node that carries `#[safety::checked]` must contain **exactly one** unsafe call/method;
       otherwise emit a diagnostic. *(We intentionally stop at this simple rule; splitting complex
       unsafe expressions into separate annotated nodes is considered good style.)*
-   4. Make sure tags in `#[safety::checked]` correspond to their definitions.
-   5. Diagnostics are emitted at the current Clippy lint level (warning or error).
+   4. Merge tags in multiple `checked` on the same node. Emit a diagnostic if tag name duplicates.
+   5. Make sure checked tags correspond to their definitions. Emit a diagnostic if the tag doesn't 
+      have a definition on the call.
+   6. Diagnostics are emitted at the current Clippy lint level (warning or error).
 
 [HIR ExprKind]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_hir/hir/enum.ExprKind.html
 
@@ -327,6 +378,26 @@ documentation hover in `#[safety::checked]` as per tag definitions on unsafe cal
 
 Maybe some logics on safety tags like collecting tag definitions need to be extracted to a shared
 crate for both Clippy and Rust-Analyzer to use. 
+
+## Implementation in Rustdoc
+
+Treat `#[safety::requires]` tool attributes on unsafe functions as `#[doc]` attributes, and extract
+tag names and definitions to render as item list:
+
+```rust
+#[safety::requires(Tag1 = "definition1")]
+#[safety::requires(Tag2 = "definition2")]
+```
+
+will be rendered if in markdown syntax
+
+```md
+* `Tag1`: definition1
+* `Tag2`: definition2
+```
+
+It'd be good if tag names have a special css class like background color to be attractive. Tag
+styling is not required in this RFC, and can be implemented later as an improvement.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -358,12 +429,17 @@ to implement them.
    be tied to internal APIs and specific toolchains. Extending Rust-Analyzer is therefore the only
    practical way to give users first-class IDE support.
 
+4. Avoid safety comment duplication. Tag definitions and safety requirements share identical prose,
+   so we only need one way to render them. Generating safety docs through safety tags prevents
+   verbosity and inconsistency.
+
 We therefore seek approvals from the following teams:
 
 1. **Library team** – to allow the tagging of unsafe operations and to expose tag items as public
    APIs.
-2. **Clippy team** – to integrate tag checking into the linter.  
-3. **Rust-Analyzer team** – to add IDE support for tags.  
+2. **Clippy team** – to integrate tag checking into the linter.
+3. **Rust-Analyzer team** – to add IDE support for tags.
+3. **Rustdoc team** – to render tags to docs.
 4. **Compiler team** – to reserve the `safety` namespace and gate the feature via
    `#![feature(safety_tags)]` for the namespace and tag APIs in standard libraries.
 
@@ -520,51 +596,6 @@ struct, enum, or union is neither needed nor permitted.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
-
-## Better Rustdoc Rendering
-
-Because tags are surfaced as a part of API, rustdoc can render documentation of tags by displaying
-each tag name, its optional description, and possible deprecated state below the tagged function or
-other unsafe item.
-
-## Generate Safety Docs from Tags
-
-We can take structured safety comments one step further by turning the explanatory prose into
-explicit tag reasons.
-
-For `ptr::read`, the existing comments are replaced with safety tags:
-
-```rust
-/// * `src` must be [valid] for reads.
-/// * `src` must be properly aligned. Use [`read_unaligned`] if this is not the case.
-/// * `src` must point to a properly initialized value of type `T`.
-pub const unsafe fn read<T>(src: *const T) -> T { ... }
-```
-
-```rust
-#[safety {
-    ValidPtr =  "`src` must be [valid] for reads";
-    Aligned = "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
-    Initialized = "`src` must point to a properly initialized value of type `T`"
-}]
-pub const unsafe fn read<T>(src: *const T) -> T { ... }
-```
-
-`#[safety]` becomes a procedural macro that expands to both `#[doc]` attributes and the
-`#[safety::requires]` attribute.
-
-```rust
-/// # Safety
-/// 
-/// - ValidPtr: `src` must be [valid] for reads
-/// - Aligned: `src` must be properly aligned. Use [`read_unaligned`] if this is not the case
-/// - Initialized: `src` must point to a properly initialized value of type `T`
-#[safety::requires { ValidPtr = "...", Aligned = "...", Initialized = "..." }]
-pub const unsafe fn read<T>(src: *const T) -> T { ... }
-```
-
-With support for tag arguments, safety documentation can be made more precise and contextual by
-dynamically injecting the argument values into the reason strings.
 
 ## Discharge One Tag from `any = { Option1, Option2 }`
 
