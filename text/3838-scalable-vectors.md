@@ -289,6 +289,20 @@ not possible for these types to be used with generic functions or traits.
 See
 [*Trait implementations and generic instantiation*][trait-implementations-and-generic-instantiation].
 
+## Changing vector lengths at runtime
+[changing-vector-lengths-at-runtime]: #changing-vector-lengths-at-runtime
+
+It is possible to change the vector length at runtime using a
+[`prctl()`][prctl] call to the Linux kernel, or via similar mechanisms in other
+operating systems.
+
+Doing so would require that `vscale` change, which Rust will not supported.
+
+`prctl` or similar must only be used to set up the vector length for child
+processes, not to change the vector length of the current process. As Rust
+cannot prevent users from doing this, it will be documented as undefined
+behaviour, consistent with C and C++.
+
 ## Implementing `rustc_scalable_vector`
 [implementing-rustc_scalable_vector]: #implementing-rustc_scalable_vector
 
@@ -313,13 +327,6 @@ result in register sizes of 128, 256, 512, 1024 or 2048 and 4, 8, 16, 32, or 64
 
 The `N` in the `#[rustc_scalable_vector(N)]` determines the `element_count` used
 in the LLVM type for a scalable vector.
-
-While it is possible to change the vector length at runtime using a
-[`prctl()`][prctl] call to the kernel, this would require that `vscale` change,
-which is unsupported. `prctl` must only be used to set up the vector length for
-child processes, not to change the vector length of the current process. As Rust
-cannot prevent users from doing this, it will be documented as undefined
-behaviour, consistent with C and C++.
 
 Tuples in RISC-V's V Extension lower to target-specific types in LLVM rather
 than generic scalable vector types, so `rustc_scalable_vector` will not
