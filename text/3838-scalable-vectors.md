@@ -650,6 +650,11 @@ reasonable.
 # Prior art
 [prior-art]: #prior-art
 
+[rfcs#3268] was a previous iteration of this RFC.
+
+## Other languages
+[prior-art-inother-languages]: #other-languages
+
 There are not many languages with support for scalable vectors:
 
 - SVE in C takes a similar approach as this proposal by using sizeless
@@ -661,7 +666,437 @@ There are not many languages with support for scalable vectors:
   the design and implementation considerations in .NET are quite different to
   Rust.
 
-[rfcs#3268] was a previous iteration of this RFC.
+## `repr(simd)` and `target_feature`
+[prior-art-in-rust]: #reprsimd-and-target_feature
+
+Both `repr(simd)` and `target_feature` attributes were initially proposed in
+RFCs:
+
+- **[rfcs#2045]: `target_feature`**
+  - Original accepted RFC for `#[target_feature(enable = "..")]`.
+  - Of relevance to ABI-affecting target features, there was various discussion
+    around the RFC which led to discussion of ABI issues being
+    [relegated to an unresolved question][rfcs#2045-abi]
+    - At the time of writing the RFC, Portable SIMD types were the only types
+      that were considered as potentially having ABI issues, rather than types
+      to be used with vendor intrinsics
+      - > However, there are types that we might want to add to the language at
+        > some point, like portable vector types, for which this \[a lack of ABI
+        > changes] is not the case.
+        >
+        > The behaviour of `#[target_feature]` for those types should be
+        > specified in the RFC that proposes to stabilize those types, and this RFC
+        > should be amended as necessary.
+      - It does not appear that this has been considered for any intrinsic types
+        that were later stabilised (e.g.
+        [Neon intrinsics on AArch64][rust#90972]) and as such that these types
+        can exist in featureless functions is an accident of history
+
+- **[rust#44839]: Tracking issue for RFC 2045: improving `#[target_feature]`**
+  - Tracking issue for the `#[target_feature]` parts of RFC 2045
+  - This issue hasn't been well-maintained and the description is out-of-date.
+    It aims to track both the addition of intrinsics for various architectures
+    which use `#[target_feature]` as well as improvements to the
+    `#[target_feature]` attribute itself
+  - It was last triaged by the language team in Mar 2022, concluding that the
+    issue needed an owner
+
+- **[rfcs#2396]: `#[target_feature]` 1.1**
+  - Allows specifying `#[target_feature]` functions without making them unsafe,
+    still requiring calls to be in unsafe blocks unless the calling function
+    also has the target features enabled
+
+- **[rfcs#1199]: `repr_simd`**
+  - Proposed `repr(simd)` attribute, applied to structs with multiple fields,
+    one for each element in the corresponding vector
+    - `repr(simd)` has since changed it was proposed in this RFC
+      - It is used for both portable SIMD types and non-portable types, and now
+        contains an array (i.e. `[f32; 4]` instead of `(f32, f32, f32, f32)`)
+  - Largely focused on portable SIMD, rather than non-portable intrinsics
+  - Proposed intrinsics be declared in `extern "platform-intrinsic"` blocks and
+    that platform detection be available (though this part was later subsumed by
+    [rfcs#2045])
+
+- **[rust#27731]: Tracking issue for SIMD support**
+  - Initially tracked implementation of [rfcs#1199], eventually ended up
+    tracking `simd_ffi` ([rust#53346]), `repr(simd)` and `core::arch` intrinsics
+  - It was later closed and split up into tracking issues for each
+    architecture's intrinsics
+
+There are many existing issues and RFCs related to `repr(simd)`; interactions
+between SIMD types and target features; and ABI incompatibilities with SIMD
+types, surveyed in the sections below.
+
+Many of these issues were related to specific intrinsics on specific platforms
+(adding, stabilising or fixing bugs with them), these have been omitted and only
+issues that affect generic infrastructure are included.
+
+### Projections into `repr(simd)`
+[prior-art-projections]: #projections-into-reprsimd
+
+A handful of issues are related to projections into `repr(simd)` types being
+initially permitted..
+
+- **[rust#105439]: ICE due to generating LLVM bitcast vec -> array**
+  - Accessing the field of a `repr(simd)` type causes an ICE
+  - Fixed by [rust#105583], changing codegen to remove the illegal operation
+  - Later addressed holistically by [compiler-team#838] which will ban projecting into `repr(simd)` types
+    - Landed in [rust#143833]
+
+- **[rust#137108]: Projecting into non-power-of-two-lanes `repr(simd)` types does the wrong thing**
+  - Repeat of [rust#105439]:
+    - Accessing the field of a `repr(simd)` type misbehaves
+    - Similarly addressed by [compiler-team#838]
+
+- **[rust#113465]: transmute + tuple access + eq on `repr(simd)`'s inner value seems UB to valgrind**
+  - Repeat of [rust#105439], except with Portable SIMD type ([portable-simd#339])
+    - Accessing the field of a `repr(simd)` type misbehaves
+    - Similarly addressed by [compiler-team#838]
+
+These issues are informative for scalable vectors and projection into scalable
+vectors will not be supported, as described in
+[*Reference-level explanation*][reference-level-explanation].
+
+### Inheritance of `target_feature`
+[prior-art-target-feat-inheritance]: #inheritance-of-target_feature
+
+Other issues discussed confusion related to inheritance of `target_feature` to
+nested functions and closures...
+
+- **[rust#58729]: target_feature doesn't trickle down to closures and internal fns**
+  - `target_feature` attribute doesn't apply to nested functions and closures
+    - Interaction with nested functions is expected, these never inherit from their parent
+    - Interaction with closures was a bug
+      - Prior to [rfcs#2396], closures would have required the ability to be marked as unsafe to support `target_feature`
+      - After [rfcs#2396], closures inheriting target features was accepted in [rust#73631] (then implemented in [rust#78231])
+        - Interactions with `inline(always)` fixed in [rust#111836]
+          - `target_feature` attributes are ignored from `inline(always)`-annotated closures
+
+- **[rust#108338]: closure doesn't seem to inherit the target attributes for codegen purposes**
+  - Basically a dupe of [rust#58729] with same resolution
+
+- **[rust#111836]: Fix #\[inline(always)] on closures with target feature 1.1**
+  - Allows `#[inline(always)]` to be used with `#[target_feature]` on closures,
+    assuming that target features only affect codegen
+
+Scalable vectors will inherit the behaviour described above.
+
+### `repr(simd)` syntax
+[prior-art-syntax]: #reprsimd-syntax
+
+There are issues related to how well `repr(simd)` syntax works with other
+representation hints and whether a language item would be better:
+
+- **[rust#47103]: What to do about repr(C, simd)?**
+  - Unclear what the behaviour of `repr(C, simd)` should be
+    - When submitted, a warning of incompatible representation hints was emitted
+    - When omitted, a FFI unsafety warning was emitted when SIMD types used in
+      FFI
+  - Passing vectors as immediates is trickier, later resolved in [rfcs#2574], so
+    discussion focused on passing vectors indirectly over the FFI boundary
+  - Discussion fizzled out, but with [rust#116558], it may be possible to allow
+    `repr(C, simd)`
+
+- **[rust#130402]: When a type is `#[repr(simd)]`, `#[repr(align(N))]` annotations are ignored**
+  - `repr(align)` ignored when `repr(simd)` is present
+  - Intended to be fixed after [rust#137256] which refactored layout logic
+    within the compiler
+    - Unclear if the fix happened, but the code from the bug report still has
+      the unexpected alignment
+
+- **[rust#63633]: Remove repr(simd) attribute and use a lang-item instead**
+  - Suggests using a language item for the `Simd` type (part of Portable SIMD)
+    instead of using `repr(simd)`
+  - Doesn't address what would happen for non-portable intrinsics that also use
+    this infrastructure
+  - Various other issues cited as motivation:
+    - [rust#18147] used Portable SIMD `f64x2` and found that constant
+      initialisers weren't optimised with `-Copt-level=0`
+      - Not clear that this applies to types intended for use with
+        architecture-specific intrinsics
+    - [rust#47103]
+      - See above
+    - [rust#53346]
+      - See below
+    - [rust#77529]
+      - See below
+    - [rust#77866] defines its own `repr(simd)` type and then passes it to an
+      LLVM intrinsic binding that has been declared incorrectly
+    - [rust#81931] defines its own `repr(simd)` type and finds that it is
+      misaligned according to recommendations for achieving best performance
+
+On account of these concerns, scalable vectors use `rustc_scalable_vector`
+instead.
+
+### Portable SIMD-specific
+[prior-art-portable-simd]: #portable-simd-specific
+
+A handful of architecture-agnostic issues only relate to Portable SIMD:
+
+- **[rust#126217]: What should SIMD bitmasks look like?**
+  - Design discussion related to Portable SIMD
+    `simd_bitmask`/`simd_bitmask_select` intrinsics
+  - Not relevant to architecture-specific scalable vector intrinsics
+
+- **[rust#99211]: fn where clause "constrains trait impls" or something**
+  - Writing extension traits with const generics which. apply to Portable SIMD
+    types can run into tricky compiler errors related to the type system
+  - Only applies to Portable SIMD
+
+- **[rust#77529]: Invalid monomorphisation when `-Clink-dead-code` is used**
+  - `repr(simd)` types w/ generics (i.e. Portable SIMD or hand-rolled
+    equivalents) can have invalid instantiations with `-Clink-dead-code`
+
+These issues don't apply to scalable vectors.
+
+### Const-initialisation of vectors
+[prior-art-const-init]: #const-initialisation-of-vectors
+
+There was a single issue related to const-initialisation of non-portable vector
+types:
+
+- **[rust#48745]: Provide a way to const-initialise vendor-specific vector types**
+  - Initialisation of fixed length vectors was not possible in a const context
+    for non-portable SIMD
+  - `mem::transmute` being made constant has addressed this issue
+
+This issue doesn't apply to scalable vectors as they are inherently non-const.
+
+### `target_feature` ABI
+
+There have been well-documented issues with the ABI of fixed-length SIMD
+vectors, many of which apply to scalable vectors too, but are harder to resolve:
+
+- **[rust#44367]: `repr(simd)` is unsound**
+  - `repr(simd)` types in functions with different target features enabled can
+    have different ABIs
+  - Fixed by passing SIMD types indirectly in [rust#47743]
+
+- **[rust#53346]: `repr(simd)` is unsound in C FFI**
+  - Same issue as in [rust#44367] but only with `extern "C"` functions where the
+    Rust ABI does not apply
+  - Later fixed by [rust#116558]
+
+- **[rust#87438]: future-incompat: use of SIMD types aren't gated properly**
+  - Calling a `extern "C"` function with an SIMD vector type in a `repr(C)` or
+    `repr(transparent)` struct doesn't error
+  - Later fixed by [rust#116558]
+
+- **[rfcs#2574]: `simd_ffi`**
+  - Permits calls to `extern "C"` functions with SIMD types so long as those
+    functions have the appropriate `target_feature` attribute
+  - Never fully implemented until [rust#116558] effectively did so
+
+- **[rust#131800]: Figure out which target features are required for which SIMD size**
+  - As part of [rust#116558], solicited input in determining which target
+    features were required for a given vector length so that the lint could
+    check for those
+
+- **[rust#133146]: How should we handle dynamic vector ABIs?**
+  - Follow-up to [rust#131800]:
+    - Existing ABI compatibility checks rely on the length of the vector and the
+      architecture to identify an appropriate target feature that must be
+      enabled, but this approach does not scale to scalable vectors
+
+- **[rust#133144]: How should we handle matrix ABIs?**
+  - Follow-up to [rust#131800]:
+    - Same as [rust#133146] but for matrix extensions
+    - Out-of-scope for this RFC
+
+- **[rust#116558]: The `extern "C"` ABI of SIMD vector types depends on target features (tracking issue for `abi_unsupported_vector_types` future-incompatibility lint)**
+  - Identified ABI incompatibility when calling `extern "C"` functions that used SIMD types
+    - Rust passes SIMD types indirectly for functions with and without
+      `target_feature` annotations in its ABI. `extern "C"` functions take SIMD
+      types as immediates
+    - Calls from annotated functions to `extern "C"` could use immediates, but
+      calls from non-annotated functions could not. Rust did not prevent calls
+      from non-annotated functions.
+  - A `abi_unsupported_vector_types` future-incompatibility lint was introduced
+    to enforce that `extern "C"` functions could not have SIMD types in their
+    signatures without the appropriate target feature being enabled
+    - The lint has since been removed and replaced with a hard error
+    - It only triggers when such a function is called
+
+- **[rust#132865]: Support calling functions with SIMD vectors that couldn't be used in the caller**
+  - Follow-up to [rust#116558]
+  - There are valid calls to `extern "C"` functions which take SIMD types that
+    are not currently accepted, such as checking for the presence of the target
+    feature and then calling the `extern "C"` function with a newly created
+    vector
+  - It is hard to support this as it is not possible to generate a call with a
+    specific ABI without annotating the entire containing function as having the
+    target feature ([llvm#70563])
+    - This limitation also causes similar issues with inlining ([rust#116573])
+
+- **[Pre-RFC: Fixing ABI for SIMD types][pre_rfc_simd]**
+  - Proposes requiring appropriate target features be enabled when a x86 SIMD
+    type is used in a function signature
+    - Written primarily considering x86 SIMD
+    - Considers both globally-enabled target features (e.g. `-Ctarget-feature`
+      or default features from target specification) and per-function-enabled
+      target features (`#[target_feature]`)
+    - Proposes generating shims to translate between ABIs when calling annotated
+      functions with SIMD type arguments from non-annotated functions
+      - Avoids breakage in cases similar to [rust#132865] but between annotated
+        and non-annotated functions, rather than just Rust ABI to non-Rust ABI
+    - Errors will be emitted for function pointers based on the target features
+      of the caller
+  - Prompted by discussion in [rust#116558]
+  - Never progressed to being a submitted RFC
+  - Discussed [on Zulip][pre_rfc_simd_zulip]
+    - How does the pre-RFC interact with Portable SIMD efforts?
+      - The inherent portability of these types means that they will need a
+        matching featureful and featureless ABI. It is suggested that this be
+        the current indirect ABI, but this isn't seen as desirable - ABI shims
+        or per-target-feature monomorphisation is to be explored
+    - Should there be a difference in codegen for calls to function items vs
+      function pointers (e.g. use of a shim)?
+      - Suggestion that an ABI shim be used for function pointers rather than
+        requiring target feature on functions with the call
+    - Is there a proper featureless ABI for x86 SIMD types?
+      - Yes, details in thread
+    - Should these changes also apply to `extern "Rust"`?
+      - Mixed opinions - enables use of performant ABI, larger breaking change
+      - Concern that doing this jeopardizes the entire proposal and that Rust is
+        stuck with the current behaviour
+
+        > I still don't like the idea I'm forced to use an FFI calling
+        > convention in pure rust code because the default is fundamentally too
+        > slow
+
+        > it's a tradeoff. should the default be portable or fast. I dont think
+        > there is an obvious right answer here. might be worth digging out the
+        > history that led to the current situation -- possibly this decision
+        > has been made in the past, in favor of "portable", and that's why the
+        > ABI works the way it does?
+      - Could use the performant ABI when global target features have feature
+        enabled
+      - References later design meeting ([lang-team#235])
+
+- **[lang-team#235]: Design meeting: resolve ABI issues around target-feature**
+  ([meeting notes][lang-team#235-notes])
+  - Proposes property that functions with the same signature will always have
+    the same ABI (i.e. that target features will not be considered in the ABI)
+    and three possible fixes:
+    - Track target features as part of function signatures, which is hard to do
+      without changing function pointer syntax
+      - Discussed briefly but not proposed due to concerns regarding breaking
+        change and expectation that function pointer syntax would need
+        changed/extended, and that it introduces a new semver hazard (adding a
+        SIMD type field)
+      - Suggested that if this route were taken then allowing target features
+        in extern blocks would be desirable and passing SIMD types using
+        registers could be considered
+      - Did not discuss challenges related to trait methods and generic
+        functions
+      - References [rust#111836]
+    - Define an ABI which does not depend on target features
+      - i.e. as the Rust ABI today with indirect passing of SIMD types
+    - Reject declaring/calling functions with target-feature-requiring types
+      when the ABI target feature is not available/enabled
+      - References [Pre-RFC: Fixing ABI for SIMD types][pre_rfc_simd], proposing
+        a variant of the RFC:
+        - Instead of applying to all ABIs (as in the pre-RFC) and using the
+          performant calling convention, it would only to non-Rust ABIs (e.g.
+          `extern "C"`) and would be based on a size of the vector to feature
+          mapping (rather than annotating types w/ the required features)
+          - This narrowly fixes the soundness issue and is the basis for the
+            currently implemented future incompatibility warning
+    - Reject enabling/disabling certain ABI-affecting features
+      - Discusses this as a solution for ABI issues relating to floats
+  - During the meeting, various points were discussed:
+    - Should it be possible to declare (non-Rust ABI) functions which take SIMD
+      vectors as long as there aren't calls?
+      - Intended to reduce potential opportunities breakage.
+    - How plausible is it to include ABI-affecting target features in function
+      pointer types?
+      - It is suggested that this information could be smuggled through the ABI
+        name: e.g. `extern "Rust+avx"`
+      - Concern that this is a wider breaking change and would require treating
+        ABIs specially or would require shims
+      - Feeling that this should be possible but not discussed further as an
+        immediate solution was desired to resolve unsoundness
+    - There was consensus that crater runs were needed to gather data
+  - After the meeting, the language team concluded:
+    > We discussed this question in the T-lang design meeting on 2023-12-20. The
+    > consensus was generally in favor of fixing this, and we were interested in
+    > seeing more work in this direction. While we considered various ways that
+    > this could be fixed, we were supportive of finding the most minimal,
+    > simplest way to fix this as the first step, assuming that such an approach
+    > proves to be feasible. We'll need to see at least the results of a crater
+    > run and further analysis to confirm that feasibility.
+    - It was explicitly noted in the notes that the language team didn't want to
+      rule out considering target features as part of the ABI:
+
+      > > Track the target features in the function signature. This would
+      > > basically mean that function pointers now have to also list the set of
+      > > ABI-relevant target features that were enabled. This would be a rather
+      > > fundamental change requiring new function pointer syntax, and hard to
+      > > do without breaking code, so we mention it only for completeness'
+      > > sake.
+      >
+      > I don't think we should rule this out for the future. We've already
+      > talked about being able to track calling-convention ABI (extern "C" vs
+      > other ABIs) in function pointers somehow, so that we can safely track
+      > which kind of function we have. We've also talked about having this work
+      > in generics somehow, so that the Fn traits have a (defaulted) parameter
+      > for ABI or similar, and the monomorphization of a call will call the
+      > right ABI.
+
+See [*ABI*][abi] for discussion of these challenges as they apply to scalable
+vectors.
+
+### Multiversioning and effects
+[prior-art-future]: #multiversioning-and-effects
+
+There are ongoing efforts related to improving Rust's SIMD support:
+
+- **[rust-project-goals#261]: Nightly support for ergonomic SIMD multiversioning**
+  - Generating efficient code for specific SIMD ISAs requires `target_feature`
+    attributes on functions, which isn't particularly ergonomic
+    - Need to do runtime checks then dispatch to functions with target features
+      - Must be repeated when leaving and entering these functions
+    - Intermediate functions use `inline(always)` to avoid having to have
+      different versions for each target feature, which impacts code size
+  - Various solutions have been proposed - witness types carrying target feature
+    information, inherited target features from callers, features being const
+    generic arguments
+  - Goal aims to explore design space and experiment
+
+- **[lang-team#309]: SIMD multiversioning** ([pre-read][lang-team#309-notes])
+  - Design meeting proposal, has not yet taken place
+  - Compares two related proposals that address some of the problems with
+    multiversioning
+    - Ideas similar to [rfcs#3525]
+      - In brief: attaching target features to types, introduce traits that
+        abstract over common operations, functions are generic over those traits
+        and when instantiated with a function-carrying type, inherit the target
+        feature and use the trait methods to do SIMD operations
+    - Ideas similar to [unopened contextual target features RFC][rfcs-contextual]
+        - In brief: `#[target_features(caller)]` which causes a function to
+          inherit the features of the caller
+        - Expands on this with a `#[target_features(generic)]` attribute which
+          takes target features from the first const generic argument of the
+          function (i.e. a `const FEATURES: str`)
+  - Both ideas have many open design questions
+
+- **[rust#143352]: Tracking issue for Effective Target Features**
+  - [Initial proposal][rust#143352-proposal] aims to experiment with SIMD
+    multiversioning based on the effect model used with const traits
+  - In brief: traits can be defined as having a target feature effect,
+    implementations of those traits define the target feature that is enabled by
+    the effect, bounds on the trait in functions will enable the target feature
+    from the impl
+
+- **[lang-team#317]: Design meeting: "Marker effects"** ([meeting notes][lang-team#317-notes])
+  - Discusses the findings from investigations into keyword generics and the
+    implementation of const traits, proposing a categorisation of effects and a
+    subset to focus on initially
+  - Briefly discusses that effects overlap with the SIMD multiversioning efforts
+
+These efforts are followed with interest as they may synergise well with
+resolving the similar challenges that scalable vectors face. See
+[*Trait implementations and generic instantiation*][trait-implementations-and-generic-instantiation].
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -695,7 +1130,7 @@ restrictions on trait implementations and generic instantiation to be lifted:
   - Any mechanism that could be applied to scalable vector types could also be
     used to enforce that existing SIMD types are only used in
     `target_feature`-annotated functions, which would enable fixed-length
-    vectors to be passed by-register, improving performance
+    vectors to be passed as immediates, improving performance
 
 ## Compound types
 [compound-types]: #compound-types
@@ -732,15 +1167,67 @@ Later, there are a variety of approaches that could be taken to incorporate
 support for scalable vectors into Portable SIMD.
 
 [acle_sizeless]: https://arm-software.github.io/acle/main/acle.html#formal-definition-of-sizeless-types
+[compiler-team#838]: https://github.com/rust-lang/compiler-team/issues/838
 [dotnet]: https://github.com/dotnet/runtime/issues/93095
+[lang-team#235-notes]: https://hackmd.io/Dnd0ZIN6RjqbRlEs2GWE5Q
+[lang-team#235]: https://github.com/rust-lang/lang-team/issues/235
+[lang-team#309-notes]: https://hackmd.io/@veluca93/simd-multiversioning
+[lang-team#309]: https://github.com/rust-lang/lang-team/issues/309
+[lang-team#317-notes]: https://hackmd.io/xydafCtMQ1aqUbm6wqmEmA?view
+[lang-team#317]: https://github.com/rust-lang/lang-team/issues/317
+[llvm#70563]: https://github.com/llvm/llvm-project/issues/70563
+[portable-simd#339]: https://github.com/rust-lang/portable-simd/issues/339
 [prctl]: https://www.kernel.org/doc/Documentation/arm64/sve.txt
+[pre_rfc_simd_zulip]: https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/Pre-RFC.20discussion.3A.20Forbidding.20SIMD.20types.20w.2Fo.20features/near/399174036
+[pre_rfc_simd]: https://hackmd.io/@chorman0773/SJ1rZPWZ6
 [quote_amanieu]: https://github.com/rust-lang/rust/pull/118917#issuecomment-2202256754
+[rfcs-contextual]: https://github.com/calebzulawski/rfcs/blob/contextual-target-features/text/0000-contextual-target-features.md
 [rfcs#1199]: https://rust-lang.github.io/rfcs/1199-simd-infrastructure.html
+[rfcs#2045-abi]: https://rust-lang.github.io/rfcs/2045-target-feature.html#how-do-we-handle-abi-issues-with-portable-vector-types
+[rfcs#2045]: https://github.com/rust-lang/rfcs/pull/2045
+[rfcs#2396]: https://github.com/rust-lang/rfcs/pull/2396
+[rfcs#2574]: https://github.com/rust-lang/rfcs/pull/2574
 [rfcs#3268]: https://github.com/rust-lang/rfcs/pull/3268
-[rfcs#3729]: https://github.com/rust-lang/rfcs/pull/3729
 [rfcs#3280]: https://github.com/rust-lang/rfcs/pull/3280
-[rust#63633]: https://github.com/rust-lang/rust/issues/63633
+[rfcs#3525]: https://github.com/rust-lang/rfcs/pull/3525
+[rfcs#3729]: https://github.com/rust-lang/rfcs/pull/3729
+[rust-project-goals#261]: https://github.com/rust-lang/rust-project-goals/issues/261
+[rust#105439]: https://github.com/rust-lang/rust/issues/105439
+[rust#105583]: https://github.com/rust-lang/rust/issues/105583
+[rust#108338]: https://github.com/rust-lang/rust/issues/108338
+[rust#111836]: https://github.com/rust-lang/rust/issues/111836
+[rust#113465]: https://github.com/rust-lang/rust/issues/113465
+[rust#116558]: https://github.com/rust-lang/rust/issues/116558
+[rust#116573]: https://github.com/rust-lang/rust/issues/116573
+[rust#126217]: https://github.com/rust-lang/rust/issues/126217
+[rust#130402]: https://github.com/rust-lang/rust/issues/130402
+[rust#131800]: https://github.com/rust-lang/rust/issues/131800
+[rust#132865]: https://github.com/rust-lang/rust/issues/132865
+[rust#133144]: https://github.com/rust-lang/rust/issues/133144
+[rust#133146]: https://github.com/rust-lang/rust/issues/133146
+[rust#137108]: https://github.com/rust-lang/rust/issues/137108
+[rust#137256]: https://github.com/rust-lang/rust/issues/137256
+[rust#143352-proposal]: https://hackmd.io/M5ZAoRqSTb27oLBuEpByIA
 [rust#143352]: https://github.com/rust-lang/rust/issues/143352
+[rust#143833]: https://github.com/rust-lang/rust/issues/143833
+[rust#18147]: https://github.com/rust-lang/rust/issues/18147
+[rust#27731]: https://github.com/rust-lang/rust/issues/27731
+[rust#44367]: https://github.com/rust-lang/rust/issues/44367
+[rust#44839]: https://github.com/rust-lang/rust/issues/44839
+[rust#47103]: https://github.com/rust-lang/rust/issues/47103
+[rust#47743]: https://github.com/rust-lang/rust/issues/47743
+[rust#48745]: https://github.com/rust-lang/rust/issues/48745
+[rust#53346]: https://github.com/rust-lang/rust/issues/53346
+[rust#58729]: https://github.com/rust-lang/rust/issues/58729
+[rust#63633]: https://github.com/rust-lang/rust/issues/63633
+[rust#73631]: https://github.com/rust-lang/rust/issues/73631
+[rust#77529]: https://github.com/rust-lang/rust/issues/77529
+[rust#77866]: https://github.com/rust-lang/rust/issues/77866
+[rust#78231]: https://github.com/rust-lang/rust/issues/78231
+[rust#81931]: https://github.com/rust-lang/rust/issues/81931
+[rust#87438]: https://github.com/rust-lang/rust/issues/87438
+[rust#90972]: https://github.com/rust-lang/rust/issues/90972
+[rust#99211]: https://github.com/rust-lang/rust/issues/99211
 [rvv_bitsperblock]: https://github.com/llvm/llvm-project/blob/837b2d464ff16fe0d892dcf2827747c97dd5465e/llvm/include/llvm/TargetParser/RISCVTargetParser.h#L51
 [rvv_typesystem]: https://github.com/riscv-non-isa/rvv-intrinsic-doc/blob/main/doc/rvv-intrinsic-spec.adoc#type-system
 [sve_minlength]: https://developer.arm.com/documentation/102476/0101/Introducing-SVE#:~:text=a%20minimum%20of%20128%20bits
