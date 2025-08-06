@@ -315,7 +315,7 @@ See Rationale and Alternatives as well
     * This way we can evolve the repr (for example, by adding new niches)
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change, but at that point it will likely only be breaking code no one uses.
     * Leaning towards no
-* Should we warn on `repr(ordered_fields)` when explicit tag type is specified (i.e. no `repr(u8)`/`repr(i32)`)
+* Should we warn on `repr(ordered_fields)` when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type.
 # Future possibilities
 [future-possibilities]: #future-possibilities
