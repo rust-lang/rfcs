@@ -67,6 +67,11 @@ Even if the safety documentation is complete, two problems remain:
 - When *reviewing* the call, the absence of such a comment forces the auditor to reconstruct the
   required invariants from scratch, with no assurance that the author considered them at all.
 
+## Safety Invariants Have No Semver
+
+A severe problem may arise if the safety requirements of an API change over time: downstream users
+may be unaware of such changes and thus be exposed to security risks. 
+
 ## Granular Unsafe: How Small Is Too Small?
 
 The unsafe block faces a built-in tension:
@@ -77,11 +82,6 @@ The unsafe block faces a built-in tension:
   balloons outward.
 
 [Alternatives from IRLO]: #IRLO
-
-## Safety Invariants Have No Semver
-
-A severe problem may arise if the safety requirements of an API change over time: downstream users
-may be unaware of such changes and thus be exposed to security risks. 
 
 ## Formal Contracts, Casual Burden
 
@@ -97,18 +97,20 @@ ad-hoc practice with four concrete gains:
 1. **Shared clarity**. Authors attach a short tag above every unsafe operation; reviewers instantly
    see which invariant must hold and where it is satisfied.
 
-2. **Semantic granularity**. Tags must label a single unsafe call, or an expression contains single 
+2. **Versioned invariants**. Tags are a part of API; any change to their definition is a
+   *semver-breaking* API change, so safety invariants evolve explicitly.
+
+3. **Semantic granularity**. Tags must label a single unsafe call, or an expression contains single 
    unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps the
    precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
+   * It's viable to extend tagging to [more unsafe operations] beyond unsafe calls.
    * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
      traces every unsafe related operation that could break an invariant in source code.
-
-3. **Versioned invariants**. Tags are real items; any change to their definition is a
-   *semver-breaking* API change, so safety invariants evolve explicitly.
 
 4. **Lightweight checking**. Clippy only matches tag paths. No heavyweight formal proofs, keeping
    the system easy to adopt and understand.
 
+[more unsafe operations]: #tagging-more-unsafe-ops
 [entity-reference]: #entity-reference
 
 ## `#[safety]` Tool Attribute and Namespace
@@ -190,7 +192,7 @@ unsafe { ptr::read(ptr) }
 ```
 
 ```rust
-warning: `ValidPtr`, `Aligned`, `Initialized` tags are missing. Add them to `#[safety::checked]` or
+warning: `ValidPtr`, `Aligned`, `Initialized` tags are missing. Add them to `#[safety::checked]`
          once these invariants are confirmed to be satisfied.
    --> file.rs:xxx:xxx
     |
@@ -268,26 +270,8 @@ against [Semantic Versioning][semver].
 * Adding a tag definition is a **major** change, because new tag is missing. 
 * Removing a tag definition is a **major** change, because the tag doesn't exist.
 * Renaming a tag definition is a **major** change, because it's the result of removal and addition.
-* Marking or cancelling `@deprecated` in tag definition description is a *minor* change, because
-  the tag is still able to be checked.
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
-
-To grant dependent crates time to migrate an outdated tag definition, use `@deprecated` in tag
-description. Clippy will emit a deprecation warning whenever the tag is used in `safety::checked`.
-
-```rust
-#[safety::requires {
-  NewTag = "description",
-  Tag = "@deprecated Explain why this tag is discouraged or what tag shoud be used instead",
-}]
-unsafe fn deprecate_a_tag() {}
-
-// warning: Tag is deprecated, copy description to here.
-// error: NewTag is not discharged.
-#[safety::checked { Tag }]
-unsafe { deprecate_a_tag() }
-```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -323,8 +307,7 @@ Procedure:
       otherwise emit a diagnostic. *(We intentionally stop at this simple rule; splitting complex
       unsafe expressions into separate annotated nodes is considered good style.)*
    4. Make sure tags in `#[safety::checked]` correspond to their definitions.
-   5. If tags marked `@deprecated` in definitions are successfully checked, emit diagnostics. 
-   6. Diagnostics are emitted at the current Clippy lint level (warning or error).
+   5. Diagnostics are emitted at the current Clippy lint level (warning or error).
 
 [HIR ExprKind]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_hir/hir/enum.ExprKind.html
 
@@ -506,6 +489,8 @@ unsafe { bar(p) }
 ```
 
 ## Tagging More Unsafe Operations
+
+<a id="tagging-more-unsafe-ops"></a>
 
 There are several other unsafe operations other than unsafe calls. We can extend safety tags in the
 following cases:
