@@ -111,13 +111,14 @@ union FooUnion {
 
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 ### enum
-The enum's tag is the smallest signed integer type which can hold all of the discriminant values (unless otherwise specified). The discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
+The enum's tag type is same type that is used for `repr(C)` in edition <= 2024, and the discriminants is assigned the same was as `repr(C)` (in edition <= 2024).  This means the discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
+This does mean that the tag type will be platform specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning. This warning should suggest the smallest integer type which can hold the discriminant values (preferring signed integers to break ties).
 
 If an enum doesn't have any fields, then it is represented exactly by it's discriminant. 
 ```rust
 // tag = i16
 // represented as i16
-#[repr(ordered_fields)]
+#[repr(ordered_fields, i16)]
 enum FooEnum {
     VarA = 1,
     VarB, // discriminant = 2
@@ -140,7 +141,7 @@ Enums with fields will be laid out as if they were a union of structs.
 
 For example, this would be laid out the same as the union below
 ```rust
-#[repr(ordered_fields)]
+#[repr(ordered_fields, i8)]
 enum BarEnum {
     VarFieldless,
     VarTuple(u8, u32),
@@ -159,7 +160,7 @@ union BarUnion {
     var3: VarStruct,
 }
 
-#[repr(ordered_fields)]
+#[repr(ordered_fields, i8)]
 enum BarTag {
     VarFieldless,
     VarTuple,
