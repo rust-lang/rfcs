@@ -300,6 +300,8 @@ Therefore, there is an additional restriction that these types cannot be used in
 the argument or return types of functions unless those functions are annotated
 with the relevant target feature.
 
+Any such functions would make a trait containing them dyn-incompatible.
+
 It is permitted to create pointers to function that have scalable vector types
 in their arguments or return types, even though function pointers themselves
 cannot be annotated as having the target feature. When the function pointer was
