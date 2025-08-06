@@ -268,7 +268,13 @@ Note that discharing a tag that is not defined will raise a hard error.
 Tags constitute a public API; therefore, any alteration to their definition must be evaluated
 against [Semantic Versioning][semver].
 * Adding a tag definition is a **major** change, because new tag is missing. 
-* Removing a tag definition is a **major** change, because the tag doesn't exist.
+* Removing a tag definition is a **minor** change. The tag doesn't exist anymore, and discharing
+  an undefined tag just emits a warning-by-default diagnostic.
+* Changing the definition of a tag in a way that *requires more*, is a **major** change, because
+  callsites only checked the weaker requirement for this tag. However, it's strongly discouraged to
+  change the tag in such way, as newly added requirements may blindly discharged by callsites.
+* Changing the definition of a tag in an *equivalent* or in a way that *requires less* (the old tag
+  implies the new tag), is a **minor** change.
 * Renaming a tag definition is a **major** change, because it's the result of removal and addition.
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
