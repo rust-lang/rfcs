@@ -13,7 +13,7 @@ Include a version of `clang` and `clang++` compiled against Rust LLVM in the `ll
 
 Allowing user-access to the LLVM pipeline allows for many user-built features, such as cross-language inlining. However, LLVM version mismatching between tools can lead to frustrating problems. Including `clang` and `clang++` in `llvm-tools` allows users to use only the tools that Rust ships with, ensuring consistent versioning.
 
-In future versions of Rust, including a compiler with Rustup could also improve ergonomics for FFI crates, as it could avoid depending on system compilers. See how [Zig's implementation](https://actually.fyi/posts/zig-makes-rust-cross-compilation-just-work/) led to easy cross-compiles in rust to Macos.
+In future versions of Rust, including a compiler with Rustup could also improve ergonomics for FFI crates, as it could avoid depending on system compilers. See how [Zig's implementation](https://actually.fyi/posts/zig-makes-rust-cross-compilation-just-work/) led to easy cross-compiles in Rust to Macos.
 
 ## Background
 
@@ -29,6 +29,10 @@ clang -flto=thin -fuse-ld=lld -L . -l"name-of-your-rust-lib" -o main -O2 ./cmain
 Unfortunately, this example does not always work, because it calls system `clang`, which may use a different version of LLVM than Rust. Additionally, even at the same version, there is a potential for problems from mixing base LLVM tools with the Rust fork of LLVM.
 
 Rustup has the ability to install a component called `llvm-tools`, which exposes the llvm tools used by Rust, including `llvm-link` and `llc` - notably, it does not contain a build of `clang` or `clang++`.
+
+## Stability Guarantee
+
+The only stability guarantee is that the versions of `clang` and `clang++` will have the same LLVM version as Rust and the other LLVM tools. It is not guaranteed that `clang` and `clang++` will never break their own interfaces.
 
 ## Conclusion
 
