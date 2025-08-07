@@ -42,7 +42,7 @@ Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for c
 
 `repr(C)` in edition <= 2024 is an alias for `repr(ordered_fields)` and in all other editions, it matches the default C compiler for the given target for structs, unions, and field-less enums. Enums with fields will be laid out as if they are a union of structs with the corresponding fields.
 
-Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as an optional edition migration lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
+Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as an optional edition compatibility lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
 
 ```
 warning: use of `repr(C)` in type `Foo`
@@ -265,7 +265,7 @@ fn get_layout_for_enum(
 
 The migration will be handled as follows:
 * after `repr(ordered_fields)` is implemented
-    * add an optional edition migration warning for `repr(C)`
+    * add an optional edition compatibility lint for `repr(C)`
     	* this warning should be advertised publicly (maybe on the Rust Blog?), so that as many people use it. Since even if you are staying on edition <= 2024, it is helpful to switch to `repr(ordered_fields)` to make your intentions clearer
     * at this point both `repr(ordered_fields)` and `repr(C)` will have identical behavior
     * the warning will come with a machine-applicable fix
