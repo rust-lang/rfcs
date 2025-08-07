@@ -15,9 +15,7 @@ only in the standard library to introduce scalable vector types which can then
 be stabilised. Only the infrastructure to define these types are introduced in
 this RFC, not the types or intrinsics that use it.
 
-This RFC builds on Rust's existing SIMD infrastructure, introduced in
-[rfcs#1199: SIMD Infrastructure][rfcs#1199]. It depends on
-[rfcs#3729: Hierarchy of Sized traits][rfcs#3729].
+This RFC depends on [rfcs#3729: Hierarchy of Sized traits][rfcs#3729].
 
 SVE is used in examples throughout this RFC, but the proposed features should be
 sufficient to enable support for similar extensions in other architectures, such
