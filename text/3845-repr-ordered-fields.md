@@ -241,7 +241,7 @@ fn get_layout_for_enum(
     let mut variant_field_offsets = Vec::new();
     
     let mut variant_with_tag = Vec::new();
-    // gives the smallest integer type which can represent the variants and the specified discriminants
+    // gives the tag used by `repr(C)` enums
     let tag_layout = get_layout_for_tag(discriminants);
     // ensure that the tag is the first field
     variant_with_tag.push(tag_layout);
