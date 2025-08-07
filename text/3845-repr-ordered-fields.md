@@ -38,7 +38,7 @@ Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for c
 
 `repr(C)` in edition <= 2024 is an alias for `repr(ordered_fields)` and in all other editions, it matches the default C compiler for the given target for structs, unions, and field-less enums. Enums with fields will be laid out as if they are a union of structs with the corresponding fields.
 
-Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as a future compatibility lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
+Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as an optional edition migration lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
 
 ```
 warning: use of `repr(C)` in type `Foo`
@@ -112,7 +112,7 @@ union FooUnion {
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 ### enum
 The enum's tag type is same type that is used for `repr(C)` in edition <= 2024, and the discriminants is assigned the same was as `repr(C)` (in edition <= 2024).  This means the discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
-This does mean that the tag type will be platform specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning. This warning should suggest the smallest integer type which can hold the discriminant values (preferring signed integers to break ties).
+This does mean that the tag type will be platform specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD). This warning should suggest the smallest integer type which can hold the discriminant values (preferring signed integers to break ties).
 
 If an enum doesn't have any fields, then it is represented exactly by it's discriminant. 
 ```rust
@@ -261,23 +261,23 @@ fn get_layout_for_enum(
 
 The migration will be handled as follows:
 * after `repr(ordered_fields)` is implemented
-    * add a future compatibility warning for `repr(C)` in all current editions
+    * add an optional edition migration warning for `repr(C)`
+    	* this warning should be advertised publicly (maybe on the Rust Blog?), so that as many people use it. Since even if you are staying on edition <= 2024, it is helpful to switch to `repr(ordered_fields)` to make your intentions clearer
     * at this point both `repr(ordered_fields)` and `repr(C)` will have identical behavior
     * the warning will come with a machine-applicable fix
-        * Any crate which does no FFI can just apply the autofix
+        * Any crate that does not have FFI can just apply the autofix
         * Any crate which uses `repr(C)` for FFI can ignore the warning crate-wide
-        * Any crate which mixes both must do extra work to figure out which is which. (This is likely a tiny minority of crate)
-* Once the next edition rolls around (2027?), `repr(C)` on the new edition will *not* warn. Instead the meaning will have changed to mean *only* compatibility with C. The docs should be adjusted to mention this edition wrinkle.
+        * Any crate that mixes both must do extra work to figure out which is which. (This is likely a tiny minority of crates)
+* Once the next edition rolls around (2027?), `repr(C)` on the new edition will *not* warn. Instead, the meaning will have changed to mean *only* compatibility with C. The docs should be adjusted to mention this edition wrinkle.
     * The warning for previous editions will continue to be in effect
-* In some future edition (2033+), when it is deemed safe enough, the future compatibility warnings may be removed in editions <= 2024
-    * This should have given plenty of time for anyone who was going to update their code to do so. And doesn't burden the language indefinitely
-    * This part isn't strictly necessary, and can be removed if needed
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 * This will cause a large amount of churn in the Rust ecosystem
+	* This is only necessary for those who are updating to the new edition. Which is as little churn as we can make it
 * If we don't end up switching `repr(C)` to mean the system layout/ABI, then we will have two identical reprs, which may cause confusion.
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
