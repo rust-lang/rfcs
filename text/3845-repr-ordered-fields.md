@@ -6,7 +6,11 @@
 # Summary
 [summary]: #summary
 
-Introduce a new `repr` (let's call it `repr(ordered_fields)`, but that can be bikeshedded if this RFC is accepted) that can be applied to `struct`, `enum`, and `union` types, which guarantees a simple and predictable layout. Then provide an initial migration plan to switch users from `repr(C)` to `repr(ordered_fields)`.
+Introduce a new `repr` (let's call it `repr(ordered_fields)`, but that can be bikeshedded if this RFC is accepted) that can be applied to `struct`, `enum`, and `union` types, which guarantees a simple and predictable layout. Then provide an initial migration plan to switch users from `repr(C)` to `repr(ordered_fields)`. This allows restricting the meaning of `repr(C)` to just serve the FFI use-case.
+
+Introduce two new warnings
+1. An optional edition warning, when updating to the next edition, that the meaning of `repr(C)` is changing.
+2. A warning-by-default lint when `repr(ordered_fields)` is used on enums without the tag type specified. Since this is likely not what the user wanted.
 
 # Motivation
 [motivation]: #motivation
