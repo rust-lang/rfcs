@@ -1,5 +1,5 @@
 - Feature Name: `next_gen_transmute`
-- Start Date: (fill me in with today's date, YYYY-MM-DD)
+- Start Date: 2025-08-01
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
@@ -30,6 +30,12 @@ But that's not great.  It doesn't communicate that the programmer *expected* the
 to match, and thus there's no opportunity for the compiler to help catch a mistaken
 expectation.  Plus it obfuscates other locations that really do want `transmute_copy`,
 perhaps because they're intentionally reading a prefix out of something.
+
+It's also a safety footgun because it'll *compile* if you instead were to write
+```rust
+mem::transmute_copy(&other)
+```
+but is highly likely to result in use-after-free UB.
 
 It would be nice to move `mem::transmute` to being a normal function -- not the one
 intrinsic we let people call directly -- in a way that it can be more flexible for
@@ -165,7 +171,7 @@ The change to make `mem::transmute` an ordinary function would need to update
 the existing `check_transmutes` in typeck to instead be a lint that looks for
 calls to `#[rustc_diagnostic_item = "transmute"]` instead.  (That diagnostic
 item already exists.)  For starters the same logic could be used as a
-deny-be-default lint, as the most similar diagnostics, with any splitting done
+deny-by-default lint, as the most similar diagnostics, with any splitting done
 separately over time at the discretion of the diagnostics experts.
 
 This should be straight-forward in CTFE and codegen as well.  Once lowered such
@@ -208,10 +214,15 @@ could be implemented and tested before doing the publicly-visible switchover.
 
 Well, there's two big reasons to prefer post-mono here:
 
-1. By being post-mono, it's 100% accurate.  Sure, if we could easily be perfectly
-   accurate earlier in the pipeline that would be nice, but since it's layout-based
-   that's extremely difficult at best because of layering.  (For anything related
-   to coroutines that's particularly bad.)
+1. By being post-mono, it eliminates all "the compiler isn't smart enough" cases.
+   If you get an error from it, then the two types are *definitely* of different
+   sizes, *period*.  If you find a way to encode Fermat's Last Theorem in the
+   type system, it's ok, the compiler doesn't have to know how to prove it to let
+   you do the transmute.  It would be *nice* if we could be that accurate earlier
+   in the compilation pipeline, but for anything layout-based that's extremely
+   difficult -- especially for futures.  There's still the potential for "false"
+   warnings in code that's only conditionally run, but that's also true of trait
+   checks, and is thus left for a different RFC to think about.
 2. By being *hard* errors, rather than lints, there's a bunch more breaking change
    concerns.  Any added smarts that allow something to compile need to be around
    *forever* (as removing them would be breaking), and similarly the exact details
@@ -236,11 +247,73 @@ Plus using `union`s for type punning like this is something that people already
 do, so having a name for it helps make what's happening more obvious, plus gives
 a place for us to provider better documentation and linting when they do use it.
 
+## Why the name `union_transmute`?
+
+The idea is to lean on the fact that Rust already has `union` as a user-visible
+concept, since what this does is *exactly* the same as using an
+all-fields-at-the-same-offset `union` to reinterpret the representation.
+Similarly, a common way to do this operation in C is to use a union, so people
+coming from other languages will recognize it.
+
+Thinking about the `union` hopefully also give people the right intuition about
+the requirements that this has, especially in comparison to what the requirements
+would be if this had the pointer-cast semantics.  Hopefully seeing the union in
+the name helps them *not* think that it's just `(&raw const x).cast().read()`.
+
+There's currently (as an implementation detail) a `transmute_unchecked` intrinsic
+in rustc which doesn't have the typeck-time size check, but I leaned away from
+that name because it's unprecedented, to my knowledge, to have a `foo_unchecked`
+in the stable library where `foo` is *also* an `unsafe fn`.
+
+If we were in a world where `mem::transmute` was actually a *safe* function,
+then `transmute_unchecked` for this union-semantic version would make sense,
+but we don't currently have such a thing.
+
+## Could we keep the compile-time checks on old editions?
+
+This RFC is written assuming that we'll be able to remove the type-checking-time
+special behaviour entirely.  That does mean that some things that used to fail
+will start to compile, and it's possible that people were writing code depending
+on that kind of trickery to enforce invariants.
+
+However, there's never been a guarantee about what exactly those checks enforce,
+and in general we're always allowed to make previously-no-compiling things start
+to compile in new versions -- as has happened before with the check getting
+smarter.  We're likely fine saying that such approaches were never endorsed and
+thus that libraries should move to other mechanisms to check sizes, as
+[some ecosystem crates](https://github.com/Lokathor/bytemuck/pull/320) have
+already started to do.
+
+If for some reason that's not ok, we could consider approaches like
+edition-specific name resolution to have `mem::transmute` on edition ≤ 2024
+continue to get the typeck hacks for this, but on future editions resolve to
+the version using the interior const-assert instead.
+
+## Is transmuting to something bigger ever *not* UB?
+
+As a simple case, if you have
+
+```rust
+#[repr(C, align(4))]
+struct AlignedByte(u8);
+```
+
+then `union_transmute::<u8, AlignedByte>` and `union_transmute::<AlignedByte, u8>`
+are in fact *both* always sound, despite the sizes never matching.
+
+You can easily make other similar examples using `repr(packed)` as well.
+
 
 # Prior art
 [prior-art]: #prior-art
 
-Unknown.
+C++ has `reinterpret_cast` which sounds like it'd be similar, but which isn't
+defined for aggregates, just between integers and pointers or between pointers
+and other pointers.
+
+GCC has a cast-to-union extension, but it only goes from a value to a `union`
+with a field of matching type, and doesn't include the part of going from the
+`union` back to a different field.
 
 
 # Unresolved questions
@@ -248,6 +321,7 @@ Unknown.
 
 During implementation:
 - Should MIR's `CastKind::Transmute` retain its equal-size precondition?
+- What name should the new function get?
 
 For nightly and continuing after stabilization:
 - What exactly are the correct lints to have about these functions?
