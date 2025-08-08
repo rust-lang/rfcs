@@ -250,18 +250,18 @@ invariants, and define the new tag on `delegation` function. This practice exten
 delegation of multiple tag discharges:
 
 ```rust
-#[safety::requires { MyInvaraint = "Invariants of A and C, but could be a more contextual name." }]
+#[safety::requires { MyInvariant = "Invariants of A and C, but could be a more contextual name." }]
 unsafe fn delegation() {
     unsafe {
-        #[safety::checked { A = "delegated to the caller's MyInvaraint", B }]
+        #[safety::checked { A = "delegated to the caller's MyInvariant", B }]
         foo();
-        #[safety::checked { C = "delegated to the caller's MyInvaraint", D }]
+        #[safety::checked { C = "delegated to the caller's MyInvariant", D }]
         bar();
     }
 }
 ```
 
-Note that discharing a tag that is not defined will raise a hard error.
+Note that discharing a tag that is not defined will raise a warning-by-default lint.
 
 ## Safety Tags are a Part of an Unsafe Function
 
@@ -289,7 +289,7 @@ NOTE:
 * `requires` or `checked` can be specified multiple times, and they will be merged together.
   * Duplicate tags in `requires` will trigger errors.
   * Duplicate tags in `checked` will trigger warning-by-default diagnostics.
-* the scope of a tag is limited to the defined unsafe function, so identical tag name on different
+* the scope of a tag is limited to the defining unsafe function, so identical tag name on different
   unsafe functions won't affect with each other.
 
 ## Auto Generate Safety Docs from Tags
