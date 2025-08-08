@@ -1,18 +1,18 @@
 - Feature Name: `min_rust_version`
 - Start Date: 2018-06-28
-- RFC PR: [rust-lang/rfcs#2495](https://github.com/rust-lang/rfcs/pull/2495)
-- Rust Issue: [rust-lang/rust#65262](https://github.com/rust-lang/rust/issues/65262)
+- RFC PR: [rust-lang/rfcs#9732](https://github.com/rust-lang/rfcs/pull/9732)
+- Rust Issue: [rust-lang/rust#8072](https://github.com/rust-lang/cargo/issues/8072)
 
 # Summary
 [summary]: #summary
 
-Add `rust` field to the package section of `Cargo.toml` which will be used to
+Add `rust-version` field to the package section of `Cargo.toml` which will be used to
 specify crate's Minimum Supported Rust Version (MSRV):
 ```toml
 [package]
 name = "foo"
 version = "0.1.0"
-rust = "1.30"
+rust-version = "1.30"
 ```
 
 # Motivation
@@ -30,11 +30,11 @@ compiler versions.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-If you target a specific MSRV add a `rust` field to the `[package]` section of
+If you target a specific MSRV add a `rust-version` field to the `[package]` section of
 your `Cargo.toml` with a value equal to the targeted Rust version. If you build
 a crate with a dependency which has MSRV higher than the current version of your
 toolchain, `cargo` will return a compilation error stating the dependency and
-its MSRV. This behavior can be disabled by using `--no-msrv-check` flag.
+its MSRV. This behavior can be disabled by using `--ignore-rust-version` flag.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -45,7 +45,7 @@ tree scheduled to be built or checked. Crates which are part of the dependency
 tree, but will not be built are excluded from this check (e.g. target-dependent
 or optional crates).
 
-`rust` field should respect the following minimal requirements:
+`rust-version` field should respect the following minimal requirements:
 - Value should be a version in semver format **without** range operators. Note
 that "1.50" is a valid value and implies "1.50.0".
 - Version can not be bigger than a current stable toolchain (it will be checked
@@ -53,25 +53,25 @@ by crates.io during crate upload).
 - Version can not be smaller than 1.27 (version in which  `package.rust` field
 became a warning instead of an error).
 - Version can not be smaller than release version of a used edition, i.e.
-combination of `rust = "1.27"` and `edition = "2018"` is an invalid one.
+combination of `rust-version = "1.27"` and `edition = "2018"` is an invalid one.
 
 # Future work and extensions
 [future-work]: #future-work
 
 ## Influencing version resolution
 
-The value of `rust` field (explicit or automatically selected by `cargo`) will
+The value of `rust-version` field (explicit or automatically selected by `cargo`) will
 be used to select appropriate dependency versions.
 
 For example, let's imagine that your crate depends on crate `foo` with 10 published
-versions from `0.1.0` to `0.1.9`, in versions from `0.1.0` to `0.1.5` `rust`
+versions from `0.1.0` to `0.1.9`, in versions from `0.1.0` to `0.1.5` `rust-version`
 field in the `Cargo.toml` sent to crates.io equals to "1.30" and for others to
 "1.40". Now if you'll build your project with e.g. Rust 1.33, `cargo` will select
 `foo v0.1.5`. `foo v0.1.9` will be selected only if you'll build your project with
 Rust 1.40 or higher. But if you'll try to build your project with Rust 1.29 cargo
 will issue an error.
 
-`rust` field value will be checked as well. During crate build `cargo` will check
+`rust-version` field value will be checked as well. During crate build `cargo` will check
 if all upstream dependencies can be built with the specified MSRV. (i.e. it will
 check if there is exists solution for given crates and Rust versions constraints)
 Yanked crates will be ignored in this process.
@@ -83,22 +83,22 @@ it may be a useful convention for post-1.0 crates to bump minor version on MSRV
 bump to allow publishing backports which fix serious issues using patch version)
 
 Note that described MSRV constraints and checks for dependency versions resolution
-can be disabled with the `--no-msrv-check` option.
+can be disabled with the `--ignore-rust-version` option.
 
 ## Checking MSRV during publishing
 
 `cargo publish` will check that upload is done with a toolchain version specified
 in the `rust` field. If toolchain version is different, `cargo` will refuse to
-upload the crate. It will be a failsafe to prevent uses of incorrect `rust` values
+upload the crate. It will be a failsafe to prevent uses of incorrect `rust-version` values
 due to unintended MSRV bumps. This check can be disabled by using the existing
 `--no-verify` option.
 
 ## Making `rust` field mandatory
 
-In future (probably in a next edition) we could make `rust` field mandatory for
+In future (probably in a next edition) we could make `rust-version` field mandatory for
 a newly uploaded crates. MSRV for older crates will be determined by the `edition`
 field. In other words `edition = "2018"` will imply `rust = "1.31"` and
-`edition = "2015"` will imply `rust = "1.0"`.
+`edition = "2015"` will imply `rust-version = "1.0"`.
 
 `cargo init` would use the version of the toolchain used.
 
@@ -109,19 +109,19 @@ features. In such cases it can be useful to describe how MSRV depends on them,
 e.g. in the following way:
 ```toml
 [package]
-rust = "1.30"
+rust-version = "1.30"
 
 [target.x86_64-pc-windows-gnu.package]
-rust = "1.35"
+rust-version = "1.35"
 
 [target.'cfg(feature = "foo")'.package]
-rust = "1.33"
+rust-version = "1.33"
 ```
 
-All `rust` values in the `target` sections should be equal or bigger to a `rust` value
+All `rust-version` values in the `target` sections should be equal or bigger to a `rust-version` value
 specified in the `package` section.
 
-If target condition is true, then `cargo ` will use `rust` value from this section.
+If target condition is true, then `cargo ` will use `rust-version` value from this section.
 If several target section conditions are true, then maximum value will be used.
 
 ## Nightly and stable versions
