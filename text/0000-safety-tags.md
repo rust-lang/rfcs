@@ -91,6 +91,8 @@ precision as well as overhead of formal verification, making them too heavy for 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
+## From Motivation to Solution: Bridging the Identified Gaps
+
 We propose **checkable safety comments** via Clippy’s new **safety-tag** system, addressing today’s
 ad-hoc practice with four concrete gains:
 
@@ -103,7 +105,7 @@ ad-hoc practice with four concrete gains:
 3. **Semantic granularity**. Tags must label a single unsafe call, or an expression containing
    single unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps
    the precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
-   * It's viable to extend tagging to [more unsafe operations] beyond unsafe calls.
+   * It's viable to extend tags to [more unsafe operations] beyond unsafe calls.
    * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
      traces every unsafe related operation that could break an invariant in source code.
 
@@ -290,14 +292,14 @@ NOTE:
   * Duplicate tags in `requires` will trigger errors.
   * Duplicate tags in `checked` will trigger warning-by-default diagnostics.
 * the scope of a tag is limited to the defining unsafe function, so identical tag name on different
-  unsafe functions won't affect with each other.
+  unsafe functions won't affect each other.
 
 ## Auto Generate Safety Docs from Tags
 
 Since tag definitions duplicate safety comments, we propose `rustdoc` can recognize
 `#[safety::requires]` attributes and render them into safety docs.
 
-For `ptr::read`, the existing comments are replaced with safety tags:
+For `ptr::read`, replace the existing comments with safety tags:
 
 ```rust
 /// # Safety
