@@ -15,7 +15,7 @@ requirement into a single, check-off reminder.
 The following snippet [compiles] today if we enable enough nightly features, but we expect Clippy
 and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 
-[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=6eb0e47c416953da1f2470b11417e69a
+[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=322dbd93610aca05db49382802c732c3
 
 ```rust
 #[safety::requires { // 💡 define safety tags on an unsafe function
@@ -100,9 +100,9 @@ ad-hoc practice with four concrete gains:
 2. **Versioned invariants**. Tags are a part of API; any change to their definition is a
    *semver-breaking* API change, so safety invariants evolve explicitly.
 
-3. **Semantic granularity**. Tags must label a single unsafe call, or an expression contains single 
-   unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps the
-   precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
+3. **Semantic granularity**. Tags must label a single unsafe call, or an expression containing
+   single unsafe call. No longer constrained by the visual boundaries of `unsafe {}`. This sidesteps
+   the precision vs completeness tension of unsafe blocks, and zeros in on real unsafe operations.
    * It's viable to extend tagging to [more unsafe operations] beyond unsafe calls.
    * To enable truly semantic checking, we envision an [entity-reference] system that meticulously
      traces every unsafe related operation that could break an invariant in source code.
@@ -220,7 +220,7 @@ unsafe fn propogation<T>(ptr: *const T) -> T {
 Tags defined on an unsafe function must be **fully** discharged at callsites. No partial discharge:
 
 ```rust
-#[safety::requires { ValidPtr = "...", Aligned = "...", Initialized = "..." }]
+#[safety::requires { ValidPtr = "...", Initialized = "..." }]
 unsafe fn delegation<T>(ptr: *const T) -> T {
     #[safety::checked { Aligned }] // 💥 Error: Tags are not fully discharged. 
     unsafe { read(ptr) }
@@ -270,12 +270,18 @@ against [Semantic Versioning][semver].
 * Adding a tag definition is a **major** change, because new tag is missing. 
 * Removing a tag definition is a **minor** change. The tag doesn't exist anymore, and discharing
   an undefined tag just emits a warning-by-default diagnostic.
-* Changing the definition of a tag in a way that *requires more*, is a **major** change, because
-  callsites only checked the weaker requirement for this tag. However, it's strongly discouraged to
-  change the tag in such way, as newly added requirements may blindly discharged by callsites.
+* Renaming a tag definition is a **major** change, because it's the result of removal and addition.
 * Changing the definition of a tag in an *equivalent* or in a way that *requires less* (the old tag
   implies the new tag), is a **minor** change.
-* Renaming a tag definition is a **major** change, because it's the result of removal and addition.
+* Changing the definition of a tag in a way that *requires more*, is a **major** change, because
+  callsites only checked the weaker requirement for this tag.
+  * However, adding more safety requirements to an existing tag definition is strongly discouraged:
+    call sites that were blindly compiled against the old definition may unsoundly assume the new,
+    weaker requirements still hold.
+  * Instead, replace the tag with a distinct name. This guarantees downstream crates notice the
+    change. It's a potential hazard to reuse the tag name back in the future, due to the same reason
+    stated above. Renaming the unsafe function to keep the original tag name for new definition is
+    also good, because tags are scoped to their defining function.
 
 [semver]: https://doc.rust-lang.org/cargo/reference/semver.html
 
