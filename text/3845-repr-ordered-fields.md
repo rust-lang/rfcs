@@ -38,7 +38,9 @@ Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for c
 
 A tertiary motivation is to make progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). This proposal doesn't attempt a complete solution for the bug, but it will be a necessary component of any solution to the bug. 
 
-The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the `alignof` macro reports an alignment of 4 bytes, but in structs, it is aligned to 8 bytes. And on these platforms, we report the alignment as 8 bytes. Any proper work around will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting what `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
+The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8-bytes, and may instead only align them to 4 bytes.
+
+Any proper work around will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting what `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
