@@ -246,6 +246,13 @@ The async version of [`take_mut`] cannot be created as it relies on cleanup code
 
 [`take_mut`]: https://docs.rs/take_mut/latest/take_mut/
 
+### Performance
+
+As we saw earlier, `async` code is forced into `'static` bounds on any non-trivial task such as spawning or sending messages between tasks. That way, references cannot be used, and users must fall back into `Arc` or owned types. `Arc` will [ping-pong] cache line with the counter between the cores, while owned types enforce unnecessary allocations and clones. Example would be a [rumqttc `publish`] which takes `topic` as `Into<String>`. Why? Because it sends this topic to another task. If `!Forget` types were available, a better API choice would be to make the `Future` returned by `publish` be `!Forget` and wait until another task formats the `topic` into the output buffer and reports either success or failure of the publish.
+
+[ping-pong]: https://assets.bitbashing.io/papers/concurrency-primer.pdf
+[rumqttc `publish`]: https://docs.rs/rumqttc/latest/rumqttc/struct.Client.html#method.publish
+
 ### C/C++ bindings + async do not work well together
 [example-async-c-cpp-bindings]: #example-async-c-cpp-bindings
 
