@@ -64,6 +64,8 @@ Using `repr(C)` on all editions (including > 2024) when there are no extern bloc
 
 If *any* extern block or function (including `extern "Rust"`) is used in the crate, then this lint will not be triggered. This way we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
 
+The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c`.
+
 ```
 warning: use of `repr(C)` in type `Foo`
   --> src/main.rs:14:10
