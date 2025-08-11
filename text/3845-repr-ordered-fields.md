@@ -11,6 +11,7 @@ Introduce a new `repr` (let's call it `repr(ordered_fields)`, but that can be bi
 Introduce two new warnings
 1. An optional edition warning, when updating to the next edition, that the meaning of `repr(C)` is changing.
 2. A warn-by-default lint when `repr(ordered_fields)` is used on enums without the tag type specified. Since this is likely not what the user wanted.
+3. A warn-by-default lint when `repr(C)` is used, and there are no `extern` blocks or functions in the crate (on all editions).
 
 # Motivation
 [motivation]: #motivation
@@ -57,6 +58,22 @@ warning: use of `repr(C)` in type `Foo`
    |
    = note: `#[warn(edition_2024_repr_c)]` on by default
    = note: `repr(C)` is planned to change meaning in the next edition to match the target platform's layout algorithm. This may change the layout of this type on certain platforms. To keep the current layout, switch to `repr(ordered_fields)`
+```
+
+Using `repr(C)` on all editions (including > 2024) when there are no extern blocks or functions in the crate will trigger a warn-by-default lint suggesting to use `repr(ordered_fields)`. Since the most likely reason to do this is if you haven't heard of `repr(ordered_fields)` or are upgrading to the most recent Rust version (which now contains `repr(ordered_fields)`).
+
+If *any* extern block or function (including `extern "Rust"`) is used in the crate, then this lint will not be triggered. This way we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
+
+```
+warning: use of `repr(C)` in type `Foo`
+  --> src/main.rs:14:10
+   |
+14 |     #[repr(C)]
+   |       ^^^^^^^ help: consider switching to `repr(ordered_fields)`
+   |     struct Foo {
+   |
+   = note: `#[warn(suspicious_repr_c)]` on by default
+   = note: `repr(C)` is intended for FFI, and since there are no `extern` blocks or functions, it's likely that you meant to use `repr(ordered_fields)` to get a stable and consistent layout for your type
 ```
 
 After enough time has passed, and the community has switched over:
@@ -326,6 +343,7 @@ See Rationale and Alternatives as well
     * Leaning towards no
 * Should we warn on `repr(ordered_fields)` when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type.
+* What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
