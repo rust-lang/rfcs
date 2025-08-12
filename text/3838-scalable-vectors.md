@@ -267,8 +267,6 @@ codegen backend:
       element of the same type (but only if that struct is annotated with
       `#[rustc_scalable_vector]`)
 
-- Cannot be used in arrays
-
 - Cannot be the type of a static variable
 
 - Cannot be instantiated into generic functions (see
