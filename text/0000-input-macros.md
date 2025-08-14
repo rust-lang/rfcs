@@ -172,6 +172,8 @@ Explaining the idea is not a rabbit hole, it's a very basic idea.
 [reference-level-explanation]: #reference-level-explanation
 
 ```rs
+use std::{fmt::Arguments, io::{self, BufRead, Write}, str::FromStr};
+
 /// A macro that:
 /// - optionally prints a prompt (with `print!`).
 /// - reads **one line** from stdin.
@@ -248,6 +250,7 @@ macro_rules! inputln {
 pub fn read_input_from<R, T>(
     reader: &mut R,
     prompt: Option<Arguments<'_>>,
+    print_style: PrintStyle,
 ) -> Result<T, InputError<T::Err>>
 where
     R: BufRead,
@@ -282,7 +285,7 @@ where
 }
 
 /// A unified error type indicating either an I/O error, a parse error, or EOF.
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum InputError<E> {
     /// An I/O error occurred (e.g., closed stdin).
     Io(io::Error),
