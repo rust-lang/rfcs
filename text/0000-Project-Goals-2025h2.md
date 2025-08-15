@@ -30,7 +30,7 @@ This period we have 12 flagship goals, broken out into four themes:
 
 * [Beyond the `&`](#beyond-the-), making it possible to create user-defined smart pointers that are as ergonomic as Rust's built-in references `&`.
 * [Unblocking dormant traits](#unblocking-dormant-traits), extending the core capabilities of Rust's trait system to unblock long-desired features for language interop, lending iteration, and more.
-* [Flexible, fast(er) Rust builds](#flexible-faster-rust-builds), making Rust's builds fasterand improving support for specialized build scenarios like embedded usage and sanitizers.
+* [Flexible, fast(er) Rust builds](#flexible-faster-rust-builds), making Rust's builds faster and improving support for specialized build scenarios like embedded usage and sanitizers.
 * [Higher-level Rust](#higher-level-rust), making higher-level usage patterns in Rust easier.
 
 ### "Beyond the `&`"
