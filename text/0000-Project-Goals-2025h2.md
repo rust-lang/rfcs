@@ -1,7 +1,7 @@
 - Feature Name: N/A
 - Start Date: (fill me in with today's date, YYYY-MM-DD)
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/issues/0000)(https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)(https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3849](https://github.com/rust-lang/rfcs/issues/3849)
+- Rust Issue: N/A
 
 # Summary
 [summary]: #summary
@@ -106,7 +106,7 @@ The full slate of project goals are as follows. These goals all have identified 
 | [Nightly support for Autoreborrow traits](https://rust-lang.github.io/rust-project-goals/2025h2/autoreborrow-traits.html)                                          | [Aapo Alasuutari][]        | [compiler] ([Oliver Scherer][]), [lang] ([Tyler Mandry][]), [types]                                     |
 | [build-std](https://rust-lang.github.io/rust-project-goals/2025h2/build-std.html)                                                                                  | [David Wood][]       | [cargo] ([Eric Huss][]), [compiler] ([David Wood][]), [libs] ([Amanieu d'Antras][])                          |
 | [Prototype Cargo build analysis](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-build-analysis.html)                                                  | [Weihang Lo][]       | [cargo] ([@whlo][])                                                                       |
-| [Rework Cargo Build Dir Layout](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-build-dir-layout.html)                                                 | [@ranger-ross][]     | [cargo] ([@whlo][])                                                                       |
+| [Rework Cargo Build Dir Layout](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-build-dir-layout.html)                                                 | [Ross Sullivan][]     | [cargo] ([@whlo][])                                                                       |
 | [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-plumbing.html)                                      | ![Help Wanted][] | [cargo]                                                                               |
 | [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-script.html)                                                                  | [Ed Page][]           | [cargo] ([Ed Page][]), [compiler], [lang] ([Josh Triplett][]), [lang-docs] ([Josh Triplett][])     |
 | [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-semver-checks.html)         | [Predrag Gruevski][]      | [cargo] ([Ed Page][]), [rustdoc] ([Alona Enraght-Moony][])                                          |
@@ -734,7 +734,7 @@ That's a tough one. Part of the reason to have champions is to help us filter ou
 [Predrag Gruevski]: https://github.com/obi1kenobi
 [Oliver Scherer]: https://github.com/oli-obk
 [Vadim Petrochenkov]: https://github.com/petrochenkov
-[@ranger-ross]: https://github.com/ranger-ross
+[Ross Sullivan]: https://github.com/ranger-ross
 [Ben Kimock]: https://github.com/saethlin
 [Scott McMurray]: https://github.com/scottmcm
 [Santiago Pastorino]: https://github.com/spastorino
