@@ -103,7 +103,7 @@ The exact algorithm is deferred to whatever the default target C compiler does w
 > - edited version of the [reference](https://doc.rust-lang.org/stable/reference/type-layout.html#the-c-representation) on `repr(C)`
 ### struct
 Structs are laid out in memory in declaration order, with padding bytes added as necessary to preserve alignment.
-And their alignment is the same as their most aligned field.
+The alignment of a struct is the same as the alignment of the most aligned field.
 
 ```rust
 // assuming that u32 is aligned to 4 bytes
