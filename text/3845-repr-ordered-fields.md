@@ -9,9 +9,9 @@
 Introduce a new `repr` (let's call it `repr(ordered_fields)`, but that can be bikeshedded if this RFC is accepted) that can be applied to `struct`, `enum`, and `union` types, which guarantees a simple and predictable layout. Then provide an initial migration plan to switch users from `repr(C)` to `repr(ordered_fields)`. This allows restricting the meaning of `repr(C)` to just serve the FFI use-case.
 
 Introduce two new warnings
-1. An optional edition warning, when updating to the next edition, that the meaning of `repr(C)` is changing.
-2. A warn-by-default lint when `repr(ordered_fields)` is used on enums without the tag type specified. Since this is likely not what the user wanted.
-3. A warn-by-default lint when `repr(C)` is used, and there are no `extern` blocks or functions in the crate (on all editions).
+1. An edition migration warning, when updating to the next edition, that the meaning of `repr(C)` is changing
+2. A warn-by-default lint when `repr(ordered_fields)` is used on enums without the tag type specified. Since this is likely not what the user wanted
+3. A warn-by-default lint when `repr(C)` is used, and there are no `extern` blocks or functions in the crate (on all editions)
 
 # Motivation
 [motivation]: #motivation
@@ -36,7 +36,13 @@ struct SomeFFI([i64; 0]);
 
 Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
 
-A tertiary motivation is to make progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). This proposal doesn't attempt a complete solution for the bug, but it will be a necessary component of any solution to the bug. 
+The next two cases will not be solved by this RFC, but this RFC will provide the necessary parts steps towards the respective fixes.
+
+This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), where `repr(C, packed(N))` wants allow fields which are `align(M)` (while making the `repr(C, ...)` struct less packed). This is a footgun for normal uses of `repr(packed)`, so it would be better to relegate this strictly to the FFI use-case. However, since `repr(C)` plays two roles, this is difficult.
+
+By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, packed(N))` to contain over-aligned fields (while making the struct less packed), and (continuing to) disallow `repr(ordered_fields, packed(N))` from containing aligned fields. Thus keeping the Rust-only case free of warts, without compromising on FFI use-cases.
+
+The final motivation is to make progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). 
 
 The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8-bytes, and may instead only align them to 4 bytes.
 
@@ -65,6 +71,8 @@ warning: use of `repr(C)` in type `Foo`
 Using `repr(C)` on all editions (including > 2024) when there are no extern blocks or functions in the crate will trigger a warn-by-default lint suggesting to use `repr(ordered_fields)`. Since the most likely reason to do this is if you haven't heard of `repr(ordered_fields)` or are upgrading to the most recent Rust version (which now contains `repr(ordered_fields)`).
 
 If *any* extern block or function (including `extern "Rust"`) is used in the crate, then this lint will not be triggered. This way we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
+
+This does miss one potential use-case, where a crate provides a suite of FFI-capable types, but does not actually provide any `extern` functions or blocks. This should be an extremely small minority of crates, and they can silence this warning crate-wide.
 
 The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c`.
 
@@ -165,7 +173,7 @@ enum FooEnumUnsigned {
 }
 ```
 
-Enums with fields will be laid out as if they were a union of structs.
+Enums with fields will be laid out as if they were a struct containing the tag and a union of structs containing the data.
 
 For example, this would be laid out the same as the union below
 ```rust
@@ -182,7 +190,13 @@ enum BarEnum {
 
 ```rust
 #[repr(ordered_fields)]
-union BarUnion {
+struct BarEnumRepr {
+	tag: BarTag,
+	data: BarEnumData,
+}
+
+#[repr(ordered_fields)]
+union BarEnumData {
     var1: VarFieldless,
     var2: VarTuple,
     var3: VarStruct,
@@ -196,16 +210,13 @@ enum BarTag {
 }
 
 #[repr(ordered_fields)]
-struct VarFieldless {
-    tag: BarTag,
-}
+struct VarFieldless;
 
 #[repr(ordered_fields)]
-struct VarTuple(BarTag, u8, u32);
+struct VarTuple(u8, u32);
 
 #[repr(ordered_fields)]
 struct VarStruct {
-	tag: BarTag,
 	a: u16,
 	b: u32
 }
@@ -250,39 +261,31 @@ fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError>
     Ok(layout.pad_to_align())
 }
 
-/// Takes in the layout of each variant (and their fields) (in declaration order)
-/// and returns the offsets of all fields of the enum, and the layout of the entire enum
+/// Takes in the layout of each variant (and their fields) (in declaration order), and returns the layout of the entire enum
+/// the offsets of all fields of the enum is left as an excersize for the readers
 /// NOTE: the enum tag is always at offset 0
 fn get_layout_for_enum(
     // the discriminants may be negative for some enums
     // or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
     discriminants: &[BigInteger],
     variant_layouts: &[&[Layout]]
-) -> Result<(Vec<Vec<usize>>, Layout), LayoutError> {
+) -> Result<Layout, LayoutError> {
     assert_eq!(discriminants.len(), variant_layouts.len());
-    
-    let mut layout = Layout::new::<()>();
-    let mut variant_field_offsets = Vec::new();
-    
-    let mut variant_with_tag = Vec::new();
-    // gives the tag used by `repr(C)` enums
-    let tag_layout = get_layout_for_tag(discriminants);
-    // ensure that the tag is the first field
-    variant_with_tag.push(tag_layout);
 
-    for &variant in variant_layouts {
-        variant_with_tag.truncate(1);
-        // put all other fields of the variant after this one
-        variant_with_tag.extend_from_slice(variant);
-        let (mut offsets, variant_layout) = get_layout_for_struct(&variant_with_tag)?;
-        // remove the tag so the caller only gets the fields they provided in order
-        offsets.remove(0);
-        
-        variant_field_offsets.push(offsets);
-        layout = layout_max(layout, variant_layout)?;
-    }
+    let variant_data_layout = variant_layouts.iter()
+        .try_fold(
+            Layout::new::<()>(),
+            |acc, variant_layout| Ok(layout_max(acc, get_layout_for_struct(variant_layout)?.1)?)
+        )?;
     
-    Ok((variant_field_offsets, layout))
+    let tag_layout = get_layout_for_tag(discriminants);
+
+    let (_, layout) = get_layout_for_struct(&[
+        tag_layout,
+        variant_data_layout
+    ])?;
+
+    Ok(layout)
 }
 ```
 ### Migration to `repr(ordered_fields)`
