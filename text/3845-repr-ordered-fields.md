@@ -262,7 +262,7 @@ fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError>
 }
 
 /// Takes in the layout of each variant (and their fields) (in declaration order), and returns the layout of the entire enum
-/// the offsets of all fields of the enum is left as an excersize for the readers
+/// the offsets of all fields of the enum is left as an exercise for the readers
 /// NOTE: the enum tag is always at offset 0
 fn get_layout_for_enum(
     // the discriminants may be negative for some enums
