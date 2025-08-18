@@ -36,7 +36,7 @@ struct SomeFFI([i64; 0]);
 
 Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
 
-The next two cases will not be solved by this RFC, but this RFC will provide the necessary parts steps towards the respective fixes.
+The next two cases will not be solved by this RFC, but this RFC will provide the necessary steps towards the respective fixes.
 
 This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), where `repr(C, packed(N))` wants allow fields which are `align(M)` (while making the `repr(C, ...)` struct less packed). This is a footgun for normal uses of `repr(packed)`, so it would be better to relegate this strictly to the FFI use-case. However, since `repr(C)` plays two roles, this is difficult.
 
