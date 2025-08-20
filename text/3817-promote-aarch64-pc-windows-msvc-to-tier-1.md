@@ -1,7 +1,7 @@
 - Feature Name: promote-aarch64-pc-windows-msvc-to-tier-1
 - Start Date: 2025-05-22
 - RFC PR: [rust-lang/rfcs#3817](https://github.com/rust-lang/rfcs/pull/3817)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue: [rust-lang/rust#145671](https://github.com/rust-lang/rust/issues/145671)
 
 # Summary
 [summary]: #summary
