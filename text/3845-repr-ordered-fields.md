@@ -42,11 +42,20 @@ This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), 
 
 By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, packed(N))` to contain over-aligned fields (while making the struct less packed), and (continuing to) disallow `repr(ordered_fields, packed(N))` from containing aligned fields. Thus keeping the Rust-only case free of warts, without compromising on FFI use-cases.
 
-The final motivation is to make progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). 
+Splitting `repr(C)` also allows making progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480) and a similar AIX [issue](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594). 
 
 The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8-bytes, and may instead only align them to 4 bytes.
 
 Any proper work around will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting what `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
+
+For AIX, the issue is that `f64` is treated as aligned to 4-bytes if it is not the first field in a struct. i.e.
+```C
+struct Foo {
+	char a;
+	double b;
+}
+```
+Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has alignment 8 in Rust). Again, any proper workaround will require reducing the alignment of `f64`, and adjusting `repr(C)`.
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
