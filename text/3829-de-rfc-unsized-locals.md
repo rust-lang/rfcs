@@ -87,8 +87,7 @@ Especially around strings, which are often user-controlled, this easily leads to
 Rust's strings, reference types, and `Sized` are a part of the language that can often be hard to understand for beginners coming from garbage-collected languages.
 By allowing people to create a dynamic stack allocation without being aware of what is happening, we open the doors for people, especially new Rust programmers who are not intimately familiar with the tradeoffs of dynamic stack allocation, to shoot themselves in the foot and become vulnerable to unexpected crashes.
 
-As a _dangerous_ feature, dynamic stack allocation must be explicit and obvious - and `unsized_locals` makes it implicit _by design_.
-Therefore, `unsized_locals` must go.
+As a _dangerous_ feature, dynamic stack allocation must be explicit and obvious - and `unsized_locals` makes it implicit _by design_, a major downside of this feature that has not been addressed in prior RFCs.
 
 `unsized_locals` is not the only feature that can cause unbounded stack allocation and eventually lead to stack overflow in Rust, one has to look no further than Dijkstra's favorite: recursion.
 A program with unbounded recursion is easily found and fixed, but especially recursive parsers suffer from similar problems where user input can cause stack overflows.
@@ -105,6 +104,8 @@ The Linux kernel has spent a lot of time on getting VLAs (C's cousin to `unsized
 The `unsized_locals` feature is removed from the compiler and [RFC 1909] is officially unaccepted.
 
 If someone wants to bring dynamic stack allocation into Rust again, a new design will have to be designed from scratch, considering all the problems laid out in this RFC.
+Alternatively, the existing design of `unsized_locals` *could* be RFCed again, if such an RFC was able to work around all the problems.
+This RFC merely unaccepts the previous `unsized_locals` RFC, it does not necessarily banish `unsized_locals` from existence forever.
 
 This does not have a negative effect on features that feature unsized values in function signatures like `unsized_fn_params`.
 Their behavior is much more clear and they are implemented differently.
