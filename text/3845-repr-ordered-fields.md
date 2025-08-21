@@ -24,7 +24,16 @@ But in some cases, these two cases are in tension due to platform weirdness (eve
 * https://github.com/rust-lang/unsafe-code-guidelines/issues/521
 * https://github.com/rust-lang/rust/issues/81996
 
-Providing any fix for case 2 would subtly break any users of case 1, which makes this difficult to fix within a single edition. 
+Code in case 1 generally falls into one of these buckets:
+* rely on the exact layout being consistent across platforms
+	* for example, zero-copy deserialization (see [rkyv](https://crates.io/crates/rkyv))
+* be manually calculating the offsets of fields
+	* This is common in code written before the stabilization of `offset_of` (currently only stabilized for `struct`)
+* be manually calculating the layout for a DST, to prepare an allocation (see [slice-dst](https://crates.io/crates/slice-dst), specifically [here](https://github.com/CAD97/pointer-utils/blob/0fe399f8f7e519959224069360f3900189086683/crates/slice-dst/src/lib.rs#L162-L163))
+* to match layouts of two different types (or even, two different monomorphizations of the same generic type)
+	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`
+
+So, providing any fix for case 2 would subtly break any users of case 1. This breakage cannot be checked easily since it relies on unsafe code making assumptions about data layouts, which makes this difficult to fix within a single edition.
 
 As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for  ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
 
@@ -56,6 +65,8 @@ struct Foo {
 }
 ```
 Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has alignment 8 in Rust). Again, any proper workaround will require reducing the alignment of `f64`, and adjusting `repr(C)`.
+
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
