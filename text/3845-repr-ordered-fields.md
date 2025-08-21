@@ -29,7 +29,7 @@ Code in case 1 generally falls into one of these buckets:
 	* for example, zero-copy deserialization (see [rkyv](https://crates.io/crates/rkyv))
 * manually calculating the offsets of fields
 	* This is common in code written before the stabilization of `offset_of` (currently only stabilized for `struct`)/`&raw const`/`&raw mut`
-	* But sometimes this is still required if you are doing manually type-erasure and handling DSTs (for example, implementing [`erasable::Erasable`](https://docs.rs/erasable/1.3.0/erasable/trait.Erasable.html))
+	* But sometimes this is still required if you are manually doing type-erasure and handling DSTs (for example, implementing [`erasable::Erasable`](https://docs.rs/erasable/1.3.0/erasable/trait.Erasable.html))
 * manually calculating the layout for a DST, to prepare an allocation (see [slice-dst](https://crates.io/crates/slice-dst), specifically [here](https://github.com/CAD97/pointer-utils/blob/0fe399f8f7e519959224069360f3900189086683/crates/slice-dst/src/lib.rs#L162-L163))
 * match layouts of two different types (or even, two different monomorphizations of the same generic type)
 	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`
