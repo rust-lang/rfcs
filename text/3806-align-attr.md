@@ -310,7 +310,7 @@ from an incorrect function signature.
 
 If a function item in an `extern` block does *not* specify `#[align(…)]`, then a
 function pointer derived from that item may have any alignment. In other words,
-the following assertion could fail, on any platform:
+the following assertion may fail on any platform:
 
 ```rust
 mod inner {
@@ -325,7 +325,7 @@ unsafe extern "Rust" {
 
 fn main() {
     let foo_addr = foo as fn() as usize;
-    assert_eq!(foo_addr & 63, 0);
+    assert!(foo_addr.is_multiple_of(64));
 }
 ```
 
