@@ -269,6 +269,13 @@ fn main() {
 }
 ```
 
+### `derive` macro helper ambiguity
+
+Some existing `derive` macros in the ecosystem currently declare `align` as a
+helper attribute. To avoid breakage, we specify that `derive` helper attributes
+shadow built-in attributes of the same name (so the built-in attribute does not
+take effect). A warn-by-default lint is triggered when this occurs.
+
 ## On function items
 
 On function items, `#[align(…)]` sets the alignment of the function’s entry
