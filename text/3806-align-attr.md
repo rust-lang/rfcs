@@ -301,8 +301,30 @@ a requirement on the symbol being linked to. The UB that can result if this
 alignment is not satisfied, follows the same rules as the UB that can result
 from an incorrect function signature.
 
+If a function item in an `extern` block does *not* specify `#[align(…)]`, then a
+function pointer derived from that item may have any alignment. In other words,
+the following assertion could fail, on any platform:
+
+```rust
+mod inner {
+    #[unsafe(no_mangle)]
+    #[align(64)]
+    fn foo() {}
+}
+
+unsafe extern "Rust" {
+    safe fn foo(); // no `#[align(…)]` specification here
+}
+
+fn main() {
+    let foo_addr = foo as fn() as usize;
+    assert_eq!(foo_addr & 63, 0);
+}
+```
+
 When `#[align(…)]` is combined with `#[track_caller]`, the attribute applies to
-the shim that is generated for calls via function pointer.
+the shim that is generated for calls via function pointer, as well as to the
+primary function (though the alignment of the latter is usually not observable).
 
 WASM targets will most likely not support function alignments above 1, at least
 initially.
