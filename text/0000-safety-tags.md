@@ -15,20 +15,20 @@ requirement into a single, check-off reminder.
 The following snippet [compiles] today if we enable enough nightly features, but we expect Clippy
 and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 
-[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=322dbd93610aca05db49382802c732c3
+[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=34c1b3d4c13685bae6da6eb299fded95
 
 ```rust
-#[safety::requires { // 💡 define safety tags on an unsafe function
+#[safety::requires( // 💡 define safety tags on an unsafe function
     ValidPtr = "src must be [valid](https://doc.rust-lang.org/std/ptr/index.html#safety) for reads",
     Aligned = "src must be properly aligned, even if T has size 0",
     Initialized = "src must point to a properly initialized value of type T"
-}]
+)]
 pub unsafe fn read<T>(ptr: *const T) { }
 
 fn main() {
-    #[safety::checked { // 💡 discharge safety tags on an unsafe call
+    #[safety::checked( // 💡 discharge safety tags on an unsafe call
         ValidPtr, Aligned, Initialized = "optional reason"
-    }]
+    )]
     unsafe { read(&()) };
 }
 ```
@@ -130,11 +130,9 @@ propose that `#[safety]` be implicitly registered for every crate.
 Syntax of a safety tag is defined as follows:
 
 ```text
-SafetyTag -> `#` `[` `safety::` Operation Object `]`
+SafetyTags -> `#` `[` `safety::` Operation `(` Tags `)` `]`
 
-Operation -> requires | checked
-
-Object -> `[` Tags `]` | `(` Tags `)` | `{` Tags `}`
+Operation -> `requires` | `checked`
 
 Tags -> Tag (`,` Tag)* `,`?
 
@@ -150,15 +148,15 @@ Take [`ptr::read`] as an example: its safety comment lists three requirements, s
 corresponding tags on the function declaration and mark each one off at the call site.
 
 Note that a tag definition must contain human text to describe safety requirements for readers to
-understand them and Clippy to emit good error messages.
+understand them and Clippy to emit good diagnostic messages.
 
 ```rust
-#[safety::requires { // defsite or definition
+#[safety::requires( // defsite or definition
   ValidPtr = "definition1", Aligned = "definition2", Initialized = "definition3"
-}] 
+)] 
 pub unsafe fn read<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked { ValidPtr, Aligned, Initialized }] // callsite or discharge
+#[safety::checked( ValidPtr, Aligned, Initialized )] // callsite or discharge
 unsafe { read(ptr) };
 ```
 
@@ -167,14 +165,14 @@ We can also attach comments for a tag to clarify how safety requirements are met
 ```rust
 for _ in 0..n {
     unsafe {
-        #[safety::checked { ValidPtr, Aligned, Initialized =
+        #[safety::checked(ValidPtr, Aligned, Initialized =
             "addr range p..p+n is properly initialized from aligned memory"
-        }]
+        )]
         c ^= p.read();
 
-        #[safety::checked { InBounded, ValidNum =
+        #[safety::checked(InBounded, ValidNum =
             "`n` won't exceed isize::MAX here, so `p.add(n)` is fine"
-        }]
+        )]
         p = p.add(1);
     }
 }
@@ -212,9 +210,9 @@ Now consider forwarding invariants of unsafe callees onto the unsafe caller for 
 propogation:
 
 ```rust
-#[safety::requires { ValidPtr = "...", Aligned = "...", Initialized = "..." }]
+#[safety::requires(ValidPtr = "...", Aligned = "...", Initialized = "...")]
 unsafe fn propogation<T>(ptr: *const T) -> T {
-    #[safety::checked { ValidPtr, Aligned, Initialized }]
+    #[safety::checked(ValidPtr, Aligned, Initialized)]
     unsafe { read(ptr) }
 }
 ```
@@ -222,9 +220,9 @@ unsafe fn propogation<T>(ptr: *const T) -> T {
 Tags defined on an unsafe function must be **fully** discharged at callsites. No partial discharge:
 
 ```rust
-#[safety::requires { ValidPtr = "...", Initialized = "..." }]
+#[safety::requires(ValidPtr = "...", Initialized = "...")]
 unsafe fn delegation<T>(ptr: *const T) -> T {
-    #[safety::checked { Aligned }] // 💥 Error: Tags are not fully discharged. 
+    #[safety::checked(Aligned)] // 💥 warning: Tags are not fully discharged. 
     unsafe { read(ptr) }
 }
 ```
@@ -233,16 +231,16 @@ For such partial unsafe delegations, please fully discharge tags on the callee a
 tags on the caller.
 
 ```rust
-#[safety::requires { ValidPtr = "...", Initialized = "..." }]
+#[safety::requires(ValidPtr = "...", Initialized = "...")]
 unsafe fn delegation<T>(ptr: *const T) -> T {
     let align = mem::align_of::<T>();
     let addr = ptr as usize;
     let aligned_addr = (addr + align - 1) & !(align - 1);
 
-    #[safety::checked {
+    #[safety::checked(
       Aligned = "alignment of ptr has be adjusted",
       ValidPtr, Initialized = "delegated to the caller"
-    }]
+    )]
     unsafe { read(ptr) }
 }
 ```
@@ -252,12 +250,12 @@ invariants, and define the new tag on `delegation` function. This practice exten
 delegation of multiple tag discharges:
 
 ```rust
-#[safety::requires { MyInvariant = "Invariants of A and C, but could be a more contextual name." }]
+#[safety::requires(MyInvariant = "Invariants of A and C, but could be a more contextual name.")]
 unsafe fn delegation() {
     unsafe {
-        #[safety::checked { A = "delegated to the caller's MyInvariant", B }]
+        #[safety::checked(A = "delegated to the caller's MyInvariant", B)]
         foo();
-        #[safety::checked { C = "delegated to the caller's MyInvariant", D }]
+        #[safety::checked(C = "delegated to the caller's MyInvariant", D)]
         bar();
     }
 }
@@ -314,11 +312,11 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```rust
 /// # Safety
 /// Behavior is undefined if any of the following conditions are violated:
-#[safety::requires {
+#[safety::requires(
     ValidPtr =  "`src` must be [valid] for reads";
     Aligned = "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
     Initialized = "`src` must point to a properly initialized value of type `T`"
-}]
+)]
 /// # Examples
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
@@ -516,10 +514,10 @@ There are alternative discussion or Pre-RFCs on IRLO:
 Our proposed syntax looks closer to structured comments:
 
 ```rust
-#[safety::checked {
+#[safety::checked(
   ValidPtr, Align, Initialized = "`self.head_tail()` returns two slices to live elements.",
   NotOwned = "because we incremented...",
-}]
+)]
 unsafe { ptr::read(elem) }
 ```
 
@@ -565,16 +563,16 @@ We could allow *any* arguments in tag usage without validation. Tag arguments wo
 description of an unsafe operation, but they are never type checked. An example:
 
 ```rust
-#[safety::requires {
+#[safety::requires(
   ValidPtr = {
     args = [ "p", "T", "len" ],
     desc = "pointer `{p}` must be valid for \
       reading and writing the `sizeof({T})*{n}` memory from it"
   }
-}]
+)]
 unsafe fn foo<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked { ValidPtr(p) }] // p will not be type-checked
+#[safety::checked(ValidPtr(p))] // p will not be type-checked
 unsafe { bar(p) }
 ```
 
@@ -615,7 +613,7 @@ discharge either `DropCheck` or `CopyType` at the call site, depending on the co
 
 Another instance is `<*const T>::as_ref`, whose safety doc states that the caller must guarantee
 “the pointer is either null or safely convertible to a reference”. This can be expressed as
-`#[safety::requires { any = { Null, ValidPtr2Ref } }]`, allowing the caller to discharge whichever
+`#[safety::requires(any = { Null, ValidPtr2Ref })]`, allowing the caller to discharge whichever
 tag applies.
 
 ## Entity References and Code Review Enhancement
@@ -641,10 +639,10 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
         guard.consumed += 1;
 
         #[safety::ref(try_fold)] // 💡
-        #[safety::checked { ValidPtr, Aligned, Initialized, DropCheck =
+        #[safety::checked(ValidPtr, Aligned, Initialized, DropCheck =
             "Because we incremented `guard.consumed`, the deque \
              effectively forgot the element, so we can take ownership."
-        }]
+        )]
         unsafe { ptr::read(elem) }
     })
     .try_fold(init, &mut f)?;
