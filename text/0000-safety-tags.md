@@ -287,8 +287,10 @@ against [Semantic Versioning][semver].
 
 NOTE:
 * `requires` or `checked` can be specified multiple times, and they will be merged together.
-  * Duplicate tags in `requires` will trigger errors.
-  * Duplicate tags in `checked` will trigger warning-by-default diagnostics.
+  * Duplicate tags in `requires` will trigger errors, due to no description merge in definitions.
+  * Duplicate tags in `checked` will trigger warnings by default, as `checked` is lenient in
+    diagnostics. This leniency also applies when a defined tag is omitted or a non-existent tag is
+    added. However, Clippy lint levels can be configured to treat such checks as hard errors.
 * the scope of a tag is limited to the defining unsafe function, so identical tag name on different
   unsafe functions won't affect each other.
 
@@ -602,6 +604,11 @@ struct, enum, or union is neither needed nor permitted.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
+
+## Upgrade tag checking in `cargo check` 
+
+If safety tags become standard practice or are widely accepted, tag checks could be integrated into
+rustc, allowing `cargo check` to perform these checks.
 
 ## Discharge One Tag from `any = { Option1, Option2 }`
 
