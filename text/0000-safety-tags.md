@@ -245,6 +245,12 @@ unsafe fn delegation<T>(ptr: *const T) -> T {
 }
 ```
 
+The tags `ValidPtr` and `Initialized = "delegated to the caller"` are grouped together. We do not
+introduce new syntax for grouping tags but instead suggest visually grouping them for clarity. When
+`rustfmt` automatically formats `ValidPtr` to its own line, the only workaround is to set
+`attr_fn_like_width = 0` in the `rustfmt.toml` configuration file. For further discussion on this
+tag styling, see this [link](https://github.com/rust-lang/rfcs/pull/3842#discussion_r2296076785).
+
 In this delegation case, you're able to declare a new meaningful tag for ValidPtr and Initialized
 invariants, and define the new tag on `delegation` function. This practice extends to partial unsafe
 delegation of multiple tag discharges:
@@ -601,6 +607,23 @@ following cases:
 
 But we believe safety requirements are almost mostly imposed by unsafe functions, so tagging a
 struct, enum, or union is neither needed nor permitted.
+
+## Tag naming convention
+
+There are two primary conventions for naming tags: `PascalCase` (also known as `UpperCamelCase`) and
+`snake_case`.
+
+We might consider recommending just one convention for consistency, but it's challenging to
+determine whether a tag functions more like a type-level construct (semantically akin to an
+uninhabited enum) or a value-level construct (such as a function, especially if tags can take
+arguments).
+
+To accommodate both styles, we could provide an option that allows users to unify their code style
+or lint against the alternative convention:
+
+```rust
+#![safety::tag_naming_convention = "PascalCase"] // in root module
+```
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
