@@ -355,7 +355,7 @@ their call sites. To enable experimentation, a nightly-only library feature
 
 Procedure:
 
-1. Validate `#[safety::requires]` only appears on unsafe functions if the attribute exists.
+1. Validate `#[safety::requires]` only appears on functions with the `unsafe` qualifier.
    - Merge tags in multiple `requires` on the same function. Emit error if tag name duplicates.
 2. Validate `#[safety::checked]` on HIR nodes whose `ExprKind` is one of
    - **direct unsafe nodes**: `Call`, `MethodCall` that invoke an unsafe function/method, or
@@ -448,7 +448,7 @@ We therefore seek approvals from the following teams:
 2. **Clippy team** – to integrate tag checking into the linter.
 3. **Rust-Analyzer team** – to add IDE support for tags.
 3. **Rustdoc team** – to render tags to docs.
-4. **Compiler team** – to reserve the `safety` namespace and gate the feature via
+4. **Language team** – to reserve the `safety` namespace and gate the feature via
    `#![feature(safety_tags)]` for the namespace and tag APIs in standard libraries.
 
 [safety-tool]: https://github.com/Artisan-Lab/tag-std/blob/main/safety-tool
