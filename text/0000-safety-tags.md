@@ -717,3 +717,6 @@ locations and thus can assess if every referenced safety requirement is still sa
 Clippy can generate a diff-style report that pinpoints every location where changes to referenced
 HIR nodes occur between two commits or crate versions, enabling more focused code reviews. To
 improve dev experiences, Rust-Analyzer can retrieve every ref sites from a given ref tag object.
+
+NOTE: `ref` is a reserved keyword, so attribute candidates are `#[safety::tag]`, `#[safety::cue]`,
+and `#[safety::cite]`.
