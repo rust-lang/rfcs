@@ -525,7 +525,7 @@ Our proposed syntax looks closer to structured comments:
 
 ```rust
 #[safety::checked(
-  valid_ptr, align, initialized = "`self.head_tail()` returns two slices to live elements.",
+  valid_ptr, aligned, initialized = "`self.head_tail()` returns two slices to live elements.",
   not_owned = "because we incremented...",
 )]
 unsafe { ptr::read(elem) }
@@ -609,6 +609,71 @@ following cases:
 
 But we believe safety requirements are almost mostly imposed by unsafe functions, so tagging a
 struct, enum, or union is neither needed nor permitted.
+
+## `#[safety::batch_checked]` Shares Tag Discharging
+
+Discharging the same tags simultaneously can be convenient. However, supporting this means that tags
+in `checked` are applied to multiple unsafe operations. As a result, obligations are discharged
+extensively across various contexts, including nested and chained calls, different calls, as well as
+repeated calls with different values. This could lead to confusion and potential misuse, making it
+unclear what has been checked in shared mode or single mode. Partial discharging can be dangerous.
+
+I believe it is less error-prone to let `safety::checked` handle atomic discharging. Therefore, we
+should introduce a new attribute named `safety::batch_checked` to support the discharging of shared
+tags. This approach allows us to distinguish between different discharging semantics through
+different syntaxes.
+
+```rust
+#[safety::batch_checked( // automatically merged this tag into `checked` if it's required
+  aligned = "the place is aligned correctly for i32 by providing correct layout above"
+)]
+unsafe {
+    #[safety::checked(
+      valid_for_reads = "the place is newly allocated, so we have exclusive ownership of it"
+    )]
+    ptr.write(42);
+
+    #[safety::checked(
+      valid_for_reads = "we have exclusive ownership",
+      initialized = "just initialized above"
+    )]
+    assert_eq!(ptr.read(), 42);
+}
+
+#[safety::batch_checked(
+  aligned = "arrays are properly aligned",
+  valid_for_reads = "the arrays are owned by this function, and contain the copy type f32",
+)]
+unsafe {
+    float32x4x4_t(
+        vld1q_f32(a.as_ptr()),
+        vld1q_f32(b.as_ptr()),
+        vld1q_f32(c.as_ptr()),
+        vld1q_f32(d.as_ptr()),
+    )
+}
+```
+
+Atomic discharging saves us from visual unsafe granularity, and focus on semantic unsafe
+granularity, because any use of `checked` is only valid for single unsafe operation.
+
+```rust
+#[safety::checked(...)] // ❌ hard error
+unsafe { char::from_u32_unchecked(*ptr.cast::<u32>()) }
+
+#[safety::batch_checked(...)] // ✅
+unsafe { char::from_u32_unchecked(*ptr.cast::<u32>()) }
+
+unsafe {
+  #[safety::checked(...)] // ✅ dereferencing raw pointer is an unsafe operation in future possibilities
+  let int_value = *ptr.cast::<u32>();
+  #[safety::checked(...)] // ✅
+  char::from_u32_unchecked(int_value)
+}
+```
+
+we could have `#[deny(clippy::batch_checked)]` to prohibit any use of `#[safety::batch_checked]` in
+crates if rigid atomic discharging is required.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
