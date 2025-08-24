@@ -15,19 +15,19 @@ requirement into a single, check-off reminder.
 The following snippet [compiles] today if we enable enough nightly features, but we expect Clippy
 and Rust-Analyzer to enforce tag checks and provide first-class IDE support.
 
-[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=34c1b3d4c13685bae6da6eb299fded95
+[compiles]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2024&gist=6b7b341b8879bfdecb80ae72a8011a6d
 
 ```rust
 #[safety::requires( // 💡 define safety tags on an unsafe function
-    ValidPtr = "src must be [valid](https://doc.rust-lang.org/std/ptr/index.html#safety) for reads",
-    Aligned = "src must be properly aligned, even if T has size 0",
-    Initialized = "src must point to a properly initialized value of type T"
+    valid_ptr = "src must be [valid](https://doc.rust-lang.org/std/ptr/index.html#safety) for reads",
+    aligned = "src must be properly aligned, even if T has size 0",
+    initialized = "src must point to a properly initialized value of type T"
 )]
 pub unsafe fn read<T>(ptr: *const T) { }
 
 fn main() {
     #[safety::checked( // 💡 discharge safety tags on an unsafe call
-        ValidPtr, Aligned, Initialized = "optional reason"
+        valid_ptr, aligned, initialized = "optional reason"
     )]
     unsafe { read(&()) };
 }
@@ -152,11 +152,11 @@ understand them and Clippy to emit good diagnostic messages.
 
 ```rust
 #[safety::requires( // defsite or definition
-  ValidPtr = "definition1", Aligned = "definition2", Initialized = "definition3"
-)] 
+  valid_ptr = "definition1", aligned = "definition2", initialized = "definition3"
+)]
 pub unsafe fn read<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked( ValidPtr, Aligned, Initialized )] // callsite or discharge
+#[safety::checked( valid_ptr, aligned, initialized )] // callsite or discharge
 unsafe { read(ptr) };
 ```
 
@@ -165,12 +165,12 @@ We can also attach comments for a tag to clarify how safety requirements are met
 ```rust
 for _ in 0..n {
     unsafe {
-        #[safety::checked(ValidPtr, Aligned, Initialized =
+        #[safety::checked(valid_ptr, aligned, initialized =
             "addr range p..p+n is properly initialized from aligned memory"
         )]
         c ^= p.read();
 
-        #[safety::checked(InBounded, ValidNum =
+        #[safety::checked(in_bound, valid_num =
             "`n` won't exceed isize::MAX here, so `p.add(n)` is fine"
         )]
         p = p.add(1);
@@ -192,16 +192,16 @@ unsafe { ptr::read(ptr) }
 ```
 
 ```rust
-warning: `ValidPtr`, `Aligned`, `Initialized` tags are missing. Add them to `#[safety::checked]`
+warning: `valid_ptr`, `aligned`, `initialized` tags are missing. Add them to `#[safety::checked]`
          once these invariants are confirmed to be satisfied.
    --> file.rs:xxx:xxx
     |
 LLL | unsafe { ptr::read(ptr) }
     | ^^^^^^^^^^^^^^^^^^^^^^^^^ This unsafe call requires these safety tags.
     |
-    = NOTE: ValidPtr = "definition1"
-    = NOTE: Aligned = "definition2"
-    = NOTE: Initialized = "definition3"
+    = NOTE: valid_ptr = "definition1"
+    = NOTE: aligned = "definition2"
+    = NOTE: initialized = "definition3"
 ```
 
 The process of verifying whether a tag is checked is referred to as tag discharge.
@@ -210,9 +210,9 @@ Now consider forwarding invariants of unsafe callees onto the unsafe caller for 
 propogation:
 
 ```rust
-#[safety::requires(ValidPtr = "...", Aligned = "...", Initialized = "...")]
+#[safety::requires(valid_ptr = "...", aligned = "...", initialized = "...")]
 unsafe fn propogation<T>(ptr: *const T) -> T {
-    #[safety::checked(ValidPtr, Aligned, Initialized)]
+    #[safety::checked(valid_ptr, aligned, initialized)]
     unsafe { read(ptr) }
 }
 ```
@@ -220,9 +220,9 @@ unsafe fn propogation<T>(ptr: *const T) -> T {
 Tags defined on an unsafe function must be **fully** discharged at callsites. No partial discharge:
 
 ```rust
-#[safety::requires(ValidPtr = "...", Initialized = "...")]
+#[safety::requires(valid_ptr = "...", initialized = "...")]
 unsafe fn delegation<T>(ptr: *const T) -> T {
-    #[safety::checked(Aligned)] // 💥 warning: Tags are not fully discharged. 
+    #[safety::checked(aligned)] // 💥 warning: Tags are not fully discharged. 
     unsafe { read(ptr) }
 }
 ```
@@ -231,21 +231,21 @@ For such partial unsafe delegations, please fully discharge tags on the callee a
 tags on the caller.
 
 ```rust
-#[safety::requires(ValidPtr = "...", Initialized = "...")]
+#[safety::requires(valid_ptr = "...", initialized = "...")]
 unsafe fn delegation<T>(ptr: *const T) -> T {
     let align = mem::align_of::<T>();
     let addr = ptr as usize;
     let aligned_addr = (addr + align - 1) & !(align - 1);
 
     #[safety::checked(
-      Aligned = "alignment of ptr has be adjusted",
-      ValidPtr, Initialized = "delegated to the caller"
+      aligned = "alignment of ptr has be adjusted",
+      validPtr, initialized = "delegated to the caller"
     )]
     unsafe { read(ptr) }
 }
 ```
 
-The tags `ValidPtr` and `Initialized = "delegated to the caller"` are grouped together. We do not
+`valid_ptr` and `initialized` are grouped together to share "delegated to the caller". We do not
 introduce new syntax for grouping tags but instead suggest visually grouping them for clarity. When
 `rustfmt` automatically formats `ValidPtr` to its own line, the only workaround is to set
 `attr_fn_like_width = 0` in the `rustfmt.toml` configuration file. For further discussion on this
@@ -256,12 +256,12 @@ invariants, and define the new tag on `delegation` function. This practice exten
 delegation of multiple tag discharges:
 
 ```rust
-#[safety::requires(MyInvariant = "Invariants of A and C, but could be a more contextual name.")]
+#[safety::requires(my_invariant = "Invariants of A and C, but could be a more contextual name.")]
 unsafe fn delegation() {
     unsafe {
-        #[safety::checked(A = "delegated to the caller's MyInvariant", B)]
+        #[safety::checked(a = "delegated to the caller's MyInvariant", b)]
         foo();
-        #[safety::checked(C = "delegated to the caller's MyInvariant", D)]
+        #[safety::checked(c = "delegated to the caller's MyInvariant", d)]
         bar();
     }
 }
@@ -305,6 +305,9 @@ NOTE:
 Since tag definitions duplicate safety comments, we propose `rustdoc` can recognize
 `#[safety::requires]` attributes and render them into safety docs.
 
+By convention, tag names are written in `snake_case`. `rustdoc` will replace all underscores (`_`)
+with spaces and capitalize the first letter.
+
 For `ptr::read`, replace the existing comments with safety tags:
 
 ```rust
@@ -321,22 +324,22 @@ pub const unsafe fn read<T>(src: *const T) -> T { ... }
 /// # Safety
 /// Behavior is undefined if any of the following conditions are violated:
 #[safety::requires(
-    ValidPtr =  "`src` must be [valid] for reads";
-    Aligned = "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
-    Initialized = "`src` must point to a properly initialized value of type `T`"
+    valid_ptr =  "`src` must be [valid] for reads";
+    aligned = "`src` must be properly aligned. Use [`read_unaligned`] if this is not the case";
+    initialized = "`src` must point to a properly initialized value of type `T`"
 )]
 /// # Examples
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
 
-Each `Tag = "desc"` item is rendered as `` `Tag`: desc `` list item.
+Each `TagName = "desc"` item is rendered as `Tag name: desc` list item.
 
 ```rust
 /// # Safety
 /// Behavior is undefined if any of the following conditions are violated:
-/// * `ValidPtr`: `src` must be [valid] for reads.
-/// * `Aligned`: `src` must be properly aligned. Use [`read_unaligned`] if this is not the case.
-/// * `Initialized`: `src` must point to a properly initialized value of type `T`.
+/// * Valid ptr: `src` must be [valid] for reads.
+/// * Aligned: `src` must be properly aligned. Use [`read_unaligned`] if this is not the case.
+/// * Initialized: `src` must point to a properly initialized value of type `T`.
 /// # Examples
 pub const unsafe fn read<T>(src: *const T) -> T { ... }
 ```
@@ -399,8 +402,8 @@ Treat `#[safety::requires]` tool attributes on unsafe functions as `#[doc]` attr
 tag names and definitions to render as item list:
 
 ```rust
-#[safety::requires(Tag1 = "definition1")]
-#[safety::requires(Tag2 = "definition2")]
+#[safety::requires(tag1 = "definition1")]
+#[safety::requires(tag2 = "definition2")]
 ```
 
 will be rendered if in markdown syntax
@@ -522,16 +525,16 @@ Our proposed syntax looks closer to structured comments:
 
 ```rust
 #[safety::checked(
-  ValidPtr, Align, Initialized = "`self.head_tail()` returns two slices to live elements.",
-  NotOwned = "because we incremented...",
+  valid_ptr, align, initialized = "`self.head_tail()` returns two slices to live elements.",
+  not_owned = "because we incremented...",
 )]
 unsafe { ptr::read(elem) }
 ```
 
 ```rust
 //  SAFETY
-//  - ValidPtr, Aligned, Initialized: `self.head_tail()` returns two slices to live elements.
-//  - NotOwned: because we incremented...
+//  - Valid ptr, aligned, initialized: `self.head_tail()` returns two slices to live elements.
+//  - Not owned: because we incremented...
 unsafe { ptr::read(elem) }
 ```
 
@@ -571,7 +574,7 @@ description of an unsafe operation, but they are never type checked. An example:
 
 ```rust
 #[safety::requires(
-  ValidPtr = {
+  valid_ptr = {
     args = [ "p", "T", "len" ],
     desc = "pointer `{p}` must be valid for \
       reading and writing the `sizeof({T})*{n}` memory from it"
@@ -579,7 +582,7 @@ description of an unsafe operation, but they are never type checked. An example:
 )]
 unsafe fn foo<T>(ptr: *const T) -> T { ... }
 
-#[safety::checked(ValidPtr(p))] // p will not be type-checked
+#[safety::checked(valid_ptr(p))] // p will not be type-checked
 unsafe { bar(p) }
 ```
 
@@ -607,23 +610,6 @@ following cases:
 But we believe safety requirements are almost mostly imposed by unsafe functions, so tagging a
 struct, enum, or union is neither needed nor permitted.
 
-## Tag naming convention
-
-There are two primary conventions for naming tags: `PascalCase` (also known as `UpperCamelCase`) and
-`snake_case`.
-
-We might consider recommending just one convention for consistency, but it's challenging to
-determine whether a tag functions more like a type-level construct (semantically akin to an
-uninhabited enum) or a value-level construct (such as a function, especially if tags can take
-arguments).
-
-To accommodate both styles, we could provide an option that allows users to unify their code style
-or lint against the alternative convention:
-
-```rust
-#![safety::tag_naming_convention = "PascalCase"] // in root module
-```
-
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
@@ -632,17 +618,17 @@ or lint against the alternative convention:
 If safety tags become standard practice or are widely accepted, tag checks could be integrated into
 rustc, allowing `cargo check` to perform these checks.
 
-## Discharge One Tag from `any = { Option1, Option2 }`
+## Discharge One Tag from `any = { option1, option2 }`
 
 Sometimes it’s useful to declare a set of safety tags on an unsafe function while discharging only
 one of them.
 
-For instance, `ptr::read` could expose the grouped tag `any { DropCheck, CopyType }` and then
-discharge either `DropCheck` or `CopyType` at the call site, depending on the concrete type `T`.
+For instance, `ptr::read` could expose the grouped tag `any { drop_check, copy_type }` and then
+discharge either `drop_check` or `copy_type` at the call site, depending on the concrete type `T`.
 
 Another instance is `<*const T>::as_ref`, whose safety doc states that the caller must guarantee
 “the pointer is either null or safely convertible to a reference”. This can be expressed as
-`#[safety::requires(any = { Null, ValidPtr2Ref })]`, allowing the caller to discharge whichever
+`#[safety::requires(any = { null, valid_ptr_to_ref })]`, allowing the caller to discharge whichever
 tag applies.
 
 ## Entity References and Code Review Enhancement
@@ -668,7 +654,7 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
         guard.consumed += 1;
 
         #[safety::ref(try_fold)] // 💡
-        #[safety::checked(ValidPtr, Aligned, Initialized, DropCheck =
+        #[safety::checked(valid_ptr, aligned, initialized, drop_check =
             "Because we incremented `guard.consumed`, the deque \
              effectively forgot the element, so we can take ownership."
         )]
@@ -680,6 +666,7 @@ fn try_fold<B, F, R>(&mut self, mut init: B, mut f: F) -> R
         guard.consumed += 1;
 
         #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
+        #[safety::checked(...)]
         unsafe { ptr::read(elem) }
     })
     .try_fold(init, &mut f)
@@ -696,17 +683,19 @@ fn try_rfold<B, F, R>(&mut self, mut init: B, mut f: F) -> R {
             guard.consumed += 1;
 
             #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: See `try_fold`'s safety comment.
+            #[safety::checked(...)]
             unsafe { ptr::read(elem) }
         })
         .try_rfold(init, &mut f)?;
 
     head.iter().map(|elem| {
-            guard.consumed += 1;
+        guard.consumed += 1;
 
-            #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
-            unsafe { ptr::read(elem) }
-        })
-        .try_rfold(init, &mut f)
+        #[safety::ref(try_fold)] // 💡 No longer to write SAFETY: Same as above.
+        #[safety::checked(...)]
+        unsafe { ptr::read(elem) }
+    })
+    .try_rfold(init, &mut f)
 }
 ```
 
