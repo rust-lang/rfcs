@@ -449,13 +449,12 @@ to implement them.
 
 We therefore seek approvals from the following teams:
 
-1. **Library team** – to allow the tagging of unsafe operations and to expose tag items as public
-   APIs.
+1. **Library team** – to allow tagging unsafe public functions and unsafe calls.
 2. **Clippy team** – to integrate tag checking into the linter.
 3. **Rust-Analyzer team** – to add IDE support for tags.
 3. **Rustdoc team** – to render tags to docs.
 4. **Language team** – to reserve the `safety` namespace and gate the feature via
-   `#![feature(safety_tags)]` for the namespace and tag APIs in standard libraries.
+   `#![feature(safety_tags)]` for the namespace and tagged APIs in standard libraries.
 
 [safety-tool]: https://github.com/Artisan-Lab/tag-std/blob/main/safety-tool
 
