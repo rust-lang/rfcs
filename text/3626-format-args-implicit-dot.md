@@ -185,6 +185,18 @@ We could include support for `.await`. To users, the ability to perform field
 accesses but not `.await` may seem like an arbitrary restriction, since the two
 both use `.` syntactically.
 
+We could (in addition to this, or instead of this) add a syntax that allows
+arbitrary expressions, or a large subset of arbitrary expressions; this would
+likely require some way to make them syntactically unambiguous, such as the use
+of parentheses. This would have the downside of allowing substantial additional
+visual complexity (e.g. string constants with `"..."` in an expression in a
+format string). The rationale for allowing field accesses, in particular,
+*without* parentheses, is that they are already syntactically unambiguous
+without requiring any additional delimiters, and given that, the absence of
+additional delimiters makes them *more* readable rather than less. For example,
+`format!("{self.field}")` is entirely readable, and is not made more readable
+by changing it to (for instance) `format!("{(self.field)}")`.
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -197,4 +209,5 @@ f-strings, Javascript backticks, C#, and various other languages) allow
 arbitrary expressions. This RFC does *not* propose adding arbitrary
 expressions, nor should this RFC serve as precedent for arbitrary expressions,
 but nonetheless these other languages provide precedent for permitting more
-than just single identifiers.
+than just single identifiers. See the discussion in "Rationale and
+alternatives" for further exploration of this.
