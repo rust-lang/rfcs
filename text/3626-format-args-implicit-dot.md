@@ -84,14 +84,6 @@ println!("{self.value:self.width$.self.precision$}");
 
 This is slightly complex to read, but unambiguous thanks to the `$`s.
 
-## `await`
-
-Formatting can use `.await`, as well:
-
-```rust
-println!("{future1.await} {future2.await}");
-```
-
 ## Compatibility
 
 This syntax is not currently accepted, and results in a compiler error. Thus,
@@ -130,12 +122,11 @@ format_args!("{name.field1.field2}")
 format_args!("{unique_identifier}", unique_identifier=name.field1.field2)
 ```
 
-Any `Deref` operations or `.await` operations associated with the `.` in each
-format argument are evaluated exactly once, from left-to-right as they appear
-in the format string, at the point where the format string argument is
-evaluated, before the positional or named arguments are evaluated. No
-deduplication occurs: if `name.field` or `name.await` is mentioned multiple
-times, it will be evaluated multiple times.
+Any `Deref` operations associated with the `.` in each format argument are
+evaluated exactly once, from left-to-right as they appear in the format string,
+at the point where the format string argument is evaluated, before the
+positional or named arguments are evaluated. No deduplication occurs: if
+`name.field` is mentioned multiple times, it will be evaluated multiple times.
 
 If the identifier at the start of the chain does not exist in the scope, the
 usual error E0425 would be emitted by the compiler, with the span of that
@@ -190,9 +181,9 @@ We could omit support for other formatting parameters (width, precision).
 However, this would introduce an inconsistency that people have to remember;
 people would *expect* this to work.
 
-We could omit support for `.await`. However, to users this may seem like an
-arbitrary restriction. The rationale for this RFC is purely *syntactic*, on the
-basis that we can allow expressions using `.` without requiring delimiters.
+We could include support for `.await`. To users, the ability to perform field
+accesses but not `.await` may seem like an arbitrary restriction, since the two
+both use `.` syntactically.
 
 # Prior art
 [prior-art]: #prior-art
