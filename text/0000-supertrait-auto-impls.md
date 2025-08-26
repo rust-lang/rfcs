@@ -1,0 +1,642 @@
+- Feature Name: `supertrait_auto_impl`
+- Start Date: 2025-08-26
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+
+# Summary
+[summary]: #summary
+
+We would like to allow nested trait `impl` blocks in `trait` defintion blocks and `impl Trait for` blocks, so that users can supply supertrait items in subtrait contexts.
+
+```rust
+trait Supertrait1 {
+    type Type;
+}
+trait Supertrait2 {
+    type Type1;
+    type Type2;
+}
+trait Subtrait: Supertrait1 + Supertrait2 {
+    auto impl Supertrait1;
+    auto impl Supertrait2 {
+        type Type1 = Self;
+        type Type2 = ();
+    }
+}
+impl Subtrait for MyType {
+    type Type = u8; // implicitly implements Supertrait1::Type
+
+    auto impl Supertrait2; // This generates an implicit `impl Supertrait2 for MyType` as backfill
+}
+```
+
+# Motivation
+[motivation]: #motivation
+
+## Helpers for implementing traits
+
+This is not the main motivation for this RFC, but it is a secondary additional feature that this RFC enables.
+
+For some traits, it's difficult to implement the trait directly because the "raw" interface that the trait exposes is complex. If the trait is unsafe, this may be even worse as the end-user may not wish to write any unsafe code. This feature makes it easy to provide utilities for more easily implementing the trait.
+
+### Example: Serde
+
+The serde traits are notoriously difficult to implement directly. It's almost always done by macro. Imagine if you could write this:
+```rs
+struct MyStruct {
+    name: String,
+    int: i32,
+}
+
+#[derive(Serialize)]
+struct MyStructProxy<'a> {
+    name: &'a str,
+    tens: i32,
+    digit: i32,
+}
+
+impl SerializeByProxy for MyStruct {
+    type Proxy<'a> = MyStructProxy<'a>;
+    fn serialize(&self) -> MyStructProxy<'_> {
+        Proxy {
+            name: &self.name,
+            digit: self.int % 10,
+            tens: self.int / 10,
+        }
+    }
+}
+```
+And then `MyStruct` automatically implements `Serialize` by creating a `MyStructProxy` instance and serializing the proxy. So for example `MyStruct { name: "a", int: 42 }` is serialized into json as `{"name":"a","tens":4,"digit":2}`.
+
+Right now, the only way to provide a helper like the one above is to either:
+
+* Implement a proxy that emits the `Serialize` impl block, or
+* Provide helper methods and instruct the user how to manually implement `Serialize` using the helpers you provided.
+
+
+
+<details>
+<summary>Hypothetical example: Evolving the `Deref` trait</summary>
+    
+    This section is included because whether Deref is to be merged with Receiver is up for deliberation at the moment.
+
+[deref-receiver]: #Deref-Receiver-evolution
+
+As part of the `arbitrary_self_types` feature, we need to split `Deref` into two traits. Right now, the `Deref` trait looks like this:
+```rs
+pub trait Deref {
+    type Target: ?Sized;
+
+    fn deref(&self) -> &Self::Target;
+}
+```
+But we need it to look like this:
+```rs
+pub trait Receiver {
+    type Target: ?Sized;
+}
+
+pub trait Deref: Receiver {
+    fn deref(&self) -> &Self::Target;
+}
+```
+However, making this change is difficult due to backwards compatibility. There are many crates in the ecosystem with code that looks like this:
+```rs
+struct MyStruct(u8);
+
+impl Deref for MyStruct {
+    type Target = u8;
+    fn deref(&self) -> &u8 {
+        &self.0
+    }
+}
+```
+or like this:
+```rs
+fn assert_deref()
+where
+    MyStruct: Deref<Target = u8>
+{}
+```
+The feature in this RFC provides a mechanism for _trait evolution_ where it becomes possible to split a trait into a super-trait and sub-trait without breaking backwards compatibility in downstream crates.
+
+### Why not a blanket impl?
+
+Unfortunately, this does not work:
+```rs
+pub trait Receiver {
+    type Target: ?Sized;
+}
+
+pub trait Deref: Receiver {
+    type Target: ?Sized;
+    fn deref(&self) -> &Self::Target;
+}
+
+impl<T: Deref> Receiver for T {
+    type Target = <T as Deref>::Target;
+}
+```
+The problem is that crates need to be able to write this code:
+```rs
+struct SmartPtr(*mut T);
+
+impl<T> Receiver for SmartPtr<T> {
+    type Target = T;
+}
+
+impl<T: SafeToDeref> Deref for SmartPtr<T> {
+    fn deref(&self) -> &T {
+        unsafe { &*self.0 }
+    }
+}
+```
+This kind of code where `SmartPtr` *sometimes* implements `Deref` but *always* implements `Receiver` is not possible with a blanket implementation. The feature proposed by this RFC makes the above possible.
+</details>
+    
+## Tenets
+
+- Backward-compatibility
+    - 
+    - We need to maintain that all the current `impl` blocks to compile, specifically the `impl Deref` litmus test mentioned in the [deref-receiver] motivating example.
+    - This demand also extends to other possible library traits that may see relocation of items into a future supertrait, while ensuring that the existing `impl` blocks continue to compile.
+- Intuitional readability and clear syntatical signal
+    - 
+    - We strive for a syntax that is intuitional and easily connected to the existing constructs.
+    - A successful design is one that enables a user to easily build a correct mental picture of the trait `impl`s with assistance from the syntatical features.
+    - By extension, supertrait `impl`s should appear clearly in connection with subtrait `impl`s.
+- Flexibility
+    -
+    - We strive for providing users the means to refactor their traits without compromising the expressiveness of the trait relationships.
+
+# Guide-level explanation
+[guide-level-explanation]: #guide-level-explanation
+
+This section gives an overview of the `auto impl` feature and some example use-cases.
+
+## Overview
+
+It is possible to declare that implementations of a sub-trait should automatically implement a given supertrait.
+```rs
+trait MyTrait {
+    fn my_func(&self);
+}
+
+trait MySubTrait: MyTrait {
+    auto impl MyTrait;
+    
+    fn my_second_func(&self);
+}
+```
+Given the above traits, when you implement `MySubTrait`, you must also specify items from `MyTrait`.
+```rs
+impl MySubTrait for String {
+    fn my_func(&self) {
+        println!("my_func on String");
+    }
+    
+    fn my_second_func(&self) {
+        println!("my_second_func on String");
+    }
+}
+```
+In the above case, it is an error to not specify all items from `MyTrait`. However, it is possible to opt-out of implementing `MyTrait` in the `impl MySubTrait` block:
+```rs
+impl MyTrait for String {
+    fn my_func(&self) {
+        println!("my_func on String");
+    }
+}
+impl MySubTrait for String {
+    extern impl MyTrait;
+    fn my_second_func(&self) {
+        println!("my_second_func on String");
+    }
+}
+```
+The `extern impl MyTrait` declaration specifies the impl block does not automatically implement `MyTrait`, and that another impl block is used instead.
+
+### Example: Trait evolution
+
+Over time, needs have arised to establish a hierarchy of traits, so that the parts and pieces of existing "big" library traits, be it from `std` or ecosystem crates, can be extraced and pulled back into supertraits without requiring a breaking change in the downstream crates. In most cases, the assoication of methods to be "refactored" and the destination supertraits can be determined without ambiguity. This falls under a bigger theme of trait evolution, which concerns how a historically big trait can be broken down and refined into smaller traits and trait hierarchy. [RFC 1210](https://rust-lang.github.io/rfcs/1210-impl-specialization.html#the-default-keyword) provided an example of a trait evolution and how specialisation could have eased the refactoring.
+
+With this proposal, specialisation is not required and, instead, the pulled-back supertrait implementation applies directly within the context of the subtrait implementation.
+
+```rs=
+// A refactored Subtrait that encodes parts of its protocol
+// to be implementable on other types,
+// to which Subtrait is not applicable.
+trait Supertrait {
+    // This method is pulled out of Subtrait
+    fn supertrait_fn();
+}
+
+// Subtrait is the refinement of the Supertrait protocol
+trait Subtrait: Supertrait {
+    // Refactored into the Supertrait
+    //*** fn supertrait_fn();
+    fn subtrait_fn();
+}
+
+// The proposal called for enabling specialisation of
+// the following blanket implementation as *stop-gap*.
+// We propose that for trait evolution, we do not need to rely on specialisation...
+/**
+impl<T: Subtrait> Supertrait for T {
+    default fn supertrait_fn() {
+        <T as Subtrait>::supertrait_fn();
+    }
+}
+**/
+
+struct Middeware<T>(T);
+
+// ... but rather keep the current and future `impl` block
+// the same,
+impl Subtrait for Middleware<T> {
+    // because the trait has been well designed so that
+    // it allows seamless migration.
+    fn supertrait_fn() { .. }
+    fn subtrait_fn() { .. }
+}
+```
+
+
+
+## Default auto implementations
+
+It is possible to provide default implementations of functions from the super trait.
+```rs
+trait MyTrait {
+    fn my_func(&self);
+}
+
+trait MySubTrait: MyTrait {
+    auto impl MyTrait {
+        fn my_func(&self) {
+            self.my_second_func();
+            self.my_second_func();
+        }
+    }
+    
+    fn my_second_func(&self);
+}
+```
+In this case, an impl block for `MySubTrait` will still automatically implement `MyTrait`, but you are not required to provide an implementation of `my_func` since a default implementation exists.
+
+### Example: Helpers for implementing a trait
+
+With default auto implementations, it becomes possible to provide a sub-trait whose purpose is to help you implement the super trait in a specific way.
+
+For example, given this super trait:
+```rs
+trait EventHandler {
+    type Event;
+    fn handle_event(&mut self, event: Self::Event);
+}
+```
+Then you might have a helper for implementing `EventHandler` for a specific event type:
+```rs
+enum MouseEvent {
+    ClickEvent(ClickEvent),
+    MoveEvent(MoveEvent),
+}
+
+trait MouseEventHandler {
+    auto impl EventHandler {
+        type Event = MouseEvent;
+        fn handle_event(&mut self, event: MouseEvent) {
+            use MouseEvent::*;
+            match event {
+                ClickEvent(evt) => self.click_event(evt),
+                MoveEvent(evt) => self.move_event(evt),
+            }
+        }
+    }
+    
+    fn click_event(&mut self, event: ClickEvent);
+    fn move_event(&mut self, event: MoveEvent);
+}
+```
+This allows crates to implement `EventHandler` by writing this code:
+```rs
+struct PrintHandler;
+
+impl MouseEventHandler for PrintHandler {
+    fn click_event(&mut self, event: ClickEvent) {
+        println!("Click: {:?}", event);
+    }
+    fn move_event(&mut self, event: MoveEvent) {
+        println!("Move: {:?}", event);
+    }
+}
+```
+The `MouseEventHandler` trait could even come from a different crate than `EventHandler`.
+
+## Unsafe auto impl
+
+It's possible to declare that an auto implementation is unsafe.
+```rs
+trait MySubTrait: MyTrait {
+    unsafe auto impl MyTrait;
+    
+    fn my_second_func(&self);
+}
+```
+This means that it is unsafe to override the auto implementation.
+```rs
+impl MySubTrait for String {
+    // unsafe is required here because the `auto impl`
+    // is marked unsafe.
+    unsafe extern impl MyTrait;
+
+    fn my_second_func(&self) {
+        println!("my_second_func on String");
+    }
+}
+```
+If the super trait is unsafe, then the `auto impl` must also be unsafe.
+
+### Example: Safely implement unsafe trait
+
+This can be used to provide a safe way to implement an unsafe trait.
+```rs
+/// Implementers must ensure that even() returns an
+/// even number.
+unsafe trait Even {
+    /// Guaranteed to return an even number.
+    fn even(&self) -> usize;
+}
+
+trait Double {
+    // SAFETY: 2*x is always even
+    unsafe auto impl Even {
+        fn even(&self) -> usize {
+            2*self.value_to_double()
+        }
+    }
+    fn value_to_double(&self) -> usize;
+}
+
+// provides an impl for Even safely
+impl Double for String {
+    fn value_to_double(&self) -> usize {
+        self.len()
+    }
+}
+```
+
+---
+
+
+# Reference-level explanation
+[reference-level-explanation]: #reference-level-explanation
+
+In a trait declaration, you may declare one or more `auto impl` items with a block that provides implementations for one or more items from the super trait.
+```rs
+trait SubTrait: SuperTrait {
+    auto impl SuperTrait {
+        const MY_CONST: u32 = 10;
+        type MyType = String;
+        fn my_func(&self) -> u32 {
+            42
+        }
+    }
+}
+```
+All items inside the `auto impl` block must match an item from the super trait of the same name and signature. When the block is empty, it is legal to use a semicolon instead. That is, these are equivalent:
+
+* `auto impl SuperTrait {}`
+* `auto impl SuperTrait;`
+
+The type of the super trait can be anything that matches the [TypePath](https://doc.rust-lang.org/reference/paths.html#grammar-TypePath) grammar and evaluates to a trait. This means that, for example, this is legal:
+```rs
+trait SubTrait<T> {
+    auto impl MyGenericTrait<T, u32>;
+}
+```
+The trait must be a super-trait. That is, the trait solver must be able to prove that `where T: SubTrait` implies `where T: SuperTrait`.
+
+## Impl blocks
+
+Impl blocks using auto implementations are simply a short-hand for multiple impl blocks with all of the consequences that implies.
+
+When a trait has an `auto impl` entry, all impl blocks for the trait that do not use `extern impl` to opt-out of the auto implementation become equivalent to two impl blocks, one for the sub-trait and one for the super-trait. They are generated according to these rules:
+
+* Both impl blocks have the exact same set of generic items and where clauses, except that in the super trait any generic parameters that are unused by the super trait's `auto impl` are omitted.
+* The equivalent impl block for the super trait contains the items in the `impl` block that come from the super trait, plus any items specified in the block of the `auto impl` (if any). In case of duplicates, the item from the `impl` block is preferred.
+* The equivalent impl block for the sub-trait contains any remaining items in the original `impl` block, plus an `extern impl` declaration.
+
+So for example, given these traits:
+
+```rs
+trait SuperTrait<T, U> {
+    fn my_first_item(&self, arg: U);
+    fn my_default_item(&self, arg: T);
+}
+
+trait SubTrait<T>: SuperTrait<T, u32> {
+    auto impl SuperTrait<T, u32> {
+        fn my_default_item(&self, arg: T) {}
+    }
+    fn my_second_item(&self, arg: T);
+}
+```
+then this impl block:
+```rs
+impl<T, U> SubTrait<T> for MyStruct<U>
+where
+    T: MyTraitBound<U>,
+{
+    fn my_first_item(&self, arg: u32) {}
+    fn my_second_item(&self, arg: T) {}
+}
+```
+is short-hand for this:
+```rs
+// The original impl block MINUS the super-trait's methods
+// PLUS an extern impl statement:
+impl<T, U> SubTrait<T> for MyStruct<U>
+where
+    T: MyTraitBound<U>,
+{
+    extern impl SuperTrait<T, u32>;
+
+    fn my_second_item(&self, arg: T) {}
+}
+
+// PLUS an additional impl block for the super trait,
+// constructed in the following manner:
+impl<T, U> SuperTrait<T, u32> for MyStruct<U>
+//         ^^^^^^^^^^^^^^^^^^ taken verbatim from `auto impl` statement.
+where
+    T: MyTraitBound<U>,
+{
+    // With SuperTrait's methods from the impl block
+    fn my_first_item(&self, arg: u32) {}
+    
+    // AND SuperTrait's methods from the auto impl block
+    fn my_default_item(&self, arg: T) {}
+}
+```
+Note that this implies that you *must* use `extern impl` to provide your own implementation of the super trait. If you don't, then by the above rule, the generated impl for the super trait would overlap with your custom implementation, which is illegal by the standard trait rules.
+
+## Unsafe auto implementations
+
+The `auto impl` items can be marked `unsafe`, which declares that implementing the sub-trait without using the auto implementation is unsafe.
+
+When an `auto impl` is declared unsafe, then:
+
+* To opt-out, you must write `unsafe extern impl`.
+* If any methods from the `unsafe auto impl` block are overridden, then the `impl` block must be `unsafe`.
+
+If the super trait is `unsafe`, then the `auto impl` declaration must also be `unsafe`.
+
+## Naming ambiguity
+
+If the sub-trait defines an item of the same name as an item in the super-trait, then the `auto impl` block must provide a default implementation of the item from the super trait.
+
+In this scenario, any item in an impl block of the sub-trait using the ambiguous name will always refer to the item from the sub-trait. This means that the only way to override the item from the super trait is to use `extern impl`.
+
+---
+
+# Drawbacks
+[drawbacks]: #drawbacks
+
+- This is yet another new language syntax to teach.
+
+# Rationale and alternatives
+[rationale-and-alternatives]: #rationale-and-alternatives
+
+## A `auto impl` in a `trait` definition block should not be interpreted as a blanket `impl`
+
+Our rationale is that this blanket `impl` would unnecessarily reject genuine user-`impl`s of supertraits where a relaxed `where` bounds are desirable through overlapping `impl`s. In our opinion, a supertrait `impl` on a type that has more relaxed bounds than that on a subtrait `impl` of the same type is perfectly valid.
+
+As illustration, the following is an example
+
+```rust=
+trait BaseFunction {
+    fn base_capability(&self);
+}
+trait ManagementExtension: BaseFunction {
+    auto impl BaseFunction;
+    fn management_interface(&self);
+}
+
+struct ManagementInterface<T> { .. }
+
+impl<T> BaseFunction for ManagementInterface<T> {
+    // NOTE: we do not need `T: ManagementHandle`
+    // for ManagementInterface<T> to provide
+    // `base_capability`
+    fn base_capability(&self) { .. }
+}
+
+// Suppose that `auto impl BaseFunction` is "lowered" into a blanket `impl`,
+// then it is impossible for the `impl BaseFunction` to compile.
+
+impl<T> ManagementExtension for MangementInterface<T>
+where T: ManagementHandle
+{
+    extern impl BaseFunction;
+    fn management_interface(&self) { .. }
+}
+```
+
+## Why explicit opt-in/out for marker traits and traits with only default items?
+
+Marker supertraits and supertraits with `default` items can be easily overlooked when users write subtrait implementations. They would register too little signal for the reader to recognise the significance of traits of these kinds. For this reason, we bias towards asking users to provide clear syntatical signals through `auto impl MarkerTrait` or `extern impl MarkerTrait`, so that the automatic derivation of such traits is easily recognisable and provides obvious site for documentation in case justification is waranted.
+
+```rs=
+// It is almost always a good idea to explain
+// why a trait like below is implemented on a type.
+trait MarkerTrait {}
+
+trait Supertrait: MarkerTrait {
+    auto impl MarkerTrait;
+}
+
+impl Supertrait for MyType {
+    // Here it is a good place to explain
+    // why MyType: MarkerTrait
+    auto impl MarkerTrait;
+    // or otherwise `extern impl MarkerTrait;` is required
+}
+```
+
+### What about checking whether another impl exists?
+
+We could potentially determine whether the opt-out is used based on whether an impl of the super trait exists, but we prefer not to. We have existing mechanism to determine the specialisation and implementation overlaps. Whether a supertrait `impl` overlaps or not, is not the concern of this proposal.
+
+If we would deduce whether an `auto impl` should be effected, there could present a hazard that silently changes the program behaviour.
+
+```rs
+trait MyTrait { default fn .. }
+
+trait AutoMyTrait: MyTrait {
+    auto impl MyTrait;
+}
+
+// Suppose we allow users to elide the `auto impl`/`extern impl` directive
+// and we deduce based on some applicability criterion ...
+impl AutoMyTrait for Foo {} // <-- generates MyTrait
+
+// Suppose this item is added at one point of time
+impl<T: MyOtherTrait> MyTrait for T { .. }
+
+impl MyOtherTrait for Foo {} // <-- now it should not be generated anymore
+```
+
+## Why is a hard error on ambiguity acceptable to us?
+
+We hold the basic assumption that most associated items of a trait have sensible names. We would rather advise that one shall avoid name clashes and ambiguity through better, future-oriented trait designs.
+
+In any case, `auto impl Trait { .. }` blocks still remains available for cases where ambiguity is unavoidable or favorable in niche scenario.
+
+## Why this naming?
+
+It is still up for discussion.
+
+## Why use `unsafe` in this way
+
+As "default" supertrait implementation, _not in specialisation sense_, can be supplied in the subtrait definition, such implementation could be essential for the safe use of the subtrait `impl`. We should enable the subtrait authors to ensure that the safety invariants encoded in those "default" supertrait implementation are also observed, if the downstream implementor decides to supply its own supertrait `impl` instead of automatic derivation.
+
+# Prior art
+[prior-art]: #prior-art
+
+
+## Implementable trait-alias
+
+It was suggested in the [RFC 3437](https://github.com/rust-lang/rfcs/pull/3437) that trait aliases can be made to also carry associated items, which in turn can be instantiated in `impl` trait alias blocks.
+
+## Plain supertrait items in subtrait `impl`
+
+In fact, this proposal is an improved version over this scheme. Previously, to disambiguate names from different supertrait namespaces, one appends the associated item identifies with a qualification and generic arguments when necessary. However, the old proposal would apply more deduction, by the compiler, on whether supertrait `impl`s are demanded and it is a weaker response to the tenet that prefers more syntatical signals to compiler deduction.
+
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+- What parts of the design do you expect to resolve through the RFC process before this gets merged?
+- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
+- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+
+# Future possibilities
+[future-possibilities]: #future-possibilities
+
+Think about what the natural extension and evolution of your proposal would
+be and how it would affect the language and project as a whole in a holistic
+way. Try to use this section as a tool to more fully consider all possible
+interactions with the project and language in your proposal.
+Also consider how this all fits into the roadmap for the project
+and of the relevant sub-team.
+
+This is also a good place to "dump ideas", if they are out of scope for the
+RFC you are writing but otherwise related.
+
+If you have tried and cannot think of any future possibilities,
+you may simply state that you cannot think of anything.
+
+Note that having something written down in the future-possibilities section
+is not a reason to accept the current or a future RFC; such notes should be
+in the section on motivation or rationale in this or subsequent RFCs.
+The section merely provides additional information.
