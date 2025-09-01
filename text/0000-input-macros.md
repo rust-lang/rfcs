@@ -329,6 +329,12 @@ determine how to print the prompt. The `PrintStyle` enum has two variants:
 It allow us to use the same function for both macros and to have a more
 ergonomic way to print the prompt.
 
+You can find the implementation in this [repository](https://github.com/Phosphorus-M/input-lib) or you can install it from crates.io with:
+
+```sh
+cargo install input-lib
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
