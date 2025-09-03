@@ -36,7 +36,7 @@ Code in case 1 generally falls into one of these buckets:
 
 So, providing any fix for case 2 would subtly break any users of case 1. This breakage cannot be checked easily since it relies on unsafe code making assumptions about data layouts, which makes this difficult to fix within a single edition.
 
-As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for  ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
+As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
 
 ```rust
 // should have size 8, but has size 0
@@ -45,6 +45,11 @@ struct SomeFFI([i64; 0]);
 ```
 
 Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
+
+Fixing the layout of this struct will also most likely let us remove a long-standing hack from our implementation of the MSVC ABI:
+unlike all other ABIs, we do *not* entirely skip ZST with that ABI but instead mark them to be passed by-ptr.
+This is needed to correctly pass types like `SomeFFI`.
+If we fix our layout computation to match that of MSVC, we no longer need this special case in the ABI logic.
 
 The next two cases will not be solved by this RFC, but this RFC will provide the necessary steps towards the respective fixes.
 
