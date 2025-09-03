@@ -43,6 +43,8 @@ Here are some examples of the tension and some other RFCs which could benefit fr
 3. A Windows MSVC bug
 4. An [AIX](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594) layout bug
 
+Examples 3 and 4 cannot be solved with this RFC alone, but any fix would require splitting up `repr(C)`.
+
 ## MSVC ZST
 
 As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
@@ -59,8 +61,6 @@ Fixing the layout of this struct will also most likely let us remove a long-stan
 unlike all other ABIs, we do *not* entirely skip ZST with that ABI but instead mark them to be passed by-ptr.
 This is needed to correctly pass types like `SomeFFI`.
 If we fix our layout computation to match that of MSVC, we no longer need this special case in the ABI logic.
-
-The next two cases will not be solved by this RFC, but this RFC will provide the necessary steps towards the respective fixes.
 
 ## RFC #3718
 
@@ -410,7 +410,7 @@ See Rationale and Alternatives as well
 * Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
-* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
+* <a id="ordered_fields_align"> Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types). </a>
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845/files#r2319098177
 	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
 # Future possibilities
