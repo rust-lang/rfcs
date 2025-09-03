@@ -89,7 +89,7 @@ Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has
 
 For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
 
-In AIX, the following struct `Floats` has the following field offsets: `[0, 64, 96]` (in bits)
+In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes)
 
 ```C
 struct Floats {
@@ -103,7 +103,8 @@ This is because
 > In aggregates, the first member of this data type is aligned according to its natural alignment value; subsequent members of the aggregate are aligned on 4-byte boundaries.
 > - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1)
 
-Even though on AIX `__alignof__(double)` is 8, it is still laid out an a 4-byte boundary. 
+Even though on AIX `__alignof__(double)` is 8, it is still laid out an a 4-byte boundary.
+(That's no contradiction since `__alignof__` designates the *preferred* alignment, not the *required* alignment.)
 
 This is in stark contrast with `repr(C)` in Rust, which always lays out fields at their "natural alignment". Any fix for this would require splitting up `repr(C)` since anyone in case 2 cannot tolerate under-aligned fields (since it would disallow taking references to those fields).
 # Guide-level explanation
