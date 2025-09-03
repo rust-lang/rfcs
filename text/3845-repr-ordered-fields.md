@@ -103,7 +103,7 @@ This is because
 > In aggregates, the first member of this data type is aligned according to its natural alignment value; subsequent members of the aggregate are aligned on 4-byte boundaries.
 > - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1)
 
-Even though on AIX `alignof(double)` is 8, it is still laid out an a 4-byte boundary. 
+Even though on AIX `__alignof__(double)` is 8, it is still laid out an a 4-byte boundary. 
 
 This is in stark contrast with `repr(C)` in Rust, which always lays out fields at their "natural alignment". Any fix for this would require splitting up `repr(C)` since anyone in case 2 cannot tolerate under-aligned fields (since it would disallow taking references to those fields).
 # Guide-level explanation
