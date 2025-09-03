@@ -57,11 +57,6 @@ struct SomeFFI([i64; 0]);
 
 Of course, making `SomeFFI` size 8 doesn't work for anyone using `repr(C)` for case 1. They want it to be size 0 (as it currently is). 
 
-Fixing the layout of this struct will also most likely let us remove a long-standing hack from our implementation of the MSVC ABI:
-unlike all other ABIs, we do *not* entirely skip ZST with that ABI but instead mark them to be passed by-ptr.
-This is needed to correctly pass types like `SomeFFI`.
-If we fix our layout computation to match that of MSVC, we no longer need this special case in the ABI logic.
-
 ## RFC #3718
 
 This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), where `repr(C, packed(N))` wants allow fields which are `align(M)` (while making the `repr(C, ...)` struct less packed). This is a footgun for normal uses of `repr(packed)`, so it would be better to relegate this strictly to the FFI use-case. However, since `repr(C)` plays two roles, this is difficult.
@@ -89,7 +84,7 @@ Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has
 
 For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
 
-In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes)
+In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes) and a size of 24 bytes (since the first field has a preferred alignment of 8 bytes).
 
 ```C
 struct Floats {
@@ -103,10 +98,10 @@ This is because
 > In aggregates, the first member of this data type is aligned according to its natural alignment value; subsequent members of the aggregate are aligned on 4-byte boundaries.
 > - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1)
 
-Even though on AIX `__alignof__(double)` is 8, it is still laid out an a 4-byte boundary.
-(That's no contradiction since `__alignof__` designates the *preferred* alignment, not the *required* alignment.)
+On AIX `__alignof__(double)` is 8, but field `c` is laid out at a 4-byte boundary. This is fine because `__alignof__` designates the *preferred* alignment, not the *required* alignment. Note that in Rust, we only ever use the *required* alignment and don't have a concept of a *preferred* alignment. So in Rust, we have designated the alignment of f64 to be 8 bytes.
 
-This is in stark contrast with `repr(C)` in Rust, which always lays out fields at their "natural alignment". Any fix for this would require splitting up `repr(C)` since anyone in case 2 cannot tolerate under-aligned fields (since it would disallow taking references to those fields).
+Any fix for this would require splitting up `repr(C)`, since reducing the alignment of `f64` would reduce the size of `Floats` from `24` to `20`, which also doesn't match `C`, and we cannot special case the alignment of `Floats` to be larger since that doesn't match the algorithm currently specified for `repr(C)` (making it a breaking change).
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
