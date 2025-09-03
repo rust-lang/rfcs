@@ -410,9 +410,11 @@ See Rationale and Alternatives as well
 * Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
-* <a id="ordered_fields_align"> Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types). </a>
+* <a id="ordered_fields_align"></a>Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
 	* discussion: https://github.com/rust-lang/rfcs/pull/3845/files#r2319098177
 	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
+* What should `repr(C)` do when a given type wouldn't compile in the corresponding `C` compiler (like fieldless structs in MSVC)? 
+	* discussion: https://github.com/rust-lang/rfcs/pull/3845#discussion_r2319138105
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
