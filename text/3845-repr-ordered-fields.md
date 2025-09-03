@@ -34,7 +34,7 @@ Code in case 1 generally falls into one of these buckets:
 * match layouts of two different types (or even, two different monomorphizations of the same generic type)
 	* see [here](https://github.com/rust-lang/rust/pull/68099), where in `alloc` this is done for `Rc` and `Arc` to give a consistent layout for all `T`
 
-So, providing any fix for case 2 would subtly break any users of case 1. This breakage cannot be checked easily since it relies on unsafe code making assumptions about data layouts, which makes this difficult to fix within a single edition.
+So, providing any fix for case 2 would subtly break any users of case 1. This breakage cannot be checked easily since it affects unsafe code making assumptions about data layouts. Making it difficult to fix within a single edition/existing editions.
 
 As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
 
@@ -80,7 +80,7 @@ Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has
 
 `repr(C)` in edition <= 2024 is an alias for `repr(ordered_fields)` and in all other editions, it matches the default C compiler for the given target for structs, unions, and field-less enums. Enums with fields will be laid out as if they are a union of structs with the corresponding fields.
 
-Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as an optional edition compatibility lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
+Using `repr(C)` in editions <= 2024 triggers a lint to use `repr(ordered_fields)` as an edition migration compatibility lint with a machine-applicable fix. If you are using `repr(C)` for FFI, then you may silence this lint. If you are using `repr(C)` for anything else, please switch over to `repr(ordered_fields)` so updating to future editions doesn't change the meaning of your code.
 
 ```
 warning: use of `repr(C)` in type `Foo`
@@ -318,7 +318,7 @@ fn get_layout_for_enum(
 
 The migration will be handled as follows:
 * after `repr(ordered_fields)` is implemented
-    * add an optional edition compatibility lint for `repr(C)`
+    * add an edition migration lint for `repr(C)`
     	* this warning should be advertised publicly (maybe on the Rust Blog?), so that as many people use it. Since even if you are staying on edition <= 2024, it is helpful to switch to `repr(ordered_fields)` to make your intentions clearer
     * at this point both `repr(ordered_fields)` and `repr(C)` will have identical behavior
     * the warning will come with a machine-applicable fix
@@ -374,8 +374,8 @@ See Rationale and Alternatives as well
     * This way we can evolve the repr (for example, by adding new niches)
 * Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change, but at that point it will likely only be breaking code no one uses.
     * Leaning towards no
-* Should we warn on `repr(ordered_fields)` when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
-	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type.
+* Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
+	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
 # Future possibilities
 [future-possibilities]: #future-possibilities
