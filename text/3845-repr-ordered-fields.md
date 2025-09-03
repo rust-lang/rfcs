@@ -36,6 +36,15 @@ Code in case 1 generally falls into one of these buckets:
 
 So, providing any fix for case 2 would subtly break any users of case 1. This breakage cannot be checked easily since it affects unsafe code making assumptions about data layouts. Making it difficult to fix within a single edition/existing editions.
 
+Here are some examples of the tension and some other RFCs which could benefit from splitting up `repr(C)`'s two cases.
+
+1. Windows MSVC ZSTs
+2. the RFC [#3718](https://github.com/rust-lang/rfcs/pull/3718) for `repr(C, packed(N))` containing overaligned fields
+3. A Windows MSVC bug
+4. An [AIX](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594) layout bug
+
+## MSVC ZST
+
 As an example of this tension: on Windows MSVC, `repr(C)` doesn't always match what MSVC does for ZST structs (see this [issue](https://github.com/rust-lang/rust/issues/81996) for more details)
 
 ```rust
@@ -53,11 +62,15 @@ If we fix our layout computation to match that of MSVC, we no longer need this s
 
 The next two cases will not be solved by this RFC, but this RFC will provide the necessary steps towards the respective fixes.
 
+## RFC #3718
+
 This also plays a role in [#3718](https://github.com/rust-lang/rfcs/pull/3718), where `repr(C, packed(N))` wants allow fields which are `align(M)` (while making the `repr(C, ...)` struct less packed). This is a footgun for normal uses of `repr(packed)`, so it would be better to relegate this strictly to the FFI use-case. However, since `repr(C)` plays two roles, this is difficult.
 
-By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, packed(N))` to contain over-aligned fields (while making the struct less packed), and (continuing to) disallow `repr(ordered_fields, packed(N))` from containing aligned fields. Thus keeping the Rust-only case free of warts, without compromising on FFI use-cases.
+By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, packed(N))` to contain over-aligned fields (while making the struct less packed), and (continuing to) disallow `repr(ordered_fields, packed(N))` from containing aligned fields. Thus keeping the Rust-only case free of warts, without compromising on FFI use-cases[<sup>1</sup>](ordered_fields_align).
 
-Splitting `repr(C)` also allows making progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480) and a similar AIX [issue](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594). 
+## MSVC bug
+
+Splitting `repr(C)` also allows making progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). 
 
 The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8-bytes, and may instead only align them to 4 bytes.
 
@@ -72,7 +85,27 @@ struct Foo {
 ```
 Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has alignment 8 in Rust). Again, any proper workaround will require reducing the alignment of `f64`, and adjusting `repr(C)`.
 
+## AIX layout bug
 
+For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
+
+In AIX, the following struct `Floats` has the following field offsets: `[0, 64, 96]` (in bits)
+
+```C
+struct Floats {
+    double a;
+    char b;
+    double c;
+};
+```
+
+This is because
+> In aggregates, the first member of this data type is aligned according to its natural alignment value; subsequent members of the aggregate are aligned on 4-byte boundaries.
+> - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1)
+
+Even though on AIX `alignof(double)` is 8, it is still laid out an a 4-byte boundary. 
+
+This is in stark contrast with `repr(C)` in Rust, which always lays out fields at their "natural alignment". Any fix for this would require splitting up `repr(C)` since anyone in case 2 cannot tolerate under-aligned fields (since it would disallow taking references to those fields).
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -377,6 +410,9 @@ See Rationale and Alternatives as well
 * Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
 * What should the lints look like? (can be decided after stabilization if needed, but preferably this is hammered out before stabilization and after this RFC is accepted)
+* <a name="ordered_fields_align"/> Should `repr(ordered_fields, packed(N))` allow `align(M)` types where `M > N` (overaligned types).
+	* discussion: https://github.com/rust-lang/rfcs/pull/3845/files#r2319098177
+	* One option is to allow it and cap those fields to be aligned to `N`. This seems consistent with the handling of other over-aligned types. (i.e. putting a `u32` in a `repr(packed(2))` type)
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
