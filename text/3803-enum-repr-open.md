@@ -11,6 +11,26 @@ Allow `#[repr(_, open)]` on field-less (C-style) enums to allow the enum to cont
 
 Enums with the `open` modifier cannot be matched on exhaustively without the use of a wildcard arm. This feature is similar but distinct from the `#[non_exhaustive]` attribute, since it works on an ABI level and applies in the defining module as well.
 
+Example:
+
+```rust
+#[repr(u8, open)] // ABI stable and allowed in FFI
+pub enum Version {
+    Http0_9,
+    Http1_0,
+    Http1_1,
+    Http2_0,
+    Http3_0,
+}
+
+match version {
+    Version::Http0_9 | Version::Http1_0 | Version::Http1_1 => println!("good old"),
+    Version::Http2_0 | Version::Http3_0 => println!("ooh, fancy!"),
+    // Fallback arm is required, even in the same crate.
+    _ => println!("from the future!"),
+}
+```
+
 
 # Motivation
 [motivation]: #motivation
