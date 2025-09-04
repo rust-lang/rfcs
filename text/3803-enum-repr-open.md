@@ -573,7 +573,8 @@ Current options and sub-options:
     2. `#[non_exhaustive(abi)]`.
     3. `#[non_exhaustive(repr)]`.
     4. `#[non_exhaustive(layout)]`.
-3. New attribute `#[open]`, `#[really_non_exhaustive]` or similar.
+3. New attribute `#[open]`, `#[abi_stable]`, `#[really_non_exhaustive]` or similar.
+4. New keyword like `open_enum Weather { ... }`.
 
 We have a kind of decision tree here, where some unresolved questions depend on the syntax. The exact syntax does not need to be decided before accepting the RFC, though we should choose one of the main "branches".
 
