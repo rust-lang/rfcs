@@ -67,11 +67,11 @@ By splitting `repr(ordered_fields)`  off of `repr(C)`, we can allow `repr(C, pac
 
 Splitting `repr(C)` also allows making progress on a workaround for the MSVC bug [rust-lang/rust/112480](https://github.com/rust-lang/rust/issues/112480). 
 
-The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8-bytes, and may instead only align them to 4 bytes.
+The issue here is that MSVC is inconsistent about the alignment of `u64`/`i64` (and possibly `f64`). In MSVC, the alignment of `u64`/`i64` is reported to be 8 bytes by `alignof` and is correctly aligned in structs. However, when placed on the stack, MSVC doesn't ensure that they are aligned to 8 bytes, and may instead only align them to 4 bytes.
 
-Any proper work around will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting what `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
+Any proper workaround will require reducing the alignment of `u64`/`i64` to 4 bytes, and adjusting what `repr(C)` to treat `u64`/`i64`'s alignment as 8 bytes. This way, if you have references/pointers to `u64`/`i64` (for example, as out pointers), then the Rust side will not break when the C side passes a 4-byte aligned pointer (but not 8-byte aligned). This could happen if the C side put the integer on the stack, or was manually allocated at some 4-byte alignment.
 
-For AIX, the issue is that `f64` is treated as aligned to 4-bytes if it is not the first field in a struct. i.e.
+For AIX, the issue is that `f64` is treated as aligned to 4 bytes if it is not the first field in a struct. i.e.
 ```C
 struct Foo {
 	char a;
@@ -84,7 +84,7 @@ Field `b` would be laid out at offset 4, which is under-aligned (since `f64` has
 
 For more details, see this discussion on [irlo](https://internals.rust-lang.org/t/repr-c-aix-struct-alignment/21594/3).
 
-In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes) and a size of 24 bytes (since the first field has a preferred alignment of 8 bytes).
+In AIX, the following struct `Floats` has the following field offsets: `[0, 8, 12]` (in bytes) and a size of 24 bytes. Since the first field has a natural alignment of 8 bytes - AKA the size is 8 bytes.
 
 ```C
 struct Floats {
@@ -95,10 +95,10 @@ struct Floats {
 ```
 
 This is because
-> In aggregates, the first member of this data type is aligned according to its natural alignment value; subsequent members of the aggregate are aligned on 4-byte boundaries.
-> - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1)
+> In aggregates, the first member of this data type is aligned according to its natural alignment \[its size\] value; subsequent members of the aggregate are aligned on 4-byte boundaries.
+> - [IBM Documentation](https://www.ibm.com/docs/en/xl-c-and-cpp-aix/16.1?topic=data-using-alignment-modes) (Table 1, Note 1, which applies to `double` and `long double` data types)
 
-On AIX `__alignof__(double)` is 8, but field `c` is laid out at a 4-byte boundary. This is fine because `__alignof__` designates the *preferred* alignment, not the *required* alignment. Note that in Rust, we only ever use the *required* alignment and don't have a concept of a *preferred* alignment. So in Rust, we have designated the alignment of f64 to be 8 bytes.
+On AIX `__alignof__(double)` is 8, but field `c` is laid out at a 4-byte boundary. This is fine because `__alignof__` designates the *preferred* alignment, not the *required* alignment. Note that in Rust, we only ever use the *required* alignment and don't have a concept of a *preferred* alignment. So in Rust, we have designated the alignment of `f64` to be 8 bytes.
 
 Any fix for this would require splitting up `repr(C)`, since reducing the alignment of `f64` would reduce the size of `Floats` from `24` to `20`, which also doesn't match `C`, and we cannot special case the alignment of `Floats` to be larger since that doesn't match the algorithm currently specified for `repr(C)` (making it a breaking change).
 
@@ -125,9 +125,9 @@ warning: use of `repr(C)` in type `Foo`
 
 Using `repr(C)` on all editions (including > 2024) when there are no extern blocks or functions in the crate will trigger a warn-by-default lint suggesting to use `repr(ordered_fields)`. Since the most likely reason to do this is if you haven't heard of `repr(ordered_fields)` or are upgrading to the most recent Rust version (which now contains `repr(ordered_fields)`).
 
-If *any* extern block or function (including `extern "Rust"`) is used in the crate, then this lint will not be triggered. This way we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
+If *any* extern block or function (including `extern "Rust"`) is used in the crate, then this lint will not be triggered. This way, we don't have too many false positives for this lint. However, the lint should *not* suggest adding a `extern` block or function, since the problem is likely the `repr`.
 
-This does miss one potential use-case, where a crate provides a suite of FFI-capable types, but does not actually provide any `extern` functions or blocks. This should be an extremely small minority of crates, and they can silence this warning crate-wide.
+This does miss one potential use case, where a crate provides a suite of FFI-capable types, but does not actually provide any `extern` functions or blocks. This should be an extremely small minority of crates, and they can silence this warning crate-wide.
 
 The `suspicious_repr_c` lint takes precedence over `edition_2024_repr_c`.
 
@@ -159,7 +159,7 @@ This makes it easier to tell *why* the `repr` was applied to a given struct. If 
 The exact algorithm is deferred to whatever the default target C compiler does with default settings (or if applicable, the most commonly used settings). 
 ## `repr(ordered_fields)` 
 
-> The `ordered_fields` representation is designed for one purpose: create types that you can soundly perform operations on that rely on data layout such as reinterpreting values as a different type
+> The `ordered_fields` representation is designed for one purpose: to create types that you can soundly perform operations on that rely on data layout, such as reinterpreting values as a different type
 > 
 > This representation can be applied to structs, unions, and enums.
 > 
@@ -202,10 +202,10 @@ union FooUnion {
 
 `FooUnion` has the same layout as `u32`, since `u32` has both the biggest size and alignment.
 ### enum
-The enum's tag type is same type that is used for `repr(C)` in edition <= 2024, and the discriminants is assigned the same was as `repr(C)` (in edition <= 2024).  This means the discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
-This does mean that the tag type will be platform specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD). This warning should suggest the smallest integer type which can hold the discriminant values (preferring signed integers to break ties).
+The enum's tag type is the same type that is used for `repr(C)` in edition <= 2024, and the discriminants are assigned the same way as `repr(C)` (in edition <= 2024).  This means the discriminants are assigned such that each variant without an explicit discriminant is exactly one more than the previous variant in declaration order.
+This does mean that the tag type will be platform-specific. To alleviate this concern, using `repr(ordered_fields)` on an enum without an explicit `repr(uN)`/`repr(iN)` will trigger a warning (name TBD). This warning should suggest the smallest integer type that can hold the discriminant values (preferring signed integers to break ties).
 
-If an enum doesn't have any fields, then it is represented exactly by it's discriminant. 
+If an enum doesn't have any fields, then it is represented exactly by its discriminant. 
 ```rust
 // tag = i16
 // represented as i16
@@ -317,11 +317,11 @@ fn get_layout_for_union(field_layouts: &[Layout]) -> Result<Layout, LayoutError>
 }
 
 /// Takes in the layout of each variant (and their fields) (in declaration order), and returns the layout of the entire enum
-/// the offsets of all fields of the enum is left as an exercise for the readers
+/// the offsets of all fields of the enum are left as an exercise for the readers
 /// NOTE: the enum tag is always at offset 0
 fn get_layout_for_enum(
     // the discriminants may be negative for some enums
-    // or u128::MAX for some enums, so there is no one primitive integer type which works. So BigInteger
+    // or u128::MAX for some enums, so there is no one primitive integer type that works. So BigInteger
     discriminants: &[BigInteger],
     variant_layouts: &[&[Layout]]
 ) -> Result<Layout, LayoutError> {
@@ -397,11 +397,11 @@ See Rationale and Alternatives as well
     * something else?
 * Is the ABI of `repr(ordered_fields)` specified (making it safe for FFI)? Or not?
 * Should unions expose some niches?
-    * For example, if all variants of the union are structs which have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making union of structs behave more like an enum).
+    * For example, if all variants of the union are structs that have a common prefix, then any niches of that common prefix could be exposed (i.e. in the enum case, making a union of structs behave more like an enum).
     * This must be answered before stabilization, as it is set in stone after that
 * Should this `repr` be versioned?
     * This way we can evolve the repr (for example, by adding new niches)
-* Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change, but at that point it will likely only be breaking code no one uses.
+* Should we change the meaning of `repr(C)` in editions <= 2024 after we have reached edition 2033? Yes, it's a breaking change. But at that point, it will likely only be breaking code no one uses.
     * Leaning towards no
 * Should we warn on `repr(ordered_fields)` applied to enums when explicit tag type is missing (i.e. no `repr(u8)`/`repr(i32)`)
 	* Since it's likely they didn't want the same tag type as `C`, and wanted the smallest possible tag type
