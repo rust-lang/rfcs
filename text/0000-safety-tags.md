@@ -239,7 +239,7 @@ unsafe fn delegation<T>(ptr: *const T) -> T {
 
     #[safety::checked(
       aligned = "alignment of ptr has be adjusted",
-      validPtr, initialized = "delegated to the caller"
+      valid_ptr, initialized = "delegated to the caller"
     )]
     unsafe { read(ptr) }
 }
@@ -247,11 +247,11 @@ unsafe fn delegation<T>(ptr: *const T) -> T {
 
 `valid_ptr` and `initialized` are grouped together to share "delegated to the caller". We do not
 introduce new syntax for grouping tags but instead suggest visually grouping them for clarity. When
-`rustfmt` automatically formats `ValidPtr` to its own line, the only workaround is to set
+`rustfmt` automatically formats `valid_ptr` to its own line, the only workaround is to set
 `attr_fn_like_width = 0` in the `rustfmt.toml` configuration file. For further discussion on this
 tag styling, see this [link](https://github.com/rust-lang/rfcs/pull/3842#discussion_r2296076785).
 
-In this delegation case, you're able to declare a new meaningful tag for ValidPtr and Initialized
+In this delegation case, you're able to declare a new meaningful tag for valid_ptr and initialized
 invariants, and define the new tag on `delegation` function. This practice extends to partial unsafe
 delegation of multiple tag discharges:
 
@@ -402,15 +402,15 @@ Treat `#[safety::requires]` tool attributes on unsafe functions as `#[doc]` attr
 tag names and definitions to render as item list:
 
 ```rust
-#[safety::requires(tag1 = "definition1")]
-#[safety::requires(tag2 = "definition2")]
+#[safety::requires(first_tag = "definition1")]
+#[safety::requires(second_tag = "definition2")]
 ```
 
 will be rendered if in markdown syntax
 
 ```md
-* `Tag1`: definition1
-* `Tag2`: definition2
+* First tag: definition1
+* Second tag: definition2
 ```
 
 It'd be good if tag names have a special css class like background color to be attractive. Tag
