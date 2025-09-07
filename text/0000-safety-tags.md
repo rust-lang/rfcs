@@ -538,6 +538,38 @@ unsafe { ptr::read(elem) }
 unsafe { ptr::read(elem) }
 ```
 
+## Clippy lint `danger_not_accepted`
+
+The Clippy PR [#11600] attempted to introduce a new lint called `danger_not_accepted`, which is
+similar to safety tags but has several key differences:
+
+- **Attribute Names**: `#[clippy::dangerous]` vs. `#[safety::requires]`; `#[clippy::accept_danger]`
+  vs. `#[safety::checked]`.
+- **Applicability**: Danger attributes can be applied to safe code and modules, whereas safety tags
+  are specifically for unsafe operations. However, [entity-reference] might eventually support safe
+  code in the future.
+- **Lint Levels and Names**: Danger lint levels and names can be controlled at the module level,
+  while safety tags are controlled by `#[level(clippy::safety_requires)]` and
+  `#[level(clippy::safety_checked)]`, where the level can be `deny`, `allow`, or `warn`.
+- **Naming Conventions**: Danger names are path-based, while tag names are limited to unsafe APIs or
+  operations. There was some discussion in earlier iterations of this RFC about whether names should
+  be path-based, but we opted for this approach because it is simpler and avoids collisions.
+
+The PR was closed due to inactivity. However, I found some interesting insights:
+
+- It was discussed in a [weekly meeting][clippy-danger], where @flip1995 summarized, "I'm not
+  opposed to the idea, but to add this to Clippy, we must ensure it produces good diagnostics 
+  (reason field) and works across crates."
+  - Our proposal meets these criteria because definitions will be displayed if tags are not checked,
+    and as long as an unsafe function can be called, its tags will be available, ensuring they work
+    across crates.
+- Rustc developers have also expressed interest in this lint, as seen in
+  [this discussion][rustc-danger].
+
+[#11600]: https://github.com/rust-lang/rust-clippy/pull/11600
+[clippy-danger]: https://rust-lang.zulipchat.com/#narrow/channel/257328-clippy/topic/Meeting.202023-10-03/near/394654500
+[rustc-danger]: https://github.com/rust-lang/rust/pull/126326#issuecomment-2165339577
+
 # Prior art
 [prior-art]: #prior-art
 
