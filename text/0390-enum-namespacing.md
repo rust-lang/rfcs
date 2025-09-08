@@ -161,7 +161,7 @@ pub trait MyTrait { ... }
 This strategy does not work for flat enums in general. It is not all that
 uncommon for an enum to have *many* variants - for example, take
 [`rust-postgres`'s `SqlState`
-enum](http://www.rust-ci.org/sfackler/rust-postgres/doc/postgres/error/enum.PostgresSqlState.html),
+enum](https://docs.rs/postgres/0.8.9/postgres/enum.SqlState.html),
 which contains 232 variants. It would be ridiculous to `pub use` all of them!
 With namespaced enums, this kind of reexport becomes a simple `pub use` of the
 enum itself.
