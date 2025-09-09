@@ -16,22 +16,188 @@ trait Supertrait2 {
     type Type1;
     type Type2;
 }
-trait Subtrait: Supertrait1 + Supertrait2 {
+trait Subtrait1: Supertrait1 {
     auto impl Supertrait1;
+}
+impl Subtrait1 for MyType {
+    type Type = u8; // implicitly implements `Supertrait1::Type := u8`
+}
+
+trait Subtrait2: Supertrait2 {
     auto impl Supertrait2 {
         type Type1 = Self;
         type Type2 = ();
     }
 }
-impl Subtrait for MyType {
-    type Type = u8; // implicitly implements Supertrait1::Type
-
-    auto impl Supertrait2; // This generates an implicit `impl Supertrait2 for MyType` as backfill
+impl Subtrait2 for MyType {
+    // An implicit `impl Supertrait2 for MyType` is generated
+    // with `Type1 := MyType` and `Type2 := ()` as backfill
 }
 ```
 
 # Motivation
 [motivation]: #motivation
+
+## Trait evolution
+
+Trait evolution is a treatment to existing trait hierarchy in a library. Difficulty has arised in the past that hoisting items from the current trait into a new supertrait, or introduction of a second trait.
+
+This RFC promises to improve the situation around trait evolution. It captures the common cases under this theme and aims to reduce rewrites in downstream crates, should the need to re-organise trait hierarchy arises.
+
+### Example: trait refinement by item hoisting into supertraits
+
+As library code grows, there is frequently a need to breakdown a big trait into several smaller trait. This would have been a breaking change in view of SemVer and a user code rewrite is mandatory. However, the aim of this RFC is to ease the transition of downstream trait implementors to the new trait hierarchy by reducing the rewrites.  
+
+Suppose that we start with a big trait `Subtrait` and it becomes desirable that `candidate_for_hoisting` method is hoisted into another trait.
+```rust
+trait Subtrait {
+    fn candidate_for_hoisting(&self);
+    fn subtrait_method(&self);
+}
+// downstream crate
+impl Subtrait for MyType {
+    fn candidate_for_hoisting(&self) { .. }
+    fn subtrait_method(&self) { .. }
+}
+fn assert(x: impl Subtrait)
+where
+    MyType: Subtrait
+{
+    x.candidate_for_hoisting()
+}
+```
+With this RFC, it is possible for the library author to perform the following refactor.
+```rust
+trait Supertrait {
+    fn candidate_for_hoisting(&self); // <~ hoisted
+}
+trait Subtrait: Supertrait {
+    auto impl Supertrait;
+    fn subtrait_method(&self);
+}
+
+// downstream crate: no rewrites are required
+impl Subtrait for MyType {
+    fn candidate_for_hoisting(&self) { .. }
+    // ^ this is resolved as implementor of `Supertrait::candidate_for_hoisting`
+
+    fn subtrait_method(&self) { .. }
+}
+fn assert(x: impl Subtrait)
+where
+    MyType: Subtrait
+{
+    x.candidate_for_hoisting() // <~ method resolves to `Supertrait::candidate_for_hoisting`
+}
+```
+
+### Example: relaxed bounds via new supertraits
+A common use case of supertraits is weaken bounds involved in associated items. There are occassions that a weakend supertrait could be useful. Suppose that we have a factory trait in the following example. In this example, the `async fn make` factory method could be weakened so that the future returned could be used in the context where the future is not required to be of `Send`. This has been enabled through the use of [the `trait_variant` crate](https://docs.rs/trait-variant/latest/trait_variant/).
+
+```rust
+#[trait_variant::make(IntFactory: Send)]
+trait LocalIntFactory {
+    async fn make(&self) -> i32;
+    fn stream(&self) -> impl Iterator<Item = i32>;
+    fn call(&self) -> u32;
+}
+
+// `trait_variant` will generate a conceptual subtrait:
+
+trait IntFactory: Send {
+    fn make(&self) -> impl Future<Output = i32> + Send;
+    fn stream(&self) -> impl Iterator<Item = i32> + Send;
+    fn call(&self) -> u32;
+}
+```
+
+This RFC enables one to construct the trait in the following fashion.
+```rust
+trait LocalIntFactory {
+    async fn make(&self) -> i32;
+    fn stream(&self) -> impl Iterator<Item = u32>;
+    fn call(&self) -> u32;
+}
+trait IntFactory: Send {
+    auto impl LocalIntFactory {
+        async fn make(&self) -> i32 {
+            IntFactory::make(self).await
+        }
+        fn stream(&self) -> impl Iterator<Item = u32> {
+            IntFactory::stream(self)
+        }
+        fn call(&self) -> u32 {
+            IntFactory::call(self)
+        }
+    }
+    fn make(&self) -> impl Future<Output = i32> + Send;
+    fn stream(&self) -> impl Iterator<Item = i32> + Send;
+    fn call(&self) -> u32;
+}
+```
+
+### <a id="po-o"></a>Example: automatic supertrait implementation
+
+A second prominent example is the `PartialOrd` and `Ord` traits.
+```rust
+trait PartialOrd<Rhs = Self> {
+    fn partial_cmp(&self, other: &Rhs) -> Option<Ordering>;
+    // ...
+}
+trait Ord<Rhs = Self>: PartialOrd<Rhs> {
+    fn cmp(&self, other: &Rhs) -> Ordering;
+    // ...
+}
+// This is one of the more probably implementation:
+impl PartialOrd for X {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for X {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // here it defines a total ordering
+        ..
+    }
+}
+```
+
+The `PartialOrd` trait could be reworked in this proposal as follows.
+```rust
+trait PartialOrd<Rhs = Self> {
+    fn partial_cmp(&self, other: &Rhs) -> Option<Ordering>;
+}
+trait Ord<Rhs = Self>: PartialOrd<Rhs> {
+    fn cmp(&self, other: &Rhs) -> Ordering;
+    auto impl PartialOrd<Rhs> {
+        fn partial_cmp(&self, other: &Rhs) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+}
+```
+There are now two choices for type `X` in the downstream crate.
+- Delete the `impl PartialOrd for X`. Without the overlapping `impl`, the `auto impl` can stand in and take effect.
+```rust
+// delete: impl PartialOrd for X { .. }
+impl Ord for X {
+    fn cmp(&self, other: &Rhs) -> Ordering {
+        // here it defines the same total ordering
+    }
+}
+```
+- Declare use of the existing applicable `impl PartialOrd for X`.
+```rust
+impl PartialOrd for X {
+    // this is the same implementation
+}
+impl Ord for X {
+    extern impl PartialOrd;
+    fn cmp(&self, other: &Rhs) -> Ordering {
+        // here it defines the same total ordering
+    }
+}
+```
 
 ## Helpers for implementing traits
 
@@ -55,8 +221,27 @@ struct MyStructProxy<'a> {
     digit: i32,
 }
 
+trait SerializeByProxy: Serialize {
+    // See https://docs.rs/serde/latest/serde/trait.Serialize.html
+    auto impl Serialize {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            // First construct the proxy
+            let proxy = SerializeByProxy::serialize(self);
+            // Then delegate the serialization to the proxy
+            proxy.serialize(serializer)
+        }
+    }
+
+    type Proxy<'a>: Serialize
+    where Self: 'a;
+
+    fn serialize(&self) -> Proxy<'_>;
+}
+
 impl SerializeByProxy for MyStruct {
-    type Proxy<'a> = MyStructProxy<'a>;
+    type Proxy<'a> = MyStructProxy<'a>
+    where Self: 'a;
+
     fn serialize(&self) -> MyStructProxy<'_> {
         Proxy {
             name: &self.name,
@@ -64,6 +249,8 @@ impl SerializeByProxy for MyStruct {
             tens: self.int / 10,
         }
     }
+    // Now `MyStruct` is also automatically `Serialize`
+    // via a proxy.
 }
 ```
 And then `MyStruct` automatically implements `Serialize` by creating a `MyStructProxy` instance and serializing the proxy. So for example `MyStruct { name: "a", int: 42 }` is serialized into json as `{"name":"a","tens":4,"digit":2}`.
@@ -118,7 +305,36 @@ where
     MyStruct: Deref<Target = u8>
 {}
 ```
-The feature in this RFC provides a mechanism for _trait evolution_ where it becomes possible to split a trait into a super-trait and sub-trait without breaking backwards compatibility in downstream crates.
+The feature in this RFC provides a mechanism for _trait evolution_ of `Deref` and `Receiver` where it becomes possible to split a trait into a super-trait and sub-trait without breaking backwards compatibility in downstream crates.
+
+```rust
+pub trait Receiver {
+    type Target: ?Sized;
+}
+
+pub trait Deref: Receiver {
+    auto impl Receiver;
+
+    fn deref(&self) -> &Self::Target;
+}
+
+// Note that the `impl Deref` block is still compiled and completely equivalent
+// to the definition prior to applying this RFC.
+impl Deref for MyStruct {
+    type Target = u8;
+    fn deref(&self) -> &u8 {
+        &self.0
+    }
+}
+
+fn assert_deref()
+where
+    MyStruct: Deref<Target = u8>
+{
+    // The `Deref<Target = u8>` predicate resolves the name `Target` to
+    // `Receiver::Target` under this RFC
+}
+```
 
 ### Why not a blanket impl?
 
@@ -151,7 +367,7 @@ impl<T: SafeToDeref> Deref for SmartPtr<T> {
     }
 }
 ```
-This kind of code where `SmartPtr` *sometimes* implements `Deref` but *always* implements `Receiver` is not possible with a blanket implementation. The feature proposed by this RFC makes the above possible.
+This kind of code where `SmartPtr` *sometimes* implements `Deref` but *always* implements `Receiver` is not possible with a blanket implementation. The feature proposed by this RFC would make the above construction a possibility.
 </details>
     
 ## Tenets
@@ -222,7 +438,7 @@ Over time, needs have arised to establish a hierarchy of traits, so that the par
 
 With this proposal, specialisation is not required and, instead, the pulled-back supertrait implementation applies directly within the context of the subtrait implementation.
 
-```rs=
+```rust
 // A refactored Subtrait that encodes parts of its protocol
 // to be implementable on other types,
 // to which Subtrait is not applicable.
@@ -302,7 +518,7 @@ enum MouseEvent {
     MoveEvent(MoveEvent),
 }
 
-trait MouseEventHandler {
+trait MouseEventHandler: EventHandler {
     auto impl EventHandler {
         type Event = MouseEvent;
         fn handle_event(&mut self, event: MouseEvent) {
@@ -368,11 +584,11 @@ unsafe trait Even {
     fn even(&self) -> usize;
 }
 
-trait Double {
+trait Double: Even {
     // SAFETY: 2*x is always even
     unsafe auto impl Even {
         fn even(&self) -> usize {
-            2*self.value_to_double()
+            2 * self.value_to_double()
         }
     }
     fn value_to_double(&self) -> usize;
@@ -481,6 +697,26 @@ where
 ```
 Note that this implies that you *must* use `extern impl` to provide your own implementation of the super trait. If you don't, then by the above rule, the generated impl for the super trait would overlap with your custom implementation, which is illegal by the standard trait rules.
 
+### Extension: item aliasing in `auto impl`
+To reduce possible verbosity, we can propose a future extension to `auto impl` default implementation block, in case supertrait items can be implemented as an alias to subtrait items.
+
+When a subtrait associated method has the same signature as a supertrait associated method in terms of generics, has a set of `where` bounds that satisfies the supertrait item `where` bounds and compatible function signature, the `auto impl` default implementation can be simplified into a assignment statement, instead of a complete function body with a delegation call.
+
+```rust
+trait Supertrait {
+    fn method(&self) -> impl Trait1;
+}
+
+trait Subtrait: Supertrait {
+    auto impl Supertrait {
+        fn method(&self) -> impl Trait1 = <Self as Subtrait>::method;
+    }
+
+    fn method(&self) -> impl Trait1 + Send
+    where Self: 'static + Send;
+}
+```
+
 ## Unsafe auto implementations
 
 The `auto impl` items can be marked `unsafe`, which declares that implementing the sub-trait without using the auto implementation is unsafe.
@@ -498,6 +734,100 @@ If the sub-trait defines an item of the same name as an item in the super-trait,
 
 In this scenario, any item in an impl block of the sub-trait using the ambiguous name will always refer to the item from the sub-trait. This means that the only way to override the item from the super trait is to use `extern impl`.
 
+## Mandatory `external impl` declaration
+
+For the following definition, a **non-marker** trait is a trait with an item, which can be `default` or not. A marker trait has zero associated items.
+
+| Supertrait kind | `auto impl` block in sub-`trait` block | `auto impl` statement in sub-`trait` block |
+|-|-|-|
+| non-marker | Mandatory[<sup>a</sup>](#e-i-a) | Optional[<sup>b</sup>](#e-i-b) |
+| marker <td colspan="2" style="text-align: center"> Mandatory[<sup>c</sup>](#e-i-c) |
+
+### <a id="e-i-a"></a>Case a: `auto impl` block of a non-marker supertrait in sub-`trait` block
+For illustration, here is an example.
+```rust
+trait Supertrait {
+    type Item;
+}
+trait Subtrait: Supertrait {
+    auto impl Supertrait {
+        type Item = u32;
+    }
+}
+
+impl Supertrait for MyStruct {
+    type Item = u8;
+}
+impl Subtrait for MyStruct {
+    // Without the following ...
+    extern impl Supertrait;
+    // ... the code will be rejected for overlapping `impl Supertrait`s
+}
+```
+The reason for this is that given that `trait Subtrait` has already provided its implementation, an implementation of `Subtrait` must choose between the default implementation and a user-defined implementation. We prefer explicit confirmation through `extern impl` declaration from the implementor, rather than making the compiler to reason about whether `auto impl` should be backfilled for ease of language feature implementation.
+
+#### Extension: Possible relaxation through an unsafe attribute and a future-compatibility lint
+For important ecosystem traits like `PartialOrd` and `Ord`, this rule is still unsatisfactory due to [the potential rewrites required](#po-o) on downstream crates, even though it could be as small as an additional `extern impl PartialOrd`. As an extension, the rule could be relaxed with an unsafe attribute `#![unsafe(probe_extern_impl)]` and apply further trait selection to decide whether the default implementation given by the `auto impl` block should be used.
+
+```rust
+trait Ord: PartialOrd {
+    #[unsafe(probe_extern_impl)]
+    auto impl PartialOrd {
+        // ...
+    }
+}
+
+// The following code in the ecosystem will continue to compile.
+impl PartialOrd for MyType { .. }
+impl Ord for MyType {
+    // Given the current facts about `MyType`,
+    // the compiler can deduce that `MyType: PartialOrd` is satisfiable,
+    // so the `auto impl PartialOrd` is not used
+}
+```
+
+However, this practice will not be encouraged eventually under provision of this RFC. For this reason, we also propose a future-compatibility lint, which will be escalated on a future Edition boundary to denial. The lint shall highlight the existing `auto impl` block in the subtrait definition and suggest an explicit `extern impl` statement in the subtrait implementation.
+
+### <a id="e-i-b"></a>Case b: `auto impl` block of a non-marker supertrait in sub-`trait` statement
+For illustration, here is an example.
+```rust
+trait Supertrait {
+    type Item;
+}
+trait Subtrait: Supertrait {
+    auto impl Supertrait;
+}
+
+impl Supertrait for MyStruct {
+    type Item = u8;
+}
+impl Subtrait for MyStruct {
+    // The following `extern impl` is optional
+    extern impl Supertrait;
+}
+```
+The reason for this is that `trait Subtrait` has not already provided its implementation, an implementation of `Subtrait` must supply an implementation of `Supertrait`, which could have existed before introducing the `auto impl Supertrait`.
+
+If `auto impl` statement is declared on a non-marker supertrait without a default implementation, the `extern impl` is optional so that we do not penalise the existing trait implementors.
+
+### <a id="e-i-c"></a>Case c: `auto impl` block of a marker supertrait
+For illustration, here is an example.
+```rust
+trait Supertrait {}
+trait Subtrait: Supertrait {
+    auto impl Supertrait;
+}
+
+impl Subtrait for MyStruct {
+    // The implementor must choose between
+    // - `auto impl Super` and
+    // - `extern impl Supertrait`.
+    // Without either, it would be rejected with unsatisfied super-bound
+    extern impl Supertrait;
+}
+```
+The reason for this is that `Supertrait` as a marker trait has no associated items. As we could not decide if the `Supertrait` would be implemented within the bounds attached to the `impl Subtrait` block, due to lack of syntatical signals, it is better to require explicit confirmation from the implementor on the condition of the marker trait `Supertrait` when this marker is applicable to `MyStruct`.
+
 ---
 
 # Drawbacks
@@ -514,7 +844,7 @@ Our rationale is that this blanket `impl` would unnecessarily reject genuine use
 
 As illustration, the following is an example
 
-```rust=
+```rust
 trait BaseFunction {
     fn base_capability(&self);
 }
@@ -547,7 +877,7 @@ where T: ManagementHandle
 
 Marker supertraits and supertraits with `default` items can be easily overlooked when users write subtrait implementations. They would register too little signal for the reader to recognise the significance of traits of these kinds. For this reason, we bias towards asking users to provide clear syntatical signals through `auto impl MarkerTrait` or `extern impl MarkerTrait`, so that the automatic derivation of such traits is easily recognisable and provides obvious site for documentation in case justification is waranted.
 
-```rs=
+```rust
 // It is almost always a good idea to explain
 // why a trait like below is implemented on a type.
 trait MarkerTrait {}
@@ -564,9 +894,9 @@ impl Supertrait for MyType {
 }
 ```
 
-### What about checking whether another impl exists?
+### What about checking whether another impl exists to decide automatic `impl`-filling?
 
-We could potentially determine whether the opt-out is used based on whether an impl of the super trait exists, but we prefer not to. We have existing mechanism to determine the specialisation and implementation overlaps. Whether a supertrait `impl` overlaps or not, is not the concern of this proposal.
+We could potentially determine whether the opt-out is used based on whether an `impl` of the supertrait exists, but we prefer not to. We have existing mechanism to determine the specialisation and implementation overlaps. Whether a supertrait `impl` overlaps or not, is not the concern of this proposal.
 
 If we would deduce whether an `auto impl` should be effected, there could present a hazard that silently changes the program behaviour.
 
@@ -577,6 +907,10 @@ trait AutoMyTrait: MyTrait {
     auto impl MyTrait;
 }
 
+trait MyOtherTrait { .. }
+
+struct Foo;
+
 // Suppose we allow users to elide the `auto impl`/`extern impl` directive
 // and we deduce based on some applicability criterion ...
 impl AutoMyTrait for Foo {} // <-- generates MyTrait
@@ -584,7 +918,11 @@ impl AutoMyTrait for Foo {} // <-- generates MyTrait
 // Suppose this item is added at one point of time
 impl<T: MyOtherTrait> MyTrait for T { .. }
 
-impl MyOtherTrait for Foo {} // <-- now it should not be generated anymore
+impl MyOtherTrait for Foo {}
+
+// QUESTION: which `impl MyTrait for Foo` fulfills the boud `Foo: MyTrait`?
+// Should it be the `auto impl MyTrait;` with default items?
+// Should it be the `impl<T: MyOtherTrait> MyTrait for T` with `T := Foo`?
 ```
 
 ## Why is a hard error on ambiguity acceptable to us?
@@ -616,9 +954,7 @@ In fact, this proposal is an improved version over this scheme. Previously, to d
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- What parts of the design do you expect to resolve through the RFC process before this gets merged?
-- What parts of the design do you expect to resolve through the implementation of this feature before stabilization?
-- What related issues do you consider out of scope for this RFC that could be addressed in the future independently of the solution that comes out of this RFC?
+None so far.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
