@@ -37,14 +37,14 @@ This period we have 12 flagship goals, broken out into four themes:
 
 | Goal                                                                         | Point of contact | Team(s) and Champion(s)                      |
 | :--                                                                          | :--          | :--                                          |
-| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2025h2/autoreborrow-traits.html)                                    | [@aapoalas][]    | [compiler] ([Oliver Scherer][]), [lang] ([Tyler Mandry][])     |
+| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2025h2/autoreborrow-traits.html)                                    | [Aapo Alasuutari][]    | [compiler] ([Oliver Scherer][]), [lang] ([Tyler Mandry][])     |
 | [Design a language feature to solve Field Projections](https://rust-lang.github.io/rust-project-goals/2025h2/field-projections.html) | [Benno Lossin][] | [lang] ([Tyler Mandry][])                            |
-| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2025h2/pin-ergonomics.html)            | [@frank-king][]  | [compiler] ([Oliver Scherer][]), [lang] ([TC][]) |
+| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2025h2/pin-ergonomics.html)            | [Frank King][]  | [compiler] ([Oliver Scherer][]), [lang] ([TC][]) |
 
 
 One of Rust's core value propositions is that it's a "library-based language"—libraries can build abstractions that feel built-in to the language even when they're not. Smart pointer types like `Rc` and `Arc` are prime examples, implemented purely in the standard library yet feeling like native language features. However, Rust's built-in reference types (`&T` and `&mut T`) have special capabilities that user-defined smart pointers cannot replicate. This creates a "second-class citizen" problem where custom pointer types can't provide the same ergonomic experience as built-in references.
 
-The "Beyond the `&`" initiative aims `&`'s special capabilities, allowing library authors to create smart pointers that are truly indistinguishable from built-in references in terms of syntax and ergonomics. This will enable more ergonomic smart pointers for use in cross-language interop (e.g., references to objects in other languages like C++ or Python) and for low-level projects like Rust for Linux which use smart pointers to express particular data structures.
+The "Beyond the `&`" initiative aims to share `&`'s special capabilities, allowing library authors to create smart pointers that are truly indistinguishable from built-in references in terms of syntax and ergonomics. This will enable more ergonomic smart pointers for use in cross-language interop (e.g., references to objects in other languages like C++ or Python) and for low-level projects like Rust for Linux which use smart pointers to express particular data structures.
 
 ### "Unblocking dormant traits"
 
@@ -59,9 +59,9 @@ The "Beyond the `&`" initiative aims `&`'s special capabilities, allowing librar
 Rust's trait system is one of its most powerful features, but it has a number of longstanding limitations that are preventing us from adopting new patterns. The goals in this category unblock a number of new capabilities:
 
 * [Polonius](https://rust-lang.github.io/rust-project-goals/2025h2/./polonius.html) will enable new borrowing patterns, and in particular [unblock "lending iterators"](https://github.com/rust-lang/rust/issues/92985). Over the last few goal periods we have identified an "alpha" vesion of polonius that addresses the most important cases while being relatively simple and optimizable. Our goal for 2025H2 is to implement this algorithm in a form that is ready for stabilization in 2026.
-* The [next gen trait solver](https://rust-lang.github.io/rust-project-goals/2025h2/./next-solver.html) is a refactored trait solver that unblocks better support for numerous language features (implied bounds, negative impls, the list goes on) in addition to closing a number of existing bugs and unsoundnesses. Over the last few goal periods, the trait solver went from early prototype to being production use in coherence. The goal for 2025H2 is to prepare it for use throughout the compiler.
-* The work on [evolving trait hierarchies](https://rust-lang.github.io/rust-project-goals/2025h2/./evolving-traits.html) will make it possible to refactor some parts of an existing trait out into a new supertrait so they can be used on their own. This unblocks a number of features where the existing trait is insufficiently general, in particular stabilizing support for custom receiver types, a prior project goal that wound up blocking on this refactoring.
-* The work to [expand Rust's `Sized` hierarchy](https://rust-lang.github.io/rust-project-goals/2025h2/./scalable-vectors.html) will permit us to express types that are neither `Sized` nor `?Sized`, such as extern types (which have no size) or Arm's Scalable Vector Extension (which have a size that is known at runtime, but not compilation time). This goal builds on [RFC #3729](https://github.com/rust-lang/rfcs/pull/3729)[] and [RFC #3838](https://github.com/rust-lang/rfcs/pull/3838)[], authored in previous project goal periods.
+* The [next gen trait solver](https://rust-lang.github.io/rust-project-goals/2025h2/./next-solver.html) is a refactored trait solver that unblocks better support for numerous language features (implied bounds, negative impls, the list goes on) in addition to closing a number of existing bugs and unsoundnesses. Over the last few goal periods, the trait solver went from early prototype to being production use in coherence. The goal for 2025H2 is to prepare it for stabilization.
+* The work on [evolving trait hierarchies](https://rust-lang.github.io/rust-project-goals/2025h2/./evolving-traits.html) will make it possible to refactor some parts of an existing trait out into a new supertrait so they can be used on their own. This unblocks a number of features where the existing trait is insufficiently general, in particular stabilizing support for custom receiver types, a prior project goal that wound up blocking on this refactoring. This will also make it safer to provide stable traits in the standard library, while preserving the ability to evolve them in the future.
+* The work to [expand Rust's `Sized` hierarchy](https://rust-lang.github.io/rust-project-goals/2025h2/./scalable-vectors.html) will permit us to express types that are neither `Sized` nor `?Sized`, such as extern types (which have no size) or ARM's Scalable Vector Extensions (which have a size that is known at runtime, but not compilation time). This goal builds on [RFC #3729](https://github.com/rust-lang/rfcs/pull/3729) and [RFC #3838](https://github.com/rust-lang/rfcs/pull/3838), authored in previous project goal periods.
 * [In-place initialization](https://rust-lang.github.io/rust-project-goals/2025h2/./in-place-initialization.html) allows creating structs and values that are tied to a particular place in memory. While useful directly for projects doing advanced C interop, it also unblocks expanding `dyn Trait` to support for `async fn` and `-> impl Trait` methods, as compiling such methods requires the ability for the callee to return a future whose size is not known to the caller.
 
 ### "Flexible, fast(er) compilation"
@@ -103,14 +103,14 @@ The full slate of project goals are as follows. These goals all have identified 
 | [Getting Rust for Linux into stable Rust: compiler features](https://rust-lang.github.io/rust-project-goals/2025h2/Rust-for-Linux-compiler.html)                   | [Tomas Sedovic][]    | [compiler] ([Wesley Wiser][])                                                             |
 | [Getting Rust for Linux into stable Rust: language features](https://rust-lang.github.io/rust-project-goals/2025h2/Rust-for-Linux-language.html)                   | [Tomas Sedovic][]    | [lang] ([Josh Triplett][]), [lang-docs] ([TC][])                                    |
 | [Borrow checking in a-mir-formality](https://rust-lang.github.io/rust-project-goals/2025h2/a-mir-formality.html)                                                   | [Niko Matsakis][]    | [types] ([Niko Matsakis][])                                                               |
-| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2025h2/autoreborrow-traits.html)                                                                  | [@aapoalas][]        | [compiler] ([Oliver Scherer][]), [lang] ([Tyler Mandry][])                                              |
+| [Reborrow traits](https://rust-lang.github.io/rust-project-goals/2025h2/autoreborrow-traits.html)                                                                  | [Aapo Alasuutari][]        | [compiler] ([Oliver Scherer][]), [lang] ([Tyler Mandry][])                                              |
 | [build-std](https://rust-lang.github.io/rust-project-goals/2025h2/build-std.html)                                                                                  | [David Wood][]       | [cargo] ([Eric Huss][]), [compiler] ([David Wood][]), [libs] ([Amanieu d'Antras][])                          |
 | [Prototype Cargo build analysis](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-build-analysis.html)                                                  | [Weihang Lo][]       | [cargo] ([Weihang Lo][])                                                                  |
-| [Rework Cargo Build Dir Layout](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-build-dir-layout.html)                                                 | [@ranger-ross][]     | [cargo] ([Weihang Lo][])                                                                  |
+| [Rework Cargo Build Dir Layout](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-build-dir-layout.html)                                                 | [Ross Sullivan][]     | [cargo] ([Weihang Lo][])                                                                  |
 | [Prototype a new set of Cargo "plumbing" commands](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-plumbing.html)                                      | ![Help Wanted][] | [cargo]                                                                               |
 | [Stabilize cargo-script](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-script.html)                                                                  | [Ed Page][]           | [cargo] ([Ed Page][]), [compiler], [lang] ([Josh Triplett][]), [lang-docs] ([Josh Triplett][])     |
 | [Continue resolving `cargo-semver-checks` blockers for merging into cargo](https://rust-lang.github.io/rust-project-goals/2025h2/cargo-semver-checks.html)         | [Predrag Gruevski][]      | [cargo] ([Ed Page][]), [rustdoc] ([Alona Enraght-Moony][])                                          |
-| [Emit Retags in Codegen](https://rust-lang.github.io/rust-project-goals/2025h2/codegen_retags.html)                                                                | [@icmccorm][]        | [compiler] ([Ralf Jung][]), [opsem] ([Ralf Jung][])                                           |
+| [Emit Retags in Codegen](https://rust-lang.github.io/rust-project-goals/2025h2/codegen_retags.html)                                                                | [Ian McCormack][]        | [compiler] ([Ralf Jung][]), [opsem] ([Ralf Jung][])                                           |
 | [Comprehensive niche checks for Rust](https://rust-lang.github.io/rust-project-goals/2025h2/comprehensive-niche-checks.html)                                       | [Bastian Kersting][]          | [compiler] ([Ben Kimock][]), [opsem] ([Ben Kimock][])                                           |
 | [Const Generics](https://rust-lang.github.io/rust-project-goals/2025h2/const-generics.html)                                                                        | [Boxy][]         | [lang] ([Niko Matsakis][])                                                                |
 | [Ergonomic ref-counting: RFC decision and preview](https://rust-lang.github.io/rust-project-goals/2025h2/ergonomic-rc.html)                                        | [Niko Matsakis][]    | [compiler] ([Santiago Pastorino][]), [lang] ([Niko Matsakis][])                                      |
@@ -125,7 +125,7 @@ The full slate of project goals are as follows. These goals all have identified 
 | [Next-generation trait solver](https://rust-lang.github.io/rust-project-goals/2025h2/next-solver.html)                                                             | [lcnr][]            | [types] ([lcnr][])                                                                       |
 | [Implement Open API Namespace Support](https://rust-lang.github.io/rust-project-goals/2025h2/open-namespaces.html)                                                 | ![Help Wanted][] | [cargo] ([Ed Page][]), [compiler] ([b-naber][]), [crates-io] ([Carol Nichols][])                 |
 | [Promoting Parallel Front End](https://rust-lang.github.io/rust-project-goals/2025h2/parallel-front-end.html)                                                      | [Sparrow Li][]      | [compiler]                                                                            |
-| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2025h2/pin-ergonomics.html)                                          | [@frank-king][]      | [compiler] ([Oliver Scherer][]), [lang] ([TC][])                                          |
+| [Continue Experimentation with Pin Ergonomics](https://rust-lang.github.io/rust-project-goals/2025h2/pin-ergonomics.html)                                          | [Frank King][]      | [compiler] ([Oliver Scherer][]), [lang] ([TC][])                                          |
 | [Stabilizable Polonius support on nightly](https://rust-lang.github.io/rust-project-goals/2025h2/polonius.html)                                                    | [Rémy Rakic][]             | [types] ([Jack Huey][])                                                                   |
 | [Production-ready cranelift backend](https://rust-lang.github.io/rust-project-goals/2025h2/production-ready-cranelift.html)                                        | [Folkert de Vries][]      | [compiler], [wg-compiler-performance]                                                 |
 | [Stabilize public/private dependencies](https://rust-lang.github.io/rust-project-goals/2025h2/pub-priv.html)                                                       | ![Help Wanted][] | [cargo] ([Ed Page][]), [compiler]                                                          |
@@ -137,7 +137,7 @@ The full slate of project goals are as follows. These goals all have identified 
 | [Stabilize rustdoc `doc_cfg` feature](https://rust-lang.github.io/rust-project-goals/2025h2/rustdoc-doc-cfg.html)                                                  | [Guillaume Gomez][]  | [rustdoc] ([Guillaume Gomez][])                                                           |
 | [Add a team charter for rustdoc team](https://rust-lang.github.io/rust-project-goals/2025h2/rustdoc-team-charter.html)                                             | [Guillaume Gomez][]  | [rustdoc] ([Guillaume Gomez][])                                                           |
 | [SVE and SME on AArch64](https://rust-lang.github.io/rust-project-goals/2025h2/scalable-vectors.html)                                                              | [David Wood][]       | [compiler] ([David Wood][]), [lang] ([Niko Matsakis][]), [libs] ([Amanieu d'Antras][]), [types]           |
-| [Rust Stabilization of MemorySanitizer and ThreadSanitizer Support](https://rust-lang.github.io/rust-project-goals/2025h2/stabilization-of-sanitizer-support.html) | [@jakos-sec][]       | [bootstrap], [compiler], [infra], [project-exploit-mitigations]                       |
+| [Rust Stabilization of MemorySanitizer and ThreadSanitizer Support](https://rust-lang.github.io/rust-project-goals/2025h2/stabilization-of-sanitizer-support.html) | [Jakob Koschel][]       | [bootstrap], [compiler], [infra], [project-exploit-mitigations]                       |
 | [Type System Documentation](https://rust-lang.github.io/rust-project-goals/2025h2/typesystem-docs.html)                                                            | [Boxy][]         | [types] ([Boxy][])                                                                    |
 | [Unsafe Fields](https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html)                                                                          | [Jack Wrenn][]         | [compiler] ([Jack Wrenn][]), [lang] ([Scott McMurray][])                                             |
 
@@ -699,7 +699,7 @@ That's a tough one. Part of the reason to have champions is to help us filter ou
 [Sparrow Li]: https://github.com/SparrowLii
 [Wesley Wiser]: https://github.com/WesleyWiser
 [Manuel Drehwald]: https://github.com/ZuseZ4
-[@aapoalas]: https://github.com/aapoalas
+[Aapo Alasuutari]: https://github.com/aapoalas
 [Alona Enraght-Moony]: https://github.com/adotinthevoid
 [b-naber]: https://github.com/b-naber
 [Jon Bauman]: https://github.com/baumanj
@@ -712,10 +712,10 @@ That's a tough one. Part of the reason to have champions is to help us filter ou
 [Eric Huss]: https://github.com/ehuss
 [Ed Page]: https://github.com/epage
 [Folkert de Vries]: https://github.com/folkertdev
-[@frank-king]: https://github.com/frank-king
-[@icmccorm]: https://github.com/icmccorm
+[Frank King]: https://github.com/frank-king
+[Ian McCormack]: https://github.com/icmccorm
 [Jack Huey]: https://github.com/jackh726
-[@jakos-sec]: https://github.com/jakos-sec
+[Jakob Koschel]: https://github.com/jakos-sec
 [Josh Triplett]: https://github.com/joshtriplett
 [Jack Wrenn]: https://github.com/jswrenn
 [Jakub Beránek]: https://github.com/kobzol
@@ -726,7 +726,7 @@ That's a tough one. Part of the reason to have champions is to help us filter ou
 [Predrag Gruevski]: https://github.com/obi1kenobi
 [Oliver Scherer]: https://github.com/oli-obk
 [Vadim Petrochenkov]: https://github.com/petrochenkov
-[@ranger-ross]: https://github.com/ranger-ross
+[Ross Sullivan]: https://github.com/ranger-ross
 [Ben Kimock]: https://github.com/saethlin
 [Scott McMurray]: https://github.com/scottmcm
 [Santiago Pastorino]: https://github.com/spastorino
