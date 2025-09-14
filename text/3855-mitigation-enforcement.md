@@ -76,6 +76,75 @@ to introduce the mitigations to the entire program.
 [`-Z stack-protector`]: https://github.com/rust-lang/rust/issues/114903
 [example by Alice Ryhl]: https://rust-lang.zulipchat.com/#narrow/channel/131828-t-compiler/topic/Target.20modifiers.20and.20-Cunsafe-allow-abi-mismatch/near/483871803
 
+## Supported mitigations
+
+The following mitigations could find this feature interesting
+
+### Already Stable
+
+1. `-C control-flow-guard`
+   This is a "CFI-type" mitigation on Windows, and therefore having it enabled
+   only partially makes it far less protective.
+
+   However, it is already stable, and we would need a `-C control-flow-guard-enforce`
+   or `-C deny-partial-mitigations=control-flow-guard` (or bikeshed) to make
+   it enforcing.
+2. `-C relocation-model`
+   If position-dependent code is compiled into a binary, then ASLR will
+   not be able to be enabled.
+
+   This is less of a problem in Rust than in C, since position-independent
+   code is a rarely-changed default in Rust, and it can easily be checked
+   via [`hardening-check(1)`] or similar tools since it's easily visible
+   in the ELF header.
+
+   However, we might still want to introduce a `-C enforce-position-independent` or
+   `-C deny-partial-mitigations=position-independent`.
+
+   As far as I can tell, there is no way to disable `relro` via stable Rust
+   compilation flags.
+
+### Currently Unstable (as of rustc 1.89)
+
+This RFC is not the place to make a decision of exactly which unstable mitigations
+should have enforcement enabled - that should take place as a part of their
+stabilization.
+
+However, it would be good to see that enforcement fits well with sanitizers.
+
+1. [`-Z branch-protection`]/[`-Z cf-protection`] - control flow
+   protection in ARM or Intel, respectively. Would probably want this.
+   It uses [`.note.gnu.property`](#notegnuproperty-1) which makes it active only
+   if every object in the address space uses it, which makes it easy to detect via a
+   [`hardening-check(1)`]-style tool, but since it is not the default, this
+   would make it easier to make sure it is enabled.
+2. `-Z ehcont-guard` - I couldn't find documentation of that (Windows) feature,
+   but it looks relevant.
+2. [`-Z indirect-branch-cs-prefix`] - a part of retpoline (Spectre)
+   mitigation on x86.
+3. [`-Z no-jump-tables`] - CFI-type mitigation?
+   soon to be stabilized as [`-C jump-tables`]. Do we want to hold that
+   stabilization as well?
+3. [`-Z retpoline`] and `-Z retpoline-external-thunk` - Spectre-type mitigation
+4. [`-Z sanitizer`]-based mitigations. A fairly large use case.
+   As far as I can tell, enforcement makes sense for
+   `-Zsanitizer=cfi, -Zsanitizer=memtag, -Zsanitizer=shadow-call-stack`
+   and does not make sense for
+   `-Zsanitizer=address, -Zsanitizer=dataflow, -Zsanitizer=hwaddress, -Zsanitizer=leak, -Zsanitizer=memory, -Zsanitizer=thread`
+4. [`-Z stack-protector`] - stack smashing protection, local-type mitigation
+5. [`-Z ub-checks`]: as far as I can tell, it is not intended as a mitigation,
+   but since it prevents some UB, it might be thought of as one
+
+[`-Z branch-protection`]: https://github.com/rust-lang/rust/issues/113369
+[`-Z cf-protection`]: https://github.com/rust-lang/rust/issues/93754
+[`-Z indirect-branch-cs-prefix`]: https://github.com/rust-lang/rust/issues/116852
+[`-Z no-jump-tables`]: https://github.com/rust-lang/rust/issues/116592
+[`-C jump-tables`]: https://github.com/rust-lang/rust/pull/145974
+[`-Z retpoline`]: https://github.com/rust-lang/rust/issues/116852
+[`-Z sanitizer`]: https://github.com/rust-lang/rust/issues/89653
+[`-Z stack-protector`]: https://github.com/rust-lang/rust/issues/114903
+[`-Z ub-checks`]: https://github.com/rust-lang/rust/issues/123499
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -109,8 +178,8 @@ When compiling a crate, if the current crate has a mitigation with enforcement
 turned on, and one of the dependencies does not have that mitigation turned
 on (whether enforcing or not), a compilation error results.
 
-If a mitigation has multiple "levels", a lower level at a child crate is compatible
-with a higher level at a base crate.
+If a mitigation has multiple "levels", a lower level at a dependent
+crate is compatible with a higher level at a base crate.
 
 The error happens independent of the target crate type (you get an error
 if you are building an rlib, not just the final executable).
@@ -118,14 +187,14 @@ if you are building an rlib, not just the final executable).
 For example, with `-C stack-protector`, the compatibility table will be
 as follows:
 
-|    Base\Child    | none | none-noenforce | strong |   strong-noenforce   |  all  |    all-noenforce     |
-| ---------------- | ---- | -------------- | ------ | -------------------- | ----- | -------------------- |
-| none             |  OK  |      OK        | error  | OK - child noenforce | error | OK - child noenforce |
-| none-noenforce   |  OK  |      OK        | error  | OK - child noenforce | error | OK - child noenforce | 
-| strong           |  OK  |      OK        |   OK   |          OK          | error | OK - child noenforce |
-| strong-noenforce |  OK  |      OK        |   OK   |          OK          | error | OK - child noenforce |
-| all              |  OK  |      OK        |   OK   |          OK          |   OK  |           OK         |
-| all-noenforce    |  OK  |      OK        |   OK   |          OK          |   OK  |           OK         |
+|  Base\Dependent  | none | none-noenforce | strong |     strong-noenforce     |  all  |      all-noenforce       |
+| ---------------- | ---- | -------------- | ------ | ------------------------ | ----- |   --------------------   |
+| none             |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
+| none-noenforce   |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
+| strong           |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
+| strong-noenforce |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
+| all              |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
+| all-noenforce    |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
 
 If a program has multiple flags of the same kind, the last flag wins, so e.g.
 `-C stack-protector=strong-noenforce -C stack-protector=strong` is the same as
