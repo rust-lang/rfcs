@@ -350,12 +350,23 @@ for them.
 
 This is somewhat hard to do with an external tool, since there is
 no way of looking at a binary and telling what mitigations its components
-have (for example [`hardening-check(1)`], exists, but its check for
-stack smashing protection only checks that at least 1 function has stack
-cookies, rather than checking that every interesting function has it
-enabled).
+have.
 
+There are howevever some external tools that do check for mitigations,
+but they have limitations:
+
+1. [`hardening-check(1)`] exists, but its check for stack smashing protection only
+   checks that at least 1 function has stack cookies, rather than checking that
+   every interesting function has it enabled.
+2. The Linux kernel has [`objtool`], which checks for some other mitigations (for
+   example, retpolines). It however needs to access the `.o` object files
+   rather than to the final linked executable or shared library - which
+   requires its user to control the linking process - and also has hardcoded
+   limitations that make it only suitable for the Linux kernel, rather than
+   being useful as a general-purpose tool.
+   
 [`hardening-check(1)`]: https://manpages.debian.org/testing/devscripts/hardening-check.1.en.html
+[`objtool`]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/objtool/Documentation/objtool.txt?id=5cd64d4f92683afa691a6b83dcad5adfb2165ed0
 
 ## .note.gnu.property
 
