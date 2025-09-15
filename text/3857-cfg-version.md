@@ -617,7 +617,7 @@ could reuse the `#[cfg(since)]` predicate.
 
 As not all systems use SemVer, we can either
 - Contort the version into SemVer
-  - This can run into problems either with having more precision (e.g. `120.0.1.10` while SemVer only allows `X.Y.Z`) or post-release versions (e.g. `1.2.0.post1` which a SemVer predicate would treat as a pre-release).
+  - This can run into problems either with having more precision (e.g. `120.0.1.10` while SemVer only allows `X.Y.Z`) or post-release versions (e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/) which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release).
 - Add an optional third field for specifying the version format (e.g. `#[cfg(since(windows, "10.0.10240", <policy-name>)]`)
 - Make `--check-cfg` load-bearing by having the version policy name be specified in the `--check-cfg` predicate
 
