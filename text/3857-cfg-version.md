@@ -165,7 +165,7 @@ fn main() {
     // ^--- This warning only happens if we are on Rust >= 1.27.
 }
 ```
-However, this would produce a `unexpected_cfgs` lint and you would need to add the following to `Cargo.toml`:
+However, this would produce an `unexpected_cfgs` lint and you would need to add the following to `Cargo.toml`:
 ```toml
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
