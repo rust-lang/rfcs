@@ -254,6 +254,27 @@ is equivalent to `-C stack-protector=strong`.
 This would work quite well, but I am not sure that rustc wants to have order between different
 kinds of CLI arguments.
 
+## Limiting the set of crates that are allowed to bypass enforcement
+
+You could have a syntax like `-C stack-protector=strong-noenforce=std+alloc+core` or
+`-C allow-partial-mitigations=stack-protector=std+alloc+core`,
+or some other syntax (using `+` since `,` should have a different level of precedence),
+which would only allow the mitigation to be partial on a specified set of crate names.
+
+This is different from `-C pretend-mitigation-enabled`, since it reflects a decision
+made by the application writer (dependent crate) rather than the library writer.
+
+This can be done in a later stabilization that the core of the feature.
+
+### Impacts to syntax choices
+
+The `-C stack-protector=strong-noenforce=std+alloc+core` syntax feels ugly.
+
+If we decide that the noenforce syntax is important to allow for flag concatenation, we can
+certainly have both the `noenforce` syntax and the `allow-partial-mitigations` syntax,
+with `noenforce` disabling enforcement for all crates while `allow-partial-mitigations`
+disables it only for specific crates.
+
 ## Interaction with `-C unsafe-allow-abi-mismatch` / `-C pretend-mitigation-enabled`
 
 The proposed rules do not interact with `-C unsafe-allow-abi-mismatch` at all, so if
