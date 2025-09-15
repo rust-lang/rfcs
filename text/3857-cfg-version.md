@@ -291,7 +291,7 @@ Whether build probes or nightly version checks,
 auto-enabling nightly features
 (rather than having users opt-in)
 runs counter to the spirit of nightly (works like stable except where you opt-in)
-and cause problems if the checks are incorrect which has broken many crates nightly builds in the past
+and cause problems if the checks are incorrect which has broken many crates' nightly builds in the past
 and has even caused friction in changing unstable features within the compiler.
 
 Libraries could having ticking time bombs that accidentally break or have undesired behavior for some future Rust version that can't be found until we hit that version.
