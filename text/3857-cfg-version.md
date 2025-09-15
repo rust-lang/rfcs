@@ -435,7 +435,7 @@ On the [stabilization issue](https://github.com/rust-lang/rust/pull/141766),
 there was concern about the name "rust" in this predicate not fitting in with the rest of the language.
 However, dropping it to `version` would make things awkward in Cargo where there wouldn't be enough context for which item's `version` is being referred to.
 There is also a future possibility of better integrating dependency versions into the language.
-If done, then `version` may be come more ambiguous even in Rust.
+If done, then `version` may become more ambiguous even in Rust.
 For example, if Cargo told rustc the minimum compatible version for a dependency, `#[deprecated(since)]`` warnings could not emit if the minimum version bound is lower than `since`.
 Similarly, if we stabilized `#[stable(since)]`, a linter could report when a version requirement is too low.
 
