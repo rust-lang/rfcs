@@ -258,7 +258,7 @@ This will be reported back through `--print-cfg`.
 Because this gets reported back in `--print-cfg`,
 Cargo will expose `rust` in:
 - build scripts as `CARGO_CFG_RUST`
-- `target."cfg()".dependencies`
+- `[target."cfg()".dependencies]`
 
 ## clippy
 
@@ -268,7 +268,7 @@ However, it will be perfectly reasonable to use those items when guarded by a `#
 
 Clippy may wish to:
 - Find a way to reduce false positives, e.g. evaluating the `cfg(since)`s that led to the item's usage or disabling the lint within `#[cfg(since)]`
-- Suggest `#[cfg(since)]` in the `clippy::incompatible_msrv` diagnostic report (maybe along with offering to bump MSRV)
+- Suggest `#[cfg(since)]` in the `clippy::incompatible_msrv` diagnostic report (maybe along with offering to bump MSRV as that is a reasonable alternative)
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -292,7 +292,7 @@ Libraries could having ticking time bombs that accidentally break or have undesi
 
 ## `since` cfg predicate
 
-We could offer a `before` operator but that is already covered by `not(since)`.
+We could offer a `before` predicate but that is already covered by `not(since)`.
 
 The `since` name was taken from 
 [rustversion](https://crates.io/crates/rustversion) and the `#[deprecated(since)]` / `#[stable(since)]` attributes.
@@ -331,11 +331,11 @@ in case we want the future possibility of relaxing SemVer versions
 We could have the `check-cfg` `since` predicate only apply to the `cfg` `since` predicate,
 causing `#[cfg(rust = "1.100.0")]` to warn.
 However,
-- the `since` predicates are a general feature intended to be used with other version numbers where exact matches may be appropriate.
+- the `since` predicates are a general feature intended to be used with other version numbers where exact matches may also be appropriate.
 - this would get in the way of approximating the vendor version by the language version for working around compiler bugs and snapshotting of compiler output.
 
 Possibly there could be a clippy lint specifically about `rust = "<something>"`.
-Alternatively, we could try to find a way to structure `--check-cfg` to allow the person defining the `cfg` to decide whether it can be use with `=` or not.
+Alternatively, we could try to find a way to structure `--check-cfg` to allow the person defining the `cfg` to decide whether it can be used with `=` or not.
 One way of doing this is by allowing the `check-cfg` `since` predicate outside of the `values` predicate,
 meaning it works with the `cfg` `since` predicate and not the `=` operator.
 Another way would be for the `check-cfg` `since` predicate to never work with `=` but to instead
@@ -363,7 +363,7 @@ To allow checking for the presence of `rust`, add the following to your `Cargo.t
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
 ```
-Alternatively, we could have the built-in `--check-cfg` include `values(none())` but:
+Alternatively, we could have the built-in `--check-cfg` for `rust` include `values(none())` but:
 - When building on an old version, users will see the warning and will likely want to add it anyways.
 - We lose out on `--check-cfg` identifying misused.
   Instead, we may wish to add a dedicated predicate intended for "is set".
@@ -373,12 +373,16 @@ Alternatively, we could have the built-in `--check-cfg` include `values(none())`
 While there was concern over `rust` appearing in the name of `cfg(rust_version("1.95"))`,
 I feel that `rust` as its own entity makes sense and avoids that problem.
 
+Rust does appear in some parts of the language,
+but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/type-layout.html?#the-rust-representation).
+However, the convention for `--cfg`s is generally lower case.
+
 ### Pre-release
 
-When translating `rustc --version` to a Language version, we have several choices when it comes to pre-releases, including:
-- Treat the nightly as fully implementing that Language version
-- Treat the nightly as not implementing that Language version at all, only the previous
-- Leave a marker that that Language version is incomplete, while the previous Language version is complete
+When translating `rustc --version` to a language version, we have several choices when it comes to pre-releases, including:
+- Treat the nightly as fully implementing that language version
+- Treat the nightly as not implementing that language version at all, only the previous
+- Leave a marker that that language version is incomplete, while the previous language version is complete
 
 In RFC 2523, this was left as an
 [unresolved question](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html#unresolved-questions).
@@ -400,7 +404,7 @@ For RFC 2523, they settled on pre-releases being incomplete,
 favoring maintainers to adopt stabilized-on-nightly features immediately
 while letting people on pinned nightlies or bisecting nightlies to set a `-Z` to mark the version as incomplete.
 
-In this RFC, we settled translating `-nightly` to `-incomplete` because:
+In this RFC, we settled on translating `-nightly` to `-incomplete` because:
 - Maintainers can adopt stabilized-on-nightly features with `#[cfg(since(rust, "1.100.0-0"))]` (the lowest pre-release for `1.100.0`), keeping friction low while explicitly acknowledging that the unstable feature may change
 - Allows build scripts to experiment with other logic without less chance of needing to invoke `rustc` (e.g. detecting nightly)
 - It provides extra context when approximating the vendor version from the language version when populating build information
