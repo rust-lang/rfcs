@@ -255,7 +255,7 @@ We expect rustc to:
 
 This will be reported back through `--print=cfg`.
 
-Because this gets reported back in `--print-cfg`,
+Because this gets reported back in `--print=cfg`,
 Cargo will expose `rust` in:
 - build scripts as `CARGO_CFG_RUST`
 - `[target."cfg()".dependencies]`
