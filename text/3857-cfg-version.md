@@ -171,12 +171,20 @@ However, this would produce an `unexpected_cfgs` lint and you would need to add 
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
 ```
 
-Say you were wanting to test out `#[must_use]` after it got stabilized on nightly to provide feedback and to be ready for when it hits stable, there would be no change to the examples above.
-Nightly compiler releases report themselves as the version they will be on hitting the stable channel.
+Say you were wanting to test out `#[must_use]` after it got stabilized on nightly to provide feedback and to be ready for when it hits stable,
+you would instead use `"1.27.0-0"` to match all pre-release versions of 1.27.0:
+```rust
+#[cfg_attr(since(rust, "1.27.0-0"), must_use)]
+fn double(x: i32) -> i32 {
+    2 * x
+}
 
-On the flip side, you might be bisecting nightlies or pinning to a 1.27 nightly before `#[must_use]` was stabilized.
-You would have the sad predicament of not being able to use `double` because you would get a feature-gate error.
-In that case, you can pass `-Z assume-incomplete-release` to the compiler so that 1.27 nightly reports itself as being 1.26 and `#[must_use]` won't be applied within `double`.
+fn main() {
+    double(4);
+    // warning: unused return value of `double` which must be used
+    // ^--- This warning only happens if we are on Rust >= 1.27.
+}
+```
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
