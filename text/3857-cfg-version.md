@@ -346,12 +346,13 @@ However,
 - this would get in the way of approximating the vendor version by the language version for working around compiler bugs and snapshotting of compiler output.
 
 Possibly there could be a clippy lint specifically about `rust = "<something>"`.
-Alternatively, we could try to find a way to structure `--check-cfg` to allow the person defining the `cfg` to decide whether it can be used with `=` or not.
+Alternatively, we could try to find a way to structure `--check-cfg` to allow the person setting the `check-cfg` to decide whether it can be used with `=` or not.
 One way of doing this is by allowing the `check-cfg` `since` predicate outside of the `values` predicate,
 meaning it works with the `cfg` `since` predicate and not the `=` operator.
 Another way would be for the `check-cfg` `since` predicate to never work with `=` but to instead
 allow operators inside of the `cfg` `since` predicate, e.g. `#[cfg(since(rust, "=1.95.0"))]`.
 However, with the rename of the predicate from `version` to `since`, operators don't fit in as easily.
+If someone wanted to support equality checks, there wouldn't be a way to support a continuous range of `values()` but would instead have to manually specify each likely potential version.
 
 `--check-cfg` will cause the following to warn:
 ```rust
