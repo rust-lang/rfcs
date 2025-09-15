@@ -221,13 +221,13 @@ ConfigurationVersion -> `since` `(` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 
 The syntax for the contents of the string literal is a SemVer value without the build field.
 
-This will specify that the given `--cfg` is valid for all values that match:
+This will specify that for the given cfg, values will be valid if:
 - SemVer syntax
 - from the specified version and up
 
-When the given `--cfg` is used with the `since` predicate:
+Specifically when the given cfg is used with the `cfg` `since` predicate:
 - the string literal should not be of a syntax that evaluates to `false`
-- the minimum version requirement must specify a subset of what the `--check-cfg` specifies
+- the string literal must be a minimum version requirement that specifies a subset of what the `--check-cfg` specifies
 
 So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 - ✅ `#[cfg(foo = "1.100.0")]`
