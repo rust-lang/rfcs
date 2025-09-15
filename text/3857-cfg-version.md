@@ -237,7 +237,7 @@ So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 
 A new built-in cfg `--cfg rust=<version>` will be added by the compiler
 that specifies the language version.
-This will be the version of `rustc` with how the pre-release version is handled being unspecified.
+This will be the version of `rustc` with the behavior for pre-release versions being unspecified.
 We expect rustc to:
 - Translate the `-nightly` pre-release to `-incomplete
 - Strip the `-beta.5` pre-release
