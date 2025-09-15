@@ -195,7 +195,7 @@ If `IDENTIFIER` has no value or is undefined, this will evaluate to `false`.
 
 If `IDENTIFIER` is not a valid [SemVer](https://semver.org/) value, this will evaluate to `false`.
 
-If the string literal is does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, this will evaluate to `false`.
+If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, this will evaluate to `false`.
 Note that this excludes support for the `+build` field.
 
 Otherwise, the `IDENTIFIER` will be compared to the string literal according to
