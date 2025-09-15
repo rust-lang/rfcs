@@ -10,15 +10,15 @@ Allow Rust-version conditional compilation by adding a built-in `--cfg rust=<ver
 
 Say this was added before 1.70, you could do:
 ```toml
-[target.'cfg(not(version(rust, "1.70")))'.dependencies"]
+[target.'cfg(not(since(rust, "1.70")))'.dependencies"]
 is-terminal = "0.4.16"
 ```
 
 ```rust
 fn is_stderr_terminal() -> bool {
-    #[cfg(version(rust, "1.70"))]
+    #[cfg(since(rust, "1.70"))]
     use std::io::IsTerminal as _;
-    #[cfg(not(version(rust, "1.70")))]
+    #[cfg(not(since(rust, "1.70")))]
     use is_terminal::IsTerminal as _;
 
     std::io::stderr().is_terminal()
@@ -121,9 +121,9 @@ circumstances may warrant doing so while maintaining an existing [MSRV](https://
 rather than raising to what the language or standard library feature needs.
 This can be accomplished by conditionally compiling the code for that feature.
 
-For instance, say you have an MSRV of 1.10 and `#[cfg(version)]` feature was available in 1.20, you would have been able to do:
+For instance, say you have an MSRV of 1.10 and `#[cfg(since)]` feature was available in 1.20, you would have been able to do:
 ```rust
-#[cfg_attr(version(rust, "1.27"), must_use)]
+#[cfg_attr(since(rust, "1.27"), must_use)]
 fn double(x: i32) -> i32 {
     2 * x
 }
@@ -138,7 +138,7 @@ fn main() {
 > Side note: if we also had [RFC 3804](https://github.com/rust-lang/rfcs/pull/3804),
 > we can give this condition a semantic name and avoid duplicating it, reducing the chance of bugs:
 > ```rust
-> #[cfg_alias(must_use_exists, version(rust, "1.27"))]
+> #[cfg_alias(must_use_exists, since(rust, "1.27"))]
 >
 > #[cfg_attr(must_use_exists, must_use)]
 > fn double(x: i32) -> i32 {
@@ -152,9 +152,9 @@ fn main() {
 > }
 > ```
 
-Now, let's say `#[cfg(version)]` was stabilized in Rust 1.27 or later, you can check for support for it with:
+Now, let's say `#[cfg(since)]` was stabilized in Rust 1.27 or later, you can check for support for it with:
 ```rust
-#[cfg_attr(rust, cfg_attr(version(rust, "1.27"), must_use))]
+#[cfg_attr(rust, cfg_attr(since(rust, "1.27"), must_use))]
 fn double(x: i32) -> i32 {
     2 * x
 }
@@ -181,14 +181,14 @@ In that case, you can pass `-Z assume-incomplete-release` to the compiler so tha
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `version` cfg predicate
+## `since` cfg predicate
 
-A `version` cfg predicate will be added to Rust.
+A `since` cfg predicate will be added to Rust.
 As Cargo mirrors Rust's `#[cfg]` syntax, it too will gain this predicate.
 
 The [syntax](https://doc.rust-lang.org/reference/conditional-compilation.html#grammar-ConfigurationPredicate) is:
 ```
-ConfigurationVersion -> `version` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
+ConfigurationVersion -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
 If `IDENTIFIER` has no value or is undefined, this will evaluate to `false`.
@@ -200,7 +200,7 @@ Note that this excludes support for the `+build` field.
 
 Otherwise, the `IDENTIFIER` will be compared to the string literal according to
 [Cargo's `>=` version requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#comparison-requirements).
-For example, `#[cfg(version(rust, "1.90"))]` will be treated as `1.95.2 >= 1.90.0`.
+For example, `#[cfg(since(rust, "1.90"))]` will be treated as `1.95.2 >= 1.90.0`.
 
 See also `--check-cfg`.
 
@@ -208,7 +208,7 @@ See also `--check-cfg`.
 
 A new predicate will be added of the form:
 ```
-ConfigurationVersion -> `version` `(` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
+ConfigurationVersion -> `since` `(` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
 The syntax for the contents of the string literal is a SemVer value without the build field.
@@ -217,21 +217,21 @@ This will specify that the given `--cfg` is valid for all values that match:
 - SemVer syntax
 - from the specified version and up
 
-When the given `--cfg` is used with the `version` predicate:
+When the given `--cfg` is used with the `since` predicate:
 - the string literal should not be of a syntax that evaluates to `false`
 - the minimum version requirement must specify a subset of what the `--check-cfg` specifies
 
-So given `--check-cfg 'cfg(foo, values(version("1.95.0")))'`,
+So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 - ✅ `#[cfg(foo = "1.100.0")]`
 - ⚠️ `#[cfg(foo = "1.0")]`: not SemVer syntax
-- ✅ `#[cfg(version(foo, "1.95.0"))]`
-- ✅ `#[cfg(version(foo, "1.100.0"))]`
-- ✅ `#[cfg(version(foo, "3.0.0"))]`
-- ✅ `#[cfg(version(foo, "1.95"))]`
-- ⚠️ `#[cfg(version(foo, "1.90.0"))]`: matches a superset of `--check-cfg`
-- ⚠️ `#[cfg(version(foo, "1.95.0-0"))]`: matches a superset of `--check-cfg`
-- ⚠️ `#[cfg(version(foo, "1"))]`: matches a superset of `--check-cfg`
-- ⚠️ `#[cfg(version(foo, "bar"))]`: invalid string literal syntax
+- ✅ `#[cfg(since(foo, "1.95.0"))]`
+- ✅ `#[cfg(since(foo, "1.100.0"))]`
+- ✅ `#[cfg(since(foo, "3.0.0"))]`
+- ✅ `#[cfg(since(foo, "1.95"))]`
+- ⚠️ `#[cfg(since(foo, "1.90.0"))]`: matches a superset of `--check-cfg`
+- ⚠️ `#[cfg(since(foo, "1.95.0-0"))]`: matches a superset of `--check-cfg`
+- ⚠️ `#[cfg(since(foo, "1"))]`: matches a superset of `--check-cfg`
+- ⚠️ `#[cfg(since(foo, "bar"))]`: invalid string literal syntax
 
 ## `rust` cfg
 
@@ -242,7 +242,7 @@ We expect rustc to:
 - Translate the `-nightly` pre-release to `-incomplete
 - Strip the `-beta.5` pre-release
 
-`rust` will be specified as `--check-cfg 'cfg(rust, values(version("1.95.0")))'`
+`rust` will be specified as `--check-cfg 'cfg(rust, values(since("1.95.0")))'`
 (or whatever version this gets stabilized in).
 
 This will be reported back through `--print-cfg`.
@@ -256,16 +256,17 @@ Cargo will expose `rust` in:
 
 Clippy has a [`clippy::incompatible_msrv`](https://rust-lang.github.io/rust-clippy/master/index.html#incompatible_msrv) lint
 which will fire whenever a standard library item is used with a `#[stable(since)]` newer than `package.rust-version`.
-However, it will be perfectly reasonable to use those items when guarded by a `#[cfg(version)]`.
+However, it will be perfectly reasonable to use those items when guarded by a `#[cfg(since)]`.
 
 Clippy may wish to:
-- Find a way to reduce false positives, e.g. evaluating the `cfg(version)`s that led to the item's usage or disabling the lint within `#[cfg(version)]`
-- Suggest `#[cfg(version)]` in the `clippy::incompatible_msrv` diagnostic report (maybe along with offering to bump MSRV)
+- Find a way to reduce false positives, e.g. evaluating the `cfg(since)`s that led to the item's usage or disabling the lint within `#[cfg(since)]`
+- Suggest `#[cfg(since)]` in the `clippy::incompatible_msrv` diagnostic report (maybe along with offering to bump MSRV)
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
 People may be using `--cfg rust` already and would be broken by this change.
+There are no compatibility concerns with predicate names.
 
 This does not include a solution for adopting this within `Cargo.toml` without waiting for an MSRV bump.
 
@@ -281,16 +282,20 @@ Libraries could having ticking time bombs that accidentally break or have undesi
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## `version` cfg predicate
+## `since` cfg predicate
 
-We could offer a `before` operator but that is already covered by `not(version)`.
+We could offer a `before` operator but that is already covered by `not(since)`.
 
-The `version` predicate's name doesn't convey what operation is happening and doesn't leave room for other version operators (e.g. a `before` to go with `since`).
-We could call this `since`, `minimum`, or support comparison operators in the spirit of [RFC 3796](https://github.com/rust-lang/rfcs/pull/3796).
-The challenge is dealing with clarity around the meaning, especially if we gain support for other data types in `cfg`, like integers, which is of interest for embedded development.
-`since` would fit in with `deprecated`.
+The `since` name was taken from 
+[rustversion](https://crates.io/crates/rustversion) and the `#[deprecated(since)]` / `#[stable(since)]` attributes.
+This better conveys what operation is being performed than the original `version` name
+and leaves room for related predicates like `before`.
+We could also call this `minimum`, or support comparison operators in the spirit of [RFC 3796](https://github.com/rust-lang/rfcs/pull/3796).
+The risk with a general word like `since` is if we gain support for other data types in cfgs, like integers for embedded development.
+The name `since` might apply in some situations but not others and its unclear if we'd want to generalize it past versions.
+While having a specific name avoids these concerns.
 
-We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(version("1.95"))]` as a shorthand.
+We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(since("1.95"))]` as a shorthand.
 However, this would look confusing in Cargo and doesn't seem like its offering enough of a benefit to be worth the costs.
 
 The `ConfigurationVersion` is sloppy with the string literal's syntax (relying on `--check-cfg`) so that
@@ -299,8 +304,8 @@ The `ConfigurationVersion` is sloppy with the string literal's syntax (relying o
 
 If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
-(e.g. `#[cfg(version(rust, 1.95.0))]`).
-If we ever decided to support operators (e.g.`#[cfg(version(rust, "=1.95.0"))]`), then we'd need to decide if those also go outside the string or then require a string, being inconsistent.
+(e.g. `#[cfg(since(rust, 1.95.0))]`).
+If we ever decided to support operators (e.g.`#[cfg(since(rust, "=1.95.0"))]`, see `--check-cfg`), then we'd need to decide if those also go outside the string or then require a string, being inconsistent.
 This would also be inconsistent with other uses of `cfg`s
 *but* maybe that would just be the start to natively supporting more types in `cfg`,
 like integers which are of interest to embedded folks.
@@ -309,33 +314,34 @@ like integers which are of interest to embedded folks.
 
 The `--check-cfg` predicate and the value for `rust` ensures users get warnings about
 - Invalid syntax
-- Using this with versions from before its supported, e.g. `#[cfg(version(rust, "1.0.0")]`
+- Using this with versions from before its supported, e.g. `#[cfg(since(rust, "1.0.0")]`
 
 `--check-cfg` requires a SemVer version, rather than a version requirement,
 in case we want the future possibility of relaxing SemVer versions
 *and* we want to infer from the fields used in `--check-cfg` to specify the maximum number of fields accepted in comparisons.
 
-We could have the `check-cfg` `version` predicate only apply to the `cfg` `version` predicate,
+We could have the `check-cfg` `since` predicate only apply to the `cfg` `since` predicate,
 causing `#[cfg(rust = "1.100.0")]` to warn.
 However,
-- the `version` predicates are a general feature intended to be used with other version numbers where exact matches may be appropriate.
+- the `since` predicates are a general feature intended to be used with other version numbers where exact matches may be appropriate.
 - this would get in the way of approximating the vendor version by the language version for working around compiler bugs and snapshotting of compiler output.
 
 Possibly there could be a clippy lint specifically about `rust = "<something>"`.
 Alternatively, we could try to find a way to structure `--check-cfg` to allow the person defining the `cfg` to decide whether it can be use with `=` or not.
-One way of doing this is by allowing the `check-cfg` `version` predicate outside of the `values` predicate,
-meaning it works with the `cfg` `version` predicate and not the `=` operator.
-Another way would be for the `check-cfg` version predicate to never work with `=` but to instead
-allow operators inside of the `cfg` `version` predicate, e.g. `#[cfg(version(rust, "=1.95.0"))]`.
+One way of doing this is by allowing the `check-cfg` `since` predicate outside of the `values` predicate,
+meaning it works with the `cfg` `since` predicate and not the `=` operator.
+Another way would be for the `check-cfg` `since` predicate to never work with `=` but to instead
+allow operators inside of the `cfg` `since` predicate, e.g. `#[cfg(since(rust, "=1.95.0"))]`.
+However, with the rename of the predicate from `version` to `since`, operators don't fit in as easily.
 
 `--check-cfg` will cause the following to warn:
 ```rust
 fn is_stderr_terminal() -> bool {
     #[cfg(rust)]
-    #[cfg(version(rust, "1.70"))]
+    #[cfg(since(rust, "1.70"))]
     use std::io::IsTerminal as _;
     #[cfg(rust)]
-    #[cfg(not(version(rust, "1.70")))]
+    #[cfg(not(since(rust, "1.70")))]
     use is_terminal::IsTerminal as _;
     #[cfg(not(rust))]
     use is_terminal::IsTerminal as _;
@@ -373,13 +379,13 @@ The initial implementation treated nightlies as complete.
 This was [changed to incomplete](https://github.com/rust-lang/rust/pull/72001) after
 [some discussion](https://github.com/rust-lang/rust/issues/64796#issuecomment-624673206).
 In particular, this is important for
-- the case of package `bleeding-edge` starting to use a new feature behind `#[cfg(version)]` and package `nightly-only` has their toolchain pinned to a nightly before the feature was stabilized (to ensure consistent behavior of unstable features), package `nightly-only` cannot add or update their dependency on `bleeding-edge` without getting a "feature gate needed" error.
+- the case of package `bleeding-edge` starting to use a new feature behind `#[cfg(since)]` and package `nightly-only` has their toolchain pinned to a nightly before the feature was stabilized (to ensure consistent behavior of unstable features), package `nightly-only` cannot add or update their dependency on `bleeding-edge` without getting a "feature gate needed" error.
 - bisecting nightlies.
 
 This was [changed back to complete](https://github.com/rust-lang/rust/pull/81468) after
 [some more discussion](https://github.com/rust-lang/rust/issues/64796#issuecomment-634546711).
 In particular, this is important for
-- keeping friction down for packages preparing for stabilized-on-nightly features as their `#[cfg(version)]`s can be inserted and "just work" which can be important for getting feedback quickly while the feature is easier to adapt to feedback that can be gained from these users
+- keeping friction down for packages preparing for stabilized-on-nightly features as their `#[cfg(since)]`s can be inserted and "just work" which can be important for getting feedback quickly while the feature is easier to adapt to feedback that can be gained from these users
   - releasing the package while its in this state puts it at risk to be broken if the feature is changed after stabilization
 
 For RFC 2523, they settled on pre-releases being incomplete,
@@ -387,7 +393,7 @@ favoring maintainers to adopt stabilized-on-nightly features immediately
 while letting people on pinned nightlies or bisecting nightlies to set a `-Z` to mark the version as incomplete.
 
 In this RFC, we settled translating `-nightly` to `-incomplete` because:
-- Maintainers can adopt stabilized-on-nightly features with `#[cfg(version(rust, "1.100.0-0"))]` (the lowest pre-release for `1.100.0`), keeping friction low while explicitly acknowledging that the unstable feature may change
+- Maintainers can adopt stabilized-on-nightly features with `#[cfg(since(rust, "1.100.0-0"))]` (the lowest pre-release for `1.100.0`), keeping friction low while explicitly acknowledging that the unstable feature may change
 - Allows build scripts to experiment with other logic without less chance of needing to invoke `rustc` (e.g. detecting nightly)
 - It provides extra context when approximating the vendor version from the language version when populating build information
 
@@ -552,12 +558,12 @@ Haskell:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- In the future the `--check-cfg` `version()` predicate could make the minimum-version field optional,
+- In the future the `--check-cfg` `since()` predicate could make the minimum-version field optional,
   matching all version numbers.
 
 ## Relaxing SemVer
 
-Instead of requiring the `IDENTIFIER` in the `version` predicate to be strictly SemVer `major.minor.patch`,
+Instead of requiring the `IDENTIFIER` in the `check-cfg` `since` predicate to be strictly SemVer `major.minor.patch`,
 we could allow abbreviated forms like `major.minor` or even `major`.
 This would make the predicate more inclusive for other cases, like `edition`.
 
@@ -583,12 +589,12 @@ See also [`#[cfg(nightly)]`](https://rust-lang.github.io/rfcs/2523-cfg-path-vers
 ## `cfg_target_version`
 
 Instead of defining a new `#[cfg]` predicate, [RFC 3750](https://github.com/rust-lang/rfcs/pull/3750)
-could reuse the `#[cfg(version)]` predicate.
+could reuse the `#[cfg(since)]` predicate.
 
 As not all systems use SemVer, we can either
 - Contort the version into SemVer
   - This can run into problems either with having more precision (e.g. `120.0.1.10` while SemVer only allows `X.Y.Z`) or post-release versions (e.g. `1.2.0.post1` which a SemVer predicate would treat as a pre-release).
-- Add an optional third field for specifying the version format (e.g. `#[cfg(version(windows, "10.0.10240", <policy-name>)]`)
+- Add an optional third field for specifying the version format (e.g. `#[cfg(since(windows, "10.0.10240", <policy-name>)]`)
 - Make `--check-cfg` load-bearing by having the version policy name be specified in the `--check-cfg` predicate
 
 ## Provide a way to get a `--cfg`s value
@@ -601,4 +607,4 @@ this would allow an application to approximate the vendor version `--bugreport` 
 
 As the ecosystem grows and matures,
 the Rust language and standard library may not be the only dependencies users wish to support multiple versions of.
-We may want to allow `#(cfg(version(serde, "1.0.900")]`.
+We may want to allow `#(cfg(since(serde, "1.0.900")]`.
