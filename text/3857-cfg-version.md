@@ -578,6 +578,7 @@ Some challenges for this with `rustc --version`:
   all mapping to the `-nightly` pre-release version rather than including the date within the pre-release
 - This does not conform to SemVer's precedence rules,
   as `-nightly` is an older version than `-beta.4` while [SemVer's precedence rules](https://semver.org/#spec-item-11) say the opposite
+- Crater runs and local builds don't necessarily have a version that fits within this picture
 
 ## `#[cfg(nightly)]`
 
