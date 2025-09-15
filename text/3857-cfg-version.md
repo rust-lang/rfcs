@@ -314,6 +314,8 @@ If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
 (e.g. `#[cfg(since(rust, 1.95.0))]`).
 If we ever decided to support operators (e.g.`#[cfg(since(rust, "=1.95.0"))]`, see `--check-cfg`), then we'd need to decide if those also go outside the string or then require a string, being inconsistent.
+This may limit us if we decide to allow for alternative version formats like with [target_version](#cfg_target_version) as they may not have formats that map well to SemVer.
+Worst case, we'd need to accept arbitrary bare words.
 This would also be inconsistent with other uses of `cfg`s
 *but* maybe that would just be the start to natively supporting more types in `cfg`,
 like integers which are of interest to embedded folks.
