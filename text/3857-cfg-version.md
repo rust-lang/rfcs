@@ -253,7 +253,7 @@ We expect rustc to:
 `rust` will be specified as `--check-cfg 'cfg(rust, values(since("1.95.0")))'`
 (or whatever version this gets stabilized in).
 
-This will be reported back through `--print-cfg`.
+This will be reported back through `--print=cfg`.
 
 Because this gets reported back in `--print-cfg`,
 Cargo will expose `rust` in:
