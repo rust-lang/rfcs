@@ -633,3 +633,13 @@ this would allow an application to approximate the vendor version `--bugreport` 
 As the ecosystem grows and matures,
 the Rust language and standard library may not be the only dependencies users wish to support multiple versions of.
 We may want to allow `#(cfg(since(serde, "1.0.900")]`.
+
+## `check-cfg` support for a version without a minimum
+
+`--check-cfg 'cfg(foo, values(since("1.95.0")))'` requires setting a minimum version.
+If a user did not need that when setting a `cfg`,
+they would have to do `--check-cfg 'cfg(foo, values(since("0.0.0-0")))'`.
+A user may want a shorthand for this.
+With the name `since`, defaulting it to `"0.0.0-0"` doesn't read too well (--check-cfg 'cfg(foo, values(since()))'`).
+Maybe a new predicate can be added `version()`.
+A shorthand may be limited to SemVer versions if we use the `since(version)` syntax to specify the supported version syntax, see [`--check-cfg` rationale][#--check-cfg-rationale].
