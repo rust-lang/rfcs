@@ -283,16 +283,9 @@ While that isn't always true today (e.g. some Cargo features go from "unknown" w
 having distinct implementations for different Rust versions can make the testing matrix more complex.
 Tools like [`cargo hack`](https://crates.io/crates/cargo-hack) can help which can run commands on not just one toolchain version but also the every version starting with the MSRV with a command like `cargo hack --rust-version --version-step 1 check`.
 
-This does not help with identifying nightlies that a feature is available on or compatible with which will still require a `build.rs`.
-In terms of doing this via build probes,
-Cargo team has previously rejected support for build probes
-([source](https://github.com/rust-lang/cargo/issues/11244#issuecomment-2326780810)).
-Whether build probes or nightly version checks,
-auto-enabling nightly features
-(rather than having users opt-in)
-runs counter to the spirit of nightly (works like stable except where you opt-in)
-and cause problems if the checks are incorrect which has broken many crates' nightly builds in the past
-and has even caused friction in changing unstable features within the compiler.
+As we don't expose a nightly's date,
+this does not cover the use case from [rustversion](https://crates.io/crates/rustversion) represented by
+`#[rustversion::since(2025-01-01)]`.
 
 Libraries could having ticking time bombs that accidentally break or have undesired behavior for some future Rust version that can't be found until we hit that version.
 
