@@ -299,7 +299,7 @@ Libraries could having ticking time bombs that accidentally break or have undesi
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## `since` cfg predicate
+## `since` cfg predicate rationale
 
 We could offer a `before` predicate but that is already covered by `not(since)`.
 
@@ -329,7 +329,7 @@ This would also be inconsistent with other uses of `cfg`s
 *but* maybe that would just be the start to natively supporting more types in `cfg`,
 like integers which are of interest to embedded folks.
 
-## `--check-cfg`
+## `--check-cfg` rationale
 
 The `--check-cfg` predicate and the value for `rust` ensures users get warnings about
 - Invalid syntax
@@ -380,7 +380,7 @@ Alternatively, we could have the built-in `--check-cfg` for `rust` include `valu
 - We lose out on `--check-cfg` identifying misused.
   Instead, we may wish to add a dedicated predicate intended for "is set".
 
-## `rust` cfg
+## `rust` cfg rationale
 
 While there was concern over `rust` appearing in the name of `cfg(rust_version("1.95"))`,
 I feel that `rust` as its own entity makes sense and avoids that problem.
