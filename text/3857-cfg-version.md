@@ -121,7 +121,13 @@ circumstances may warrant doing so while maintaining an existing [MSRV](https://
 rather than raising to what the language or standard library feature needs.
 This can be accomplished by conditionally compiling the code for that feature.
 
-For instance, say you have an MSRV of 1.10 and `#[cfg(since)]` feature was available in 1.20, you would have been able to do:
+As its hard to talk about features and versions in the future,
+we're going to step through this in an alternate reality where:
+- `--check-cfg` (warn on invalid conditional compilation) was stabilized in 1.0
+- `--cfg rust` and `#[cfg(since)]` were stabilized in 1.20
+- `#[must_use]` (an example language feature) was still stabilized in 1.27
+
+For instance, say you have an MSRV of 1.20, to use `#[must_use]` you would do:
 ```rust
 #[cfg_attr(since(rust, "1.27"), must_use)]
 fn double(x: i32) -> i32 {
@@ -152,7 +158,11 @@ fn main() {
 > }
 > ```
 
-Now, let's say `#[cfg(since)]` was stabilized in Rust 1.27 or later, you can check for support for it with:
+Now,
+let's say your MSRV is 1.10,
+the above code would error when compiling with your MSRV because the `since` predicate does not exist with that version.
+However, the presence of `--cfg rust` implies that we are on 1.27,
+so you can "detect" support for `since` by changing your code to:
 ```rust
 #[cfg_attr(rust, cfg_attr(since(rust, "1.27"), must_use))]
 fn double(x: i32) -> i32 {
