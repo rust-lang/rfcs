@@ -397,6 +397,7 @@ but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/
 However, the convention for `--cfg`s is generally lower case.
 
 `--cfg=rust` is added to allow `#[cfg(rust)]` checks so packages can immediately adopt this feature without bumping an MSRV.
+This does lock us into how a `cfg_value!(rust)` would work from the [future-possibilities].
 
 `--check-cfg` will cause the following to warn:
 ```rust
@@ -673,9 +674,26 @@ See also [`#[cfg(nightly)]`](https://rust-lang.github.io/rfcs/2523-cfg-path-vers
 
 ## Provide a way to get a `--cfg`s value
 
-Similar to how `cfg!` allows doing conditionals in Rust code, provide a "`cfg_value!`" for reading the value.
-On top of [other use cases](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618) for `cfg_value!`,
-this would allow an application to approximate the vendor version `--bugreport` / `-v --version` without a build script.
+Use cases:
+- Allows application to use `rust` to approximate the vendor version in `--bugreport` / `-v --version` without a build script.
+  As other versions get represented in `cfg`, this may be desired for the same reason.
+- See also [mutually exclusive features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618) for `cfg_value!`,
+
+Similar to how `cfg!` allows doing conditionals in Rust code,
+provide macros for reading the values set for a `cfg`.
+
+The most general form maybe `cfg_values!(foo)` but a `cfg_value!(foo)` could offer some convenience.
+
+Open questions:
+- How does `cfg_values!(foo)` deal with unset and name-only cfg's?
+  - Most strict would be `Iterator<Option<&'static str>>`, requiring users to do `cfg_values!(foo).filter_map(std::convert::identity)` in most cases
+  - Could auto-skip name-only.  Empty iterator would then be ambigious.
+- How does `cfg_value!(foo)` deal being unset?
+  - Compiler error, like `env!`.  Could provide an `option_cfg_value!`.
+- How does `cfg_value!(foo)` deal with name-only cfgs??
+  - Ignoring them would work best for the purpose of `--cfg=rust --cfg=rust="1.95.0"`
+- How does `cfg_value!(foo)` deal with multiple cfg vales?
+  - Compiler error
 
 ## `check-cfg` support for a version without a minimum
 
