@@ -320,6 +320,10 @@ this does not cover the use case from [rustversion](https://crates.io/crates/rus
 
 Libraries could having ticking time bombs that accidentally break or have undesired behavior for some future Rust version that can't be found until we hit that version.
 
+Compared to the alternative designs,
+this may take more time in design discussions, implementation, and vetting the implementation
+as there are more corner cases to cover, particularly with how this integrates with future possibilities.
+
 ## Pre-releases for major versions
 
 Pre-releases of major versions isn't a consideration for `rust` but in the general use of `since`.
@@ -514,6 +518,9 @@ Similarly, if we stabilized `#[stable(since)]`, a linter could report when a ver
 
 We could rename this to `version` and stabilize it as-is,
 with this RFC being a future possibility that adds an optional second parameter for specifying which version is being referred to.
+
+This ends up being a one-off solution,
+requiring other one-off solutions for `edition`, [`target_version`](https://github.com/rust-lang/rfcs/pull/3750), etc.
 
 ### `cfg(rust = "1.95")`
 
