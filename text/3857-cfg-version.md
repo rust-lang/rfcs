@@ -591,6 +591,9 @@ Accessible
 
 ## Other
 
+Swift:
+- Similar syntax, an attribute [`@available`](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/attributes#available) with name/value pairs. Examples: `@available(swift 3.0.2)`, `@available(iOS 10.0, macOS 10.12)`.
+
 Python
 - Programmatic version: [`sys.version_info`](https://docs.python.org/3/library/sys.html#sys.version_info)
 - Vendor display version: [`sys.version`](https://docs.python.org/3/library/sys.html#sys.version)
