@@ -264,6 +264,8 @@ We expect rustc to:
 
 `rust` will be specified as `--check-cfg 'cfg(rust, values(since("1.95.0")))'`
 (or whatever version this gets stabilized in).
+Like with `--check-cfg` for Cargo `features`,
+the compiler may choose to add additional context for why this lower bound is present (not stabilized).
 
 This will be reported back through `--print=cfg`.
 
