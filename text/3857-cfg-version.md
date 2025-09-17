@@ -211,20 +211,30 @@ The [syntax](https://doc.rust-lang.org/reference/conditional-compilation.html#gr
 ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
-If `IDENTIFIER` is unset, this will evaluate to `false`.
-
-If `IDENTIFIER` is name-only, this will evaluate to `false`.
-
-If `IDENTIFIER` is not a valid [SemVer](https://semver.org/) value, this will evaluate to `false`.
-
-If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, this will evaluate to `false`.
-Note that this excludes support for the `+build` field.
-
-*(for warning on always-false checks, see `--check-cfg`)*
-
-Otherwise, the `IDENTIFIER` will be compared to the string literal according to
+When evaluating `since`,
+1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, this will evaluate to `false`.<br>
+   *(for warning on always-false checks, see `--check-cfg`)*
+2. If `IDENTIFIER` is unset, this will evaluate to `false`.
+3. If any of the following evaluates to `true` for any cfg entry for `IDENTIFIER`, `since` will evaluate to `true`, otherwise `false`.
+  1. If `IDENTIFIER` is name-only, this entry will evaluate to `false`.
+  2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, this entry will evaluate to `false`.
+     Note that this excludes support for the `+build` field.
+  3. Otherwise, the `IDENTIFIER`s value will be compared to the string literal according to
 [Cargo's `>=` version requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#comparison-requirements).
-For example, `#[cfg(since(rust, "1.90"))]` will be treated as `1.95.2 >= 1.90.0`.
+     For example, `#[cfg(since(rust, "1.90"))]` will be treated as `1.95.2 >= 1.90.0`.
+
+Examples:
+- `cfg(since(unset_name, "1.0.0"))` will be false
+- `--cfg name_only` and `cfg(since(name_only, "1.0.0"))` will be false
+- `--cfg foo="bird"` and `cfg(since(name_only, "1.0.0"))` will be false
+- `--cfg foo="1.1.0"` and `cfg(since(foo, "bird"))` will be false
+- `--cfg foo="1.1.0"` and `cfg(since(foo, "1.2.0"))` will be true
+- `--cfg foo="1.1.0"` and `cfg(since(foo, "1.0.0"))` will be false
+- `--cfg foo --cfg foo="1.1.0" --cfg foo="1.0.0"` and `cfg(since(foo, "1.0.0"))` will be true
+
+The compiler implementation currently treats cfgs as `HashSet<(String, Option<String>)`
+and would likely need to change this to `HashMap<String, HashSet<Option<String>>>``
+to accommodate this predicate.
 
 ## `--check-cfg`
 
@@ -361,6 +371,16 @@ Worst case, we'd need to accept arbitrary bare words.
 This would also be inconsistent with other uses of `cfg`s
 *but* maybe that would just be the start to natively supporting more types in `cfg`,
 like integers which are of interest to embedded folks.
+
+A user could do `--cfg=foo --cfg=foo="1.2.0" --cfg=foo"1.3.0"`, leading to `cfg` to be a set of:
+- `("foo", None)`
+- `("foo", "1.2.0")`
+- `("foo", "1.3.0")`
+
+meaning `cfg(all(foo, foo = "1.2.0", foo = "1.3.0"))` is `true`.
+
+We take this into account by checking if any cfg with the name `foo` matches `since`.
+Alternatively, we could fail the match in this case but that prevents `--cfg rust` for checking if this feature is stable.
 
 ## `--check-cfg` rationale
 
