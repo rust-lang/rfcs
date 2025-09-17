@@ -211,7 +211,9 @@ The [syntax](https://doc.rust-lang.org/reference/conditional-compilation.html#gr
 ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
-If `IDENTIFIER` has no value or is undefined, this will evaluate to `false`.
+If `IDENTIFIER` is unset, this will evaluate to `false`.
+
+If `IDENTIFIER` is name-only, this will evaluate to `false`.
 
 If `IDENTIFIER` is not a valid [SemVer](https://semver.org/) value, this will evaluate to `false`.
 
