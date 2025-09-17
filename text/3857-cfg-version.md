@@ -447,6 +447,7 @@ while letting people on pinned nightlies or bisecting nightlies to set a `-Z` to
 
 In this RFC, we settled on translating `-nightly` to `-incomplete` because:
 - Maintainers can adopt stabilized-on-nightly features with `#[cfg(since(rust, "1.100.0-0"))]` (the lowest pre-release for `1.100.0`), keeping friction low while explicitly acknowledging that the unstable feature may change
+  - `-0` is recommended over `-incomplete` or any other value as the exact pre-release value is unspecified.
 - Allows build scripts to experiment with other logic when approximating the vendor version from the language version with less of a chance of needing to invoke `rustc` (e.g. detecting nightly)
 - It provides extra context when approximating the vendor version from the language version when populating build information
 
