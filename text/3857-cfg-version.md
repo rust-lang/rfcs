@@ -292,7 +292,8 @@ There are no compatibility concerns with predicate names.
 This could be helped by supporting a `#[cfg(before("1.95.0"))]`.
 This was left to [a future possibility][future-possibilities].
 
-This does not include a solution for adopting this within `Cargo.toml` without waiting for an MSRV bump.
+While Rust can stacks `cfg`s to test for the presence of this feature on older version,
+this does not include a solution for adopting this within `Cargo.toml` without waiting for an MSRV bump to the version `since` is stabilized in.
 
 Traditionally, maintainers only test their MSRV and latest, assuming those will catch every issue.
 While that isn't always true today (e.g. some Cargo features go from "unknown" warning to "unstable" error to supported and MSRV might be in the warning phase),
