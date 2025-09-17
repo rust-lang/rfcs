@@ -303,6 +303,27 @@ this does not cover the use case from [rustversion](https://crates.io/crates/rus
 
 Libraries could having ticking time bombs that accidentally break or have undesired behavior for some future Rust version that can't be found until we hit that version.
 
+## Pre-releases for major versions
+
+Pre-releases of major versions isn't a consideration for `rust` but in the general use of `since`.
+
+If wanting to split a continuous range with minor and patch versions,
+`#[cfg(since(foo, "1.1.0"))]` and `#[cfg(not(since(foo, "1.1.0")))]`
+works reasonably well.
+
+The problem comes into play when doing so with major versions when pre-releases are involved,
+like `#[cfg(since(foo, "2.0.0"))]` and `#[cfg(not(since(foo, "2.0.0")))]`.
+In this situation, a `2.0.0-dev.5` will match the second condition when the user likely only wanted to include `1.*`.
+Instead, they should do `#[cfg(since(foo, "2.0.0-0"))]` and `#[cfg(not(since(foo, "2.0.0-0")))]` or have a third case for pre-releases of `foo@2.0.0`.
+
+This came up in Cargo when considering how to improve interactions with pre-releases.
+Cargo has the advantages of:
+- Not working with splitting continuous ranges, so special cases can be made that cause discontinuities
+- Simpler expressions that can be analyzed for considering global knowledge.
+
+For more information on Cargo's experiments with this (all unstable),
+see [cargo#14305](https://github.com/rust-lang/cargo/pull/14305).
+
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
