@@ -385,6 +385,17 @@ allow operators inside of the `cfg` `since` predicate, e.g. `#[cfg(since(rust, "
 However, with the rename of the predicate from `version` to `since`, operators don't fit in as easily.
 If someone wanted to support equality checks, there wouldn't be a way to support a continuous range of `values()` but would instead have to manually specify each likely potential version.
 
+## `rust` cfg rationale
+
+While there was concern over `rust` appearing in the name of `cfg(rust_version("1.95"))`,
+I feel that `rust` as its own entity makes sense and avoids that problem.
+
+Rust does appear in some parts of the language,
+but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/type-layout.html?#the-rust-representation).
+However, the convention for `--cfg`s is generally lower case.
+
+`--cfg=rust` is added to allow `#[cfg(rust)]` checks so packages can immediately adopt this feature without bumping an MSRV.
+
 `--check-cfg` will cause the following to warn:
 ```rust
 fn is_stderr_terminal() -> bool {
@@ -411,16 +422,6 @@ Alternatively, we could have the built-in `--check-cfg` for `rust` include `valu
 - We lose out on `--check-cfg` identifying misuses.
   Instead, we may wish to add a dedicated predicate intended for "is set".
 
-## `rust` cfg rationale
-
-While there was concern over `rust` appearing in the name of `cfg(rust_version("1.95"))`,
-I feel that `rust` as its own entity makes sense and avoids that problem.
-
-Rust does appear in some parts of the language,
-but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/type-layout.html?#the-rust-representation).
-However, the convention for `--cfg`s is generally lower case.
-
-`--cfg=rust` is added to allow `#[cfg(rust)]` checks so packages can immediately adopt this feature without bumping an MSRV.
 
 ### Pre-release
 
