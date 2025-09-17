@@ -212,12 +212,12 @@ ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_L
 ```
 
 When evaluating `since`,
-1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, this will evaluate to `false`.<br>
+1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, the compiler will error
    *(for warning on always-false checks, see `--check-cfg`)*
 2. If `IDENTIFIER` is unset, this will evaluate to `false`.
 3. If any of the following evaluates to `true` for any cfg entry for `IDENTIFIER`, `since` will evaluate to `true`, otherwise `false`.
   1. If `IDENTIFIER` is name-only, this entry will evaluate to `false`.
-  2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, this entry will evaluate to `false`.
+  2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, the compiler will error
      Note that this excludes support for the `+build` field.
   3. Otherwise, the `IDENTIFIER`s value will be compared to the string literal according to
 [Cargo's `>=` version requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#comparison-requirements).
@@ -358,9 +358,12 @@ While having a specific name avoids these concerns.
 We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(since("1.95"))]` as a shorthand.
 However, this would look confusing in Cargo and doesn't seem like its offering enough of a benefit to be worth the costs.
 
-The `ConfigurationSince` is sloppy with the string literal's syntax (relying on `--check-cfg`) so that
-- Allows evolution without requiring an MSRV bump
-- Its consistent with other predicates, e.g. `#[cfg(foo = "1.0")]`
+`ConfigurationSince` requires the `IDENTIFIER` and string literal to be a SemVer version
+so we can have the flexibility to relax the syntax over time without it being a breaking change
+For example, if `--cfg=foo="1.0"` caused `cfg(since(foo, "1.0"))` to be `false` and we later allowed `"1.0"` for the `IDENTIFIER`, it would now be `true` and would change behavior.
+Because we'll have `since(rust, _)` at that point, it won't require an MSRV bump.
+This does leave the door open for us to relax this in the future once we become comfortable with the flexibility of our version syntax.
+Alternatively, we could try to determine a flexible-enough version syntax now though that comes with the risk that it isn't sufficient.
 
 If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
