@@ -640,6 +640,7 @@ Haskell:
   matching all version numbers.
 - Adding `#[cfg(before("1.95.0"))]` could resolve the unnatural grammar of `#[cfg(not(since("1.95.0")))]`.
   - Deferring to keep this minimal and to get more real world input on the usefulness of this
+  - Another possible name is `#[cfg(until("1.95.0"))]` which reads well as `#[cfg(not(until("1.95.0")))]`
 
 ## Relaxing SemVer
 
