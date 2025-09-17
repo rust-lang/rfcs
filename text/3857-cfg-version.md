@@ -255,7 +255,7 @@ So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 
 ## `rust` cfg
 
-A new built-in cfg `--cfg rust=<version>` will be added by the compiler
+A new built-in cfg `--cfg=rust --cfg=rust="<version>"` will be added by the compiler
 that specifies the language version.
 This will be the version of `rustc` with the behavior for pre-release versions being unspecified.
 We expect rustc to:
@@ -408,7 +408,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
 ```
 Alternatively, we could have the built-in `--check-cfg` for `rust` include `values(none())` but:
 - When building on an old version, users will see the warning and will likely want to add it anyways.
-- We lose out on `--check-cfg` identifying misused.
+- We lose out on `--check-cfg` identifying misuses.
   Instead, we may wish to add a dedicated predicate intended for "is set".
 
 ## `rust` cfg rationale
@@ -419,6 +419,8 @@ I feel that `rust` as its own entity makes sense and avoids that problem.
 Rust does appear in some parts of the language,
 but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/type-layout.html?#the-rust-representation).
 However, the convention for `--cfg`s is generally lower case.
+
+`--cfg=rust` is added to allow `#[cfg(rust)]` checks so packages can immediately adopt this feature without bumping an MSRV.
 
 ### Pre-release
 
