@@ -208,7 +208,7 @@ As Cargo mirrors Rust's `#[cfg]` syntax, it too will gain this predicate.
 
 The [syntax](https://doc.rust-lang.org/reference/conditional-compilation.html#grammar-ConfigurationPredicate) is:
 ```
-ConfigurationVersion -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
+ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
 If `IDENTIFIER` has no value or is undefined, this will evaluate to `false`.
@@ -228,7 +228,7 @@ For example, `#[cfg(since(rust, "1.90"))]` will be treated as `1.95.2 >= 1.90.0`
 
 A new predicate will be added of the form:
 ```
-ConfigurationVersion -> `since` `(` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
+CheckConfigurationSince -> `since` `(` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
 The syntax for the contents of the string literal is a SemVer value without the build field.
@@ -346,7 +346,7 @@ While having a specific name avoids these concerns.
 We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(since("1.95"))]` as a shorthand.
 However, this would look confusing in Cargo and doesn't seem like its offering enough of a benefit to be worth the costs.
 
-The `ConfigurationVersion` is sloppy with the string literal's syntax (relying on `--check-cfg`) so that
+The `ConfigurationSince` is sloppy with the string literal's syntax (relying on `--check-cfg`) so that
 - Allows evolution without requiring an MSRV bump
 - Its consistent with other predicates, e.g. `#[cfg(foo = "1.0")]`
 
