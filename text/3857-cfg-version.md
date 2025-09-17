@@ -249,7 +249,7 @@ This will specify that for the given cfg, literals will be valid if:
 - SemVer syntax
 - from the specified version and up
 
-Specifically when the given cfg is used with the `cfg` `since` predicate:
+Specifically when the given cfg is used with the cfg `since` predicate:
 - the string literal should not be of a syntax that evaluates to `false`
 - the string literal must be a minimum version requirement that specifies a subset of what the `--check-cfg` specifies
 
@@ -392,7 +392,7 @@ The `--check-cfg` predicate and the value for `rust` ensures users get warnings 
 in case we want the future possibility of relaxing SemVer versions
 *and* we want to infer from the fields used in `--check-cfg` to specify the maximum number of fields accepted in comparisons.
 
-We could have the `check-cfg` `since` predicate only apply to the `cfg` `since` predicate,
+We could have the check-cfg `since` predicate only apply to the cfg `since` predicate,
 causing `#[cfg(rust = "1.100.0")]` to warn.
 However,
 - the `since` predicates are a general feature intended to be used with other version numbers where exact matches may also be appropriate.
@@ -400,10 +400,10 @@ However,
 
 Possibly there could be a clippy lint specifically about `rust = "<something>"`.
 Alternatively, we could try to find a way to structure `--check-cfg` to allow the person setting the `check-cfg` to decide whether it can be used with `=` or not.
-One way of doing this is by allowing the `check-cfg` `since` predicate outside of the `values` predicate,
-meaning it works with the `cfg` `since` predicate and not the `=` operator.
-Another way would be for the `check-cfg` `since` predicate to never work with `=` but to instead
-allow operators inside of the `cfg` `since` predicate, e.g. `#[cfg(since(rust, "=1.95.0"))]`.
+One way of doing this is by allowing the check-cfg `since` predicate outside of the `values` predicate,
+meaning it works with the cfg `since` predicate and not the `=` operator.
+Another way would be for the check-cfg `since` predicate to never work with `=` but to instead
+allow operators inside of the cfg `since` predicate, e.g. `#[cfg(since(rust, "=1.95.0"))]`.
 However, with the rename of the predicate from `version` to `since`, operators don't fit in as easily.
 If someone wanted to support equality checks, there wouldn't be a way to support a continuous range of `values()` but would instead have to manually specify each likely potential version.
 
@@ -651,7 +651,7 @@ Haskell:
 
 ## Relaxing SemVer
 
-Instead of requiring the `IDENTIFIER` in the `check-cfg` `since` predicate to be strictly SemVer `major.minor.patch`,
+Instead of requiring the `IDENTIFIER` in the check-cfg `since` predicate to be strictly SemVer `major.minor.patch`,
 we could allow abbreviated forms like `major.minor` or even `major`.
 This would make the predicate more inclusive for other cases, like `edition`.
 
