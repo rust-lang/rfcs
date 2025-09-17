@@ -286,6 +286,10 @@ Clippy may wish to:
 People may be using `--cfg rust` already and would be broken by this change.
 There are no compatibility concerns with predicate names.
 
+`#[cfg(not(since("1.95.0")))]` is unnatural grammar when read out loud and could cause confusion.
+This could be helped by supporting a `#[cfg(before("1.95.0"))]`.
+This was left to [a future possibility][future-possibilities].
+
 This does not include a solution for adopting this within `Cargo.toml` without waiting for an MSRV bump.
 
 Traditionally, maintainers only test their MSRV and latest, assuming those will catch every issue.
@@ -303,8 +307,6 @@ Libraries could having ticking time bombs that accidentally break or have undesi
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## `since` cfg predicate rationale
-
-We could offer a `before` predicate but that is already covered by `not(since)`.
 
 The `since` name was taken from 
 [rustversion](https://crates.io/crates/rustversion) and the `#[deprecated(since)]` / `#[stable(since)]` attributes.
@@ -587,6 +589,8 @@ Haskell:
 
 - In the future the `--check-cfg` `since()` predicate could make the minimum-version field optional,
   matching all version numbers.
+- Adding `#[cfg(before("1.95.0"))]` could resolve the unnatural grammar of `#[cfg(not(since("1.95.0")))]`.
+  - Deferring to keep this minimal and to get more real world input on the usefulness of this
 
 ## Relaxing SemVer
 
