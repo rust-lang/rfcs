@@ -7,9 +7,8 @@
 [summary]: #summary
 
 Allow Rust-version conditional compilation by adding
-- `#[cfg(since(cfg_name, "<version>"))]`, a minimum-version `cfg` predicate
 - a built-in `--cfg rust=<version>`, for the Rust language version
-- a built-in `--cfg has_rust`, for detecting the presence of the above
+- `#[cfg(since(cfg_name, "<version>"))]`, a minimum-version `cfg` predicate
 
 Say this was added before 1.70, you could do:
 ```toml
@@ -164,10 +163,10 @@ fn main() {
 Now,
 let's say your MSRV is 1.10,
 the above code would error when compiling with your MSRV because the `since` predicate does not exist with that version.
-However, the presence of `--cfg has_rust` implies that we are on 1.27,
+However, the presence of `--cfg rust` implies that we are on 1.27,
 so you can "detect" support for `since` by changing your code to:
 ```rust
-#[cfg_attr(has_rust, cfg_attr(since(rust, "1.27"), must_use))]
+#[cfg_attr(rust, cfg_attr(since(rust, "1.27"), must_use))]
 fn double(x: i32) -> i32 {
     2 * x
 }
@@ -178,10 +177,10 @@ fn main() {
     // ^--- This warning only happens if we are on Rust >= 1.27.
 }
 ```
-However, this would produce an `unexpected_cfgs` lint on the MSRV compiler and you can avoid that by adding the following to `Cargo.toml`:
+However, this would produce an `unexpected_cfgs` lint and you would need to add the following to `Cargo.toml`:
 ```toml
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_rust,values(none()))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
 ```
 
 Say you were wanting to test out `#[must_use]` after it got stabilized on nightly to provide feedback and to be ready for when it hits stable,
@@ -274,13 +273,6 @@ Because this gets reported back in `--print=cfg`,
 Cargo will expose `rust` in:
 - build scripts as `CARGO_CFG_RUST`
 - `[target."cfg()".dependencies]`
-
-## `has_rust` cfg
-
-A new built-in cfg `--cfg has_rust` will be added by the compiler
-to allow checking of `rust` and `since` can be used.
-
-`has_rust` will be specified as `--check-cfg 'cfg(rust, values(none()))'`
 
 ## clippy
 
@@ -393,28 +385,31 @@ allow operators inside of the `cfg` `since` predicate, e.g. `#[cfg(since(rust, "
 However, with the rename of the predicate from `version` to `since`, operators don't fit in as easily.
 If someone wanted to support equality checks, there wouldn't be a way to support a continuous range of `values()` but would instead have to manually specify each likely potential version.
 
-`--check-cfg` will cause the following to warn on older compilers:
+`--check-cfg` will cause the following to warn:
 ```rust
 fn is_stderr_terminal() -> bool {
-    #[cfg(has_rust)]
+    #[cfg(rust)]
     #[cfg(since(rust, "1.70"))]
     use std::io::IsTerminal as _;
-    #[cfg(has_rust)]
+    #[cfg(rust)]
     #[cfg(not(since(rust, "1.70")))]
     use is_terminal::IsTerminal as _;
-    #[cfg(not(has_rust))]
+    #[cfg(not(rust))]
     use is_terminal::IsTerminal as _;
 
     std::io::stderr().is_terminal()
 }
 ```
 
-To allow checking for the presence of `has_rust` without warnings on older compiler versions,
-add the following to your `Cargo.toml`:
+To allow checking for the presence of `rust`, add the following to your `Cargo.toml`:
 ```toml
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_rust,values(none()))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
 ```
+Alternatively, we could have the built-in `--check-cfg` for `rust` include `values(none())` but:
+- When building on an old version, users will see the warning and will likely want to add it anyways.
+- We lose out on `--check-cfg` identifying misused.
+  Instead, we may wish to add a dedicated predicate intended for "is set".
 
 ## `rust` cfg rationale
 
@@ -424,20 +419,6 @@ I feel that `rust` as its own entity makes sense and avoids that problem.
 Rust does appear in some parts of the language,
 but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/type-layout.html?#the-rust-representation).
 However, the convention for `--cfg`s is generally lower case.
-
-## `has_rust` cfg rationale
-
-We'd prefer to allow adoption of `since(rust, "<version>")`
-without requiring an MSRV bump so core packages with low MSRVs can take advantage of it immediately.
-However, unknown predicates are a compiler error and there isn't a way to check if a cfg with a value is set,
-so we added this cfg which is either set or unset and can be checked with `#[cfg(has_rust)]`.
-
-Without the context of `#[cfg(since(rust, "<version>"))]`,
-`has_rust` could be confusing (this compiling with a Rust compiler, why is it a question?).
-
-Other potential names:
-- `rust_is_set`
-- `has_since`
 
 ### Pre-release
 
@@ -514,7 +495,7 @@ between the version it was first supported up to the current version,
 making the `=` operate as a "contains" operator,
 rather than an equality operator,
 like with `#[cfg(feature = "std")]`.
-This was proposed to allow `#[cfg_attr(rust = "1.95")]` to more naturally allow adoption before the feature is stabilized.
+This was proposed to allow `#[cfg_attr(rust, cfg(rust = "1.95"))]` to more naturally allow adoption before the feature is stabilized.
 
 This could be implemented statically, by hard coding the versions.
 This would work with `--print-cfg` and so would automatically work with Cargo.
