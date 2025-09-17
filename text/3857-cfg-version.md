@@ -654,18 +654,92 @@ Haskell:
 
 ## Relaxing SemVer
 
-Instead of requiring the `IDENTIFIER` in the check-cfg `since` predicate to be strictly SemVer `major.minor.patch`,
+Instead of requiring the `IDENTIFIER` in the cfg `since` predicate to be strictly SemVer `major.minor.patch`,
 we could allow abbreviated forms like `major.minor` or even `major`.
 This would make the predicate more inclusive for other cases, like `edition`.
+
+The syntax for a version could be:
+```
+Version ->
+  ReleaseVersion
+  PrereleaseVersion?
+
+ReleaseVersion ->
+  VersionField
+  ( `.` VersionField)*
+
+PrereleaseVersion ->
+  `-`
+  VersionField
+  ( `.` VersionField)*
+
+VersionField -> ( NumericVersionField | AlphanumericVersionField )
+
+NumericVersionField ->
+    `0`
+  | ( [`1`..`9`] DEC_DIGIT* )
+
+AlphanumericVersionField -> (
+      DEC_DIGIT
+    | [`a`..`z`]
+    | [`A`..`Z`]
+    | `-`
+  )+
+```
+
+With the precedence of:
+- Precedence is calculated by separating the `Version` into the respective `VersionField`s
+- Precedence is determined by the first difference when comparing each field from left to right of `ReleaseVersion`
+  - `NumericVersionField` is compared numerically
+  - `AlphanumericVersionField` is compared lexically in ASCII sort order
+  - Numeric identifiers always have lower precedence than non-numeric identifiers
+  - When two versions have different number of fields, the missing fields are assumed to be `0`
+- When the two `ReleaseVersion`s are equal, a `Version` with a `PrereleaseVersion` has lower precedence than one without
+- Precedence for two `Version`s with the matching `ReleaseVersion`s but different `PrereleaseVersion`s is determined by the first difference when comparing each field from left to right of `PrereleaseVersion`
+  - `NumericVersionField` is compared numerically
+  - `AlphanumericVersionField` is compared lexically in ASCII sort order
+  - Numeric identifiers always have lower precedence than non-numeric identifiers
+  - `PrereleaseVersion` with more `VersionField`s has a higher precedence than one with less, if all of the preceding `VersionField`s are equal.
+
+This was adopted from [SemVer](https://semver.org/) with the following changes:
+- Arbitrary precision for `ReleaseVersion`
+  - Unlike `PrereleaseVersion`, missing fields is assumed to be `0`, rather than lower precedence
+- Alphanumerics are allowed in release version fields
+
+The string literal for cfg `since` and check-cfg `since` would be similarly updated.
+A user would see the `unexpected_cfgs` lint if their cfg `since` string literal had more precision (more `VersionField`s) than the check-cfg `since` predicate.
+
+Note: for `--cfg foo="bar"`, `"bar"` would be a valid version.
+
+## `--cfg edition`
+
+In adding a `cfg` for the Edition, we could model it as either:
+- An integer
+- A single-field version
+
+Assuming the latter,
+we could have the following definition, building on the above relaxing of SemVer:
+
+`--cfg edition="<year>"`
+
+`--check-cfg cfg(edition, values(2015, 2018, 2021, 2024, since(2025)))`
+- The discrete values for known editions is there to help catch mistakes
+- `since(2025)` is used so packages don't have to deal with `unexpected_cfgs` when operating with edition versions higher than their current compiler recognizes and without having to try to predict what our future edition versions and policies may be
+- `since(2025)` also ensures that a user gets an `unexpected_cfgs` warning if they do `cfg(since(edition, 2028.10))` as that matches the `since(2025)` but has more precision
 
 ## `cfg_target_version`
 
 Instead of defining a new `#[cfg]` predicate, [RFC 3750](https://github.com/rust-lang/rfcs/pull/3750)
 could reuse the `#[cfg(since)]` predicate.
 
-As not all systems use SemVer, we can either
-- Contort the version into SemVer
-  - This can run into problems either with having more precision (e.g. `120.0.1.10` while SemVer only allows `X.Y.Z`) or post-release versions (e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/) which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release).
+Building on the above relaxing of Semver, we should meat the needs of most versioning systems.
+The one known exception is "post releases"
+(e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/)
+which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release.
+We can translate this to extra precision, e.g. `1.2.0-post1` could be `1.2.0.post1`.
+This would require the check-cfg `since` to use the appropriate amount of precision to not warn.
+
+If this is still not sufficient, we some options include:
 - Add an optional third field for specifying the version format (e.g. `#[cfg(since(windows, "10.0.10240", <policy-name>)]`)
 - Make `--check-cfg` load-bearing by having the version policy name be specified in the `--check-cfg` predicate
 
