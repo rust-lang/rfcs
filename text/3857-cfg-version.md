@@ -707,7 +707,7 @@ The most general form maybe `cfg_values!(foo)` but a `cfg_value!(foo)` could off
 Open questions:
 - How does `cfg_values!(foo)` deal with unset and name-only cfg's?
   - Most strict would be `Iterator<Option<&'static str>>`, requiring users to do `cfg_values!(foo).filter_map(std::convert::identity)` in most cases
-  - Could auto-skip name-only.  Empty iterator would then be ambigious.
+  - Could auto-skip name-only.  Empty iterator would then be ambiguous.
 - How does `cfg_value!(foo)` deal being unset?
   - Compiler error, like `env!`.  Could provide an `option_cfg_value!`.
 - How does `cfg_value!(foo)` deal with name-only cfgs??
