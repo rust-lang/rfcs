@@ -680,3 +680,10 @@ A user may want a shorthand for this.
 With the name `since`, defaulting it to `"0.0.0-0"` doesn't read too well (--check-cfg 'cfg(foo, values(since()))'`).
 Maybe a new predicate can be added `version()`.
 A shorthand may be limited to SemVer versions if we use the `since(version)` syntax to specify the supported version syntax, see [`--check-cfg` rationale][#--check-cfg-rationale].
+
+## An `is_set` predicate
+
+There isn't a way to check if a `cfg` name is set, whether with or without values
+which would work like a `cfg` version of
+[`cfg_accessible`](https://dev-doc.rust-lang.org/stable/unstable-book/library-features/cfg-accessible.html)
+so long as the `cfg` is unconditionally set.
