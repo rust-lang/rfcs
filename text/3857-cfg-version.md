@@ -628,6 +628,23 @@ Instead of requiring the `IDENTIFIER` in the `check-cfg` `since` predicate to be
 we could allow abbreviated forms like `major.minor` or even `major`.
 This would make the predicate more inclusive for other cases, like `edition`.
 
+## `cfg_target_version`
+
+Instead of defining a new `#[cfg]` predicate, [RFC 3750](https://github.com/rust-lang/rfcs/pull/3750)
+could reuse the `#[cfg(since)]` predicate.
+
+As not all systems use SemVer, we can either
+- Contort the version into SemVer
+  - This can run into problems either with having more precision (e.g. `120.0.1.10` while SemVer only allows `X.Y.Z`) or post-release versions (e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/) which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release).
+- Add an optional third field for specifying the version format (e.g. `#[cfg(since(windows, "10.0.10240", <policy-name>)]`)
+- Make `--check-cfg` load-bearing by having the version policy name be specified in the `--check-cfg` predicate
+
+## Conditional compilation for dependency versions
+
+As the ecosystem grows and matures,
+the Rust language and standard library may not be the only dependencies users wish to support multiple versions of.
+We may want to allow `#(cfg(since(serde, "1.0.900")]`.
+
 ## Vendor name and version
 
 We could add `--cfg`s for the compiler vendor name and version.
@@ -648,28 +665,11 @@ we either need the language version or the vendor name and version as well as a 
 
 See also [`#[cfg(nightly)]`](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html#cfgnightly) in the previous RFC.
 
-## `cfg_target_version`
-
-Instead of defining a new `#[cfg]` predicate, [RFC 3750](https://github.com/rust-lang/rfcs/pull/3750)
-could reuse the `#[cfg(since)]` predicate.
-
-As not all systems use SemVer, we can either
-- Contort the version into SemVer
-  - This can run into problems either with having more precision (e.g. `120.0.1.10` while SemVer only allows `X.Y.Z`) or post-release versions (e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/) which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release).
-- Add an optional third field for specifying the version format (e.g. `#[cfg(since(windows, "10.0.10240", <policy-name>)]`)
-- Make `--check-cfg` load-bearing by having the version policy name be specified in the `--check-cfg` predicate
-
 ## Provide a way to get a `--cfg`s value
 
 Similar to how `cfg!` allows doing conditionals in Rust code, provide a "`cfg_value!`" for reading the value.
 On top of [other use cases](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618) for `cfg_value!`,
 this would allow an application to approximate the vendor version `--bugreport` / `-v --version` without a build script.
-
-## Conditional compilation for dependency versions
-
-As the ecosystem grows and matures,
-the Rust language and standard library may not be the only dependencies users wish to support multiple versions of.
-We may want to allow `#(cfg(since(serde, "1.0.900")]`.
 
 ## `check-cfg` support for a version without a minimum
 
