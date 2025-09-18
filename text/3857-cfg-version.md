@@ -354,6 +354,8 @@ The `since` name was taken from
 [rustversion](https://crates.io/crates/rustversion) and the `#[deprecated(since)]` / `#[stable(since)]` attributes.
 This better conveys what operation is being performed than the original `version` name
 and leaves room for related predicates like `before`.
+In particular, as this is a general feature and not just for Rust version comparisons,
+we need to consider cases like `version(python, "2.8")` and whether people would interpret that as an exact match, a SemVer match, or a `>=` match (the winner).
 We could also call this `minimum`, or support comparison operators in the spirit of [RFC 3796](https://github.com/rust-lang/rfcs/pull/3796).
 The risk with a general word like `since` is if we gain support for other data types in cfgs, like integers for embedded development.
 The name `since` might apply in some situations but not others and its unclear if we'd want to generalize it past versions.
@@ -508,6 +510,30 @@ that corresponds more to the vendor version than the language version,
 so we do not include that information.
 
 ## Alternative designs
+
+### `version(rust, ">=1.95")`
+
+Instead of having an assumed operator for the predicate,
+we could require an operator as either:
+- `version(rust, ">=1.95")`
+- `version(rust >= "1.95")`
+
+For Cargo, operators do not match pre-release versions unless the operand uses them
+though this may be relaxed, see [cargo#14305](https://github.com/rust-lang/cargo/pull/14305).
+This does not fit with out use cases because it causes discontinuities
+while users of the `cfg` need continuity.
+
+This allows moving to a more specialized predicate name than `since` without losing the conveyed meaning.
+
+If the operator is outside of the string literal
+- we could also make it a bare word but that could lead to problems when dealing with relaxing of the version syntax
+- this creates a DSL inside our existing DSL which feels tacked on like using [rustversion](https://crates.io/crates/rustversion)
+- We'd need to decide how far to extend this DSL
+
+If the operator is inside the string literal
+- this would feel comfortably familiar due to Cargo
+- users may stumble and be frustrated with missing features from cargo (do we include all unary and binary operators?)
+- behavior differences with Cargo may be needed due to different use cases but could lead to user bugs and frustration as it might not match what users are familiar with
 
 ### `cfg(rust_version(1.95))`
 
@@ -666,6 +692,7 @@ Haskell:
 - `rust` or `rust_version`?
 - `--cfg rust` or `--cfg has_rust` for using now without an MSRV bump?
 - How strict should the version syntax be at this stage?
+- `since(rust, "1.95")`, `version(rust, ">=1.95")`, or `version(rust >= "1.95")`
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
