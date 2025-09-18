@@ -663,6 +663,10 @@ Haskell:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
+- `rust` or `rust_version`?
+- `--cfg rust` or `--cfg has_rust` for using now without an MSRV bump?
+- How strict should the version syntax be at this stage?
+
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
