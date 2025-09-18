@@ -693,6 +693,7 @@ Haskell:
 - `--cfg rust` or `--cfg has_rust` for using now without an MSRV bump?
 - How strict should the version syntax be at this stage?
 - `since(rust, "1.95")`, `version(rust, ">=1.95")`, or `version(rust >= "1.95")`
+- Is `"1.95.0-incomplete"` an acceptable compromise on the question of whether to treat nightlies as complete or incomplete?
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
