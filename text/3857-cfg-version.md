@@ -362,12 +362,14 @@ While having a specific name avoids these concerns.
 We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(since("1.95"))]` as a shorthand.
 However, this would look confusing in Cargo and doesn't seem like its offering enough of a benefit to be worth the costs.
 
-`ConfigurationSince` requires the `IDENTIFIER` and string literal to be a SemVer version
+`ConfigurationSince` requires the `IDENTIFIER` and string literal to be a SemVer version,
+erroring otherwise,
 so we can have the flexibility to relax the syntax over time without it being a breaking change
 For example, if `--cfg=foo="1.0"` caused `cfg(since(foo, "1.0"))` to be `false` and we later allowed `"1.0"` for the `IDENTIFIER`, it would now be `true` and would change behavior.
 Because we'll have `since(rust, _)` at that point, it won't require an MSRV bump.
 This does leave the door open for us to relax this in the future once we become comfortable with the flexibility of our version syntax.
 Alternatively, we could try to determine a flexible-enough version syntax now though that comes with the risk that it isn't sufficient.
+Another benefit to erroring is so `not(since(invalid, "<invalid>"))` is not `true`.
 
 If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
