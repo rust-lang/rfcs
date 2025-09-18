@@ -232,7 +232,7 @@ Examples:
 - `--cfg foo="1.1.0"` and `cfg(since(foo, "1.0.0"))` will be false
 - `--cfg foo --cfg foo="1.1.0" --cfg foo="1.0.0"` and `cfg(since(foo, "1.0.0"))` will be true
 
-The compiler implementation currently treats cfgs as `HashSet<(String, Option<String>)`
+The compiler implementation currently treats cfgs as `HashSet<(String, Option<String>)>`
 and would likely need to change this to `HashMap<String, HashSet<Option<String>>>``
 to accommodate this predicate.
 
