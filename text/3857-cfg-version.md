@@ -433,6 +433,7 @@ However, the convention for `--cfg`s is generally lower case.
 
 `--cfg=rust` is added to allow `#[cfg(rust)]` checks so packages can immediately adopt this feature without bumping an MSRV.
 This does lock us into how a `cfg_value!(rust)` would work from the [future-possibilities].
+Alternatively, we could add a separate cfg, like `has_rust`, `rust_is_set`, `has_since`.
 
 `--check-cfg` will cause the following to warn:
 ```rust
