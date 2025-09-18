@@ -678,6 +678,7 @@ The syntax for a version could be:
 Version ->
   ReleaseVersion
   PrereleaseVersion?
+  BuildMetadata?
 
 ReleaseVersion ->
   VersionField
@@ -685,6 +686,11 @@ ReleaseVersion ->
 
 PrereleaseVersion ->
   `-`
+  VersionField
+  ( `.` VersionField)*
+
+BuildMetadata ->
+  `+`
   VersionField
   ( `.` VersionField)*
 
@@ -703,7 +709,7 @@ AlphanumericVersionField -> (
 ```
 
 With the precedence of:
-- Precedence is calculated by separating the `Version` into the respective `VersionField`s
+- Precedence is calculated by separating the `Version` into the respective `VersionField`s, ignoring `BuildMetadata`
 - Precedence is determined by the first difference when comparing each field from left to right of `ReleaseVersion`
   - `NumericVersionField` is compared numerically
   - `AlphanumericVersionField` is compared lexically in ASCII sort order
@@ -721,10 +727,16 @@ This was adopted from [SemVer](https://semver.org/) with the following changes:
   - Unlike `PrereleaseVersion`, missing fields is assumed to be `0`, rather than lower precedence
 - Alphanumerics are allowed in release version fields
 
-The string literal for cfg `since` and check-cfg `since` would be similarly updated.
+The version requirement (string literal) for cfg `since` and check-cfg `since` would be similarly updated
+except  `BuildMetadata` would not be allowed.
 A user would see the `unexpected_cfgs` lint if their cfg `since` string literal had more precision (more `VersionField`s) than the check-cfg `since` predicate.
 
 Note: for `--cfg foo="bar"`, `"bar"` would be a valid version.
+
+We could always relax this incrementally, e.g.
+- Variable precision for `edition`
+- `BuildMetadata` for dependency versions
+- Whatever `target_version` requires
 
 ## `--cfg edition`
 
@@ -733,7 +745,7 @@ In adding a `cfg` for the Edition, we could model it as either:
 - A single-field version
 
 Assuming the latter,
-we could have the following definition, building on the above relaxing of SemVer:
+we could have the following definition, building on the above relaxing of SemVer for at least variable alternative precision:
 
 `--cfg edition="<year>"`
 
@@ -763,6 +775,11 @@ If this is still not sufficient, we some options include:
 As the ecosystem grows and matures,
 the Rust language and standard library may not be the only dependencies users wish to support multiple versions of.
 We may want to allow `#(cfg(since(serde, "1.0.900")]`.
+
+As dependency versions can have build numbers,
+we'd need to decide whether to further relax version numbers by allowing build numbers
+which would not affect precedence or whether the caller is responsible for stripping them,
+losing potential release information.
 
 ## Vendor name and version
 
