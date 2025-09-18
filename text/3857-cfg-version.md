@@ -431,6 +431,10 @@ Rust does appear in some parts of the language,
 but is capitalized like with [`repr(Rust)`](https://doc.rust-lang.org/reference/type-layout.html?#the-rust-representation).
 However, the convention for `--cfg`s is generally lower case.
 
+Alternatively, we could call this `rust_version`.
+The lack of a qualifier happens to work in this case but that might not be universally true
+and adding the qualifier now may improve consistency with the future.
+
 `--cfg=rust` is added to allow `#[cfg(rust)]` checks so packages can immediately adopt this feature without bumping an MSRV.
 This does lock us into how a `cfg_value!(rust)` would work from the [future-possibilities].
 Alternatively, we could add a separate cfg, like `has_rust`, `rust_is_set`, `has_since`.
