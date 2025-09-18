@@ -371,6 +371,12 @@ This does leave the door open for us to relax this in the future once we become 
 Alternatively, we could try to determine a flexible-enough version syntax now though that comes with the risk that it isn't sufficient.
 Another benefit to erroring is so `not(since(invalid, "<invalid>"))` is not `true`.
 
+Deferring the more flexible syntax avoids having to couple this decision to what syntax should be allowed
+which will allow us to better evaluate the ramifications for each time we relax things.
+For instance, in the [future-possibilities] we go so far as to allow alphabetic characters in any field while making the precision arbitrary.
+This can have side effects like allowing comparing words like with `#[cfg(since(hello, "world"))]`,
+whether intended by the users (potential abuse of the feature) or not (masking errors that could help find bugs).
+
 If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
 (e.g. `#[cfg(since(rust, 1.95.0))]`).
