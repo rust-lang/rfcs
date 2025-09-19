@@ -377,8 +377,9 @@ For instance, in the [future-possibilities] we go so far as to allow alphabetic 
 This can have side effects like allowing comparing words like with `#[cfg(since(hello, "world"))]`,
 whether intended by the users (potential abuse of the feature) or not (masking errors that could help find bugs).
 
-Deferring `+build` metadata field support a non-precedence setting field can cause confusion (as shown in Cargo/crates.io),
+Deferring `+build` metadata field support for `IDENTIFIER`s value because a non-precedence setting field can cause confusion (as shown in Cargo/crates.io),
 its likely best to hold off for us to evaluate the use of it when the need arrives.
+Like with Cargo, the `+build` metadata field should probably not be supported in the string literal (version requirement) because it does not affect precedence.
 
 If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
