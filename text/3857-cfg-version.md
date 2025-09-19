@@ -241,7 +241,7 @@ A new predicate will be added of the form:
 CheckConfigurationSince -> `since` `(` ( STRING_LITERAL | RAW_STRING_LITERAL ) `)`
 ```
 
-The syntax for the contents of the string literal is a SemVer value without the build field.
+The syntax for the contents of the string literal is a SemVer value without the `+build` metadata field.
 
 This will specify that for the given cfg, literals will be valid if:
 - SemVer syntax
