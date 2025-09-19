@@ -326,8 +326,8 @@ this does not cover the use case from [rustversion](https://crates.io/crates/rus
 
 Libraries could having ticking time bombs that accidentally break or have undesired behavior for some future Rust version that can't be found until we hit that version.
 
-Compared to the alternative designs,
-this may take more time in design discussions, implementation, and vetting the implementation
+Compared to the more specialized alternative designs,
+this more general solution may take more time in design discussions, implementation, and vetting the implementation
 as there are more corner cases to cover, particularly with how this integrates with future possibilities.
 
 ## Pre-releases for major versions
