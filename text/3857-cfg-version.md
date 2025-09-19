@@ -213,11 +213,11 @@ ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_L
 
 When evaluating `since`,
 1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, the compiler will error.  Unset `<minor>` and `<patch>` will assumed to be `0`.
+   Note that this excludes support for the `+build` field.
 2. If `IDENTIFIER` is unset, this will evaluate to `false`.
 3. If any of the following evaluates to `true` for any cfg entry for `IDENTIFIER`, `since` will evaluate to `true`, otherwise `false`.
     1. If `IDENTIFIER` is name-only, this entry will evaluate to `false`.
-    2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, the compiler will error
-       Note that this excludes support for the `+build` field.
+    2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, minus the `+build` field, the compiler will error.
     3. Otherwise, if `IDENTIFIER`s value has the same or higher [precedence](https://semver.org/#spec-item-11), this entry will evaluate to `true`
        For example, `#[cfg(since(rust, "1.90"))]` will be interpreted as `prededence_of(1.95.2) >= precedence_of(1.90.0)`.
 
@@ -376,6 +376,9 @@ which will allow us to better evaluate the ramifications for each time we relax 
 For instance, in the [future-possibilities] we go so far as to allow alphabetic characters in any field while making the precision arbitrary.
 This can have side effects like allowing comparing words like with `#[cfg(since(hello, "world"))]`,
 whether intended by the users (potential abuse of the feature) or not (masking errors that could help find bugs).
+
+Deferring `+build` metadata field support a non-precedence setting field can cause confusion (as shown in Cargo/crates.io),
+its likely best to hold off for us to evaluate the use of it when the need arrives.
 
 If we were stricter on the syntax,
 we could allow for version numbers to be directly accepted, without quotes 
@@ -811,8 +814,8 @@ As the ecosystem grows and matures,
 the Rust language and standard library may not be the only dependencies users wish to support multiple versions of.
 We may want to allow `#(cfg(since(serde, "1.0.900")]`.
 
-As dependency versions can have build numbers,
-we'd need to decide whether to further relax version numbers by allowing build numbers
+As dependency versions can have a `+build` metadata field,
+we'd need to decide whether to further relax version numbers by allowing a `+build` metadata field
 which would not affect precedence or whether the caller is responsible for stripping them,
 losing potential release information.
 
