@@ -7,7 +7,7 @@
 [summary]: #summary
 
 Allow Rust-version conditional compilation by adding
-- a built-in `--cfg rust=<version>`, for the Rust language version
+- a built-in `--cfg=rust --cfg=rust="<version>"`, for the Rust language version
 - `#[cfg(since(cfg_name, "<version>"))]`, a minimum-version `cfg` predicate
 
 Say this was added before 1.70, you could do:
