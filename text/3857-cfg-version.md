@@ -411,6 +411,9 @@ The `--check-cfg` predicate and the value for `rust` ensures users get warnings 
 in case we want the future possibility of relaxing SemVer versions
 *and* we want to infer from the fields used in `--check-cfg` to specify the maximum number of fields accepted in comparisons.
 
+Like with the cfg's string literal,
+check-cfg's string literal does not support the `+build` metadata field as it has no affect on precedence.
+
 We could have the check-cfg `since` predicate only apply to the cfg `since` predicate,
 causing `#[cfg(rust = "1.100.0")]` to warn.
 However,
