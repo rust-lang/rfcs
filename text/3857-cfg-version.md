@@ -251,15 +251,17 @@ Specifically when the given cfg is used with the cfg `since` predicate:
 - the string literal should not be of a syntax that evaluates to `false`
 - the string literal must be a minimum version requirement that specifies a subset of what the `--check-cfg` specifies
 
+This composes with all other values specified with the `values()` predicate
+
 So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 - ✅ `#[cfg(foo = "1.100.0")]`
-- ⚠️ `#[cfg(foo = "1.0")]`: not SemVer syntax
+- ⚠️ `#[cfg(foo = "1.100")]`: not SemVer syntax
 - ✅ `#[cfg(since(foo, "1.95.0"))]`
 - ✅ `#[cfg(since(foo, "1.100.0"))]`
 - ✅ `#[cfg(since(foo, "3.0.0"))]`
 - ✅ `#[cfg(since(foo, "1.95"))]`
-- ⚠️ `#[cfg(since(foo, "1.90.0"))]`: matches a superset of `--check-cfg`
 - ⚠️ `#[cfg(since(foo, "1.95.0-0"))]`: matches a superset of `--check-cfg`
+- ⚠️ `#[cfg(since(foo, "1.90.0"))]`: matches a superset of `--check-cfg`
 - ⚠️ `#[cfg(since(foo, "1"))]`: matches a superset of `--check-cfg`
 - ⚠️ `#[cfg(since(foo, "bar"))]`: invalid string literal syntax
 
