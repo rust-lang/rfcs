@@ -312,10 +312,10 @@ on top of the other benefits of providing a central, semantic name.
 This could also be helped by supporting a `#[cfg(before("1.95.0"))]`.
 This was left to [a future possibility][future-possibilities].
 
-While Rust can stacks `cfg`s to test for the presence of this feature on older version,
+While Rust can stacks `cfg`s to test for the presence of this feature on older versions,
 this does not include a solution for adopting this within `Cargo.toml` without waiting for an MSRV bump to the version `since` is stabilized in.
 
-Traditionally, maintainers only test their MSRV and latest, assuming those will catch every issue.
+Traditionally, maintainers only test their MSRV and latest stable, assuming those will catch every issue.
 While that isn't always true today (e.g. some Cargo features go from "unknown" warning to "unstable" error to supported and MSRV might be in the warning phase),
 having distinct implementations for different Rust versions can make the testing matrix more complex.
 Tools like [`cargo hack`](https://crates.io/crates/cargo-hack) can help which can run commands on not just one toolchain version but also the every version starting with the MSRV with a command like `cargo hack --rust-version --version-step 1 check`.
