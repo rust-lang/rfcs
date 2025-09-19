@@ -213,7 +213,6 @@ ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_L
 
 When evaluating `since`,
 1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, the compiler will error
-   *(for warning on always-false checks, see `--check-cfg`)*
 2. If `IDENTIFIER` is unset, this will evaluate to `false`.
 3. If any of the following evaluates to `true` for any cfg entry for `IDENTIFIER`, `since` will evaluate to `true`, otherwise `false`.
     1. If `IDENTIFIER` is name-only, this entry will evaluate to `false`.
