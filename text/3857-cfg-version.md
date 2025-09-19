@@ -228,9 +228,9 @@ Examples:
 - `--cfg name_only` and `cfg(since(name_only, "1.0.0"))` will be false
 - `--cfg foo="bird"` and `cfg(since(name_only, "1.0.0"))` will be a compiler error
 - `--cfg foo="1.1.0"` and `cfg(since(foo, "bird"))` will be a compiler error
-- `--cfg foo="1.1.0"` and `cfg(since(foo, "1.2.0"))` will be true
-- `--cfg foo="1.1.0"` and `cfg(since(foo, "1.0.0"))` will be false
-- `--cfg foo --cfg foo="1.1.0" --cfg foo="1.0.0"` and `cfg(since(foo, "1.0.0"))` will be true
+- `--cfg foo="1.1.0"` and `cfg(since(foo, "1.0.0"))` will be true
+- `--cfg foo="1.1.0"` and `cfg(since(foo, "1.2.0"))` will be false
+- `--cfg foo --cfg foo="1.1.0" --cfg foo="1.0.0"` and `cfg(since(foo, "1.1.0"))` will be true
 
 The compiler implementation currently treats cfgs as `HashSet<(String, Option<String>)>`
 and would likely need to change this to `HashMap<String, HashSet<Option<String>>>``
