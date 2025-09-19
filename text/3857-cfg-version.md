@@ -305,8 +305,11 @@ At least a preliminary search of GitHub did not uncover uses
 but that search may have been incomplete
 and that data set is biased towards open source and not all uses of Rust.
 
-`#[cfg(not(since("1.95.0")))]` is unnatural grammar when read out loud and could cause confusion.
-This could be helped by supporting a `#[cfg(before("1.95.0"))]`.
+Ignoring the logic, a straight-English reading of `#[cfg(not(since("1.95.0")))]` is unnatural and could cause confusion.
+This can be mitigated by use of `#[cfg_alias]`
+which will let users provide a semantic name for the positive case that works with the negative case,
+on top of the other benefits of providing a central, semantic name.
+This could also be helped by supporting a `#[cfg(before("1.95.0"))]`.
 This was left to [a future possibility][future-possibilities].
 
 While Rust can stacks `cfg`s to test for the presence of this feature on older version,
