@@ -212,15 +212,14 @@ ConfigurationSince -> `since` `(` IDENTIFIER `,` ( STRING_LITERAL | RAW_STRING_L
 ```
 
 When evaluating `since`,
-1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, the compiler will error
+1. If the string literal does not conform to the syntax from `<major>` to `<major>.<minor>.<patch>-<pre-release>` where the first three fields must be integers, the compiler will error.  Unset `<minor>` and `<patch>` will assumed to be `0`.
 2. If `IDENTIFIER` is unset, this will evaluate to `false`.
 3. If any of the following evaluates to `true` for any cfg entry for `IDENTIFIER`, `since` will evaluate to `true`, otherwise `false`.
     1. If `IDENTIFIER` is name-only, this entry will evaluate to `false`.
     2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, the compiler will error
        Note that this excludes support for the `+build` field.
-    3. Otherwise, the `IDENTIFIER`s value will be compared to the string literal according to
-[Cargo's `>=` version requirements](https://doc.rust-lang.org/nightly/cargo/reference/specifying-dependencies.html#comparison-requirements).
-       For example, `#[cfg(since(rust, "1.90"))]` will be treated as `1.95.2 >= 1.90.0`.
+    3. Otherwise, if `IDENTIFIER`s value has the same or higher [precedence](https://semver.org/#spec-item-11), this entry will evaluate to `true`
+       For example, `#[cfg(since(rust, "1.90"))]` will be interpreted as `prededence_of(1.95.2) >= precedence_of(1.90.0)`.
 
 Examples:
 - `cfg(since(unset_name, "1.0.0"))` will be false
