@@ -120,7 +120,7 @@ This can include the compiler vendor and version used to build the application.
 
 When using a new language or standard library feature,
 circumstances may warrant doing so while maintaining an existing [MSRV](https://doc.rust-lang.org/cargo/reference/rust-version.html),
-rather than raising to what the language or standard library feature needs.
+rather than raising it to what the language or standard library feature needs.
 This can be accomplished by conditionally compiling the code for that feature.
 
 As its hard to talk about features and versions in the future,
