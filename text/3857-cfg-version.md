@@ -33,9 +33,9 @@ This supersedes the `cfg_version` subset of [RFC 2523](https://rust-lang.github.
 [motivation]: #motivation
 
 These problems mostly have solutions today through third-party crates or other patterns but
-- The workarounds for Rust-version-specific dependencies are less straightforward and difficult to get right.
 - That requires knowledge of them when users expect this to "just work" like in other ecosystems
 - They slow down build times, requiring at least one build script to be fully built (even in `cargo check`) and then executed.  In one sample "simple webserver", in the dependency tree there were 10 build scripts and 2 proc-macros built for the sake of version detection.
+- The workarounds for Rust-version-specific dependencies are less straightforward and difficult to get right.
 
 ## Use cases
 
