@@ -301,6 +301,9 @@ Clippy may wish to:
 
 People may be using `--cfg rust` already and would be broken by this change.
 There are no compatibility concerns with predicate names.
+At least a preliminary search of GitHub did not uncover uses
+but that search may have been incomplete
+and that data set is biased towards open source and not all uses of Rust.
 
 `#[cfg(not(since("1.95.0")))]` is unnatural grammar when read out loud and could cause confusion.
 This could be helped by supporting a `#[cfg(before("1.95.0"))]`.
