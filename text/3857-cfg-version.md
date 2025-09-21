@@ -219,7 +219,7 @@ When evaluating `since`,
     1. If `IDENTIFIER` is name-only, this entry will evaluate to `false`.
     2. If `IDENTIFIER`'s value is not a valid [SemVer](https://semver.org/) value, minus the `+build` field, the compiler will error.
     3. Otherwise, if `IDENTIFIER`s value has the same or higher [precedence](https://semver.org/#spec-item-11), this entry will evaluate to `true`
-       For example, `#[cfg(since(rust, "1.90"))]` will be interpreted as `prededence_of(1.95.2) >= precedence_of(1.90.0)`.
+       For example, `#[cfg(since(rust, "1.90"))]` will be interpreted as `precedence_of(1.95.2) >= precedence_of(1.90.0)`.
 
 Examples:
 - `cfg(since(unset_name, "1.0.0"))` will be false
