@@ -527,16 +527,17 @@ so we do not include that information.
 ### `version(rust, ">=1.95")`
 
 Instead of having an assumed operator for the predicate,
-we could require an operator as either:
+we could require an operator or predicate as either:
 - `version(rust, ">=1.95")`
 - `version(rust >= "1.95")`
+- `version(rust, since("1.95"))`
 
 For Cargo, operators do not match pre-release versions unless the operand uses them
 though this may be relaxed, see [cargo#14305](https://github.com/rust-lang/cargo/pull/14305).
 This does not fit with out use cases because it causes discontinuities
 while users of the `cfg` need continuity.
 
-This allows moving to a more specialized predicate name than `since` without losing the conveyed meaning.
+This allows moving to a more specialized outer predicate name than `since` without losing the conveyed meaning.
 
 If the operator is outside of the string literal
 - we could also make it a bare word but that could lead to problems when dealing with relaxing of the version syntax
@@ -547,6 +548,17 @@ If the operator is inside the string literal
 - this would feel comfortably familiar due to Cargo
 - users may stumble and be frustrated with missing features from cargo (do we include all unary and binary operators?)
 - behavior differences with Cargo may be needed due to different use cases but could lead to user bugs and frustration as it might not match what users are familiar with
+
+If we nest `since` inside `version`,
+- If there is a concern with boundary with `since` conditions that aren't alleviated by the discussion else where,
+  then this isn't helped because we are still using `since`
+- Its not clear how a user is expected to reason about this (i.e. how do we teach this?)
+  especially in light of how the existing predicates work
+- This creates a DSL inside our existing DSL which feels tacked on like using [rustversion](https://crates.io/crates/rustversion)
+- Users are likely to hit impedance mismatches between principles they expect to work within the parent DSL and this DSL (e.g. using `all`)
+- Nesting APIs puts more of a burden on the user, their editing experience, and our documentation structure to navigate compared to a flat structure
+  - If this is just to make the name `since` more specific,
+    we could just as well be served by naming it `version_since`
 
 ### `cfg(rust_version(1.95))`
 
@@ -705,7 +717,7 @@ Haskell:
 - `rust` or `rust_version`?
 - `--cfg rust` or `--cfg has_rust` for using now without an MSRV bump?
 - How strict should the version syntax be at this stage?
-- `since(rust, "1.95")`, `version(rust, ">=1.95")`, or `version(rust >= "1.95")`
+- `since(rust, "1.95")`, `version_since(rust, "1.95")`, `version(rust, ">=1.95")`, `version(rust >= "1.95")`, or `version(rust, since("1.95"))`
 - Is `"1.95.0-incomplete"` an acceptable compromise on the question of whether to treat nightlies as complete or incomplete?
   - How much do we care about the name?
 
