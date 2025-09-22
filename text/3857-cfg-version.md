@@ -552,7 +552,7 @@ If the operator is inside the string literal
 If we nest `since` inside `version`,
 - If there is a concern with boundary with `since` conditions that aren't alleviated by the discussion else where,
   then this isn't helped because we are still using `since`
-- Its not clear how a user is expected to reason about this (i.e. how do we teach this?)
+- It's not clear how a user is expected to reason about this (i.e. how do we teach this?)
   especially in light of how the existing predicates work
 - This creates a DSL inside our existing DSL which feels tacked on like using [rustversion](https://crates.io/crates/rustversion)
 - Users are likely to hit impedance mismatches between principles they expect to work within the parent DSL and this DSL (e.g. using `all`)
