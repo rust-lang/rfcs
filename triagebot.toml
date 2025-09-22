@@ -12,6 +12,8 @@ trigger-files = ["text/"]
 
 [shortcut]
 
+[range-diff]
+
 [notify-zulip."T-cargo"]
 zulip_stream = 246057 # t-cargo
 topic = "RFC #{number} - {title}"
