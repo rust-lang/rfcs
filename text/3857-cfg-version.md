@@ -830,7 +830,7 @@ Building on the above relaxing of Semver, we should meet the needs of most versi
 The one known exception is "post releases"
 (e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/)
 which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release.
-We can translate this to extra precision, e.g. `1.2.0-post1` could be `1.2.0.post1`.
+We can translate this to extra precision, e.g. `1.2.0-post1` could be `1.2.0.post.1`.
 This would require the check-cfg `since` to use the appropriate amount of precision to not warn.
 
 If this is still not sufficient, we some options include:
