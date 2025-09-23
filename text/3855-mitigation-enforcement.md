@@ -89,6 +89,8 @@ The following mitigations could find this feature interesting
    However, it is already stable, and we would need a `-C control-flow-guard-enforce`
    or `-C deny-partial-mitigations=control-flow-guard` (or bikeshed) to make
    it enforcing.
+
+   We could also make it enforcing over an edition boundary.
 2. `-C relocation-model`
    If position-dependent code is compiled into a binary, then ASLR will
    not be able to be enabled.
@@ -103,6 +105,16 @@ The following mitigations could find this feature interesting
 
    As far as I can tell, there is no way to disable `relro` via stable Rust
    compilation flags.
+3. `-C overflow-checks`
+   This can be thought of as a mitigation in some sense. It might make sense
+   to add a way to make it enforcing, but I don't think it makes sense to
+   make it enforcing by default since that is contrary to the normal
+   use of turning overflow checks only for the crate under development.
+
+   However, we might still want to introduce a `-C enforce-overflow-checks` or
+   `-C deny-partial-mitigations=overflow-checks`. It probably does not
+   make sense to make it enforcing over an edition boundary, since the
+   desired default there is not to enforce.
 
 ### Currently Unstable (as of rustc 1.89)
 
@@ -174,12 +186,16 @@ name of the value, for example `-C stack-protector=strong-noenforce` or
 
 Every crate gets a metadata field that contains the set of mitigations it has enabled.
 
-When compiling a crate, if the current crate has a mitigation with enforcement
-turned on, and one of the dependencies does not have that mitigation turned
-on (whether enforcing or not), a compilation error results.
+When compiling a crate, if the current crate has a mitigation
+with enforcement turned on, and one of the dependencies does not
+have that mitigation turned on (whether enforcing or not), a
+compilation error results.
 
-If a mitigation has multiple "levels", a lower level at a dependent
-crate is compatible with a higher level at a base crate.
+If a mitigation has multiple "levels", a stricter level at a dependency is
+compatible with a looser level at the current (dependent) crate, but not
+vice-versa - for example, if the standard library crates were compiled with
+`-C stack-protector=all` (not discusser whether that is a wise idea), they would be
+compatible with every configuration of user crates.
 
 The error happens independent of the target crate type (you get an error
 if you are building an rlib, not just the final executable).
@@ -187,14 +203,14 @@ if you are building an rlib, not just the final executable).
 For example, with `-C stack-protector`, the compatibility table will be
 as follows:
 
-|  Base\Dependent  | none | none-noenforce | strong |     strong-noenforce     |  all  |      all-noenforce       |
-| ---------------- | ---- | -------------- | ------ | ------------------------ | ----- |   --------------------   |
-| none             |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
-| none-noenforce   |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
-| strong           |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
-| strong-noenforce |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
-| all              |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
-| all-noenforce    |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
+|  Dependency\Current | none | none-noenforce | strong |     strong-noenforce     |  all  |      all-noenforce       |
+| ------------------- | ---- | -------------- | ------ | ------------------------ | ----- |   --------------------   |
+| none                |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
+| none-noenforce      |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
+| strong              |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
+| strong-noenforce    |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
+| all                 |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
+| all-noenforce       |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
 
 If a program has multiple flags of the same kind, the last flag wins, so e.g.
 `-C stack-protector=strong-noenforce -C stack-protector=strong` is the same as
