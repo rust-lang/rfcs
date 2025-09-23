@@ -114,7 +114,8 @@ The following mitigations could find this feature interesting
    However, we might still want to introduce a `-C deny-partial-mitigations=overflow-checks` or
    `-C enforce-overflow-checks`. It probably does not
    make sense to make it enforcing over an edition boundary, since the
-   desired default there is not to enforce.
+   desired default there is not to enforce. This probably merits a separate
+   RFC/FCP.
 
 ### Currently Unstable (as of rustc 1.89)
 
