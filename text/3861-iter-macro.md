@@ -1,6 +1,6 @@
 - Feature Name: `iter_macro`
 - Start Date: 2025-09-22
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3861](https://github.com/rust-lang/rfcs/pull/3861)
 - Rust Issue: [rust-lang/rust#142269](https://github.com/rust-lang/rust/issues/142269)
 
 # Summary
