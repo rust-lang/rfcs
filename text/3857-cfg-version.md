@@ -826,7 +826,7 @@ we could have the following definition, building on the above relaxing of SemVer
 Instead of defining a new `#[cfg]` predicate, [RFC 3750](https://github.com/rust-lang/rfcs/pull/3750)
 could reuse the `#[cfg(since)]` predicate.
 
-Building on the above relaxing of Semver, we should meat the needs of most versioning systems.
+Building on the above relaxing of Semver, we should meet the needs of most versioning systems.
 The one known exception is "post releases"
 (e.g. [`1.2.0.post1`](https://packaging.python.org/en/latest/discussions/versioning/)
 which, if we translated it to SemVer's syntax of `1.2.0-post1`, would be treated as a pre-release.
