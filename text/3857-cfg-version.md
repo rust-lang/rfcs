@@ -180,7 +180,7 @@ fn main() {
 However, this would produce an `unexpected_cfgs` lint and you would need to add the following to `Cargo.toml`:
 ```toml
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust)'] }
 ```
 
 Say you were wanting to test out `#[must_use]` after it got stabilized on nightly to provide feedback and to be ready for when it hits stable,
@@ -474,7 +474,7 @@ fn is_stderr_terminal() -> bool {
 To allow checking for the presence of `rust`, add the following to your `Cargo.toml`:
 ```toml
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust,values(none()))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust)'] }
 ```
 Alternatively, we could have the built-in `--check-cfg` for `rust` include `values(none())` but:
 - When building on an old version, users will see the warning and will likely want to add it anyways.
