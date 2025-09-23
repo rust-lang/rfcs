@@ -247,9 +247,10 @@ This will specify that for the given cfg, string literals will be valid if:
 - SemVer syntax
 - from the specified version and up
 
-Specifically when the given cfg is used with the cfg `since` predicate:
-- the string literal should not be of a syntax that evaluates to `false`
+When checking a `since` predicate,
 - the string literal must be a minimum version requirement that specifies a subset of what the `--check-cfg` specifies
+
+*note: non-version string literals are already a compiler error*
 
 This composes with all other values specified with the `values()` predicate
 
