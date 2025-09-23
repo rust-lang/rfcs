@@ -86,8 +86,8 @@ The following mitigations could find this feature interesting
    This is a "CFI-type" mitigation on Windows, and therefore having it enabled
    only partially makes it far less protective.
 
-   However, it is already stable, and we would need a `-C control-flow-guard-enforce`
-   or `-C deny-partial-mitigations=control-flow-guard` (or bikeshed) to make
+   However, it is already stable, and we would need a `-C deny-partial-mitigations=control-flow-guard`
+   or `-C control-flow-guard-enforce` (or bikeshed) to make
    it enforcing.
 
    We could also make it enforcing over an edition boundary.
@@ -100,8 +100,8 @@ The following mitigations could find this feature interesting
    via [`hardening-check(1)`] or similar tools since it's easily visible
    in the ELF header.
 
-   However, we might still want to introduce a `-C enforce-position-independent` or
-   `-C deny-partial-mitigations=position-independent`.
+   However, we might still want to introduce a `-C deny-partial-mitigations=position-independent` or
+   `-C enforce-position-independent`.
 
    As far as I can tell, there is no way to disable `relro` via stable Rust
    compilation flags.
@@ -111,8 +111,8 @@ The following mitigations could find this feature interesting
    make it enforcing by default since that is contrary to the normal
    use of turning overflow checks only for the crate under development.
 
-   However, we might still want to introduce a `-C enforce-overflow-checks` or
-   `-C deny-partial-mitigations=overflow-checks`. It probably does not
+   However, we might still want to introduce a `-C deny-partial-mitigations=overflow-checks` or
+   `-C enforce-overflow-checks`. It probably does not
    make sense to make it enforcing over an edition boundary, since the
    desired default there is not to enforce.
 
@@ -167,17 +167,37 @@ dependencies does not have that mitigation enabled, compilation will fail.
 > `-C stack-protector=strong`.
 >
 > Recompile that crate with the mitigation enabled, or use
-> `-C stack-protector=strong-noenforce` to allow creating an artifact
+> `-C allow-partial-mitigations=stack-protector` to allow creating an artifact
 > that has the mitigation only partially enabled.
+>
+> It is possible to disable `-C allow-partial-mitigations=stack-protector` via
+> `-C deny-partial-mitigations=stack-protector`.
+
+Other flags that can be mitigations, for example `-C overflow-checks=on`,
+permit partial mitigations by default, but it is possible to make sure
+your dependencies have the same mitigation setting as you by passing
+`-C deny-partial-mitigations=overflow-checks`. That flag can be
+overridden by `-C allow-partial-mitigations=overflow-checks`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Every flag value that enables a mitigation for which enforcement is desired is split
-into 2 separate values, "enforcing" and "non-enforcing" mode. The enforcing mode
-is the default, non-enforcing mode is constructed by adding `-noenforce` to the
-name of the value, for example `-C stack-protector=strong-noenforce` or
-`-C sanitizer=shadow-call-stack-noenforce`.
+For every mitigation-like option, the compiler CLI flags determines whether that
+mitigation allows or denies partial mitigations. This can be turned on
+via `-C allow-partial-mitigations=<mitigation>` and turned off by
+`-C deny-partial-mitigations=<mitigation>` (for example,
+`-C allow-partial-mitigations=stack-protector` and
+`-C deny-partial-mitigations=stack-protector`).
+
+These flags act like every other compiler flag, with the last flag winning if there are multiple
+values.
+
+There is no "resetting" of the allow/deny status if the mitigation is overriden, but see
+the alternative [with order dependency](#with-order-dependency).
+
+The default of allow/deny is mitigation-dependent, but can also depend on edition (for
+example, it might be best to make `-C control-flow-guard` only deny-by-default from the next
+edition).
 
 > It is possible to bikeshed the exact naming scheme.
 
@@ -203,47 +223,52 @@ if you are building an rlib, not just the final executable).
 For example, with `-C stack-protector`, the compatibility table will be
 as follows:
 
-|  Dependency\Current | none | none-noenforce | strong |     strong-noenforce     |  all  |      all-noenforce       |
-| ------------------- | ---- | -------------- | ------ | ------------------------ | ----- |   --------------------   |
-| none                |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
-| none-noenforce      |  OK  |      OK        | error  | OK - dependent noenforce | error | OK - dependent noenforce |
-| strong              |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
-| strong-noenforce    |  OK  |      OK        |   OK   |            OK            | error | OK - dependent noenforce |
-| all                 |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
-| all-noenforce       |  OK  |      OK        |   OK   |            OK            |   OK  |             OK           |
-
-If a program has multiple flags of the same kind, the last flag wins, so e.g.
-`-C stack-protector=strong-noenforce -C stack-protector=strong` is the same as
-`-C stack-protector=strong`.
+|   Dependency\Current   | none | none+allow | strong |   strong + allow partial    |  all  |    strong + allow partial   |
+| ---------------------- | ---- | ---------- | ------ | --------------------------- | ----- | --------------------------- |
+| none                   |  OK  |      OK    | error  | OK - current allows partial | error | OK - current allows partial |
+| none + allow partial   |  OK  |      OK    | error  | OK - current allows partial | error | OK - current allows partial |
+| strong                 |  OK  |      OK    |   OK   |             OK              | error | OK - current allows partial |
+| strong + allow partial |  OK  |      OK    |   OK   |             OK              | error | OK - current allows partial |
+| all                    |  OK  |      OK    |   OK   |             OK              |   OK  |               OK            |
+| all + allow partial    |  OK  |      OK    |   OK   |             OK              |   OK  |               OK            |
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-The `-noenforce` syntax is ugly, and the
-`-C allow-partial-mitigations=stack-protector` syntax is either order-dependent
-or does not allow for easy appending.
+The `-C allow-partial-mitigations=stack-protector` syntax
+does not allow for easy appending, unless made order-dependent.
+
+The `-noenforce` syntax is ugly.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Syntax alternatives
 
-### -C stack-protector=none-noenforce
+### `-C my-mitigation-noenforce`
+
+Instead of `-C allow-partial-mitigations`, it is possible to split every flag value that enables
+a mitigation for which enforcement is desired is split into 2 separate values, "enforcing" and
+"non-enforcing" mode. The enforcing mode is the default, non-enforcing mode is constructed by
+adding `-noenforce` to the name of the value, for example `-C stack-protector=strong-noenforce` or
+`-C sanitizer=shadow-call-stack-noenforce`.
+
+If a program has multiple flags of the same kind, the last flag wins, so e.g.
+`-C stack-protector=strong-noenforce -C stack-protector=strong` is the same as
+`-C stack-protector=strong`.
+
+This is uglier, but acts nicer if distributors want to set flags by default,
+see [with order dependency](#with-order-dependency).
+
+#### -C stack-protector=none-noenforce
 
 The option `-C stack-protector=none-noenforce` is the same as
 `-C stack-protector=none`. I am not sure whether we should have both, but
 it feels that orthogonality is in favor of having both.
 
-### -C allow-partial-mitigations
+### With order dependency
 
-Instead of having `-C stack-protector=strong-noenforce`, we could have the
-syntax be `-C stack-protector=strong -C allow-partial-mitigations=stack-protector`.
-
-Some people feel that syntax is prettier. In that case, we have 2 options:
-
-#### Without order dependency
-
-This is the simplest to implement. With that,
+With the way the flag is specified now,
 `-C stack-protector=strong -C allow-partial-mitigations=stack-protector -C stack-protector=strong`
 is the same as `-C stack-protector=strong -C allow-partial-mitigations=stack-protector`.
 
@@ -260,8 +285,6 @@ Maybe it is actually possible to ship a `-C stack-protector=strong` standard lib
 add a `-C stack-protector=strong` default, since the enforcement check only works
 "towards roots"?
 
-#### With order dependency
-
 With a small amount of implementation effort, we could have `-C stack-protector=strong` reset the
 `-C allow-partial-mitigations=stack-protector` state, so that
 `-C stack-protector=strong -C allow-partial-mitigations=stack-protector -C stack-protector=strong`
@@ -272,10 +295,13 @@ kinds of CLI arguments.
 
 ## Limiting the set of crates that are allowed to bypass enforcement
 
-You could have a syntax like `-C stack-protector=strong-noenforce=std+alloc+core` or
-`-C allow-partial-mitigations=stack-protector=std+alloc+core`,
-or some other syntax (using `+` since `,` should have a different level of precedence),
-which would only allow the mitigation to be partial on a specified set of crate names.
+You could have a syntax like `-C allow-partial-mitigations=stack-protector=@stdlib+foo`
+`-C stack-protector=strong-noenforce=@stdlib+foo` or  some other syntax (using `+` since
+`,` should have a different level of precedence), which would only allow the mitigation
+to be partial on a specified set of crate names.
+
+`@stdlib` is used here to stand for all the sysroot crates, since the user does not
+want to specify them all (should we bikeshed the syntax?).
 
 This is different from `-C pretend-mitigation-enabled`, since it reflects a decision
 made by the application writer (dependent crate) rather than the library writer.
@@ -320,8 +346,8 @@ add a new mitigation in an enforcing way, as that will cause widespread
 breakage, but they can fairly easily turn a mitigation on in a non-enforcing way.
 
 We do want the combination of defaults to combine in a nice way - if the
-distributioon sets `-C stack-protector=strong-noenforce`, and the user adds
-`-C stack-protector=strong`, we want the result to be stack-protector set
+distribution sets `-C stack-protector=strong -C allow-partial-mitigations=stack-protector`,
+and the user adds `-C stack-protector=strong`, we want the result to be stack-protector set
 to strong and enforcing.
 
 On the other hand, maybe there is not actually desire to add
