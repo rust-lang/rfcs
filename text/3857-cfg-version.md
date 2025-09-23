@@ -480,7 +480,8 @@ Alternatively, we could have the built-in `--check-cfg` for `rust` include `valu
 - When building on an old version, users will see the warning and will likely want to add it anyways.
 - We lose out on `--check-cfg` identifying misuses.
   Instead, we may wish to add a dedicated predicate intended for "is set".
-
+- The lint is an opportunity to tell people how to suppress it in old versions
+- However, this does "punish" people who need it but don't care about warnings on old versions
 
 ### Pre-release
 
