@@ -976,3 +976,10 @@ There isn't a way to check if a `cfg` name is set, whether with or without value
 which would work like a `cfg` version of
 [`cfg_accessible`](https://dev-doc.rust-lang.org/stable/unstable-book/library-features/cfg-accessible.html)
 so long as the `cfg` is unconditionally set.
+
+## Clippy lint: prefer using `cfg(since)` via `cfg_alias!`
+
+Once we have this RFC and [RFC 3804](https://github.com/rust-lang/rfcs/pull/3804),
+we may want a restriction lint that would encourage people to use `cfg(since)` through `cfg_alias`
+so people work off of names in `cfg()` throughout their code base,
+rather than versions that may be duplicated and lack semantic meaning.
