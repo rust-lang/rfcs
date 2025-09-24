@@ -183,21 +183,6 @@ However, this would produce an `unexpected_cfgs` lint and you would need to add 
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(rust)'] }
 ```
 
-Say you were wanting to test out `#[must_use]` after it got stabilized on nightly to provide feedback and to be ready for when it hits stable,
-you would instead use `"1.27.0-0"` to match all pre-release versions of 1.27.0:
-```rust
-#[cfg_attr(since(rust, "1.27.0-0"), must_use)]
-fn double(x: i32) -> i32 {
-    2 * x
-}
-
-fn main() {
-    double(4);
-    // warning: unused return value of `double` which must be used
-    // ^--- This warning only happens if we are on Rust >= 1.27.
-}
-```
-
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
@@ -261,7 +246,6 @@ So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 - ✅ `#[cfg(since(foo, "1.100.0"))]`
 - ✅ `#[cfg(since(foo, "3.0.0"))]`
 - ✅ `#[cfg(since(foo, "1.95"))]`
-- ⚠️ `#[cfg(since(foo, "1.95.0-0"))]`: matches a superset of `--check-cfg`
 - ⚠️ `#[cfg(since(foo, "1.90.0"))]`: matches a superset of `--check-cfg`
 - ⚠️ `#[cfg(since(foo, "1"))]`: matches a superset of `--check-cfg`
 - ⚠️ `#[cfg(since(foo, "bar"))]`: invalid string literal syntax
@@ -271,9 +255,10 @@ So given `--check-cfg 'cfg(foo, values(since("1.95.0")))'`,
 A new built-in cfg `--cfg=rust --cfg=rust="<version>"` will be added by the compiler
 that specifies the language version.
 This will be the version of `rustc` with the behavior for pre-release versions being unspecified.
-We expect rustc to:
-- Translate the `-nightly` pre-release to `-incomplete`
-- Strip the `-beta.5` pre-release
+We expect rustc to treat beta and nightly versions as an "incomplete" implementation of that language version,
+reporting some number less than the current nightly.
+We could either track the latest patch release at the time of the nightly, assume `x.y.0`, or assume `x.y.99`.
+The compiler may choose to offer an unstable flag to mark a nightly as "complete" to allow for testing of features with `since`.
 
 `rust` will be specified as `--check-cfg 'cfg(rust, values(since("1.95.0")))'`
 (or whatever version this gets stabilized in).
@@ -517,7 +502,7 @@ For RFC 2523, they settled on pre-releases being incomplete,
 favoring maintainers to adopt stabilized-on-nightly features immediately
 while letting people on pinned nightlies or bisecting nightlies to set a `-Z` to mark the version as incomplete.
 
-In this RFC, we settled on translating `-nightly` to `-incomplete` because:
+Originally, this RFC chose to translate `-nightly` to `-incomplete` because:
 - Maintainers can adopt stabilized-on-nightly features with `#[cfg(since(rust, "1.100.0-0"))]` (the lowest pre-release for `1.100.0`), keeping friction low while explicitly acknowledging that the unstable feature may change
   - `-0` is recommended over `-incomplete` or any other value as the exact pre-release value is unspecified.
 - Allows build scripts to experiment with other logic when approximating the vendor version from the language version with less of a chance of needing to invoke `rustc` (e.g. detecting nightly)
@@ -530,6 +515,9 @@ The term `-nightly` would be more discoverable but would convey more of a relati
 As for differentiating between nightlies,
 that corresponds more to the vendor version than the language version,
 so we do not include that information.
+
+However, we've decided to punt on the question of nightlies to reduce the scope of this RFC
+and out of concern for published packages using unstable features that will automatically get enabled somehow.
 
 ## Alternative designs
 
@@ -873,6 +861,31 @@ We could always relax this incrementally, e.g.
 - Variable precision for `edition`
 - `BuildMetadata` for dependency versions
 - Whatever `target_version` requires
+
+## Incomplete language versions
+
+Rustc could indicate that it implements an incomplete version of the compiler by having an `-incomplete` pre-release field.
+This would be used for nightlies and there would be a question of whether beta should be incomplete or not.
+
+This can be done later as its unstable.
+
+A guide-level explanation would be:
+
+> Say you were wanting to test out `#[must_use]` after it got stabilized on nightly to provide feedback and to be ready
+> for when it hits stable,
+> you would instead use `"1.27.0-0"` to match all pre-release versions of 1.27.0:
+> ```rust
+> #[cfg_attr(since(rust, "1.27.0-0"), must_use)]
+> fn double(x: i32) -> i32 {
+>     2 * x
+> }
+>
+> fn main() {
+>     double(4);
+>     // warning: unused return value of `double` which must be used
+>     // ^--- This warning only happens if we are on Rust >= 1.27.
+> }
+> ```
 
 ## `--cfg edition`
 
