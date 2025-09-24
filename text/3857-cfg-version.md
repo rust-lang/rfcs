@@ -380,6 +380,13 @@ This does leave the door open for us to relax this in the future once we become 
 Alternatively, we could try to determine a flexible-enough version syntax now though that comes with the risk that it isn't sufficient.
 Another benefit to erroring is so `not(since(invalid, "<invalid>"))` is not `true`.
 
+Having a unset or name-only `IDENTIFIER` evaluate to `false` is consistent with `cfg(IDENTIFIER)` and `cfg(IDENTIFIER = "value")`.
+When a version can be conditionally present,
+it avoids the need to gate an expression which would either require including `--cfg IDENTIFIER` with `--cfg IDENTIFIER="<version>"` (like `--cfg rust`) to check for its presence or for us to add an `is_set` predicate.
+However, this would also apply to a `before` predicate, making `before` not the same as `not(since)`.
+If we did error on unset or name-only `IDENTIFIER`s,
+we'd need it to be done lazily so as to not error if the expression is gated.
+
 Deferring the more flexible syntax avoids having to couple this decision to what syntax should be allowed
 which will allow us to better evaluate the ramifications for each time we relax things.
 For instance, in the [future-possibilities] we go so far as to allow alphabetic characters in any field while making the precision arbitrary.
