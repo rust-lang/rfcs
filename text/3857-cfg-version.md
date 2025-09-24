@@ -731,7 +731,7 @@ Haskell:
 - `since(rust, "1.95")`, `version_since(rust, "1.95")`, `version(rust, ">=1.95")`, `version(rust >= "1.95")`, or `version(rust, since("1.95"))`
 - Is `"1.95.0-incomplete"` an acceptable compromise on the question of whether to treat nightlies as complete or incomplete?
   - How much do we care about the name?
-  - Are beta's incomplete?   Stricty speaking, yes.  However, in most cases they will be complete.
+  - Are beta's incomplete?   Strictly speaking, yes.  However, in most cases they will be complete.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
