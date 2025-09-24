@@ -243,7 +243,7 @@ impl SerializeByProxy for MyStruct {
     where Self: 'a;
 
     fn serialize(&self) -> MyStructProxy<'_> {
-        Proxy {
+        MyStructProxy {
             name: &self.name,
             digit: self.int % 10,
             tens: self.int / 10,
@@ -373,16 +373,13 @@ This kind of code where `SmartPtr` *sometimes* implements `Deref` but *always* i
 ## Tenets
 
 - Backward-compatibility
-    - 
     - We need to maintain that all the current `impl` blocks to compile, specifically the `impl Deref` litmus test mentioned in the [deref-receiver] motivating example.
     - This demand also extends to other possible library traits that may see relocation of items into a future supertrait, while ensuring that the existing `impl` blocks continue to compile.
 - Intuitional readability and clear syntatical signal
-    - 
     - We strive for a syntax that is intuitional and easily connected to the existing constructs.
     - A successful design is one that enables a user to easily build a correct mental picture of the trait `impl`s with assistance from the syntatical features.
     - By extension, supertrait `impl`s should appear clearly in connection with subtrait `impl`s.
 - Flexibility
-    -
     - We strive for providing users the means to refactor their traits without compromising the expressiveness of the trait relationships.
 
 # Guide-level explanation
@@ -741,7 +738,7 @@ For the following definition, a **non-marker** trait is a trait with an item, wh
 | Supertrait kind | `auto impl` block in sub-`trait` block | `auto impl` statement in sub-`trait` block |
 |-|-|-|
 | non-marker | Mandatory[<sup>a</sup>](#e-i-a) | Optional[<sup>b</sup>](#e-i-b) |
-| marker <td colspan="2" style="text-align: center"> Mandatory[<sup>c</sup>](#e-i-c) |
+| marker | Mandatory[<sup>c</sup>](#e-i-c) | Mandatory[<sup>c</sup>](#e-i-c) |
 
 ### <a id="e-i-a"></a>Case a: `auto impl` block of a non-marker supertrait in sub-`trait` block
 For illustration, here is an example.
@@ -767,11 +764,11 @@ impl Subtrait for MyStruct {
 The reason for this is that given that `trait Subtrait` has already provided its implementation, an implementation of `Subtrait` must choose between the default implementation and a user-defined implementation. We prefer explicit confirmation through `extern impl` declaration from the implementor, rather than making the compiler to reason about whether `auto impl` should be backfilled for ease of language feature implementation.
 
 #### Extension: Possible relaxation through an unsafe attribute and a future-compatibility lint
-For important ecosystem traits like `PartialOrd` and `Ord`, this rule is still unsatisfactory due to [the potential rewrites required](#po-o) on downstream crates, even though it could be as small as an additional `extern impl PartialOrd`. As an extension, the rule could be relaxed with an unsafe attribute `#![unsafe(probe_extern_impl)]` and apply further trait selection to decide whether the default implementation given by the `auto impl` block should be used.
+For important ecosystem traits like `PartialOrd` and `Ord`, this rule is still unsatisfactory due to [the potential rewrites required](#po-o) on downstream crates, even though it could be as small as an additional `extern impl PartialOrd`. As an extension, the rule could be relaxed with an unsafe attribute `#[probe_extern_impl]` and apply further trait selection to decide whether the default implementation given by the `auto impl` block should be used.
 
 ```rust
 trait Ord: PartialOrd {
-    #[unsafe(probe_extern_impl)]
+    #[probe_extern_impl]
     auto impl PartialOrd {
         // ...
     }
@@ -920,7 +917,7 @@ impl<T: MyOtherTrait> MyTrait for T { .. }
 
 impl MyOtherTrait for Foo {}
 
-// QUESTION: which `impl MyTrait for Foo` fulfills the boud `Foo: MyTrait`?
+// QUESTION: which `impl MyTrait for Foo` fulfills the bound `Foo: MyTrait`?
 // Should it be the `auto impl MyTrait;` with default items?
 // Should it be the `impl<T: MyOtherTrait> MyTrait for T` with `T := Foo`?
 ```
