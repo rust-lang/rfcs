@@ -548,7 +548,7 @@ So given `--cfg=rust --cfg=rust=version("1.95.0")`, you could do `cfg(rust >= ve
 
 With typing,
 `cfg_values!` (a future possibility) could evaluate to the given type.
-So for `--cfg foo=integer("1')`, `cfg_value!(foo)` would be as if you typed `1`.
+So for `--cfg foo=integer("1')` (maybe even `--cfg foo=1`), `cfg_value!(foo)` would be as if you typed `1`.
 For versions,
 as there is no native Rust type,
 we'd likely have it evaluate to a `&'static str`.
