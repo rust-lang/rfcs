@@ -552,6 +552,7 @@ If the operator is outside of the string literal
 - we could also make it a bare word but that could lead to problems when dealing with relaxing of the version syntax
 - this creates a DSL inside our existing DSL which feels tacked on like using [rustversion](https://crates.io/crates/rustversion)
 - We'd need to decide how far to extend this DSL
+- We have not considered the syntax implications for check-cfg which would not have a left-hand side for the operator.
 
 If the operator is inside the string literal
 - this would feel comfortably familiar due to Cargo
