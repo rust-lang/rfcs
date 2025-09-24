@@ -573,6 +573,8 @@ Another is how to handle check-cfg.
 The proposed syntax is a binary operator but there is no left-hand side in check-cfg.
 Would we accept `cfg(rust, values(>="1.95"))`?
 How would we specify types?  Would we replace `values` with `versions`?
+Or do we deviate from the check-cfg syntax and go with `cfg(rust >= version("1.95"))`?
+This would make editions `--check-cfg 'cfg(edition, values(version("2015"), version("2018"), version("2021"), version("2024")))' --check-cfg 'cfg(edition >= verison("2025"))'`
 
 Adding typing to cfg,
 while likely something we'll do one day,
