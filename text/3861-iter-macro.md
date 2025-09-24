@@ -137,7 +137,7 @@ let i = iter!(|xs: &[u8]| {
 });
 ```
 
-Here we are both holding a borrow across a `yield` point (because the `for` loop inserts a call to `xs.into_iterator()` and the result of that borrows `xs`) and attempting to yield references to the iterator's stack (because the iterator over `xs` yields references to `xs`).
+Here we are both holding a borrow across a `yield` point (because the `for` loop inserts a call to `xs.into_iter()` and the result of that borrows `xs`) and attempting to yield references to the iterator's stack (because the iterator over `xs` yields references to `xs`).
 
 Finally, iterator closures should not be passed as arguments.
 The reason is that although `iter!` creates an iterator closure, Rust has not specified how to name the type of an iterator closure.
@@ -400,7 +400,7 @@ We note that we can achieve a similar effect by adding an `IntoIterator` impl, w
 ## `IntoIterator` for Thunks
 
 It would be convenient to add a blanket impl or `IntoIterator` for functions of no arguments that return iterators.
-After all, calling `f.into_iterator()` is isomorphic to `f()`, as both apply a function of no arguments to `f`.
+After all, calling `f.into_iter()` is isomorphic to `f()`, as both apply a function of no arguments to `f`.
 This blanket impl would allow the following, which is arguably clearer to understand:
 
 ```rust
@@ -408,7 +408,7 @@ let it = iter!(|| {
     yield 1;
     yield 2;
     yield 3;
-}).into_iterator();
+}).into_iter();
 ```
 
 But perhaps more importantly, we could pass the result of `iter!` into a `for` loop without an intervening `()`:
