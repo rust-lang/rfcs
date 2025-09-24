@@ -533,6 +533,65 @@ so we do not include that information.
 
 ## Alternative designs
 
+### `cfg(rust >= "1.95")`
+
+[RFC #3796](https://github.com/rust-lang/rfcs/pull/3796)
+will be allowing operators in addition to predicates and it stands to reason that we can extend that
+to version comparisons as well.
+
+The expression `rust >= "1.95"` without any other changes would be a string comparison and not a version precedence comparison.
+We'd need to add the concept of types to cfg.
+We could make check-cfg load-bearing by relying on its type information
+or we could add coercion functions to cfg.
+
+So given `--cfg=rust --cfg=rust=version("1.95.0")`, you could do `cfg(rust >= version("1.95"))`.
+
+With typing,
+`cfg_values!` (a future possibility) could evaluate to the given type.
+So for `--cfg foo=integer("1')`, `cfg_value!(foo)` would be as if you typed `1`.
+For versions,
+as there is no native Rust type,
+we'd likely have it evaluate to a `&'static str`.
+
+[RFC #3796](https://github.com/rust-lang/rfcs/pull/3796)
+does not address questions around binary operators,
+requiring us to work it out.
+For example, are the sides of the operator fully swappable?
+If we define all comparisons, would `==` be different than `=`?
+How will these operators work in the presence of multiple values or a name-only cfg?
+
+Would we allow implicit coercion so you can skip the `version` inside of `cfg`, like `cfg(rust >= "1.95")`?
+I would suggest not because this would make it harder to catch bugs where
+- The `--cfg` is not a version but you thought it was
+- The `--cfg` should be a version but `version()` was left off
+
+Currently, check-cfg does not apply at all to `--cfg` because it is commonly used with `RUSTFLAGS` which
+are applied to all packages and would warn that an unknown `IDENTIFIER` is in use for packages that don't care.
+We could still skip checking for unknown `IDENTIFIER`s and instead warn on misuse of `IDENTIFIER`s which would increase the chance of catching a mistake (unless a person duplicated there `--cfg` mistake with `--check-cfg`.
+
+Another is how to handle check-cfg.
+The proposed syntax is a binary operator but there is no left-hand side in check-cfg.
+Would we accept `cfg(rust, values(>="1.95"))`?
+How would we specify types?  Would we replace `values` with `versions`?
+
+Adding typing to cfg,
+while likely something we'll do one day,
+greatly enlarges the scope of this RFC.
+This makes it harder to properly evaluate each part,
+making it more likely we'll make mistakes.
+This further delays the feature as the unstable period is likely to be longer.
+We also are not ready to evaluate other use cases for typing to evaluate the impact
+and likely won't until we move forward with [global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618)
+and `cfg_values!`,
+allowing us to cover use cases like embedded using [toml_cfg](https://crates.io/crates/toml-cfg).
+
+If we defer typing, we'll have to allow implicit coercion of values so we can mark `rust` as a version in the future without it being a breaking change.
+
+If we consider typing the correct long term solution but defer it,
+we may want to consider the most narrowly scoped solution in the short term,
+like `rust_version("1.95")`.
+These "big questions" can then have dedicated issues and versions can be built on top of that.
+
 ### `version(rust, ">=1.95")`
 
 Instead of having an assumed operator for the predicate,
