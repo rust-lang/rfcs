@@ -366,7 +366,7 @@ we need to consider cases like `version(python, "2.8")` and whether people would
 We could also call this `minimum`, or support comparison operators in the spirit of [RFC 3796](https://github.com/rust-lang/rfcs/pull/3796).
 The risk with a general word like `since` is if we gain support for other data types in cfgs, like integers for embedded development.
 The name `since` might apply in some situations but not others and its unclear if we'd want to generalize it past versions.
-While having a specific name avoids these concerns.
+Having a more specific name like `version_since` / `since_version` could avoid these concerns.
 
 We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(since("1.95"))]` as a shorthand.
 However, this would look confusing in Cargo and doesn't seem like its offering enough of a benefit to be worth the costs.
