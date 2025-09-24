@@ -648,6 +648,9 @@ If we nest `since` inside `version`,
   - If this is just to make the name `since` more specific,
     we could just as well be served by naming it `version_since`
 
+If we want to consider typed-config in the future (and by extension `cfg(rust >= "1.95")`),
+we may want to hold off on the use of operators to give ourselves more flexibility in defining how they work.
+
 ### `cfg(rust_version(1.95))`
 
 *(this is [RFC 2523](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html))*
