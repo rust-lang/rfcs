@@ -367,7 +367,7 @@ We could also call this `version_minimum` or `version_ge`, or support comparison
 Including `since` reduces the risk if we gain support for other data types in cfgs, like integers for embedded development.
 Naming it only `since` might apply in some situations but not others and its unclear if we'd want to generalize it past versions.
 Having a more specific name like `version_since` / `since_version` could avoid these concerns.
-We chose `version_since` since it can read as "for versions since rust 1.20" and follows the type-method naming style.
+We chose `version_since` since it can read as "for versions since rust 1.20", follows the type-method naming style, help with version-related auto-completions, and version-related predicates will naturally sort next to each other.
 However, the name `version_since` can seem excessively verbose, especially compared to `version` or `since`.
 
 We could swap the order of parameters and make `rust` a default for the second parameter to allow `#[cfg(version_since("1.95"))]` as a shorthand.
