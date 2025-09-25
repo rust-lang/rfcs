@@ -205,7 +205,9 @@ complex.
 
 We could handle conditionally available fields by presenting them as though
 they have a repetition of `?`, which would allow expansions within `$(...)?`;
-that would support simple conditional cases without much complexity.
+that would support simple conditional cases without much complexity, but seems
+like an awkward way to write conditionals, and would not handle more complex
+cases.
 
 We could handle some other types of conditions by presenting "boolean"-like
 fields as fields that expand to no tokens but do so under a repetition of `?`,
