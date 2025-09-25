@@ -627,6 +627,8 @@ This does not fit with out use cases because it causes discontinuities
 while users of the `cfg` need continuity.
 
 This splits our specific predicate name (`version_since`) into smaller parts without losing conveyed meaning.
+This also provides a natural home for common documentation for cfg version concepts,
+if we gain more predicates.
 
 If the operator is outside of the string literal
 - we could also make it a bare word but that could lead to problems when dealing with relaxing of the version syntax
