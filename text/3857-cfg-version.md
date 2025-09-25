@@ -626,6 +626,15 @@ though this may be relaxed, see [cargo#14305](https://github.com/rust-lang/cargo
 This does not fit with out use cases because it causes discontinuities
 while users of the `cfg` need continuity.
 
+[RFC #3796](https://github.com/rust-lang/rfcs/pull/3796)
+does not address questions around binary operators,
+requiring us to work it out.
+For example, are the operands fully swappable?
+If not, that could lead to impedance mismatches for users.
+What all operators do we support?
+All `Ord` operators increases the scope.
+Not having all can lead to impedance mismatches for users.
+
 This splits our specific predicate name (`version_since`) into smaller parts without losing conveyed meaning.
 This also provides a natural home for common documentation for cfg version concepts,
 if we gain more predicates.
