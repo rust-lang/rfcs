@@ -61,8 +61,8 @@ invoked.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-Fragment fields may be used in a macro transcriber anywhere the corresponding
-fragment name could be used.
+Fragment fields may be used in a macro transcriber anywhere a fragment name of
+the appropriate type could be used.
 
 Fragment fields typically follow the same rules for repetition handling as the
 corresponding fragment (e.g. being used at the same level/kind of repetition).
