@@ -731,7 +731,7 @@ If the sub-trait defines an item of the same name as an item in the super-trait,
 
 In this scenario, any item in an impl block of the sub-trait using the ambiguous name will always refer to the item from the sub-trait. This means that the only way to override the item from the super trait is to use `extern impl`.
 
-## Mandatory `external impl` declaration
+## Mandatory `extern impl` declaration
 
 For the following definition, a **non-marker** trait is a trait with an item, which can be `default` or not. A marker trait has zero associated items.
 
@@ -763,8 +763,8 @@ impl Subtrait for MyStruct {
 ```
 The reason for this is that given that `trait Subtrait` has already provided its implementation, an implementation of `Subtrait` must choose between the default implementation and a user-defined implementation. We prefer explicit confirmation through `extern impl` declaration from the implementor, rather than making the compiler to reason about whether `auto impl` should be backfilled for ease of language feature implementation.
 
-#### Extension: Possible relaxation through an unsafe attribute and a future-compatibility lint
-For important ecosystem traits like `PartialOrd` and `Ord`, this rule is still unsatisfactory due to [the potential rewrites required](#po-o) on downstream crates, even though it could be as small as an additional `extern impl PartialOrd`. As an extension, the rule could be relaxed with an unsafe attribute `#[probe_extern_impl]` and apply further trait selection to decide whether the default implementation given by the `auto impl` block should be used.
+#### Extension: Possible relaxation through an attribute and a future-compatibility lint
+For important ecosystem traits like `PartialOrd` and `Ord`, this rule is still unsatisfactory due to [the potential rewrites required](#po-o) on downstream crates, even though it could be as small as an additional `extern impl PartialOrd`. As an extension, the rule could be relaxed with an attribute `#[probe_extern_impl]` and apply further trait selection to decide whether the default implementation given by the `auto impl` block should be used.
 
 ```rust
 trait Ord: PartialOrd {
