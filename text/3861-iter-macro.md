@@ -127,18 +127,6 @@ iter!(|counter: Rc<RefCell<i32>>| {
 });
 ```
 
-These two limitations can also combine in examples such as:
-
-```rust
-let i = iter!(|xs: &[u8]| {
-    for x in xs {
-        yield x;
-    }
-});
-```
-
-Here we are both holding a borrow across a `yield` point (because the `for` loop inserts a call to `xs.into_iter()` and the result of that borrows `xs`) and attempting to yield references to the iterator's stack (because the iterator over `xs` yields references to `xs`).
-
 Finally, iterator closures should not be passed as arguments.
 The reason is that although `iter!` creates an iterator closure, Rust has not specified how to name the type of an iterator closure.
 This means there is not an appropriate type annotation to add to a function.
