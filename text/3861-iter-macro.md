@@ -482,3 +482,15 @@ task_context = yield;
 Then when an executor calls `poll` on a future, as in `fut.poll(cx)`, the value of `cx` because the value of the `yield` and therefore assigned to `task_context`.
 
 Given that rustc already supports this functionality internally, it would be useful to expose this to Rust users directly.
+
+## Additional Iterator Traits
+
+There are other iteration traits such as `ExactSizeIterator` and `FusedIterator`.
+In this RFC, the iterator returned by an iterator closure only implements `Iterator`.
+It's possible we could extend this in the future.
+Some would be easier than others.
+For example, we can probably make all `iter!` iterators implement `FusedIterator` without much trouble (we'd need to make `FusedIterator` a lang item, which it isn't currently).
+`ExactSizeIterator` would likely need an annotation and/or analysis of the iterator body to see if it can be proven to iterate a known and fixed number of times.
+On the other hand, `DoubleEndedIterator` would need some way to specify the `next_back` method.
+
+Since this is a purely additive change, we recommend considering it at a later time after doing adqeuate exploration.
