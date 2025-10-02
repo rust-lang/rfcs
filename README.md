@@ -131,8 +131,8 @@ merged into the RFC repository as a markdown file. At that point the RFC is
     and drawbacks are shown. You can make edits, big and small, to the RFC to
     clarify or change the design, but make changes as new commits to the pull
     request, and leave a comment on the pull request explaining your changes.
-    Specifically, do not squash or rebase commits after they are visible on the
-    pull request.
+    **Specifically, do not squash or rebase commits after they are visible on
+    the pull request.**
   - At some point, a member of the subteam will propose a "motion for final
     comment period" (FCP), along with a *disposition* for the RFC (merge, close,
     or postpone).
