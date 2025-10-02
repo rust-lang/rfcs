@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Let's make it more elegant to conditionally compile tuple type declarations by allowing cfg-attributes directly on their element types.
+Let's make it more elegant to conditionally compile tuple type declarations and pattern matches by allowing cfg-attributes directly on their elements.
 
 # Motivation
 [motivation]: #motivation
@@ -273,6 +273,44 @@ type ShipArchetype = EcsArchetype<(
 
 This would likely need to be generated via macro in practice, and the macro itself would have to parse the cfg-attributes to produce these combinatorial outputs. However, macros aren't an easy fix in all positions where tuples are supported (e.g. as type arguments), and so even with macros this would create levels of indirection and require alias definitions. The hecs query example above could not easily have an element conditionally gated via a macro without first declaring an alias for that query's tuple type outside of the position where the query iteration occurs. This is because doing so would likely require the macro to be able to generate code outside of its immediate context to function (i.e. to branch based on each cfg-attribute involved).
 
+In addition to supporting cfg-attributes in tuple declarations, this RFC proposes supporting these attributes in pattern matching as a proper counterpart. For example:
+
+```rust
+let (a, #[cfg(something)] b) = my_tuple;
+```
+or
+```rust
+struct MyStruct(i32, #[cfg(something)] u32); // Already supported
+
+fn foo(x: MyStruct) {
+    let MyStruct(a, #[cfg(something)] b) = x; // Not yet supported
+}
+```
+or
+```rust
+match my_tuple {
+    (val, #[cfg(something)] Some(other)) => { ... },
+}
+```
+
+To continue the client-server analogy above, in a hecs-like ECS query, it is useful to conditionally define components on a client- or server-only basis. For example, if the server needed to run additional logic and store additional state when an object updates its movement, one might accomplish this like so:
+
+```rust
+type MovementQuery = (Position, Rotation, #[cfg(server)] Authority);
+
+fn do_update(ecs: &mut Ecs) {
+    for components in ecs.query::<MovementQuery>().iter_mut() {
+        let (position, rotation, #[cfg(server)] authority) = components;
+        let _output = update_movement(position, rotation);
+        
+        #[cfg(server)]
+        update_authority(authority, position, rotation, _output);
+    }
+}
+```
+
+Permitting cfg attributes in both the tuple definition, and in the pattern matching to extract tuple elements, allows code like this to conditionally branch without the risk of combinatorial explosion as above.
+
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
@@ -288,10 +326,24 @@ type MyTuple = (
 
 and in other situations where tuple types are declared, such as in function arguments. These will conditionally include or exclude the type in that tuple (affecting the tuple's length) based on the compile-time evaluation result of each `#[cfg]` predicate.
 
+Similarly, cfg-attributes can be used in pattern matching, like so:
+
+```rust
+let (a, #[cfg(something)] b) = my_tuple;
+```
+and
+```rust
+match my_tuple {
+    (val, #[cfg(something)] Some(other)) => { ... },
+}
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-This RFC proposes changing the syntax of the `TupleType` (see 10.1.5 in the Rust reference) to include `OuterAttribute*` before each occurrence of `Type`. These attributes can decorate each individual type (up to the comma or closing paren). In practice, at least within the scope of this RFC, only cfg-attributes need to be supported in this position.
+This RFC proposes changing the syntax of the `TupleType` (See [[type.tuple.syntax]](https://doc.rust-lang.org/stable/reference/types/tuple.html#r-type.tuple.syntax)) to include `OuterAttribute*` before each occurrence of `Type`. These attributes can decorate each individual type (up to the comma or closing paren). Similarly, for pattern matching, this RFC proposes adding `OuterAttribute*` before each `Pattern` in `TuplePattern` (See [[patterns.tuple.syntax]](https://doc.rust-lang.org/stable/reference/patterns.html#r-patterns.tuple.syntax)) and `TupleStructPattern` (See [[patterns.tuple-struct.syntax]](https://doc.rust-lang.org/stable/reference/patterns.html#r-patterns.tuple-struct.syntax)). This would work similarly to the `OuterAttribute*` in `StructPatternField` (See [[patterns.struct.syntax]](https://doc.rust-lang.org/stable/reference/patterns.html#r-patterns.struct.syntax)),
+
+In practice, at least within the scope of this RFC, only cfg-attributes need to be supported in these new `OuterAttribute`s.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -305,19 +357,36 @@ As with any feature, this adds complication to the language and grammar. Conditi
 
 The need for conditionally compiling tuple types can arise in applications with different deployment targets or that want to release builds with different sets of functionality (e.g. client, server, editor, demo, etc.). It would be useful to support cfg-attributes directly here without requiring workarounds to achieve this functionality. Macros, proc macros, and so on are also ways to conditionally compile tuple types, but these also introduce at least one level of obfuscation from the core goal and can't be used everywhere a tuple can be. Finally, tuples can be wholly duplicated under different cfg-attributes, but this scales poorly with both the size and intricacy of the tuple and the number of interacting attributes (which may grow combinatorically), and can introduce a maintenance burden from repeated code.
 
-It also makes sense in this instance to support cfg-attributes here because they are already supported in this manner for tuple initialization and for tuple struct declaration.
+It also makes sense in this instance to support cfg-attributes here because they are already supported in this manner for tuple initialization and for tuple struct declaration, as well as for individual fields in pattern matching on structs.
 
 # Prior art
 [prior-art]: #prior-art
 
-I'm not aware of any prior work in adding this to the language.
+I'm not aware of any prior work in adding this to the language. Other forms of this kind of cfg-attribute support exist elsewhere in
+the language. For example in tuple structs (illustrated above), and in pattern matching on non-tuple structs, where matched fields can already be conditionally gated, like so:
+
+```rust
+struct MyStruct {
+    a: u32,
+    #[cfg(true)]
+    b: u32,
+}
+
+fn foo(x: MyStruct) {
+    let MyStruct{
+        a,
+        #[cfg(true)]
+        b,
+    } = x;
+}
+```
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-I don't have any unresolved questions for this RFC.
+There are currently no unresolved questions for this RFC.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-I believe this change is relatively self-contained, though I also think it's worth continuing to look for additional places where support for cfg-attributes makes sense to add. Conditional compilation is very important, especially in some domains, and requiring workarounds and additional boilerplate to support it is not ideal.
+I believe this change is relatively self-contained, though I also think it's worth continuing to look for additional places where support for cfg-attributes makes sense to add. Conditional compilation is very important, especially in some domains, and requiring workarounds and additional boilerplate to support it is not ideal. A more detailed enumeration of inconsistencies with cfg-attributes and comma-terminated fragments can be found [on this HackMD page](https://hackmd.io/@recatek/S1NO5ZXHT). If this RFC is accepted, only two reasonable use cases for cfg-attributes on comma-terminated fragments would remain uncovered.
