@@ -3,6 +3,10 @@
 - RFC PR: [rust-lang/rfcs#1861](https://github.com/rust-lang/rfcs/pull/1861)
 - Rust Issue: [rust-lang/rust#43467](https://github.com/rust-lang/rust/issues/43467)
 
+> This RFC has been superseded by [RFC 0000](https://rust-lang.github.io/rfcs/0000-extern-types-v2.md).
+>
+> This RFC omits details such as the alignment of extern types which proved essential for implementing it.
+
 # Summary
 [summary]: #summary
 
