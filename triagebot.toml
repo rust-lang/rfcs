@@ -10,6 +10,17 @@ trigger-files = ["text/"]
 
 [assign]
 
+[assign.owners]
+"/.github/"           = ["internal-sites"]
+"/.gitattributes"     = ["internal-sites"]
+"/.gitignore"         = ["internal-sites"]
+"/book.toml"          = ["internal-sites"]
+"/generate-book.py"   = ["internal-sites"]
+"/LICENSE-APACHE"     = ["internal-sites"]
+"/LICENSE-MIT"        = ["internal-sites"]
+"/README.md"          = ["internal-sites"]
+"/triagebot.toml"     = ["internal-sites"]
+
 [shortcut]
 
 [range-diff]
