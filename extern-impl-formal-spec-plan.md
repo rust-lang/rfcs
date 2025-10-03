@@ -8,6 +8,8 @@ This document outlines the plan for improving the formal specification of the ex
 - [ ] Define terminology and graph-theoretic concepts
 - [ ] Enumerate and formalize all coherence invariants
 - [ ] Analyze generic type parameters and associated types
+- [ ] Analyze supertraits and their interaction with impl deps
+- [ ] Analyze intrinsic methods (impl blocks without traits)
 - [ ] Add performance and complexity analysis section
 - [ ] Review and revise other spec restrictions
 - [ ] Design and implement new formal specification
@@ -48,9 +50,13 @@ Core invariants to formalize:
 - Is it the immediate dominator? The least common ancestor in the dep tree?
 - Formalize: "crate C must check impls I₁, I₂ iff C is the closest crate where both are visible through distinct direct deps"
 
-### Phase 3: Generics and Associated Types (separate deep dive)
+### Phase 3: Generics, Associated Types, and Edge Cases (separate deep dive)
 
-This deserves its own analysis because:
+This deserves its own analysis because of several complex interactions.
+
+**3a. Generics and Associated Types**
+
+These add complexity because:
 - Blanket impls create universal quantification
 - Associated types add type-level functions
 - Specialization (if/when stabilized) adds partial ordering
@@ -60,7 +66,39 @@ This deserves its own analysis because:
 2. Do overlap rules change? (I suspect not, but needs proof)
 3. How do associated type constraints interact with visibility?
 
-**Approach**: Start with simplified model (no generics), then add them incrementally
+**3b. Supertraits**
+
+Supertraits create implicit dependencies between trait implementations.
+
+**Key questions:**
+1. If `trait A: B` and a type T has `impl A` in crate X and `impl B` in crate Y, does this create coherence issues?
+2. Does the existing orphan rule already handle this? (Likely yes, but needs verification)
+3. With impl deps: can crate X implement A for T if it has an impl dep on the crate defining A, but T's impl of B is elsewhere?
+4. Are there any new coherence concerns when supertrait impls are spread across crates?
+5. Does the checker responsibility algorithm need to account for supertrait relationships?
+
+**Hypothesis**: Supertraits are probably already covered by the existing overlap checking rules, since the type system requires `impl A for T` to prove `T: B` exists. But this needs formal verification.
+
+**3c. Intrinsic Methods (impl blocks without traits)**
+
+The current proposal focuses on trait implementations. A natural extension is intrinsic methods.
+
+**Current Rust**: Multiple `impl Type` blocks are allowed in the same crate, spreading methods across different modules/files.
+
+**Proposed extension**: Allow `impl Type` blocks across multiple impl crates.
+
+**Key questions:**
+1. How much additional complexity does this add to the proposal?
+2. Coherence is simpler (no overlap checking needed between intrinsic methods)
+3. But visibility becomes more complex: which methods are visible where?
+4. Do we need a "defining crate" concept for intrinsic impls?
+5. How does this interact with privacy/visibility rules?
+6. Does allowing intrinsic impls in impl-dep crates create security/encapsulation concerns?
+7. Should this be in the initial proposal or deferred to future work?
+
+**Consideration**: The RFC mentions this as a future possibility. It may significantly complicate the Cargo story (how to declare which crate provides which methods?) and the coherence checking story (though simpler than traits).
+
+**Approach**: Start with simplified model (no generics, no supertraits, no intrinsic methods), then add each dimension incrementally
 
 ### Phase 4: Implementation Concerns (can be parallel with Phase 3)
 
