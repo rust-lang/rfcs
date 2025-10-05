@@ -139,10 +139,11 @@ The `Forgettable` auto-trait model:
 
 [prior-art]: #prior-art
 
-* **C++ RAII:** Forgetting RAII guards is UB if destructors are skipped manually.
-* **Swift ARC:** Always runs destructors; you cannot “forget” safely.
-* **Rust unsafe cell patterns:** Similar principles exist with `Send` and `Sync` auto traits, where types opt out for safety.
-* **Go finalizers:** No equivalent manual forget; this is Rust’s unique challenge due to `mem::forget`.
+* **Rust:** Similar principles exist with `Send` and `Sync` auto traits, where types opt out for safety.
+* **C++:** RAII destructors are often used for releasing locks or restoring invariants required for safety. Skipping may lead to UB.
+* **Swift:** Object destruction is reference-counted and deterministic.
+Destructors (`deinit`) always run when an object’s reference count reaches zero.
+You cannot manually “forget” an object like in Rust; memory leaks are only possible through strong reference cycles or manual Unmanaged APIs, but these never cause undefined behavior.
 
 # Unresolved questions
 
