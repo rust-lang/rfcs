@@ -162,32 +162,6 @@ The `#[export_visibility = ...]` attribute uses the
 syntax to specify the desired visibility.  The following sections describe
 string values that may be used.
 
-### Interposable visibility
-
-`#[export_visibility = "interposable"]` will cause symbols to be emitted with
-"default" visibility. On platforms that support it, this makes it so that
-symbols can be interposed, which means that they can be overridden by symbols
-with the same name from the executable or by other shared objects earlier in the
-load order.
-
-> **Note**:
-> See [interposable-vs-llvm] section below for discussion about an open
-> question that asks about interactions between `interposable` visibility
-> and LLVM optimization passes.
-
-> **Note**:
-> See [interposable-vs-dllexport] section below for discussion whether
-> this visibility should also inject `dllexport` when targeting Windows
-> platform.
-
-> **TODO**: This section (as well as `protected` and `hidden` sections below) is based on
-> https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html#interposable
-> In the long-term we should deduplicated these docs/definitions (for example
-> description of `hidden` in this RFC is a bit expanded and brings up additional
-> benefits of hiding symbols).  "long-term" probably means: 1) once this or the
-> other feature have been stabilized and/or 2) once we are confident with names,
-> behavior, etc of all the visibility levels.
-
 ### Protected visibility
 
 <!-- This section is based on
@@ -285,17 +259,8 @@ and
 [`#[export_name = ...]`](https://doc.rust-lang.org/reference/abi.html#the-export_name-attribute)
 attributes provides a similar level of details.)
 
-A few additional notes attempt to clarify the intended behavior of the proposed
-behavior beyond what is described in the guide-level explanation above:
-
-* The `#[export_visibility = ...]` attribute may only be applied to item
-  definitions with an "extern" indicator as checked by
-  [`fn contains_extern_indicator`](https://github.com/rust-lang/rust/blob/3bc767e1a215c4bf8f099b32e84edb85780591b1/compiler/rustc_middle/src/middle/codegen_fn_attrs.rs#L174-L184).
-  Therefore it may only be applied to items to which
-  `#[no_mangle]`, `#[export_name = ...]`, and similar already-existing
-  attributes may be already applied.
-* The proposal in this RFC has been prototyped in
-  https://github.com/anforowicz/rust/tree/export-visibility
+The proposal in this RFC has been prototyped in
+https://github.com/anforowicz/rust/tree/export-visibility
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -304,6 +269,41 @@ See "Open questions" section.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
+
+## Context: why the new attribute cannot increase visibility
+
+The `#[export_visibility = ...]` attribute may only be applied to item
+definitions with an "extern" indicator as checked by [`fn
+contains_extern_indicator`](https://github.com/rust-lang/rust/blob/3bc767e1a215c4bf8f099b32e84edb85780591b1/compiler/rustc_middle/src/middle/codegen_fn_attrs.rs#L174-L184).
+Therefore it may only be applied to items to which `#[no_mangle]`,
+`#[export_name = ...]`, and similar already-existing attributes may be already
+applied.
+
+Based on the above, the `#[export_visibility = ...]` attribute may never
+_increase_ visibility of a symbol.  This is because:
+
+* `#[no_mangle]`, `#[export_name = ...]` and similar attributes force the
+  _maximum_ possible visiblity.  See
+  https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937
+* One known exception is `#[rustc_std_internal_symbol]` - see
+  https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_codegen_ssa/src/back/symbol_export.rs#L527-L542.  This exception is avoided by disallowing using `#[export_visibility = ...]` with `#[rustc_std_internal_symbol]`.
+
+## Rationale for not supporting `interposable` visibility
+
+The "why the new attribute cannot increase visibility" section above means that
+`#[export_visibility = "interposable"]` would be a no-op.  Because of this, the
+`"interposable"` visibility value is not supported by the
+`#[export_visibility = ...]` attribute.
+
+> Side-note: The "interposable" visibility is sometimes called
+> "default" [linker] visibility (see [the LLVM documentation
+> here](https://llvm.org/docs/LangRef.html#visibility-styles)),
+> or "public" or "exported" visibility.
+
+Lack of support for the `"interposable"` visibility means that this RFC avoids
+potential open questions about interaction with `__declspec(dllexport)` and/or
+whether `rustc` would have to enable the [the LLVM SemanticInterposition
+feature](https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fsemantic-interposition).
 
 ## Alternative: `#[rust_symbol_export_level]`
 
@@ -339,8 +339,7 @@ Other notes:
         - No `dylib` trouble (see [hidden-vs-dylibs])
         - No need to define behavior of specific visibilities - this question
           is punted to `-Zdefault-visibility=...`.
-          See also [cross-platform-behavior], [interposable-vs-dllexport]
-          and [interposable-vs-llvm].
+          See also [cross-platform-behavior].
 * Cons:
     - Doesn't give the same level of control as C++ attributes
 * Open questions:
@@ -677,51 +676,6 @@ hiding symbols coming from Rust standard library:
       (using an external, non-`rustc` linker) hiding standard library symbols
       would still require rebuilding it with `-Zdefault-visibility=hidden`
       as described in the "do nothing" alternative above.
-
-## Windows and `__declspec(dllexport)`
-[interposable-vs-dllexport]: #windows-and-__declspecdllexport
-
-We need to decide whether `#[export_visibility = "interposable"]` should also
-result in `__declspec((dllexport))` being added to a symbol.  See for example
-[this Stack Overflow question and answer](https://stackoverflow.com/a/25746044/24042981).
-
-Potential answers:
-
-* Don't stabilize for now (or don't support at all)
-  `#[export_visibility = "interposable"]` but still support other visibilities
-* `#[export_visibility = "interposable"]` should only control visibility
-* `#[export_visibility = "interposable"]` should control visibility
-  and also use `__declspec(dllexport)`
-
-## Interposability vs LLVM optimization passes
-[interposable-vs-llvm]: #interposability-vs-llvm-optimization-passes
-
-This RFC proposes to use `interposable` to map to
-[`SymbolVisibility::Interposable`](https://github.com/rust-lang/rust/blob/81a964c23ea4fe9ab52b4449bb166bf280035797/compiler/rustc_target/src/spec/mod.rs#L842)
-which is then mapped to
-[`llvm::Visibility::Default`](https://github.com/rust-lang/rust/blob/81a964c23ea4fe9ab52b4449bb166bf280035797/compiler/rustc_codegen_llvm/src/llvm/ffi.rs#L167).  This mimics how `interposable` is implemented and supported
-in
-[`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html).
-
-One problem here is that `llvm::Visibility::Default` is not sufficient to
-achieve actual interposability.  https://crbug.com/418073233 has one example of
-undefined behavior, but even if DSO-local global data structures were not an
-issue, then LLVM-level assumptions could still lead to undefined behavior.
-This is because the LLVM optimization passes assume that a symbol with normal
-external linkage (not weak, odr, etc) the definition it can see is the
-definition that will be actually used.  To avoid these LLVM assumptions `rustc`
-would have to enable
-[the SemanticInterposition feature](https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fsemantic-interposition).
-
-Special thanks to @jyknight for pointing out this concern.
-
-Potential answers:
-
-* Don't stabilize for now (or don't support at all)
-  `#[export_visibility = "interposable"]` but still support other visibilities
-* Rename `interposable` to `public` or `default`.
-  (It is quite unfortunate that `default` is an overloaded term and
-  may be potentially confused with the `inherit` behavior.)
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
