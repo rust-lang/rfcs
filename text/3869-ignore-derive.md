@@ -379,7 +379,7 @@ struct Foo {
 }
 ```
 
-Each of `std::hash::Hash`, `PartialEq`, and `Debug` will receive the following input:
+Each of `std::hash::Hash`, `PartialEq`, and `Debug` will receive the following input, except that span of the `#[ignore]` will differ:
 
 ```rust
 #[derive(PartialEq, Debug, std::hash::Hash)]
