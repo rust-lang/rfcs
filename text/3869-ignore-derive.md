@@ -175,7 +175,7 @@ Then it's up to the `std::hash::Hash` macro on how exactly it wants to use the `
 
 - In the common case, it will exclude `foo` and `baz` from the generated `std::hash::Hash` impl
 - `std::hash::Hash` is allowed to ignore existence of the attribute.
-- It could emit a `compile_error!("`#[ignore]` is not supported for this derive")`
+- It could emit a `` compile_error!("`#[ignore]` is not supported for this derive") ``
   or, in the future, a [diagnostic](https://doc.rust-lang.org/proc_macro/struct.Diagnostic.html)
 
 ## Standard library macros that support `#[ignore]`
