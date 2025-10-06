@@ -1,7 +1,7 @@
 - Feature Name: `ignore_derive`
 - Start Date: 2025-10-06
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3869](https://github.com/rust-lang/rfcs/pull/3869)
+- Rust Issue: [rust-lang/rust#3869](https://github.com/rust-lang/rust/issues/3869)
 
 # Summary
 [summary]: #summary
