@@ -127,7 +127,7 @@ When a derive macro such as `#[derive(std::hash::Hash)]` is applied to an item l
 - If the `#[ignore]` attribute **does not** mention the derive, then the attribute is removed completely from the macro's input `TokenStream`.
   The derive macro doesn't know that other derives ignore this field.
 
-  **Example:** `Clone` will see just `field: ()` when the input contains `#[ignore(std::hash::Hash, Clone)] field: ()`
+  **Example:** `Clone` will see just `field: ()` when the input contains `#[ignore(std::hash::Hash)] field: ()`
 
 ### Example
 
