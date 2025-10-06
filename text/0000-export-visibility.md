@@ -92,7 +92,7 @@ OTOH, Rust doesn't have an equivalent attribute.
 Adopting this RFC would be a step toward closing this gap.
 
 ## Context: Undefined behavior caused by naming collisions
-[ub-intro]: #ub-intro
+[ub-intro]: #context-undefined-behavior-caused-by-naming-collisions
 
 The subsections below attempt to provide details about the risk of undefined
 behavior (UB) caused by duplicate symbol definitions.
@@ -109,7 +109,7 @@ symbol), leading to undefined behavior".  Similar UB risk is documented for the
 attribute.
 
 ### Scope of UB risk
-[scope-of-naming-collision-risk]: #scope-of-naming-collision-risk
+[scope-of-naming-collision-risk]: #scope-of-ub-risk
 
 The risk of name collisions is caused by two separate behaviors of
 `#[export_name = ...]` and `#[no_mangle]`:
@@ -336,7 +336,7 @@ See "Open questions" section.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Context: why the new attribute cannot increase visibility
-[why-new-attr-cant-increase-visibility]: #why-new-attr-cant-increase-visibility
+[why-new-attr-cant-increase-visibility]: #context-why-the-new-attribute-cannot-increase-visibility
 
 The `#[export_visibility = ...]` attribute may only be applied to item
 definitions with an "extern" indicator as checked by [`fn
