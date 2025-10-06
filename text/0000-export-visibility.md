@@ -91,29 +91,81 @@ tracked in https://github.com/rust-lang/rust/issues/131090).
 OTOH, Rust doesn't have an equivalent attribute.
 Adopting this RFC would be a step toward closing this gap.
 
+## Context: Undefined behavior caused by naming collisions
+[ub-intro]: #ub-intro
+
+The subsections below attempt to provide details about the risk of undefined
+behavior (UB) caused by duplicate symbol defitions.
+
+### Presence of UB risk
+
+The fact that naming collisions may cause UB is documented in the documentation
+of [`#[export_name =
+...]`](https://doc.rust-lang.org/reference/abi.html#the-export_name-attribute)
+which points out that "this attribute is `unsafe` as a symbol with a custom name
+may collide with another symbol with the same name (or with a well-known
+symbol), leading to undefined behavior".  Similar UB risk is documented for the
+[`#[no_mangle]`](https://doc.rust-lang.org/reference/abi.html#the-no_mangle-attribute)
+attribute.
+
+### Scope of UB risk
+[scope-of-naming-collision-risk]: #scope-of-naming-collision-risk
+
+The risk of introducing name collisions is caused by two separate behaviors of
+`#[export_name = ...]` and `#[no_mangle]`:
+
+* Turning-off mangling (e.g. see
+  [here](https://github.com/rust-lang/rust/blob/3d8c1c1fc077d04658de63261d8ce2903546db13/compiler/rustc_symbol_mangling/src/lib.rs#L240-L243))
+  introduces the _possibility_/_risk_ of naming collisions.
+* Exporting the symbol with public visibility (e.g. see [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937)) increases the _scope_ of possible naming collisions (covering all DSOs).
+
+### Origins of UB
+
+It is out of scope for this RFC to identify and/or explain the exact origin
+and/or mechanisms of the UB.  Nevertheless, discussions related to this RFC may
+benefit from outlining at a high-level how the UB may happen.
+
+The author of this RFC is not aware of a more authoratitative source that would
+explain the _mechanisms_ that can lead to the UB in presence of naming
+collisions.  The author speculates that:
+
+* Compilers may assume that each symbol is defined only once (and that breaking
+  this assumption can lead to UB).  Examples of such assumption:
+    - C++ documents [One Definition Rule
+      (ODR)](https://en.cppreference.com/w/cpp/language/definition.html#One_Definition_Rule).
+      This rule necessarily extends to binaries that link C++ compilation
+      artifacts with `rustc` artifacts (even if official Rust documentation
+      doesn't AFAIK talk about this rule).
+    - LLVM optimization passes assume that if they see a definition of a symbol,
+      then this is the definition that will be actually used (for symbols with
+      normal linkage - not weak, odr, etc.).  LLVM supports suppressing this
+      assumption with [the SemanticInterposition
+      feature](https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fsemantic-interposition),
+      but `rustc` doesn't use this LLVM feature (e.g. see
+      [here](https://github.com/rust-lang/rfcs/pull/3834#discussion_r2395618137)).
+      Special thanks to @jyknight for pointing this out.
+* Linkers don't define which exact definition will be used when multiple
+  definitions are present
+    - LLVM explicitly
+      [documents](https://llvm.org/docs/LangRef.html#linkage-types) this for
+      `linkonce_odr` and `weak_odr` saying that "one of the definitions is
+      _non-deterministically_ chosen to run" (_emphasis_ mine).
+    - It seems likely that dynamic linking may also be non-deterministic when
+      multiple definitions are present.  For example, it seems that the
+      choice of a definition may depend on the order in which DSOs are linked
+      (and it seems fair to treat this order as non-deterministic, or at least
+      outside the immediate control of the code author).
+
 ## Benefit: Avoiding undefined behavior
 
-Documentation of
-[`#[export_name = ...]`](https://doc.rust-lang.org/reference/abi.html#the-export_name-attribute)
-points out that "this attribute is unsafe as a symbol with a custom name may
-collide with another symbol with the same name (or with a well-known symbol),
-leading to undefined behavior".  Similar unsafety risk is present for the
-[`#[no_mangle]`](https://doc.rust-lang.org/reference/abi.html#the-no_mangle-attribute)
-attribute.  Unnecessary public exports increase the scope of this risk.
+Using `#[export_visibility = ...]` to reduce symbol visibility can be used to
+reduce or eliminate the risk of undefined behavior (UB) described in the previous
+[ub-intro] section.
 
-A more concrete example of this problem is related to a memory allocator.
-A memory allocator may use some global or per-thread data structures to
-manage active allocations.  Each
-[Dynamic Shared Object (DSO)](https://en.wikipedia.org/wiki/Dynamic_shared_object)
-can use a different allocator library (and even if using the same allocator,
-it can use separate, DSO-specific global data structures).
-Therefore taking an allocation made in one DSO
-and freeing it in another DSO can lead to memory unsafety
-(when the freeing allocator expects that the pointer it got was earlier
-allocated by the same allocator instance).
-
-This is what happened in https://crbug.com/418073233.  In the smaller repro
-from https://crrev.com/c/6580611/1 we see the following:
+UB caused by high symbol visibility is not just a hypothetical risk - this risk
+has actually caused difficult to diagnose symptoms that are captured in
+https://crbug.com/418073233.  In the smaller repro from
+https://crrev.com/c/6580611/1 we see the following:
 
 * Without this RFC the [`cxx`](https://cxx.rs) library cannot avoid publicly
   exporting symbols that are called from C++.  In particular, the following
@@ -124,22 +176,36 @@ from https://crrev.com/c/6580611/1 we see the following:
     - `cxxbridge1$string$drop` exported from
       [`cxx/src/symbols/rust_string.rs`](https://github.com/dtolnay/cxx/blob/07d2bca38b7bfbbe366a9e844d3d66b80820d339/src/symbols/rust_string.rs#L83C18-L86)
 * In the repro case, `rust_lib` is statically linked into the main test
-  executable, and into an `.so`.
-    - The `.so` statically links `rust_lib`, but doesn't actually use it.
-      (In the original repro the `.so` used a small part of a bigger statically linked
-      "base" library and also didn't actually use Rust's `cxx`-related symbols.  See
-      https://crrev.com/c/6504932 which removes the `.so`'s dependency on the
-      "base" library as a workaround for this problem.)
-    - The test executable calls `rust_lib::get_string` and then
-      `cxxbridge1$string$drop`.
-* This scenario leads to memory unsafety when:
-    - The call from test executable to `rust_lib::get_string` ends up calling
-      `dso!rust_lib::get_string` rather than `exe!rust_lib::get_string`.
+  executable **and** into an `.so`.  This results in the naming collision,
+  because now `rust_lib$cxxbridge1$get_string` and `cxxbridge1$string$drop` both
+  have two definitions - one definition in the test executable and one in the
+  `.so`.
+* The test executable calls `rust_lib$cxxbridge1$get_string` and then
+  `cxxbridge1$string$drop`.
+    - Side-note: The `.so` statically links `rust_lib`, but doesn't actually use
+      it.  (In the original repro the `.so` used a small part of a bigger
+      statically linked "base" library and also didn't actually use Rust's
+      `cxx`-related symbols.  See https://crrev.com/c/6504932 which removes the
+      `.so`'s dependency on the "base" library as a workaround for this
+      problem.)
+* Because naming collisions lead to UB (see the [ub-intro] section above),
+  it is non-deterministic whether calling `rust_lib$cxxbridge1$get_string` will
+  end up calling the definition in the test executable VS in the `.so`.  Similar
+  UB exists for calls to `cxxbridge1$string$drop`.
+* The UB from the previous item leads to memory unsafety when:
+    - The call from test executable to `rust_lib$cxxbridge1$get_string`
+      ends up calling the definition in the `.so`, rather than in the executable.
+      This means that allocations made by `get_string` use **one** set of the
+      allocator's global symbols - the copy within the `.so`.
     - The call from test executable to `cxxbridge1$string$drop` ends up
-      calling `exe!cxxbridge1$string$drop`.
-    - This means that the `exe`'s allocator tries to free an allocation made
-      by the allocator from the `dso`.  In debug builds this is caught by an
-      assertion.  In release builds this would lead to memory unsafety.
+      calling the definition in the executable, rather than in the `.so`.
+      This means that freeing the previous allocation uses **other**
+      set of allocator's global symbols - the ones in the executable.
+    - Using wrong global symbols means that the executable's allocator tries to free
+      an allocation that it doesn't know anything about (because this allocation
+      has been make by the allocator from the `.so`).  In debug builds this is
+      caught by an assertion.  In release builds this would lead to memory
+      unsafety.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
@@ -270,6 +336,7 @@ See "Open questions" section.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ## Context: why the new attribute cannot increase visibility
+[why-new-attr-cant-increase-visibility]: #why-new-attr-cant-increase-visibility
 
 The `#[export_visibility = ...]` attribute may only be applied to item
 definitions with an "extern" indicator as checked by [`fn
@@ -289,7 +356,7 @@ _increase_ visibility of a symbol.  This is because:
 
 ## Rationale for not supporting `interposable` visibility
 
-The "why the new attribute cannot increase visibility" section above means that
+The [why-new-attr-cant-increase-visibility] section above means that
 `#[export_visibility = "interposable"]` would be a no-op.  Because of this, the
 `"interposable"` visibility value is not supported by the
 `#[export_visibility = ...]` attribute.
@@ -303,6 +370,33 @@ Lack of support for the `"interposable"` visibility means that this RFC avoids
 potential open questions about interaction with `__declspec(dllexport)` and/or
 whether `rustc` would have to enable the [the LLVM SemanticInterposition
 feature](https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-fsemantic-interposition).
+
+## Rationale for not requiring `unsafe` when using the new attribute
+
+### Naming collisions
+
+The risk of naming collisions is introduced by lack of mangling
+(e.g. caused by the presence of `#[no_mangle]` or `#[export_name = ...]`
+attributes).  Presence of `#[export_visibility = ...]` does not
+_introduce_ this risk.
+
+The [scope-of-naming-collision-risk] section above points out that symbol
+visiblity affects the _scope_ of the risk of undefined behavior (UB) stemming
+from naming collisions.  `#[export_visibility = ...]` never increases this risk,
+because the [why-new-attr-cant-increase-visibility] section above shows that
+`#[export_visibility = ...]` can never _increase_ visibility of a symbol.
+
+### Missing symbols
+
+The [hidden-vs-dylibs] section below points out that using
+`#[export_visibility = ...]` may break `dylib`s.  This concern
+is tracked as an open question, but this kind of breakage
+is well-defined and doesn't lead to undefined behavior.
+
+In particular, it is understood that hiding symbols from `dylib` may result in
+linking failures (symbol X not found).  This risk is quite similar to the risk
+of forgetting to write `pub mod` instead of `mod` (and we don't require writing
+`unsafe mod`).
 
 ## Alternative: `#[rust_symbol_export_level]`
 
