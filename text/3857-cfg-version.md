@@ -798,7 +798,15 @@ Accessible
 ## Other
 
 Swift:
-- Similar syntax, an attribute [`@available`](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/attributes#available) with name/value pairs. Examples: `@available(swift 3.0.2)`, `@available(iOS 10.0, macOS 10.12)`.
+- A [`swift(_)` and `compiler(_)` platform condition](https://docs.swift.org/swift-book/documentation/the-swift-programming-language/statements/#Conditional-Compilation-Block) for use with `#if`
+  - `compiler` is for current compiler version while `swift` is the language version mode set on the compiler
+  - Supports `>=` and `<` operators
+  - No whitespace
+  - Takes a bare word version, major is required but unlimited precision after
+  - Examples
+    - `#if compiler(>=5)`
+    - `#if swift(>=4.2)`
+    - `#if compiler(>=5) && swift(<5)`
 
 Python
 - Programmatic version: [`sys.version_info`](https://docs.python.org/3/library/sys.html#sys.version_info)
