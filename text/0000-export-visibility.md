@@ -95,7 +95,7 @@ Adopting this RFC would be a step toward closing this gap.
 [ub-intro]: #ub-intro
 
 The subsections below attempt to provide details about the risk of undefined
-behavior (UB) caused by duplicate symbol defitions.
+behavior (UB) caused by duplicate symbol definitions.
 
 ### Presence of UB risk
 
@@ -111,12 +111,12 @@ attribute.
 ### Scope of UB risk
 [scope-of-naming-collision-risk]: #scope-of-naming-collision-risk
 
-The risk of introducing name collisions is caused by two separate behaviors of
+The risk of name collisions is caused by two separate behaviors of
 `#[export_name = ...]` and `#[no_mangle]`:
 
 * Turning-off mangling (e.g. see
   [here](https://github.com/rust-lang/rust/blob/3d8c1c1fc077d04658de63261d8ce2903546db13/compiler/rustc_symbol_mangling/src/lib.rs#L240-L243))
-  introduces the _possibility_/_risk_ of naming collisions.
+  introduces the _possibility_ of naming collisions.
 * Exporting the symbol with public visibility (e.g. see [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937)) increases the _scope_ of possible naming collisions (covering all DSOs).
 
 ### Origins of UB
@@ -126,8 +126,8 @@ and/or mechanisms of the UB.  Nevertheless, discussions related to this RFC may
 benefit from outlining at a high-level how the UB may happen.
 
 The author of this RFC is not aware of a more authoratitative source that would
-explain the _mechanisms_ that can lead to the UB in presence of naming
-collisions.  The author speculates that:
+explain the mechanisms that can lead to the UB in presence of naming collisions.
+The author speculates that:
 
 * Compilers may assume that each symbol is defined only once (and that breaking
   this assumption can lead to UB).  Examples of such assumption:
@@ -350,9 +350,11 @@ _increase_ visibility of a symbol.  This is because:
 
 * `#[no_mangle]`, `#[export_name = ...]` and similar attributes force the
   _maximum_ possible visiblity.  See
-  https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937
+  [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937)
 * One known exception is `#[rustc_std_internal_symbol]` - see
-  https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_codegen_ssa/src/back/symbol_export.rs#L527-L542.  This exception is avoided by disallowing using `#[export_visibility = ...]` with `#[rustc_std_internal_symbol]`.
+  [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_codegen_ssa/src/back/symbol_export.rs#L527-L542).
+  The RFC suggests to avoid this exception by disallowing using
+  `#[export_visibility = ...]` with `#[rustc_std_internal_symbol]`.
 
 ## Rationale for not supporting `interposable` visibility
 
