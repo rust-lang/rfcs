@@ -284,7 +284,7 @@ Notes:
 - Fields can be either named or unnamed.
 - When applied to fields, `#[ignore]` takes a list of [`SimplePath`](https://doc.rust-lang.org/reference/paths.html#simple-paths)s separated by comma,
   with an optional trailing comma, e.g. `#[ignore(Foo, Bar,)]`.
-- The list is allowed to be empty: `#[ignore()]` but it **must** exist.
+- The list is allowed to be empty: `#[ignore()]` but it **must** exist. Just `#[ignore]` without the `()` is not allowed.
 - Multiple `#[ignore]` attributes on a field are allowed to appear in a row, in which case their list of paths merges into a single `#[ignore]`.
   The derive macro still just receives a single `#[ignore]` if it's present in the list of paths, no matter how many `#[ignore]` attributes were used on the field.
 
