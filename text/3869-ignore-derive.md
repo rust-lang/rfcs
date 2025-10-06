@@ -513,7 +513,7 @@ warning: `#[ignore]` only has an effect on functions
   = note: `#[warn(unused_attributes)]` on by default
 ```
 
-It could be possible to implement `#[ignore]` on fields over an edition, maybe. This is discussed in the "Future Possibilities" section.
+It could be possible to implement `#[ignore]` (without a list of paths) on fields over an edition, maybe. This is discussed in the "Future Possibilities" section.
 
 By explicitly **requiring** the list of arguments with parentheses, we can just feature-gate that syntax - which is currently invalid with a deny-by-default lint:
 
