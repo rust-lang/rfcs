@@ -55,7 +55,7 @@ impl std::hash::Hash for User {
 [motivation]: #motivation
 
 It's common to want to exclude one or more fields when deriving traits such as `Debug` or `Deserialize`.
-To do this, you currently need to implement completely abandon the `derive` and instead implement the trait manually.
+To do this, you currently need to completely abandon the `derive` and instead implement the trait manually.
 
 Manually implementing the trait is much more error-prone than letting the derive do it for you.
 For example, when a new field is added, it's possible to forget to change all of your implementations.
