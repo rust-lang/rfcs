@@ -71,9 +71,9 @@ Common use-cases of ignoring fields when implementing traits include:
   #[derive(PartialEq, Eq)]
   struct Ident {
       /// Location of the identifier in the source code
+      #[ignore(PartialEq, Eq)]
       span: Span,
       /// Value of the identifier
-      #[ignore(PartialEq, Eq)]
       value: String
   }
   ```
