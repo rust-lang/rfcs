@@ -332,7 +332,7 @@ The above works, because `RenamedHash` *is* `std::hash::Hash`.
 
 ### Unknown derive
 
-A path supplied to `ignore` that does not apply to the current derive, for example:
+A path supplied to `ignore` that does not apply to the current derive is disallowed. For example:
 
 ```rust
 #[derive(Clone)]
@@ -341,8 +341,6 @@ struct Foo {
     ignored: ()
 }
 ```
-
-Is a compile error.
 
 ### Duplicate derive
 
