@@ -6,7 +6,8 @@
 # Summary
 [summary]: #summary
 
-The `#[ignore]` attribute can now be applied to fields. Its purpose is to tell derive macros to skip the field when generating code.
+The `#[ignore]` attribute can now be applied to fields.
+Its purpose is to tell derive macros to skip the field when generating code.
 
 ```rust
 #[derive(Clone, PartialEq, Eq, std::hash::Hash)]
@@ -21,7 +22,8 @@ struct User {
 }
 ```
 
-For the above struct `User`, derives `PartialEq` and `Hash` will ignore the `name` and `age` fileds. Code like this is generated:
+For the above struct `User`, derives `PartialEq` and `Hash` will ignore the `name` and `age` fileds.
+Code like this is generated:
 
 ```rust
 impl Clone for User {
