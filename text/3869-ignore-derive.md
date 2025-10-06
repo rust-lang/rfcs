@@ -356,8 +356,6 @@ struct Foo {
 }
 ```
 
-Both of the above generate compile errors.
-
 ## Inside the macro
 
 The `#[ignore]` attribute(s) for a particular derive macro `Foo` applied to the current item will do one of 2 things
