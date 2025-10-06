@@ -114,6 +114,20 @@ struct Foo {
 
 In the above example, `Foo` derives `Clone` but not `PartialEq` - so passing `PartialEq` to `ignore` is disallowed.
 
+## Variants
+
+You can also apply `#[derive]` to enum variants, too:
+
+```rust
+#[derive(Serialize, Deserialize, Debug)]
+enum Status {
+    Active,
+    Inactive,
+    #[ignore(Serialize, Deserialize)]
+    Unknown,
+}
+```
+
 ## From the perspective of a `derive` macro
 
 When a derive macro such as `#[derive(std::hash::Hash)]` is applied to an item like a `struct`:
@@ -278,6 +292,7 @@ The `#[ignore]` attribute now *also* applies to:
 - Fields of `struct`s
 - Fields of enum variarnts
 - Fields of `union`s
+- Enum variants
 
 Notes:
 
@@ -298,13 +313,17 @@ struct NamedFields {
 #[derive(Foo)]
 struct UnnamedFields(#[ignore(Foo)] ());
 
-#[derive(Foo)]
+#[derive(Foo, Bar)]
 enum Enum {
+    #[ignore(Bar)]
     NamedFields {
       #[ignore(Foo)]
       ignored: ()
     },
-    UnnamedFields(#[ignore(Foo)] ())
+    #[ignore(Bar)]
+    UnnamedFields(#[ignore(Foo)] ()),
+    #[ignore(Bar)]
+    Unit,
 }
 
 #[derive(Foo)]
@@ -616,7 +635,3 @@ struct Foo {
 ```
 
 If desired, such a change will be possible to make in the future, but it is not part of this RFC because the first code block **already compiles** (although with a warning - `ignore only has an effect on functions`).
-
-## `#[ignore]` on enum variants
-
-There is no known reason why this would be useful, but it could be added in the future if needed
