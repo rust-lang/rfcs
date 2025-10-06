@@ -238,8 +238,7 @@ command-line flag.
 If you control the linking process (i.e. you control how your symbols are linked
 into an executable, or into a `cdylib`, `so` or `dll`), then you should use the
 lowest possible visibility.  If a public export is not needed, then use the
-`hidden` visibility.  Otherwise consider using `protected` or `interposable`
-visibility.
+`hidden` visibility.
 
 If you are an author of a reusable crate, then you don't know how users of your
 crate will link it into executables, `cdylib`s, `dylib`s, etc.  In this case it
@@ -424,7 +423,7 @@ https://crbug.com/418073233, because it seems to only affect scenarios where
 linking is driven by `rustc`).
 Other edition-boundary changes may also be considered - for example
 just changing the default effect of `#[no_mangle]` from
-`#[export_visibility = "interposable"]` to
+(pseudo-code) `#[export_visibility = "interposable"]` to
 `#[export_visibility = "inherit"]`
 (which combined with `-Zdefault-visibility=hidden` should address
 https://crbug.com/418073233).
@@ -554,7 +553,7 @@ answering the `dylib`-vs-`hidden`-visibility problem:
 [cross-platform-behavior]: #cross-platform-behavior
 
 We don't really know
-whether the `hidden` / `protected` / `interposable` visibilities
+whether the `hidden` / `protected` visibilities
 make sense across different target platforms and/or map to distinct entities
 (see
 [a Zulip question here](https://rust-lang.zulipchat.com/#narrow/channel/233931-t-compiler.2Fmajor-changes/topic/.60.23.5Bexport_visibility.20.3D.20.2E.2E.2E.5D.60.20attribute.20compiler-team.23881/near/522491140)).
