@@ -486,7 +486,7 @@ as attributes are part of the language."
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Interaction between `#[export_visibility = "hidden"]` vs `dylib`s
+## Open question: `#[export_visibility = "hidden"]` vs `dylib`s
 [hidden-vs-dylibs]: #interaction-between-export_visibility--hidden-vs-dylibs
 
 ### Problem description
@@ -549,7 +549,7 @@ answering the `dylib`-vs-`hidden`-visibility problem:
 * Investigate if cross-`dylib`-inlining can (should?) be avoided if the inlined
   code ends up calling a hidden symbol from the other crate.
 
-## Cross-platform behavior
+## Open question: Cross-platform behavior
 [cross-platform-behavior]: #cross-platform-behavior
 
 We don't really know
@@ -577,7 +577,7 @@ of target platforms (maybe: Posix, Windows, Wasm?):
 
 * TODO: what exactly do we want to verify on these target platforms?
 
-## Rust standard library
+## Open question: Rust standard library
 
 ### Problem description
 
