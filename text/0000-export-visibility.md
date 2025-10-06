@@ -642,8 +642,29 @@ answering the `dylib`-vs-`hidden`-visibility problem:
     - Document a recommendation that reusable crates shouldn't use a hardcoded
       visibility (see the "Choosing the right visibility" section in the
       guide-level explanation above)
-* Investigate if cross-`dylib`-inlining can (should?) be avoided if the inlined
-  code ends up calling a hidden symbol from the other crate.
+* Avoid inlining if the inlined code ends up calling a hidden symbol from
+  another `dylib`
+    - Currently preventing inlining is problematic, because `#[inline]` will
+      stop the function from being codegened in the original crate unless used
+      (hattip
+      [@chorman0773](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352655525)).
+      OTOH, this doesn't necessarily seem like a hard blocker (i.e. maybe this
+      behavior can change).
+    - Generics also cannot have code generated in the original crate, because
+      codegen requires knowing the generic parameters.  But generics seem
+      irrelevant here, because `#[export_visibility = ...]` does _not_ apply to
+      generics.  In particular, `#[no_mangle]`
+      ([Rust
+      playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=ac8f26f9b05471c2480b3185388c05e8))
+      and `#[export_name = ...]` cannot be used with generics, because the names
+      of the symbols (ones generated during monomorphization) need to differ
+      based on the generic parameters.
+    - One major problem with avoiding inlining is that during codegen it is not yet
+      known if two crates will end up getting linked into the same or different
+      dylib.  This means that inlining would need to be inhibited for any
+      cross-crate calls into hidden symbols.  And this would suppress many
+      legitimate optimizations. (hattip
+      [@bjorn3](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352658642))
 
 ## Open question: Cross-platform behavior
 [cross-platform-behavior]: #cross-platform-behavior
