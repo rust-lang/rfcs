@@ -441,7 +441,7 @@ This RFC additionally proposes to add 2 new deny-by-default lints:
 
   Violating this property is a logic error, so it would be incorrect to `#[ignore]` only 1 of those traits.
 
-- Types with fields that ignore **just one of** `PartialEq` or `PartialOrd` issue a lint,
+- Types with fields that ignore **just one, or just two of** `PartialEq`, `PartialOrd` and `Ord` issue a lint,
   because it is logically incorrect for the implementations to differ.
   See the [documentation](https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html) for details.
 
