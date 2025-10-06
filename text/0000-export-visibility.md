@@ -665,6 +665,23 @@ answering the `dylib`-vs-`hidden`-visibility problem:
       cross-crate calls into hidden symbols.  And this would suppress many
       legitimate optimizations. (hattip
       [@bjorn3](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352658642))
+* Add a lint/warning that detects when `#[export_visibility = ...]` is used
+  inappropriately
+    - Sub-idea 1: when a hidden function is called from a caller that may be
+      inlined into another crate.  (hattip
+      [@tmandry](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3282373591))
+        - This idea is problematic, because using inlineability for restricting
+          how source programs are written means committing to implementation
+          details of rustc’s codegen strategy.  For example, `rustc` currently
+          has some logic to treat small functions as-if they were `#[inline]`
+          for codegen purposes even if they weren’t declared as such in the
+          source code. (hattip
+          [@hanna-kruppe](https://github.com/rust-lang/rfcs/pull/3834#discussion_r2395437679))
+    - Sub-idea 2: when a hidden function is called _at all_ from another Rust
+      function
+        - This seems very drastic, but in practice `#[no_mangle]` are oftentimes
+          called only from _another, non-Rust_ language.  This is definitely the
+          case for FFI thunks used as one of motivating examples in this RFC.
 
 ## Open question: Cross-platform behavior
 [cross-platform-behavior]: #cross-platform-behavior
