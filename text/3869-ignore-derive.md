@@ -384,8 +384,13 @@ The `#[ignore]` attribute(s) for a particular derive macro `Foo` applied to the 
 ## Spans
 
 Because input to the macro is different from what it is in the source code, we have to talk about
-the `Span` that the derive macros see. Derives macros that don't support `#[ignore]` will want to report an error about it,
-and they can do so by using span of the `ignore` identifier.
+the `Span` that the derive macros see. Derive macros can use this span for various purposes.
+
+For example, since this RFC does not make an attempt to fit every possible use-case of ignoring fields, some derive macros
+might require additional information about *how* to ignore the field. They can use this span to create an error and re-direct
+users to their custom `#[foo(ignore(...))]` that might take arguments for example.
+
+### The span
 
 Given the following struct:
 
