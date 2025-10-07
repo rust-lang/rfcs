@@ -555,6 +555,47 @@ The lint was implemented in January 2019. See the [tracking issue](https://githu
 It has been almost 6 years since it became deny-by-default.
 It should be fine to promote it into a hard error as that's what this RFC would require for the feature-gate
 
+## `#[ignore]` (without parentheses) on fields already compiles. Would this be a breaking change?
+
+You can currently apply `#[ignore]` to fields at the moment in 2 ways, which leads to a warn-by-default `unused_attributes` lint:
+
+- `#[ignore]` **without parentheses**
+- `#[ignore = "some string"]`
+
+For example:
+
+```rust
+struct Foo {
+    #[ignore]
+    ignored_1: String,
+    #[ignore = "for some reason"]
+    ignored_2: String,
+}
+```
+
+The above gives warnings:
+
+```
+warning: `#[ignore]` only has an effect on functions
+ --> src/main.rs:2:5
+  |
+2 |     #[ignore]
+  |     ^^^^^^^^^
+  |
+  = note: `#[warn(unused_attributes)]` on by default
+
+warning: `#[ignore]` only has an effect on functions
+ --> src/main.rs:4:5
+  |
+4 |     #[ignore = "for some reason"]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+```
+
+Both attributes do nothing, but are syntactically valid. Under this RFC, **they will continue to compile with warnings**,
+probably with a changed error message to alert the user that they do absolutely nothing.
+
+Upgrading these warnings into a deny-by-default future incompatibility lint is discussed in the "Future Possibilities" section.
+
 ## Why not choose a new name
 
 As seen with the `#[skip]` attribute attempt, it is likely to lead to breakages when we try to create a new built-in attribute for this.
@@ -634,4 +675,16 @@ struct Foo {
 }
 ```
 
-If desired, such a change will be possible to make in the future, but it is not part of this RFC because the first code block **already compiles** (although with a warning - `ignore only has an effect on functions`).
+If desired, such a change will be possible to make in the future, but it is not part of this RFC because
+the first code block already compiles - it would be a breaking change.
+
+It's also not clear whether we'd want `#[ignore]` to work this way at all, so let's leave it up to a future
+RFC to decide if giving `#[ignore]` (without parentheses) on fields meaning would be worth it.
+
+## Promote `#[ignore]` on fields (without parentheses) and `#[ignore = "reason"]` on fields into a deny-by-default lint
+
+Whilst it's not currently clear whether we want `#[ignore]` (without parentheses) on fields to actually do something,
+we could upgrade the 2 currently useless forms of `#[ignore]` (without parentheses) on fields and `#[ignore = "reason"]` on fields into a
+deny-by-default future incompatibility lint - just to be safe.
+
+This lint is not part of the RFC, and can be discussed separately.
