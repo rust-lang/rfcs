@@ -381,6 +381,22 @@ The `#[ignore]` attribute(s) for a particular derive macro `Foo` applied to the 
 - If the list of paths includes the derive macro `Foo` itself, then an `#[ignore]` attribute **without** any arguments is applied to the field
 - If the list of paths to `ignore` does not name the the derive macro, then the `ignore` attribute is fully removed.
 
+## Declaring support
+
+Derive macros must explicitly declare that they support the `ignore` attribute:
+
+```rust
+#[proc_macro_derive(Foo, attributes(foo, ignore))]
+pub fn derive_foo(input: TokenStream) -> TokenStream {
+    // ...
+}
+```
+
+If the derive macro doesn't support `ignore`, then any usage of `#[ignore]` on fields will yield an error.
+
+`#[ignore]` without parentheses, and `#[ignore = "some string"]` will compile and do nothing (with a warn-by-default or deny-by-default lint),
+even if no support for the `ignore` attribute is declared by the derive macro. This is discussed further in the "Rationale and alternatives" section.
+
 ## Spans
 
 Because input to the macro is different from what it is in the source code, we have to talk about
