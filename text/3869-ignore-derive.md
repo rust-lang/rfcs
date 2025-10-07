@@ -661,7 +661,12 @@ There are numerous disadvantages to not having a single attribute in the standar
 # Prior art
 [prior-art]: #prior-art
 
-There are no other languages with something like derive macros that directly have this feature built-in
+Several crates in the Rust ecosystem currently support similar functionality.
+
+- [`#[serde(skip)]`](https://serde.rs/attr-skip-serializing.html)
+- [`#[clap(skip)]`](https://docs.rs/clap/latest/clap/_derive/index.html#command-attributes)
+- [`derive_more::Debug`](https://docs.rs/derive_more/latest/derive_more/derive.Debug.html)
+  is a more customizable version of the `std::Debug` derive and allows skipping individual fields with `#[debug(skip)]`
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
