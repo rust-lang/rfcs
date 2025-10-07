@@ -643,8 +643,11 @@ There are numerous disadvantages to not having a single attribute in the standar
 
 - Blocks standard library derives like `Hash`, `Ord`, `PartialOrd`, `Eq`, `PartialEq` from ignoring fields, because
   if adding the 1 `skip` attribute lead to so much breakage imagine if we added 5 new attributes
-- People have to learn each crate's own way of skipping fields, if it exists at all. With `#[ignore]` on fields, the user can instead use the same syntax
-  for every derive macro. Derives that do not support `#[ignore]` attribute will be encouraged to emit a compile error to helpfully let the user know.
+- People have to learn each crate's own way of skipping fields, if it exists at all.
+  With `#[ignore]` on fields, the user can instead use the same syntax for every derive macro.
+
+  If they try adding a derive macro to the the list of paths in the `ignore` attribute, the user will be notified by the
+  compiler if the derive macro doesn't support the `ignore` attribute - as it is explicitly opt-in in `attributes(ignore)`
 - Standardizes syntax and makes reading Rust code more predictable.
 - Multiple `#[foo(ignore)]`, `#[bar(ignore)]` attributes each take up a separate line. A single `#[ignore(Foo, Bar)]` can instead nicely fit on a single line.
 - **Compile times.** If we have a separate crate re-implement the standard library `Hash` derives and others, then the compile times will be much worse since
