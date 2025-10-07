@@ -477,7 +477,7 @@ However, this lead to [unacceptable breaking changes](https://github.com/rust-la
 
 > To give an update (at long last), the crater report did confirm my suspicion. We have 4 confirmed root regressions: [1], [2], [3], [4], [4.1], [4.2].
 
-Considering the breakage would compromise Rust's stabiligy guarantees, a different design is required:
+Considering the breakage would compromise Rust's stability guarantees, a different design is required:
 
 > Given the crater results showing compatibility hazards, it sounds like this is going to need a design and lang RFC for an approach that avoids those. 
 
