@@ -30,7 +30,9 @@ still important for several reasons:
    [`-Z harden-sls`]) mitigate the impact of Spectre-style speculative
    execution vulnerabilities, that exist in Rust just as well as C.
 2. Many Rust programs also contain large C/C++ components, that can have
-   memory vulnerabilities.
+   memory vulnerabilities. The exploitation of these vulnerabilities
+   is made easier by the presence of mitigation-less Rust code within
+   the same address-space.
 3. Many Rust programs use `unsafe`, that can introduce memory unsafety
    and vulnerabilities.
 
@@ -131,8 +133,11 @@ However, it would be good to see that enforcement fits well with sanitizers.
    if every object in the address space uses it, which makes it easy to detect via a
    [`hardening-check(1)`]-style tool, but since it is not the default, this
    would make it easier to make sure it is enabled.
-2. `-Z ehcont-guard` - I couldn't find documentation of that (Windows) feature,
-   but it looks relevant.
+2. [`-Z ehcont-guard`] - Similar for [`-Z branch-protection`]/[`-Z cf-protection`],
+   but for Windows exception handlers - if every object in the address space
+   uses it, `NtContinue` is only allowed to jump to valid exception handlers.
+   This means it is easy to detect via a [`hardening-check(1)`]-style tool, but
+   it probably makes sense to include it.
 2. [`-Z indirect-branch-cs-prefix`] - a part of retpoline (Spectre)
    mitigation on x86.
 3. [`-Z no-jump-tables`] - CFI-type mitigation?
@@ -143,13 +148,14 @@ However, it would be good to see that enforcement fits well with sanitizers.
    As far as I can tell, enforcement makes sense for
    `-Zsanitizer=cfi, -Zsanitizer=memtag, -Zsanitizer=shadow-call-stack`
    and does not make sense for
-   `-Zsanitizer=address, -Zsanitizer=dataflow, -Zsanitizer=hwaddress, -Zsanitizer=leak, -Zsanitizer=memory, -Zsanitizer=thread`
+   `-Zsanitizer=address, -Zsanitizer=dataflow, -Zsanitizer=hwaddress, -Zsanitizer=leak, -Zsanitizer=memory, -Zsanitizer=thread` (`-Z sanitizer=address` should probably be a [target modifier])
 4. [`-Z stack-protector`] - stack smashing protection, local-type mitigation
 5. [`-Z ub-checks`]: as far as I can tell, it is not intended as a mitigation,
    but since it prevents some UB, it might be thought of as one
 
 [`-Z branch-protection`]: https://github.com/rust-lang/rust/issues/113369
 [`-Z cf-protection`]: https://github.com/rust-lang/rust/issues/93754
+[`-Z ehcont-guard`]: https://learn.microsoft.com/en-us/cpp/build/reference/guard-enable-eh-continuation-metadata?view=msvc-170
 [`-Z indirect-branch-cs-prefix`]: https://github.com/rust-lang/rust/issues/116852
 [`-Z no-jump-tables`]: https://github.com/rust-lang/rust/issues/116592
 [`-C jump-tables`]: https://github.com/rust-lang/rust/pull/145974
@@ -215,7 +221,7 @@ compilation error results.
 If a mitigation has multiple "levels", a stricter level at a dependency is
 compatible with a looser level at the current (dependent) crate, but not
 vice-versa - for example, if the standard library crates were compiled with
-`-C stack-protector=all` (not discusser whether that is a wise idea), they would be
+`-C stack-protector=all` (not discussing whether that is a wise idea), they would be
 compatible with every configuration of user crates.
 
 The error happens independent of the target crate type (you get an error
@@ -279,13 +285,6 @@ believes they are turning on enforcing stack protection by using `-C stack-prote
 the application will not be getting enforcement due to the distribution setting
 `-C allow-partial-mitigations=stack-protector`.
 
-On the other hand, maybe there is not actually desire to add
-`-C stack-protector=strong -C allow-partial-mitigations=stack-protector` as a default?
-
-Maybe it is actually possible to ship a `-C stack-protector=strong` standard library and
-add a `-C stack-protector=strong` default, since the enforcement check only works
-"towards roots"?
-
 With a small amount of implementation effort, we could have `-C stack-protector=strong` reset the
 `-C allow-partial-mitigations=stack-protector` state, so that
 `-C stack-protector=strong -C allow-partial-mitigations=stack-protector -C stack-protector=strong`
@@ -304,7 +303,8 @@ to be partial on a specified set of crate names.
 `@stdlib` is used here to stand for all the sysroot crates, since the user does not
 want to specify them all (should we bikeshed the syntax?).
 
-This is different from `-C pretend-mitigation-enabled`, since it reflects a decision
+This is different from `-C pretend-mitigation-enabled` (which would be a mitigation
+equivalent of `-C unsafe-allow-abi-mismatch`), since it reflects a decision
 made by the application writer (dependent crate) rather than the library writer.
 
 This can be done in a later stabilization that the core of the feature.
@@ -365,15 +365,21 @@ add a `-C stack-protector=strong` default, since the enforcement check only work
 
 One big place where it's very easy to end up with mixed mitigations is the
 standard library. The standard library comes compiled with just a single
-set of mitigations enabled (as of Rust 1.88: none), and without `-Z build-std`,
-it is only possible to use the mitigation settings in the shipped standard
-library.
+set of mitigations enabled (as of Rust 1.88: [PIC], [NX],
+[`-z relro -z now`]), and without `-Z build-std`, it is only possible to use
+the mitigation settings in the shipped standard library.
 
 If we find out that some mitigations have a positive cost-benefit ratio
 for the standard library (probably at least [`-Z stack-protector`]), we
 probably want to ship a standard library supporting them by default, but
-in a way that still allows people to compile code without mitigations,
-if that fulfills their cost/benefit ratios better.
+in a way that still allows people to compile code without mitigations (for
+example, shipaa `libstd` with `-C stack-protector=strong`, but allow users
+to compile their own code with `-C stack-protector=none` using that
+`libstd`) if that fulfills their security/performance tradeoff better.
+
+[PIC]: https://en.wikipedia.org/wiki/Position-independent_code
+[NX]: https://en.wikipedia.org/wiki/Executable-space_protection
+[`-z relro -z now`]: https://www.redhat.com/en/blog/hardening-elf-binaries-using-relocation-read-only-relro
 
 ## Why not target modifiers?
 
@@ -409,6 +415,22 @@ knowing what they are doing, and more people that don't agree with the performan
 tradeoff they bring. In that case, we should allow the executable-writer to be aware
 of the tradeoff being made, rather than letting libraries in the middle decide it
 for them.
+
+### Target modifier, enforced mitigation, neither, or both?
+
+For every single mitigation-like flag:
+
+1. If mixing values of the flag can cause unsound behavior, sanitizer false
+   positives, or crashes, it should be a target modifier.
+2. If mixing values of the flag can hurt a production program's security
+   posture, it should be an enforced mitigation.
+3. If the flag is a sanitizer intended for use only in fuzzing and testing, and
+   mixing values of it does not lead to unsound behavior, it should be
+   neither.
+4. If mixing values of the flag hurt a production program's
+   security posture in some cases, and lead to unsound behavior in
+   other cases, it should be both. I am not aware of a current flag that
+   fits this pattern.
 
 ## Why not an external tool?
 
