@@ -450,9 +450,15 @@ but they have limitations:
    requires its user to control the linking process - and also has hardcoded
    limitations that make it only suitable for the Linux kernel, rather than
    being useful as a general-purpose tool.
-   
+3. Fedora has a tool called [`annobin`], which is able to parse the
+   [`.gnu.build.attributes`](#gnubuildattributes-1) section, which compilers
+   can use to indicate mitigation support. That does fit our needs, but is
+   specific to the GNU/Linux world - it is desirable to have a solution that
+   works on all platforms.
+
 [`hardening-check(1)`]: https://manpages.debian.org/testing/devscripts/hardening-check.1.en.html
 [`objtool`]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/objtool/Documentation/objtool.txt?id=5cd64d4f92683afa691a6b83dcad5adfb2165ed0
+[`annobin`]: https://sourceware.org/cgit/annobin
 
 ## .note.gnu.property
 
@@ -480,6 +486,24 @@ but is not good if we want to be able to add new enforced mitigations without re
 cooperation from all platforms.
 
 [`GNU_PROPERTY_AARCH64_FEATURE_1_BTI`]: https://docs.rs/object/0.37/object/elf/constant.GNU_PROPERTY_AARCH64_FEATURE_1_BTI.html
+
+## .gnu.build.attributes
+
+This is a [Fedora feature]. It actually behaves pretty similarly to how we expect
+mitigation enforcement to work - a compiler plugin written by Fedora makes
+C/C++ compilers output a `.gnu.build.attributes` section indicating which
+mitigations are present or absent. The linker aggregates all of these sections,
+and `annocheck` can be used to check whether an object file declares an
+interesting mitigation as missing.
+
+This is currently a Fedora-ism as far as I can tell. It can be used with non-Fedora
+linkers (of course, in that case, C code will probably not indicate which mitigations
+it is missing).
+
+It might be a good idea to coordinate with Fedora and have rustc emit this metadata,
+but since it only works on Linux platforms, probably better to not solely rely on it.
+
+[Fedora feature]: https://fedoraproject.org/wiki/Toolchain/Watermark
 
 # Prior art
 [prior-art]: #prior-art
