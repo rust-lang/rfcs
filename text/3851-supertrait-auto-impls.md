@@ -1,6 +1,6 @@
 - Feature Name: `supertrait_auto_impl`
 - Start Date: 2025-08-26
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3851)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -195,6 +195,67 @@ impl Ord for X {
     extern impl PartialOrd;
     fn cmp(&self, other: &Rhs) -> Ordering {
         // here it defines the same total ordering
+    }
+}
+```
+
+### Example: A possible [`ToOwned`](https://doc.rust-lang.org/stable/std/borrow/trait.ToOwned.html) refactor
+
+As of writing, `ToOwned` is defined as follows.
+```rust
+pub trait ToOwned {
+    type Owned: Borrow<Self>;
+
+    fn to_owned(&self) -> Self::Owned;
+
+    fn clone_into(&self, target: &mut Self::Owned) { ... }
+}
+```
+
+`ToOwned` is a trait that could be further refined into the `AsOwned` concept and itself.
+
+```rust
+pub trait AsOwned {
+    type Owned: Borrow<Self>;
+}
+
+pub trait ToOwned: AsOwned {
+    auto impl AsOwned;
+
+    fn to_owned(&self) -> Self::Owned;
+
+    fn clone_into(&self, target: &mut Self::Owned) {
+        // same implementation
+    }
+}
+```
+
+The appeal of this refinement is that there is a proper separation between the capability to *borrow out data* and that to *take and own data*. This enables `Cow<'_, _>` to be implemented in the following snippet.
+
+```rust
+// Note that we do not out right require that the data can be taken and owned ...
+pub enum Cow<'a, B: AsOwned + ?Sized> {
+    Borrowed(&'a B),
+    Owned(B::Owned),
+}
+
+impl<B: AsOwned + ?Sized> Deref for Cow<'_, B> {
+    type Target = B;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Borrowed(v) => v,
+            Self::Owned(v) => v.borrow(),
+        }
+    }
+}
+
+impl<B: ToOwned + ?Sized> Cow<'_, B> {
+    // ... until the need arises here.
+    pub fn into_owned(self) -> B::Owned {
+        match self {
+            Self::Borrowed(v) => v.to_owned(),
+            Self::Owned(v) => v,
+        }
     }
 }
 ```
@@ -932,9 +993,11 @@ In any case, `auto impl Trait { .. }` blocks still remains available for cases w
 
 It is still up for discussion.
 
-## Why use `unsafe` in this way
+## What is the SemVer implication?
 
-As "default" supertrait implementation, _not in specialisation sense_, can be supplied in the subtrait definition, such implementation could be essential for the safe use of the subtrait `impl`. We should enable the subtrait authors to ensure that the safety invariants encoded in those "default" supertrait implementation are also observed, if the downstream implementor decides to supply its own supertrait `impl` instead of automatic derivation.
+A conservative calibration is, introducing `auto impl` directive into `trait Trait` definition is a major version breaking change, even though this feature intends to reduce rewrites in downstream crates and possibly no rewrite is required. The reason is that it is most probably a sign of trait refinement so that trait bounds could have been evolved. It is especially true as associated type projections or paths to associated method might need to be refactored: `BigTrait::Type` item is now moved into `SmallTrait::Type` and it is not always clear if `T::Type` would definitely resolve to `SmallTrait::Type` or there would exist ambiguity because `BigTrait` may have other, possibly new, supertraits which might also contain a `Type` associated item. This already warrants a major version bump.
+
+The case of marker traits is easier. In the most conservative case, no trait facts are changed and a downstream crate only needs to decide whether `auto impl` or `extern impl` suits the best. Semver stability then only relies on, in case of adoption of `extern impl`, whether the trait bound of the marker supertrait `impl` has changed.
 
 # Prior art
 [prior-art]: #prior-art
