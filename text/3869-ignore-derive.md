@@ -551,7 +551,7 @@ match foo {
 }
 ```
 
-Hence any type deriving `PartialEq` with ignored fields will not implement `StructuralPartialEq` automatically
+Hence any type deriving `PartialEq` with fields that are marked `#[ignore(PartialEq)]` will not implement `StructuralPartialEq` automatically
 
 # Drawbacks
 [drawbacks]: #drawbacks
