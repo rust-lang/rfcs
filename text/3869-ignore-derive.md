@@ -545,7 +545,6 @@ match foo {
 }
 
 // The above is NOT equivalent to this:
-
 match foo {
     Foo { foo: 10, bar: false }  => print!("ok"),
     _ => panic!()
