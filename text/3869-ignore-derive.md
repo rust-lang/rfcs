@@ -786,3 +786,64 @@ deny-by-default future incompatibility lint - just to be safe.
 
 This lint is not part of the RFC, and can be discussed separately.
 
+## `ignore` with arguments
+
+It's possible that derive macros might find it useful to know *how* they should be ignored.
+We could allow passing arguments to paths in `ignore`:
+
+```rust
+#[derive(MyTrait)]
+struct S {
+    #[ignore(MyTrait(<args>))] // <args> is any token stream
+    foo: Foo,
+    #[ignore(MyTrait)]
+    bar: Bar,
+    #[ignore(MyTrait = <arg>)] // <arg> is any expression
+    baz: Baz,
+}
+```
+
+Which would give the following input to `MyTrait`:
+
+```rust
+struct S {
+    #[ignore(<args>)]
+    foo: Foo,
+    #[ignore]
+    bar: Bar,
+    #[ignore = <arg>]
+    baz: Baz,
+}
+```
+
+This could be backward-compatible to add, so this is left for a future RFC to propose.
+
+However it's worth noting that there are several disadvantages with this:
+
+- It could encourage misuse of the `ignore` attribute, using the arguments as a sort of "default" value,
+  when it would be clearer to use [default field values](https://github.com/rust-lang/rust/issues/132162)
+- Overloads meaning of the attribute, it is not necessarily always about "ignoring" any more, rather adding a condition to serializiation
+- Makes it harder to read which derives are ignored. It's more reasonable to have a flat list of all ignored derives,
+  and if there is any metadata about ignoring, derives can use their own helper attributes for that. Prefer:
+
+  ```rust
+  #[derive(Deserialize, Debug, Serialize, Parser)]
+  struct MyStruct {
+      #[ignore(Debug, Deserialize, Parser)]
+      #[serde(ignore_if(is_meaningless(name)))]
+      #[clap(ignore_if(is_meaningless(name)))]
+      name: String,
+  }
+  ```
+
+  Over stuffing all information in a single attribute:
+
+  ```rust
+  #[derive(Deserialize, Debug, Serialize, Parser)]
+  struct MyStruct {
+      #[ignore(Deserialize(is_meaningless(name)), Debug, Parser(is_meaningless(name)))]
+      name: String,
+  }
+  ```
+
+- None of the derives in the standard library would use this feature, and few crates would find it useful where default field values don't solve the issue. We would be supporting a mostly niche use-case
