@@ -716,11 +716,18 @@ There are numerous disadvantages to not having a single attribute in the standar
 
   If they try adding a derive macro to the the list of paths in the `ignore` attribute, the user will be notified by the
   compiler if the derive macro doesn't support the `ignore` attribute - as it is explicitly opt-in in `attributes(ignore)`
-- Standardizes syntax and makes reading Rust code more predictable.
 - Multiple `#[foo(ignore)]`, `#[bar(ignore)]` attributes each take up a separate line. A single `#[ignore(Foo, Bar)]` can instead nicely fit on a single line.
 - **Compile times.** If we have a separate crate re-implement the standard library `Hash` derives and others, then the compile times will be much worse since
   they'll require additional dependencies like `syn` and miss out on the optimizations that can be gained with a derive macro that is
   included in the standard library
+
+Other benefits of `ignore` attribute include:
+
+- Standardizes syntax and makes reading Rust code more predictable.
+- Allows language servers like rust-analyzer to provide suggestions for the list of paths an `ignore` attribute would accept,
+  making this functionality more discoverable
+- Similar to how multiple `#[derive]`s are merged into a single `#[derive]` by rustfmt, multiple `#[ignore]`
+  attributes could be merged into a single `#[ignore]` attribute
 
 ## What is the impact of not doing this?
 
