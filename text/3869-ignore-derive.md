@@ -483,6 +483,77 @@ This RFC additionally proposes to add 2 new deny-by-default lints:
   because it is logically incorrect for the implementations to differ.
   See the [documentation](https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html) for details.
 
+## Standard library derives supporting the `ignore` attribute
+
+- `PartialEq`
+- `PartialOrd`
+- `Ord`
+- `Debug`
+- `Hash`
+
+### `#[derive(PartialEq)]` does not implement `StructuralPartialEq` if any fields are ignored
+
+By default, `#[derive(PartialEq)]` automatically implements [`StructuralPartialEq`](https://doc.rust-lang.org/std/marker/trait.StructuralPartialEq.html),
+and the invariant automatically upheld is the following:
+
+> interpreting the value of the constant as a pattern is equivalent to calling PartialEq
+
+Essentially, given any type `Foo` implementing `PartialEq`, both A and B must be identical:
+
+```rust
+#[derive(PartialEq)]
+struct Foo {
+    foo: u32,
+    bar: bool
+}
+const FOO: Foo = Foo { foo: 10, bar: false };
+
+// A
+match foo {
+    FOO => print!("ok"),
+    _ => panic!()
+}
+
+// B
+match foo {
+    Foo { foo: 10, bar: false }  => print!("ok"),
+    _ => panic!()
+}
+```
+
+But if any field is `#[ignore(PartialEq)]`d, then the property would be violated:
+
+```rust
+#[derive(PartialEq)]
+struct Foo {
+    foo: u32,
+    #[ignore(PartialEq)]
+    bar: bool
+}
+const FOO: Foo = Foo { foo: 10, bar: false };
+
+// Then this
+match foo {
+    FOO => print!("not ok"),
+    _ => panic!()
+}
+
+// Is actually this:
+match foo {
+    Foo { foo: 10, bar /* doesn't matter */ } => print!("not ok"),
+    _ => panic!()
+}
+
+// The above is NOT equivalent to this:
+
+match foo {
+    Foo { foo: 10, bar: false }  => print!("ok"),
+    _ => panic!()
+}
+```
+
+Hence any type deriving `PartialEq` with ignored fields will not implement `StructuralPartialEq` automatically
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -715,3 +786,34 @@ we could upgrade the 2 currently useless forms of `#[ignore]` (without parenthes
 deny-by-default future incompatibility lint - just to be safe.
 
 This lint is not part of the RFC, and can be discussed separately.
+
+## `ignore` with arguments
+
+Some derives need to know how to ignore a field. It could be possible to allow passing arguments to paths in `ignore`:
+
+```rust
+#[derive(MyTrait)]
+struct S {
+    #[ignore(MyTrait(<args>))] // <args> is any token stream
+    foo: Foo,
+    #[ignore(MyTrait)]
+    bar: Bar,
+    #[ignore(MyTrait = <arg>)] // <arg> is any expression
+    baz: Baz,
+}
+```
+
+Which would give the following input to `MyTrait`:
+
+```rust
+struct S {
+    #[ignore(<args>)]
+    foo: Foo,
+    #[ignore]
+    bar: Bar,
+    #[ignore = <arg>]
+    baz: Baz,
+}
+```
+
+efault field values would 
