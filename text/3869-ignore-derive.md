@@ -685,7 +685,7 @@ probably with a changed error message to alert the user that they do absolutely 
 
 Upgrading these warnings into a deny-by-default future incompatibility lint is discussed in the "Future Possibilities" section.
 
-## Why not choose a new name
+## Why not another name?
 
 As seen with the `#[skip]` attribute attempt, it is likely to lead to breakages when we try to create a new built-in attribute for this.
 The `ignore` keyword is very convenient for us, because it lets us implement this feature using an understandable keyword
