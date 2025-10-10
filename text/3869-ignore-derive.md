@@ -786,31 +786,3 @@ deny-by-default future incompatibility lint - just to be safe.
 
 This lint is not part of the RFC, and can be discussed separately.
 
-## `ignore` with arguments
-
-Some derives need to know how to ignore a field. It could be possible to allow passing arguments to paths in `ignore`:
-
-```rust
-#[derive(MyTrait)]
-struct S {
-    #[ignore(MyTrait(<args>))] // <args> is any token stream
-    foo: Foo,
-    #[ignore(MyTrait)]
-    bar: Bar,
-    #[ignore(MyTrait = <arg>)] // <arg> is any expression
-    baz: Baz,
-}
-```
-
-Which would give the following input to `MyTrait`:
-
-```rust
-struct S {
-    #[ignore(<args>)]
-    foo: Foo,
-    #[ignore]
-    bar: Bar,
-    #[ignore = <arg>]
-    baz: Baz,
-}
-```
