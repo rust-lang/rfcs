@@ -814,5 +814,3 @@ struct S {
     baz: Baz,
 }
 ```
-
-efault field values would 
