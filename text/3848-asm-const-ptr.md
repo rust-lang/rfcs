@@ -627,7 +627,7 @@ integer, then the behavior is the same as when passing an integer type. This
 includes cases such as:
 
 * `core::ptr::null()`
-* `0xdeadbeef as *const ()`
+* `0xA000_000 as *mut u8`
 * `core::ptr::null().wrappind_add(1000)`
 * `core::ptr::without_provenance(1000)`
 
