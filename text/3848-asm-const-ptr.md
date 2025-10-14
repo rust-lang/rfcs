@@ -640,9 +640,9 @@ operand.
 
 When the pointer was created from a named symbol, but is offset from the symbol
 itself (e.g. it points at a field of the symbol), then the compiler will insert
-`symbol_name+offset` into the asm block as plain text. In this scenario, using
-`{}` with a const operand is equivalent to writing `{}+offset` with the `sym`
-operand.
+`symbol_name+offset` (or `symbol_name-offset`) into the asm block as plain text.
+In this scenario, using `{}` with a const operand is equivalent to writing
+`{}+offset` (or `{}-offset`) with the `sym` operand.
 
 The compiler may choose to emit the symbol name by inserting it into the asm
 verbatim, or by using certain backend-specific operands (e.g. `'i'` or `'s'`),
@@ -654,13 +654,13 @@ Not all globals are named. For example, when using static promotion to create a
 variable stored statically, the location of the global has no name.
 
 In this scenario, the compiler will generate a name for the symbol and emit
-`symbol_name` or `symbol_name+offset` using the newly generated symbol, under
-the same rules as named symbols.
+`symbol_name` or `symbol_name+offset` (or `symbol_name-offset`) using the newly
+generated symbol, under the same rules as named symbols.
 
 The compiler may choose any name for this symbol. The name may be chosen by
-rustc and emitted to the backend as `symbol_name` or `symbol_name+offset`, or
-rustc may pass the pointer to the backend using a backend-specific operand
-(e.g. `'i'`) and let the backend choose the name.
+rustc and emitted to the backend as `symbol_name` or `symbol_name+offset` (or
+`symbol_name-offset`), or rustc may pass the pointer to the backend using a
+backend-specific operand (e.g. `'i'`) and let the backend choose the name.
 
 ## Coercions
 
