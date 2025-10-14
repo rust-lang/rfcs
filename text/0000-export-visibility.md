@@ -228,67 +228,6 @@ The `#[export_visibility = ...]` attribute uses the
 syntax to specify the desired visibility.  The following sections describe
 string values that may be used.
 
-### Protected visibility
-
-<!-- This section is based on
-https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html#protected-visibility
--->
-
-`#[export_visibility = "protected"]` signals to the compiler, the linker, and
-the runtime linker that the symbol cannot be overridden by the executable or by
-other shared objects earlier in the load order.
-
-This allows the compiler to emit direct references to symbols, which may improve
-performance. It also removes the need for these symbols to be resolved when a
-shared object built with this option is loaded.
-
-Using protected visibility when linking with GNU `ld` prior to 2.40 will result
-in linker errors when building for Linux. Other linkers such as LLD are not
-affected.
-
-### Hidden visibility
-
-<!-- This section is based on
-https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html#hidden-visibility,
-but it was expanded to point out additional benefits and risks of hidden visibility.
-
-TODO: copy those benefits to the `-Zdefault-visibility=...` docs?  Or move them
-to a shared location somewhere?
--->
-
-`#[export_visibility = "hidden"]` marks the symbol as hidden.
-Hidden symbols will not be exported from the created shared object, so cannot be
-referenced from other shared objects or from executables.
-
-<!--
-The claim of reduced runtime overhead is based on
-https://gcc.gnu.org/wiki/Visibility
--->
-Similarly to protected visibility, hidden visibility may allow the compiler
-to improve performance of the generated code by
-emitting direct references to symbols.
-And it may remove the runtime overhead of linking these symbols at runtime.
-
-<!-- The claim about extra LTO opportunities is based on
-https://github.com/rust-lang/rust/issues/73958#issue-649745016.
-The claim about the reduced safety risk is based on https://crbug.com/418073233.
--->
-Unlike protected visibility, hidden visibility may also enable additional inlining
-during Link Time Optimization (LTO), which may be especially important for small
-functions (thunks) used for cross-language calls.  It may also limit the scope
-of the safety risk of having 2 symbols with the same name.
-
-<!-- The dylib problems caused by hidden visibility have been pointed out in
-https://github.com/rust-lang/rust/issues/73958#issuecomment-2635015556 -->
-`hidden` visibility should *not* be used when it is not possible to control
-whether the symbol may be referenced from another shared object.  For example,
-`hidden` visibility should be avoided when building `dylib`s, because
-cross-`dylib` inlining may lead to linking errors.
-
-> **Note**:
-> See [hidden-vs-dylibs] section below for more discussion on what to do
-> about the interaction between `dylibs` and this RFC.
-
 ### Inherited visibility
 
 `#[export_visibility = "inherit"]` uses
@@ -298,21 +237,6 @@ Note: the nightly version of the `rustc` compiler
 supports overriding the target platform's visibility with the
 [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html)
 command-line flag.
-
-### Choosing the right visibility
-
-If you control the linking process (i.e. you control how your symbols are linked
-into an executable, or into a `cdylib`, `so` or `dll`), then you should use the
-lowest possible visibility.  If a public export is not needed, then use the
-`hidden` visibility.
-
-If you are an author of a reusable crate, then you don't know how users of your
-crate will link it into executables, `cdylib`s, `dylib`s, etc.  In this case it
-is best to give control over visibility of your symbols to your clients by using
-`#[export_visibility = "inherit"]`.  Alternatively (e.g. if you provide a proc
-macro to generate the exported symbols) you can consider parametrizing the
-behavior of your crate to let your clients specify the exact visibility that
-your library will declare through the `#[export_visibility = ...]` attribute.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -582,107 +506,6 @@ as attributes are part of the language."
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Open question: `#[export_visibility = "hidden"]` vs `dylib`s
-[hidden-vs-dylibs]: #interaction-between-export_visibility--hidden-vs-dylibs
-
-### Problem description
-
-https://github.com/rust-lang/rust/issues/73958#issuecomment-2635015556
-points out that using `#[export_visibility = "hidden"]` may break some `dylib`
-scenarios.
-
-For example, let's say that a crate named `rlib` is compiled into an `rlib` with
-the following functions:
-
-```rust
-/// Let's say that this is an internal helper that is only intended to be called
-/// from code within this library.  To facilitate this, this function is *not*
-/// `pub`.
-///
-/// To also enable calling the helper from a friendly (also internal-only),
-/// supporting C/C++ library we may use `#[no_mangle]`.  To keep this function
-/// internal and only enable directly calling this helper from statically-linked
-/// C/C++ libraries we may /// use `#[export_visibility = "hidden"]`.  We will
-/// see below how the hidden visibility may have some undesirable
-/// interactions with `dylib`s.
-///
-/// TODO: Do we need `rustc` command-line examples that would show how such
-/// static linking would be done when building a `staticlib`, `bin`, `cdylib`,
-/// or a `dylib` (I haven't checked how/if this would work in all of those
-/// cases;  i.e. I haven't checked how to ask `rustc` to link with static
-/// libraries produced by a C/C++ compiler).
-#[no_mangle]
-#[export_visibility = "hidden"]
-fn internal_helper_called_from_rust_or_cpp() { todo!() }
-
-/// This is a public (`pub`) Rust function - it may be called from other Rust
-/// crates.
-///
-/// This function may internally (say, as an implementation detail) call
-/// `fn internal_helper_called_from_rust_or_cpp` above.  If this public function
-/// gets inlined into another `dylib` then the call to the internal helper
-/// will cross `dylib` boundaries - this will **not** work if the internal
-/// helper is hidden from dynamic linking.
-#[inline]
-pub fn public_function() {
-    internal_helper_called_from_rust_or_cpp()
-}
-```
-
-### Potential answers
-
-The following options have been identified so far as a potential way for
-answering the `dylib`-vs-`hidden`-visibility problem:
-
-* Don't stabilize (or don't support at all) `#[export_visibility = "hidden"]`
-  but still support other visibilities
-* Support `#[export_visibility = "hidden"]`, but
-    - Document that `hidden` visibility may break linking of `dylib`s
-      (see the "Hidden visibility" section in the guide-level explanation above)
-    - Document a recommendation that reusable crates shouldn't use a hardcoded
-      visibility (see the "Choosing the right visibility" section in the
-      guide-level explanation above)
-* Avoid inlining if the inlined code ends up calling a hidden symbol from
-  another `dylib`
-    - Currently preventing inlining is problematic, because `#[inline]` will
-      stop the function from being codegened in the original crate unless used
-      (hattip
-      [@chorman0773](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352655525)).
-      OTOH, this doesn't necessarily seem like a hard blocker (i.e. maybe this
-      behavior can change).
-    - Generics also cannot have code generated in the original crate, because
-      codegen requires knowing the generic parameters.  But generics seem
-      irrelevant here, because `#[export_visibility = ...]` does _not_ apply to
-      generics.  In particular, `#[no_mangle]`
-      ([Rust
-      playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=ac8f26f9b05471c2480b3185388c05e8))
-      and `#[export_name = ...]` cannot be used with generics, because the names
-      of the symbols (ones generated during monomorphization) need to differ
-      based on the generic parameters.
-    - One major problem with avoiding inlining is that during codegen it is not yet
-      known if two crates will end up getting linked into the same or different
-      dylib.  This means that inlining would need to be inhibited for any
-      cross-crate calls into hidden symbols.  And this would suppress many
-      legitimate optimizations. (hattip
-      [@bjorn3](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352658642))
-* Add a lint/warning that detects when `#[export_visibility = ...]` is used
-  inappropriately
-    - Sub-idea 1: when a hidden function is called from a caller that may be
-      inlined into another crate.  (hattip
-      [@tmandry](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3282373591))
-        - This idea is problematic, because using inlineability for restricting
-          how source programs are written means committing to implementation
-          details of rustc’s codegen strategy.  For example, `rustc` currently
-          has some logic to treat small functions as-if they were `#[inline]`
-          for codegen purposes even if they weren’t declared as such in the
-          source code. (hattip
-          [@hanna-kruppe](https://github.com/rust-lang/rfcs/pull/3834#discussion_r2395437679))
-    - Sub-idea 2: when a hidden function is called _at all_ from another Rust
-      function
-        - This seems very drastic, but in practice `#[no_mangle]` are oftentimes
-          called only from _another, non-Rust_ language.  This is definitely the
-          case for FFI thunks used as one of motivating examples in this RFC.
-
 ## Open question: Cross-platform behavior
 [cross-platform-behavior]: #cross-platform-behavior
 
@@ -813,4 +636,183 @@ hiding symbols coming from Rust standard library:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-Couldn't think of anything so far.
+## Provide reference-level definitions of supported visibility levels
+
+`#[export = "inherited"]` defers the choice of an actual visibility level to
+
+1. Session-wide default of
+   [`SymbolVisibility::Interposable`](https://github.com/rust-lang/rust/blob/910617d84d611e9ba508fd57a058c59b8a767697/compiler/rustc_session/src/session.rs#L551-L557)
+2. Unless overridden by target platform’s default visibility specified in
+   [`rustc_target::spec::TargetOptions`](https://github.com/rust-lang/rust/blob/910617d84d611e9ba508fd57a058c59b8a767697/compiler/rustc_target/src/spec/mod.rs#L2225-L2230),
+3. Or overridden by
+   [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html) command-line flag.
+
+This means that _this_ RFC doesn't necessarily need to
+define the exact semantics and behavior of supported visibility levels.
+OTOH, such definitions may be desirable in the future:
+
+* If/when stabilizing `-Zdefault-visibility=...`
+* If/when extending `#[export_visibility = ...]` to support specific visibility
+  levels (i.e. if the attribute would support not only the `"inherit"`
+  visibility value, but also `"hidden"`, `"protected"`, and/or
+  `"interposable"`).
+
+One way to provide such definitions would be to map different visibility levels
+into specific behavior on the supported Tier 1 platforms.   This can be limited
+to documenting the impact for ELF, Mach-O, and PE binaries, because all of
+[Tier 1 target triples](https://doc.rust-lang.org/beta/rustc/platform-support.html#tier-1-with-host-tools)
+use one of those three binary formats:
+
+* `aarch64-apple-darwin`: MachO (documented
+  [here](https://doc.rust-lang.org/beta/rustc/platform-support/apple-darwin.html#binary-format))
+* `aarch64-pc-windows-msvc`: PE/COFF (documented
+  [here](https://doc.rust-lang.org/beta/rustc/platform-support/windows-msvc.html#platform-details))
+* `aarch64-unknown-linux-gnu`: ELF
+* `i686-pc-windows-msvc`: PE/COFF (same documentation as above)
+* `i686-unknown-linux-gnu`: ELF
+* `x86_64-pc-windows-gnu`: PE (documented
+  [here](https://doc.rust-lang.org/beta/rustc/platform-support/windows-gnu.html#requirements)) 
+* `x86_64-unknown-linux-gnu`: ELF
+
+Ad-hoc, manual tests (TODO: link to a GitHub comment)
+of `#[export_visibility = "inherit"]` provide some
+reassurance that such definitions should be possible in the future.
+OTOH, when future RFCs or PRs consider implementing specific visibility levels,
+they should ideally come with:
+
+* Codegen tests that verify how `#[export_visibility = …]` is translated into
+  LLVM syntax
+* End-to-end tests for 3 platforms that cover ELF, Mach-O, and PE binaries.
+  Verification in such tests would most likely have to depend on arbitrary
+  developer tools (e.g.
+  [`readelf`](https://man7.org/linux/man-pages/man1/readelf.1.html) or
+  [`dumpbin`](https://learn.microsoft.com/en-us/cpp/build/reference/dumpbin-reference?view=msvc-170))
+  and therefore such tests would most likely have to be
+  `make`-based.
+
+## Support hidden visibility
+
+In the future, we may consider supporting `#[export_visibility = “hidden”]`.
+In terms of the internal `rustc` APIs this would map to
+[`rustc_target::spec::SymbolVisibility::Hidden`](https://github.com/rust-lang/rust/blob/910617d84d611e9ba508fd57a058c59b8a767697/compiler/rustc_target/src/spec/mod.rs#L884).
+The hidden visibility would have the following impact on Tier 1 binaries:
+
+* ELF binaries: The symbol is marked
+  [`STV_HIDDEN`](https://man7.org/linux/man-pages/man5/elf.5.html#:~:text=specific%20hidden%20class.-,STV_HIDDEN,-Symbol%20is%20unavailable)
+* PE binaries: The symbol is non-exported (i.e. the symbol is not listed in
+  [the `.edata` section](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-edata-section-image-only))
+* MachO binaries: The symbol is non-exported (i.e. the symbol is not listed in
+  [the export trie](https://github.com/apple-oss-distributions/xnu/blob/8d741a5de7ff4191bf97d57b9f54c2f6d4a15585/EXTERNAL_HEADERS/mach-o/loader.h#L1369))
+
+### Open question: `#[export_visibility = "hidden"]` vs `dylib`s
+[hidden-vs-dylibs]: #interaction-between-export_visibility--hidden-vs-dylibs
+
+#### Problem description
+
+https://github.com/rust-lang/rust/issues/73958#issuecomment-2635015556
+points out that using `#[export_visibility = "hidden"]` may break some `dylib`
+scenarios.
+
+For example, let's say that a crate named `rlib` is compiled into an `rlib` with
+the following functions:
+
+```rust
+/// Let's say that this is an internal helper that is only intended to be called
+/// from code within this library.  To facilitate this, this function is *not*
+/// `pub`.
+///
+/// To also enable calling the helper from a friendly (also internal-only),
+/// supporting C/C++ library we may use `#[no_mangle]`.  To keep this function
+/// internal and only enable directly calling this helper from statically-linked
+/// C/C++ libraries we may /// use `#[export_visibility = "hidden"]`.  We will
+/// see below how the hidden visibility may have some undesirable
+/// interactions with `dylib`s.
+///
+/// TODO: Do we need `rustc` command-line examples that would show how such
+/// static linking would be done when building a `staticlib`, `bin`, `cdylib`,
+/// or a `dylib` (I haven't checked how/if this would work in all of those
+/// cases;  i.e. I haven't checked how to ask `rustc` to link with static
+/// libraries produced by a C/C++ compiler).
+#[no_mangle]
+#[export_visibility = "hidden"]
+fn internal_helper_called_from_rust_or_cpp() { todo!() }
+
+/// This is a public (`pub`) Rust function - it may be called from other Rust
+/// crates.
+///
+/// This function may internally (say, as an implementation detail) call
+/// `fn internal_helper_called_from_rust_or_cpp` above.  If this public function
+/// gets inlined into another `dylib` then the call to the internal helper
+/// will cross `dylib` boundaries - this will **not** work if the internal
+/// helper is hidden from dynamic linking.
+#[inline]
+pub fn public_function() {
+    internal_helper_called_from_rust_or_cpp()
+}
+```
+
+#### Potential answers
+
+The following options have been identified so far as a potential way for
+answering the `dylib`-vs-`hidden`-visibility problem:
+
+* Don't stabilize (or don't support at all) `#[export_visibility = "hidden"]`
+  but still support other visibilities
+* Support `#[export_visibility = "hidden"]`, but
+    - Document that `hidden` visibility may break linking of `dylib`s
+      (see the "Hidden visibility" section in the guide-level explanation above)
+    - Document a recommendation that reusable crates shouldn't use a hardcoded
+      visibility (see the "Choosing the right visibility" section in the
+      guide-level explanation above)
+* Avoid inlining if the inlined code ends up calling a hidden symbol from
+  another `dylib`
+    - Currently preventing inlining is problematic, because `#[inline]` will
+      stop the function from being codegened in the original crate unless used
+      (hattip
+      [@chorman0773](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352655525)).
+      OTOH, this doesn't necessarily seem like a hard blocker (i.e. maybe this
+      behavior can change).
+    - Generics also cannot have code generated in the original crate, because
+      codegen requires knowing the generic parameters.  But generics seem
+      irrelevant here, because `#[export_visibility = ...]` does _not_ apply to
+      generics.  In particular, `#[no_mangle]`
+      ([Rust
+      playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=ac8f26f9b05471c2480b3185388c05e8))
+      and `#[export_name = ...]` cannot be used with generics, because the names
+      of the symbols (ones generated during monomorphization) need to differ
+      based on the generic parameters.
+    - One major problem with avoiding inlining is that during codegen it is not yet
+      known if two crates will end up getting linked into the same or different
+      dylib.  This means that inlining would need to be inhibited for any
+      cross-crate calls into hidden symbols.  And this would suppress many
+      legitimate optimizations. (hattip
+      [@bjorn3](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352658642))
+* Add a lint/warning that detects when `#[export_visibility = ...]` is used
+  inappropriately
+    - Sub-idea 1: when a hidden function is called from a caller that may be
+      inlined into another crate.  (hattip
+      [@tmandry](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3282373591))
+        - This idea is problematic, because using inlineability for restricting
+          how source programs are written means committing to implementation
+          details of rustc’s codegen strategy.  For example, `rustc` currently
+          has some logic to treat small functions as-if they were `#[inline]`
+          for codegen purposes even if they weren’t declared as such in the
+          source code. (hattip
+          [@hanna-kruppe](https://github.com/rust-lang/rfcs/pull/3834#discussion_r2395437679))
+    - Sub-idea 2: when a hidden function is called _at all_ from another Rust
+      function
+        - This seems very drastic, but in practice `#[no_mangle]` are oftentimes
+          called only from _another, non-Rust_ language.  This is definitely the
+          case for FFI thunks used as one of motivating examples in this RFC.
+
+## Support protected visibility
+
+In the future, we may consider supporting `#[export_visibility = “protected”]`.
+
+Open question:
+
+* Need to clarify how `protected` vs `interposable` visibilities would work for
+  Tier 1 platforms.  In particular, it seems that PE and Mach-O binary formats
+  may not be able to distinguish between `protected` and `interposable`
+  visibilities (the latter is the default when a `#[no_mangle]` symbol is not
+  accompanied by `#[export_visibility = ...]`).
