@@ -297,7 +297,7 @@ https://doc.rust-lang.org/reference/abi.html should get a new section:
 # Drawbacks
 [drawbacks]: #drawbacks
 
-See "Open questions" section.
+No drawbacks have been identified at this point.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
