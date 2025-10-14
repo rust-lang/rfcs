@@ -454,6 +454,94 @@ symbols.  And therefore it seems that the `#[export_visibility = ...]` attribute
 proposed in this RFC would be useful not only in the current Rust edition,
 but also in the hypothetical future Rust edition.
 
+## Rationale: Okay to have no impact on Rust standard library
+
+This RFC treats visibility of Rust standard library symbols as out of scope.
+`-Zdefault-visibility=...` remains the only way to control symbol visibility
+of the Rust standard library (assumming that it can be rebuilt with this
+command-line flag).  This is ok - the RFC is beneficial even with this limited
+scope.
+
+More details about symbols exported from the Rust standard library can be
+found in the folded details section below:
+
+<details>
+
+### Symbols exported from Rust standard library
+
+Currently Rust standard library may end up exporting two kinds of symbols.
+One kind is symbols using `#[rustc_std_internal_symbol]` attribute
+(similar to `#[no_mangle]` so in theory `#[export_visibility = ...]`
+attribute could be applied to such symbols).
+An example can be found below:
+
+```
+$ git clone git@github.com:guidance-ai/llguidance.git
+$ cd llguidance/parser
+$ cargo rustc -- --crate-type=staticlib
+...
+$ nm --demangle --defined-only ../target/debug/libllguidance.a 2>/dev/null | grep __rustc::
+0000000000000000 T __rustc::__rust_alloc
+0000000000000000 T __rustc::__rust_dealloc
+0000000000000000 T __rustc::__rust_realloc
+0000000000000000 T __rustc::__rust_alloc_zeroed
+0000000000000000 T __rustc::__rust_alloc_error_handler
+0000000000000000 B __rustc::__rust_alloc_error_handler_should_panic
+00000000 T __rustc::__rust_probestack
+```
+
+But non-`#[rustc_std_internal_symbol]` symbols (e.g.
+[`String::new`](https://github.com/rust-lang/rust/blob/9c4ff566babe632af5e30281a822d1ae9972873b/library/alloc/src/string.rs#L439-L446))
+can also end up publicly exported:
+
+```
+$ nm --demangle --defined-only ../target/debug/libllguidance.a 2>/dev/null \
+    | grep alloc::string::String::new
+0000000000000000 T alloc::string::String::new
+0000000000000000 T alloc::string::String::new
+0000000000000000 T alloc::string::String::new
+0000000000000000 t alloc::string::String::new
+0000000000000000 T alloc::string::String::new
+0000000000000000 T alloc::string::String::new
+0000000000000000 T alloc::string::String::new
+```
+
+> **Disclaimer**: The example above could be illustrated with other crates.
+> It uses `llguidance` because:
+>
+> 1. it exposes C API
+>    (and therefore it is potentially useful to build it as a `staticlib`)
+> 2. it happens to be used by Chromium so the RFC author is somewhat familiar
+>    with the crate
+> 3. the RFC author had trouble building `rustc-demangle-capi` in this way
+>    (hitting `#[panic_handler]`-related errors).
+
+### Justification for relying on `-Zdefault-visibility=...`
+
+Symbols can be hidden by rebuilding Rust standard library with
+`-Zdefault-visibility=hidden`.
+
+There are other valid reasons
+for rebuilding the standard library when building a given project.
+For example this is a way to use globally consistent `-C` options
+like `-Cpanic=abort`,
+[`-Clto=no`](https://source.chromium.org/chromium/chromium/src/+/main:build/config/compiler/BUILD.gn;l=1115-1118;drc=26d51346374a0d16b0ba2243ef83c015a944d975),
+etc.
+
+Rebuilding the standard library is possible,
+although it is currently supported as an **unstable**
+[`-Zbuild-std`](https://doc.rust-lang.org/cargo/reference/unstable.html#build-std)
+command-line flag of `cargo`.
+FWIW Chromium currently does rebuild the standard library
+(using automated
+[tooling](https://source.chromium.org/chromium/chromium/src/+/main:tools/rust/gnrt_stdlib.py;drc=628c608971bc01c96193055bb0848149cccde645)
+to translate standard library's `Cargo.toml` files into
+[equivalent `BUILD.gn` rules](https://source.chromium.org/chromium/chromium/src/+/main:build/rust/std/rules/BUILD.gn;drc=35fb76c686b55acc25b53f7e5c9b58e56dca7f4a)),
+which is one reason why this RFC is a viable UB fix for
+https://crbug.com/418073233.
+
+</details>
+
 # Prior art
 [prior-art]: #prior-art
 
@@ -506,104 +594,7 @@ as attributes are part of the language."
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Open question: Rust standard library
-
-### Problem description
-
-The scope of this RFC is currently limited to just introducing the
-`#[export_visibility = ...]` attribute.  This should help realize the
-benefits described by this RFC wherever the new attribute is used
-(even if there remain places where the new attribute is not used).
-OTOH this means that this RFC treats
-visibility of Rust standard library symbols
-as out of scope.
-
-Currently Rust standard library may end up exporting two kinds of symbols.
-One kind is symbols using `#[rustc_std_internal_symbol]` attribute
-(similar to `#[no_mangle]` so in theory `#[export_visibility = ...]`
-attribute could be applied to such symbols).
-An example can be found below:
-
-```
-$ git clone git@github.com:guidance-ai/llguidance.git
-$ cd llguidance/parser
-$ cargo rustc -- --crate-type=staticlib
-...
-$ nm --demangle --defined-only ../target/debug/libllguidance.a 2>/dev/null | grep __rustc::
-0000000000000000 T __rustc::__rust_alloc
-0000000000000000 T __rustc::__rust_dealloc
-0000000000000000 T __rustc::__rust_realloc
-0000000000000000 T __rustc::__rust_alloc_zeroed
-0000000000000000 T __rustc::__rust_alloc_error_handler
-0000000000000000 B __rustc::__rust_alloc_error_handler_should_panic
-00000000 T __rustc::__rust_probestack
-```
-
-But non-`#[rustc_std_internal_symbol]` symbols (e.g.
-[`String::new`](https://github.com/rust-lang/rust/blob/9c4ff566babe632af5e30281a822d1ae9972873b/library/alloc/src/string.rs#L439-L446))
-can also end up publicly exported:
-
-```
-$ nm --demangle --defined-only ../target/debug/libllguidance.a 2>/dev/null \
-    | grep alloc::string::String::new
-0000000000000000 T alloc::string::String::new
-0000000000000000 T alloc::string::String::new
-0000000000000000 T alloc::string::String::new
-0000000000000000 t alloc::string::String::new
-0000000000000000 T alloc::string::String::new
-0000000000000000 T alloc::string::String::new
-0000000000000000 T alloc::string::String::new
-```
-
-> **Disclaimer**: The example above could be illustrated with other crates.
-> It uses `llguidance` because:
->
-> 1. it exposes C API
->    (and therefore it is potentially useful to build it as a `staticlib`)
-> 2. it happens to be used by Chromium so the RFC author is somewhat familiar
->    with the crate
-> 3. the RFC author had trouble building `rustc-demangle-capi` in this way
->    (hitting `#[panic_handler]`-related errors).
-
-### Potential answers
-
-The following options have been identified so far as a potential way for
-hiding symbols coming from Rust standard library:
-
-* Do nothing.
-    - Hiding symbols would require rebuilding Rust standard library with
-      `-Zdefault-visibility=hidden`.
-    - Note that there are other valid reasons
-      for rebuilding the standard library when building a given project.
-      For example this is a way to use globally consistent `-C` options
-      like `-Cpanic=abort`,
-      [`-Clto=no`](https://source.chromium.org/chromium/chromium/src/+/main:build/config/compiler/BUILD.gn;l=1115-1118;drc=26d51346374a0d16b0ba2243ef83c015a944d975),
-      etc.
-    - Rebuilding the standard library is possible,
-      although it is currently supported as an **unstable**
-      [`-Zbuild-std`](https://doc.rust-lang.org/cargo/reference/unstable.html#build-std)
-      command-line flag of `cargo`.
-      FWIW Chromium currently does rebuild the standard library
-      (using automated
-      [tooling](https://source.chromium.org/chromium/chromium/src/+/main:tools/rust/gnrt_stdlib.py;drc=628c608971bc01c96193055bb0848149cccde645)
-      to translate standard library's `Cargo.toml` files into
-      [equivalent `BUILD.gn` rules](https://source.chromium.org/chromium/chromium/src/+/main:build/rust/std/rules/BUILD.gn;drc=35fb76c686b55acc25b53f7e5c9b58e56dca7f4a)),
-      which is one reason why this RFC is a viable UB fix for
-      https://crbug.com/418073233.
-* Alternative: support in `rustc` emitting a `staticlib` with symbol visibility
-  that matches `cdylib` behavior.
-    - Initially this behavior would be gated behind a new unstable `-Z` flag.
-        - Either a new flag: `-Zhide-rust-level-exports`
-        - Or by ensuring that `-Zdefault-visibility=hidden` also applies
-          to Rust-level exports transitively linked into a `staticlib`
-    - Open question: should this behavior become the default in the future?
-    - Implementation-wise, this behavior can be seen as partial linking or
-      as object file rewriting.
-    - It seems that this behavior makes most sense for `staticlib`s, because
-      `rlib`s don't include transitive dependencies.  So when linking `rlib`s
-      (using an external, non-`rustc` linker) hiding standard library symbols
-      would still require rebuilding it with `-Zdefault-visibility=hidden`
-      as described in the "do nothing" alternative above.
+There are no unresolved questions at this point.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
