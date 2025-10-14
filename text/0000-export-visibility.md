@@ -123,7 +123,10 @@ The risk of name collisions is caused by two separate behaviors of
 
 It is out of scope for this RFC to identify and/or explain the exact origin
 and/or mechanisms of the UB.  Nevertheless, discussions related to this RFC may
-benefit from outlining at a high-level how the UB may happen.
+benefit from outlining at a high-level how the UB may happen, so this topic
+is explored underneath the folded details section below.
+
+<details>
 
 The author of this RFC is not aware of a more authoratitative source that would
 explain the mechanisms that can lead to the UB in presence of naming collisions.
@@ -156,6 +159,8 @@ The author speculates that:
       (and it seems fair to treat this order as non-deterministic, or at least
       outside the immediate control of the code author).
 
+</details>
+
 ## Benefit: Avoiding undefined behavior
 
 Using `#[export_visibility = ...]` to reduce symbol visibility can be used to
@@ -164,7 +169,12 @@ reduce or eliminate the risk of undefined behavior (UB) described in the previou
 
 UB caused by high symbol visibility is not just a hypothetical risk - this risk
 has actually caused difficult to diagnose symptoms that are captured in
-https://crbug.com/418073233.  In the smaller repro from
+https://crbug.com/418073233.  More information about this bug can be found in
+the folded details section below.
+
+<details>
+
+In the smaller repro from
 https://crrev.com/c/6580611/1 we see the following:
 
 * Without this RFC the [`cxx`](https://cxx.rs) library cannot avoid publicly
@@ -206,6 +216,8 @@ https://crrev.com/c/6580611/1 we see the following:
       has been make by the allocator from the `.so`).  In debug builds this is
       caught by an assertion.  In release builds this would lead to memory
       unsafety.
+
+</details>
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
