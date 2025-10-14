@@ -776,6 +776,15 @@ are statically linked, the offsets between symbols from different units become
 known constants. This allows the linker to resolve references between them
 correctly.
 
+## Implementation complexity
+
+The implementation of this feature in rustc is straightforward. The compiler's
+only responsibility is to perform const evaluation on the pointer and then
+insert the resulting symbol and offset into the assembly string. All of the
+complex logic for handling relocations and symbol resolution is handled by the
+backend (LLVM) and the linker. Rustc does not need to implement any of this
+logic itself.
+
 ## Large offsets and memory operands
 
 Sarah brings up a concern about large offsets [on github](https://github.com/rust-lang/rust/issues/128464#issuecomment-2859580807).
