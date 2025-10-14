@@ -241,15 +241,58 @@ command-line flag.
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-It seems that the guide-level explanation above may also work as a
-reference-level explanation.  (At least, the reference documentation of
-[`#[no_mangle]`](https://doc.rust-lang.org/reference/abi.html#the-no_mangle-attribute)
-and
-[`#[export_name = ...]`](https://doc.rust-lang.org/reference/abi.html#the-export_name-attribute)
-attributes provides a similar level of details.)
+## Prototype
 
 The proposal in this RFC has been prototyped in
 https://github.com/anforowicz/rust/tree/export-visibility
+
+## Edits to reference documentation for `#[no_mangle]`
+
+If this RFC is adopted (and stabilized) then
+https://doc.rust-lang.org/reference/abi.html#r-abi.no_mangle.publicly-exported
+should be edited.
+
+Old text:
+
+    > Additionally, the item will be publicly exported from the produced library
+    > or object file, similar to the used attribute.
+
+New text:
+
+    > Unless overridden by `#[export_visibility = …]`, the item will be publicly
+    > exported from the produced library or object file, similar to the used
+    > attribute.
+
+## Edits to reference documentation for `#[export_name]`
+
+If this RFC is adopted (and stabilized) then
+https://doc.rust-lang.org/reference/abi.html#r-abi.export_name should be edited.
+
+Old text doesn’t mention symbol visibility, or exporting.
+
+New text / paragraph:
+
+    > Unless overridden by `#[export_visibility = …]`, the item will be publicly
+    > exported from the produced library or object file, similar to the used
+    > attribute.
+
+## New section for `#[export_visibility = …]`
+
+If this RFC is adopted (and stabilized) then
+https://doc.rust-lang.org/reference/abi.html should get a new section:
+
+    > # The `export_visibility` attribute
+    >
+    > Intro-tag: The _`export_visibility` attribute_ overrides if or how the item is
+    > exported from the produced library or object file.
+    >
+    > Syntax-tag: The export_name attribute uses the MetaNameValueStr syntax to
+    > specify the symbol name.
+    >
+    > Inherited-tag: Currently only `#[export_visibility = “inherited”]` is
+    > supported.  When used, it means that the item will be exported with the
+    > default visibility of the target platform (which may be overridden by the
+    > unstable `-Zdefault-visibility=...` command-line flag.
 
 # Drawbacks
 [drawbacks]: #drawbacks
