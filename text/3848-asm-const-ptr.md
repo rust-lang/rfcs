@@ -768,6 +768,14 @@ Any future language features that introduce ambiguity here must address how
 they affect the `const` operand. An example of such a feature would be casting
 pointers to integers during const eval.
 
+## What about codegen units
+
+Rust may choose to split a crate into multiple codegen units to enable parallel
+compilation. This is not an issue for this RFC because when the codegen units
+are statically linked, the offsets between symbols from different units become
+known constants. This allows the linker to resolve references between them
+correctly.
+
 ## Large offsets and memory operands
 
 Sarah brings up a concern about large offsets [on github](https://github.com/rust-lang/rust/issues/128464#issuecomment-2859580807).
