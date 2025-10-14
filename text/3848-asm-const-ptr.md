@@ -937,3 +937,41 @@ operand will expand to something using that register.
 
 We could add an operand for interpolating a string into the assembly verbatim.
 See [the section on wide pointers][wide-pointers] for more info.
+
+## Formatting Specifiers
+
+Similar to how `println!` uses format specifiers like `{:x}` or `{:?}` to change
+how a value is printed, the `asm!` format string could be extended to support
+specifiers for its operands. This would provide a more convenient way to request
+architecture-specific formatting without requiring the user to write it
+manually.
+
+For example, a `pcrel` specifier could be introduced for program-counter-relative
+addressing, used like `asm!("lea {0:pcrel}, rax", sym MY_GLOBAL)`. The specifier
+(`:pcrel`) modifies how the operand is rendered. On x86, the behavior would be:
+
+* For an integer (`const 123`), `{0:pcrel}` would expand to the integer value
+  with a dollar sign: `$123`.
+* For a symbol operand (`sym my_symbol`), `{0:pcrel}` would expand to
+  `my_symbol(%rip)`.
+* For an offset symbol operand (`const &MY_GLOBAL.field`), `{0:pcrel}` would
+  expand to `(symbol+offset)(%rip)`.
+
+This syntax could apply to both `sym` and `const` operands. This kind of
+formatting can be quite useful due to assembly language quirks. For example, on
+x86:
+
+* On one hand, `symbol(%rip)` means `%rip + (symbol - %rip)`, so it is equal to
+  just writing `symbol` except that the instruction uses rip-relative
+  addressing.
+* On the other hand, `100(%rip)` means `%rip + 100`, so it is *not* equal to
+  `100`. The thing that actually means 100 in this context is `$100`.
+
+Therefore, having a way to format into either `symbol(%rip)` or `$100` is quite
+useful.
+
+Note that `{:pcrel}` is an interesting middle ground between the bare
+`const`/`sym` operand and the memory operand. On one hand, the expansion is
+going to be architecture-specific, so it's a bit more complex than the
+`symbol+offset` expansion. But unlike the memory operand, it does not need to
+understand the context in which it is used within the asm block.
