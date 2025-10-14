@@ -645,8 +645,8 @@ itself (e.g. it points at a field of the symbol), then the compiler will insert
 operand.
 
 The compiler may choose to emit the symbol name by inserting it into the asm
-verbatim, or by using the `'i'` or `'s'` operand, depending on what the backend
-supports.
+verbatim, or by using certain backend-specific operands (e.g. `'i'` or `'s'`),
+depending on what the backend supports.
 
 ## Pointer values to an unnamed global
 
@@ -659,8 +659,8 @@ the same rules as named symbols.
 
 The compiler may choose any name for this symbol. The name may be chosen by
 rustc and emitted to the backend as `symbol_name` or `symbol_name+offset`, or
-rustc may pass the pointer to the backend using the `'i'` operand and let the
-backend choose the name.
+rustc may pass the pointer to the backend using a backend-specific operand
+(e.g. `'i'`) and let the backend choose the name.
 
 ## Coercions
 
