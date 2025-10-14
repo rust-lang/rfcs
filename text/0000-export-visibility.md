@@ -13,9 +13,9 @@ will be "publicly exported from the produced library or object file".
 This RFC proposes a new `#[export_visibility = ...]` attribute
 to override this behavior.
 This means that if the same `#[no_mangle]` function is also
-decorated with `#[export_visibility = "inherit"]`,
-then it will instead inherit the default visibility of the target platform
-(or the default visibility specified with the
+decorated with `#[export_visibility = "target_default"]`,
+then it will instead use the default visibility of the target platform
+(which can be overriden with the
 [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html)
 command-line flag).
 
@@ -240,10 +240,10 @@ The `#[export_visibility = ...]` attribute uses the
 syntax to specify the desired visibility.  The following sections describe
 string values that may be used.
 
-### Inherited visibility
+### Default target platform visibility
 
-`#[export_visibility = "inherit"]` uses
-the standard visibility of the target platform.
+`#[export_visibility = "target_default"]` uses
+the default visibility of the target platform.
 
 Note: the nightly version of the `rustc` compiler
 supports overriding the target platform's visibility with the
@@ -301,10 +301,11 @@ https://doc.rust-lang.org/reference/abi.html should get a new section:
     > Syntax-tag: The export_name attribute uses the MetaNameValueStr syntax to
     > specify the symbol name.
     >
-    > Inherited-tag: Currently only `#[export_visibility = “inherited”]` is
-    > supported.  When used, it means that the item will be exported with the
-    > default visibility of the target platform (which may be overridden by the
-    > unstable `-Zdefault-visibility=...` command-line flag.
+    > Target-default-tag: Currently only `#[export_visibility =
+    > “target_default”]` is supported.  When used, it means that the item will
+    > be exported with the default visibility of the target platform (which may
+    > be overridden by the unstable `-Zdefault-visibility=...` command-line
+    > flag.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -464,7 +465,7 @@ the `#[export_visibility = ...]`-based approach proposed in this RFC:
 * Using a version script is one way of fixing https://crbug.com/418073233.
   This fix approach requires that authors of each future shared library know
   about the problem and use a version script.  This is in contrast to using
-  `-Zdefault-visibility=hidden` and `#[export_visibility = "inherit"]` for `cxx`
+  `-Zdefault-visibility=hidden` and `#[export_visibility = "target_default"]` for `cxx`
   symbols, which has to be done only once to centrally, automatically avoid the
   problem for all `cxx`-dependent libraries in a given build environment.
   (In fairness, using the command-line flag also requires awareness and opt-in,
@@ -499,7 +500,7 @@ linking is driven by `rustc`).
 Other edition-boundary changes may also be considered - for example
 just changing the default effect of `#[no_mangle]` from
 (pseudo-code) `#[export_visibility = "interposable"]` to
-`#[export_visibility = "inherit"]`
+`#[export_visibility = "target_default"]`
 (which combined with `-Zdefault-visibility=hidden` should address
 https://crbug.com/418073233).
 
@@ -656,7 +657,7 @@ There are no unresolved questions at this point.
 
 ## Provide reference-level definitions of supported visibility levels
 
-`#[export = "inherited"]` defers the choice of an actual visibility level to
+`#[export = "target_default"]` defers the choice of an actual visibility level to
 
 1. Session-wide default of
    [`SymbolVisibility::Interposable`](https://github.com/rust-lang/rust/blob/910617d84d611e9ba508fd57a058c59b8a767697/compiler/rustc_session/src/session.rs#L551-L557)
@@ -671,7 +672,7 @@ OTOH, such definitions may be desirable in the future:
 
 * If/when stabilizing `-Zdefault-visibility=...`
 * If/when extending `#[export_visibility = ...]` to support specific visibility
-  levels (i.e. if the attribute would support not only the `"inherit"`
+  levels (i.e. if the attribute would support not only the `"target_default"`
   visibility value, but also `"hidden"`, `"protected"`, and/or
   `"interposable"`).
 
@@ -693,7 +694,7 @@ use one of those three binary formats:
 * `x86_64-unknown-linux-gnu`: ELF
 
 Ad-hoc, manual tests (TODO: link to a GitHub comment)
-of `#[export_visibility = "inherit"]` provide some
+of `#[export_visibility = "target_default"]` provide some
 reassurance that such definitions should be possible in the future.
 OTOH, when future RFCs or PRs consider implementing specific visibility levels,
 they should ideally come with:
