@@ -506,34 +506,6 @@ as attributes are part of the language."
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Open question: Cross-platform behavior
-[cross-platform-behavior]: #cross-platform-behavior
-
-We don't really know
-whether the `hidden` / `protected` visibilities
-make sense across different target platforms and/or map to distinct entities
-(see
-[a Zulip question here](https://rust-lang.zulipchat.com/#narrow/channel/233931-t-compiler.2Fmajor-changes/topic/.60.23.5Bexport_visibility.20.3D.20.2E.2E.2E.5D.60.20attribute.20compiler-team.23881/near/522491140)).
-
-One weak argument is that these visibilities are supported by LLVM and Clang, so hopefully
-they would also make sense for Rust:
-
-* **LLVM**: Those visibilities are ultimately mapped from
-[`rustc_target`'s `SymbolVisibility`](https://github.com/rust-lang/rust/blob/81a964c23ea4fe9ab52b4449bb166bf280035797/compiler/rustc_target/src/spec/mod.rs#L839-L843),
-through
-[`rustc_middle`'s `Visibility`](https://github.com/rust-lang/rust/blob/81a964c23ea4fe9ab52b4449bb166bf280035797/compiler/rustc_middle/src/mir/mono.rs#L396-L407),
-and into
-[`rustc_codegen_llvm`'s `Visibility`](https://github.com/rust-lang/rust/blob/81a964c23ea4fe9ab52b4449bb166bf280035797/compiler/rustc_codegen_llvm/src/llvm/ffi.rs#L153-L160).
-So all the values make some sense at
-[the LLVM level](https://llvm.org/docs/LangRef.html#visibility-styles).
-* **Clang** and **GCC** support those 3 visibilities
-  (see the "Parity with C++" subsection in the "Motivation" section above).
-
-OTOH, ideally we would somehow check what happens on some representative subset
-of target platforms (maybe: Posix, Windows, Wasm?):
-
-* TODO: what exactly do we want to verify on these target platforms?
-
 ## Open question: Rust standard library
 
 ### Problem description
