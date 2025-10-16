@@ -52,7 +52,7 @@ use std::sync::Mutex;
 use std::sync::Condvar;
 
 pub fn request_data(guard: &mut MutexGuard<usize>) {
-    inner_guard_ref.freeze_guard(
+    guard.freeze_guard(
         || { &condvar.notify_one(); },
         |poison| { panic!() }
     );
