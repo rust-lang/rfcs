@@ -250,6 +250,57 @@ supports overriding the target platform's visibility with the
 [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html)
 command-line flag.
 
+#### End-to-end example
+
+Consider the following example code:
+
+    ```
+    #![feature(export_visibility)]
+
+    #[unsafe(export_name = "test_fn_no_attr")]
+    unsafe extern "C" fn test_fn_with_no_attr() -> u32 {
+        line!()  // `line!()` avoids identical code folding (ICF)
+    }
+
+    #[unsafe(export_name = "test_fn_target_default")]
+    #[export_visibility = "target_default"]
+    unsafe extern "C" fn test_fn_asks_for_target_default() -> u32 {
+        line!()  // `line!()` avoids identical code folding (ICF)
+    }
+    ```
+
+When the code above is built into a DSO,
+then `-Zdefault-visiblity=hidden` will affect visibility of the 2nd function
+and prevent it from getting exported from the DSO.
+See below for an example of how this may be observed on a Linux system:
+
+    ```
+    $ rustc ~/scratch/export_visibility_end_to_end_test.rs \
+        --crate-type=cdylib \
+        -o ~/scratch/export_visibility_end_to_end_test_with_hidden_default_visibility.so \
+        -Zdefault-visibility=hidden
+
+    $ readelf \
+            --dyn-syms \
+            --demangle \
+            ~/scratch/export_visibility_end_to_end_test_with_hidden_default_visibility.so \
+        | grep test_fn
+
+        55: 0000000000035920     6 FUNC    GLOBAL DEFAULT   15 test_fn_no_attr
+    ```
+
+#### LLVM-level example
+
+`tests/codegen-llvm/export-visibility.rs` proposed in
+[a prototype associated with this RFC](https://github.com/rust-lang/rust/commit/1e1924bdac60b3b522ecffefbedfef94e4aa79d5#diff-25436b0328a03fca2c8be8a36152e30d58272315d690d9b3b6b5f0b5ebf35269)
+has the following expectations for the test functions from the example in the
+previous section (with `-Zdefault-visibility=hidden`):
+
+```
+// HIDDEN: define noundef i32 @test_fn_no_attr
+// HIDDEN: define hidden noundef i32 @test_fn_target_default
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
