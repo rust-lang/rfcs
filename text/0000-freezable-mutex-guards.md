@@ -51,7 +51,7 @@ use std::thread;
 use std::sync::Mutex;
 use std::sync::Condvar;
 
-pub fn request_data(guard: &mut MutexGuard<usize>) {
+pub fn request_data(guard: &mut MutexGuard<usize>, condvar: &Condvar) {
     guard.freeze_guard(
         || { &condvar.notify_one(); },
         |poison| { panic!() }
@@ -70,7 +70,7 @@ pub fn main() {
             
             let inner_guard_ref = &mut inner_guard;
             assert_eq!(**inner_guard_ref, 0);
-            request_data(inner_guard_ref);
+            request_data(inner_guard_ref, &condvar);
             assert_eq!(**inner_guard_ref, 123);
 
         });
