@@ -775,14 +775,12 @@ pub fn public_function() {
 The following options have been identified so far as a potential way for
 answering the `dylib`-vs-`hidden`-visibility problem:
 
-* Don't stabilize (or don't support at all) `#[export_visibility = "hidden"]`
-  but still support other visibilities
+* Don't stabilize `#[export_visibility = "hidden"]` (initially? forever?)
 * Support `#[export_visibility = "hidden"]`, but
     - Document that `hidden` visibility may break linking of `dylib`s
       (see the "Hidden visibility" section in the guide-level explanation above)
     - Document a recommendation that reusable crates shouldn't use a hardcoded
-      visibility (see the "Choosing the right visibility" section in the
-      guide-level explanation above)
+      visibility
 * Avoid inlining if the inlined code ends up calling a hidden symbol from
   another `dylib`
     - Currently preventing inlining is problematic, because `#[inline]` will
