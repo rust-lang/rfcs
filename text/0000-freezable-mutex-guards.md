@@ -50,10 +50,14 @@ guard is valid again.
 use std::thread;
 use std::sync::Mutex;
 use std::sync::Condvar;
+use std::time::Duration;
 
 pub fn request_data(guard: &mut MutexGuard<usize>, condvar: &Condvar) {
     guard.freeze_guard(
-        || { &condvar.notify_one(); },
+        || { 
+            &condvar.notify_one();
+            thread::sleep(Duration::from_millis(100));
+        },
         |poison| { panic!() }
     );
 }
@@ -93,7 +97,7 @@ current thread (excluding the case that the thread is acquiring the lock in the 
 
 ```rust
 impl<'a, T: ?Sized> MutexGuard<'a, T> {
-    pub fn freeze_guard<F, H>(&mut self, func: F, heal: H) -> () 
+    pub fn freeze_guard<F, H>(orig: &mut Self, func: F, heal: H) -> () 
     where
         F: FnOnce() -> (),
         H: FnOnce(PoisonError<T>) -> (),
