@@ -304,11 +304,6 @@ previous section (with `-Zdefault-visibility=hidden`):
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Prototype
-
-The proposal in this RFC has been prototyped in
-https://github.com/anforowicz/rust/tree/export-visibility
-
 ## Edits to reference documentation for `#[no_mangle]`
 
 If this RFC is adopted (and stabilized) then
@@ -357,6 +352,19 @@ https://doc.rust-lang.org/reference/abi.html should get a new section:
     > be exported with the default visibility of the target platform (which may
     > be overridden by the unstable `-Zdefault-visibility=...` command-line
     > flag.
+
+## Other details
+
+Other details (probably not important enough to include in the official
+reference documentation for Rust):
+
+* It is an error to use `#[export_visibility = ...]` on an item
+  _without_ either `#[no_mangle]` or `#[export_name = ...]`
+  attribute.
+* The proposal in this RFC has been prototyped in
+  https://github.com/anforowicz/rust/tree/export-visibility
+
+
 
 # Drawbacks
 [drawbacks]: #drawbacks
