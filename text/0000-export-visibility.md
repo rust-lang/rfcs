@@ -1,7 +1,7 @@
 - Feature Name: `export_visibility`
 - Start Date: 2025-06-12
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- Rust Issue:[rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
 [summary]: #summary
@@ -117,7 +117,9 @@ The risk of name collisions is caused by two separate behaviors of
 * Turning-off mangling (e.g. see
   [here](https://github.com/rust-lang/rust/blob/3d8c1c1fc077d04658de63261d8ce2903546db13/compiler/rustc_symbol_mangling/src/lib.rs#L240-L243))
   introduces the _possibility_ of naming collisions.
-* Exporting the symbol with public visibility (e.g. see [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937)) increases the _scope_ of possible naming collisions (covering all DSOs).
+* Exporting the symbol with public visibility (e.g. see
+  [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937))
+  increases the _scope_ of possible naming collisions (covering all DSOs).
 
 ### Origins of UB
 
@@ -164,8 +166,8 @@ The author speculates that:
 ## Benefit: Avoiding undefined behavior
 
 Using `#[export_visibility = ...]` to reduce symbol visibility can be used to
-reduce or eliminate the risk of undefined behavior (UB) described in the previous
-[ub-intro] section.
+reduce or eliminate the risk of undefined behavior (UB) described in the
+previous [ub-intro] section.
 
 UB caused by high symbol visibility is not just a hypothetical risk - this risk
 has actually caused difficult to diagnose symptoms that are captured in
@@ -204,18 +206,18 @@ https://crrev.com/c/6580611/1 we see the following:
   UB exists for calls to `cxxbridge1$string$drop`.
 * The UB from the previous item leads to memory unsafety when:
     - The call from test executable to `rust_lib$cxxbridge1$get_string`
-      ends up calling the definition in the `.so`, rather than in the executable.
-      This means that allocations made by `get_string` use **one** set of the
-      allocator's global symbols - the copy within the `.so`.
+      ends up calling the definition in the `.so`, rather than in the
+      executable.  This means that allocations made by `get_string` use **one**
+      set of the allocator's global symbols - the copy within the `.so`.
     - The call from test executable to `cxxbridge1$string$drop` ends up
       calling the definition in the executable, rather than in the `.so`.
       This means that freeing the previous allocation uses **other**
       set of allocator's global symbols - the ones in the executable.
-    - Using wrong global symbols means that the executable's allocator tries to free
-      an allocation that it doesn't know anything about (because this allocation
-      has been make by the allocator from the `.so`).  In debug builds this is
-      caught by an assertion.  In release builds this would lead to memory
-      unsafety.
+    - Using wrong global symbols means that the executable's allocator tries to
+      free an allocation that it doesn't know anything about (because this
+      allocation has been make by the allocator from the `.so`).  In debug
+      builds this is caught by an assertion.  In release builds this would lead
+      to memory unsafety.
 
 </details>
 
@@ -341,8 +343,8 @@ https://doc.rust-lang.org/reference/abi.html should get a new section:
 
     > # The `export_visibility` attribute
     >
-    > Intro-tag: The _`export_visibility` attribute_ overrides if or how the item is
-    > exported from the produced library or object file.
+    > Intro-tag: The _`export_visibility` attribute_ overrides if or how the
+    > item is exported from the produced library or object file.
     >
     > Syntax-tag: The export_name attribute uses the MetaNameValueStr syntax to
     > specify the symbol name.
@@ -513,8 +515,8 @@ the `#[export_visibility = ...]`-based approach proposed in this RFC:
 * Version scripts don't work on all target platforms.  In particular,
   they work in GNU `ld` and LLVM `lld`, but the native Microsoft Visual C++
   linker (`link.exe`) does not directly support GNU-style version scripts.
-  Instead, MSVC uses `.def` (module-definition) files to control symbol export and
-  other aspects of DLL creation.  Having to use
+  Instead, MSVC uses `.def` (module-definition) files to control symbol export
+  and other aspects of DLL creation.  Having to use
   [a `.def` file](https://learn.microsoft.com/en-us/cpp/build/reference/exports?view=msvc-170)
   has a few extra downsides compared to a version script:
     - Having to support both formats
@@ -524,13 +526,14 @@ the `#[export_visibility = ...]`-based approach proposed in this RFC:
 * Using a version script is one way of fixing https://crbug.com/418073233.
   This fix approach requires that authors of each future shared library know
   about the problem and use a version script.  This is in contrast to using
-  `-Zdefault-visibility=hidden` and `#[export_visibility = "target_default"]` for `cxx`
-  symbols, which has to be done only once to centrally, automatically avoid the
-  problem for all `cxx`-dependent libraries in a given build environment.
-  (In fairness, using the command-line flag also requires awareness and opt-in,
-  but it seems easier to append `-Zdefault-visibility=hidden` to default
-  `rustflags` in globally-applicable build settings than it is to modify build
-  tools to require a linker script for all shared libraries.  In fact, Chromium
+  `-Zdefault-visibility=hidden` and `#[export_visibility = "target_default"]`
+  for `cxx` symbols, which has to be done only once to centrally, automatically
+  avoid the problem for all `cxx`-dependent libraries in a given build
+  environment.  (In fairness, using the command-line flag also requires
+  awareness and opt-in, but it seems easier to append
+  `-Zdefault-visibility=hidden` to default `rustflags` in globally-applicable
+  build settings than it is to modify build tools to require a linker script for
+  all shared libraries.  In fact, Chromium
   [already builds with the `-Zdefault-visibility=...` flag](https://source.chromium.org/chromium/chromium/src/+/main:build/config/gcc/BUILD.gn;l=34-35;drc=ee3900fd57b3c580aefff15c64052904d81b7760).)
 
 ## Alternative: introduce `-Zdefault-visibility-for-c-exports=...`
@@ -676,8 +679,10 @@ languages that compile to native binary code:
 
 * It is unclear if GoLang has a way to explicitly specify visibility.
   Using `#pragma GCC visibility push(hidden)` has been proposed as a workaround
-  (see [here](https://github.com/golang/go/issues/28340#issuecomment-466645246)).
-* Haskell libraries can say `foreign export ccall some_function_name :: Int -> Int`
+  (see
+  [here](https://github.com/golang/go/issues/28340#issuecomment-466645246)).
+* Haskell libraries can say
+  `foreign export ccall some_function_name :: Int -> Int`
   to export a function (see
   [the Haskell wiki](https://wiki.haskell.org/Foreign_Function_Interface)).
   Presumably such functions are publicly exported
@@ -685,7 +690,8 @@ languages that compile to native binary code:
 * There is
   [a proposal](https://forums.swift.org/t/current-status-of-swift-symbol-visibility/66949)
   for Swift language to leverage
-  [the `package` access modifier](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0386-package-access-modifier.md)  as a way to specify public visibility.
+  [the `package` access modifier](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0386-package-access-modifier.md)
+  as a way to specify public visibility.
 * There is an open issue that tracks adding a similar mechanism to Zig:
   https://github.com/ziglang/zig/issues/9762
 
@@ -716,14 +722,16 @@ There are no unresolved questions at this point.
 
 ## Provide reference-level definitions of supported visibility levels
 
-`#[export = "target_default"]` defers the choice of an actual visibility level to
+`#[export = "target_default"]` defers the choice of an actual visibility level
+to:
 
 1. Session-wide default of
    [`SymbolVisibility::Interposable`](https://github.com/rust-lang/rust/blob/910617d84d611e9ba508fd57a058c59b8a767697/compiler/rustc_session/src/session.rs#L551-L557)
 2. Unless overridden by target platform’s default visibility specified in
    [`rustc_target::spec::TargetOptions`](https://github.com/rust-lang/rust/blob/910617d84d611e9ba508fd57a058c59b8a767697/compiler/rustc_target/src/spec/mod.rs#L2225-L2230),
 3. Or overridden by
-   [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html) command-line flag.
+   [`-Zdefault-visibility=...`](https://doc.rust-lang.org/beta/unstable-book/compiler-flags/default-visibility.html)
+   command-line flag.
 
 This means that _this_ RFC doesn't necessarily need to
 define the exact semantics and behavior of supported visibility levels.
@@ -857,10 +865,10 @@ answering the `dylib`-vs-`hidden`-visibility problem:
       and `#[export_name = ...]` cannot be used with generics, because the names
       of the symbols (ones generated during monomorphization) need to differ
       based on the generic parameters.
-    - One major problem with avoiding inlining is that during codegen it is not yet
-      known if two crates will end up getting linked into the same or different
-      dylib.  This means that inlining would need to be inhibited for any
-      cross-crate calls into hidden symbols.  And this would suppress many
+    - One major problem with avoiding inlining is that during codegen it is not
+      yet known if two crates will end up getting linked into the same or
+      different dylib.  This means that inlining would need to be inhibited for
+      any cross-crate calls into hidden symbols.  And this would suppress many
       legitimate optimizations. (hattip
       [@bjorn3](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3352658642))
 * Add a lint/warning that detects when `#[export_visibility = ...]` is used
