@@ -141,7 +141,7 @@ error: pointers cannot be cast to integers during const eval
 18 |             const T::PTR as usize,
    |                   ^^^^^^^^^^^^^^^
    |
-   = note: at compile-time, pointers do not have an integer value#include <stdio.h>
+   = note: at compile-time, pointers do not have an integer value
 ```
 
 The Linux kernel currently works around this limitation by using a macro:
