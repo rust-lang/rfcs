@@ -44,7 +44,7 @@ following.
   - Removing language features, including those that are feature-gated.
   - Changes to the interface between the compiler and libraries, including lang
     items and intrinsics.
-  - Additions to `std`.
+  - Large additions to `std`.
 
 Some changes do not require an RFC:
 
@@ -55,6 +55,7 @@ Some changes do not require an RFC:
     more errors, etc.)
   - Additions only likely to be _noticed by_ other developers-of-rust,
     invisible to users-of-rust.
+  - Minor additions to `std`: these only require an [ACP](https://std-dev-guide.rust-lang.org/development/feature-lifecycle.html).
 
 If you submit a pull request to implement a new feature without going through
 the RFC process, it may be closed with a polite request to submit an RFC first.
