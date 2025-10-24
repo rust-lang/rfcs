@@ -961,9 +961,9 @@ This syntax could apply to both `sym` and `const` operands. This kind of
 formatting can be quite useful due to assembly language quirks. For example, on
 x86:
 
-* On one hand, `symbol(%rip)` means `%rip + (symbol - %rip)`, so it is equal to
-  just writing `symbol` except that the instruction uses rip-relative
-  addressing.
+* On one hand, `symbol(%rip)` means `%rip + (symbol - %rip)` (where the part in
+  parentheses is calculated at link time), so it is equal to just writing
+  `symbol` except that the instruction uses rip-relative addressing.
 * On the other hand, `100(%rip)` means `%rip + 100`, so it is *not* equal to
   `100`. The thing that actually means 100 in this context is `$100`.
 
