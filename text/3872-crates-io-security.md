@@ -4,12 +4,14 @@
 - Rust Issue: [rust-lang/rust#3872](https://github.com/rust-lang/rust/issues/3872)
 
 # Summary
+
 [summary]: #summary
 
 This RFC proposes that crates.io should provide insight into vulnerabilities and unsound
 API surface based on the RustSec advisory database.
 
 # Motivation
+
 [motivation]: #motivation
 
 One of the roles that crates.io serves for Rust developers is as a discovery mechanism for library
@@ -24,9 +26,9 @@ risk of introducing problems in the final artifact via the supply chain of depen
 
 We've seen an increasing number of security issues via transitive dependencies:
 
-* In 2024, some releases of the popular xz-utils package (written in C) contained
+- In 2024, some releases of the popular xz-utils package (written in C) contained
   a [malicious backdoor] affecting OpenSSH servers running on the local system.
-* In 2025, a phishing campaign [targeted crates.io users] using the `rustfoundation.dev` domain
+- In 2025, a phishing campaign [targeted crates.io users] using the `rustfoundation.dev` domain
   name to impersonate the Rust Foundation and steal maintainer's credentials.
 
 While known actively malicious crates would be deleted from crates.io by the responsible team,
@@ -45,6 +47,7 @@ The RustSec advisory database tooling already supports exporting advisories in t
 [Principles for Package Repository Security]: https://repos.openssf.org/principles-for-package-repository-security.html
 
 # Guide-level explanation
+
 [guide-level-explanation]: #guide-level-explanation
 
 The crates.io website will display information about known vulnerabilities and unsound APIs.
@@ -67,6 +70,7 @@ automatically be consumed by tooling), having this information directly on crate
 make it accessible and visible to a wider audience.
 
 # Reference-level explanation
+
 [reference-level-explanation]: #reference-level-explanation
 
 The RustSec project publishes a number of Rust crates that can be used to parse and query the
@@ -78,6 +82,7 @@ directly.
 [advisory-db repository]: https://github.com/RustSec/advisory-db
 
 # Drawbacks
+
 [drawbacks]: #drawbacks
 
 The RustSec project is maintained by an independent team of volunteers, so the crates.io Security
@@ -93,6 +98,7 @@ that are best for their projects.
 [ongoing discussion]: https://github.com/rust-lang/leadership-council/issues/140
 
 # Rationale and alternatives
+
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 crates.io is the official package repository for the Rust ecosystem, so sharing important security
@@ -110,11 +116,13 @@ seems mostly unrelated to what crates.io does, and seems like an interesting fut
 [cargo-deny]: https://crates.io/crates/cargo-deny
 
 # Prior art
+
 [prior-art]: #prior-art
 
 Neither npm nor PyPI currently seem to provide support for displaying security advisories.
 
 # Unresolved questions
+
 [unresolved-questions]: #unresolved-questions
 
 This seems like a relatively straightforward feature with a limited scope. The main questions
@@ -122,6 +130,7 @@ are about the desirability of the feature, the implementation approach, and the 
 of the source data.
 
 # Future possibilities
+
 [future-possibilities]: #future-possibilities
 
 In the future, it would be valuable if lockfile updates exposed open vulnerabilities in a
