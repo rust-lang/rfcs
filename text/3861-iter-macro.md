@@ -52,9 +52,9 @@ Let's change this.
 
 ```rust 
 let count_to_three = iter!(|| {
-    yield 1;
-    yield 2;
-    yield 3;
+    1.yield;
+    2.yield;
+    3.yield;
 })
 
 for i in count_to_three() {
@@ -67,7 +67,7 @@ This program would print 1, 2, 3, each on a new line.
 Iterator closures can also take arguments.
 
 ```rust 
-let once = iter!(|item| yield item);
+let once = iter!(|item| item.yield);
 
 for item in once(5) {
     println!("This only should happen once: {item}");
@@ -79,7 +79,7 @@ We can make more complicated iterators. For example, we can include loops.
 ```rust 
 let count_to_n = iter!(|n| {
     for i in 1..=n {
-        yield n
+        n.yield
     }
 });
 ```
@@ -95,7 +95,7 @@ For example, the following is not allowed:
 ```rust
 iter!(|| {
     let mut number = 0;
-    yield &mut number;
+    (&mut number).yield;
     //^ ERROR yields a value referencing data owned by the current function
 
     println!("Number is now {number}");
@@ -120,7 +120,7 @@ iter!(|counter: Rc<RefCell<i32>>| {
         let mut counter_ref = counter.borrow_mut();
         //^ ERROR borrow may still be in use when `gen` closure body yields
         *counter_ref += 1;
-        yield ();
+        ().yield;
         //^ possible yield occurs here
         *counter_ref -= 1;
     }
@@ -160,8 +160,8 @@ Example:
 
 ```rust
 let make_iter = iter!(|| {
-    yield 1;
-    yield 2;
+    1.yield;
+    2.yield;
 });
 let mut it = make_iter();
 assert_eq!(it.next(), Some(1));
@@ -176,11 +176,9 @@ Within an iterator closure body, `yield` expressions are allowed.
 These have the following syntax:
 
     YieldExpr ->
-        yield Expr?
         Expr.yield
 
-Yield expressions can be written as either `yield foo` or `foo.yield`.
-A `yield` with no arguments is equivalent to both `yield ()` and `().yield`.
+Yield expressions can be written as `foo.yield`.
 A `yield` expression always has type `()`.
 
 When evaluating a `yield`, the iterator suspends execution and passes the value of its argument to the iterating context (i.e. the caller of `next()`).
@@ -277,7 +275,7 @@ This means we are unable to support certain patterns, such as:
 gen fn iter_set_rc<T: Clone>(xs: Rc<RefCell<HashSet<T>>>) -> T {
     for x in xs.borrow().iter() {
     //       ^^^^^^^^^^^ ERROR borrow may still be in use
-        yield x.clone(); // during this yield
+        x.clone().yield; // during this yield
     }
 }
 ```
@@ -308,14 +306,16 @@ As a built-in macro, `iter!` is able to have a cleaner and more efficient implem
 
 [genawaiter]: https://github.com/whatisaphone/genawaiter
 
-## Pre- and Post-fix Yield
+## Prefix Yield
 
-This RFC is written to allow `yield` in either a prefix position (`yield foo`) or a postfix position (`foo.yield`).
-For simple iterators that users are likely to write with `iter!`, the prefix form is often most familiar.
-However, in Rust, postfix operators such as `?` or `.await` are also common and natural.
+This RFC is written to allow `yield` in postfix position (`foo.yield`).
+This is a departure from most programming languages, but it is inline with other Rust postfix operators such as `?` or `.await`.
 
-If we were to support full coroutines (see [Future Work][full-coroutines]), `yield` would be able to return a non-`()` value.
-In this case, there will likely be cases where it is convenient to write `foo().yield.do_something()` instead of `(yield foo()).do_something()`;
+This design decision is primarily forward looking.
+We would like to support full coroutines (see [Future Work][full-coroutines]), at which point `yield` will be able to return a non-`()` value.
+In this case, there will be cases where it is convenient to write `foo().yield.do_something()` instead of `(yield foo()).do_something()`;
+
+Rather than choose one syntax now and either change it or accept a suboptimal syntax in the future, we propose to adopt the postfix `yield` syntax from the start.
 
 # Prior art
 
@@ -338,7 +338,7 @@ These would allow iterator closures to create iterators that borrow from the clo
 Concretely, `iter Fn*` traits would allow cases like:
 
 ```rust
-iter!(|x: &i32| yield x);
+iter!(|x: &i32| x.yield);
 ```
 
 Adding these traits would largely be a copy-and-paste operation from the `async Fn*` trait family and would reuse much of the machinery.
@@ -353,9 +353,9 @@ While we think it is important to support iterator *closures* from the beginning
 
 ```rust
 iter!({
-    yield 1;
-    yield 2;
-    yield 3;
+    1.yield;
+    2.yield;
+    3.yield;
 })
 ```
 
@@ -364,9 +364,9 @@ The most consistent option is to make it a shorthand for:
 
 ```rust
 iter!(|| {
-    yield 1;
-    yield 2;
-    yield 3;
+    1.yield;
+    2.yield;
+    3.yield;
 })
 ```
 
@@ -377,9 +377,9 @@ In other words, it would be equivalent to:
 
 ```rust
 iter!(|| {
-    yield 1;
-    yield 2;
-    yield 3;
+    1.yield;
+    2.yield;
+    3.yield;
 })()
 ```
 
@@ -393,9 +393,9 @@ This blanket impl would allow the following, which is arguably clearer to unders
 
 ```rust
 let it = iter!(|| {
-    yield 1;
-    yield 2;
-    yield 3;
+    1.yield;
+    2.yield;
+    3.yield;
 }).into_iter();
 ```
 
@@ -403,7 +403,7 @@ But perhaps more importantly, we could pass the result of `iter!` into a `for` l
 
 ```rust
 for i in iter!(|| {
-    yield 1;
+    1.yield;
 }) {
     println!("{i}");
 }
@@ -445,10 +445,10 @@ For example:
 ```rust
 let concat = iter!(|a, b| {
     for i in a {
-        yield i;
+        i.yield;
     }
     for i in b {
-        yield b;
+        b.yield;
     }
 })
 ```
@@ -476,7 +476,7 @@ The primary capability coroutines gain over iterators is the ability to provide 
 Although not visible in the surface syntax, this is used in the desugaring of `await`, which includes something like:
 
 ```rust
-task_context = yield;
+task_context = ().yield;
 ```
 
 Then when an executor calls `poll` on a future, as in `fut.poll(cx)`, the value of `cx` because the value of the `yield` and therefore assigned to `task_context`.
