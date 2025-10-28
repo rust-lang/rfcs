@@ -89,7 +89,8 @@ directly.
 The RustSec project is maintained by an independent team of volunteers, so the crates.io Security
 tab will be reflecting data that is maintained by what amounts to a kind of third party.
 The Leadership Council has an [ongoing discussion] on governance for the Secure Code WG that
-governs the RustSec project, which might be relevant to this proposal.
+governs the RustSec project, which might be relevant to this proposal. Feedback on the RustSec
+advisory data can be fed back to the RustSec team via their issue tracker.
 
 Rust developers might be scared off of using crates that have known vulnerabilities, even if
 those vulnerabilities are not relevant to their use case, or have been fixed in later versions.
