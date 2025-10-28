@@ -32,10 +32,10 @@ However, in this case, we believe that even with full generator support, there w
 The `iter!` macro is used to create *iterator closures*. These are closures that create iterators.
 
 ```rust 
-    // (import the macro; this is assumed in subsequent examples too)
-    use std::iter::iter; 
+// (import the macro; this is assumed in subsequent examples too)
+use std::iter::iter;
 
-    let empty = iter!(|| {});
+let empty = iter!(|| {});
 ```
 
 When we call `empty`, we get something we can iterator over.
