@@ -122,6 +122,14 @@ seems mostly unrelated to what crates.io does, and seems like an interesting fut
 
 Neither npm nor PyPI currently seem to provide support for displaying security advisories.
 
+[lib.rs], the opinionated alternative crate index, does have an [audit page] that shows
+both RustSec advisories and reviews from [cargo-crev] and [cargo-vet].
+
+[lib.rs]: https://lib.rs/
+[audit page]: https://lib.rs/crates/tokio-tar/audit
+[cargo-crev]: https://github.com/crev-dev/cargo-crev
+[cargo-vet]: https://github.com/mozilla/cargo-vet
+
 # Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
