@@ -51,23 +51,24 @@ The RustSec advisory database tooling already supports exporting advisories in t
 [guide-level-explanation]: #guide-level-explanation
 
 The crates.io website will display information about known vulnerabilities and unsound APIs.
-This might take the form of a Security tab on a crate's page. If there are known vulnerabilities
-for the currently selected version, the tab might be highlighted. The Security tab will be
-there whether there are existing advisories for a crate or not, and the linked page will show
-a message indicating that there are no published advisories if that is the case.
-
-Opening the Security tab for a crate should show a list of advisories that affect the crate,
-including a summary of the issue, a list of affected versions, and links to more information.
-Care should be taken to ensure that the mere existence of past vulnerabilities does not negatively
-impact the perceived quality of a crate; very popular crates are much more likely to have
-vulnerabilities reported against them, simply due to their popularity and the amount of scrutiny.
-
-The Security tab should give Rust developers a quick overview of the security status of a crate,
-and allow them to make informed decisions about whether to use the crate in their projects.
-
 While this information is available today via the RustSec website (including feeds that can
 automatically be consumed by tooling), having this information directly on crates.io would
 make it accessible and visible to a wider audience.
+
+We want to convey a quick overview of the security status of a crate, and allow users to make informed decisions about whether to use the crate in their projects. Care should be taken to
+ensure that the mere existence of past vulnerabilities does not negatively impact the perceived quality of a crate; very popular crates are much more likely to have vulnerabilities reported
+against them, simply due to their popularity and the amount of scrutiny.
+
+For example, the UI could be somewhat like this:
+
+> Add a `Security` tab to crate pages. If there are known vulnerabilities for the currently
+> selected version, the tab might be highlighted. The Security tab will be there whether there
+> are existing advisories for a crate or not. Opening the Security tab for a crate should show
+> a list of advisories that affect the crate, including a summary of the issue, a list of
+> affected versions, and links to more information.
+
+The way advisories are represented in the crates.io UI will evolve over time based on the
+available data and user feedback. This RFC does not mandate a specific UI design.
 
 # Reference-level explanation
 
