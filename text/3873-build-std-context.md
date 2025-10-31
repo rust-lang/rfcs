@@ -27,17 +27,17 @@ and later RFCs will reference this one.** This RFC is part of the
     - [Background][background]
     - [History][history]
     - [Motivation][motivation]
-2. `build-std="always"` ([rfcs#XXXX])
-    - [Proposal][rfcs#XXXX-proposal]
-    - [Rationale and alternatives][rfcs#XXXX-rationale-and-alternatives]
-    - [Unresolved questions][rfcs#XXXX-unresolved-questions]
-    - [Future possibilities][rfcs#XXXX-future-possibilities]
-    - [Summary of proposed changes][rfcs#XXXX-summary]
-3. Explicit standard library dependencies ([rfcs#XXXX])
-    - [Proposal][rfcs#XXXX-proposal]
-    - [Rationale and alternatives][rfcs#XXXX-rationale-and-alternatives]
-    - [Unresolved questions][rfcs#XXXX-unresolved-questions]
-    - [Future possibilities][rfcs#XXXX-future-possibilities]
+2. `build-std="always"` ([rfcs#3874])
+    - [Proposal][rfcs#3874-proposal]
+    - [Rationale and alternatives][rfcs#3874-rationale-and-alternatives]
+    - [Unresolved questions][rfcs#3874-unresolved-questions]
+    - [Future possibilities][rfcs#3874-future-possibilities]
+    - [Summary of proposed changes][rfcs#3874-summary]
+3. Explicit standard library dependencies ([rfcs#3875])
+    - [Proposal][rfcs#3875-proposal]
+    - [Rationale and alternatives][rfcs#3875-rationale-and-alternatives]
+    - [Unresolved questions][rfcs#3875-unresolved-questions]
+    - [Future possibilities][rfcs#3875-future-possibilities]
 4. `build-std="compatible"` (RFC not opened yet)
 5. `build-std="match-profile"` (RFC not opened yet)
 
@@ -1100,6 +1100,18 @@ considering it uses a different versioning system to Cargo, Rust and the
 standard library.
 
 [build-std project goal]: https://rust-lang.github.io/rust-project-goals/2025h2/build-std.html
+
+[rfcs#3874]: https://github.com/rust-lang/rfcs/pull/3874
+[rfcs#3874-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#proposal
+[rfcs#3874-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#rationale-and-alternatives
+[rfcs#3874-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#unresolved-questions
+[rfcs#3874-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#future-possibilities
+[rfcs#3874-summary]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#summary-of-proposed-changes
+[rfcs#3875]: https://github.com/rust-lang/rfcs/pull/3875
+[rfcs#3875-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#proposal
+[rfcs#3875-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#rationale-and-alternatives
+[rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
+[rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
 
 [davidtwco]: https://github.com/davidtwco
 [adamgemmell]: https://github.com/adamgemmell
