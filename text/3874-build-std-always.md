@@ -30,11 +30,11 @@ RFCs:**
     - [Unresolved questions][unresolved-questions]
     - [Future possibilities][future-possibilities]
     - [Summary of proposed changes][summary-of-changes]
-3. Explicit standard library dependencies ([rfcs#XXXX])
-    - [Proposal][rfcs#XXXX-proposal]
-    - [Rationale and alternatives][rfcs#XXXX-rationale-and-alternatives]
-    - [Unresolved questions][rfcs#XXXX-unresolved-questions]
-    - [Future possibilities][rfcs#XXXX-future-possibilities]
+3. Explicit standard library dependencies ([rfcs#3875])
+    - [Proposal][rfcs#3875-proposal]
+    - [Rationale and alternatives][rfcs#3875-rationale-and-alternatives]
+    - [Unresolved questions][rfcs#3875-unresolved-questions]
+    - [Future possibilities][rfcs#3875-future-possibilities]
 4. `build-std="compatible"` (RFC not opened yet)
 5. `build-std="match-profile"` (RFC not opened yet)
 
@@ -1475,8 +1475,14 @@ the rest of the toolchain that would need to be upheld:
 [background]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#background
 [history]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
 [motivations]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
-[deps]: ./0000b-standard-library-dependencies.md
-[future-compiler-builtins-c]: ./0000b-standard-library-dependencies.md#allow-local-builds-of-compiler-rt-intrinsics
+
+[rfcs#3875]: https://github.com/rust-lang/rfcs/pull/3875
+[rfcs#3875-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#proposal
+[rfcs#3875-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#rationale-and-alternatives
+[rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
+[rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
+[deps]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md
+[future-compiler-builtins-c]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#allow-local-builds-of-compiler-rt-intrinsics
 
 [Opaque dependencies]: https://hackmd.io/@epage/ByGfPtRell
 
