@@ -1,6 +1,6 @@
 - Feature Name: `build-std-explicit-dependencies`
 - Start Date: 2025-06-05
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3875](https://github.com/rust-lang/rfcs/pull/3875)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
