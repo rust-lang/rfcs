@@ -63,6 +63,13 @@ following [motivations][rfcs#3873-motivation] it identifies:
 - Building standard library crates that are not shipped for a target
 - Using the standard library with tier three targets
 
+While the enabling and disabling of some standard library features is mentioned
+in this RFC (when required to support existing stable features of Cargo), the
+enabling and disabling of arbitrary standard library features is handled by
+[RFC #3875][rfcs#3875-features].
+
+[rfcs#3875-features]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#features
+
 # Proposal
 [proposal]: #proposal
 
