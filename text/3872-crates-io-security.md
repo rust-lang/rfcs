@@ -147,3 +147,9 @@ crates.io doesn't necessarily have good access to a project's dependency graph, 
 implementation would be limited to direct dependencies, which limits its usefulness.
 
 crates.io could extend its existing API to query advisories for a given crate.
+
+`SECURITY.md` files are often used to communicate a project's security policies. crates.io
+could surface the contents of these files on the new Security page. However, `SECURITY.md`
+files commonly live in the repository root, which is often a crate workspace, and thus
+is not directly associated with a specific crate. Some prerequisite work in Cargo would
+probably be needed to associate a crate with the relevant `SECURITY.md` file.
