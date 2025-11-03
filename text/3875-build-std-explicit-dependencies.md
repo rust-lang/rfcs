@@ -909,18 +909,6 @@ version of Cargo with a implicit standard library dependency.
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
-## Why follow the default privacy of explicit standard library dependencies?
-[rationale-explicit-private]: #why-follow-the-default-privacy-of-explicit-standard-library-dependencies
-
-This may be unintuitive when a user first writes an explicit standard library
-dependency, triggering the `exported_private_dependency` lint, but this would be
-caught immediately by the user. However, it is also unintuitive that the default
-for privacy of a explicitly written dependency would depend on which crate the
-dependency was (i.e. the standard library has a different default than
-everything else).
-
-↩ [*Public and private dependencies*][public-and-private-dependencies]
-
 ## Why add standard library crates to Cargo's index?
 [rationale-cargo-index]: #why-add-standard-library-crates-to-cargos-index
 
