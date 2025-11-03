@@ -21,9 +21,9 @@ matches the prebuilt one (if available) as closely as possible.
 RFCs:**
 
 1. build-std context ([rfcs#3873])
-    - [Background][background]
-    - [History][history]
-    - [Motivation][motivation]
+    - [Background][rfcs#3873-background]
+    - [History][rfcs#3873-history]
+    - [Motivation][rfcs#3873-motivation]
 2. `build-std="always"` (this RFC)
     - [Proposal][proposal]
     - [Rationale and alternatives][rationale-and-alternatives]
@@ -38,12 +38,26 @@ RFCs:**
 4. `build-std="compatible"` (RFC not opened yet)
 5. `build-std="match-profile"` (RFC not opened yet)
 
+[build-std project goal]: https://rust-lang.github.io/rust-project-goals/2025h2/build-std.html
+
+[rfcs#3873]: https://github.com/rust-lang/rfcs/pull/3873
+[rfcs#3873-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#proposal
+[rfcs#3873-background]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#background
+[rfcs#3873-history]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
+[rfcs#3873-motivation]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
+
+[rfcs#3875]: https://github.com/rust-lang/rfcs/pull/3875
+[rfcs#3875-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#proposal
+[rfcs#3875-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#rationale-and-alternatives
+[rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
+[rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
+
 # Motivation
 [motivation]: #motivation
 
 This RFC builds on a large collection of prior art collated in the
-[`build-std-context`][build-std-context] RFC, and is aimed at supporting the
-following [motivations][motivations] it identifies:
+[`build-std-context`][rfcs#3873-proposal] RFC, and is aimed at supporting the
+following [motivations][rfcs#3873-motivation] it identifies:
 
 - Building the standard library without relying on unstable escape hatches
 - Building standard library crates that are not shipped for a target
@@ -116,7 +130,7 @@ A value of "std" means that every crate in the graph has a direct dependency on
 If `std` is to be built and Cargo is building a test or benchmark using the
 default test harness then Cargo will also build the `test` crate.
 
-If [*Standard library dependencies*][deps] are implemented then `builtin`
+If [*Standard library dependencies*][rfcs#3875] are implemented then `builtin`
 dependencies will be used if `build-std-crates` is not explicitly set.
 Otherwise, `build-std-crates` will default to the crate intended to be supported
 by the target (see later
@@ -152,7 +166,7 @@ by the target (see later
 > Cargo will resolves the dependencies of opaque dependencies, such as the
 > standard library, separately in their own workspaces. The root of such a
 > resolve will be the crates specified in `build-std-crates` or, if
-> [*Standard library dependencies*][deps] is implemented, the unified set of
+> [*Standard library dependencies*][rfcs#3875] is implemented, the unified set of
 > packages that any crate in the dependency has a direct dependency on. A
 > dependency on the relevant roots are added to all crates in the main resolve.
 >
@@ -212,6 +226,8 @@ target in the project.
 *See the following sections for future possibilities:*
 
 - [*Allow reusing sysroot artifacts if available*][future-reuse-sysroot]
+
+[Opaque dependencies]: https://hackmd.io/@epage/ByGfPtRell
 
 ## Standard library crate stability
 [standard-library-crate-stability]: #standard-library-crate-stability
@@ -274,7 +290,7 @@ supported: core, alloc, std
 Behaviour of crates using `#![no_std]` will not change whether or not `std` is
 rebuilt and passed via `--extern` to rustc, and `#![no_std]` will still be
 required in order for `rustc` to not attempt to load `std` and add it to the
-extern prelude. [*Standard library dependencies*][deps] describes a future
+extern prelude. [*Standard library dependencies*][rfcs#3875] describes a future
 possibility for how the `no_std` mechanism could be replaced.
 
 *See the following sections for future possibilities:*
@@ -290,6 +306,8 @@ The existing `restricted_std` mechanism will be removed from `std`'s
 *See the following sections for rationale/alternatives:*
 
 - [*Why remove `restricted_std`?*][rationale-remove-restricted-std]
+
+[std-build.rs]: https://github.com/rust-lang/rust/blob/f315e6145802e091ff9fceab6db627a4b4ec2b86/library/std/build.rs#L17
 
 ## Custom targets
 [custom-targets]: #custom-targets
@@ -479,6 +497,9 @@ otherwise) will be used.
 
 - [*Enable local recompilation of special object files/sanitizer runtimes*][future-recompile-special]
 
+[rust#76158]: https://github.com/rust-lang/rust/pull/76158
+[compiler-team#343]: https://github.com/rust-lang/compiler-team/issues/343
+
 ## `compiler-builtins`
 [compiler-builtins]: #compiler-builtins
 
@@ -489,6 +510,8 @@ and is unchanged.
 
 See [*Allow local builds of `compiler-rt` intrinsics*][future-compiler-builtins-c]
 for discussion of the `compiler-builtins-c` feature.
+
+[future-compiler-builtins-c]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#allow-local-builds-of-compiler-rt-intrinsics
 
 ### `compiler-builtins/mem`
 [compiler-builtins-mem]: #compiler-builtinsmem
@@ -510,7 +533,7 @@ on `std`.
 Those users providing their own mem symbols can override on weak linkage of the
 `compiler_builtins` symbols, or use a nightly toolchain to enable the
 `external-mem` feature of an explicit dependency on the standard library (per
-[*Standard library dependencies*][deps]).
+[*Standard library dependencies*][rfcs#3875]).
 
 *See the following sections for rationale/alternatives:*
 
@@ -559,7 +582,7 @@ built standard libraries.
 
 Any Cargo command which accepts a package spec with `-p` will not recognise
 `core`, `alloc`, `std` or none of their dependencies (unless
-[*Standard library dependencies*][deps] is implemented). Many of Cargo's
+[*Standard library dependencies*][rfcs#3875] is implemented). Many of Cargo's
 subcommands will need modification to support build-std:
 
 [`cargo clean`][cargo-clean] will additionally delete any builds of the standard
@@ -629,6 +652,45 @@ This part of the RFC has no implications for the following Cargo subcommands:
 - [`cargo uninstall`][cargo-uninstall]
 - [`cargo version`][cargo-version]
 - [`cargo yank`][cargo-yank]
+
+[cargo-add]: https://doc.rust-lang.org/cargo/commands/cargo-add.html
+[cargo-bench]: https://doc.rust-lang.org/cargo/commands/cargo-bench.html
+[cargo-build]: https://doc.rust-lang.org/cargo/commands/cargo-build.html
+[cargo-check]: https://doc.rust-lang.org/cargo/commands/cargo-check.html
+[cargo-clean]: https://doc.rust-lang.org/cargo/commands/cargo-clean.html
+[cargo-clippy]: https://doc.rust-lang.org/cargo/commands/cargo-clippy.html
+[cargo-doc]: https://doc.rust-lang.org/cargo/commands/cargo-doc.html
+[cargo-fetch]: https://doc.rust-lang.org/cargo/commands/cargo-fetch.html
+[cargo-fix]: https://doc.rust-lang.org/cargo/commands/cargo-fix.html
+[cargo-fmt]: https://doc.rust-lang.org/cargo/commands/cargo-fmt.html
+[cargo-generate-lockfile]: https://doc.rust-lang.org/cargo/commands/cargo-generate-lockfile.html
+[cargo-help]: https://doc.rust-lang.org/cargo/commands/cargo-help.html
+[cargo-info]: https://doc.rust-lang.org/cargo/commands/cargo-info.html
+[cargo-init]: https://doc.rust-lang.org/cargo/commands/cargo-init.html
+[cargo-install]: https://doc.rust-lang.org/cargo/commands/cargo-install.html
+[cargo-locate-project]: https://doc.rust-lang.org/cargo/commands/cargo-locate-project.html
+[cargo-login]: https://doc.rust-lang.org/cargo/commands/cargo-login.html
+[cargo-logout]: https://doc.rust-lang.org/cargo/commands/cargo-login.html
+[cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
+[cargo-miri]: https://doc.rust-lang.org/cargo/commands/cargo-miri.html
+[cargo-new]: https://doc.rust-lang.org/cargo/commands/cargo-new.html
+[cargo-owner]: https://doc.rust-lang.org/cargo/commands/cargo-owner.html
+[cargo-package]: https://doc.rust-lang.org/cargo/commands/cargo-package.html
+[cargo-pkgid]: https://doc.rust-lang.org/cargo/commands/cargo-pkgid.html
+[cargo-publish]: https://doc.rust-lang.org/cargo/commands/cargo-publish.html
+[cargo-remove]: https://doc.rust-lang.org/cargo/commands/cargo-remove.html
+[cargo-report]: https://doc.rust-lang.org/cargo/commands/cargo-report.html
+[cargo-run]: https://doc.rust-lang.org/cargo/commands/cargo-run.html
+[cargo-rustc]: https://doc.rust-lang.org/cargo/commands/cargo-rustc.html
+[cargo-rustdoc]: https://doc.rust-lang.org/cargo/commands/cargo-rustdoc.html
+[cargo-search]: https://doc.rust-lang.org/cargo/commands/cargo-search.html
+[cargo-test]: https://doc.rust-lang.org/cargo/commands/cargo-test.html
+[cargo-tree]: https://doc.rust-lang.org/cargo/commands/cargo-tree.html
+[cargo-uninstall]: https://doc.rust-lang.org/cargo/commands/cargo-uninstall.html
+[cargo-update]: https://doc.rust-lang.org/cargo/commands/cargo-update.html
+[cargo-vendor]: https://doc.rust-lang.org/cargo/commands/cargo-vendor.html
+[cargo-version]: https://doc.rust-lang.org/cargo/commands/cargo-version.html
+[cargo-yank]: https://doc.rust-lang.org/cargo/commands/cargo-yank.html
 
 ## Stability guarantees
 [stability-guarantees]: #stability-guarantees
@@ -730,7 +792,7 @@ There are various alternatives to putting `build-std` in the Cargo configuration
 While using `build-std` key in the Cargo configuration shares some of the
 downsides of using an explicit flag - not having a natural extension point for
 other Cargo options exposed to dependencies -
-[*Standard library dependencies*][deps] addresses these concerns.
+[*Standard library dependencies*][rfcs#3875] addresses these concerns.
 
 ↩ [*Proposal*][proposal]
 
@@ -801,7 +863,7 @@ Not all standard library crates will build on all targets. In a `no_std` project
 for a tier three target, `build-std-crates` gives the user the ability to limit
 which crates are built to those they know they need and will build successfully.
 
-*See [Standard library dependencies*][deps] for an alternative to
+*See [Standard library dependencies*][rfcs#3875] for an alternative to
 `build-std-crates`.*
 
 ↩ [*Proposal*][proposal]
@@ -1065,6 +1127,8 @@ of custom targets.
 
 ↩ [*Custom targets*][custom-targets]
 
+[rust#71009]: https://github.com/rust-lang/rust/pull/71009
+
 ## Why prevent rustc from loading root dependencies from the sysroot?
 [rationale-root-sysroot-deps]: #why-prevent-rustc-from-loading-root-dependencies-from-the-sysroot
 
@@ -1114,6 +1178,8 @@ been a source of [bugs][wg-cargo-std-aware#40] in previous `-Zbuild-std`
 implementations.
 
 ↩ [*Preventing implicit sysroot dependencies*][preventing-implicit-sysroot-dependencies]
+
+[wg-cargo-std-aware#40]: https://github.com/rust-lang/wg-cargo-std-aware/issues/40
 
 ## Why not allow the source path for the standard library be customised?
 [rationale-custom-src-path]: #why-not-allow-the-source-path-for-the-standard-library-be-customised
@@ -1229,6 +1295,8 @@ remove the `mem` feature and have the symbols always be present:
 
 ↩ [*`compiler-builtins-mem`*][compiler-builtins-mem]
 
+[compiler-builtins#411]: https://github.com/rust-lang/compiler-builtins/pull/411
+
 ## Why not globally cache builds of the standard library?
 [rationale-caching]: #why-not-globally-cache-builds-of-the-standard-library
 
@@ -1239,6 +1307,8 @@ standard library. [cargo#5931] tracks the feature request of intermediate
 artifact caching in Cargo.
 
 ↩ [*Caching*][caching]
+
+[cargo#5931]: https://github.com/rust-lang/cargo/issues/5931
 
 ## Why not link to hosted standard library documentation in generated docs?
 [rationale-generated-docs]: #why-not-link-to-hosted-standard-library-documentation-in-generated-docs
@@ -1312,8 +1382,8 @@ to once per toolchain as the component persists through updates.
 # Prior art
 [prior-art]: #prior-art
 
-See the [*Background*][background] and [*History*][history] of the build-std
-context RFC.
+See the [*Background*][rfcs#3873-background] and [*History*][rfcs#3873-history]
+of the build-std context RFC.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -1336,7 +1406,7 @@ build, but this is complex enough to warrant its own proposal if desired.
 
 Crates can currently use the crate attribute `#![no_std]` to indicate a lack of
 dependency on `std`. Introducing `build-std-crates` or explicit dependencies (as
-in [*Standard library dependencies*][deps]) would add a second way for the user
+in [*Standard library dependencies*][rfcs#3875]) would add a second way for the user
 to indicate a lack of dependency on the standard library. It could therefore be
 desirable to deprecate `#![no_std]` so that there remains only a single way to
 express a dependency on the standard library.
@@ -1471,71 +1541,6 @@ the rest of the toolchain that would need to be upheld:
 > relevant parts of the toolchain can be updated in tandem when this is
 > necessary.
 
-[build-std project goal]: https://rust-lang.github.io/rust-project-goals/2025h2/build-std.html
-
-[rfcs#3873]: https://github.com/rust-lang/rfcs/pull/3873
-[build-std-context]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md
-[background]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#background
-[history]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
-[motivations]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
-
-[rfcs#3875]: https://github.com/rust-lang/rfcs/pull/3875
-[rfcs#3875-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#proposal
-[rfcs#3875-rationale-and-alternatives]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#rationale-and-alternatives
-[rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
-[rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
-[deps]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md
-[future-compiler-builtins-c]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#allow-local-builds-of-compiler-rt-intrinsics
-
-[Opaque dependencies]: https://hackmd.io/@epage/ByGfPtRell
-
-[cargo#5931]: https://github.com/rust-lang/cargo/issues/5931
-[compiler-builtins#411]: https://github.com/rust-lang/compiler-builtins/pull/411
-[compiler-team#343]: https://github.com/rust-lang/compiler-team/issues/343
-[rust#76158]: https://github.com/rust-lang/rust/pull/76158
-[rust#71009]: https://github.com/rust-lang/rust/pull/71009
-
-[links]: https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-links-field
 [JOSH]: https://josh-project.github.io/josh/intro.html
 [rust-lang/rust]: https://github.com/rust-lang/rust
-[std-build.rs]: https://github.com/rust-lang/rust/blob/f315e6145802e091ff9fceab6db627a4b4ec2b86/library/std/build.rs#L17
-
-[cargo-add]: https://doc.rust-lang.org/cargo/commands/cargo-add.html
-[cargo-bench]: https://doc.rust-lang.org/cargo/commands/cargo-bench.html
-[cargo-build]: https://doc.rust-lang.org/cargo/commands/cargo-build.html
-[cargo-check]: https://doc.rust-lang.org/cargo/commands/cargo-check.html
-[cargo-clean]: https://doc.rust-lang.org/cargo/commands/cargo-clean.html
-[cargo-clippy]: https://doc.rust-lang.org/cargo/commands/cargo-clippy.html
-[cargo-doc]: https://doc.rust-lang.org/cargo/commands/cargo-doc.html
-[cargo-fetch]: https://doc.rust-lang.org/cargo/commands/cargo-fetch.html
-[cargo-fix]: https://doc.rust-lang.org/cargo/commands/cargo-fix.html
-[cargo-fmt]: https://doc.rust-lang.org/cargo/commands/cargo-fmt.html
-[cargo-generate-lockfile]: https://doc.rust-lang.org/cargo/commands/cargo-generate-lockfile.html
-[cargo-help]: https://doc.rust-lang.org/cargo/commands/cargo-help.html
-[cargo-info]: https://doc.rust-lang.org/cargo/commands/cargo-info.html
-[cargo-init]: https://doc.rust-lang.org/cargo/commands/cargo-init.html
-[cargo-install]: https://doc.rust-lang.org/cargo/commands/cargo-install.html
-[cargo-locate-project]: https://doc.rust-lang.org/cargo/commands/cargo-locate-project.html
-[cargo-login]: https://doc.rust-lang.org/cargo/commands/cargo-login.html
-[cargo-logout]: https://doc.rust-lang.org/cargo/commands/cargo-login.html
-[cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
-[cargo-miri]: https://doc.rust-lang.org/cargo/commands/cargo-miri.html
-[cargo-new]: https://doc.rust-lang.org/cargo/commands/cargo-new.html
-[cargo-owner]: https://doc.rust-lang.org/cargo/commands/cargo-owner.html
-[cargo-package]: https://doc.rust-lang.org/cargo/commands/cargo-package.html
-[cargo-pkgid]: https://doc.rust-lang.org/cargo/commands/cargo-pkgid.html
-[cargo-publish]: https://doc.rust-lang.org/cargo/commands/cargo-publish.html
-[cargo-remove]: https://doc.rust-lang.org/cargo/commands/cargo-remove.html
-[cargo-report]: https://doc.rust-lang.org/cargo/commands/cargo-report.html
-[cargo-run]: https://doc.rust-lang.org/cargo/commands/cargo-run.html
-[cargo-rustc]: https://doc.rust-lang.org/cargo/commands/cargo-rustc.html
-[cargo-rustdoc]: https://doc.rust-lang.org/cargo/commands/cargo-rustdoc.html
-[cargo-search]: https://doc.rust-lang.org/cargo/commands/cargo-search.html
-[cargo-test]: https://doc.rust-lang.org/cargo/commands/cargo-test.html
-[cargo-tree]: https://doc.rust-lang.org/cargo/commands/cargo-tree.html
-[cargo-uninstall]: https://doc.rust-lang.org/cargo/commands/cargo-uninstall.html
-[cargo-update]: https://doc.rust-lang.org/cargo/commands/cargo-update.html
-[cargo-vendor]: https://doc.rust-lang.org/cargo/commands/cargo-vendor.html
-[cargo-version]: https://doc.rust-lang.org/cargo/commands/cargo-version.html
-[cargo-yank]: https://doc.rust-lang.org/cargo/commands/cargo-yank.html
-[wg-cargo-std-aware#40]: https://github.com/rust-lang/wg-cargo-std-aware/issues/40
+[links]: https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-links-field
