@@ -482,6 +482,19 @@ names as described in [the rationale][rationale-unstable-builtin-crates].
 If attempting to add a `builtin` crate with features then this will fail unless
 the required `cargo-feature` is enabled as described in [*Features*][features].
 
+Once public and private dependencies are stabilised ([rust#44663]), `cargo add`
+will add `public = true` by default for the standard library dependencies added:
+
+```toml
+[package]
+name = "hello_world"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+std = { builtin = true, public = true } # <-- this would be added
+```
+
 [`cargo info`][cargo-info] will learn how to print information for the built-in
 `std`, `alloc` and `core` dependencies:
 
@@ -635,6 +648,7 @@ This part of the RFC has no implications for the following Cargo subcommands:
 - [`cargo version`][cargo-version]
 - [`cargo yank`][cargo-yank]
 
+[rust#44663]: https://github.com/rust-lang/rust/issues/44663
 [cargo-pkgid-spec]: https://doc.rust-lang.org/cargo/reference/pkgid-spec.html
 
 [cargo-add]: https://doc.rust-lang.org/cargo/commands/cargo-add.html
