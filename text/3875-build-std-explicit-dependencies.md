@@ -903,9 +903,9 @@ desirable. See
 [rationale-default-public]: #why-default-to-public-for-standard-library-dependencies
 
 There are crates building on stable which re-export from the standard library.
-If the standard library dependencies were not public then these crates would
+If implicit standard library dependencies were not public then these crates would
 start to trigger the `exported_private_dependencies` lint when upgrading to a
-version of Cargo with a standard library dependency.
+version of Cargo with a implicit standard library dependency.
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
