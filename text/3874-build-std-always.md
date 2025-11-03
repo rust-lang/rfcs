@@ -8,7 +8,7 @@
 
 Add a new Cargo configuration option, `build-std = "always|never"`, which will
 unconditionally rebuild standard library dependencies. The set of standard
-library dependencies can optionally be customised with a new `build-std-crates`
+library dependencies can optionally be customised with a new `build-std.crates`
 option. It also describes how Cargo (or external tools) should build the
 standard library crates on stable (i.e., which flags to pass and features to
 enable).
@@ -120,14 +120,21 @@ respect the `RUSTFLAGS` environment variable.
 > artifacts produced by build-std match the pre-built standard library as much
 > as is feasible.
 
-Alongside `build-std`, a `build-std-crates` key will be introduced
-([?][rationale-build-std-crate]), which can be used to specify which crates from
-the standard library should be built. Only "core", "alloc" and "std" are valid
-values for `build-std-crates`.
+`build-std` is a short-hand for an object which sets the `when` key:
 
 ```toml
 [build]
-build-std-crates = "std"
+build-std = { when = "always" }
+```
+
+Alongside `build-std`, a `build-std.crates` key will be introduced
+([?][rationale-build-std-crate]), which can be used to specify which crates from
+the standard library should be built. Only "core", "alloc" and "std" are valid
+values for `build-std.crates`.
+
+```toml
+[build]
+build-std = { when = "always", crates = "std" }
 ```
 
 A value of "std" means that every crate in the graph has a direct dependency on
@@ -138,8 +145,8 @@ If `std` is to be built and Cargo is building a test or benchmark using the
 default test harness then Cargo will also build the `test` crate.
 
 If [*Standard library dependencies*][rfcs#3875] are implemented then `builtin`
-dependencies will be used if `build-std-crates` is not explicitly set.
-Otherwise, `build-std-crates` will default to the crate intended to be supported
+dependencies will be used if `build-std.crates` is not explicitly set.
+Otherwise, `build-std.crates` will default to the crate intended to be supported
 by the target (see later
 [*Standard library crate stability*][standard-library-crate-stability] section).
 
@@ -163,7 +170,7 @@ by the target (see later
 >       used by the pre-built standard library as much as possible (e.g. using
 >       `-Cembed-bitcode=yes` to support LTO).
 >
-> - Standard library crates and their dependencies from `build-std-crates`
+> - Standard library crates and their dependencies from `build-std.crates`
 >   cannot be patched/replaced by the user in the Cargo manifest or config
 >   (e.g. using source replacement, `[replace]` or `[patch]`)
 >
@@ -172,7 +179,7 @@ by the target (see later
 >
 > Cargo will resolves the dependencies of opaque dependencies, such as the
 > standard library, separately in their own workspaces. The root of such a
-> resolve will be the crates specified in `build-std-crates` or, if
+> resolve will be the crates specified in `build-std.crates` or, if
 > [*Standard library dependencies*][rfcs#3875] is implemented, the unified set of
 > packages that any crate in the dependency has a direct dependency on. A
 > dependency on the relevant roots are added to all crates in the main resolve.
@@ -215,7 +222,7 @@ target in the project.
 - [*Why does `[target]` take precedence over `[build]` for `build-std`?*][rationale-build-std-precedence]
 - [*Why does "always" rebuild unconditionally?*][rationale-unconditional]
 - [*Why does "always" rebuild in release profile?*][rationale-release-profile]
-- [*Why add `build-std-crates`?*][rationale-build-std-crate]
+- [*Why add `build-std.crates`?*][rationale-build-std-crate]
 - [*Why use the lockfile of the `rust-src` component?*][rationale-lockfile]
 - [*Why not build the standard library in incremental?*][rationale-incremental]
 - [*Why not produce a `dylib` for the standard library?*][rationale-no-dylib]
@@ -227,7 +234,7 @@ target in the project.
 
 - [*What should the `build-std` configuration in `.cargo/config` be named?*][unresolved-config-name]
 - [*What should the "always" and "never" values of `build-std` be named?*][unresolved-config-values]
-- [*What should `build-std-crates` be named?*][unresolved-build-std-crate-name]
+- [*What should `build-std.crates` be named?*][unresolved-build-std-crate-name]
 - [*Should the standard library inherit RUSTFLAGS?*][unresolved-inherit-rustflags]
 
 *See the following sections for future possibilities:*
@@ -256,8 +263,8 @@ to be built for this target on a stable toolchain. On a nightly toolchain, Cargo
 will build whichever standard library crates are requested by the user.
 
 The `default` field determines which crate will be built by Cargo if
-`build-std = "always"` and `build-std-crates` is not set. Users can specify
-`build-std-crates` to build more crates than included in the `default`, as long
+`build-std.when = "always"` and `build-std.crates` is not set. Users can specify
+`build-std.crates` to build more crates than included in the `default`, as long
 as those crates are included in `supported`.
 
 The correct value for `standard_library_support` is independent of the tier of
@@ -268,7 +275,7 @@ If `standard_library_support` is unset for a target, then Cargo will not permit
 any standard library crates to be built for the target on a stable toolchain. It
 will be required to use a nightly toolchain to use build-std with that target.
 
-Cargo's `build-std-crates` field will default to the value of the
+Cargo's `build-std.crates` field will default to the value of the
 `standard_library_support.default` field (`std` for "core, alloc, and std",
 `alloc` for "core and alloc", and `core` for "core"). This does not prevent
 users from building more crates than the default, it is only intended to be a
@@ -873,15 +880,15 @@ profile.
 
 ↩ [*Proposal*][proposal]
 
-## Why add `build-std-crates`?
-[rationale-build-std-crate]: #why-add-build-std-crates
+## Why add `build-std.crates`?
+[rationale-build-std-crate]: #why-add-build-stdcrates
 
 Not all standard library crates will build on all targets. In a `no_std` project
-for a tier three target, `build-std-crates` gives the user the ability to limit
+for a tier three target, `build-std.crates` gives the user the ability to limit
 which crates are built to those they know they need and will build successfully.
 
 *See [Standard library dependencies*][rfcs#3875] for an alternative to
-`build-std-crates`.*
+`build-std.crates`.*
 
 ↩ [*Proposal*][proposal]
 
@@ -1344,8 +1351,8 @@ The following are aspects of the proposal which warrant further discussion or
 small details are likely to be bikeshed prior to this part of the RFC's
 acceptance or stabilisation and aren't pertinent to the overall design:
 
-## What should the `build-std` configuration in `.cargo/config` be named?
-[unresolved-config-name]: #what-should-the-build-std-configuration-in-cargoconfig-be-named
+## What should the `build-std.when` configuration in `.cargo/config` be named?
+[unresolved-config-name]: #what-should-the-build-stdwhen-configuration-in-cargoconfig-be-named
 
 What should this configuration option be named? `build-std`?
 `rebuild-standard-library`?
@@ -1365,8 +1372,8 @@ standard library and caches the newly-built standard library.
 
 ↩ [*Proposal*][proposal]
 
-## What should `build-std-crates` be named?
-[unresolved-build-std-crate-name]: #what-should-build-std-crates-be-named
+## What should `build-std.crates` be named?
+[unresolved-build-std-crate-name]: #what-should-build-stdcrates-be-named
 
 What should this configuration option be named?
 
