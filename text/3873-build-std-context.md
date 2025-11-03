@@ -59,7 +59,7 @@ be able to support many use cases that those waiting for build-std hope that it
 will. This is also an explicit and deliberate choice for the build-std project
 goal's proposals.
 
-This RFC will focus on summarising these previous discussion and proposals in
+This RFC will focus on summarising these previous discussions and proposals in
 order to enable an MVP of build-std to be accepted and stabilised. This will lay
 the foundation for future proposals to lift restrictions and enable build-std to
 support more use cases, without those proposals having to survey the ten-plus
@@ -96,12 +96,11 @@ The following terminology is used throughout the RFC:
   standard library
 
 Throughout the build-std project goal's later RFCs, parentheses with "?" links
-([?][rationale-rationale]) will be present that which link the relevant section
-in the appropriate "Rationale and alternatives" section to justify a decision or
-provide alternatives to it.
+([?][rationale-rationale]) will be present which link to the relevant "Rationale
+and alternatives" section to justify a decision or provide alternatives to it.
 
 Additionally, "note alerts" will be used in the *Proposal* sections to separate
-implementation considerations from the core proposal. Implementation detail
+implementation considerations from the core proposal. Implementation details
 should be considered non-normative. These details could change during
 implementation and are present solely to demonstrate that the implementation
 feasibility has been considered and to provide an example of how implementation
@@ -312,7 +311,7 @@ from the sysroot.
 `--extern` has a `noprelude` modifier which will allow the user to use
 `--extern` to specify the location at which a crate can be found without adding
 it to the extern prelude. This could allow a path for crates like `alloc` or
-`test` to be provided without effecting the observable behaviour of the
+`test` to be provided without affecting the observable behaviour of the
 language.
 
 ## Panic strategies
@@ -320,10 +319,10 @@ language.
 
 Rust has the concept of a *panic handler*, which is a crate that is responsible
 for performing a panic. There are various panic handler crates on crates.io,
-such as [panic-abort] (which different from the `panic_abort` panic runtime!),
-[panic-halt], [panic-itm], and [panic-semihosting]. Panic handler crates define
-a function annotated with `#[panic_handler]`. There can only be one
-`#[panic_handler]` in the crate graph.
+such as [panic-abort] (which is different from the `panic_abort` panic
+runtime!), [panic-halt], [panic-itm], and [panic-semihosting]. Panic handler
+crates define a function annotated with `#[panic_handler]`. There can only be
+one `#[panic_handler]` in the crate graph.
 
 `core` uses the panic handler to implement panics inserted by code generation
 (e.g. arithmetic overflow or out-of-bounds access) and the `core::panic!` macro
@@ -373,8 +372,8 @@ what its dependencies are, etc.
 
 Cargo can query registries using a Git protocol which caches the registry on
 disk, or using a sparse protocol which exposes the index over HTTP and allows
-Cargo to avoid Cargo having a local copy of the whole index, which has become
-quite large for crates.io.
+Cargo to avoid having a local copy of the whole index, which has become quite
+large for crates.io.
 
 crates.io's registry index is exposed as both a HTTP API and a Git repository -
 [rust-lang/crates.io-index] - both are updated automatically by crates.io when
@@ -385,11 +384,11 @@ Each crate in the registry index has a JSON file, following
 and crates.io teams. Crates may refer to those in other registries, but all
 non-`path`/`git` crates in the dependency graph must exist in a registry. As the
 registry index drives the building of Cargo's dependency graph, all
-non-`path`/`git` crates that end up in the dependency graph must be present a
+non-`path`/`git` crates that end up in the dependency graph must be present in a
 registry.
 
 When a package is published, Cargo posts a JSON blob to the registry which is
-not a index entry but has sufficient information to generate one. crates.io does
+not an index entry but has sufficient information to generate one. crates.io does
 not use Cargo's JSON blob, instead re-generating it from the `Cargo.toml` (this
 avoids the index and `Cargo.toml` from going out-of-sync due to bugs or
 malicious publishes). As a consequence, changes to the index format must be
@@ -414,7 +413,7 @@ so as to make it easier to avoid breaking semver compatibility.
 With the `public-dependency` feature enabled, dependencies are marked as
 "private" by default which can be overridden with a `public = true` declaration.
 
-Private dependencies are passed to rustc with an `priv` modifier to the
+Private dependencies are passed to rustc with a `priv` modifier to the
 `--extern` flag. Dependencies without this modifier are treated as public by
 rustc for backwards compatibility reasons. rust emits the
 `exported-private-dependencies` lint if an item from a private dependency is
@@ -453,9 +452,9 @@ This RFC proposed that the standard library be made an explicit dependency in
 `Cargo.toml` and be rebuilt automatically when required. An implicit dependency
 on the standard library would be added automatically unless an explicit
 dependency is written. This RFC was written prior to a stable `#![no_std]`
-attribute and so does not address the circumstance where a implicit dependency
-would make a no-std crate fail to compile on a target that does not support
-the standard library.
+attribute and so does not address the circumstance where an implicit dependency
+would make a `#![no_std]` crate fail to compile on a target that does not
+support the standard library.
 
 There were objectives of and possibilities enabled by the RFC that were not
 shared with the project teams at the time, such as the standard library being
@@ -467,7 +466,7 @@ of [cargo#4959].
 ## [xargo] and [cargo#4959] (2016)
 [xargo-and-cargo-4959-2016]: #xargo-and-cargo4959-2016
 
-While the discussions around [rfcs#1133] where ongoing, [xargo] was released in
+While the discussions around [rfcs#1133] were ongoing, [xargo] was released in
 2016. Xargo is a Cargo wrapper that builds a sysroot with a customised standard
 library and then uses that with regular Cargo operations (i.e. `xargo build`
 performs the same operation as `cargo build` but with a customised standard
@@ -505,18 +504,18 @@ and applying different codegen flags to the standard library. It did not concern
 itself with build-std's potential use in `rustbuild` or with abolishing the
 sysroot.
 
-[rfcs#2663] was primarily concerned what functionality should be available to
-the user and what the user experience ought to be. It proposed that `core`,
-`alloc` and `std` be automatically built when the target did not have a pre-built
-standard library available through rustup. It would be automatically rebuilt on
-any target when the profile configuration was modified such that it no longer
-matched the pre-built standard library. If using nightly, the user could enable
-Cargo features and modify the source of the standard library. Standard library
-dependencies were implicit by default, as today, but would be written explicitly
-when enabling Cargo features. It also aimed to stabilise the target-spec-json
-format and allow "stable" Cargo features to be enabled on stable toolchains, and
-as such proposed the concept of stable and unstable Cargo features be
-introduced.
+[rfcs#2663] was primarily concerned with what functionality should be available
+to the user and what the user experience ought to be. It proposed that `core`,
+`alloc` and `std` be automatically built when the target did not have a
+pre-built standard library available through rustup. It would be automatically
+rebuilt on any target when the profile configuration was modified such that it
+no longer matched the pre-built standard library. If using nightly, the user
+could enable Cargo features and modify the source of the standard library.
+Standard library dependencies were implicit by default, as today, but would be
+written explicitly when enabling Cargo features. It also aimed to stabilise the
+target-spec-json format and allow "stable" Cargo features to be enabled on
+stable toolchains, and as such proposed the concept of stable and unstable Cargo
+features be introduced.
 
 There was a lot of feedback on [rfcs#2663] which largely stemmed from it being
 very high-level, containing many large unresolved questions and details left for
@@ -577,7 +576,7 @@ categories:
    entirety seems to be uncertain.
 
    [`cargo vendor`][wg-cargo-std-aware#23] did receive lots of discussion.
-   Vendoring  the standard library is desirable (for the same reasons as any
+   Vendoring the standard library is desirable (for the same reasons as any
    vendoring), but would lock the user to a specific version of the toolchain
    when using a vendored standard library. However, if the `rust-src` component
    contained already-vendored dependencies, then `cargo vendor` would not need
@@ -694,9 +693,9 @@ categories:
 
    [wg-cargo-std-aware#43] investigates the options for the UX of build-std.
    `-Zbuild-std` flag is not a good experience as it needs added to every
-   invocation and has few extension points. Using build-std should be a unstable
-   feature at first. It was argued that build-std should be transparent and
-   happen automatically when Cargo determines it is necessary. There are
+   invocation and has few extension points. Using build-std should be an
+   unstable feature at first. It was argued that build-std should be transparent
+   and happen automatically when Cargo determines it is necessary. There are
    concerns that this could trigger too often and that it should only happen
    automatically for ABI-modifying flags.
 
@@ -806,12 +805,12 @@ and target , but this restriction was later resolved ([cargo#14317]).
 
 A second flag, [`-Zbuild-std-features`][build-std-features], was added in
 [cargo#8490] and allows overriding the default Cargo features of the standard
-library. Like the arguments to `-Zbuild-std`, this values accepted by this flag
+library. Like the arguments to `-Zbuild-std`, the values accepted by this flag
 are inherently unstable as the library team has not committed to any of the
 standard library's Cargo features being stable. Features are enabled on the
 `sysroot` crate and propagate down through the crate graph of the standard
-library (e.g. `compiler-builtins-mem` is a feature in `sysroot`, `std`,
-`alloc`, and `core` until `compiler_builtins`).
+library (e.g. `compiler-builtins-mem` is a feature in `sysroot`, `std`, `alloc`,
+and `core` until `compiler_builtins`).
 
 build-std gets the source of the standard library from the `rust-src` rustup
 component. This does not happen automatically and the user must ensure the
@@ -988,7 +987,7 @@ rebuild the standard library.
     - Similarly, when deploying to known environments, use of `target-cpu` or
       `target-feature` can improve the performance of code generation or allow
       the use of newer hardware features than the target's baseline provides. As
-      above, these configuration will not apply to the pre-built standard
+      above, these configurations will not apply to the pre-built standard
       library
 
     - While the pre-built standard library is built to support debugging without
@@ -1022,7 +1021,7 @@ this goal will attempt to ensure they remain viable as future possibilities):
       flags that would not be appropriate for the pre-built standard library, so
       is forced to require nightly and build its own sysroot
 
-Some use cases are unlikely to supported by the project unless a new and
+Some use cases are unlikely to be supported by the project unless a new and
 compelling use-case is presented, and so this project goal may make decisions
 which make these motivations harder to solve in future:
 
@@ -1187,7 +1186,7 @@ standard library.
 [rust#46439]: https://github.com/rust-lang/rust/pull/46439
 [rust#71009]: https://github.com/rust-lang/rust/issues/71009
 [rust#67074]: https://github.com/rust-lang/rust/issues/67074
-[rust#122305]: https://github.com/rust-lang/rust/pull/128534
+[rust#122305]: https://github.com/rust-lang/rust/pull/122305
 [rust#128534]: https://github.com/rust-lang/rust/pull/128534
 [rust#136966]: https://github.com/rust-lang/rust/issues/136966
 
