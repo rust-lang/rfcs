@@ -427,6 +427,14 @@ whether or not `panic` is set in the profile:
   - `panic_abort` is a non-optional dependency of `std` so it will always be
     built
 
+- If `panic` is set to "immediate-abort" then `-Cpanic=immediate-abort` will be
+  passed
+
+  - Neither `panic_abort` or `panic_unwind` need to be built, but as
+    `panic_abort` is non-optional, it will be
+
+  - `-Cpanic=immediate-abort` is unstable
+
 Tests, benchmarks, build scripts and proc macros continue to ignore the "panic"
 setting and `panic = "unwind"` is always used - which means the standard library
 needs to be recompiled again if the user is using "abort". Once
