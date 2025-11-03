@@ -37,6 +37,9 @@ Security]; while crates.io already addresses many of these, one of these is:
 > repository UI.
 
 The RustSec advisory database tooling already supports exporting advisories in the OSV format.
+Today, crates.io does not display any information about known vulnerabilities or unsound APIs
+for a given crate. Devising how best to surface this information across a project dependency
+graph is a more complex problem that is outside the scope of this RFC (but see future work).
 
 [Log4Shell]: https://en.wikipedia.org/wiki/Log4j#Log4Shell_vulnerability
 [Principles for Package Repository Security]: https://repos.openssf.org/principles-for-package-repository-security.html
@@ -140,5 +143,7 @@ of the source data.
 
 In the future, it would be valuable if lockfile updates exposed open vulnerabilities in a
 project's dependency graph in the Cargo CLI, for example on `cargo update` or `cargo check`.
+crates.io doesn't necessarily have good access to a project's dependency graph, so a simple
+implementation would be limited to direct dependencies, which limits its usefulness.
 
 crates.io could extend its existing API to query advisories for a given crate.
