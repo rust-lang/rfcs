@@ -986,7 +986,8 @@ RFC's acceptance or stabilisation and aren't pertinent to the overall design:
 [unresolved-dep-syntax]: #what-syntax-is-used-to-identify-dependencies-on-the-standard-library-in-cargotoml
 
 What syntax should be used for the explicit standard library dependencies?
-`builtin = true`? `sysroot = true`?
+`builtin = true`? `sysroot = true` (not ideal, as "sysroot" isn't a concept that
+we typically introduce to end-users)?
 
 ↩ [*Proposal*][proposal]
 
