@@ -219,9 +219,9 @@ specification ([?][rationale-target-spec-purpose]), replacing the existing
 `metadata.std` field. `standard_library_support` has two fields:
 
 - `supported`, which can be set to either "core", "core and alloc", or
-  "core, alloc and std"
+  "core, alloc, and std"
 - `default`, which can be set to either "core", "core and alloc", or
-  "core, alloc and std"
+  "core, alloc, and std"
   - `default` cannot be set to a value which is "less than" that of `supported`
     (i.e. "core and alloc" when `supported` was only set to "core")
 
@@ -243,7 +243,7 @@ any standard library crates to be built for the target on a stable toolchain. It
 will be required to use a nightly toolchain to use build-std with that target.
 
 Cargo's `build-std-crates` field will default to the value of the
-`standard_library_support.default` field (`std` for "core, alloc and std",
+`standard_library_support.default` field (`std` for "core, alloc, and std",
 `alloc` for "core and alloc", and `core` for "core"). This does not prevent
 users from building more crates than the default, it is only intended to be a
 sensible default for the target that is probably what the user expects.
