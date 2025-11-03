@@ -527,9 +527,8 @@ documentation: https://doc.rust-lang.org/1.86.0/core/index.html
 
 [`cargo metadata`][cargo-metadata] will emit `std`, `alloc` and `core`
 dependencies to the metadata emitted by `cargo metadata` (when those crates are
-explicit dependencies). None of the standard library's dependencies will be
-included. `source` would be set to `builtin` and the remaining fields would be
-set like any other dependency.
+explicit dependencies). `source` would be set to `builtin` and the remaining
+fields would be set like any other dependency.
 
 > [!NOTE]
 >
