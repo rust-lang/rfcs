@@ -441,8 +441,9 @@ similarly be updated to support `builtin_deps`.
 >
 > When producing a registry index entry for a package Cargo will not serialise
 > any `builtin` dependencies it inferred. This allows the set of inferred
-> packages to change in the future if needed. Similarly, the published
-> `Cargo.toml` will not explicitly declare any inferred dependencies.
+> packages to change in the future if needed and prevents publishing a package
+> with a new Cargo from raising your MSRV. Similarly, the published `Cargo.toml`
+> will not explicitly declare any inferred dependencies.
 
 *See the following sections for rationale/alternatives:*
 
@@ -1051,6 +1052,7 @@ or explicit dependencies would add a second way for the user to indicate a lack
 of dependency on the standard library. It could therefore be desirable to
 deprecate `#![no_std]` so that there remains only a single way to express a
 dependency on the standard library.
+
 
 `#![no_std]` serves two purposes - it stops the compiler from adding `std` to
 the extern prelude and it prevents the user from depending on anything from
