@@ -8,7 +8,7 @@
 
 Allow users to add explicit dependencies on standard library crates in the
 `Cargo.toml`. This enables Cargo to determine which standard library crates are
-required by the crate graph without `build-std-crates` being set and for
+required by the crate graph without `build-std.crates` being set and for
 different crates to require different standard library crates.
 
 **This RFC is is part of the [build-std project goal] and a series of build-std
@@ -706,7 +706,7 @@ required:
 
 - Cargo could allow the user to specify which crates are required to be built,
   such as with the existing options to the `-Zbuild-std=` flag.
-  [`build-std=always`][rfcs#3874-proposal] proposes a `build-std-crates` flag to
+  [`build-std=always`][rfcs#3874-proposal] proposes a `build-std.crates` flag to
   enable explicit dependencies to be a separate part of this RFC.
 
 Furthermore, supporting explicit dependencies on standard library crates enables
@@ -810,7 +810,7 @@ Supporting implicit dependencies allows the majority of the Rust ecosystem from
 having to make any changes - `no_std` crates (or crates with a `std` feature)
 will still benefit from adding explicit dependencies as allow them to be easily
 used with `no_std` targets but users can still work around any legacy crates in
-the graph with [`build-std-crates`][rfcs#3874-proposal].
+the graph with [`build-std.crates`][rfcs#3874-proposal].
 
 ↩ [*Proposal*][proposal]
 
@@ -1046,7 +1046,7 @@ There are many possible follow-ups to this part of the RFC:
 [future-replace-no_std]: #replace-no_std-as-the-source-of-truth-for-whether-a-crate-depends-on-std
 
 Crates can currently use the crate attribute `#![no_std]` to indicate a lack of
-dependency on `std`. Introducing `build-std-crates` from [RFC #3874][rfcs#3874]
+dependency on `std`. Introducing `build-std.crates` from [RFC #3874][rfcs#3874]
 or explicit dependencies would add a second way for the user to indicate a lack
 of dependency on the standard library. It could therefore be desirable to
 deprecate `#![no_std]` so that there remains only a single way to express a
