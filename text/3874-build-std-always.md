@@ -146,6 +146,9 @@ by the target (see later
 >   cannot be patched/replaced by the user in the Cargo manifest or config
 >   (e.g. using source replacement, `[replace]` or `[patch]`)
 >
+> - Lints in standard library crates will be built using `--cap-lints allow`
+>   matching other upstream dependencies.
+>
 > Cargo will resolves the dependencies of opaque dependencies, such as the
 > standard library, separately in their own workspaces. The root of such a
 > resolve will be the crates specified in `build-std-crates` or, if
