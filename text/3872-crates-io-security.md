@@ -23,16 +23,12 @@ which tracks known vulnerabilities, unsound code, and maintenance status of crat
 The Rust ecosystem has a culture of having smaller, focused crates with a clear purpose.
 As a result, many Rust projects have a large number of dependencies, which increases the
 risk of introducing problems in the final artifact via the supply chain of dependencies.
+Actively malicious crates (or crate versions) would be one example of these risks; the
+crates.io team handles these by deleting them when discovered.
 
-We've seen an increasing number of security issues via transitive dependencies:
-
-- In 2024, some releases of the popular xz-utils package (written in C) contained
-  a [malicious backdoor] affecting OpenSSH servers running on the local system.
-- In 2025, a phishing campaign [targeted crates.io users] using the `rustfoundation.dev` domain
-  name to impersonate the Rust Foundation and steal maintainer's credentials.
-
-While known actively malicious crates would be deleted from crates.io by the responsible team,
-unintentional vulnerabilities and unsound APIs can still pose a risk to Rust developers.
+This RFC concerns itself mostly with unintentional vulnerabilities and unsound APIs. An example
+from the Java ecosystem is the [Log4Shell] vulnerability in the popular Log4j logging library,
+when a widely used package exposed affected services to remote code execution attacks.
 
 The Open Source Security Foundation (OpenSSF) has enumerated [Principles for Package Repository
 Security]; while crates.io already addresses many of these, one of these is:
@@ -42,8 +38,7 @@ Security]; while crates.io already addresses many of these, one of these is:
 
 The RustSec advisory database tooling already supports exporting advisories in the OSV format.
 
-[malicious backdoor]: https://en.wikipedia.org/wiki/XZ_Utils_backdoor
-[targeted crates.io users]: https://blog.rust-lang.org/2025/09/12/crates-io-phishing-campaign/
+[Log4Shell]: https://en.wikipedia.org/wiki/Log4j#Log4Shell_vulnerability
 [Principles for Package Repository Security]: https://repos.openssf.org/principles-for-package-repository-security.html
 
 # Guide-level explanation
