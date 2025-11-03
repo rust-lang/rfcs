@@ -1044,7 +1044,12 @@ of the build-std context RFC.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-There are many possible follow-ups to this part of the RFC:
+This RFC unblocks fixing [rust-lang/cargo#8798], enabling no-std crates from
+being prevented from having std dependencies.
+
+There are also many possible follow-ups to this part of the RFC:
+
+[rust-lang/cargo#8798]: https://github.com/rust-lang/cargo/issues/8798
 
 ## Replace `#![no_std]` as the source-of-truth for whether a crate depends on `std`
 [future-replace-no_std]: #replace-no_std-as-the-source-of-truth-for-whether-a-crate-depends-on-std
