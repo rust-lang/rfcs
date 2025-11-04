@@ -448,6 +448,37 @@ For every single mitigation-like flag:
    other cases, it should be both. I am not aware of a current flag that
    fits this pattern.
 
+## `-emit=component-info`
+
+One possible "big" alternative would be emitting a component info file, via
+`-emit=component-info`. For example:
+
+```json
+{
+   "components": [
+      { 
+         "type": "crate",
+         "name": "foo",
+         "mitigations": ["a"]
+      }
+   ]
+}
+```
+
+We could then have Cargo run over that file and look for missing mitigations.
+
+I do think that without support in Cargo, this is a non-starter since it would
+take an annoying enough amount of effort for people to scan it.
+
+I do think that it is important to avoid this sort of JSON being bikeshed-land.
+
+A disadvantage is that it would be possible to enable a mitigation in rustc but
+not in Cargo (e.g. by setting `RUSTFLAGS`), which would make it non-enforced.
+
+In some sense, this is moving complexity from rustc to Cargo, which I'm not sure
+reduces it overall. But it does allow people to do their own custom policies in
+edge cases, which could reduce bikeshed effort in some situations.
+
 ## Why not an external tool?
 
 This is somewhat hard to do with an external tool, since there is
