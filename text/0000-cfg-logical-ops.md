@@ -7,7 +7,8 @@
 [summary]: #summary
 
 `#[cfg]`, `#[cfg_attr]`, and `cfg!()` can use `&&`, `||`, and `!` for `all`, `any`, and `not`,
-respectively.
+respectively. Due to precedence, `feature = "foo"` must be parenthesized when adjoining any of the
+new operators.
 
 # Motivation
 [motivation]: #motivation
@@ -27,36 +28,39 @@ Similarly, `#[cfg(foo || bar)]` enables the annotated code if and only if either
 is enabled. Finally, `#[cfg(!foo)]` enables the annotated code if and only if `foo` is **not**
 enabled. `#[cfg_attr]` and `cfg!()` behave the same way.
 
-Precedence is the [same as in expressions][precedence], with `=` being treated as `==` for this
-purpose.
+Precedence is the [same as in expressions][precedence], which necessitates using parentheses in some
+situations. This is shown in the table below. `=` is **not** treated the same as `==` for precedence
+purposes; it has lower precedence than all logical operators.
 
 ## Examples
 
-| Syntax                             | Equivalent to                                      | Rationale                                                                           |
-| ---------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `a && b`                           | `all(a, b)`                                        | definition of `&&`                                                                  |
-| `a \|\| b`                         | `any(a, b)`                                        | definition of `\|\|`                                                                |
-| `!a`                               | `not(a)`                                           | definition of `!`                                                                   |
-| `(a)`                              | `a`                                                | definition of `()`                                                                  |
-| `a && b && c && d`                 | `all(a, b, c, d)` (or `all(all(all(a, b), c), d)`) | `&&` is associative                                                                 |
-| `a \|\| b \|\| c \|\| d`           | `any(a, b, c, d)` (or `any(any(any(a, b), c), d)`) | `\|\|` is associative                                                               |
-| `!!!!!!a`                          | `not(not(not(not(not(not(a))))))`                  | `!` can be repeated                                                                 |
-| `((((((a))))))`                    | a                                                  | `()` can be nested                                                                  |
-| `a && b \|\| c && d`               | `any(all(a, b), all(c, d))`                        | `\|\|` has lower precedence than `&&`                                               |
-| `a \|\| b && c \|\| d`             | `any(a, all(b, c), d)`                             | `\|\|` has lower precedence than `&&`                                               |
-| `(a \|\| b) && (c \|\| d)`         | `all(any(a, b), any(c, d))`                        | `()` can be used for grouping                                                       |
-| `!a \|\| !b && !c`                 | `any(not(a), all(not(b), not(c)))`                 | `!` has highest precedence                                                          |
-| `feature="foo" \|\| feature="bar"` | `any(feature="foo", feature="bar")`                | `\|\|` has lower precedence than `=`                                                |
-| `feature="foo" && feature="bar"`   | `all(feature="foo", feature="bar")`                | `&&` has lower precedence than `=`                                                  |
-| `!feature="foo"`                   | _syntax error_                                     | `!` has higher precedence than `=`, which may be confusing, so we ban this syntax   |
-| `!(feature="foo")`                 | `not(feature="foo")`                               | use `()` for grouping                                                               |
-| `!all(x, y)`                       | `not(all(x, y))`                                   | `!` has lower precedence than "function call"                                       |
-| `any(!x \|\| !w, !(y && z))`       | `any(any(not(x), not(w)), not(all(y, z)))`         | `!`, `&&` etc. can be used inside `any`, `all` and `not`                            |
-| `true && !false`                   | `all(true, not(false))`                            | `!`, `&&` etc. can be used on boolean literals (they are syntactically identifiers) |
-| `!accessible(std::mem::forget)`    | `not(accessible(std::mem::forget))`                | `!`, `&&` etc. can be used on `cfg_accessible`                                      |
-| `accessible(std::a \|\| std::b)`   | _syntax error_                                     | … but not inside                                                                    |
-| `!version("1.42.0")`               | `not(version("1.42.0"))`                           | `!`, `&&` etc. can be used on `cfg_version`                                         |
-| `version(!"1.42.0")`               | _syntax error_                                     | … but not inside                                                                    |
+| Syntax                                 | Equivalent to                                      | Rationale                                                                            |
+| -------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `a && b`                               | `all(a, b)`                                        | definition of `&&`                                                                   |
+| `a \|\| b`                             | `any(a, b)`                                        | definition of `\|\|`                                                                 |
+| `!a`                                   | `not(a)`                                           | definition of `!`                                                                    |
+| `(a)`                                  | `a`                                                | definition of `()`                                                                   |
+| `a && b && c && d`                     | `all(a, b, c, d)` (or `all(all(all(a, b), c), d)`) | `&&` is associative                                                                  |
+| `a \|\| b \|\| c \|\| d`               | `any(a, b, c, d)` (or `any(any(any(a, b), c), d)`) | `\|\|` is associative                                                                |
+| `!!!!!!a`                              | `not(not(not(not(not(not(a))))))`                  | `!` can be repeated                                                                  |
+| `((((((a))))))`                        | a                                                  | `()` can be nested                                                                   |
+| `a && b \|\| c && d`                   | `any(all(a, b), all(c, d))`                        | `\|\|` has lower precedence than `&&`                                                |
+| `a \|\| b && c \|\| d`                 | `any(a, all(b, c), d)`                             | `\|\|` has lower precedence than `&&`                                                |
+| `(a \|\| b) && (c \|\| d)`             | `all(any(a, b), any(c, d))`                        | `()` can be used for grouping                                                        |
+| `!a \|\| !b && !c`                     | `any(not(a), all(not(b), not(c)))`                 | `!` has highest precedence                                                           |
+| `feature="foo" \|\| feature="bar"`     | _syntax error_                                     | `\|\|` has higher precedence than `=`, which may be confusing, so we ban this syntax |
+| `(feature="foo") \|\| (feature="bar")` | `any(feature="foo", feature="bar")`                | use `()` for grouping                                                                |
+| `feature="foo" && feature="bar"`       | _syntax error_                                     | `&&` has higher precedence than `=`, which may be confusing, so we ban this syntax   |
+| `(feature="foo") && (feature="bar")`   | `all(feature="foo", feature="bar")`                | use `()` for grouping                                                                |
+| `!feature="foo"`                       | _syntax error_                                     | `!` has higher precedence than `=`, which may be confusing, so we ban this syntax    |
+| `!(feature="foo")`                     | `not(feature="foo")`                               | use `()` for grouping                                                                |
+| `!all(x, y)`                           | `not(all(x, y))`                                   | `!` has lower precedence than "function call"                                        |
+| `any(!x \|\| !w, !(y && z))`           | `any(any(not(x), not(w)), not(all(y, z)))`         | `!`, `&&` etc. can be used inside `any`, `all` and `not`                             |
+| `true && !false`                       | `all(true, not(false))`                            | `!`, `&&` etc. can be used on boolean literals (they are syntactically identifiers)  |
+| `!accessible(std::mem::forget)`        | `not(accessible(std::mem::forget))`                | `!`, `&&` etc. can be used on `cfg_accessible`                                       |
+| `accessible(std::a \|\| std::b)`       | _syntax error_                                     | … but not inside                                                                     |
+| `!version("1.42.0")`                   | `not(version("1.42.0"))`                           | `!`, `&&` etc. can be used on `cfg_version`                                          |
+| `version(!"1.42.0")`                   | _syntax error_                                     | … but not inside                                                                     |
 
 ## Formal syntax
 
@@ -142,5 +146,9 @@ None so far.
 [future-possibilities]: #future-possibilities
 
 - Pattern-like syntax such as `#[cfg(feature = "foo" | "bar")]` could be allowed as a shorthand for
-  `#[cfg(feature = "foo" || feature = "bar")]`. This would be particularly useful for
+  `#[cfg((feature = "foo") || (feature = "bar"))]`. This would be particularly useful for
   platform-specific code (e.g. `#[cfg(target_os = "linux" | "windows")]`).
+- The use of parentheses could be relaxed in some situations, such as allowing `!feature = "foo"` or
+  `feature = "foo" || feature = "bar"`.
+- A different syntax for key-value pairs, such as `feature("foo")`, could be used for clarity (as it
+  is neither assignment nor equality) and to reduce the need for manual precedence management.
