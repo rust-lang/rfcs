@@ -467,10 +467,11 @@ One possible "big" alternative would be emitting a component info file, via
 
 We could then have Cargo run over that file and look for missing mitigations.
 
-I do think that without support in Cargo, this is a non-starter since it would
-take an annoying enough amount of effort for people to scan it.
+Without support in Cargo, this would be a a non-starter since it would
+take an annoying enough amount of effort for people to scan the generated
+json files.
 
-I do think that it is important to avoid this sort of JSON being bikeshed-land.
+It is important to avoid this sort of JSON being bikeshed-land.
 
 A disadvantage is that it would be possible to enable a mitigation in rustc but
 not in Cargo (e.g. by setting `RUSTFLAGS`), which would make it non-enforced.
@@ -478,6 +479,10 @@ not in Cargo (e.g. by setting `RUSTFLAGS`), which would make it non-enforced.
 In some sense, this is moving complexity from rustc to Cargo, which I'm not sure
 reduces it overall. But it does allow people to do their own custom policies in
 edge cases, which could reduce bikeshed effort in some situations.
+
+A big disadvantage of this is that it adds much complexity and deeper-than-we-want
+integration to projects that are *not* using Cargo, since they have to
+implement the scanning integration themselves.
 
 ## Why not an external tool?
 
