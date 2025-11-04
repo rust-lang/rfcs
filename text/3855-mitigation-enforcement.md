@@ -219,7 +219,8 @@ kcfi would deny partial mitigations, since the `-Csanitizer=kcfi` would reset th
 
 The default of allow/deny is mitigation-dependent, but can also depend on edition (for
 example, it might be best to make `-C control-flow-guard` only deny-by-default from the next
-edition).
+edition), and if we decide to add mitigation enforcement for overflow checks,
+it would probably be best to make it allow-by-default.
 
 > It is possible to bikeshed the exact naming scheme.
 
