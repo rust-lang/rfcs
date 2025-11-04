@@ -467,22 +467,29 @@ One possible "big" alternative would be emitting a component info file, via
 
 We could then have Cargo run over that file and look for missing mitigations.
 
-Without support in Cargo, this would be a a non-starter since it would
+Without support in Cargo, this would be not good enough since it would
 take an annoying enough amount of effort for people to scan the generated
 json files.
 
 It is important to avoid this sort of JSON being bikeshed-land.
 
-A disadvantage is that it would be possible to enable a mitigation in rustc but
-not in Cargo (e.g. by setting `RUSTFLAGS`), which would make it non-enforced.
+An advantage is that people could write their own custom policies, which would
+take some pressure off bikesheds for things like overflow checks.
 
 In some sense, this is moving complexity from rustc to Cargo, which I'm not sure
-reduces it overall. But it does allow people to do their own custom policies in
-edge cases, which could reduce bikeshed effort in some situations.
+reduces it overall.
+
+A disadvantage is that it would be possible to enable a mitigation in rustc but
+not in Cargo (e.g. by setting `RUSTFLAGS`), which would make it non-enforced.
 
 A big disadvantage of this is that it adds much complexity and deeper-than-we-want
 integration to projects that are *not* using Cargo, since they have to
 implement the scanning integration themselves.
+
+Even if this alternative is not selected, some sort of `-emit=component-info` does
+feel like a good feature, though one that deserves a separate RFC. There does not
+seem to be a *conflict* between `-emit=component-info` and
+`-C allow-partial-mitigations`.
 
 ## Why not an external tool?
 
