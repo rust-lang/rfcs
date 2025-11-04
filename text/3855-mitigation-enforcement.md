@@ -197,10 +197,25 @@ via `-C allow-partial-mitigations=<mitigation>` and turned off by
 `-C deny-partial-mitigations=stack-protector`).
 
 These flags act like every other compiler flag, with the last flag winning if there are multiple
-values.
+values for the same mitigation.
 
 There is no "resetting" of the allow/deny status if the mitigation is overriden, but see
-the alternative [with order dependency](#with-order-dependency).
+the alternative [with order dependency].
+
+For example,
+```
+-Callow-partial-mitigations=stack-protector -Callow-partial-mitigations=overflow-checkd
+-Callow-partial-mitigations=kcfi -Cdeny-partial-mitigations=overflow-checks -Csanitizer=kcfi
+```
+
+Will allow partial mitigations for stack-protector (since there's an allow)
+and kcfi (since enabling the sanitizer does not "reset" the allow status),
+but deny partial mitigations for `overflow-checks` (since the later deny overrides
+the allow). If we decide to go [with order dependency], then in that example
+kcfi would deny partial mitigations, since the `-Csanitizer=kcfi` would reset the
+`-C allow-partial-mitigations=kcfi`.
+
+[with order dependency]: #with-order-dependency
 
 The default of allow/deny is mitigation-dependent, but can also depend on edition (for
 example, it might be best to make `-C control-flow-guard` only deny-by-default from the next
