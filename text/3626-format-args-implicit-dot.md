@@ -177,6 +177,16 @@ but would then not be automatically and consistently available within all of
 Rust's formatting macros, including those in the standard library and those
 throughout the ecosystem.
 
+We could omit support for `Deref`; however, this would be inconsistent with
+what's possible with `a.b` expressions in the arguments of a format macro.
+People will expect to be able to move an `a.b` from the arguments to the format
+string, and this should not depend on the type of `a`.
+
+We could attempt to unify references to the same structure, or the same field,
+and call `Deref` only once. However, this would be inconsistent with normal
+Rust expressions. We could consider such an optimization in the future if we
+add a `DerefPure` marker.
+
 We could omit support for other formatting parameters (width, precision).
 However, this would introduce an inconsistency that people have to remember;
 people would *expect* this to work.
