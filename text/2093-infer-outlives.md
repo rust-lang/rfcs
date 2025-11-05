@@ -3,13 +3,31 @@
 - RFC PR: [rust-lang/rfcs#2093](https://github.com/rust-lang/rfcs/pull/2093)
 - Rust Issue: [rust-lang/rust#44493](https://github.com/rust-lang/rust/issues/44493)
 
-# This RFC was previously approved, but part of it later **withdrawn**
+# This RFC was modified after it was accepted
 
-To infer `T: 'static` requirements from structs, the `infer_static_outlives_requirements` feature was previously implemented
-as part of this RFC, but later removed. For details see the [summary comment].
+As implemented, the compiler will automatically add where-clauses of the form `where T: 'x` when (a) `'x` is a lifetime parameter on the struct and (b) the where-clauses are implied by the field types within the struct:
 
-[summary comment]: https://github.com/rust-lang/rust/issues/54185#issuecomment-1124097663
+```rust
+struct Foo<'x, T>
+// where
+//     T: 'x, <-- added automatically by the compiler
+{
+    r: &'x T
+}
+```
 
+The RFC originally also covered where-clauses relating to `'static`, but the lang-team opted to limit automatic where-clauses to only apply to named lifetime parameters ([rationale]):
+
+[rationale]: https://github.com/rust-lang/rust/issues/54185#issuecomment-1124097663
+
+```rust
+struct Foo<T>
+// where
+//     T: 'static, <-- NOT added automatically by the compiler
+{
+    r: &'static T // ERROR: `T: 'static` required
+}
+```
 # Summary
 [summary]: #summary
 
