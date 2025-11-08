@@ -59,10 +59,10 @@ applied to the original `in (PLACE_EXPR) VALUE_EXPR` syntax):
 
  * [p1start](https://github.com/rust-lang/rfcs/pull/809#issuecomment-73837430)
 
-   > I’m not a fan of in <place> { <stmts> }, simply because the
+   > I’m not a fan of `in <place> { <stmts> }`, simply because the
    > requirement of a block suggests that it’s some kind of control
    > flow structure, or that all the statements inside will be
-   > somehow run ‘in’ the given <place> (or perhaps, as @m13253
+   > somehow run ‘in’ the given `<place>` (or perhaps, as @m13253
    > seems to have interpreted it, for all box expressions to go
    > into the given place). It would be our first syntactical
    > construct which is basically just an operator that has to

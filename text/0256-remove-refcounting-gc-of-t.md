@@ -47,7 +47,7 @@ still in place; the move to a library type `Gc<T>` was just a shift in
 perspective from the end-user's point of view (and that of the
 parser).
 
-## Recent history: Removing uses of Gc<T> from the compiler
+## Recent history: Removing uses of `Gc<T>` from the compiler
 
 Largely due to the tireless efforts of `eddyb`, one of the primary
 clients of `Gc<T>`, namely the `rustc` compiler itself, has little to

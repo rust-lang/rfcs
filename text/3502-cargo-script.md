@@ -334,7 +334,7 @@ Inferred / defaulted manifest fields:
   manifest at the cost of potentially breaking scripts on rust upgrades
   - Warn when `edition` is unspecified.  Since piped commands are run with `--quiet`, this may not show up.
   - Based on feedback, we might add `cargo-<edition>` proxies to put in `#!` as a shorthand
-  - Based on feedback, we can switch to "edition is required as of <future> edition"
+  - Based on feedback, we can switch to "edition is required as of &lt;future&gt; edition"
 
 Note: As of [rust-lang/cargo#123](https://github.com/rust-lang/cargo/pull/12786),
 when `package.version` is missing,
