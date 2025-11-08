@@ -12,3 +12,6 @@ heading-split-level = 0
 
 [output.html.playground]
 runnable = false
+
+[build]
+extra-watch-dirs = ["text"]
