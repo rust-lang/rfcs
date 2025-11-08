@@ -65,7 +65,7 @@ Note: The supported Unicode version should be stated in the documentation.
 
 The lexer defines identifiers as:
 
-> **<sup>Lexer:<sup>**  
+> **<sup>Lexer:</sup>**
 > IDENTIFIER_OR_KEYWORD:  
 > &nbsp;&nbsp; XID_Start&nbsp;XID_Continue<sup>\*</sup>  
 > &nbsp;&nbsp; | `_` XID_Continue<sup>*</sup>  
