@@ -309,7 +309,7 @@ Here is an attempt to transcribe/summarize them:
 
      This seems pretty fragile; i.e., easy to forget.
 
-  6. Outlaw the trivial FRU form Foo { ..<expr> }. That is, to use
+  6. Outlaw the trivial FRU form `Foo { ..<expr> }`. That is, to use
      FRU, you have to use at least one field in the constructing
      expression. Again, this implies that types like Vec and HashMap
      will not be subject to the vulnerability outlined here.

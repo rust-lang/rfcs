@@ -50,7 +50,7 @@ directions. See the Alternatives section for more details.
 ## Why do we get an error in the first place?
 
 You may wonder why this code isn't accepted in the first place. To see
-why, consider what the (somewhat simplified) resulting MIR looks like:
+why, consider what the (somewhat simplified[^simp]) resulting MIR looks like:
 
 [^simp]: This MIR is mildly simplified; the real MIR has multiple basic blocks to account for the possibility of panics.
 

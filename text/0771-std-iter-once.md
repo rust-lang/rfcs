@@ -12,7 +12,7 @@ This is a common task when working with iterators. Currently, this can be done i
 
 # Detailed design
 
-`once` will return a new struct, `std::iter::Once<T>`, implementing Iterator<T>. Internally, `Once<T>` is simply a newtype wrapper around `std::option::IntoIter<T>`. The actual body of `once` is thus trivial:
+`once` will return a new struct, `std::iter::Once<T>`, implementing `Iterator<T>`. Internally, `Once<T>` is simply a newtype wrapper around `std::option::IntoIter<T>`. The actual body of `once` is thus trivial:
 
 ```rust
 pub struct Once<T>(std::option::IntoIter<T>);

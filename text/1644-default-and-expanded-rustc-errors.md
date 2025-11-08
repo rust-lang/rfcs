@@ -251,8 +251,8 @@ subsequent style RFC.
 
 ## Expanded error messages
 
-Currently, --explain text focuses on the error code. You invoke the compiler with --explain
-<error code> and receive a verbose description of what causes errors of that number. The resulting
+Currently, --explain text focuses on the error code. You invoke the compiler with `--explain
+<error code>` and receive a verbose description of what causes errors of that number. The resulting
 message can be helpful, but it uses generic sample code which makes it feel less connected to the
 user's code.
 

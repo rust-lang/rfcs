@@ -26,7 +26,7 @@ put onto a surer footing.
 
 ## Use cases
 
-### Poor interaction with overloadable deref and index <a name=overload>
+### Poor interaction with overloadable deref and index { #overload }
 
 *Addressed by:* New method resolution algorithm.
 
@@ -66,7 +66,7 @@ manually specified by making the receiver type fully explicit: `(&mut
 address this problem, as well as the question of how to handle copies
 and moves of the referent (use #3 in my list above).
 
-### Lack of backtracking <a name=backtrack>
+### Lack of backtracking { #backtrack }
 
 *Addressed by:* New method resolution algorithm.
 
@@ -190,7 +190,7 @@ property.  And the popularity and usefulness of blanket impls cannot
 be denied.  Therefore, I think this property ("always being able to
 add impls") is not especially useful or important.
 
-### Hokey implementation <a name=hokey>
+### Hokey implementation { #hokey }
 
 *Addressed by:* Gradual vtable resolution algorithm
 
@@ -298,7 +298,7 @@ personal preference, if we can achieve it).
 The coherence rules fall into two categories: the *orphan* restriction
 and the *overlapping implementations* restriction.
 
-<a name=orphan>
+<span id="orphan"></span>
 
 *Orphan check*: Every implementation must meet one of
 the following conditions:
@@ -679,9 +679,9 @@ probably an error. DEFERRED obligations are ok until we reach the end
 of the function. For details, please refer to the
 [prototype][prototype].
 
-# Alternatives and downsides <a name=alternatives>
+# Alternatives and downsides { #alternatives }
 
-## Autoderef and ambiguity <a name=ambig>
+## Autoderef and ambiguity { #ambig }
 
 The addition of a `Deref` trait makes autoderef complicated, because
 we may encounter situations where the smart pointer *and* its
@@ -707,20 +707,20 @@ needs to be evaluated.
 
 # Footnotes
 
-<a name=1>
+<span id="1"></span>
 
 **Note 1:** when combining with DST, the `in` keyword goes
 first, and then any other qualifiers. For example, `in unsized RHS` or
 `in type RHS` etc. (The precise qualifier in use will depend on the
 DST proposal.)
 
-<a name=2>
+<span id="2"></span>
 
 **Note 2:** Note that the `DerefMut<T>` trait extends
 `Deref<T>`, so if a type supports mutable derefs, it must also support
 immutable derefs.
 
-<a name=3>
+<span id="3"></span>
 
 **Note 3:** The restriction that inputs must precede outputs
 is not strictly necessary. I added it to keep options open concerning
@@ -728,25 +728,25 @@ associated types and so forth. See the
 [Alternatives section](#alternatives), specifically the section on
 [associated types](#assoc).
 
-<a name=4>
+<span id="4"></span>
 
 **Note 4:** The prioritization of inherent methods could be
 reconsidered after DST has been implemented. It is currently needed to
 make impls like `impl Trait for ~Trait` work.
 
-<a name=5>
+<span id="5"></span>
 
 **Note 5:** The set of in-scope traits is currently defined
 as those that are imported by name. PR #37 proposes possible changes
 to this rule.
 
-<a name=6>
+<span id="6"></span>
 
 **Note 6:** In the section on [autoderef and ambiguity](#ambig), I
 discuss alternate rules that might allow us to lift the requirement
 that the receiver be named `self`.
 
-<a name=7>
+<span id="7"></span>
 
 **Note 7:** I am considering introducing mechanisms in a subsequent
 RFC that could be used to express mutual exclusion of traits.

@@ -135,7 +135,7 @@ $ tree . -a
 │       ├── static.files
 │           │   ├── COPYRIGHT-23e9bde6c69aea69.txt
 │           │   ├── favicon-2c020d218678b618.svg
-│           │   └── <rest of the contents excluded>
+│           │   └── &lt;rest of the contents excluded&gt;
 │       ├── trait-crate
 │       │   ├── all.html
 │       │   ├── index.html

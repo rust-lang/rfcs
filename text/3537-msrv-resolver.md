@@ -31,7 +31,7 @@ likely only needing to follow the FCP process.
 
 ## Status Quo
 
-<details><summary>Ensuring you have a `Cargo.lock` with dependencies compatible with your minimum-supported Rust version (MSRV) is an arduous task of running `cargo update <dep> --precise <ver>` until it works.</summary>
+<details><summary>Ensuring you have a <code>Cargo.lock</code> with dependencies compatible with your minimum-supported Rust version (MSRV) is an arduous task of running <code>cargo update &lt;dep&gt; --precise &lt;ver&gt;</code> until it works</summary>
 
 Let's step through a simple scenario where a user develops with the
 latest Rust version but production uses an older version:

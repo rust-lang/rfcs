@@ -166,10 +166,10 @@ So, an interaction between a program, a collection library, and an
 allocator might look like this:
 
 <img width="800" src="https://rawgit.com/pnkfelix/pnkfelix.github.com/69230e5f1ea140c0a09c5a9fdd7f0766207cdddd/Svg/allocator-msc.svg">
+
 If you cannot see the SVG linked here, try the [ASCII art version][ascii-art] appendix.
 Also, if you have suggestions for changes to the SVG, feel free to write them as a comment
 in that appendix; (but be sure to be clear that you are pointing out a suggestion for the SVG).
-</img>
 
 In general, an allocator might be the backing memory pool itself; or
 an allocator might merely be a *handle* that references the memory

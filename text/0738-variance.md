@@ -348,8 +348,7 @@ contravariant.
 **Why contravariance?** To see why contravariance is correct, you have
 to consider what it means for `Self` to be contravariant for a marker
 trait. It means that if I have evidence that `T : Copy`, then I can
-use that as evidence to show that `U
-: Copy` if `U <: T`. More formally:
+use that as evidence to show that `U : Copy` if `U <: T`. More formally:
 
     (T : Copy) <: (U : Copy)   // I can use `T:Copy` where `U:Copy` is expected...
     U <: T                     // ...so long as `U <: T`

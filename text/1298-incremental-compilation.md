@@ -247,7 +247,7 @@ I've uncovered a few fishy cases where we using the node id from
 external crates to index into the local crate's HIR map, which is
 certainly incorrect. --nmatsakis
    
-<a id="depgraph">
+<a id="depgraph"></a>
 ## Identifying and tracking dependencies
 
 ### Core idea: a fine-grained dependency graph
