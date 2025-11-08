@@ -181,11 +181,11 @@ released.
 
   Right now its legal to write this:
   ```rust
-fn main() {
+  fn main() {
         use Bar = std::result::Result;
         use Bar = std::option::Option;
         let x: Bar<uint> = None;
-}
+  }
   ```
   where the latter `use` shadows the former. This would have to be forbidden as well,
   however the current semantic seems like a accident anyway.
