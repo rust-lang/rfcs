@@ -1,7 +1,7 @@
 - Feature Name: `deref_into`
 - Start Date: 2025-11-10
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3880](https://github.com/rust-lang/rfcs/pull/3880)
+- Rust Issue: [rust-lang/rust#3880](https://github.com/rust-lang/rust/issues/3880)
 
 # Summary
 [summary]: #summary
