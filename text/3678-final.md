@@ -150,6 +150,11 @@ account:
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+We could add the optimization of not putting `final` methods in the trait
+vtable. A design for this should take into account cases where people *do* want
+`final` methods to appear in the vtable, because they benefit substantially
+from monomorphization.
+
 As mentioned in the alternatives section, we could allow inherent `impl` blocks
 for a `Trait` (e.g. `impl Trait { ... }` without `for Type`). People today
 already occasionally write `impl dyn Trait` blocks, since `dyn Trait` is a type
