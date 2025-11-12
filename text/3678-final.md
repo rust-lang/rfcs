@@ -133,6 +133,8 @@ base trait.
 
 This feature is similar to `final` methods in Java or C++.
 
+It's also similar to `sealed` in C#, where `sealed class` is something from which you can't derive and a base class can use `sealed` on a method to say derived classes can't `override` it.
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
