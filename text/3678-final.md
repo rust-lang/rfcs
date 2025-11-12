@@ -136,16 +136,7 @@ This feature is similar to `final` methods in Java or C++.
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-We should consider this syntax and the inherent `impl Trait { ... }` syntax
-(without `for Trait`) mentioned in the alternatives and future-possibilities
-sections, and decide whether we want one or both of these. We should take into
-account:
-- The conceptual model we want to present to users
-- Whether we anticipate user confusion due to the former meaning of this syntax in Rust 2015 (prior to the move from `Trait` to `dyn Trait` to write trait objects)
-- Any effect on diagnostic quality
-- Whether the two approaches differ in implementation complexity
-- How much we want the benefit of allowing `impl dyn Trait` blocks to be
-  generalized by deleting the `dyn`
+None yet.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
@@ -160,6 +151,17 @@ for a `Trait` (e.g. `impl Trait { ... }` without `for Type`). People today
 already occasionally write `impl dyn Trait` blocks, since `dyn Trait` is a type
 and supports inherent impl blocks; this change would allow generalizing such
 blocks by deleting the `dyn`.
+
+When evaluating possible future syntaxes such as `impl Trait { ... }` blocks,
+we should take into account:
+- The conceptual model we want to present to users
+- Whether we anticipate user confusion due to the former meaning of this syntax
+  in Rust 2015 (prior to the move from `Trait` to `dyn Trait` to write trait
+  objects)
+- Any effect on diagnostic quality
+- Whether an additional syntax adds excessive implementation complexity
+- How much we want the benefit of allowing `impl dyn Trait` blocks to be
+  generalized by deleting the `dyn`
 
 We could add additional flexibility using the restriction mechanism defined in
 [RFC 3323](https://rust-lang.github.io/rfcs/3323-restrictions.html), using
