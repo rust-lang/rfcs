@@ -1071,21 +1071,24 @@ of dependency on the standard library. It could therefore be desirable to
 deprecate `#![no_std]` so that there remains only a single way to express a
 dependency on the standard library.
 
-
 `#![no_std]` serves two purposes - it stops the compiler from adding `std` to
 the extern prelude and it prevents the user from depending on anything from
 `std` accidentally. rustc's default behaviour of loading `std` when not
 explicitly provided the crate via an `--extern` flag should be preserved for
 backwards-compatibility with existing direct invocations of rustc.
 
-`#![no_std]` could instead become a compiler flag which would indicate to the
-compiler that `std` should not be loaded by default and that `core`'s prelude
-should be used instead. Cargo would use this flag when driving rustc, providing
-explicit paths to the newly-built or pre-built standard library crates, just as
-with any other dependency.
+Initially, if a crate has the `#![no_std]` attribute and has implicit
+dependencies on the standard library in its `Cargo.toml`, a lint could be
+emitted to suggest that their Cargo dependencies are adjusted.
 
-In addition, `#![no_std]` could be migrated to denying a lint which would
-prevent use of items from `std`.
+Eventually, `#![no_std]` could instead become a compiler flag which would
+indicate to the compiler that `std` should not be loaded by default and that
+`core`'s prelude should be used instead. Cargo would use this flag when driving
+rustc, providing explicit paths to the newly-built or pre-built standard library
+crates, just as with any other dependency.
+
+In addition, uses of the `#![no_std]` attribute could be migrated to denying a
+lint which would prevent use of items from `std`.
 
 ↩ [*Proposal*][proposal]
 
