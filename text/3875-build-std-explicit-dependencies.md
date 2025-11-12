@@ -528,7 +528,8 @@ documentation: https://doc.rust-lang.org/1.86.0/core/index.html
 [`cargo metadata`][cargo-metadata] will emit `std`, `alloc` and `core`
 dependencies to the metadata emitted by `cargo metadata` (when those crates are
 explicit dependencies). `source` would be set to `builtin` and the remaining
-fields would be set like any other dependency.
+fields would be set like any other dependency. See also unresolved question
+[*Should `cargo metadata` include the standard library's dependencies?*][unresolved-cargo-metadata].
 
 > [!NOTE]
 >
@@ -1033,6 +1034,16 @@ no-std build scripts. It is unclear whether supporting no-std build scripts
 would be desirable.
 
 ↩ [*`dev-dependencies` and `build-dependencies`*][dev-dependencies-and-build-dependencies]
+
+## Should `cargo metadata` include the standard library's dependencies?
+[unresolved-cargo-metadata]: #should-cargo-metadata-include-the-standard-librarys-dependencies
+
+`cargo metadata` is used by tools like rust-analyzer to determine the entire
+crate graph and would benefit from knowledge of the standard library's
+dependencies, but this leaks internal details of the standard library and is
+counter to the intent behind opaque dependencies.
+
+↩ [*Cargo subcommands*][cargo-subcommands]
 
 # Prior art
 [prior-art]: #prior-art
