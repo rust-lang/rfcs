@@ -66,7 +66,8 @@ Note that in some cases, the compiler might choose to avoid placing a `final`
 method in the trait's vtable, if the one-and-only implementation does not
 benefit from monomorphization.
 
-Note that removing a `final` restriction is always forwards-compatible.
+Note that removing a `final` restriction is a compatible change. (Removing a
+default implementation remains a breaking change.)
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
