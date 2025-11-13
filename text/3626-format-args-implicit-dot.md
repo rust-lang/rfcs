@@ -152,6 +152,17 @@ error[E0609]: no field `name` on type `person`
   |                                 ^^^^ unknown field
 ```
 
+The field references, like the initial identifier, are resolved as though
+written using raw identifiers; thus, they may conflict with Rust keywords.
+(This is for consistency with existing non-field arguments, and may change in a
+future edition of Rust.) Thus, the following two expressions are semantically
+equivalent:
+
+```
+format_args!("{type.field} {while.for}");
+format_args!("{uniq1} {uniq2}", uniq1=r#type.field, uniq2=r#while.r#for);
+```
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -195,6 +206,14 @@ We could include support for `.await`. To users, the ability to perform field
 accesses but not `.await` may seem like an arbitrary restriction, since the two
 both use `.` syntactically.
 
+Rather than implicitly using raw identifiers (and thus allowing fields whose
+names conflict with Rust keywords), we could instead require the use of `r#`
+explicitly, or disallow names that conflict with keywords. However, this would
+be inconsistent with existing non-field names in format strings;
+`format!("{type}")` works today, so `format!("{type.for}")` should be
+consistent with that. Note, though, that in being consistent with current
+behavior, we prevent supporting `.await` unless we change this.
+
 We could (in addition to this, or instead of this) add a syntax that allows
 arbitrary expressions, or a large subset of arbitrary expressions; this would
 likely require some way to make them syntactically unambiguous, such as the use
@@ -221,3 +240,10 @@ expressions, nor should this RFC serve as precedent for arbitrary expressions,
 but nonetheless these other languages provide precedent for permitting more
 than just single identifiers. See the discussion in "Rationale and
 alternatives" for further exploration of this.
+
+# Future possibilities
+[future possibilities]: #future-possibilities
+
+In a future edition, we could stop treating `"{type}"` as though written with a
+raw keyword, and instead require `"{r#type}"`, or disallow it entirely. This
+would then unblock the ability to write `"{x.await}"` or similar.
