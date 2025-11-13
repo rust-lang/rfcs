@@ -50,7 +50,8 @@ format_args!("hello {unique_ident}", unique_ident=person.name)
 ```
 
 The identifier at the beginning of the chain (`person` in this case) must be an
-identifier which existed in the scope in which the macro is invoked, and must
+identifier which existed in the scope in which the macro is invoked or an
+identifier introduced as a named argument of the formatting macro, and must
 have a field of the appropriate name (`name` in this case).
 
 This syntax works for fields within fields as well:
@@ -90,23 +91,21 @@ This syntax is not currently accepted, and results in a compiler error. Thus,
 adding this syntax should not cause any breaking changes in any existing Rust
 code.
 
-## No field access from named arguments
+## Field access from named arguments
 
-This syntax only permits referencing fields from identifiers in scope. It does
-not permit referencing fields from named arguments passed into the macro. For
-instance, the following syntax is not valid, and results in an error:
-
-```rust
-println!("{x.field}", x=expr()); // Error
-```
-
-If there is an ambiguity between an identifier in scope and an identifier used
-for a named argument, the compiler emits an error.
+This syntax allows referencing fields from identifiers in scope, or from named
+arguments passed into the macro. For instance, all of the following work:
 
 ```rust
 let x = SomeStruct::new();
-println!("{x.field}", x=expr()); // Error
+println!("{x.field}");
+println!("{y.field}", y = x);
+println!("{z.field}", z = SomeStruct::new());
 ```
+
+If there is an ambiguity between an identifier in scope and an identifier used
+for a named argument, the named argument takes precedence, just as it does for
+implicit named arguments without fields.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -128,9 +127,9 @@ at the point where the format string argument is evaluated, before the
 positional or named arguments are evaluated. No deduplication occurs: if
 `name.field` is mentioned multiple times, it will be evaluated multiple times.
 
-If the identifier at the start of the chain does not exist in the scope, the
-usual error E0425 would be emitted by the compiler, with the span of that
-identifier:
+If the identifier at the start of the chain does not exist in the scope or as a
+named argument, the usual error E0425 would be emitted by the compiler, with
+the span of that identifier:
 
 ```
 error[E0425]: cannot find value `person` in this scope
