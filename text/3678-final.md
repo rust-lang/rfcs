@@ -149,6 +149,8 @@ vtable. A design for this should take into account cases where people *do* want
 `final` methods to appear in the vtable, because they benefit substantially
 from monomorphization.
 
+We could allow `final fn` methods on `#[marker]` traits, which are currently not allowed to have any methods (because they can't allow different implementations in different `impl`s).
+
 As mentioned in the alternatives section, we could allow inherent `impl` blocks
 for a `Trait` (e.g. `impl Trait { ... }` without `for Type`). People today
 already occasionally write `impl dyn Trait` blocks, since `dyn Trait` is a type
