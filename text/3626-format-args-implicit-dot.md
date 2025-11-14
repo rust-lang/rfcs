@@ -257,6 +257,13 @@ but nonetheless these other languages provide precedent for permitting more
 than just single identifiers. See the discussion in "Rationale and
 alternatives" for further exploration of this.
 
+# Unresolved questions
+[unresolved-questions]: #unresolved-questions
+
+Can we successfully change the ordering and deduplication issue identified in
+https://github.com/rust-lang/rust/issues/145739#issuecomment-3530192688 ? If we
+can, we should do so, before stabilizing this.
+
 # Future possibilities
 [future possibilities]: #future-possibilities
 
