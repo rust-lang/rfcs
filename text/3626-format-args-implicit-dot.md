@@ -139,7 +139,8 @@ evaluated after all explicit arguments.
 
 Deduplicating identical field access expressions is consistent with non-field
 implicit named arguments; however, we may wish to change this in a future
-edition, to more closely match how function calls handle their arguments.
+edition or via a careful crater run, to more closely match how function calls
+handle their arguments.
 
 If the identifier at the start of the chain does not exist in the scope or as a
 named argument, the usual error E0425 would be emitted by the compiler, with
@@ -168,8 +169,8 @@ error[E0609]: no field `name` on type `person`
 The field references, like the initial identifier, are resolved as though
 written using raw identifiers; thus, they may conflict with Rust keywords.
 (This is for consistency with existing non-field arguments, and may change in a
-future edition of Rust.) Thus, the following two expressions are semantically
-equivalent:
+future edition of Rust or via a careful crater run.) Thus, the following two
+expressions are semantically equivalent:
 
 ```
 format_args!("{type.field} {while.for}");
@@ -211,7 +212,7 @@ field expression left-to-right, after all explicit fields. This would be more
 consistent with normal expressions (e.g. function calls), but would be
 inconsistent with existing support for implicit named arguments without fields.
 We should consider changing the behavior for implicit named arguments without
-fields, via an edition.
+fields, via an edition or a careful crater run.
 
 We could omit support for other formatting parameters (width, precision).
 However, this would introduce an inconsistency that people have to remember;
@@ -259,11 +260,12 @@ alternatives" for further exploration of this.
 # Future possibilities
 [future possibilities]: #future-possibilities
 
-In a future edition, we could stop treating `"{type}"` as though written with a
-raw keyword, and instead require `"{r#type}"`, or disallow it entirely. This
-would then unblock the ability to write `"{x.await}"` or similar.
+In a future edition or via a careful crater run, we could stop treating
+`"{type}"` as though written with a raw keyword, and instead require
+`"{r#type}"`, or disallow it entirely. This would then unblock the ability to
+write `"{x.await}"` or similar.
 
-In a future edition, we could stop deduplicating `"{x.field} {x.field}"`, and
-instead desugar to a distinct evaluation for each field access expression. This
-would more closely match how function calls handle their arguments (e.g.
-`func(x.field, x.field)`).
+In a future edition or via a careful crater run, we could stop deduplicating
+`"{x.field} {x.field}"`, and instead desugar to a distinct evaluation for each
+field access expression. This would more closely match how function calls
+handle their arguments (e.g. `func(x.field, x.field)`).
