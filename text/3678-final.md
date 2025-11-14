@@ -32,6 +32,12 @@ One example of a trait in the standard library benefiting from this:
 override. This RFC would allow stabilizing that method so users can call it,
 without permitting reimplementation of it.
 
+Another would be the `Read::read_buf_exact` method. Making this `final` would
+allow callers to rely on its implementation to be correct, while keeping the
+function safe to call. Without this, callers using `unsafe` code must defend
+against the possibility of an incorrect `read_buf_exact` implementation (e.g.
+returning `Ok(())` without filling the buffer) to avoid UB.
+
 # Explanation
 [explanation]: #explanation
 
