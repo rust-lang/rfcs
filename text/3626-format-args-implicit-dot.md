@@ -121,11 +121,25 @@ format_args!("{name.field1.field2}")
 format_args!("{unique_identifier}", unique_identifier=name.field1.field2)
 ```
 
-Any `Deref` operations associated with the `.` in each format argument are
-evaluated exactly once, from left-to-right as they appear in the format string,
-at the point where the format string argument is evaluated, before the
-positional or named arguments are evaluated. No deduplication occurs: if
-`name.field` is mentioned multiple times, it will be evaluated multiple times.
+The field access expressions are deduplicated textually, and each unique
+expression (including any `Deref` operations in it) is evaluated exactly once,
+from left-to-right as it first appears, after all explicit arguments to the
+formatting macro have been evaluated. Thus, the following expressions are
+semantically equivalent:
+
+```rust
+format_args!("{name.a.b} {name.c.d} {name.a.b}")
+
+format_args!("{unique1} {unique2} {unique1}", unique1=name.a.b, unique2=name.c.d)
+```
+
+Evaluating the implicit named arguments with fields last is consistent with
+current handling of implicit named arguments without fields, which are
+evaluated after all explicit arguments.
+
+Deduplicating identical field access expressions is consistent with non-field
+implicit named arguments; however, we may wish to change this in a future
+edition, to more closely match how function calls handle their arguments.
 
 If the identifier at the start of the chain does not exist in the scope or as a
 named argument, the usual error E0425 would be emitted by the compiler, with
@@ -192,10 +206,12 @@ what's possible with `a.b` expressions in the arguments of a format macro.
 People will expect to be able to move an `a.b` from the arguments to the format
 string, and this should not depend on the type of `a`.
 
-We could attempt to unify references to the same structure, or the same field,
-and call `Deref` only once. However, this would be inconsistent with normal
-Rust expressions. We could consider such an optimization in the future if we
-add a `DerefPure` marker.
+Rather than unifying references to the same field, we could evaluate every
+field expression left-to-right, after all explicit fields. This would be more
+consistent with normal expressions (e.g. function calls), but would be
+inconsistent with existing support for implicit named arguments without fields.
+We should consider changing the behavior for implicit named arguments without
+fields, via an edition.
 
 We could omit support for other formatting parameters (width, precision).
 However, this would introduce an inconsistency that people have to remember;
@@ -246,3 +262,8 @@ alternatives" for further exploration of this.
 In a future edition, we could stop treating `"{type}"` as though written with a
 raw keyword, and instead require `"{r#type}"`, or disallow it entirely. This
 would then unblock the ability to write `"{x.await}"` or similar.
+
+In a future edition, we could stop deduplicating `"{x.field} {x.field}"`, and
+instead desugar to a distinct evaluation for each field access expression. This
+would more closely match how function calls handle their arguments (e.g.
+`func(x.field, x.field)`).
