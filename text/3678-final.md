@@ -134,7 +134,9 @@ base trait.
 
 This feature is similar to `final` methods in Java or C++.
 
-It's also similar to `sealed` in C#, where `sealed class` is something from which you can't derive and a base class can use `sealed` on a method to say derived classes can't `override` it.
+It's also similar to `sealed` in C#, where `sealed class` is something from
+which you can't derive and a base class can use `sealed` on a method to say
+derived classes can't `override` it.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
@@ -149,7 +151,9 @@ vtable. A design for this should take into account cases where people *do* want
 `final` methods to appear in the vtable, because they benefit substantially
 from monomorphization.
 
-We could allow `final fn` methods on `#[marker]` traits, which are currently not allowed to have any methods (because they can't allow different implementations in different `impl`s).
+We could allow `final fn` methods on `#[marker]` traits, which are currently
+not allowed to have any methods (because they can't allow different
+implementations in different `impl`s).
 
 As mentioned in the alternatives section, we could allow inherent `impl` blocks
 for a `Trait` (e.g. `impl Trait { ... }` without `for Type`). People today
