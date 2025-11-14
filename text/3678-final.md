@@ -183,8 +183,10 @@ types, as well. If this is simple to implement, we should implement it for all
 items that can appear in a trait simultaneously; if it proves difficult to
 implement, we should prioritize methods.
 
-We could support `impl(unsafe)`, to make a trait safe to implement if *not*
-overriding the method, and only unsafe to implement if overriding the method.
+We could support some syntax (e.g. `impl(unsafe)`), to make a method safe to
+call, but unsafe to override. This would allow the implementation to be
+trusted, so that unsafe code can rely on it rather than defending against
+incorrect implementations.
 
 We could integrate this with stability markers, to stabilize calling a method
 but keep it unstable to *implement*.
