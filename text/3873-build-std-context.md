@@ -953,8 +953,8 @@ rebuild the standard library.
     - There is no stable mechanism for using the standard library on a tier
       three target that does not ship a pre-built std
 
-    - While it is common for these targets to not support the standard library,
-      they should be able to use `core`
+    - While it is common for these targets to not support the `std` crate, they
+      should be able to use `core`
 
     - These users are forced to use nightly and the unstable `-Zbuild-std`
       feature or third-party tools like [cargo-xbuild] (formerly [xargo])
