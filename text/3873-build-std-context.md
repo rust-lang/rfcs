@@ -159,7 +159,7 @@ rustc's [platform support docs][platform-support], for tier three targets:
 > automated testing ensures that each tier 1 target builds and passes tests
 > after each change.
 
-As an innate property of the target, not all targets can support the `std` crate
+As an innate property of the target, not all targets can support the `std` crate.
 This is independent of its tier, where as stated in the
 [Target Tier Policy][target-tier-policy] lower-tier targets may not have a
 complete implementation for all APIs in the crates they can support.
