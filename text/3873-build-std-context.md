@@ -1015,11 +1015,12 @@ this goal will attempt to ensure they remain viable as future possibilities):
         - For example, embedded users may want to enable `optimize_for_size` or
           disable `backtrace` to reduce binary size
 
-3. **Using miri on a stable toolchain**
+3. **Progress towards using miri on a stable toolchain**
 
-    - Using miri requires building the standard library with specific compiler
-      flags that would not be appropriate for the pre-built standard library, so
-      is forced to require nightly and build its own sysroot
+    - One of the limitations of miri is that it requires building the standard
+      library with specific compiler flags that would not be appropriate for the
+      pre-built standard library, this is part of miri's dependency on nightly
+      to build its own sysroot using [rustc-build-sysroot]
 
 Some use cases are unlikely to be supported by the project unless a new and
 compelling use-case is presented, and so this project goal may make decisions
@@ -1154,6 +1155,7 @@ standard library.
 [wg-cargo-std-aware]: https://github.com/rust-lang/wg-cargo-std-aware
 [cargo-xbuild]: https://github.com/rust-osdev/cargo-xbuild
 [xargo]: https://github.com/japaric/xargo
+[rustc-build-sysroot]: https://github.com/ralfjung/rustc-build-sysroot
 
 [build-std]: https://doc.rust-lang.org/cargo/reference/unstable.html#build-std
 [build-std-features]: https://doc.rust-lang.org/cargo/reference/unstable.html#build-std-features
