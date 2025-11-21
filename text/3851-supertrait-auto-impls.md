@@ -92,7 +92,7 @@ where
 ```
 
 ### Example: relaxed bounds via new supertraits
-A common use case of supertraits is weaken bounds involved in associated items. There are occassions that a weakend supertrait could be useful. Suppose that we have a factory trait in the following example. In this example, the `async fn make` factory method could be weakened so that the future returned could be used in the context where the future is not required to be of `Send`. This has been enabled through the use of [the `trait_variant` crate](https://docs.rs/trait-variant/latest/trait_variant/).
+A common use case of supertraits is weaken bounds involved in associated items. There are occassions that a weakend supertrait could be useful. Suppose that we have a factory trait in the following example. In this example, the `async fn make` factory method could be weakened so that the future returned could be used in the context where the future is not required to be of `Send`. This has been enabled through the use of [the `trait_variant` crate](https://docs.rs/trait-variant/latest/trait_variant/). The [`tower::Service`](https://docs.rs/tower/latest/tower/trait.Service.html) trait would benefit greatly from this proposal by having also the `!Send` bound for local service without major refactoring.
 
 ```rust
 #[trait_variant::make(IntFactory: Send)]
