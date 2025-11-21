@@ -698,7 +698,7 @@ Impl blocks using auto implementations are simply a short-hand for multiple impl
 When a trait has an `auto impl` entry, all impl blocks for the trait that do not use `extern impl` to opt-out of the auto implementation become equivalent to two impl blocks, one for the sub-trait and one for the super-trait. They are generated according to these rules:
 
 * Both impl blocks have the exact same set of generic items and where clauses, except that in the super trait any generic parameters that are unused by the super trait's `auto impl` are omitted.
-* The equivalent impl block for the super trait contains the items in the `impl` block that come from the super trait, plus any items specified in the block of the `auto impl` (if any). In case of duplicates, the item from the `impl` block is preferred.
+* The equivalent impl block for the super trait contains the items in the `impl` block that come from the super trait, plus any items specified in the block of the `auto impl` if any. In case of duplicates, the item from the `impl` block is preferred.
 * The equivalent impl block for the sub-trait contains any remaining items in the original `impl` block, plus an `extern impl` declaration.
 
 So for example, given these traits:
@@ -788,9 +788,40 @@ If the super trait is `unsafe`, then the `auto impl` declaration must also be `u
 
 ## Naming ambiguity
 
-If the sub-trait defines an item of the same name as an item in the super-trait, then the `auto impl` block must provide a default implementation of the item from the super trait.
+If the sub-trait defines an item of the same name as an item in the super-trait, then the `auto impl` block must provide an implementation of that item from the super trait.
 
-In this scenario, any item in an impl block of the sub-trait using the ambiguous name will always refer to the item from the sub-trait. This means that the only way to override the item from the super trait is to use `extern impl`.
+In this scenario, any item in an impl block of the sub-trait using the ambiguous name will always be resolved to the item from the sub-trait. This means that the only way to override the item from the super trait is to use `extern impl` or an overriding `auto impl` block inside the sub-trait `impl` block.
+
+If the sub-trait definition contains two `auto impl` directives and a sub-trait implementation has an item with a name that can be resolved to an associated item in both of the `auto impl` supertraits, irrespective of the associated item kind, then it **must** also be rejected as ambiguity. Either an `extern impl` statement or an overriding `auto impl` block is required for supplying an alternative definition of this item for each relevant supertrait.
+
+## Nesting `auto impl` in sub-trait defintion
+
+Nesting `auto impl` is allowed in a sub-trait definition or implementor.
+
+In a sub-trait definition site, only `auto impl`s is ever allowed in any level of nesting. If a target supertrait has at least one associated item or `auto impl` directive, **either** the full list of associated items and full list of `auto impl`s with concrete implementation are supplied as a default implementation at one nesting level, **or** the `auto impl` implementation is elided and the nesting terminates at this supertrait.
+
+```rust
+trait Supersupertrait {
+    type Type;
+}
+trait Supertrait: Supersupertrait {
+    auto impl Supersupertrait;
+}
+trait Subtrait: Supertrait {
+    // A full implementation as default is required at each nesting level, or ...
+    auto impl Supertrait {
+        auto impl Supersupertrait {
+            type Type = ();
+        }
+    }
+}
+trait Subtrait2: Supertrait {
+    // No default implementation is supplied and the nesting terminates at this supertrait
+    auto impl Supertrait;
+}
+```
+
+In a sub-trait implementor site, both `auto impl`s and `extern impl`s are allowed.
 
 ## Mandatory `extern impl` declaration
 
@@ -885,6 +916,31 @@ impl Subtrait for MyStruct {
 }
 ```
 The reason for this is that `Supertrait` as a marker trait has no associated items. As we could not decide if the `Supertrait` would be implemented within the bounds attached to the `impl Subtrait` block, due to lack of syntatical signals, it is better to require explicit confirmation from the implementor on the condition of the marker trait `Supertrait` when this marker is applicable to `MyStruct`.
+
+## SemVer consideration
+
+In this section we consider the impact on semantic versioning when a change to trait definition and implementors affects a `auto impl` syntax structure.
+
+### Addition of `auto impl` in sub-trait definition
+
+This is a SemVer hazard and can constitute a major change to public API, provided that the supertrait relation has not been changed. Implementers now have the obligation to ensure that their external implementation does not conflict with a potential default implementation at the sub-trait definition site.
+
+### Removal of `auto impl` in sub-trait definition
+
+This is a SemVer hazard and can constitute a major change. This requires the downstream implementors of the sub-trait to move the `auto impl` out of the `impl` block.
+
+### Addition and removal of `unsafe` qualifier on the `auto impl` directives
+
+This is a SemVer hazard and mandates a major change. The implementors should inspect their implementation against the trait safety specification and add or remove safety comments accordingly. It is possible that the semantics of the API would change as the safety obligation can propagate through the API across multiple crate boundaries.
+
+### Switching between `extern impl Supertrait` and `auto impl Supertrait`
+
+This is a SemVer hazard and mandates a minor change. Provided that both the sub-trait and the super-trait remains SemVer stable, this constitutes only a change in implementation detail.
+
+### Change in the proper defintion of super- and sub-traits
+
+This is a SemVer hazard and mandates a major change. The justification follows API change in trait irregardless of super- or sub-trait relationship. This scenario encompasses any changes in types, function signature, bounds, names.
+
 
 ---
 
@@ -992,12 +1048,6 @@ In any case, `auto impl Trait { .. }` blocks still remains available for cases w
 ## Why this naming?
 
 It is still up for discussion.
-
-## What is the SemVer implication?
-
-A conservative calibration is, introducing `auto impl` directive into `trait Trait` definition is a major version breaking change, even though this feature intends to reduce rewrites in downstream crates and possibly no rewrite is required. The reason is that it is most probably a sign of trait refinement so that trait bounds could have been evolved. It is especially true as associated type projections or paths to associated method might need to be refactored: `BigTrait::Type` item is now moved into `SmallTrait::Type` and it is not always clear if `T::Type` would definitely resolve to `SmallTrait::Type` or there would exist ambiguity because `BigTrait` may have other, possibly new, supertraits which might also contain a `Type` associated item. This already warrants a major version bump.
-
-The case of marker traits is easier. In the most conservative case, no trait facts are changed and a downstream crate only needs to decide whether `auto impl` or `extern impl` suits the best. Semver stability then only relies on, in case of adoption of `extern impl`, whether the trait bound of the marker supertrait `impl` has changed.
 
 # Prior art
 [prior-art]: #prior-art
