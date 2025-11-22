@@ -100,10 +100,17 @@ Each environment variable name is determined as follows:
 3. Append the feature name.
     a. For language and library features, append the name of the feature gate in uppercase. For example, `#![feature(asm_unwind)]` would append `ASM_UNWIND`.
     b. For cli flags, append the name of the flag in uppercase, excluding any `-Z` prefix, and replacing dashes with underscores. For example, `-Z validate-mir` would append `VALIDATE_MIR`.
-    
+
 As a quality-of-implementation concern, the tool may warn when a `crate_name` passed to an environment variable is not a valid Rust identifier (this may happen if, e.g., a cargo package name is used instead of the proper crate name).
 
-As a quality of implementation concern, the tool should warn when an unrecognized feature is permitted.
+As a quality-of-implementation concern, the tool should warn when an unrecognized feature is permitted.
+
+As a quality-of-implementation concern, the compiler should verify (i.e. through testing, not at runtime) that no CLI flag name would cause its environment variable to overlap with a feature gate.
+Existing feature gates that cause such a conflict should be renamed.
+For example, `-Z ub-checks` and `feature(ub_checks)` cause an overlap under this proposal; `feature(ub_checks)` should be renamed to avoid the overlap.
+Note that this is only relevant to the compiler, since other tools are already pseudo-namespaced and can't have conflicts.
+
+As a quality-of-implementation concern, the compiler should verify (through testing) that there are no conflicts between a compiler feature and an official tool feature; for example, it should verify that `feature(rustdoc_internals)` does not conflict with a rustdoc flag named `-Z internals`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
