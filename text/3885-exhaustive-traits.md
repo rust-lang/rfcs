@@ -91,7 +91,13 @@ Because the exhaustive-trait implementation set for the concrete type is determi
 
 ### Rule 3: Exhaustive traits and all their implementors must be `'static`.
 
-This gives us the ability to map traits to vtables. (TypeId -> dyn VTable) where `TypeId` represents the `TypeId` of the trait
+This gives us the ability to map traits to vtables. (TypeId -> dyn VTable) where `TypeId` represents the `TypeId` of the trait.
+
+
+
+### Rule 4: Exhaustive traits must be object safe
+
+This is self-explanatory. To be able to store the VTable of an `#[exhaustive]` trait implementation, the `#[exhaustive]` trait would need to be able to have a dyn vtable in the first place. 
 
 if all the rules are satisfied, code that is similar to the code below will be possible
 
@@ -227,7 +233,7 @@ Crates like `bevy_reflect` exist to allow this, but they rely on manual/derive r
 [unresolved-questions]: #unresolved-questions
 
 - Is `#[exhaustive]` really a good name for these kinds of traits?
-- Could `#[exhaustive]` be a `keyword` rather than an attribute
+- Could `#[exhaustive]` be a `keyword` rather than an attribute?
 - Is there a more efficient way to map traits to vtables other than using trait TypeIds?
 - Would it be possible to make the `#[exhaustive]` trait implementation rules more flexible while preserving soundness?
 
