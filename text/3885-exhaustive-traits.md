@@ -93,8 +93,6 @@ Because the exhaustive-trait implementation set for the concrete type is determi
 
 This gives us the ability to map traits to vtables. (TypeId -> dyn VTable) where `TypeId` represents the `TypeId` of the trait.
 
-
-
 ### Rule 4: Exhaustive traits must be object safe
 
 This is self-explanatory. To be able to store the VTable of an `#[exhaustive]` trait implementation, the `#[exhaustive]` trait would need to be able to have a dyn vtable in the first place. 
