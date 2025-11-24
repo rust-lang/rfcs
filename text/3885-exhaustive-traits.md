@@ -154,8 +154,13 @@ struct VTable {
 We would have compiler intrinsics that would enable us to get the VTable for a trait object
 
 ```rust
+// Auto implemented by traits that are exhaustive. Cannot be manually implemented.
+pub trait Exhaustive{
+    
+}
+
 #[rustc_intrinsic]
-pub const unsafe fn exhaustive_vtable_of<T: ?Sized + 'static, U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + ?Sized>(
+pub const unsafe fn exhaustive_vtable_of<T: ?Sized + Exhaustive + 'static, U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + ?Sized>(
     obj: *const U
 ) -> Option<core::ptr::DynMetadata<T>>;
 ```
