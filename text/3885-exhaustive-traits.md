@@ -161,7 +161,7 @@ We would have compiler intrinsics that would enable us to get the VTable for a t
 
 ```rust
 // Auto implemented by traits that are exhaustive. Cannot be manually implemented.
-pub trait Exhaustive{
+pub trait Exhaustive : 'static {
     
 }
 
