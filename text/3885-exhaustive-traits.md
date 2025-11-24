@@ -39,7 +39,7 @@ Making casting between unrelated traits a natural part of the language would mak
 
 If a trait is marked `#[exhaustive]`, then the compiler enforces certain rules that make cross trait casting work soundly.
 
-### Rule 1 :A crate may only implement an exhaustive trait for types it owns.
+### Rule 1: A crate may only implement an exhaustive trait for types it owns.
 
 Equivalently:
 
