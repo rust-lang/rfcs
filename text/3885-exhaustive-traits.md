@@ -1,7 +1,7 @@
 - Feature Name: `exhaustive_traits`
 - Start Date: 2025-11-24
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
-- Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
+- RFC PR: [rust-lang/rfcs#3885](https://github.com/rust-lang/rfcs/pull/3885)
+- Rust Issue: [rust-lang/rust#3885](https://github.com/rust-lang/rust/issues/3885)
 
 # Summary
 [summary]: #summary
@@ -39,7 +39,7 @@ Making casting between unrelated traits a natural part of the language would mak
 
 If a trait is marked `#[exhaustive]`, then the compiler enforces certain rules that make cross trait casting work soundly.
 
-### Rule 1:A crate may only implement an exhaustive trait for types it owns.
+### Rule 1 :A crate may only implement an exhaustive trait for types it owns.
 
 Equivalently:
 
