@@ -162,8 +162,8 @@ We would have compiler intrinsics that would enable us to get the VTable for a t
 ```rust
 use core::ptr;
 
-// Auto implemented by traits that are exhaustive. Cannot be manually implemented.
-pub trait Exhaustive: 'static {}
+// Auto implemented by 'dyn Trait' types that are exhaustive. Cannot be manually implemented.
+pub trait Exhaustive {}
 
 #[rustc_intrinsic]
 pub const unsafe fn exhaustive_vtable_of<
