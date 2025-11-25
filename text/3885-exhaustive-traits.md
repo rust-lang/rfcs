@@ -17,7 +17,7 @@ trait Behavior { ... }
 If I have dyn Trait, I want to be able to attempt:
 ```rust
 let any : &dyn Any = &MyStruct::new();
-let casted: Option<&dyn Behavior> = any.cross_trait_cast_ref::<dyn Behavior>()
+let casted: Option<&dyn Behavior> = cross_trait_cast_ref(any);
 ```
 # Motivation
 [motivation]: #motivation
@@ -85,7 +85,7 @@ impl<T> MyTrait<T> for MyType<T> {}
 impl<T> MyTrait<Vec<T>> for MyType<T> {}
 ```
 
-This makes it impossible for type "T" to implement an infinite amount of `#[exhaustive]` traits, which is what we do not want, since the implementation set of #[exhaustive] traits should be deterministic.
+This makes it impossible for a type to implement an infinite amount of `#[exhaustive]` traits, which is what we do not want, since the implementation set of #[exhaustive] traits should be deterministic.
 
 Because the exhaustive-trait implementation set for the concrete type is deterministic, the compiler/runtime can safely use per-type metadata to answer “does this type implement `Behavior`?” in different crates without coherence surprises
 
@@ -115,7 +115,7 @@ fn main() {
     let t = T(7);
 
     let a: &dyn A = &t;
-    let b: &dyn B = a.cross_trait_cast_ref::<dyn B>().unwrap(); // cross-trait cast
+    let b: &dyn B = cross_trait_cast_ref(a).unwrap(); // cross-trait cast
 
     assert_eq!(a.a(), 7);
     assert_eq!(b.b(), 14);
@@ -131,7 +131,7 @@ fn main() {
 
 Each type will have an array (`[(TypeId, TraitVTable)]`), where `TypeId` is the `TypeId` of the `dyn Trait`. this is possible because of the `'static only` restriction, and this is similar to how C# does it.
 
-Essentially, an iteration would be done, until it finds the relevant vtable. If it cannot be found, `None` would be returned. Ofc, this makes it O(n), but C# has a fast path which we could be able to emulate, which I have yet to fully understand. Something we could discuss.
+Essentially, an iteration would be done, until it finds the relevant vtable. If it cannot be found, `None` would be returned. Of course, this makes it O(n), but C# has a fast path which we could be able to emulate, which I have yet to fully understand. Something we could discuss.
 
 Inside the vtable of every trait object, a ptr that represents the array can be found. Types that do not have any exhaustive traits implemented, and non static types could simply have a ptr that represents an empty array
 
@@ -158,19 +158,50 @@ struct VTable {
 We would have compiler intrinsics that would enable us to get the VTable for a trait object
 
 ```rust
+use core::ptr;
+
 // Auto implemented by traits that are exhaustive. Cannot be manually implemented.
-pub trait Exhaustive : 'static {
-    
-}
+pub trait Exhaustive: 'static {}
 
 #[rustc_intrinsic]
-pub const unsafe fn exhaustive_vtable_of<T: ?Sized + Exhaustive + 'static, U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + ?Sized>(
-    obj: *const U
-) -> Option<core::ptr::DynMetadata<T>>;
+pub const unsafe fn exhaustive_vtable_of<
+    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + ?Sized,
+    U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + Exhaustive + 'static + ?Sized>(
+    obj: *const T
+) -> Option<core::ptr::DynMetadata<U>>;
 ```
 
-where `U` is the trait object, `T` is the trait object we want to cast to. 
-This intrinsic would be used by a non intrinsic functions to enable safe cross trait casting. Namely `cross_trait_cast_ref` and `cross_trait_cast_mut`
+And then we would use it to implement the functions `cross_trait_cast_ref` and `cross_trait_cast_mut`
+
+```rust
+use core::ptr;
+
+pub fn cross_trait_cast_ref<
+    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + ?Sized,
+    U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + Exhaustive + 'static + ?Sized>
+(obj: &T) -> Option<&U>
+
+{
+    let meta = unsafe { exhaustive_vtable_of::<T, U>(obj)? };
+    let data = obj as *const T as *const ();
+    let ptr = ptr::from_raw_parts::<U>(data, meta);
+    Some(unsafe { &*ptr })
+}
+
+pub fn cross_trait_cast_mut<
+    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + ?Sized,
+    U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + Exhaustive + 'static + ?Sized>
+(obj: &mut T) -> Option<&mut U>
+
+{
+    let meta = unsafe { exhaustive_vtable_of::<T, U>(obj)? };
+    let data = obj as *mut T as *mut ();
+    let ptr = ptr::from_raw_parts_mut::<U>(data, meta);
+    Some(unsafe { &mut *ptr })
+}
+```
+
+where `T` is the trait object, `U` is the trait object we want to cast to. 
 
 # Drawbacks
 [drawbacks]: #drawbacks
