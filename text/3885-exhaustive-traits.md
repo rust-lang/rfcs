@@ -165,7 +165,7 @@ pub trait Exhaustive: 'static {}
 
 #[rustc_intrinsic]
 pub const unsafe fn exhaustive_vtable_of<
-    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + ?Sized,
+    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + 'static + ?Sized,
     U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + Exhaustive + 'static + ?Sized>(
     obj: *const T
 ) -> Option<core::ptr::DynMetadata<U>>;
@@ -177,7 +177,7 @@ And then we would use it to implement the functions `cross_trait_cast_ref` and `
 use core::ptr;
 
 pub fn cross_trait_cast_ref<
-    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + ?Sized,
+    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + 'static + ?Sized,
     U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + Exhaustive + 'static + ?Sized>
 (obj: &T) -> Option<&U>
 
@@ -189,7 +189,7 @@ pub fn cross_trait_cast_ref<
 }
 
 pub fn cross_trait_cast_mut<
-    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + ?Sized,
+    T: ptr::Pointee<Metadata = ptr::DynMetadata<T>> + 'static + ?Sized,
     U: ptr::Pointee<Metadata = ptr::DynMetadata<U>> + Exhaustive + 'static + ?Sized>
 (obj: &mut T) -> Option<&mut U>
 
