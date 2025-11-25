@@ -133,7 +133,7 @@ Each type will have an array (`[(TypeId, TraitVTable)]`), where `TypeId` is the 
 
 Essentially, an iteration would be done, until it finds the relevant vtable. If it cannot be found, `None` would be returned. Of course, this makes it O(n), but C# has a fast path which we could be able to emulate, which I have yet to fully understand. Something we could discuss.
 
-Inside the vtable of every trait object, a ptr that represents the array can be found. Types that do not have any exhaustive traits implemented, and non static types could simply have a ptr that represents an empty array
+Inside the vtable of every trait object, a ptr that represents the array can be found.
 
 A quick sketch
 
