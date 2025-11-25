@@ -89,9 +89,9 @@ This makes it impossible for a type to implement an infinite amount of `#[exhaus
 
 Because the exhaustive-trait implementation set for the concrete type is deterministic, the compiler/runtime can safely use per-type metadata to answer “does this type implement `Behavior`?” in different crates without coherence surprises
 
-### Rule 3: Exhaustive traits and all their implementors must be `'static`.
+### Rule 3: 'static requirement for cross-trait casting
 
-This gives us the ability to map traits to vtables. (TypeId -> dyn VTable) where `TypeId` represents the `TypeId` of the trait.
+Exhaustive traits and their implementors do not have to be 'static in general. However, this cross-trait casting mechanism is only available when both the source and target trait objects are 'static (that is, dyn Trait + 'static, backed by a 'static concrete type). This is required to avoid undefined behaviour.
 
 ### Rule 4: Exhaustive traits must be object safe
 
