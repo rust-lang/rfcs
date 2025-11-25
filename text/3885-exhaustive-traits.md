@@ -131,7 +131,7 @@ fn main() {
 
 Each type will have an array (`[(TypeId, TraitVTable)]`), where `TypeId` is the `TypeId` of the `dyn Trait`. This is similar to how C# does it.
 
-If either the dyn Trait type or the implementing type is not 'static, the compiler conceptually treats them as 'static when computing the internal (TypeId → TraitVTable) mapping used for cross-trait casting. This is sound because the cross-trait casting operation only works when both the source and target trait object types are `'static` (that is, dyn Trait + 'static). so non 'static variants can never observe or rely on this mapping.
+If either the dyn Trait type or the implementing type is not 'static, the compiler conceptually treats them as 'static when computing the internal (TypeId → TraitVTable) mapping used for cross-trait casting. This is sound because the cross-trait casting operation only works when both the source and target trait object types are `'static` (that is, dyn Trait + 'static). So non 'static variants can never observe or rely on this mapping.
 
 Essentially, an iteration would be done, until it finds the relevant vtable. If it cannot be found, `None` would be returned. Of course, this makes it O(n), but C# has a fast path which we could be able to emulate, which I have yet to fully understand. Something we could discuss.
 
