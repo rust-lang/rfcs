@@ -166,7 +166,7 @@ For an expression `expr.NAME` where `NAME` is declared as `const self NAME: Type
 
 ### Trait objects
 
-For a trait object: `&dyn Trait`, where Trait defines:
+For a trait object: `&dyn Trait`, where `Trait` defines:
 
 ```rust
 trait Trait {
@@ -241,7 +241,7 @@ This RFC can be seen as:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Is there a better declaration syntax than `const self : TYPE`?
+* Is there a better declaration syntax than `const self NAME : Type`?
 * Is `obj.METADATA_FIELD` syntax too conflicting with `obj.normal_field`?
 * Is `obj.(Trait.METADATA_FIELD)` a good syntax for disambiguating?
 # Future possibilities
