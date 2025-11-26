@@ -233,13 +233,7 @@ Downsides:
 # Prior art
 [prior-art]: #prior-art
 
-Rust today: associated consts and const generics:
-* Good for type-level, compile-time constants.
-* Not designed for dynamic access via trait objects.
-
-C++ / C# / Java:
-* Generally use virtual/virtual-like methods returning constants or static fields accessed via types.
-* There is no standard “inline metadata in vtable” feature exposed at the language level for per-implementation constants.
+As of the day this RFC was published, there is no mainstream language with a similar feature. The common workaround is having a virtual function return the literal, but that does not mean we should not strive for a more efficient method.
 
 This RFC can be seen as:
 * Making explicit a pattern that compiler and runtimes already rely on internally (metadata attached to vtables).
