@@ -63,9 +63,9 @@ Imagine a hot loop walking over thousands of `&dyn Behavior` objects every frame
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## What is const self?
+### What is const self?
 
-`const self`introduces metadata fields: constants that belong to a type (or trait implementation) but can be accessed through a `self` expression.
+`const self` introduces metadata fields: constants that belong to a type (or trait implementation) but can be accessed through a `self` expression.
 
 ### Example with a concrete type:
 
@@ -122,7 +122,7 @@ Naming conventions for `const self` fields follow the same conventions as other 
 To be more specific about which trait's `const self` field should be accessed, a new `instance.(some_path::Trait.NAME)` syntax can be used. 
 
 NOTE: `T::FIELD` would give a compile-time error when `FIELD` is declared as `const self FIELD: Type`; `const self` fields are only accessible through value syntax (`expr.FIELD`), not type paths.
-## How should programmers think about it?
+### How should programmers think about it?
 
 Programmers can think of `const self` metadata fields as “const but per-type” constants that can be read through references and trait objects, and a replacement for patterns like:
 ```rust
@@ -141,13 +141,13 @@ For new Rust programmers, `const self` can be introduced after associated consta
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
-## Restrictions
+### Restrictions
 `const self` declarations:
 * Must follow the same const-evaluation rules as associated constants (i.e., const expression is evaluated at compile time).
 * Are per concrete type (for inherent impls) or per (Trait, ConcreteType) pair for trait implementations.
 * The type `T` of a `const self` field must be `Sized` and `'static`, since it is stored in static metadata and references to it have type `&'static T`.
 
-## Resolution Semantics
+### Resolution Semantics
 
 
 For a path expression  `T::NAME` where `NAME` is a `const self` field on type T, it would give a compiler error. 
@@ -164,7 +164,7 @@ For an expression `expr.NAME` where `NAME` is declared as `const self NAME: Type
 * If both a normal struct field and a const self field of the same name are visible, there would be an ambiguity error, which can be resolved by `expr.(Trait.NAME)` syntax.
 * If multiple traits, both implemented by type `T`, provide `const self` fields with the same name and `expr.NAME` is used (where `expr` is an instance of type `T`), that is also an ambiguity error. The programmer must disambiguate using `expr.(Trait.NAME)`.
 
-## Trait objects
+### Trait objects
 
 For a trait object: `&dyn Trait`, where Trait defines:
 
@@ -184,7 +184,7 @@ We would have this VTable layout
 [4] AGE: i32 //stored inline
 ```
 This layout is conceptual; the precise placement of metadata in the vtable is left as an implementation detail, as long as the observable behavior (one metadata load per access) is preserved.
-## Lifetimes
+### Lifetimes
 
 Taking a reference to a `const self` field always yields a `&'static T`, because the data lives in static metadata
 ```rust
@@ -206,7 +206,7 @@ let p: &'static i32 = &bar.METADATA_FIELD;
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why this design?
+### Why this design?
 * Explicitly value-only access (expr.NAME) keeps the mental model simple, as it functions similarly to a field access
 
 * If you have a trait object, you can read its per-impl metadata.
@@ -218,10 +218,10 @@ let p: &'static i32 = &bar.METADATA_FIELD;
   * Having to explain when a const is “type-level” vs “metadata-level” under the same syntax.
 * A metadata load is cheaper and more predictable than a virtual method call. Especially important when touching many trait objects in tight loops.
 
-## Why not a macro/library?
+### Why not a macro/library?
 A library or macro cannot extend the vtable layout or teach the optimizer that certain values are metadata; it can only generate more methods or global lookup tables. `const self` requires language and compiler support to achieve the desired ergonomics and performance.
 
-## Alternatives
+### Alternatives
 Keep using methods:
 ```rust
 fn value(&self) -> u32; // remains the standard way.
