@@ -42,7 +42,6 @@ impl Foo for MyType {
 ```
 For monomorphized code where Self is known, `MyType::VALUE` is an excellent fit. 
 
-
 However: You cannot directly read an associated const through a `&dyn Foo`. There is no stable, efficient way to write `foo.VALUE` where `foo: &dyn Foo` and have that dynamically dispatch to the concrete implementation’s const value. 
 
 The common workaround is a vtable method:
@@ -65,7 +64,7 @@ Imagine a hot loop walking over thousands of `&dyn Behavior` objects every frame
 
 ### What is const self?
 
-`const self` introduces metadata fields: constants that belong to a type (or trait implementation) but can be accessed through a `self` expression.
+`const self` introduces metadata fields: constants that belong to a type (or trait implementation) but are accessed through a `self` expression. 
 
 ### Example with a concrete type:
 
@@ -84,6 +83,8 @@ fn write_header(h: &Foo) {
     let ptr: &'static u32 = &h.CONST_FIELD;
 }
 ```
+
+A `const self` field's type must implement `Freeze`, must be `'static`, and must be `Sized`. These rules are enforced by the compiler.
 
 ### Trait objects and metadata fields
 
@@ -121,7 +122,7 @@ Naming conventions for `const self` fields follow the same conventions as other 
 
 To be more specific about which trait's `const self` field should be accessed, a new `instance.(some_path::Trait.NAME)` syntax can be used. 
 
-NOTE: `T::FIELD` would give a compile-time error when `FIELD` is declared as `const self FIELD: Type`; `const self` fields are only accessible through value syntax (`expr.FIELD`), not type paths.
+`T::FIELD` would give a compile-time error when `FIELD` is declared as `const self FIELD: Type`; `const self` fields are only accessible through value syntax (`expr.FIELD`), not type paths.
 ### How should programmers think about it?
 
 Programmers can think of `const self` metadata fields as “const but per-type” constants that can be read through references and trait objects, and a replacement for patterns like:
@@ -143,14 +144,14 @@ For new Rust programmers, `const self` can be introduced after associated consta
 [reference-level-explanation]: #reference-level-explanation
 ### Restrictions
 `const self` declarations:
-* Must follow the same const-evaluation rules as associated constants (i.e., const expression is evaluated at compile time).
+* Can only be assigned to constant expressions.
 * Are per concrete type (for inherent impls) or per (Trait, ConcreteType) pair for trait implementations.
-* The type `T` of a `const self` field must be `Sized` and `'static`, since it is stored in static metadata and references to it have type `&'static T`.
+* The type `T` of a `const self` field must be `Sized`, `Freeze`, and `'static` to prevent unsoundness.
 
 ### Resolution Semantics
 
 
-For a path expression  `T::NAME` where `NAME` is a `const self` field on type T, it would give a compiler error. 
+For a path expression `T::NAME` where `NAME` is a `const self` field on type T, it would give a compiler error. 
 This is because allowing `T::NAME` syntax would also mean that `dyn Trait::NAME` syntax should be valid, which shouldn't work, since the `dyn Trait` type does not have any information on the `const` value. 
 
 `const self` fields are not simply type-level constants; they are value-accessible metadata.
@@ -186,11 +187,11 @@ We would have this VTable layout
 This layout is conceptual; the precise placement of metadata in the vtable is left as an implementation detail, as long as the observable behavior (one metadata load per access) is preserved.
 ### Lifetimes
 
-Taking a reference to a `const self` field always yields a `&'static T`, because the data lives in static metadata
+Taking a reference to a `const self` field always yields a `&'static T`. This is sound since `const self` types are required to implement `Freeze`, and are required to be `'static`.
 ```rust
 let p: &'static i32 = &bar.METADATA_FIELD;
 ```
-
+However, you get a potentially different `'static` reference every time you use the same `const self` field from the same type. This is because the storage for a `const self` field potentially lives in a trait object’s metadata, and different trait objects of the same underlying type do not necessarily share the same exact metadata.
 # Drawbacks
 [drawbacks]: #drawbacks
 
