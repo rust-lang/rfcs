@@ -6,25 +6,27 @@
 # Summary
 [summary]: #summary
 
-This RFC proposes per-type fields that can be accessed through a value or trait object using a new `const self` syntax:
+This RFC proposes per-type fields that can be accessed through a value or trait object using new `const self` and `static const self` syntax:
 
 ```rust
 impl Foo{
     const self METADATA_FIELD: i32 = 5;
+    static const self STATIC_METADATA_FIELD: i32 = 10;
 }
 trait Bar {
     const self METADATA_FIELD: i32;
+    static const self STATIC_METADATA_FIELD: i32;
 }
 ```
 This allows code like:
 ```rust
 fn use_bar(bar: &dyn Bar) {
-    let x: i32 = bar.METADATA_FIELD;
-    let r: &'static i32 = &bar.METADATA_FIELD;
+    let x: i32 = bar.METADATA_FIELD; // const self
+    let y: &'static i32 = &bar.STATIC_METADATA_FIELD; // static const self
 }
 fn use_foo(foo: &Foo) {
-    let x: i32 = foo.METADATA_FIELD;
-    let r: &'static i32 = &foo.METADATA_FIELD;
+    let x: i32 = foo.METADATA_FIELD; // const self
+    let y: &'static i32 = &foo.STATIC_METADATA_FIELD; // static const self
 }
 ```
 When combined with traits, enables object-safe, per-implementation constant data that can be read through `&dyn Trait` in a more efficient manner than a dynamic function call, by storing the constant in trait object metadata instead of as a vtable method.
@@ -40,7 +42,7 @@ impl Foo for MyType {
     const VALUE: i32 = 5;
 }
 ```
-For monomorphized code where Self is known, `MyType::VALUE` is an excellent fit. 
+For monomorphized code where `Self` is known, `MyType::VALUE` is an excellent fit. 
 
 However: You cannot directly read an associated const through a `&dyn Foo`. There is no stable, efficient way to write `foo.VALUE` where `foo: &dyn Foo` and have that dynamically dispatch to the concrete implementation’s const value. 
 
@@ -51,11 +53,11 @@ trait Foo {
 }
 ```
 
-This forces a dynamic function call, which is very slow compared to the `const self` equivalent, and does not have as much compiler optimization potential.
+This forces a dynamic function call, which is very slow compared to the `const self` and `static const self` equivalent, and does not have as much compiler optimization potential.
 
-When using a trait object, `const self` stores the bits directly inside the vtable, so accessing it is around as performant as accessing a field from a struct, which is of course, much more performant than a dynamic function call.
+When using a trait object, `const self` and `static const self` store the bits directly inside the vtable, so accessing it is around as performant as accessing a field from a struct, which is of course, much more performant than a dynamic function call.
 
-Imagine a hot loop walking over thousands of `&dyn Behavior` objects every frame to read a tiny “flag”. If that’s a virtual method, you pay a dynamic function call on every object. With `const self`, you’re just doing a metadata load, so the per-object overhead is noticeably much smaller.
+Imagine a hot loop walking over thousands of `&dyn Behavior` objects every frame to read a tiny “flag”. If that’s a virtual method, you pay a dynamic function call on every object. With `const self` and `static const self`, you’re just doing a metadata load, so the per-object overhead is noticeably much smaller.
 
 
 
@@ -66,7 +68,7 @@ Imagine a hot loop walking over thousands of `&dyn Behavior` objects every frame
 
 `const self` introduces metadata fields: constants that belong to a type (or trait implementation) but are accessed through a `self` expression. 
 
-### Example with a concrete type:
+Example:
 
 ```rust
 struct Foo;
@@ -78,13 +80,51 @@ impl Foo {
 fn write_header(h: &Foo) {
     // Reads a per-type constant through a value:
     assert_eq!(h.CONST_FIELD, 1);
-
-    // It is a &'static reference
-    let ptr: &'static u32 = &h.CONST_FIELD;
+    let value: u32 = h.CONST_FIELD;
 }
 ```
 
-A `const self` field's type must implement `Freeze`, must be `'static`, and must be `Sized`. These rules are enforced by the compiler.
+A `const self` field's type can have interior mutability, because the compiler does not operate on the field directly by its reference, even if it is stored in a trait object's metadata.
+It first copies the field, and does the operations on that copied value, similar to how `const` variables work in rust.
+This makes using it with interior mutability sound.
+
+When using references like shown below:
+
+```rust
+let value : &u32 = &h.CONST_FIELD;
+```
+
+This works similarly to how `const` variables work in Rust: it copies `CONST_FIELD`, then takes a reference to that copy. Unlike a normal `const` item though, the resulting reference does **not** have a `'static` lifetime; it has a temporary lifetime, as if you had written:
+
+```rust
+let tmp: u32 = h.CONST_FIELD; // copied
+let value: &u32 = &tmp;
+```
+### What is static const self
+
+
+`static const self` is similar to `const self`, however, working on `static const self` fields means working directly with its reference. Think: global `static` variable you are not allowed to mutate.
+This means that the type of a `static const self` field must not have any interior mutability. In other words, the type of the field must implement `Freeze`. This is enforced by the compiler.
+
+Example:
+
+```rust
+struct Foo;
+
+impl Foo {
+    static const self STATIC_CONST_FIELD: u32 = 1;
+}
+
+fn write_header(h: &Foo) {
+    // Reads a per-type constant through a value:
+    assert_eq!(h.STATIC_CONST_FIELD, 1);
+    let reference: &'static u32 = &h.STATIC_CONST_FIELD;
+}
+```
+`static const self` field's references have `'static` lifetimes. 
+
+Note that unlike normal `static` variables, you cannot rely on the reference of a `static const self` field to be the same reference of the same `static const self` field of the same underlying type.
+
 
 ### Trait objects and metadata fields
 
@@ -118,14 +158,14 @@ It is much more efficient than having a `format_version(&self)`, trait method, w
 
 On a non trait object, accessing `FORMAT_VERSION` will be as efficient as accessing a `const` value.
 
-Naming conventions for `const self` fields follow the same conventions as other `const`/associated constants (e.g. `SCREAMING_SNAKE_CASE` as recommended by the Rust style guide); this RFC does not introduce any new naming rules.
+Naming conventions for `const self` and `static const self` fields follow the same conventions as other `const` and `static` variables (e.g. `SCREAMING_SNAKE_CASE` as recommended by the Rust style guide); this RFC does not introduce any new naming rules.
 
-To be more specific about which trait's `const self` field should be accessed, a new `instance.(some_path::Trait.NAME)` syntax can be used. 
+To be more specific about which trait's `const self`/`static const self`  field should be accessed, a new `instance.(some_path::Trait.NAME)` syntax can be used. 
 
-`T::FIELD` would give a compile-time error when `FIELD` is declared as `const self FIELD: Type`; `const self` fields are only accessible through value syntax (`expr.FIELD`), not type paths.
+`T::FIELD` would give a compile-time error when `FIELD` is a `static const self` or `const self` field. These fields are only accessible through value syntax (`expr.FIELD`), not type paths.
 ### How should programmers think about it?
 
-Programmers can think of `const self` metadata fields as “const but per-type” constants that can be read through references and trait objects, and a replacement for patterns like:
+Programmers can think of `const self`/`static const self` metadata fields as “const but per-type” constants that can be read through references and trait objects, and a replacement for patterns like:
 ```rust
 trait Foo {
     fn version(&self) -> u32; // just returns a literal 
@@ -135,35 +175,61 @@ Where the data truly is constant and better modeled as a field in metadata.
 
 ### Teaching differences: new vs existing Rust programmers
 
-For new Rust programmers, `const self` can be introduced after associated constants:
+For new Rust programmers, `const self` and `static const self` can be introduced after associated constants:
 * Types can have constants: `Type::CONST`
 * Sometimes you want those constants visible through trait objects; that’s where `const self` metadata fields come in.
+* Sometimes you want to be able to directly reference those constants. Good for when it is too large; that's where `static const self` metadata fields come in.
 * You can access `self.CONST_FIELD` even if self is `&dyn Trait`, as long as the trait declares it.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 ### Restrictions
-`const self` declarations:
-* Can only be assigned to constant expressions.
-* Are per concrete type (for inherent impls) or per (Trait, ConcreteType) pair for trait implementations.
-* The type `T` of a `const self` field must be `Sized`, `Freeze`, and `'static` to prevent unsoundness.
+
+For `const self`, we only ever operate on copies, so its type having interior mutability is fine.
+
+For `static const self`, we get a `&'static T` directly from the metadata; to keep that sound we additionally require `T: Freeze` so that `&T` truly represents immutable data.
+
+Both `const self` and `static const self` field's type are required to be `Sized`, and must have a `'static` lifetime.
+
+Assume we have:
+
+```rust
+struct Foo;
+impl Foo{
+    const self X: Type = value;
+    static const self Y: OtherType = value;
+}
+```
+
+then it can be used like:
+
+```rust
+
+let variable = obj.X; //ok. Copies it
+let variable2 : &_ = &obj.X; // ok, but what it actually does is copy it, and uses the reference of the copy. Reference lifetime is not 'static.
+
+
+let variable3 = obj.Y; // ok if the type of 'Y' implements Copy
+let variable4 : &'static _ = &obj.Y; // ok. Lifetime of reference is 'static, uses the reference directly
+```
+
 
 ### Resolution Semantics
 
 
-For a path expression `T::NAME` where `NAME` is a `const self` field of type T, it would give a compiler error. 
+For a path expression `T::NAME` where `NAME` is a `const self` or `static const self` field of type `T`, it would give a compiler error. 
 This is because allowing `T::NAME` syntax would also mean that `dyn Trait::NAME` syntax should be valid, which shouldn't work, since the `dyn Trait` type does not have any information on the `const` value. 
 
-`const self` fields are not simply type-level constants; they are value-accessible metadata.
+`const self` and `static const self` fields are not simply type-level constants; they are value-accessible metadata.
 
-For an expression `expr.NAME` where `NAME` is declared as `const self NAME: Type`
+For an expression `expr.NAME` where `NAME` is declared as `const self NAME: Type` or `static const self NAME: Type`:
 
 * First, the compiler tries to resolve `NAME` as a normal struct field on the type of expr.
-* If that fails, it tries to resolve `NAME` as a `const self` field from:
+* If that fails, it tries to resolve `NAME` as a `const self`/`static const self` field from:
   * inherent impls of the receiver type
   * If that fails, it then tries to resolve scoped traits implemented by the receiver type, using the same autoderef/autoref rules as method lookup.
-* If both a normal struct field and a const self field of the same name are visible, there would be an ambiguity error, which can be resolved by `expr.(Trait.NAME)` syntax.
-* If multiple traits, both implemented by type `T`, provide `const self` fields with the same name and `expr.NAME` is used (where `expr` is an instance of type `T`), that is also an ambiguity error. The programmer must disambiguate using `expr.(Trait.NAME)`.
+* A struct cannot have a normal field and an inherent `const self`/`static const self` field with the same name. 
+* If multiple traits, both implemented by type `T` and are in scope, provide `const self` or `static const self` fields with the same name and `expr.NAME` is used (where `expr` is an instance of type `T`), that is also an ambiguity error. The programmer must disambiguate using `expr.(Trait.NAME)`.
 
 ### Trait objects
 
@@ -173,6 +239,7 @@ For a trait object: `&dyn Trait`, where `Trait` defines:
 trait Trait {
     fn do_something(&self);
     const self AGE: i32;
+    const self LARGE_VALUE: LargeType;
 }
 ```
 
@@ -183,15 +250,16 @@ We would have this VTable layout
 [2] align: usize
 [3] do_something_fn_ptr
 [4] AGE: i32 //stored inline
+[5] LARGE_VALUE: LargeType //stored inline
 ```
 This layout is conceptual; the precise placement of metadata in the vtable is left as an implementation detail, as long as the observable behavior (one metadata load per access) is preserved.
 ### Lifetimes
 
-Taking a reference to a `const self` field always yields a `&'static T`. This is sound since `const self` types are required to implement `Freeze`, and are required to be `'static`.
+Taking a reference to a `static const self` field always yields a `&'static T`. This is sound since `static const self` types are required to implement `Freeze`, and are required to be `'static`.
 ```rust
-let p: &'static i32 = &bar.METADATA_FIELD;
+let p: &'static i32 = &bar.STATIC_METADATA_FIELD;
 ```
-However, you get a potentially different `'static` reference every time you use the same `const self` field from the same type. This is because the storage for a `const self` field potentially lives in a trait object’s metadata, and different trait objects of the same underlying type do not necessarily share the same exact metadata.
+However, you get a potentially different `'static` reference every time you use the same `static const self` field from the same type. This is because the storage for a `static const self` field potentially lives in a trait object’s metadata, and different trait objects of the same underlying type do not necessarily share the same exact metadata.
 # Drawbacks
 [drawbacks]: #drawbacks
 
@@ -220,7 +288,7 @@ However, you get a potentially different `'static` reference every time you use 
 * A metadata load is cheaper and more predictable than a virtual method call. Especially important when touching many trait objects in tight loops.
 
 ### Why not a macro/library?
-A library or macro cannot extend the vtable layout or teach the optimizer that certain values are metadata; it can only generate more methods or global lookup tables. `const self` requires language and compiler support to achieve the desired ergonomics and performance.
+A library or macro cannot extend the vtable layout or teach the optimizer that certain values are metadata; it can only generate more methods or global lookup tables. `const self`/`static const self` requires language and compiler support to achieve the desired ergonomics and performance.
 
 ### Alternatives
 Keep using methods:
@@ -242,10 +310,10 @@ This RFC can be seen as:
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-* Is there a better declaration syntax than `const self NAME : Type`?
+* Is there a better declaration syntax than `static const self NAME : Type`/`const self NAME : Type`?
 * Is `obj.METADATA_FIELD` syntax too conflicting with `obj.normal_field`?
 * Is `obj.(Trait.METADATA_FIELD)` a good syntax for disambiguating?
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-* Faster type matching than `dyn Any`: Since `dyn Any` does a virtual call to get the `TypeId`, using `const self` to store the `TypeId` Would be a much more efficient way to downcast.
+* Faster type matching than `dyn Any`: Since `dyn Any` does a virtual call to get the `TypeId`, using `static const self` to store the `TypeId` would be a much more efficient way to downcast.
