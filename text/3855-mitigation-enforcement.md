@@ -311,8 +311,8 @@ kinds of CLI arguments.
 
 ## Limiting the set of crates that are allowed to bypass enforcement
 
-You could have a syntax like `-C allow-partial-mitigations=stack-protector=@stdlib+foo`
-`-C stack-protector=strong-noenforce=@stdlib+foo` or  some other syntax (using `+` since
+You could have a syntax like `-C allow-partial-mitigations=stack-protector=@stdlib+foo`,
+`-C stack-protector=strong-noenforce=@stdlib+foo`, or some other syntax (using `+` since
 `,` should have a different level of precedence), which would only allow the mitigation
 to be partial on a specified set of crate names.
 
@@ -344,7 +344,7 @@ you have a "sanitizer runtime" crate that is compiled with the following options
 Then dependencies will need to use it via `-C sanitizer=shadow-call-stack-noenforce`
 rather than `-C sanitizer=shadow-call-stack`, otherwise they will get an error.
 
-As far as I can need, there is no current demand for that sort of sanitizer runtime,
+As far as I can see, there is no current demand for that sort of sanitizer runtime,
 but if that is desired, it might be a good idea to add a
 `-C pretend-mitigation-enabled=shadow-call-stack`, and possibly to make
 `-C unsafe-allow-abi-mismatch` do that for crates that are target modifiers.
@@ -389,7 +389,7 @@ If we find out that some mitigations have a positive cost-benefit ratio
 for the standard library (probably at least [`-Z stack-protector`]), we
 probably want to ship a standard library supporting them by default, but
 in a way that still allows people to compile code without mitigations (for
-example, shipaa `libstd` with `-C stack-protector=strong`, but allow users
+example, ship a `libstd` with `-C stack-protector=strong`, but allow users
 to compile their own code with `-C stack-protector=none` using that
 `libstd`) if that fulfills their security/performance tradeoff better.
 
@@ -497,7 +497,7 @@ This is somewhat hard to do with an external tool, since there is
 no way of looking at a binary and telling what mitigations its components
 have.
 
-There are howevever some external tools that do check for mitigations,
+There are however some external tools that do check for mitigations,
 but they have limitations:
 
 1. [`hardening-check(1)`] exists, but its check for stack smashing protection only
@@ -505,7 +505,7 @@ but they have limitations:
    every interesting function has it enabled.
 2. The Linux kernel has [`objtool`], which checks for some other mitigations (for
    example, retpolines). It however needs to access the `.o` object files
-   rather than to the final linked executable or shared library - which
+   rather than the final linked executable or shared library - which
    requires its user to control the linking process - and also has hardcoded
    limitations that make it only suitable for the Linux kernel, rather than
    being useful as a general-purpose tool.
