@@ -151,7 +151,7 @@ For new Rust programmers, `const self` can be introduced after associated consta
 ### Resolution Semantics
 
 
-For a path expression `T::NAME` where `NAME` is a `const self` field on type T, it would give a compiler error. 
+For a path expression `T::NAME` where `NAME` is a `const self` field of type T, it would give a compiler error. 
 This is because allowing `T::NAME` syntax would also mean that `dyn Trait::NAME` syntax should be valid, which shouldn't work, since the `dyn Trait` type does not have any information on the `const` value. 
 
 `const self` fields are not simply type-level constants; they are value-accessible metadata.
