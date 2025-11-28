@@ -47,8 +47,7 @@ For an explanation for RFC readers, see [Motivation](#motivation).
 [reference-level-explanation]: #reference-level-explanation
 
 There are two parts to this feature, one handled in the compiler itself and another handled by the incremental system
-and heavily interacting with Cargo.
-
+and heavily interacting with Cargo as they have the most power over the `target` directory layout.
 
 The easiest part is handled by the compiler, where "safe points to exit" are designated (such as in between of parsing
 to AST and macro-expansion, or lowering THIR to MIR). Depending on the input that the `--target-stage` option takes,
@@ -76,7 +75,7 @@ and only process/store the parts that actually differ.
 ## Non-overlapping cases
 
 Not all cases overlap, for example, while `-Cdebug-assertions` is marked as "codegen", it's a commonly used option for
-detecting the profile of the compilation in `cfg`s. That is the reason that some stage dependencies are can affect
+detecting the profile of the compilation in `cfg`s. That is the reason that some stage dependencies can affect
 several stages and be enabled/disabled for some stages independently.
 
 In the example of `-Cdebug-assertions`, the attribute parser would check for the presence of `#[cfg(debug_assertions)]`,
@@ -101,7 +100,6 @@ Why should we *not* do this?
 - This flag would override the currently unstable and untracked `no_analysis` option. Althought this flag currently
 exists, it doesn't see any real use inside the compiler, nor does it have a tracking issue. It doesn't operate with
 Cargo, and isn't designed to be as loadbearing as this RFC proposes.
-
 
 # Prior art
 [prior-art]: #prior-art
@@ -130,9 +128,6 @@ It seems that Rust currently has the most documented incremental compilation sys
 
 This effort helps push forward towards a query-driven compiler, where all big "stages" of a compilation are
 querified.
-
-It also allows for better flexibility when interacting with 3rd party programs, and ad-hoc programs
-to `rustc_driver` like Clippy and thus, allowing the share of cache between these.
 
 <!-- More information will be provided for this section in the future -->
 
