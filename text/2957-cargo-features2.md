@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2957](https://github.com/rust-lang/rfcs/pull/2957)
 - Cargo Issue: [rust-lang/cargo#8088](https://github.com/rust-lang/cargo/issues/8088)
 
-# Summary
+## Summary
 
 This RFC is to gather final feedback on stabilizing the new feature resolver
 in Cargo. This new feature resolver introduces a new algorithm for computing
@@ -25,9 +25,9 @@ flags] for information on the new flag behavior.
 [unstable feature docs]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#features
 [unstable package flags]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#package-features
 
-# Motivation
+## Motivation
 
-## Feature unification
+### Feature unification
 
 Currently, when features are computed for a package, Cargo takes the union of
 all requested features in all situations for that package. This is relatively
@@ -58,7 +58,7 @@ to solve:
 
 [crates.io]: https://crates.io/
 
-## Command-line feature selection
+### Command-line feature selection
 
 Cargo has several flags for choosing which features are enabled during a
 build. `--features` allows enabling individual features, `--all-features`
@@ -79,9 +79,9 @@ problems in a workspace:
 See [New command-line behavior](#new-command-line-behavior) below for how
 these problems are solved.
 
-# Guide-level explanation
+## Guide-level explanation
 
-## New resolver behavior
+### New resolver behavior
 
 When the new feature resolver is enabled, features are not always unified when
 a dependency appears multiple times in the dependency graph. The new behaviors
@@ -96,7 +96,7 @@ building (like proc-macros) do not affect the packages being built.
 The following three sections describe the new behavior for three difference
 situations.
 
-### Target dependencies
+#### Target dependencies
 
 When a package appears multiple times in the build graph, and one of those
 instances is a target-specific dependency, then the features of the
@@ -116,7 +116,7 @@ features = ["f2"]
 When building this example for a non-Windows platform, the `f2` feature will
 *not* be enabled.
 
-### dev-dependencies
+#### dev-dependencies
 
 When a package is shared as a normal dependency and a dev-dependency, the
 dev-dependency features are only enabled if the current build is including
@@ -138,7 +138,7 @@ Note that this is a global decision. So a command like `cargo build
 --all-targets` will include examples and tests, and thus features from
 dev-dependencies will be enabled.
 
-### Host dependencies
+#### Host dependencies
 
 When a package is shared as a normal dependency and a build-dependency or
 proc-macro, the features for the normal dependency are kept independent of the
@@ -163,7 +163,7 @@ be unlikely to cause problems that feature unification usually cause because
 they are both being built for the host platform, and are only used at build
 time.
 
-## Resolver opt-in
+### Resolver opt-in
 
 Testing has been performed on various projects. Some were found to fail to
 compile with the new resolver. This is because some dependencies are written
@@ -208,7 +208,7 @@ It is intended that `resolver = "2"` will likely become the default setting in
 a future Rust Edition. See ["Default opt-in"](#default-opt-in) below for more
 details.
 
-## New command-line behavior
+### New command-line behavior
 
 The following changes are made to the behavior of selecting features on the
 command-line.
@@ -242,7 +242,7 @@ workspace manifest because it is a backwards-incompatible change. The other
 changes are intended to be stabilized for everyone, as they only extend
 previously invalid usage.
 
-## `cargo metadata`
+### `cargo metadata`
 
 At this time, the `cargo metadata` command will not be changed to expose the
 new feature resolver. The "features" field will continue to display the
@@ -270,7 +270,7 @@ resolver.
 
 [`--unit-graph`]: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#unit-graph
 
-# Drawbacks
+## Drawbacks
 
 There are a number of drawbacks to this approach:
 
@@ -329,12 +329,12 @@ There are a number of drawbacks to this approach:
   problems. It is difficult to get sufficient testing, particularly when only
   available as an unstable feature.
 
-## Subtle behaviors
+### Subtle behaviors
 
 The following are behaviors that may be confusing or surprising, and are
 highlighted here as potential concerns.
 
-### Optional dependency feature names
+#### Optional dependency feature names
 
 * `dep_name/feat_name` will always enable the feature `dep_name`, even if it
   is an inactive optional dependency (such as a dependency for another
@@ -353,7 +353,7 @@ This is somewhat intertwined with the upcoming [namespaced features]. For an
 optional dependency, the feature is decoupled from the activating of the
 dependency itself.
 
-### Proc-macro unification in a workspace
+#### Proc-macro unification in a workspace
 
 If there is a proc-macro in a workspace, and the proc-macro is included as a
 "root" package along with other packages in a workspace (for example with
@@ -374,7 +374,7 @@ related to the [workspace unification issue].
 [issue #8312]: https://github.com/rust-lang/cargo/issues/8312
 [workspace unification issue]: https://github.com/rust-lang/cargo/issues/4463
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 * These changes could be forced on all users without an opt-in. The amount of
   breakage is not expected to be widespread, though limited testing has
@@ -388,7 +388,7 @@ related to the [workspace unification issue].
   be feature masks. This would likely be a tedious process, whereas hopefully
   this RFC's approach is more automatic and streamlined for the common case.
 
-# Prior art
+## Prior art
 
 Other tools have various ways of controlling conditional compilation, but none
 are quite exactly like Cargo to our knowledge. The following is a survey of a
@@ -471,11 +471,11 @@ few tools with similar capabilities.
 [pip]: https://pypi.org/project/pip/
 [yarn]: https://yarnpkg.com/
 
-# Unresolved questions
+## Unresolved questions
 
 None at this time.
 
-# Motivating issues
+## Motivating issues
 
 The Cargo issue tracker contains historical context for some of the requests that
 have motivated these changes:
@@ -518,9 +518,9 @@ have motivated these changes:
 [#7916]: https://github.com/rust-lang/cargo/issues/7916
 [#8088]: https://github.com/rust-lang/cargo/issues/8088
 
-# Future possibilities
+## Future possibilities
 
-## Feature resolver enhancements
+### Feature resolver enhancements
 
 The following changes are things we are thinking about, but are not in a
 fully-baked state. It is uncertain if they will require backwards-incompatible
@@ -549,7 +549,7 @@ changes or not.
 [rust-lang/cargo#2980]: https://github.com/rust-lang/cargo/issues/2980
 [A-features]: https://github.com/rust-lang/cargo/issues?q=is%3Aopen+is%3Aissue+label%3AA-features
 
-## Default opt-in
+### Default opt-in
 
 We are planning to make it so that in the next Rust Edition, Cargo will
 automatically use the new resolver. It will assume you specify
@@ -560,7 +560,7 @@ edition several defaults were changed. It is unclear how this would work in a
 virtual workspace, or if this will cause additional confusion, so this is left
 as a possibility to be explored in the future.
 
-## Default `cargo new`
+### Default `cargo new`
 
 In the short term, `cargo new` (and `init`) will not set the `resolver` field.
 After this feature has had some time on stable and more projects have some

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2229](https://github.com/rust-lang/rfcs/pull/2229)
 - Rust Issue: [rust-lang/rust#53488](https://github.com/rust-lang/rust/issues/53488)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes that closure capturing should be minimal rather than maximal.
@@ -27,7 +27,7 @@ Note that some discussion of this has already taken place:
 - rust-lang/rust#19004
 - [Rust internals forum](https://internals.rust-lang.org/t/borrow-the-full-stable-name-in-closures-for-ergonomics/5387)
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In the rust language today, any variables named within a closure will be fully
@@ -53,7 +53,7 @@ pub fn update(&mut self) {
 }
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Rust understands structs sufficiently to know that it's possible
@@ -100,7 +100,7 @@ impl FirstDuplicated {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This RFC does not propose any changes to the borrow checker. Instead, the MIR
@@ -162,7 +162,7 @@ from changing, but feels strange and non-orthogonal *(see unresolved)*.
 Encountering this case at all could trigger a warning, so that this extra rule
 could exist temporarily but be removed over the next epoc *(see unresolved)*.
 
-## Reference Examples
+### Reference Examples
 
 Below are examples of various closures and their capture sets.
 
@@ -279,14 +279,14 @@ somefunc(other);
 - `&mut foo.bar` (ownership *not* available, borrow can be split)
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC does ruin the intuition that all variables named within a closure are
 *completely* captured. I argue that that intuition is not common or necessary
 enough to justify the extra glue code.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 This proposal is purely ergonomic since there is a complete and common
@@ -296,7 +296,7 @@ significant useless glue code when borrowing many but not all of the fields in
 a struct. It also produces a larger closure than necessary which could make the
 difference when inlining.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - How to optimize pointers. Can borrows that all reference parts of the same

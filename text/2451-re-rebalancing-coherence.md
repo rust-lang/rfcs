@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2451](https://github.com/rust-lang/rfcs/pull/2451)
 - Rust Issue: [rust-lang/rust#55437](https://github.com/rust-lang/rust/issues/55437)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC seeks to clarify some ambiguity from [RFC #1023], and expands it to
@@ -12,7 +12,7 @@ implemented, regardless of whether a local type appears before them. More
 concretely, it allows `impl<T> ForeignTrait<LocalType> for ForeignType<T>` to be
 written.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 For better or worse, we allow implementing foreign traits for foreign types. For
@@ -52,10 +52,10 @@ Unless we expand the orphan rules, use cases like this one will never be
 possible, and a crate like Diesel will never be able to be designed in a
 completely extensible fashion.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Definitions
+### Definitions
 
 Local Trait: A trait which was defined in the current crate. Whether a trait is
 local or not has nothing to do with type parameters. Given `trait Foo<T, U>`,
@@ -82,7 +82,7 @@ considered local, `&T`, `&mut T`, and `Box<T>` are also considered local.
 Fundamental types cannot cover other types. Any time the term "covered type" is
 used, `&T`, `&mut T`, and `Box<T>` are not considered covered.
 
-## What is coherence and why do we care?
+### What is coherence and why do we care?
 
 Let's start with a quick refresher on coherence and the orphan rules. Coherence
 means that for any given trait and type, there is one specific implementation
@@ -115,7 +115,7 @@ own. Rust's rules around this balance two separate, but related goals:
   for traits/types they do own without worrying about breaking downstream
   crates.
 
-## Teaching users
+### Teaching users
 
 This change isn't something that would end up in a guide, and is mostly
 communicated through error messages. The most common one seen is [E0210]. The
@@ -175,10 +175,10 @@ non-fundamental trait is a minor breaking change, and states that adding any
 blanket impl for an existing trait is a major breaking change, using the
 definition of blanket impl given above.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Concrete orphan rules
+### Concrete orphan rules
 
 Assumes the same definitions [as above](#definitions).
 
@@ -224,7 +224,7 @@ conflicting impls, with or without this proposal.
 - Sibling crate A could not possibly name a type from sibling crate B, thus that
   parameter can never overlap.
 
-## Effects on parent crates
+### Effects on parent crates
 
 [RFC #1023] is amended to state that adding a new impl to an existing trait is
 considered a breaking change unless, given `impl<P1..=Pn> Trait<T1..=Tn> for
@@ -256,7 +256,7 @@ However, the following impls would not be considered a breaking change:
 - `impl<T> OldTrait<T> for NewType`
 - `impl<T> OldTrait<NewType, T> for OldType`
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The current rules around coherence are complex and hard to explain. While this
@@ -270,7 +270,7 @@ from it. Even though `impl From<Foo> for Vec<()>` has always been accepted,
 `impl<T> From<Foo> for Vec<T>` *feels* even less local. While `Vec<()>` only
 applies to `std`, `Vec<T>` now applies to types from `std` and any other crate.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 - Rework coherence even more deeply. The rules around the orphan rule are
@@ -307,7 +307,7 @@ applies to `std`, `Vec<T>` now applies to types from `std` and any other crate.
   orphan impls unless that's the entire point of your crate", it wouldn't
   actually be that bad.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Are there additional implementations which are clearly acceptable under the

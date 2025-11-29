@@ -1,13 +1,13 @@
-# Macro matcher fragment specifiers edition policy
+## Macro matcher fragment specifiers edition policy
 
 - Start Date: 2023-11-15
 - RFC PR: [rust-lang/rfcs#3531](https://github.com/rust-lang/rfcs/pull/3531)
 
-# Summary
+## Summary
 
 This RFC sets out the policy for how the behavior of macro matcher fragment specifiers is updated over an edition when those specifiers fall out of sync with the underlying grammar of Rust.
 
-# Background and motivation
+## Background and motivation
 
 Rust has a syntactic abstraction feature called ["macros by example"][] or `macro_rules`.  This feature allows for writing *macros* that transform source code in a principled way.
 
@@ -27,7 +27,7 @@ Periodically, we need a way to bring the language and the fragment specifiers ba
 [fragment specifiers]: https://doc.rust-lang.org/reference/macros-by-example.html#metavariables
 [item]: https://doc.rust-lang.org/reference/items.html
 
-# Policy
+## Policy
 
 [policy]: #policy
 
@@ -49,9 +49,9 @@ In cases where we're adding new syntax and updating the grammar to include that 
 
 [uniform behavior across editions]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md#uniform-behavior-across-editions
 
-# Alternatives
+## Alternatives
 
-## Keep the old, add specifiers for the new
+### Keep the old, add specifiers for the new
 
 Changing the behavior of existing fragment specifiers, even over an edition, has an obvious cost: we may change the meaning of existing macros and consequently change the code that they generate.
 
@@ -61,7 +61,7 @@ Another alternative would be to *never* change the meaning of existing fragment 
 
 This would be burdensome in other ways, so we've decided not to do this.
 
-## Add specifier for new edition behavior in all editions
+### Add specifier for new edition behavior in all editions
 
 In addition to doing what is specified in this RFC, when releasing a new edition we could also add a new fragment specifier to all editions whose behavior would match that of the original fragment specifier in the new edition.  E.g., when releasing Rust 2024, we would add an `expr_2024` fragment specifier to all editions that would match the behavior of `expr` in Rust 2024.
 
@@ -78,7 +78,7 @@ Consequently, for these reasons, we've decided not to do this.
 [RFC 3085]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md
 [editions are meant to be adopted]: https://github.com/rust-lang/rfcs/blob/master/text/3085-edition-2021.md#editions-are-meant-to-be-adopted
 
-## Use suffix without underscore
+### Use suffix without underscore
 
 This RFC specifies that, when adding a new fragment specifier that preserves the old behavior, if a better semantically meaningful name cannot be found, we will use the existing name suffixed with the identifier of the current stable edition separated by an underscore.  E.g., we might add `expr_2021`.
 

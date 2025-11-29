@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1560](https://github.com/rust-lang/rfcs/pull/1560)
 - Rust Issue: [rust-lang/rust#35120](https://github.com/rust-lang/rust/issues/35120)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Some internal and language-level changes to name resolution.
@@ -23,7 +23,7 @@ flexibility in the name resolution rules, especially around globs and shadowing.
 There is an implementation of the language changes in
 [PR #32213](https://github.com/rust-lang/rust/pull/32213).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Naming and importing macros currently works very differently to naming and
@@ -37,7 +37,7 @@ current rules around imports and name shadowing. This should make programming
 using imports easier.
 
 
-## Some issues in Rust's name resolution
+### Some issues in Rust's name resolution
 
 Whilst name resolution is sometimes considered a simple part of the compiler,
 there are some details in Rust which make it tricky to properly specify and
@@ -74,16 +74,16 @@ important later.
   Names in the prelude can be shadowed by any other names.
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Guiding principles
+### Guiding principles
 
 We would like the following principles to hold. There may be edge cases where
 they do not, but we would like these to be as small as possible (and prefer they
 don't exist at all).
 
-#### Avoid 'time-travel' ambiguities, or different results of resolution if names
+##### Avoid 'time-travel' ambiguities, or different results of resolution if names
 are resolved in different orders.
 
 Due to macro expansion, it is possible for a name to be resolved and then to
@@ -102,7 +102,7 @@ series) resolve to that binding, and if resolving a name produces an error
 error.
 
 
-#### Avoid errors due to the resolver being stuck.
+##### Avoid errors due to the resolver being stuck.
 
 Errors with concrete causes and explanations are easier for the user to
 understand and to correct. If an error is caused by name resolution getting
@@ -114,27 +114,27 @@ import, then there is an obvious resolution that can't be reached due to our
 ordering constraints.
 
 
-#### The order of declarations of items should be irrelevant.
+##### The order of declarations of items should be irrelevant.
 
 I.e., names should be able to be used before they are declared. Note that this
 clearly does not hold for declarations of variables in statements inside
 function bodies.
 
 
-#### Macros should be manually expandable.
+##### Macros should be manually expandable.
 
 Compiling a program should have the same result before and after expanding a
 macro 'by hand', so long as hygiene is accounted for.
 
 
-#### Glob imports should be manually expandable.
+##### Glob imports should be manually expandable.
 
 A programmer should be able to replace a glob import with a list import that
 imports any names imported by the glob and used in the current scope, without
 changing name resolution behaviour.
 
 
-#### Visibility should not affect name resolution.
+##### Visibility should not affect name resolution.
 
 Clearly, visibility affects whether a name can be used or not. However, it
 should not affect the mechanics of name resolution. I.e., changing a name from
@@ -142,9 +142,9 @@ public to private (or vice versa), should not cause more or fewer name
 resolution errors (it may of course cause more or fewer accessibility errors).
 
 
-## Changes to name resolution rules
+### Changes to name resolution rules
 
-### Multiple unused imports
+#### Multiple unused imports
 
 A name may be imported multiple times, it is only a name resolution error if
 that name is used. E.g.,
@@ -167,7 +167,7 @@ mod baz {
 In this example, adding a use of `Qux` in `baz` would cause a name resolution
 error.
 
-### Multiple imports of the same binding
+#### Multiple imports of the same binding
 
 A name may be imported multiple times and used if both names bind to the same
 item. E.g.,
@@ -189,7 +189,7 @@ mod baz {
 }
 ```
 
-### non-public imports
+#### non-public imports
 
 Currently `use` and `pub use` items are treated differently. Non-public imports
 will be treated in the same way as public imports, so they may be referenced
@@ -210,7 +210,7 @@ mod bar {
 ```
 
 
-### Glob imports of accessible but not public names
+#### Glob imports of accessible but not public names
 
 Glob imports will import all accessible names, not just public ones. E.g.,
 
@@ -245,7 +245,7 @@ Note that in combination with the above rule, this means non-public imports are
 imported by globs where they are private but accessible.
 
 
-### Explicit names may shadow implicit names
+#### Explicit names may shadow implicit names
 
 Here, an implicit name means a name imported via a glob or inherited from an
 outer scope (as opposed to being declared or imported directly in an inner scope).
@@ -373,7 +373,7 @@ This change is discussed in [issue 31337](https://github.com/rust-lang/rust/issu
 and on this RFC PR's comment thread.
 
 
-### Re-exports, namespaces, and visibility.
+#### Re-exports, namespaces, and visibility.
 
 (This is something of a clarification point, rather than explicitly new behaviour.
 See also discussion on [issue 31783](https://github.com/rust-lang/rust/issues/31783)).
@@ -397,7 +397,7 @@ For a glob re-export, there is an error if there are no public items in any
 namespace. Otherwise private names are imported and public names are re-exported
 on a per-namespace basis (i.e., following the above rules).
 
-## Changes to the implementation
+### Changes to the implementation
 
 Note: below I talk about "the binding table", this is sort of hand-waving. I'm
 envisaging a sets-of-scopes system where there is effectively a single, global
@@ -555,7 +555,7 @@ Note that the rules in the previous section have been carefully formulated to
 ensure that this check is sufficient to prevent temporal ambiguities. There are
 many slight variations for which this check would not be enough.
 
-### Privacy
+#### Privacy
 
 In order to resolve imports (and in the future for macro privacy), we must be
 able to decide if names are accessible. This requires doing privacy checking as
@@ -566,7 +566,7 @@ During macro expansion, once a name is resolvable, then we can safely perform
 privacy checking, because parsing and macro expansion will never remove items,
 nor change the module structure of an item once it has been expanded.
 
-### Metadata
+#### Metadata
 
 When a crate is packed into metadata, we must also include the binding table. We
 must include private entries due to macros that the crate might export. We don't
@@ -575,7 +575,7 @@ inlining/monomorphisation, we should include local data (although it's probably
 better to serialise the HIR or MIR, then the local bindings are unnecessary).
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It's a lot of work and name resolution is complex, therefore there is scope for
@@ -585,10 +585,10 @@ The macro changes are not backwards compatible, which means having a macro
 system 2.0. If users are reluctant to use that, we will have two macro systems
 forever.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Naming rules
+### Naming rules
 
 We could take a subset of the shadowing changes (or none at all), whilst still
 changing the implementation of name resolution. In particular, we might want to
@@ -620,7 +620,7 @@ mod boz {
 }
 ```
 
-## Import resolution algorithm
+### Import resolution algorithm
 
 Rather than lookup names for imports during the fixpoint iteration, one could
 save links between imports and definitions. When lookup is required (for macros,
@@ -628,10 +628,10 @@ or later in the compiler), these links are followed to find a name, rather than
 having the name being immediately available.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-## Name lookup
+### Name lookup
 
 The name resolution phase would be replaced by a cut-down name lookup phase,
 where the binding tables generated during expansion are used to lookup names in
@@ -643,7 +643,7 @@ name lookup could be done lazily (probably with some caching) so no tables
 binding names to definitions are kept. I prefer the first option, but this is
 not really in scope for this RFC.
 
-## `pub(restricted)`
+### `pub(restricted)`
 
 Where this RFC touches on the privacy system there are some edge cases involving
 the `pub(path)` form of restricted visibility. I expect the precise solutions
@@ -651,7 +651,7 @@ will be settled during implementation and this RFC should be amended to reflect
 those choices.
 
 
-# References
+## References
 
 * [Niko's prototype](https://github.com/nikomatsakis/rust-name-resolution-algorithm)
 * [Blog post](http://ncameron.org/blog/name-resolution/), includes details about

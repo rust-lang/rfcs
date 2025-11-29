@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2151](https://github.com/rust-lang/rfcs/pull/2151)
 - Rust Issue: [rust-lang/rust#48589](https://github.com/rust-lang/rust/issues/48589)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a raw identifier format `r#ident`, so crates written in future language
 editions/versions can still use an older API that overlaps with new keywords.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 One of the primary examples of breaking changes in the edition RFC is to add
@@ -24,7 +24,7 @@ compatible, so one can write `r#catch` where `catch`-as-identifier is needed.
 
 [@matklad found]: https://internals.rust-lang.org/t/pre-rfc-raw-identifiers/5502/40
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Although some identifiers are reserved by the Rust language as keywords, it is
@@ -84,7 +84,7 @@ fn main() {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The syntax for identifiers allows an optional `r#` prefix for a raw identifier,
@@ -98,13 +98,13 @@ let foo = 123;
 let bar = r#foo * 2;
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - New syntax is always scary/noisy/etc.
 - It might not be intuitively "raw" to a user coming upon this the first time.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 If we don't have any way to refer to identifiers that were legal in prior
@@ -172,7 +172,7 @@ but that may not be a good intuitive relationship.
 [Swift]: https://developer.apple.com/library/content/documentation/Swift/Conceptual/Swift_Programming_Language/LexicalStructure.html
 [@kennytm demonstrated]: https://internals.rust-lang.org/t/pre-rfc-raw-identifiers/5502/28
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Do macros need any special care with such identifier tokens?

@@ -2,14 +2,14 @@
 - RFC PR: [rust-lang/rfcs#2](https://github.com/rust-lang/rfcs/pull/2), [rust-lang/rfcs#6](https://github.com/rust-lang/rfcs/pull/6)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 The "RFC" (request for comments) process is intended to provide a
 consistent and controlled path for new features to enter the language
 and standard libraries, so that all stakeholders can be confident about
 the direction the language is evolving in.
 
-# Motivation
+## Motivation
 
 The freewheeling way that we add new features to Rust has been good for
 early development, but for Rust to become a mature platform we need to
@@ -18,7 +18,7 @@ This is a proposal for a more principled RFC process to make it
 a more integral part of the overall development process, and one that is
 followed consistently to introduce features to Rust.
 
-# Detailed design
+## Detailed design
 
 Many changes, including bug fixes and documentation improvements can be
 implemented and reviewed via the normal GitHub pull request workflow.
@@ -27,7 +27,7 @@ Some changes though are "substantial", and we ask that these be put
 through a bit of a design process and produce a consensus among the Rust
 community and the [core team].
 
-## When you need to follow this process
+### When you need to follow this process
 
 You need to follow this process if you intend to make "substantial"
 changes to the Rust distribution. What constitutes a "substantial"
@@ -53,7 +53,7 @@ If you submit a pull request to implement a new feature without going
 through the RFC process, it may be closed with a polite request to
 submit an RFC first.
 
-## What the process is
+### What the process is
 
 In short, to get a major feature added to Rust, one must first get the
 RFC merged into the RFC repo as a markdown file. At that point the RFC
@@ -99,7 +99,7 @@ after becoming active is 'inactive' and moves to the 'inactive' folder.
 
 [Active RFC List]: ../README.md#active-rfc-list
 
-# Alternatives
+## Alternatives
 
 Retain the current informal RFC process. The newly proposed RFC process is
 designed to improve over the informal process in the following ways:
@@ -111,7 +111,7 @@ understand why new features are being merged
 
 As an alternative, we could adopt an even stricter RFC process than the one proposed here. If desired, we should likely look to Python's [PEP] process for inspiration.
 
-# Unresolved questions
+## Unresolved questions
 
 1. Does this RFC strike a favorable balance between formality and agility?
 2. Does this RFC successfully address the aforementioned issues with the current

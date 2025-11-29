@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#130](https://github.com/rust-lang/rfcs/pull/130)
 - Rust Issue: [rust-lang/rust#16094](https://github.com/rust-lang/rust/issues/16094)
 
-# Summary
+## Summary
 
 Remove special treatment of `Box<T>` from the borrow checker.
 
-# Motivation
+## Motivation
 
 Currently the `Box<T>` type is special-cased and converted to the old
 `~T` internally. This is mostly invisible to the user, but it shows up
@@ -73,7 +73,7 @@ code. The idea is to pull the result of the deref into a new temporary:
         let b = &mut temp.b;
     }
 
-# Detailed design
+## Detailed design
 
 Removing this treatment from the borrow checker basically means
 changing the construction of loan paths for unique pointers.
@@ -86,11 +86,11 @@ probably to handle derefs of `Box<T>` in a similar way to how
 overloaded derefs are handled, but somewhat differently to account for
 the possibility of moving out of them. Some investigation is needed.
 
-# Drawbacks
+## Drawbacks
 
 The borrow checker rules are that much more restrictive.
 
-# Alternatives
+## Alternatives
 
 We have ruled out inconsistent behavior between `Box` and other smart
 pointer types. We considered a number of ways to extend the current
@@ -113,6 +113,6 @@ treatment of box to other smart pointer types:
    enjoy parametricity properties due to presence of reflection and
    unsafe code.
 
-# Unresolved questions
+## Unresolved questions
 
 Best implementation strategy.

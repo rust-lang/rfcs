@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1048](https://github.com/rust-lang/rfcs/pull/1048)
 - Rust Issue: [rust-lang/rust#24222](https://github.com/rust-lang/rust/pull/24222)
 
-# Summary
+## Summary
 
 Deprecate `std::fs::soft_link` in favor of platform-specific versions:
 `std::os::unix::fs::symlink`, `std::os::windows::fs::symlink_file`, and
 `std::os::windows::fs::symlink_dir`.
 
-# Motivation
+## Motivation
 
 Windows Vista introduced the ability to create symbolic links, in order to
 [provide compatibility with applications ported from Unix](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365680%28v=vs.85%29.aspx):
@@ -94,7 +94,7 @@ many of the documents you find start using "symlink" after introducing the
 concept, so it seems to be a fairly common abbreviation for the full name even
 among Windows developers and users.
 
-# Detailed design
+## Detailed design
 
 Move `std::fs::soft_link` to `std::os::unix::fs::symlink`, and create
 `std::os::windows::fs::symlink_file` and `std::os::windows::fs::symlink_dir`
@@ -105,12 +105,12 @@ Keep a deprecated compatibility wrapper `std::fs::soft_link` which wraps
 depending on the platform (as that is the current behavior of
 `std::fs::soft_link`, to create a file symbolic link).
 
-# Drawbacks
+## Drawbacks
 
 This deprecates a stable API during the 1.0.0 beta, leaving an extra wrapper
 around.
 
-# Alternatives
+## Alternatives
 
 * Have a cross platform `symlink` and `symlink_dir`, that do the same thing on
   Unix but differ on Windows.  This has the drawback of invisible
@@ -168,7 +168,7 @@ of churn and extra verbosity for not much benefit, as `symlink` and
 Windows versions would need to be named `create_file_symlink` and
 `create_dir_symlink` (or the variations with `sym_link` or `symbolic_link`).
 
-# Unresolved questions
+## Unresolved questions
 
 If we deprecate `soft_link` now, early in the beta cycle, would it be
 acceptable to remove it rather than deprecate it before 1.0.0, thus avoiding a

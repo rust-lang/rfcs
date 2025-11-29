@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3491](https://github.com/rust-lang/rfcs/pull/3491)
 - Tracking Issue: [rust-lang/cargo#12826](https://github.com/rust-lang/cargo/issues/12826)
 
-# Summary
+## Summary
 [summary]: #summary
 
 By default, cargo will treat any optional dependency as a
@@ -15,7 +15,7 @@ the optional dependency as `dep:<name>`
 On the next edition, cargo will stop exposing optional dependencies as features
 implicitly, requiring users to add `foo = ["dep:foo"]` if they still want it exposed.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 While implicit features offer a low overhead way of defining features,
@@ -28,14 +28,14 @@ While implicit features offer a low overhead way of defining features,
 - It requires people and tools to deal with this special case ([rust-lang/cargo#10543](https://github.com/rust-lang/cargo/issues/10543))
   - Granted, anything having to deal with old editions will still have to deal with this
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 
 
 Updated documentation:
 
-## Optional Dependencies
+### Optional Dependencies
 *(Replaces the [same section in the book](https://doc.rust-lang.org/cargo/reference/features.html#optional-dependencies))*
 
 Dependencies can be marked "optional", which means they will not be compiled
@@ -62,10 +62,10 @@ feature is enabled.
 > [platform-specific dependencies]. Instead of using features, these are
 > conditional based on the target platform.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Existing editions
+### Existing editions
 
 As is expected for edition changes, `cargo fix --edition` will add `foo = ["dep:foo"]` features as needed.
 Where undesired, users can remove these and switch their references to the
@@ -89,7 +89,7 @@ This would be machine applicable with a suggestion to add `foo = ["dep:foo"]`.  
 
 If that system is not ready in time, we can always hard code the change in `cargo fix`.
 
-## Next edition
+### Next edition
 
 On the next edition, this warning will be a hard error.
 
@@ -99,20 +99,20 @@ unused optional dependency `foo`.  To use it, a feature must activate it with `d
 ```
 This could be machine applicable with a suggestion to add `foo = ["dep:foo"]`.
 
-## Other
+### Other
 
 To help users through this, `cargo add` will be updated so that `cargo add foo
 --optional` will create a `foo = ["dep:foo"]` if its not already referenced by
 another features
 ([rust-lang/cargo#11010](https://github.com/rust-lang/cargo/issues/11010)).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Some boilerplate is needed for all features, rather than just a subset
 - Extra ecosystem churn on the next edition update
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Instead of a `cargo::rust-202X-compatibility` group, we could put this in
@@ -125,11 +125,11 @@ Instead of an error, optional dependencies could be
   - We could still transition to this in the future
 - Allow access to the feature via `#[cfg(accessible)]` ([RFC #2523](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html))
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities

@@ -3,21 +3,21 @@
 - RFC PR: [rust-lang/rfcs#979](https://github.com/rust-lang/rfcs/pull/979)
 - Rust Issue: [rust-lang/rust#23911](https://github.com/rust-lang/rust/issues/23911)
 
-# Summary
+## Summary
 
 Make the `count` parameter of `SliceExt::splitn`, `StrExt::splitn` and
 corresponding reverse variants mean the *maximum number of items
 returned*, instead of the *maximum number of times to match the
 separator*.
 
-# Motivation
+## Motivation
 
 The majority of other languages (see examples below) treat the `count`
 parameter as the maximum number of items to return. Rust already has
 many things newcomers need to learn, making other things similar can
 help adoption.
 
-# Detailed design
+## Detailed design
 
 Currently `splitn` uses the `count` parameter to decide how many times
 the separator should be matched:
@@ -32,9 +32,9 @@ constructor functions. If the count becomes zero, we mark the returned
 iterator as `finished`. See **Unresolved questions** for nicer
 transition paths.
 
-## Example usage
+### Example usage
 
-### Strings
+#### Strings
 
 ```rust
 let input = "a,b,c";
@@ -48,7 +48,7 @@ let v: Vec<_> = input.splitn(0, ',').collect();
 assert_eq!(v, []);
 ```
 
-### Slices
+#### Slices
 
 ```rust
 let input = [1, 0, 2, 0, 3];
@@ -62,67 +62,67 @@ let v: Vec<_> = input.splitn(0, |&x| x == 0).collect();
 assert_eq!(v, []);
 ```
 
-## Languages where `count` is the maximum number of items returned
+### Languages where `count` is the maximum number of items returned
 
-### C# ###
+#### C# ###
 
 ```c#
 "a,b,c".Split(new char[] {','}, 2)
 // ["a", "b,c"]
 ```
 
-### Clojure
+#### Clojure
 
 ```clojure
 (clojure.string/split "a,b,c" #"," 2)
 ;; ["a" "b,c"]
 ```
 
-### Go
+#### Go
 
 ```go
 strings.SplitN("a,b,c", ",", 2)
 // [a b,c]
 ```
 
-### Java
+#### Java
 
 ```java
 "a,b,c".split(",", 2);
 // ["a", "b,c"]
 ```
 
-### Ruby
+#### Ruby
 
 ```ruby
 "a,b,c".split(',', 2)
 # ["a", "b,c"]
 ```
 
-### Perl
+#### Perl
 
 ```perl
 split(",", "a,b,c", 2)
 # ['a', 'b,c']
 ```
 
-## Languages where `count` is the maximum number of times the separator will be matched
+### Languages where `count` is the maximum number of times the separator will be matched
 
-### Python
+#### Python
 
 ```python
 "a,b,c".split(',', 2)
 # ['a', 'b', 'c']
 ```
 
-### Swift
+#### Swift
 
 ```swift
 split("a,b,c", { $0 == "," }, maxSplit: 2)
 // ["a", "b", "c"]
 ```
 
-# Drawbacks
+## Drawbacks
 
 Changing the *meaning* of the `count` parameter without changing the
 *type* is sure to cause subtle issues. See **Unresolved questions**.
@@ -131,7 +131,7 @@ The iterator can only return 2^64 values; previously we could return
 2^64 + 1. This could also be considered an upside, as we can now
 return an empty iterator.
 
-# Alternatives
+## Alternatives
 
 1. Keep the status quo. People migrating from many other languages
 will continue to be surprised.
@@ -139,7 +139,7 @@ will continue to be surprised.
 2. Add a parallel set of functions that clearly indicate that `count`
 is the maximum number of items that can be returned.
 
-# Unresolved questions
+## Unresolved questions
 
 Is there a nicer way to change the behavior of `count` such that users
 of `splitn` get compile-time errors when migrating?

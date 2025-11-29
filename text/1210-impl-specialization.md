@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1210](https://github.com/rust-lang/rfcs/pull/1210)
 - Rust Issue: [rust-lang/rust#31844](https://github.com/rust-lang/rust/issues/31844)
 
-# Summary
+## Summary
 
 This RFC proposes a design for *specialization*, which permits multiple `impl`
 blocks to apply to the same type/trait, so long as one of the blocks is clearly
@@ -16,7 +16,7 @@ for performance and code reuse, and it lays the groundwork for an "efficient
 inheritance" scheme that is largely based on the trait system (described in a
 forthcoming companion RFC).
 
-# Motivation
+## Motivation
 
 Specialization brings benefits along several different axes:
 
@@ -34,7 +34,7 @@ Specialization brings benefits along several different axes:
 
 The following subsections dive into each of these motivations in more detail.
 
-## Performance
+### Performance
 
 The simplest and most longstanding motivation for specialization is
 performance.
@@ -125,7 +125,7 @@ unsafe trait TrustedSizeHint {}
 that can allow the optimization to apply to a broader set of types than slices,
 but are still more specific than `T: IntoIterator`.
 
-## Reuse
+### Reuse
 
 Today's default methods in traits are pretty limited: they can assume only the
 `where` clauses provided by the trait itself, and there is no way to provide
@@ -192,7 +192,7 @@ default impl<T> Iterator for T where T: ExactSizeIterator {
 }
 ```
 
-## Supporting efficient inheritance
+### Supporting efficient inheritance
 
 Finally, specialization can be seen as a form of inheritance, since methods
 defined within a blanket impl can be overridden in a fine-grained way by a more
@@ -216,7 +216,7 @@ The author is preparing a companion RFC showing how this can be done with a
 relatively small further extension to the language. But it should be said that
 the design in *this* RFC is fully motivated independently of its companion RFC.
 
-# Detailed design
+## Detailed design
 
 There's a fair amount of material to cover, so we'll start with a basic overview
 of the design in intuitive terms, and then look more formally at a specification.
@@ -253,7 +253,7 @@ The bulk of the detailed design is aimed at making this intuition more
 precise. But first, we need to explore some problems that arise when you
 introduce specialization in any form.
 
-## Hazard: interactions with type checking
+### Hazard: interactions with type checking
 
 Consider the following, somewhat odd example of overlapping impls:
 
@@ -353,7 +353,7 @@ to emerge before stabilizing that.)
 The solution proposed in this RFC is instead to treat specialization of items in
 a trait as a per-item *opt in*, described in the next section.
 
-## The `default` keyword
+### The `default` keyword
 
 Many statically-typed languages that allow refinement of behavior in some
 hierarchy also come with ways to signal whether or not this is allowed:
@@ -484,9 +484,9 @@ The main drawbacks of this solution are:
   introducing the keyword at a fine-grained level, but leaving the door open to
   adding shorthands (like writing `default impl ...`) in the future, if need be.
 
-## Overlapping impls and specialization
+### Overlapping impls and specialization
 
-### What is overlap?
+#### What is overlap?
 
 Rust today does not allow any "overlap" between impls. Intuitively, this means
 that you cannot write two trait impls that could apply to the same "input"
@@ -567,7 +567,7 @@ impl<T> Bar<T> for T {}
 impl<'a, T, U> Bar<T> for &'a U where U: Bar<T> {}
 ```
 
-### Permitting overlap
+#### Permitting overlap
 
 The goal of specialization is to allow overlapping impls, but it's not as simple
 as permitting *all* overlap. There has to be a way to decide which of two
@@ -641,7 +641,7 @@ For many purposes, the above simple patterns are sufficient for working with
 specialization. But to provide a spec, we need a more general, formal way of
 deciding precedence; we'll give one next.
 
-### Defining the precedence rules
+#### Defining the precedence rules
 
 An impl block `I` contains basically two pieces of information relevant to
 specialization:
@@ -677,7 +677,7 @@ We'll start with an abstract/high-level formulation, and then build up toward an
 algorithm for deciding specialization by introducing a number of building
 blocks.
 
-#### Abstract formulation
+##### Abstract formulation
 
 Recall that the
 [input types](https://github.com/aturon/rfcs/blob/associated-items/active/0000-associated-items.md)
@@ -762,7 +762,7 @@ The claim is that `apply(I)` and `apply(J)` intersect, but neither contains the
 other. Thus, these two impls are not permitted to coexist according to this
 RFC's design. (We'll revisit this limitation toward the end of the RFC.)
 
-#### Algorithmic formulation
+##### Algorithmic formulation
 
 The goal in the remainder of this section is to turn the above abstract
 definition of `<=` into something closer to an algorithm, connected to existing
@@ -780,7 +780,7 @@ effectively "inlines" `apply`:
 It turns out that the compiler is already quite capable of answering these
 questions, via "unification" and "skolemization", which we'll see next.
 
-##### Unification: solving equations on types
+###### Unification: solving equations on types
 
 Unification is the workhorse of type inference and many other mechanisms in the
 Rust compiler. You can think of it as a way of solving equations on types that
@@ -847,7 +847,7 @@ that `2 = 3` cannot be solved, but `x = y` and `y = z` can be.)  This
 distinction may seem obvious, but we'll next see how to leverage it in a
 somewhat subtle way.
 
-##### Skolemization: asking forall/there exists questions
+###### Skolemization: asking forall/there exists questions
 
 We've already rephrased `<=` to start with a "for all, there exists" problem:
 
@@ -885,7 +885,7 @@ of `<=` in the following way:
 Note that a successful unification through skolemization gives you the same
 answer as you'd get if you unified without skolemizing.
 
-##### The algorithmic version
+###### The algorithmic version
 
 One outcome of running unification on two impls as above is that we can
 understand both impl headers in terms of a single set of type variables. For
@@ -946,7 +946,7 @@ Here, since `T: Trait4` implies `T: Trait3` but not vice versa, we get
 impl<T: Trait4> Foo for T    <    impl<T: Trait3> Foo for T
 ```
 
-##### Key properties
+###### Key properties
 
 Remember that for each pair of impls `I`, `J`, the compiler will check that
 exactly one of the following holds:
@@ -970,7 +970,7 @@ There are various implementation strategies that avoid having to recalculate the
 ordering during monomorphization, but we won't delve into those details in this
 RFC.
 
-### Implications for coherence
+#### Implications for coherence
 
 The coherence rules ensure that there is never an ambiguity about which impl to
 use when monomorphizing code. Today, the rules consist of the simple overlap
@@ -989,7 +989,7 @@ sibling crates are unaware of each other, there's no way that they could each
 provide an impl overlapping with the other, yet be sure that one of those impls
 is more specific than the other in the overlapping region.
 
-### Interaction with lifetimes
+#### Interaction with lifetimes
 
 A hard constraint in the design of the trait system is that *dispatch cannot
 depend on lifetime information*. In particular, we both cannot, and should not
@@ -1038,7 +1038,7 @@ impl<T: 'static> MustBeStatic for T {}
 impl<T: 'static + Clone> MustBeStatic for T {}
 ```
 
-#### Going down the rabbit hole
+##### Going down the rabbit hole
 
 Unfortunately, we cannot easily rule out the undesirable lifetime-dependent
 specializations, because they can be "hidden" behind innocent-looking trait
@@ -1109,7 +1109,7 @@ even be aware of the existence of the `marker` crate.
 If we make this kind of situation a hard error, we could easily end up with a
 scenario in which plugging together otherwise-unrelated crates is *impossible*.
 
-#### Proposal: ask forgiveness, rather than permission
+##### Proposal: ask forgiveness, rather than permission
 
 So what do we do? There seem to be essentially two avenues:
 
@@ -1140,7 +1140,7 @@ To begin with, this lint should be an error by default; we want to get
 feedback as to how often this is happening before any
 stabilization.
 
-##### What this means for the programmer
+###### What this means for the programmer
 
 Ultimately, the goal of the "just ignore lifetimes for specialization" approach
 is to reduce the number of knobs in play. The programmer gets to use both
@@ -1195,7 +1195,7 @@ relevant for specialization -- `marker::Marker` -- belongs to a crate that
 hasn't even been imported in `client`. Nevertheless, this approach seems
 friendlier than the alternative (discussed in Alternatives).
 
-#### An algorithm for ignoring lifetimes in dispatch
+##### An algorithm for ignoring lifetimes in dispatch
 
 Although approach (1) may seem simple, there are some subtleties in handling
 cases like the following:
@@ -1295,7 +1295,7 @@ impl<T: SometimesDep> Spec for T {}
 Using `Spec` on `i32` will not trigger the lint, because the specialization is
 justified without any lifetime constraints.
 
-## Default impls
+### Default impls
 
 An interesting consequence of specialization is that impls need not (and in fact
 sometimes *cannot*) provide all of the items that a trait specifies. Of course,
@@ -1421,7 +1421,7 @@ that item. Such a relaxed approach is much more flexible, probably easier to
 work with, and can enable more code reuse -- but it's also more complicated, and
 backwards-compatible to add on top of the proposed conservative approach.
 
-## Limitations
+### Limitations
 
 One frequent motivation for specialization is broader "expressiveness", in
 particular providing a larger set of trait implementations than is possible
@@ -1573,12 +1573,12 @@ If we allowed "relaxed" partial impls as described above, one could at least use
 that mechanism to avoid having to give a definition directly in most cases. (So
 if you had `T: Ord` you could write `impl PartialOrd for T {}`.)
 
-## Possible extensions
+### Possible extensions
 
 It's worth briefly mentioning a couple of mechanisms that one could consider
 adding on top of specialization.
 
-### Inherent impls
+#### Inherent impls
 
 It has long been folklore that inherent impls can be thought of as special,
 anonymous traits that are:
@@ -1647,7 +1647,7 @@ in the Motivation section.)
 
 There are more details about this idea in the appendix.
 
-### Super
+#### Super
 
 Continuing the analogy between specialization and inheritance, one could imagine
 a mechanism like `super` to access and reuse less specialized implementations
@@ -1660,7 +1660,7 @@ overlapping with this one", there is always a unique answer to that question,
 because all overlapping impls are totally ordered with respect to each other via
 specialization.
 
-### Extending HRTBs
+#### Extending HRTBs
 
 In the Motivation we mentioned the need to refactor the `Extend` trait to take
 advantage of specialization. It's possible to work around that need by using
@@ -1707,7 +1707,7 @@ fn needs_extend_all<T>(t: T) where for<I: IntoIterator<Item=u8>> T: Extend<u8, I
 
 Such a mechanism is out of scope for this RFC.
 
-### Refining bounds on associated types
+#### Refining bounds on associated types
 
 The design with `default` makes specialization of associated types an
 all-or-nothing affair, but it would occasionally be useful to say that
@@ -1716,7 +1716,7 @@ trait bound on the associated type. This is particularly relevant for
 the "efficient inheritance" use case. Such a mechanism can likely be
 added, if needed, later on.
 
-# Drawbacks
+## Drawbacks
 
 Many of the more minor tradeoffs have been discussed in detail throughout. We'll
 focus here on the big picture.
@@ -1751,9 +1751,9 @@ Finally, if we take it as a given that we want to support some form of
 to use specialization to do so, while also getting all of its benefits, is a net
 simplifier. The full story there, of course, depends on the forthcoming companion RFC.
 
-# Alternatives
+## Alternatives
 
-## Alternatives to specialization
+### Alternatives to specialization
 
 The main alternative to specialization in general is an approach based on
 negative bounds, such as the one outlined in an
@@ -1764,9 +1764,9 @@ make it possible to perform a certain amount of specialization up front when
 defining a trait, but don't easily support downstream crates further
 specializing the trait impls.
 
-## Alternative specialization designs
+### Alternative specialization designs
 
-### The "lattice" rule
+#### The "lattice" rule
 
 The rule proposed in this RFC essentially says that overlapping impls
 must form *chains*, in which each one is strictly more specific than
@@ -1805,7 +1805,7 @@ to the main goals of specialization (as laid out in the Motivation),
 and so, since the lattice rule can be added later, the RFC sticks with
 the simple chain rule for now.
 
-### Explicit ordering
+#### Explicit ordering
 
 Another, perhaps more palatable alternative would be to take the specialization
 rule proposed in this RFC, but have some other way of specifying precedence when
@@ -1814,7 +1814,7 @@ of mechanism is usually noncompositional, but due to the orphan rule, it's a
 least a crate-local concern. Like the alternative rule above, it could be added
 backwards compatibly if needed, since it only enables new cases.
 
-### Singleton non-default wins
+#### Singleton non-default wins
 
 @pnkfelix suggested the following rule, which allows overlap so long as there is
 a unique non-default item.
@@ -1850,7 +1850,7 @@ The downsides are:
   "specialization hierarchy" to be flat, in particular ruling out multiple
   levels of increasingly-specialized blanket impls.
 
-## Alternative handling of lifetimes
+### Alternative handling of lifetimes
 
 This RFC proposes a *laissez faire* approach to lifetimes: we let you
 write whatever impls you like, then warn you if some of them are being
@@ -1935,13 +1935,13 @@ impl<'a, T> Foo for (T, &'a u8) where (T, &'a u8): Tie
 All told, the proposed *laissez faire* seems a much better bet in
 practice, but only experience with the feature can tell us for sure.
 
-# Unresolved questions
+## Unresolved questions
 
 All questions from the RFC discussion and prototype have been resolved.
 
-# Appendix
+## Appendix
 
-## More details on inherent impls
+### More details on inherent impls
 
 One tricky aspect for specializing inherent impls is that, since there is no
 explicit trait definition, there is no general signature that each definition of

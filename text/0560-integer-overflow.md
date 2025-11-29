@@ -2,7 +2,7 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/560
 - Rust Issue #: https://github.com/rust-lang/rust/issues/22020
 
-# Summary
+## Summary
 
 Change the semantics of the built-in fixed-size integer types from
 being defined as wrapping around on overflow to it being considered a
@@ -14,7 +14,7 @@ enabled. Add a `WrappingOps` trait to the standard library with
 operations defined as wrapping on overflow for the limited number of
 cases where this is the desired semantics, such as hash functions.
 
-# Motivation
+## Motivation
 
 Numeric overflow prevents a difficult situation. On the one hand,
 overflow (and [underflow]) is known to be a common source of error in
@@ -63,7 +63,7 @@ specific crates. Another option might be lexically scoped annotations
 to enable overflow (or perhaps disable) checking in specific
 blocks. Neither mechanism is detailed in this RFC at this time.
 
-## Why tie overflow checking to debug assertions
+### Why tie overflow checking to debug assertions
 
 The reasoning behind connecting overflow checking and debug assertion
 is that it ensures that pervasive checking for overflow is performed
@@ -85,9 +85,9 @@ become aware that overflow in Rust is not the norm. It will also help
 debug simple errors, like unsigned underflow leading to an infinite
 loop.
 
-# Detailed design
+## Detailed design
 
-## Arithmetic operations with error conditions
+### Arithmetic operations with error conditions
 
 There are various operations which can sometimes produce error
 conditions (detailed below). Typically these error conditions
@@ -135,7 +135,7 @@ defined results today. The only change is that now a panic may result.
   shift value is unconditionally masked to be modulo `N` to ensure that the
   argument is always in range.
 
-## Enabling overflow checking
+### Enabling overflow checking
 
 Compilers should present a command-line option to enable overflow
 checking universally. Additionally, when building in a default "debug"
@@ -156,7 +156,7 @@ In the future, we may add additional means to control when overflow is
 checked, such as scoped attributes or a global, independent
 compile-time switch.
 
-## Delayed panics
+### Delayed panics
 
 If an error condition should occur and a thread panic should result,
 the compiler is not required to signal the panic at the precise point
@@ -170,7 +170,7 @@ coalesced into a single check. Another useful example might be that,
 when summing a vector, the final overflow check could be deferred
 until the summation is complete.
 
-## Methods for explicit wrapping arithmetic
+### Methods for explicit wrapping arithmetic
 
 For those use cases where explicit wraparound on overflow is required,
 such as hash functions, we must provide operations with such
@@ -193,7 +193,7 @@ impl i32 { // and i8, i16, i64, isize, u8, u32, u64, usize
 These are implemented to preserve the pre-existing, wrapping semantics
 unconditionally.
 
-### `Wrapping<T>` type for convenience
+#### `Wrapping<T>` type for convenience
 
 For convenience, the `std::num` module also provides a `Wrapping<T>`
 newtype for which the operator overloads are implemented using the
@@ -212,7 +212,7 @@ newtype for which the operator overloads are implemented using the
 Note that this is only for potential convenience. The type-based approach has the
 drawback that e.g. `Vec<int>` and `Vec<Wrapping<int>>` are incompatible types.
 
-## Lint
+### Lint
 
 In general it seems inadvisable to use operations with error
 conditions (like a naked `+` or `-`) in unsafe code. It would be
@@ -222,7 +222,7 @@ destructors is inadvisable. Therefore, the RFC recommends a lint be
 added against such operations, defaulting to warn, though the details
 (such as the name of this lint) are not spelled out.
 
-# Drawbacks
+## Drawbacks
 
 **Making choices is hard.** Having to think about whether wraparound
 arithmetic is appropriate may cause an increased cognitive
@@ -294,9 +294,9 @@ default for overflow checking to *enabled* in optimized builds, we
 would want to measure carefully and likely include some means of
 disabling checks in particularly hot paths.
 
-# Alternatives and possible future directions
+## Alternatives and possible future directions
 
-## Do nothing for now
+### Do nothing for now
 
 Defer any action until later, as advocated by:
 
@@ -310,7 +310,7 @@ needlessly proliferating types. Given the paucity of circumstances where
 wraparound semantics is appropriate, having it be the default is defensible only
 if better options aren't available.
 
-## Scoped attributes to control runtime checking
+### Scoped attributes to control runtime checking
 
 The [original RFC][GH] proposed a system of scoped attributes for
 enabling/disabling overflow checking. Nothing in the current RFC
@@ -377,7 +377,7 @@ Illustration of use:
 
 [40]: https://github.com/rust-lang/rfcs/blob/master/active/0040-more-attributes.md
 
-## Checks off means wrapping on
+### Checks off means wrapping on
 
 If we adopted a model of overflow checks, one could use an explicit
 request to turn overflow checks *off* as a signal that wrapping is
@@ -392,7 +392,7 @@ checks `on` or `off` solely based on performance considerations. It should be
 possible to distinguish cases where checking was too expensive from where
 wraparound was desired. (Wraparound is not usually desired.)
 
-## Different operators
+### Different operators
 
 Have the usual arithmetic operators check for overflow, and introduce a new set
 of operators with wraparound semantics, as done by Swift. Alternately, do the
@@ -403,7 +403,7 @@ Reasons this was not pursued: New, strange operators would pose an entrance
 barrier to the language. The use cases for wraparound semantics are not common
 enough to warrant having a separate set of symbolic operators.
 
-## Different types
+### Different types
 
 Have separate sets of fixed-size integer types which wrap around on overflow and
 which are checked for overflow (e.g. `u8`, `u8c`, `i8`, `i8c`, ...).
@@ -413,7 +413,7 @@ among so many types. Using different types would introduce compatibility hazards
 to APIs. `Vec<u8>` and `Vec<u8c>` are incompatible. Wrapping arithmetic is not
 common enough to warrant a whole separate set of types.
 
-## Just use `Checked*`
+### Just use `Checked*`
 
 Just use the existing `Checked` traits and a `Checked<T>` type after the same
 fashion as the `Wrapping<T>` in this proposal.
@@ -421,13 +421,13 @@ fashion as the `Wrapping<T>` in this proposal.
 Reasons this was not pursued: Wrong defaults. Doesn't enable distinguishing
 "checking is slow" from "wrapping is desired" from "it was the default".
 
-## Runtime-closed range types
+### Runtime-closed range types
 
 [As proposed by Bill Myers.][BM-RFC]
 
 Reasons this was not pursued: My brain melted. :(
 
-## Making `as` be checked
+### Making `as` be checked
 
 The RFC originally specified that using `as` to convert between types
 would cause checked semantics. However, we now use `as` as a primitive
@@ -454,11 +454,11 @@ were:
 [803]: https://github.com/rust-lang/rfcs/pull/803
 [911]: https://github.com/rust-lang/rfcs/pull/911
 
-# Unresolved questions
+## Unresolved questions
 
 None today (see Updates section below).
 
-# Future work
+## Future work
 
  * Look into adopting imprecise exceptions and a similar design to Ada's, and to
    what is explored in the research on AIR (As Infinitely Ranged) semantics, to
@@ -476,7 +476,7 @@ None today (see Updates section below).
 [CZ22]: https://mail.mozilla.org/pipermail/rust-dev/2014-June/010483.html
 [JR23_2]: https://mail.mozilla.org/pipermail/rust-dev/2014-June/010527.html
 
-# Updates since being accepted
+## Updates since being accepted
 
 Since it was accepted, the RFC has been updated as follows:
 
@@ -491,7 +491,7 @@ Since it was accepted, the RFC has been updated as follows:
    a clarification).
 5. `INT_MIN / -1` and `INT_MIN % -1` panics.
 
-# Acknowledgements and further reading
+## Acknowledgements and further reading
 
 This RFC was [initially written by Gábor Lehel][GH] and was since
 edited by Nicholas Matsakis into its current form. Although the text

@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#71126](https://github.com/rust-lang/rust/issues/71126)
 - Proof-of-concept: [rust-lang/rust#71156](https://github.com/rust-lang/rust/pull/71156)
 
-# Summary
+## Summary
 [summary]: #summary
 
 We allow destructuring on assignment, as in `let` declarations. For instance, the following are now
@@ -22,7 +22,7 @@ Struct { x, y } = Struct { x: 5, y: 6 };
 This brings assignment in line with `let` declaration, in which destructuring is permitted. This
 will simplify and improve idiomatic code involving mutability.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Destructuring assignment increases the consistency of the language, in which assignment is typically
@@ -30,7 +30,7 @@ expected to behave similarly to variable declarations. The aim is that this feat
 the clarity and concision of idiomatic Rust, primarily in code that makes use of mutability. This
 feature is [highly desired among Rust developers](https://github.com/rust-lang/rfcs/issues/372).
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You may destructure a value when making an assignment, just as when you declare variables. See the
@@ -43,7 +43,7 @@ You may destructure a value when making an assignment, just as when you declare 
 
 You may use `_` and `..` as in a normal declaration pattern to ignore certain values.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The feature as described here has been implemented as a proof-of-concept
@@ -159,7 +159,7 @@ Unlike in usual `let` bindings, default binding modes do *not* apply for the des
 assignments, as this leads to counterintuitive behaviour since the desugaring is an implementation
 detail.
 
-## Diagnostics
+### Diagnostics
 
 It is worth being explicit that, in the implementation, the diagnostics that are reported are
 pattern diagnostics: that is, because the desugaring occurs regardless, the messages will imply that
@@ -175,7 +175,7 @@ think that this results in a better user experience, as intuitively the left-han
 destructuring assignment acts like a pattern "in spirit", but this is technically false: we should
 be careful that this does not result in misleading diagnostics.
 
-## Underscores and ellipses
+### Underscores and ellipses
 
 In patterns, we may use `_` and `..` to ignore certain values, without binding them. While range
 patterns already have analogues in terms of range expressions, the underscore wildcard pattern
@@ -214,7 +214,7 @@ let mut a;
 
 and similarly for slices and structs.
 
-## Unsupported patterns
+### Unsupported patterns
 
 We do not support the following "patterns" in destructuring assignment:
 
@@ -246,13 +246,13 @@ context:
 Therefore, literals, bitwise OR, and range expressions (`..`, `..=`) are not permitted on the
 left-hand side of a destructuring assignment.
 
-## Compound destructuring assignment
+### Compound destructuring assignment
 
 We forbid destructuring compound assignment, i.e. destructuring for operators like `+=`, `*=` and so
 on. This is both for the sake of simplicity and since there are relevant design questions that do
 not have obvious answers, e.g. how this could interact with custom implementations of the operators.
 
-## Order-of-assignment
+### Order-of-assignment
 
 The right-hand side of the assignment is always evaluated first. Then, assignments are performed
 left-to-right. Note that component expressions in the left-hand side may be complex, and not simply
@@ -295,7 +295,7 @@ fn main() {
 
 We thus feel that a lint is more appropriate.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - It could be argued that this feature increases the surface area of the language and thus
@@ -304,7 +304,7 @@ We thus feel that a lint is more appropriate.
 - It is possible that these changes could result in some confusing diagnostics. However, we have not
   found any during testing, and these could in any case be ironed out before stabilisation.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 As we argue above, we believe this change increases the perceived consistency of Rust and improves
@@ -338,7 +338,7 @@ the following disadvantages, which we believe make it less suitable than our pro
   to simply write `x = value;`.
 - It is longer and no more readable than the proposed syntax.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The most persuasive prior art is Rust itself, which already permits destructuring declarations.
@@ -357,12 +357,12 @@ declarations.
 It is a general pattern that languages support destructuring assignment when they support
 destructuring declarations.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - The implementation already supports destructuring of every class of expressions that currently

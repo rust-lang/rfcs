@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#68](https://github.com/rust-lang/rfcs/pull/68)
 - Rust Issue: [rust-lang/rust#7362](https://github.com/rust-lang/rust/issues/7362)
 
-# Summary
+## Summary
 
 Rename `*T` to `*const T`, retain all other semantics of unsafe pointers.
 
-# Motivation
+## Motivation
 
 Currently the `T*` type in C is equivalent to `*mut T` in Rust, and the `const
 T*` type in C is equivalent to the `*T` type in Rust. Noticeably, the two most
@@ -22,7 +22,7 @@ proving to be too error prone to realistically enable these optimizations at a
 future date. By renaming Rust's unsafe pointers to closely match their C
 brethren, the likelihood for erroneously transcribing a signature is diminished.
 
-# Detailed design
+## Detailed design
 
 > This section will assume that the current unsafe pointer design is forgotten
 > completely, and will explain the unsafe pointer design from scratch.
@@ -41,7 +41,7 @@ The two unsafe pointer types will be freely castable among one another via `as`
 expressions, but no coercion will occur between the two. Additionally, values of
 type `uint` can be casted to unsafe pointers.
 
-## When is a coercion valid?
+### When is a coercion valid?
 
 When coercing from `&'a T` to `*const T`, Rust will guarantee that the memory
 will remain valid for the lifetime `'a` and the memory will be immutable up to
@@ -63,7 +63,7 @@ internal invariants, such as `Box<T>` never being `NULL`. This is often a
 per-type invariant, so it is the responsibility of the unsafe code to uphold
 these invariants.
 
-## When is a safe cast valid?
+### When is a safe cast valid?
 
 Unsafe code can convert an unsafe pointer to a safe pointer via dereferencing
 inside of an unsafe block. This section will discuss when this action is valid.
@@ -76,7 +76,7 @@ When converting `*const T` to `&'a T`, it must be guaranteed that the memory is
 initialized to start out with and that nobody will write to the pointer during
 `'a` except for memory within `Unsafe<U>`.
 
-# Drawbacks
+## Drawbacks
 
 Today's unsafe pointers design is consistent with the borrowed pointers types in
 Rust, using the `mut` qualifier for a mutable pointer, and no qualifier for an
@@ -84,7 +84,7 @@ Rust, using the `mut` qualifier for a mutable pointer, and no qualifier for an
 consistency, and would also introduce a keyword that is not used elsewhere in
 the language, `const`.
 
-# Alternatives
+## Alternatives
 
 * The current `*mut T` type could be removed entirely, leaving only one unsafe
   pointer type, `*T`. This will not allow FFI calls to take advantage of the
@@ -100,7 +100,7 @@ the language, `const`.
   solution is as it is currently not yet implemented. There may still be
   confusion as well that `*T` is not equivalent to C's `T*`.
 
-# Unresolved questions
+## Unresolved questions
 
 * How much can the compiler help out when coercing `&mut T` to `*mut T`? As
   previously stated, the source pointer `&mut T` is consumed during the

@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1199](https://github.com/rust-lang/rfcs/pull/1199)
 - Rust Issue: [rust-lang/rust#27731](https://github.com/rust-lang/rust/issues/27731)
 
-# Summary
+## Summary
 
 Lay the ground work for building powerful SIMD functionality.
 
-# Motivation
+## Motivation
 
 SIMD (Single-Instruction Multiple-Data) is an important part of
 performant modern applications. Most CPUs used for that sort of task
@@ -22,7 +22,7 @@ types and access to the raw instructions on each platform.
 (An earlier variant of this RFC was discussed as a
 [pre-RFC](https://internals.rust-lang.org/t/pre-rfc-simd-groundwork/2343).)
 
-## Where does this code go? Aka. why not in `std`?
+### Where does this code go? Aka. why not in `std`?
 
 This RFC is focused on building stable, powerful SIMD functionality in
 external crates, not `std`.
@@ -40,7 +40,7 @@ infrastructure: compiling with some target features will rebuild with
 those features enabled.
 
 
-# Detailed design
+## Detailed design
 
 The design comes in three parts, all on the path to stabilisation:
 
@@ -61,7 +61,7 @@ many platforms, but this RFC doesn't try to extract that, it is just
 building tools that can be wrapped into a more uniform API later.
 
 
-## Types
+### Types
 
 There is a new attribute: `repr(simd)`.
 
@@ -91,7 +91,7 @@ Adding `repr(simd)` to a type may increase its minimum/preferred
 alignment, based on platform behaviour. (E.g. x86 wants its 128-bit
 SSE vectors to be 128-bit aligned.)
 
-## Operations
+### Operations
 
 CPU vendors usually offer "standard" C headers for their CPU specific
 operations, such as [`arm_neon.h`][armneon] and [the `...mmintrin.h` headers for
@@ -173,7 +173,7 @@ are non-SIMD platform-specific instructions that may be nice to expose
 (for example, Intel defines an `_addcarry_u32` intrinsic corresponding
 to the `ADC` instruction).
 
-### Shuffles & element operations
+#### Shuffles & element operations
 
 One of the most powerful features of SIMD is the ability to rearrange
 data within vectors, giving super-linear speed-ups sometimes. As such,
@@ -233,7 +233,7 @@ The `i0` indices do not have to be constant. These are equivalent to
 `v[i0] = elem` and `v[i0]` respectively. They are type checked
 similarly to the shuffles.
 
-### Comparisons
+#### Comparisons
 
 Comparisons are implemented via intrinsics. The raw signatures would
 look like:
@@ -254,7 +254,7 @@ shuffles: ensuring that `T` and `U` have the same length, and that `U`
 is appropriately "boolean"-y. Libraries can use traits to ensure that
 these will be enforced by the type checker too.
 
-### Arithmetic
+#### Arithmetic
 
 Intrinsics will be provided for arithmetic operations like addition
 and multiplication.
@@ -277,7 +277,7 @@ These will have codegen time checks that the element type is correct:
 (The integer types are `i8`, ..., `i64`, `u8`, ..., `u64` and the
 float types are `f32` and `f64`.)
 
-### Why not inline asm?
+#### Why not inline asm?
 
 One alternative to providing intrinsics is to instead just use
 inline-asm to expose each CPU instruction. However, this approach has
@@ -304,7 +304,7 @@ written assembly over intrinsics only come in to play when writing
 longer blocks of raw assembly, i.e. some inner loop might be faster
 when written as a single chunk of asm rather than as intrinsics.
 
-## Platform Detection
+### Platform Detection
 
 The availability of efficient SIMD functionality is very fine-grained,
 and our current `cfg(target_arch = "...")` is not precise enough. This
@@ -347,7 +347,7 @@ cfg_if_else! {
 }
 ```
 
-# Extensions
+## Extensions
 
 - scatter/gather operations allow (partially) operating on a SIMD
   vector of pointers. This would require allowing
@@ -366,7 +366,7 @@ cfg_if_else! {
 
   This should be a backwards-compatible generalisation.
 
-# Alternatives
+## Alternatives
 
 - Intrinsics could instead by namespaced by ABI, `extern
   "x86-intrinsic"`, `extern "arm-intrinsic"`.
@@ -416,7 +416,7 @@ cfg_if_else! {
   and the generic intrinsics. This would probably require a relatively
   complicated set of traits (with compiler integration).
 
-# Unresolved questions
+## Unresolved questions
 
 - Should integer vectors get division automatically? Most CPUs
   don't support them for vectors.

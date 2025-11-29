@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1057](https://github.com/rust-lang/rfcs/pull/1057)
 - Rust Issue: [rust-lang/rust#24133](https://github.com/rust-lang/rust/pull/24133)
 
-# Summary
+## Summary
 
 Add the `Sync` bound to `io::Error` by requiring that any wrapped custom errors
 also conform to `Sync` in addition to `error::Error + Send`.
 
-# Motivation
+## Motivation
 
 Adding the `Sync` bound to `io::Error` has 3 primary benefits:
 
@@ -18,7 +18,7 @@ Adding the `Sync` bound to `io::Error` has 3 primary benefits:
   `io::Error` using an `Arc` in order to simulate the old behavior of being able
   to clone an `io::Error`.
 
-# Detailed design
+## Detailed design
 
 The only thing keeping `io::Error` from being `Sync` today is the wrapped custom
 error type `Box<error::Error+Send>`. Changing this to
@@ -27,7 +27,7 @@ is sufficient to make `io::Error` be `Sync`. In addition, the relevant
 `convert::From` impls that convert to `Box<error::Error+Send>` will be updated
 to convert to `Box<error::Error+Send+Sync>` instead.
 
-# Drawbacks
+## Drawbacks
 
 The only downside to this change is it means any types that conform to
 `error::Error` and are `Send` but not `Sync` will no longer be able to be
@@ -56,7 +56,7 @@ added that returns an `io::Error` that is indistinguishable from a wrapped
 
 [impls]: http://doc.rust-lang.org/nightly/std/error/trait.Error.html
 
-# Alternatives
+## Alternatives
 
 Don't do this. Not adding the `Sync` bound to `io::Error` means `io::Error`s
 cannot be stored in an `Arc` and types that contain an `io::Error` cannot be
@@ -66,7 +66,7 @@ We should also consider whether we should go a step further and change
 `io::Error` to use `Arc` instead of `Box` internally. This would let us restore
 the `Clone` impl for `io::Error`.
 
-# Unresolved questions
+## Unresolved questions
 
 Should we add the `From` impl for `SendError`? There is no code in the rust
 project that relies on `SendError` being converted to `io::Error`, and I'm

@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2351](https://github.com/rust-lang/rfcs/pull/2351)
 - Rust Issue: [rust-lang/rust#53485](https://github.com/rust-lang/rust/issues/53485)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add the methods `is_sorted`, `is_sorted_by` and `is_sorted_by_key` to `[T]`;
 add the methods `is_sorted` and `is_sorted_by` to `Iterator`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In quite a few situations, one needs to check whether a sequence of elements
@@ -46,7 +46,7 @@ in [this StackOverflow answer](https://stackoverflow.com/posts/51272639/revision
 and in many more places. Thus, avoiding this common bug is another good
 reason to add `is_sorted()`.
 
-## Fast Implementation via SIMD
+### Fast Implementation via SIMD
 
 Lastly, it is possible to implement `is_sorted` for many common types with SIMD
 instructions which improves speed significantly. It is unlikely that many
@@ -56,7 +56,7 @@ standard library.
 
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Possible documentation of the two new methods of `Iterator` as well as
@@ -77,7 +77,7 @@ Possible documentation of the two new methods of `Iterator` as well as
 > definition implies that this function returns `false` if any two
 > consecutive items are not comparable.
 >
-> ## Example
+> ### Example
 >
 > ```rust
 > assert!([1, 2, 2, 9].iter().is_sorted());
@@ -119,7 +119,7 @@ Possible documentation of the two new methods of `Iterator` as well as
 > that, it's equivalent to `is_sorted`; see its documentation for more
 > information.
 >
-> ## Example
+> ### Example
 >
 > ```rust
 > assert!(["c", "bb", "aaa"].is_sorted_by_key(|s| s.len()));
@@ -129,7 +129,7 @@ Possible documentation of the two new methods of `Iterator` as well as
 The methods `[T]::is_sorted` and `[T]::is_sorted_by` will have analogous
 documentations to the ones shown above.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This RFC proposes to add the following methods to `[T]` (slices) and
@@ -182,12 +182,12 @@ A sample implementation can be found
 [here](https://play.rust-lang.org/?gist=431ff42fe8ba5980fcf9250c8bc4492b&version=stable).
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It increases the size of the standard library by a tiny bit.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 ### Only add the methods to `Iterator`, but not to `[T]`
@@ -244,7 +244,7 @@ get a subslice or a part of an iterator (via `.take()`) and call `is_sorted()`
 on that part.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 

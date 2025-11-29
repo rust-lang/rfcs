@@ -12,14 +12,14 @@
 [RFC 2920]: https://github.com/rust-lang/rfcs/blob/master/text/2920-inline-const.md
 [rust-lang/rust#49147]: https://github.com/rust-lang/rust/issues/49147
 
-# Summary
+## Summary
 [summary]: #summary
 
 Relaxes the rules for repeat expressions, `[x; N]` such that `x` may also be
 `const` *(strictly speaking rvalue promotable)*, in addition to `typeof(x): Copy`.
 The result of `[x; N]` where `x` is `const` is itself also `const`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 2000, `const_generics`]: https://github.com/rust-lang/rfcs/blob/master/text/2000-const-generics.md
@@ -57,7 +57,7 @@ println!("{:?}", &data[0]);
 this removes one common reason to use `uninitialized()` which **"is incredibly
 dangerous"**.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You have a variable or expression `X` which is const, for example:
@@ -85,7 +85,7 @@ let mut arr = [X; 100];
 arr[0] = Some(Box::new(1));
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Values which are `const` are freely duplicatable as seen in the following
@@ -162,13 +162,13 @@ moves outside of the repeat expression). These semantics are intentionally
 conservative and intended to be forward-compatible with a more expansive
 `is_const(expr)` check.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It might make the semantics of array initializers more fuzzy. The RFC, however,
 argues that the change is quite intuitive.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 [`ptr::write(..)`]: https://doc.rust-lang.org/nightly/std/ptr/fn.write.html
@@ -190,7 +190,7 @@ compatible with such future changes.
 The impact of not doing this change is to not enable generically sized arrays to
 be `const` as well as encouraging the use of `mem::uninitialized`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are no unresolved questions.

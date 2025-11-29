@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2300](https://github.com/rust-lang/rfcs/pull/2300)
 - Rust Issue: [rust-lang/rust#49303](https://github.com/rust-lang/rust/issues/49303)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The special `Self` identifier is now permitted in `struct`, `enum`, and `union`
@@ -19,10 +19,10 @@ where
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Removing exceptions and making the language more uniform
+### Removing exceptions and making the language more uniform
 
 The contextual identifier `Self` can already be used in type context in cases
 such as when defining what an associated type is for a particular type as well
@@ -48,7 +48,7 @@ But this is not currently possible inside both fields and where clauses of
 type definitions. This makes the language less consistent with respect to what
 is allowed in type positions than what it could be.
 
-## Principle of least surprise
+### Principle of least surprise
 
 Users, just new to the language and experts in the language alike, also
 have a reasonable expectations that using `Self` inside type definitions is
@@ -59,7 +59,7 @@ intuition of the languages semantics. Avoiding that breakage will reduce the
 paper cuts newcomers face when using the language. It will also allow the
 community to focus on answering more important questions.
 
-## Better ergonomics with smaller edit distances
+### Better ergonomics with smaller edit distances
 
 When you have complex recursive `enum`s with many variants and generic types,
 and want to rename a type parameter or the type itself, it would make renaming
@@ -69,14 +69,14 @@ extent, but you do not always have such IDEs and even then, the readability of
 using `Self` is superior to repeating the type in variants and fields since it
 is a more visual cue that can be highlighted for specially.
 
-## Encouraging descriptively named types, type variables, and more generic code
+### Encouraging descriptively named types, type variables, and more generic code
 
 Making it simpler and more ergonomic to have longer type names and more
 generic parameters in type definitions can also encourage using more
 descriptive identifiers for both the type and the type variables used.
 It may also encourage more generic code altogether.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 [An Obligatory Public Service Announcement]: http://cglab.ca/~abeinges/blah/too-many-lists/book/#an-obligatory-public-service-announcement
@@ -87,7 +87,7 @@ It may also encourage more generic code altogether.
 
 We will now go through a few examples of what you can and can't do with this RFC.
 
-## Simple example
+### Simple example
 
 Let's look at a simple cons-list of `u8`s. Before this RFC, you had to write:
 
@@ -124,7 +124,7 @@ This new way of writing with `Self` can be thought of as literally
 desugaring to the way it is written in the example before it. This also
 extends to generic types (non-nullary type constructors) that are recursive.
 
-## With generic type parameters
+### With generic type parameters
 
 Continuing with the cons lists, let's take a look at how the canonical
 linked-list example can be rewritten using this RFC.
@@ -151,7 +151,7 @@ Notice in particular how we used just `Self` for both `U8List` and `List<T>`.
 This applies to types with any number of parameters, including those that are
 parameterized by lifetimes.
 
-## Examples with lifetimes
+### Examples with lifetimes
 
 An example of this can be seen in the following cons list:
 
@@ -171,7 +171,7 @@ enum StackList<'a, T: 'a> {
 }
 ```
 
-## Structs and unions
+### Structs and unions
 
 You can also use `Self` in `struct`s as in:
 
@@ -193,7 +193,7 @@ struct NonEmptyList<T> {
 
 This also extends to `union`s.
 
-## `where`-clauses
+### `where`-clauses
 
 In today's Rust, it is possible to define a type such as:
 
@@ -256,7 +256,7 @@ where
 
 This makes the bound involving `Self` slightly more clear.
 
-## When `Self` can **not** be used
+### When `Self` can **not** be used
 
 Consider the following small expression language:
 
@@ -320,7 +320,7 @@ enum Expr<T: Ty> {
 }
 ```
 
-## Types of infinite size
+### Types of infinite size
 
 Consider the following example:
 
@@ -375,7 +375,7 @@ error[E0072]: recursive type `List` has infinite size
   = help: insert indirection (e.g., a `Box`, `Rc`, or `&`) at some point to make `List` representable
 ```
 
-## Teaching the contents of this RFC
+### Teaching the contents of this RFC
 
 [LRWETMLL]: http://cglab.ca/~abeinges/blah/too-many-lists/book/first-layout.html
 
@@ -384,7 +384,7 @@ possible to use `Self`, the ability to use `Self` in this context should
 be taught along side those types. An example of where this can be introduced
 is the [*"Learning Rust With Entirely Too Many Linked Lists"* guide][LRWETMLL].
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The identifier `Self` is (now) allowed in type contexts in fields of `struct`s,
@@ -392,7 +392,7 @@ The identifier `Self` is (now) allowed in type contexts in fields of `struct`s,
 as the left hand side of a bound in a `where` clause and as a type argument
 to a trait bound on the right hand side of a `where` clause.
 
-## Desugaring
+### Desugaring
 
 When the compiler encounters `Self` in type contexts inside the places
 described above, it will substitute them with the header of the type
@@ -449,14 +449,14 @@ where
 
 [RFC 2102]: https://github.com/rust-lang/rfcs/pull/2102
 
-## In relation to [RFC 2102] and what `Self` refers to.
+### In relation to [RFC 2102] and what `Self` refers to.
 
 It should be noted that `Self` always refers to the top level type and not
 the inner unnamed `struct` or `union` because those are unnamed. Specifically,
 *Self always applies to the innermost nameable type*. In type definitions in
 particular, this is equivalent: *Self always applies to the top level type*.
 
-## Error messages
+### Error messages
 
 When `Self` is used to construct an infinite type as in:
 
@@ -484,7 +484,7 @@ error[E0072]: recursive type `List` has infinite size
 
 Note in particular that `Self` is used and not `List<T>` on line `3`.
 
-## In relation to other RFCs
+### In relation to other RFCs
 
 This RFC expands on [RFC 593] and [RFC 1647] with respect to where the keyword
 `Self` is allowed.
@@ -492,7 +492,7 @@ This RFC expands on [RFC 593] and [RFC 1647] with respect to where the keyword
 [RFC 593]: 0593-forbid-Self-definitions.md
 [RFC 1647]: 1647-allow-self-in-where-clauses.md
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Some may argue that we shouldn't have many ways to do the same thing and
@@ -503,13 +503,13 @@ it removes exceptional cases especially in the users mental model.
 Using `Self` in a type definition makes it harder to search for all positions
 in which a pattern can appear in an AST.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 The rationale for this particular design is straightforward as it would be
 uneconomic, confusing, and inconsistent to use other keywords.
 
-## The consistency of what `Self` refers to
+### The consistency of what `Self` refers to
 
 As explained in the [reference-level explanation], we said that:
 > *Self always applies to the innermost nameable type*.
@@ -517,7 +517,7 @@ As explained in the [reference-level explanation], we said that:
 We arrive at this conclusion by examining a few different cases and what
 they have in common.
 
-### Current Rust - Shadowing in `impl`s
+#### Current Rust - Shadowing in `impl`s
 
 First, let's take a look at shadowing in `impl`s.
 
@@ -560,7 +560,7 @@ impl Trait for Foo {
 
 We see that the conclusion holds for both examples.
 
-### In relation to [RFC 2102]
+#### In relation to [RFC 2102]
 
 Let's consider a modified example from [RFC 2102]:
 
@@ -579,7 +579,7 @@ struct S {
 In this example, the inner union is not nameable, and so `Self` refers to the
 only nameable introduced type `S`. Therefore, the conclusion holds.
 
-### Type definitions inside `impl`s
+#### Type definitions inside `impl`s
 
 If in the future we decide to permit type definitions inside `impl`s as in:
 
@@ -635,12 +635,12 @@ impl Trait for Foo {
 }
 ```
 
-### Conclusion
+#### Conclusion
 
 We've now examined a few cases and seen that indeed, the meaning of `Self` is
 consistent in all of them as well as with what the meaning in today's Rust.
 
-## Doing nothing
+### Doing nothing
 
 One alternative to the changes proposed in this RFC is to simply not implement
 those changes. However, this has the downsides of not increasing the ergonomics
@@ -650,7 +650,7 @@ types that have long names and/or many generic parameters and may encourage
 developers to use type names which are less descriptive and keep their code
 less generic than what is appropriate.
 
-## Internal scoped type aliases
+### Internal scoped type aliases
 
 Another alternative is to allow users to specify type aliases inside type
 definitions and use any generic parameters specified in that definition.
@@ -719,7 +719,7 @@ RFC in that both can be supported technically. The alternative should be
 considered interesting future work, but for now, a more conservative approach
 is preferred.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 + This syntax creates ambiguity if we ever permit types to be declared directly

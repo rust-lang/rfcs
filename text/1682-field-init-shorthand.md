@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1682](https://github.com/rust-lang/rfcs/pull/1682)
 - Rust Issue: [rust-lang/rust#37340](https://github.com/rust-lang/rust/issues/37340)
 
-# Summary
+## Summary
 [summary]: #summary
 
 When initializing a data structure (struct, enum, union) with named fields,
@@ -26,7 +26,7 @@ Example usage:
         }
     }
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 When writing initialization code for a data structure, the names of the
@@ -59,10 +59,10 @@ This RFC takes inspiration from the Haskell
 and from ES6
 [shorthand property names](http://www.ecma-international.org/ecma-262/6.0/#sec-object-initializer).
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Grammar
+### Grammar
 
 In the initializer for a `struct` with named fields, a `union` with named
 fields, or an enum variant with named fields, accept an identifier `field` as a
@@ -78,7 +78,7 @@ to the following:
     | ident ':' expr
     ;
 
-## Interpretation
+### Interpretation
 
 The shorthand initializer `field` always behaves in every possible way like the
 longhand initializer `field: field`. This RFC introduces no new behavior or
@@ -86,7 +86,7 @@ semantics, only a purely syntactic shorthand. The rest of this section only
 provides further examples to explicitly clarify that this new syntax remains
 entirely orthogonal to other initializer behavior and semantics.
 
-## Examples
+### Examples
 
 If the struct `SomeStruct` has fields `field1` and `field2`, the initializer
 `SomeStruct { field1, field2 }` behaves in every way like the initializer
@@ -106,7 +106,7 @@ An initializer may use shorthand field initializers together with
     let b = SomeStruct { field1: field1, .. someStructInstance };
     assert_eq!(a, b);
 
-## Compilation errors
+### Compilation errors
 
 This shorthand initializer syntax does not introduce any new compiler errors
 that cannot also occur with the longhand initializer syntax `field: field`.
@@ -133,7 +133,7 @@ Existing compiler errors that can occur with the longhand initializer syntax
   the shorthand initializer `field` results in a compiler error for mismatched
   types ([E0308](https://doc.rust-lang.org/error-index.html#E0308)).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This new syntax could significantly improve readability given clear and local
@@ -152,10 +152,10 @@ uses parentheses instead of braces: `SomeStruct(x, y)` is unambiguously a
 positional initializer, while `SomeStruct { x, y }` is unambiguously a
 shorthand initializer for the named fields `x` and `y`.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Wildcards
+### Wildcards
 
 In addition to this syntax, initializers could support omitting the field names
 entirely, with syntax like `SomeStruct { .. }`, which would implicitly
@@ -163,7 +163,7 @@ initialize omitted fields from identically named variables. However, that would
 introduce far too much magic into initializers, and the context-dependence
 seems likely to result in less readable, less obvious code.
 
-## Macros
+### Macros
 
 A macro wrapped around the initializer could implement this syntax, without
 changing the language; for instance, `pun! { SomeStruct { field1, field2 } }`
@@ -176,7 +176,7 @@ language-level support. Pattern matching already allows using field names as
 the _destination_ for the field values via destructuring. This change adds a
 symmetrical mechanism for construction which uses existing names as _sources_.
 
-## Sigils
+### Sigils
 
 To minimize confusing shorthand expressions with the construction of
 tuple-like structs, we might elect to prefix expanded field names with
@@ -198,7 +198,7 @@ cost/benefit ratio of adding a shorthand. Any use of a sigil also breaks
 the symmetry between binding pattern matching and the proposed
 shorthand.
 
-## Keyword-prefixed
+### Keyword-prefixed
 
 Similarly to sigils, we could use a keyword like Nix uses
 [inherit](http://nixos.org/nix/manual/#idm46912467627696). Some forms we could

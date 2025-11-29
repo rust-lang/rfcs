@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2996](https://github.com/rust-lang/rfcs/pull/2996)
 - Rust Issue: [rust-lang/rust#79024](https://github.com/rust-lang/rust/issues/79024)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce the `AsyncIterator` trait into the standard library, using the
@@ -11,7 +11,7 @@ design from `futures`. Redirect the `Stream` trait definition in the
 `futures-core` crate (which is "pub-used" by the `futures` crate) to the
 `AsyncIterator` trait in the standard library.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Async iterators are a core async abstraction. These behave similarly to `Iterator`,
@@ -27,29 +27,29 @@ wishes to declare a [5 year stability period](http://smallcultfollowing.com/baby
 having the `AsyncIterator` trait in the standard library means there are no concerns 
 about the trait changing during that time ([citation](http://smallcultfollowing.com/babysteps/blog/2019/12/23/async-interview-3-carl-lerche/#what-should-we-do-next-stabilize-stream)).
 
-## Examples of current crates that are consuming async iterators
+### Examples of current crates that are consuming async iterators
 
-### async-h1
+#### async-h1
 
 * [async-h1](https://docs.rs/async-h1)'s server implementation takes `TcpStream` instances produced by a `TcpListener` in a loop.
 
-### async-sse
+#### async-sse
 
 * [async-sse](https://docs.rs/async-sse/) parses incoming buffers into an async iterator of messages.
 
-## Why a shared trait?
+### Why a shared trait?
 
 We eventually want dedicated syntax for working with async iterators, which will require a shared trait. 
 This includes a trait for producing async iterators and a trait for consuming async iterators.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 An "async iterator" is the async version of an [iterator].
 
 The `Iterator` trait includes a `next` method, which computes and returns the next item in the sequence. The `AsyncIterator` trait includes the `poll_next` method to assist with defining a async iterator. In the future, we should add a `next` method for use when consuming and interacting with a async iterator (see the [Future possiblilities][future-possibilities] section later in this RFC).
 
-## poll_next method
+### poll_next method
 
 When implementing a `AsyncIterator`, users will define a `poll_next` method. 
 The `poll_next` method asks if the next item is ready. If so, it returns
@@ -92,7 +92,7 @@ The arguments to `poll_next` match that of the [`Future::poll`] method:
 [context]: https://doc.rust-lang.org/std/task/struct.Context.html
 [`Waker`]: https://doc.rust-lang.org/std/task/struct.Waker.html
 
-### Usage
+#### Usage
 
 A user could create an async iterator as follows (Example taken from @yoshuawuyts' [implementation pull request](https://github.com/rust-lang/rust/pull/79023)).
 
@@ -145,7 +145,7 @@ impl AsyncIterator for Counter {
 }
 ```
 
-## Initial impls
+### Initial impls
 
 There are a number of simple "bridge" impls that are also provided:
 
@@ -180,20 +180,20 @@ where
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This section goes into details about various aspects of the design and
 why they ended up the way they did.
 
-## Where does `AsyncIterator` live in the std lib?
+### Where does `AsyncIterator` live in the std lib?
 
 `AsyncIterator` will live in the `core::async_iter` module and be re-exported as `std::async_iter`.
 
 It is possible that it could live in another area as well, though this follows
 the pattern of `core::future`.
 
-## Why use a `poll` method?
+### Why use a `poll` method?
 
 An alternative design for the async iterator trait would be to have a trait
 that defines an async `next` method:
@@ -219,15 +219,15 @@ with them.
 Unfortunately, the use of poll does mean that it is harder to write
 async iterator implementations. The long-term fix for this, discussed in the [Future possiblilities][future-possibilities] section, is dedicated [generator syntax].
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Where should async iterator live?
+### Where should async iterator live?
 
 As mentioned above, `core::async_iter` is analogous to `core::future`. But, do we want to find 
 some other naming scheme that can scale up to other future additions, such as io traits or channels?
 
-## Naming
+### Naming
 
 When considering what to name the trait and concepts, there were two options:
 
@@ -277,10 +277,10 @@ the historical benefit of using "stream" terminology will lessen over time.
 Overall we found that despite having some downsides, the name `AsyncIterator`
 is strongly preferable over `Stream`.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Next method
+### Next method
 
 While users will be able to implement a `AsyncIterator` as defined in this RFC, they will not have a way to interact with it in the core library. As soon as we figure out a way to do it in an object safe manner, we should add a `next` method  either in the `AsyncIterator` trait or elsewhere.
 
@@ -334,7 +334,7 @@ But this could also be written as:
 while let Some(x) = s.next().await.transpose()?
 ```
 
-### More Usage Examples
+#### More Usage Examples
 
 Using the example of `AsyncIterator` implemented on a struct called `Counter`, the user would interact with the async iterator like so:
 
@@ -363,7 +363,7 @@ This would print `1` through `5`, each on their own line.
 
 An earlier draft of the RFC prescribed an implementation of the `next` method on the `AsyncIterator` trait. Unfortunately, as detailed in [this comment](https://github.com/rust-lang/rust/pull/79023#discussion_r547425181), it made the async iterator non-object safe. More experimentation is required - and it may need to be an unstable language feature for more testing before it can be added to core.
 
-## More Convenience methods
+### More Convenience methods
 
 The `Iterator` trait also defines a number of useful combinators, like
 `map`.  The `AsyncIterator` trait being proposed here does not include any
@@ -395,9 +395,9 @@ existing code, perhaps as part of an edition migration.
 
 Designing such a migration feature is out of scope for this RFC.
 
-## IntoAsyncIterator / FromAsyncIterator traits
+### IntoAsyncIterator / FromAsyncIterator traits
 
-### IntoAsyncIterator
+#### IntoAsyncIterator
 
 **Iterators**
 
@@ -488,7 +488,7 @@ impl IntoAsyncIterator for S {
 }   
 ```
 
-### FromAsyncIterator
+#### FromAsyncIterator
 
 **Iterators**
 
@@ -557,7 +557,7 @@ about whether to implement from_async_iter for all T where `T: FromIterator` as 
 current function, but doesn't have to. Therefore, many (if not all) existing impls of `FromIterator` would work
 for `FromAsyncIterator` as well. While this would be a good point for a future discussion, it is not in the scope of this RFC.
 
-## Converting an Iterator to a AsyncIterator
+### Converting an Iterator to a AsyncIterator
 
 If a user wishes to convert an Iterator to a AsyncIterator, they may not be able to use IntoAsyncIterator because a blanked impl for Iterator would conflict with more specific impls they may wish to write. Having a function that takes an `impl Iterator<Item = T>` and returns an `impl AsyncIterator<Item = T>` would be quite helpful. 
 
@@ -565,7 +565,7 @@ The [async-std](https://github.com/async-rs/async-std) crate has [stream::from_i
 
 Adding this functionality is out of the scope of this RFC, but is something we should revisit once `AsyncIterator` is in the standard library.
 
-## Other Traits
+### Other Traits
 
 Eventually, we may also want to add some (if not all) of the roster of traits we found useful for `Iterator`.
 
@@ -583,7 +583,7 @@ Eventually, we may also want to add some (if not all) of the roster of traits we
 
 As detailed in previous sections, the migrations to add these traits are out of scope for this RFC.
 
-## Async iteration syntax
+### Async iteration syntax
 
 Currently, if someone wishes to iterate over a `AsyncIterator` as defined in the `futures` crate,
 they are not able to use  `for` loops, they must use `while let` and `next/try_next` instead.
@@ -607,11 +607,11 @@ control flow. We could add a `par_async_iter()` method, similar to
 
 Designing this extension is out of scope for this RFC. However, it could be prototyped using procedural macros today.
 
-## "Lending" async iterators
+### "Lending" async iterators
 
 There has been much discussion around lending async iterators (also referred to as attached async iterators).
 
-### Definitions
+#### Definitions
 
 [Source](https://smallcultfollowing.com/babysteps/blog/2019/12/10/async-interview-2-cramertj-part-2/#the-need-for-streaming-streams-and-iterators)
 
@@ -636,7 +636,7 @@ The disadvantage of this is functions that consume async iterators would
 first be written to work with `AsyncIterator`, and then potentially have 
 to be rewritten later to work with `LendingAsyncIterator`s.
 
-### Current AsyncIterator Trait
+#### Current AsyncIterator Trait
 
 ```rust
 pub trait AsyncIterator {
@@ -654,7 +654,7 @@ pub trait AsyncIterator {
 This trait, like `Iterator`, always gives ownership of each item back to its caller. This offers flexibility - 
 such as the ability to spawn off futures processing each item in parallel.
 
-### Potential Lending AsyncIterator Trait
+#### Potential Lending AsyncIterator Trait
 
 ```rust
 trait LendingAsyncIterator<'s> {
@@ -731,7 +731,7 @@ This would allow us to leverage `default impl`.
 These use cases for lending/non-lending async iterators need more thought, which is part of the reason it 
 is out of the scope of this particular RFC.
 
-## Generator syntax
+### Generator syntax
 [generator syntax]: #generator-syntax
 
 In the future, we may wish to introduce a new form of function - 
@@ -743,7 +743,7 @@ could yield references to local variables. Given a "detached"
 or "owned" async iterator, the generator could yield owned values
 or things that were borrowed from its caller.
 
-### In Iterators
+#### In Iterators
 
 ```rust
 gen fn foo() -> Value {
@@ -757,7 +757,7 @@ After desugaring, this would result in a function like:
 fn foo() -> impl Iterator<Item = Value>
 ```
 
-### In Async Code
+#### In Async Code
 
 ```rust
 async gen fn foo() -> Value
@@ -773,7 +773,7 @@ If we introduce `-> impl AsyncIterator` first, we will have to permit `LendingAs
 Additionally, if we introduce `LendingAsyncIterator` later, we'll have to figure out how
 to convert a `LendingAsyncIterator` into a `AsyncIterator` seamlessly.
 
-### Differences between Iterator generators and Async generators
+#### Differences between Iterator generators and Async generators
 
 We want `AsyncIterator` and `Iterator` to work as analogously as possible, including when used with generators. However, in the current design, there are some crucial differences between the two. 
 
@@ -825,7 +825,7 @@ Another key difference between `Iterator`s and `AsyncIterator`s is that futures 
 
 It is, admittedly, somewhat confusing to have Async generators require Pinning and Iterator generators to not require pinning, users may feel they are creating code in an unnatural way when using the Async generators. This will need to be discussed more when generators are proposed in the future.
 
-### Disallowing self-borrowing generators in `gen fn`
+#### Disallowing self-borrowing generators in `gen fn`
 
 Another option is to make the generators returned by `gen fn` always be `Unpin` so that the user doesn't have to think about pinning unless they're already in an async context.
 

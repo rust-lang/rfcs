@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#53667](https://github.com/rust-lang/rust/issues/53667)
 - Rust Issue: [rust-lang/rust#53668](https://github.com/rust-lang/rust/issues/53668)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extends `if let` and `while let`-expressions with chaining, allowing you
@@ -48,13 +48,13 @@ The main aim of this RFC is to decide that this is a problem worth solving
 as well as discussing a few available options. **Most importantly, we want to
 make `if let PAT = EXPR && ..` a possible option for Rust 2018.**
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The main motivation for this RFC is improving readability, ergonomics,
 and reducing paper cuts.
 
-## Right-ward drift
+### Right-ward drift
 
 Today, each `if let` needs a brace, which means that you usually, to keep
 the code readable, indent once to the right each time. Thus, matching multiple
@@ -64,13 +64,13 @@ can only fit around 80-100 characters per line in their editor. Keeping in
 mind that code is read more than written, it is important to improve readability
 where possible.
 
-### Other solution: Tuples
+#### Other solution: Tuples
 
 One solution is matching a tuple, but that is a poor solution when there are
 side effects or expensive computations involved, and doesn't necessarily work
 as *DSTs* and *lvalues* can't go in tuples.
 
-### Other solution: `break ...`
+#### Other solution: `break ...`
 
 Another solution to avoid right-ward drift is to create a new function for
 part of the indentation. When the inner scopes depend on a lot of variables
@@ -125,7 +125,7 @@ has been introduced. The user is also forced to track the label `'stop`.
 All in all, this alternative significantly reduces readability wherefore we
 discourage from this way of writing.
 
-#### Boiler-plate reduction using macros
+##### Boiler-plate reduction using macros
 
 One way to reduce the noise from the above alternative solution is to refactor
 some commonalities into a macro. However, refactoring into a macro means that
@@ -133,14 +133,14 @@ you need to understand the macro. In comparison, chained `if let`s constitute
 something simpler that all Rust programmers will understand, as opposed to a
 specialized macro.
 
-## Mixing conditions and pattern matching
+### Mixing conditions and pattern matching
 
 A `match` expression can have `if` guards, but `if let` currently requires
 another level of conditionals.  This is particularly troublesome for cases
 that can't be matched, like `x.fract() == 0`, or error `enum`s that disallow
 matching, like `std::io::ErrorKind`.
 
-## Duplicating code in `else` clauses
+### Duplicating code in `else` clauses
 
 In some cases, you may have written something like:
 
@@ -170,7 +170,7 @@ like an artificial abstraction as discussed above.
 This is problematic even with a macro to simplify, as it results in more code
 emitted that LLVM commonly cannot simplify.
 
-## Bringing the language closer to the mental model
+### Bringing the language closer to the mental model
 
 The readability of programs is often about the degree to which the code
 corresponds to the mental model the reader has of said program. Therefore,
@@ -189,7 +189,7 @@ With respect to `if let`-expressions, rather than saying (out loud):
 This RFC is more in line with the latter formulation and thus brings the
 language closer to the readers mental model.
 
-## Instead of macros
+### Instead of macros
 
 As we've previously touched upon, we may define and use a macro to reduce
 boilerplate. A macro like [`if_chain!`] as a solution however has the problem
@@ -200,7 +200,7 @@ readability.
 
 [`if_chain!`]: https://crates.io/crates/if_chain
 
-## Plenty of Real-world use cases
+### Plenty of Real-world use cases
 
 [reverse dependencies]: https://crates.io/crates/if_chain/reverse_dependencies
 
@@ -253,21 +253,21 @@ Thus, with this RFC, some compiler internals may be simplified.
 Another common place is when authoring with custom derive macros using the 
 `syn` crate.
 
-## An expected feature
+### An expected feature
 [an_expected_feature]: #an-expected-feature
 
 As demonstrated in [Appendix B], the syntax proposed in this RFC is already
 expected to be allowed in Rust by users today. Indeed, the author of this RFC
 made this assumption at some point.
 
-## *Unification*
+### *Unification*
 
 In today's Rust, there is both a grammatical and conceptual distinction between
 `if` and `if let` as well as `while` and `while let`. This RFC aims to erase
 the divide and unify concepts. Henceforth, there is just `if` and `while`.
 Thus `if let` is no longer the unit.
 
-## "Why now?"
+### "Why now?"
 
 A legitimate question to ask is:
 > Why implement this now?
@@ -284,12 +284,12 @@ As it happens, a new edition "Rust 2018" is in the works at the moment
 (as of 2018-07-12). This is an excellent opportunity to take advantage of,
 and that is precisely what we aim to do here.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This section examines the features proposed by this RFC.
 
-## `if let`-chains
+### `if let`-chains
 
 An *`if let` chain*, refers to a chain of multiple `let` bindings,
 which may mixed with conditionals in an `if` expression.
@@ -432,7 +432,7 @@ if y.has_really_cool_property() // <-- y used before bound.
 }
 ```
 
-## `while let`-chains
+### `while let`-chains
 
 A **`while let`-chain** is similar to an `if let`-chain but instead applies to
 `while let` expressions.
@@ -504,7 +504,7 @@ generally hold. If `i_iter.next()` has side effects, then those will not
 happen when `Some(index)` does not match. This is important to keep in mind.
 Short-circuiting still applies to `while let`-chains as with `if let`-chains.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 [RFC 2046]: https://github.com/rust-lang/rfcs/pull/2046
@@ -512,7 +512,7 @@ Short-circuiting still applies to `while let`-chains as with `if let`-chains.
 This RFC introduces `if let`-chains and `while let`-chains in *Rust 2018*
 and makes some enabling preparation for such chains in Rust 2015.
 
-## Grammar
+### Grammar
 
 We replace the following productions:
 
@@ -576,7 +576,7 @@ in_if
 in_if_list : in_if [ ANDAND in_if ]*
 ```
 
-### Dealing with ambiguity
+#### Dealing with ambiguity
 
 There exists an ambiguity in this new grammar in how to parse:
 
@@ -616,7 +616,7 @@ has then the 2nd lowest precedence and binds more tightly than `||`.
 If the user wants to disambiguate, they can write `(EXPR && EXPR)` or
 `{ EXPR && EXPR }` explicitly. The same applies to `while` expressions.
 
-#### A few more examples
+##### A few more examples
 
 Given:
 
@@ -654,7 +654,7 @@ if (let PAT = F..) || false { ... }
 if (let PAT = t..) && false { ... }
 ```
 
-### Rollout Plan and Transitioning to Rust 2018
+#### Rollout Plan and Transitioning to Rust 2018
 
 Everything in this section also applies to `while let` expressions.
 
@@ -690,7 +690,7 @@ Pending the stabilization of the features in this RFC, to opt into the new
 semantics, users will need to use a nightly compiler and add the usual feature
 gate opt-in.
 
-### Facilitating for macro authors
+#### Facilitating for macro authors
 
 To facilitate for macro authors, we permit the following:
 
@@ -698,7 +698,7 @@ To facilitate for macro authors, we permit the following:
 if (let PAT = EXPR) && ... { ... }
 ```
 
-### `let PAT = EXPR` is *not* an expression
+#### `let PAT = EXPR` is *not* an expression
 
 Note that `let PAT = EXPR` does *not* become an expression (typed at `bool`)
 with this RFC. Thus, you may not write:
@@ -710,7 +710,7 @@ assert_eq!(foo, false);
 assert_eq!(bar, true);
 ```
 
-## Semantics of `if let`-chains
+### Semantics of `if let`-chains
 
 The semantics of `if let`-chains can be understood by an in-surface-language
 desugaring using only [RFC 2046] and `if let`.
@@ -840,7 +840,7 @@ the semantics are defined by the following desugaring:
 }
 ```
 
-## Semantics of `while let`-chains
+### Semantics of `while let`-chains
 
 The semantics of `while let`-chains can be understood by an in-surface-language
 desugaring using only [RFC 2046], `loop` and `if let`.
@@ -895,7 +895,7 @@ loop {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC mandates additions to the grammar as well as adding syntax lowering
@@ -920,12 +920,12 @@ Finally, some may argue, [as done by @petrochenkov][petrochenkov_cite_1],
 that this is *"a lot of ad-hoc syntax to deprecate when the proper solution
 solving all the listed problems is implemented"*.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
 We will now discuss how and why this RFC came about in its current form.
 
-## The impact of not doing this
+### The impact of not doing this
 
 There are at least two sides to power in language expressivity:
 
@@ -938,7 +938,7 @@ it is not sufficient. The second point is important to make the language
 pleasurable to use and this is what this RFC is about. Not including the
 changes proposed here would keep some paper cuts around.
 
-## Design considerations
+### Design considerations
 [design considerations]: #design-considerations
 
 There are some design considerations on this feature. These are:
@@ -963,7 +963,7 @@ Note that these are considerations and have different levels of importance.
 Note also that it is likely impossible to meet all of them, but we'd like
 to tick as many boxers as possible.
 
-## Keeping the door open for `if-let-or`-expressions
+### Keeping the door open for `if-let-or`-expressions
 
 Should a user be able to write something like the following snippet?
 
@@ -986,7 +986,7 @@ a possibility, making the feature future proof and allowing discussion on such
 a facility in the future to continue. Alternatives should similarly try to
 retain this ability.
 
-## Alternative: [RFC 2046], label break value
+### Alternative: [RFC 2046], label break value
 
 [RFC 2046]: https://github.com/rust-lang/rfcs/pull/2046
 [the macros to be improved]: https://github.com/rust-lang/rfcs/pull/2046#issuecomment-320483246
@@ -1010,7 +1010,7 @@ Furthermore, as we've noted in the [motivation], a macro based approach is
 not a construct that is universal among Rust programmers, which is an important
 property for control flow in particular to improve the legibility of programs.
 
-## The main alternatives
+### The main alternatives
 
 There are some alternatives to consider. Let's go through some of the
 main ones.
@@ -1033,7 +1033,7 @@ These 6 alternatives are:
 
 In this RFC, we propose the combination of `&&` and `let PAT = EXPR`.
 
-### A survey - Method
+#### A survey - Method
 
 To gain some data on what users of Rust think about the 6 different variants,
 a multi-answer survey was done using Google Forms. The survey ran from
@@ -1054,7 +1054,7 @@ The survey answers had the following distribution in origin:
 + IRC, 5.1%
 + The RFC, 2.4%
 
-### A survey - Data
+#### A survey - Data
 
 For those interested in reading the survey answers you can do so by reading:
 + [A summary of the survey](https://docs.google.com/forms/d/e/1FAIpQLScwG0Y3ynA9aJZ-iprOey_GyCNeFMO9MSDJR1kiskpjsjL1Mw/viewanalytics)
@@ -1126,12 +1126,12 @@ The breakdown of preferences were:
 
 Finally, 9.7% liked none of the options and 1.9% liked all of them.
 
-### A survey - Analysis of Comments
+#### A survey - Analysis of Comments
 
 There are too many answers to include here, instead, we select some of
 the most interesting ones and highlight them.
 
-#### Tried before
+##### Tried before
 
 One participant, among 6 (see [Appendix B.1]) others who all positively inclined,
 explicitly commented that they had tried the syntax proposed in this RFC before.
@@ -1142,7 +1142,7 @@ explicitly commented that they had tried the syntax proposed in this RFC before.
 
 This substantiates the claim made in the [motivation][an_expected_feature].
 
-#### Consistency
+##### Consistency
 
 An even greater number of people (48, see [Appendix B.2]) commented that they
 thought that the proposed syntax was the *consistent* alternative. This was
@@ -1152,7 +1152,7 @@ by far the most frequent comment made in the survey.
 > and everyone is already used to using `let A(x) = foo()`.
 > Honestly, the one I chose feels the most consistent with the language.
 
-#### Intuitiveness
+##### Intuitiveness
 
 A lesser number (8, see [Appendix B.3]) of participants said did not explicitly
 say that the proposed syntax was *consistent*, but that they found it
@@ -1164,7 +1164,7 @@ say that the proposed syntax was *consistent*, but that they found it
 This, and in particular the consistency, goes a long way to satisfy points
 2-3 in the [design considerations].
 
-#### Expectation that `(let PAT = EXPR) : bool`
+##### Expectation that `(let PAT = EXPR) : bool`
 
 A few participants (3, see [Appendix B.4]) hinted at that using `&&` together
 with `let PAT = EXPR` set up the expectation that the latter is a `bool` typed
@@ -1195,7 +1195,7 @@ it is the composition of `if EXPR { .. }` and `let PAT = EXPR` while it is *not*
 While the syntax changes in this RFC does enhance the risk of misconception
 somewhat, ultimately we do not feel that it poses a critical problem.
 
-#### Commas and `if` as separators - conjunction?
+##### Commas and `if` as separators - conjunction?
 
 There were many people (19, see [Appendix B.5]) who felt that using `,` or `if`
 as the separator did not clearly enough signal conjunction and thought that
@@ -1222,7 +1222,7 @@ Our conclusion is that this at least presents a serious enough of a problem
 for `,` as the separator for conjunction to rule it out while also being
 problematic for `if`.
 
-#### Commas and short-circuiting
+##### Commas and short-circuiting
 
 A number of participants (5, see [Appendix B.6]) noted that using `,` as the
 separator was not clearly enough indicating short-circuiting behaviour.
@@ -1234,7 +1234,7 @@ separator was not clearly enough indicating short-circuiting behaviour.
 
 This is a further blow to `,` in terms of our [design considerations].
 
-#### `if` as separator is noisy
+##### `if` as separator is noisy
 
 Some people argued that `if` as a separator felt noisy or that it felt like
 there were missing braces. One also noted that multiple `if`s on one line
@@ -1245,7 +1245,7 @@ As an aside, we would like to note here that `if` as a separator would need
 to be matched with `while` as a separator as well. This makes the separator
 too context dependent in our view.
 
-#### Patterns unexpectedly on the RHS
+##### Patterns unexpectedly on the RHS
 
 Some people (10, see [Appendix B.8]) thought that bindings introduced on the
 RHS as in `EXPR is PAT` as opposed to `let PAT = EXPR` was backwards and weird.
@@ -1271,7 +1271,7 @@ that `EXPR is PAT` generally reads well. However, having the pattern
 consistently on LHS everywhere makes introductions of bindings more readily
 scannable, which is a valuable property when reading code quickly.
 
-#### The `is` operator introduces bindings
+##### The `is` operator introduces bindings
 
 However, a more serious problem that some survey participants
 (15, see [Appendix B.9]) identified was that `EXPR is PAT`, according
@@ -1312,7 +1312,7 @@ As previously noted, using `is` is less scannable. This also applies to `match`.
 As an aside, one survey participant confused `is` for `as`; This does seem like
 a mistake that is likely to happen due to the similarity of these two words.
 
-## Conclusion
+### Conclusion
 
 We believe that the case for `&&` and `let PAT = EXPR` is strong.
 As demonstrated by the survey, which we believe is statistically significant,
@@ -1340,10 +1340,10 @@ For the use case of having some pattern matching construct that is typed at
 `bool`, we could later introduce the form `EXPR is PAT` but prohibit  `PAT`
 from introducing bindings.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Swift
+### Swift
 
 [RFC 160]: https://github.com/rust-lang/rfcs/pull/160
 
@@ -1406,7 +1406,7 @@ Interestingly, the separator token that Swift uses for conjunctive chaining
 in `if` is `,` (comma). [RFC 2260] proposed this, but this turned out not
 to be as intuitive for many users as `&&` is (see [alternatives] for a discussion).
 
-## Kotlin
+### Kotlin
 
 In [RFC 2260] [@matklad](https://github.com/matklad) said that:
 
@@ -1416,7 +1416,7 @@ In [RFC 2260] [@matklad](https://github.com/matklad) said that:
 >
 > However, as long as the compiler does all the inference work for you, actually using this feature is easy: you don't have to replay the analysis in your head when reading or writing code, because the compiler catches all errors.
 
-## [RFC 160]
+### [RFC 160]
 
 Interestingly, the `EXPR is PAT` idea was floated in the original RFC 160 that
 introduced `if let` expressions in the first place. There, the notion that an
@@ -1437,10 +1437,10 @@ time but that idea was ultimately also rejected. [@lilyball][lilyball_3] opined
 that using `match` as a binary operator would be *"very confusing"* but did not
 elaborate further at the time.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-## The final syntax
+### The final syntax
 
 The main goal of this RFC is threefold:
 
@@ -1458,7 +1458,7 @@ We can then debate alternatives, in particular using `EXPR match PAT`,
 more rigorously post shipping Rust 2018. Finalizing the syntax and can
 then be decided in a tracking issue or another RFC.
 
-## Irrefutable let bindings after the first refutable binding
+### Irrefutable let bindings after the first refutable binding
 
 Should temporary and irrefutable `let`s without patterns be allowed as
 in the following example?
@@ -1527,7 +1527,7 @@ or cast doubt on it making semantics possibly harder to grasp quickly.
 This is a tricky question, which we leave open for consideration during
 the stabilization period or even after stabilization.
 
-## Chained `if let`s inside `match` arms
+### Chained `if let`s inside `match` arms
 
 Would the following be accepted by a Rust compiler?
 
@@ -1544,7 +1544,7 @@ The combination of the accepted, but yet to be stabilized, [RFC 2294], and this
 RFC would entail that it would be accepted. However, at this point, and in the
 interest of time, we leave this for a future RFC or for pre-stabilization.
 
-# Appendix A - Style considerations
+## Appendix A - Style considerations
 
 How should the features introduced in this RFC be formatted?
 This is not a make or break question but rather a style question for `rustfmt`.
@@ -1655,7 +1655,7 @@ is that the `if` token stands less out.
 There are of course more versions one can contemplate and the various
 combination of them, but in the interest of brevity, we keep to this list here.
 
-# Appendix B
+## Appendix B
 [Appendix B]: #appendix-b
 
 This appendix groups some survey answers together for the purposes of analysis.
@@ -1663,7 +1663,7 @@ Please note that this appendix is by no means complete and is only offered on
 a best-effort basis. The comments cited below have also been cleaned up to
 fix obvious spelling mistakes, etc.
 
-## Appendix B.1
+### Appendix B.1
 [Appendix B.1]: #appendix-b1
 
 Here are a number of participants in the survey commenting that they expected
@@ -1683,7 +1683,7 @@ the proposed syntax in this RFC to work.
 
 7. > `let …` matches the current `if let`, and the `&&` matches the way I would write it. I've tried to write `if let Some(x) = foo && x.bar() { … }` before.
 
-## Appendix B.2
+### Appendix B.2
 [Appendix B.2]: #appendix-b2
 
 Many participants in the survey opined that the proposed syntax was consistent
@@ -1845,7 +1845,7 @@ with current Rust. They thought that this was positive.
     > Rust programmers alike. We should be focusing on keeping things as simple
     > and familiar as possible.
 
-## Appendix B.3
+### Appendix B.3
 [Appendix B.3]: #appendix-b3
 
 Some survey participants did not explicitly say that the RFC's proposed syntax
@@ -1870,7 +1870,7 @@ was *consistent*, but they did say, in some way, that it was *intuitive*.
 8. > We already have “`if let`” elsewhere. Don’t introduce a new “`is`” syntax
    > here, it’s not any more intuitive.
 
-## Appendix B.4
+### Appendix B.4
 [Appendix B.4]: #appendix-b4
 
 Some survey participants felt that the proposed syntax set up the expectation
@@ -1891,7 +1891,7 @@ statement which is currently the case.
    > all, and it's then preferable to me provided it's available where you'd
    > expect expressions to be available and not treated particularly specially.
 
-## Appendix B.5
+### Appendix B.5
 [Appendix B.5]: #appendix-b5
 
 Another group of people opined that `,` and `if` did not clearly imply
@@ -1950,7 +1950,7 @@ The majority of these comments were directed towards `,` as opposed to `if`.
 
 19. > `if` for conjunction is confusing
 
-## Appendix B.6
+### Appendix B.6
 [Appendix B.6]: #appendix-b6
 
 Does `,` entail short-circuiting behaviour or not? Some survey participants
@@ -1973,7 +1973,7 @@ did not think this was clear.
    > roughly equivalent instead of being something that ends up short
    > circuiting the evaluation.
 
-## Appendix B.7
+### Appendix B.7
 [Appendix B.7]: #appendix-b7
 
 A number of survey participants noted that separating with `if` is noisy
@@ -1995,7 +1995,7 @@ and looks as if braces are missing.
 
 5. > Too many `if`s making it noisy.
 
-## Appendix B.8
+### Appendix B.8
 [Appendix B.8]: #appendix-b8
 
 A number of survey participants noted that bindings introduced in `EXPR is PAT`
@@ -2030,7 +2030,7 @@ were unexpectedly on the RHS while they were used to it being on the LHS.
     > the right of the variable being matched. it looks like a statement of fact,
     > not the introduction of a new identifier.
 
-## Appendix B.9
+### Appendix B.9
 [Appendix B.9]: #appendix-b9
 
 Some survey participants opined that they found it surprising that an operator

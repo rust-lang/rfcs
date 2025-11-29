@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1598](https://github.com/rust-lang/rfcs/pull/1598)
 - Rust Issue: [rust-lang/rust#44265](https://github.com/rust-lang/rust/issues/44265)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow type constructors to be associated with traits. This is an incremental
@@ -15,7 +15,7 @@ system compared to other forms of higher-kinded polymorphism, and is forward
 compatible with more complex forms of higher-kinded polymorphism that may be
 introduced in the future.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Consider the following trait as a representative motivating example:
@@ -43,10 +43,10 @@ the primary application is along the same lines as the `StreamingIterator`
 trait: defining traits which yield types which have a lifetime tied to the
 local borrowing of the receiver type.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Background: What is kindedness?
+### Background: What is kindedness?
 
 "Higher-kinded types" is a vague term, conflating multiple language features
 under a single banner, which can be inaccurate. As background, this RFC
@@ -105,9 +105,9 @@ and consts with traits. There are other forms of polymorphism involving type
 constructors, such as implementing traits for a type constructor instead of a
 type, which are not a part of this RFC.
 
-## Features of associated type constructors
+### Features of associated type constructors
 
-### Declaring & assigning an associated type constructor
+#### Declaring & assigning an associated type constructor
 
 This RFC proposes a very simple syntax for defining an associated type
 constructor, which looks a lot like the syntax for creating aliases for type
@@ -152,7 +152,7 @@ impl<T> StreamingIterator for StreamIterMut<T> {
 }
 ```
 
-### Using an associated type constructor to construct a type
+#### Using an associated type constructor to construct a type
 
 Once a trait has an associated type constructor, it can be applied to any
 parameters or concrete terms that are in scope. This can be done both inside the
@@ -200,7 +200,7 @@ trait StreamingIterator {
 }
 ```
 
-### Using associated type constructors in bounds
+#### Using associated type constructors in bounds
 
 Users can bound parameters by the type constructed by that trait's associated
 type constructor of a trait using HRTB. Both type equality bounds and trait
@@ -216,7 +216,7 @@ This RFC does not propose allowing any sort of bound by the type constructor
 itself, whether an equality bound or a trait bound (trait bounds of course are
 also impossible). 
 
-## Associated type constructors of type arguments
+### Associated type constructors of type arguments
 
 All of the examples in this RFC have focused on associated type constructors of
 lifetime arguments, however, this RFC proposes adding ATCs of types as well:
@@ -264,9 +264,9 @@ struct Foo<P: PointerFamily> {
 }
 ```
 
-## Evaluating bounds and where clauses
+### Evaluating bounds and where clauses
 
-### Bounds on associated type constructors
+#### Bounds on associated type constructors
 
 Bounds on associated type constructors are treated as higher rank bounds on the
 trait itself. This makes their behavior consistent with the behavior of bounds
@@ -286,7 +286,7 @@ trait Foo where for<'a> Self::Assoc<'a>: Trait<'a> {
 }
 ```
 
-### `where` clauses on associated types
+#### `where` clauses on associated types
 
 In contrast, where clauses on associated types introduce constraints which must
 be proven each time the associated type is used. For example:
@@ -305,7 +305,7 @@ constructors specifically to handle lifetime well formedness in some cases.
 The exact details are left out of this RFC because they will emerge more fully
 during implementation.)
 
-## Benefits of implementing only this feature before other higher-kinded polymorphisms
+### Benefits of implementing only this feature before other higher-kinded polymorphisms
 
 This feature is not full-blown higher-kinded polymorphism, and does not allow
 for the forms of abstraction that are so popular in Haskell, but it does
@@ -323,7 +323,7 @@ these features that other kinds of higher-kinded polymorphism require:
 * Type operator parameters bound by higher-kinded traits
 * Type operator parameters applied to a given type or type parameter
 
-## Advantages of proposed syntax
+### Advantages of proposed syntax
 
 The advantage of the proposed syntax is that it leverages syntax that already
 exists. Type constructors can already be aliased in Rust using the same syntax
@@ -333,7 +333,7 @@ syntax is that many users will be able to use types which have associated type
 constructors without even being aware that this has something to do with a type
 system feature called higher-kindedness.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This RFC uses the terminology "associated type constructor," which has become
@@ -356,10 +356,10 @@ This will also likely increase the frequency with which users have to employ
 higher rank trait bounds; we will want to put additional effort into teaching
 and making teachable HRTBs.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Adding language complexity
+### Adding language complexity
 
 This would add a somewhat complex feature to the language, being able to
 polymorphically resolve type constructors, and requires several extensions to
@@ -382,7 +382,7 @@ trait Foo<'a> {
 }
 ```
 
-## Not full "higher-kinded types"
+### Not full "higher-kinded types"
 
 This does not add all of the features people want when they talk about higher-
 kinded types. For example, it does not enable traits like `Monad`. Some people
@@ -392,7 +392,7 @@ and doesn't preclude implementing them in any way. In fact, it paves the way
 by solving some implementation details that will impact other kinds of higher-
 kindedness as well, such as partial application.
 
-## Syntax isn't like other forms of higher-kinded polymorphism
+### Syntax isn't like other forms of higher-kinded polymorphism
 
 Though the proposed syntax is very similar to the syntax for associated types
 and type aliases, it is probably not possible for other forms of higher-kinded
@@ -404,10 +404,10 @@ However, the syntax used for these other forms of higher-kinded polymorphism
 will depend on exactly what features they enable. It would be hard to design
 a syntax which is consistent with unknown features.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Push HRTBs harder without associated type constructors
+### Push HRTBs harder without associated type constructors
 
 An alternative is to push harder on HRTBs, possibly introducing some elision
 that would make them easier to use.
@@ -429,7 +429,7 @@ only allows for some of the types that associated type constructors can
 express, and is in generally a hacky attempt to work around the limitation
 rather than an equivalent alternative.
 
-## Impose restrictions on ATCs
+### Impose restrictions on ATCs
 
 What is often called "full higher kinded polymorphism" is allowing the use of
 type constructors as input parameters to other type constructors - higher order
@@ -476,5 +476,5 @@ restrictions, for example:
 struct IterItem<'a, I: Iterable>(I::Item<'a>);
 ```
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

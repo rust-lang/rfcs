@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1566](https://github.com/rust-lang/rfcs/pull/1566)
 - Rust Issue: [rust-lang/rust#38356](https://github.com/rust-lang/rust/issues/38356)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes an evolution of Rust's procedural macro system (aka syntax
@@ -30,7 +30,7 @@ provide low-level facilities for operating on these tokens. Higher level
 facilities (e.g., for parsing tokens to an AST) should exist as library crates.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Procedural macros have long been a part of Rust and have been used for diverse
@@ -51,7 +51,7 @@ guarantees to procedural macros, would inhibit our ability to evolve the
 language. By switching to a token-based (rather than AST- based) system, we hope
 to avoid this problem.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 There are two kinds of procedural macro: function-like and attribute-like. These
@@ -142,7 +142,7 @@ implementing the above functions. By adding methods to these traits, we can
 allow macro implementations to pass data to the compiler, for example,
 specifying hygiene information or allowing for fast re-compilation.
 
-## `proc-macro` crates
+### `proc-macro` crates
 
 [Macros 1.1](https://github.com/rust-lang/rfcs/pull/1681) added a new crate
 type: proc-macro. This both allows procedural macros to be declared within the
@@ -175,7 +175,7 @@ on `extern crate` which imports procedural macros. This will not be required
 and should be deprecated.
 
 
-## Writing procedural macros
+### Writing procedural macros
 
 Procedural macro authors should not use the compiler crates (libsyntax, etc.).
 Using these will remain unstable. We will make available a new crate,
@@ -210,7 +210,7 @@ algorithm via libproc_macro. Again, full details must wait for the libproc_macro
 RFC and a sketch is available in this [blog post](http://ncameron.org/blog/libmacro/).
 
 
-## Tokens
+### Tokens
 
 Procedural macros will primarily operate on tokens. There are two main benefits
 to this principle: flexibility and future proofing. By operating on tokens, code
@@ -322,7 +322,7 @@ Note that although tokens exclude whitespace, by examining the spans of tokens,
 a procedural macro can get the string representation of a `TokenStream` and thus
 has access to whitespace information.
 
-### Open question: `Punctuation(char)` and multi-char operators.
+#### Open question: `Punctuation(char)` and multi-char operators.
 
 Rust has many compound operators, e.g., `<<`. It's not clear how best to deal
 with them. If the source code contains "`+ =`", it would be nice to distinguish
@@ -344,7 +344,7 @@ Some solutions:
   latter is a bit hacky, there would be backwards compatibility issues if we
   wanted to add new compound operators in the future.
 
-## Staging
+### Staging
 
 1. Implement [RFC 1561](https://github.com/rust-lang/rfcs/pull/1561).
 2. Implement `#[proc_macro]` and `#[cfg(proc_macro)]` and the function approach to
@@ -359,7 +359,7 @@ Some solutions:
    remove old macros completely.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Procedural macros are a somewhat unpleasant corner of Rust at the moment. It is
@@ -379,7 +379,7 @@ macros can introduce hard to debug errors, macros can make a program hard to
 comprehend, it risks creating de facto dialects of Rust and thus fragmentation
 of the ecosystem, etc.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could keep the existing system or remove procedural macros from Rust.
@@ -418,7 +418,7 @@ this would require identifying items from tokens, rather than from the AST, whic
 would require additional rules on token trees and may not be possible.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 ### Linking model

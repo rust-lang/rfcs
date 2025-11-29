@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#42](https://github.com/rust-lang/rfcs/pull/42)
 - Rust Issue: [rust-lang/rust#13700](https://github.com/rust-lang/rust/issues/13700)
 
-# Summary
+## Summary
 
 Add a `regexp` crate to the Rust distribution in addition to a small
 `regexp_macros` crate that provides a syntax extension for compiling regular
@@ -23,7 +23,7 @@ https://github.com/BurntSushi/regexp/tree/master/benchmark
 (Perhaps the links should be removed if the RFC is accepted, since I can't
 guarantee they will always exist.)
 
-# Motivation
+## Motivation
 
 Regular expressions provide a succinct method of matching patterns against
 search text and are frequently used. For example, many programming languages
@@ -33,7 +33,7 @@ The outcome of this RFC is to include a regular expression library in the Rust
 distribution and resolve issue
 [#3591](https://github.com/mozilla/rust/issues/3591).
 
-# Detailed design
+## Detailed design
 
 (Note: This is describing an existing design that has been implemented. I have
 no idea how much of this is appropriate for an RFC.)
@@ -60,7 +60,7 @@ set of syntax supported by RE2 in comparison to other regexp flavors.
 With that out of the way, there are other things that inform the design of a
 regexp library.
 
-## Unicode
+### Unicode
 
 Given the already existing support for Unicode in Rust, this is a no-brainer.
 Unicode literals should be allowed in expressions and Unicode character classes
@@ -87,14 +87,14 @@ desired, then a mapping can be maintained by the client at their discretion.
 Additionally, this makes it consistent with the `std::str` API, which also
 exposes byte indices.
 
-## Word boundaries, word characters and Unicode
+### Word boundaries, word characters and Unicode
 
 At least Python and D define word characters, word boundaries and space
 characters with Unicode character classes. My implementation does the same
 by augmenting the standard Perl character classes `\d`, `\s` and `\w` with
 corresponding Unicode categories.
 
-## Leftmost-first
+### Leftmost-first
 
 As of now, my implementation finds the leftmost-first match. This is consistent
 with PCRE style regular expressions.
@@ -104,7 +104,7 @@ leftmost-longest semantics to the existing VM. (RE2 supports this as a
 parameter, but I believe still does not fully comply with POSIX with respect to
 picking the correct submatches.)
 
-## Public API
+### Public API
 
 There are three main questions that can be asked when searching text:
 
@@ -146,7 +146,7 @@ This basically makes up the entirety of the public API, in addition to perhaps
 a `quote` function that escapes a string so that it may be used as a literal in
 an expression.
 
-## The `regexp!` macro
+### The `regexp!` macro
 
 With syntax extensions, it's possible to write an `regexp!` macro that compiles
 an expression when a Rust program is compiled. This includes translating the
@@ -183,7 +183,7 @@ of the `regexp` crate.
 remarks](https://github.com/rust-lang/rfcs/pull/42#issuecomment-40320112)
 that this state of affairs is a wart that will be corrected in the future.
 
-## Untrusted input
+### Untrusted input
 
 Given worst case `O(mn)` time complexity, I don't think it's worth worrying
 about unsafe search text.
@@ -195,7 +195,7 @@ implementation does nothing to mitigate against this, but I think a simple hard
 limit on the number of instructions allowed would work fine. (Should it be
 configurable?)
 
-## Name
+### Name
 
 The name of the crate being proposed is `regexp` and the type describing a
 compiled regular expression is `Regexp`. I think an equally good name would be
@@ -214,7 +214,7 @@ the crate as providing regular expressions.
 For consistency's sake, I propose that the syntax extension provided be named
 the same as the crate. So in this case, `regexp!`.
 
-## Summary
+### Summary
 
 My implementation is pretty much a port of most of RE2. The syntax should be
 identical or almost identical. I think matching an existing (and popular)
@@ -222,7 +222,7 @@ library has benefits, since it will make it easier for people to pick it up and
 start using it. There will also be (hopefully) fewer surprises. There is also
 plenty of room for performance improvement by implementing a DFA.
 
-# Alternatives
+## Alternatives
 
 I think the single biggest alternative is to provide a backtracking
 implementation that supports backreferences and generalized zero-width
@@ -242,7 +242,7 @@ advantage.) Also, a native implementation makes it maximally portable.
 
 Finally, it is always possible to persist without a regexp library.
 
-# Unresolved questions
+## Unresolved questions
 
 The public API design is fairly simple and straight-forward with no
 surprises.  I think most of the unresolved stuff is how the backend is
@@ -265,7 +265,7 @@ can always pick one of the existing C or C++ libraries.
 
 For now, we could mark the API as `#[unstable]` or `#[experimental]`.
 
-# Future work
+## Future work
 
 I think most of the future work for this crate is to increase the performance,
 either by implementing different matching algorithms (e.g., a DFA) or by

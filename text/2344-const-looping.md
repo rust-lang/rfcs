@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2344](https://github.com/rust-lang/rfcs/pull/2344)
 - Rust Issue: [rust-lang/rust#52000](https://github.com/rust-lang/rust/issues/52000)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow the use of `loop`, `while` and `while let` during constant evaluation.
@@ -12,7 +12,7 @@ each iteration calls `iterator.next()`, which is not a `const fn` and thus can't
 be called within constants. Future RFCs (like
 https://github.com/rust-lang/rfcs/pull/2237) might lift that restriction.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Any iteration is expressible with recursion. Since we already allow recursion
@@ -22,7 +22,7 @@ expressed as imperative loops and a lot of Rust code uses loops instead of
 recursion. Allowing loops in constants will allow more functions to become const
 fn without requiring any changes.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 If you previously had to write functional code inside constants, you can now
@@ -72,7 +72,7 @@ const fn fib(n: u128) -> u128 {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 A loop in MIR is a cyclic graph of `BasicBlock`s. Evaluating such a loop is no
@@ -87,17 +87,17 @@ a timestamp of the last (if any) loop warning emission. Both the counter needs t
 its limit and 30 seconds have to have passed since the last warning emission in order
 for a new warning to be emitted.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Infinite loops will cause the compiler to never finish if the lint is not denied
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 - Do nothing, users can keep using recursion
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should we add a true recursion check that hashes the interpreter state and

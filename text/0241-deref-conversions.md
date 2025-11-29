@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#241](https://github.com/rust-lang/rfcs/pull/241)
 - Rust Issue: [rust-lang/rust#21432](https://github.com/rust-lang/rust/issues/21432)
 
-# Summary
+## Summary
 
 Add the following coercions:
 
@@ -13,7 +13,7 @@ Add the following coercions:
 These coercions eliminate the need for "cross-borrowing" (things like `&**v`)
 and calls to `as_slice`.
 
-# Motivation
+## Motivation
 
 Rust currently supports a conservative set of *implicit coercions* that are used
 when matching the types of arguments against those given for a function's
@@ -47,11 +47,11 @@ valuable lessons in the interim and (2) there is a quite conservative kind of
 coercion we can add that dramatically improves today's ergonomic state of
 affairs.
 
-# Detailed design
+## Detailed design
 
-## Design principles
+### Design principles
 
-### The centrality of ownership and borrowing
+#### The centrality of ownership and borrowing
 
 As Rust has evolved,
 [a theme has emerged](http://blog.rust-lang.org/2014/09/15/Rust-1.0.html):
@@ -98,7 +98,7 @@ This RFC takes as a basic principle: **Coercions should never implicitly borrow 
 This is a key difference from the
 [cross-borrowing RFC](https://github.com/rust-lang/rfcs/pull/226).
 
-### Limit implicit execution of arbitrary code
+#### Limit implicit execution of arbitrary code
 
 Another positive aspect of Rust's current design is that a function call like
 `foo(bar, baz)` does not invoke arbitrary code (general implicit coercions, as
@@ -131,7 +131,7 @@ This RFC takes as a basic principle: **Coercions should narrowly limit the code 
 
 Coercions through `Deref` are considered narrow enough.
 
-## The proposal
+### The proposal
 
 The idea is to introduce a coercion corresponding to `Deref`/`DerefMut`, but
 *only* for already-borrowed values:
@@ -169,7 +169,7 @@ applicable methods at increasing levels of deref.
 
 Unlike method resolution, however, this coercion does *not* automatically borrow.
 
-### Benefits of the design
+#### Benefits of the design
 
 Under this coercion design, we'd see the following ergonomic improvements for
 "cross-borrowing":
@@ -214,7 +214,7 @@ fn use_vec_ref(v: &Vec<u8>) {
 }
 ```
 
-### Characteristics of the design
+#### Characteristics of the design
 
 The design satisfies both of the principles laid out in the Motivation:
 
@@ -233,7 +233,7 @@ perspective is in opposition to viewing `&` primarily as adding a layer of
 indirection -- a view that, given compiler optimizations, is often inaccurate
 anyway.
 
-# Drawbacks
+## Drawbacks
 
 As with any mechanism that implicitly invokes code, deref coercions make it more
 complex to fully understand what a given piece of code is doing. The RFC argued
@@ -245,7 +245,7 @@ pointer. This change could make Rust more difficult to learn (though note that
 it puts *more* attention on ownership), though it would make it more convenient
 to use in the long run.
 
-# Alternatives
+## Alternatives
 
 The main alternative that addresses the same goals as this RFC is the
 [cross-borrowing RFC](https://github.com/rust-lang/rfcs/pull/226), which
@@ -263,7 +263,7 @@ bar(v); // is v still available?
 Knowing whether `v` is moved in the call to `foo` requires knowing `foo`'s
 signature, since the coercion would *implicitly borrow* from the vector.
 
-# Appendix: ownership in Rust today
+## Appendix: ownership in Rust today
 
 In today's Rust, ownership transfer/borrowing is explicit for all
 function/method arguments. It is implicit only for:

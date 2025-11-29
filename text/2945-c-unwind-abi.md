@@ -6,7 +6,7 @@
 
 [project-group]: https://github.com/rust-lang/project-ffi-unwind
 
-# Summary
+## Summary
 [summary]: #summary
 
 We introduce a new ABI string, `"C-unwind"`, to enable unwinding from other
@@ -25,7 +25,7 @@ unwound by a foreign exception. This is something the [project
 group][project-group] would like to specify in a future RFC; as such, it is
 "TBD" (see ["Unresolved questions"][unresolved-questions]).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are some Rust projects that need cross-language unwinding to provide
@@ -43,7 +43,7 @@ assumption that such unwinding constitutes undefined behavior.
 The desire for this feature has been previously discussed on other RFCs,
 including [#2699][rfc-2699] and [#2753][rfc-2753].
 
-## Key design goals
+### Key design goals
 
 As explained in [this Inside Rust blog post][inside-rust-requirements], we have
 several requirements for any cross-language unwinding design.
@@ -92,7 +92,7 @@ how well the current design satisfies these constraints.
 [inside-rust-requirements]: https://blog.rust-lang.org/inside-rust/2020/02/27/ffi-unwind-design-meeting.html#requirements-for-any-cross-language-unwinding-specification
 [longjmp-pr]: https://github.com/rust-lang/rust/pull/48572
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When declaring an external function that may unwind, such as an entrypoint to a
@@ -127,7 +127,7 @@ may be "sandwiched" between Rust frames, so that Rust `panic`s may safely
 unwind the C++ frames, if the Rust code declares both the C++ entrypoint and
 the Rust entrypoint using `"C-unwind"`.
 
-## Other `unwind` ABI strings
+### Other `unwind` ABI strings
 
 Because the `C` ABI is not appropriate for all use cases, we also introduce
 these `unwind` ABI strings, which will only differ from their non-`unwind`
@@ -140,7 +140,7 @@ variants by permitting unwinding, with the same semantics as `"C-unwind"`:
 More `unwind` variants of existing ABI strings may be introduced, with the same
 semantics, without an additional RFC.
 
-## "Plain Old Frames"
+### "Plain Old Frames"
 [POF-definition]: #plain-old-frames
 
 A "POF", or "Plain Old Frame", is defined as a frame that can be trivially
@@ -163,7 +163,7 @@ section provides an example.
 
 [cpp-POD-definition]: https://en.cppreference.com/w/cpp/named_req/PODType
 
-## Forced unwinding
+### Forced unwinding
 [forced-unwinding]: #forced-unwinding
 
 This is a special kind of unwinding used to implement `longjmp` on Windows and
@@ -187,7 +187,7 @@ RFC][unresolved-questions].
 
 [inside-rust-forced]: https://blog.rust-lang.org/inside-rust/2020/02/27/ffi-unwind-design-meeting.html#forced-unwinding
 
-## Changes to the behavior of existing ABI strings
+### Changes to the behavior of existing ABI strings
 [extern-c-behavior]: #changes-to-extern-c-behavior
 
 Prior to this RFC, any unwinding operation that crossed an `extern "C"`
@@ -202,7 +202,7 @@ This RFC retains most of that undefined behavior, with one exception: with the
 This change will be applied to all ABI strings other than `"Rust"`, such as
 `"system"`.
 
-## Interaction with `panic=abort`
+### Interaction with `panic=abort`
 
 If a non-forced foreign unwind would enter a Rust frame via an `extern
 "C-unwind"` ABI boundary, but the Rust code is compiled with `panic=abort`, the
@@ -216,10 +216,10 @@ mode, the compiler may be able to guarantee an abort in this case.
 
 `panic=abort` will have no impact on the behavior of forced unwinding.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## ABI boundaries and unforced unwinding
+### ABI boundaries and unforced unwinding
 [abi-boundaries-and-forced-unwinding]: #abi-boundaries-and-forced-unwinding
 
 This table shows the behavior of an unwinding operation reaching each type of
@@ -238,7 +238,7 @@ In debug mode, the compiler could insert code to catch unwind attempts at
 `extern "C"` boundaries and `abort`; this would provide a safe way to discover
 (and fix) instances of this form of UB.
 
-## Frame deallocation and forced unwinding
+### Frame deallocation and forced unwinding
 
 The interaction of Rust frames with C functions that deallocate frames (i.e.
 functions that may use forced unwinding on specific platforms) is independent
@@ -250,7 +250,7 @@ of the panic runtime, ABI, or platform.
   specify a safe way to deallocate POFs with `longjmp` or `pthread_exit` in [a
   future RFC][unresolved-questions].
 
-## Additional limitations
+### Additional limitations
 [additional-limitations]: #additional-limitations
 
 In order to limit the scope of this RFC, the following limitations are imposed:
@@ -266,7 +266,7 @@ In order to limit the scope of this RFC, the following limitations are imposed:
 
 These may be addressed in [future RFCs][future-possibilities].
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Forced unwinding is treated as universally unsafe across
@@ -294,10 +294,10 @@ prohibit unwinding) would also be a safer default, since it would prevent
 undefined behavior when interfacing with external libraries that may throw
 exceptions.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Other proposals discussed with the lang team
+### Other proposals discussed with the lang team
 [alternatives]: #other-proposals-discussed-with-the-lang-team
 
 Two other potential designs have been discussed in depth; they are
@@ -321,7 +321,7 @@ boundaries, and no new ABI is introduced.
 
 [inside-rust-proposals]: https://blog.rust-lang.org/inside-rust/2020/02/27/ffi-unwind-design-meeting.html#three-specific-proposals
 
-## Reasons for the current proposal
+### Reasons for the current proposal
 [rationale]: #reasons-for-the-current-proposal
 
 Our reasons for preferring the current proposal are:
@@ -347,13 +347,13 @@ Our reasons for preferring the current proposal are:
   to translate between the Rust unwinding mechanism and the natively provided
   mechanism. In this proposal, only `"C-unwind"` boundaries would require shims.
 
-## Analysis of key design goals
+### Analysis of key design goals
 [analysis-of-design-goals]: #analysis-of-design-goals
 
 This section revisits the key design goals to assess how well they
 are met by the proposed design.
 
-### Changing from `panic=unwind` to `panic=abort` cannot cause UB
+#### Changing from `panic=unwind` to `panic=abort` cannot cause UB
 
 This constraint is met:
 
@@ -363,7 +363,7 @@ This constraint is met:
     though it is defined to abort if `panic=abort` is used.
 * Forced exceptions behave the same regardless of panic mode.
 
-### Optimization with panic=abort
+#### Optimization with panic=abort
 
 Using this proposal, the compiler is **almost always** able to reduce
 overhead related to unwinding when using panic=abort. The one
@@ -374,7 +374,7 @@ intend to unwind -- and, in that case, those functions are likely
 using panic=unwind anyway, so this is not expected to make much
 difference in practice.
 
-### Preserve the ability to change how Rust panics are propagated when using the Rust ABI
+#### Preserve the ability to change how Rust panics are propagated when using the Rust ABI
 
 This constraint is met. If we were to change Rust panics to a
 different mechanism from the mechanism used by the native ABI,
@@ -382,25 +382,25 @@ however, there would have to be a conversion step that interconverts
 between Rust panics and foreign exceptions at "C-unwind" ABI
 boundaries.
 
-### Enable Rust panics to traverse through foreign frames
+#### Enable Rust panics to traverse through foreign frames
 
 This constraint is met.
 
-### Enable foreign exceptions to propagate through Rust frame
+#### Enable foreign exceptions to propagate through Rust frame
 
 This constraint is partially met: the behavior of foreign exceptions
 with respect to `catch_unwind` is currently undefined, and left for
 future work.
 
-### Enable error handling with `longjmp`
+#### Enable error handling with `longjmp`
 
 This constraint has been [deferred][unresolved-questions].
 
-### Do not change the ABI of functions in the `libc` crate
+#### Do not change the ABI of functions in the `libc` crate
 
 This constraint has been [deferred][unresolved-questions].
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 C++ as specified has no concept of "foreign" exceptions or of an underlying
@@ -421,7 +421,7 @@ foreign exceptions as well. In the current proposal, though, such foreign
 exception support is not enabled by default with `panic=unwind` but requires
 the new `"C-unwind"` ABI.
 
-## Attributes on nightly Rust and prior RFCs
+### Attributes on nightly Rust and prior RFCs
 [nightly-attributes]: #attributes-on-nightly-rust-and-prior-rfcs
 
 Currently, nightly Rust provides attributes, `#[unwind(allowed)]` and
@@ -454,7 +454,7 @@ The attribute approach was deemed insufficient for the following reasons:
 [rfc-2699]: https://github.com/rust-lang/rfcs/pull/2699
 [rfc-2753]: https://github.com/rust-lang/rfcs/pull/2753
 
-## Older discussions about unwinding through `extern "C"` boundaries
+### Older discussions about unwinding through `extern "C"` boundaries
 
 As mentioned [above][motivation], it is currently undefined behavior for
 `extern "C"` functions to unwind. As documented in [this
@@ -478,7 +478,7 @@ be introduced.
 [1.33-discussion]: https://github.com/rust-lang/rust/issues/58794
 [discourse-thread]: https://internals.rust-lang.org/t/unwinding-through-ffi-after-rust-1-33/9521?u=batmanaod
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 The behavior of `catch_unwind` when a foreign exception encounters it is
@@ -498,7 +498,7 @@ Within the context of this RFC and in discussions among members of the
 behavior which we plan to define in future RFCs is referred to as "TBD
 behavior".
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The [FFI-unwind project group][project-group] intends to remain active at least

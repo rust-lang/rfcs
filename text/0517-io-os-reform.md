@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#517](https://github.com/rust-lang/rfcs/pull/517)
 - Rust Issue: [rust-lang/rust#21070](https://github.com/rust-lang/rust/issues/21070)
 
-# Summary
+## Summary
 [Summary]: #summary
 
 This RFC proposes a significant redesign of the `std::io` and `std::os` modules
@@ -10,7 +10,7 @@ in preparation for API stabilization. The specific problems addressed by the
 redesign are given in the [Problems] section below, and the key ideas of the
 design are given in [Vision for IO].
 
-# Note about RFC structure
+## Note about RFC structure
 
 This RFC was originally posted as a single monolithic file, which made
 it difficult to discuss different parts separately.
@@ -22,7 +22,7 @@ statement, (2) the overall vision and organization, and (3) the
 Other parts of the RFC are marked with `(stub)` and will be filed as
 follow-up PRs against this RFC.
 
-# Table of contents
+## Table of contents
 [Table of contents]: #table-of-contents
 * [Summary]
 * [Table of contents]
@@ -83,7 +83,7 @@ follow-up PRs against this RFC.
 * [Alternatives]
 * [Unresolved questions]
 
-# Problems
+## Problems
 [Problems]: #problems
 
 The `io` and `os` modules are the last large API surfaces of `std` that need to
@@ -94,7 +94,7 @@ RFC discusses the most significant problems below.
 This section only covers specific problems with the current library; see
 [Vision for IO] for a higher-level view.  section.
 
-## Atomicity and the `Reader`/`Writer` traits
+### Atomicity and the `Reader`/`Writer` traits
 [Atomicity and the `Reader`/`Writer` traits]: #atomicity-and-the-readerwriter-traits
 
 One of the most pressing -- but also most subtle -- problems with `std::io` is
@@ -120,7 +120,7 @@ Existing blocking APIs all have to deal with this problem, and Rust
 can and should follow the existing tradition here. See
 [Revising `Reader` and `Writer`] for the proposed solution.
 
-## Timeouts
+### Timeouts
 [Timeouts]: #timeouts
 
 The `std::io` module supports "timeouts" on virtually all IO objects via a
@@ -141,7 +141,7 @@ This API choice suffers from two problems, one cosmetic and the other deeper:
 
 See [Deadlines] for the proposed solution.
 
-## Posix and libuv bias
+### Posix and libuv bias
 [Posix and libuv bias]: #posix-and-libuv-bias
 
 The current `io` and `os` modules were originally designed when `librustuv` was
@@ -158,7 +158,7 @@ Part of the goal of this RFC is to set out a clear and extensible story for both
 cross-platform and platform-specific APIs in `std`. See [Design principles] for
 the details.
 
-## Unicode
+### Unicode
 [Unicode]: #unicode
 
 Rust has followed the [utf8 everywhere](http://utf8everywhere.org/) approach to
@@ -176,7 +176,7 @@ This topic was covered in some detail in the
 [Path Reform RFC](https://github.com/rust-lang/rfcs/pull/474), but this RFC
 gives a more general account in [String handling].
 
-## `stdio`
+### `stdio`
 [stdio]: #stdio
 
 The `stdio` module provides access to readers/writers for `stdin`, `stdout` and
@@ -188,7 +188,7 @@ use, while `set_stderr` affects `panic!`.
 This module needs to be clarified. See [The std::io facade] and
 [Functionality moved elsewhere] for the detailed design.
 
-## Overly high-level abstractions
+### Overly high-level abstractions
 [Overly high-level abstractions]: #overly-high-level-abstractions
 
 There are a few places where `io` provides high-level abstractions over system
@@ -205,7 +205,7 @@ services without also providing more direct access to the service as-is. For exa
 
 The motivation for going lower-level is described in [Design principles] below.
 
-## The error chaining pattern
+### The error chaining pattern
 [The error chaining pattern]: #the-error-chaining-pattern
 
 The `std::io` module is somewhat unusual in that most of the functionality it
@@ -251,14 +251,14 @@ In the meantime, this RFC proposes to phase out the use of impls for
 (Note: this may put some additional pressure on at least landing the basic use
 of `?` instead of today's `try!` before 1.0 final.)
 
-# Detailed design
+## Detailed design
 [Detailed design]: #detailed-design
 
 There's a lot of material here, so the RFC starts with high-level goals,
 principles, and organization, and then works its way through the various modules
 involved.
 
-## Vision for IO
+### Vision for IO
 [Vision for IO]: #vision-for-io
 
 Rust's IO story had undergone significant evolution, starting from a
@@ -267,7 +267,7 @@ a [pure native model](https://github.com/rust-lang/rfcs/pull/230). Given that
 history, it's worthwhile to set out explicitly what is, and is not, in scope for
 `std::io`
 
-### Goals
+#### Goals
 [Goals]: #goals
 
 For Rust 1.0, the aim is to:
@@ -301,7 +301,7 @@ multiple interoperating IO models.
 The *long term* intent is certainly to support async IO in some form,
 but doing so will require new research and experimentation.
 
-### Design principles
+#### Design principles
 [Design principles]: #design-principles
 
 Now that the scope has been clarified, it's important to lay out some broad
@@ -309,7 +309,7 @@ principles for the `io` and `os` modules. Many of these principles are already
 being followed to some extent, but this RFC makes them more explicit and applies
 them more uniformly.
 
-#### What cross-platform means
+##### What cross-platform means
 [What cross-platform means]: #what-cross-platform-means
 
 Historically, Rust's `std` has always been "cross-platform", but as discussed in
@@ -346,7 +346,7 @@ in `std` should be cross-platform:
 The next subsection gives detail on what these APIs should look like in relation
 to system services.
 
-#### Relation to the system-level APIs
+##### Relation to the system-level APIs
 [Relation to the system-level APIs]: #relation-to-the-system-level-apis
 
 How should Rust APIs map into system services? This question breaks down along
@@ -377,7 +377,7 @@ should be as high-level as possible without imposing a tax**.
 * **Coverage**. Finally, the `std` APIs should over time strive for full
   coverage of non-niche, cross-platform capabilities.
 
-#### Platform-specific opt-in
+##### Platform-specific opt-in
 [Platform-specific opt-in]: #platform-specific-opt-in
 
 Rust is a systems language, and as such it should expose seamless, no/low-cost
@@ -417,7 +417,7 @@ applied to standard IO objects.
 The precise design of these modules is in the very early stages and will likely
 remain `#[unstable]` for some time.
 
-### Proposed organization
+#### Proposed organization
 [Proposed organization]: #proposed-organization
 
 The `io` module is currently the biggest in `std`, with an entire hierarchy
@@ -467,7 +467,7 @@ counts, arguments to `main`, and so on).
 * The `process` module over time will grow to include querying/manipulating
   already-running processes, not just spawning them.
 
-## Revising `Reader` and `Writer`
+### Revising `Reader` and `Writer`
 [Revising `Reader` and `Writer`]: #revising-reader-and-writer
 
 The `Reader` and `Writer` traits are the backbone of IO, representing
@@ -512,7 +512,7 @@ long tradition for blocking IO, but they are still surprisingly subtle
 
 With those general points out of the way, let's look at the details.
 
-### `Read`
+#### `Read`
 [Read]: #read
 
 The updated `Reader` trait (and its extension) is as follows:
@@ -565,7 +565,7 @@ should probably just retry in those cases. In the case where you are
 using EINTR explicitly, `read` and `write` will be available to handle
 it (and you can always build your own abstractions on top).
 
-#### Removed methods
+##### Removed methods
 
 The proposed `Read` trait is much slimmer than today's `Reader`. The vast
 majority of removed methods are parsing/deserialization, which were
@@ -593,7 +593,7 @@ This method is equivalent to calling `reserve(n)` and then providing a
 slice to the memory starting just after `len()` entries. Using this
 method, clients of `Read` can easily recover the `push` method.
 
-### `Write`
+#### `Write`
 [Write]: #write
 
 The `Writer` trait is cut down to even smaller size:
@@ -630,7 +630,7 @@ types. The latter, at least, is already uniformly (and extensibly)
 covered via the `write!` macro. The other helpers, as with `Read`,
 should migrate into a more general (de)serialization library.
 
-## String handling
+### String handling
 [String handling]: #string-handling
 
 The fundamental problem with Rust's full embrace of UTF-8 strings is that not
@@ -659,7 +659,7 @@ panic on Windows when given non-UTF-8 data, a platform-specific
 behavior. But they are also incomplete, because on Windows you should
 be able to work directly with UCS-2 data.
 
-### Key observations
+#### Key observations
 [Key observations]: #key-observations
 
 Fortunately, there is a solution that fits well with Rust's UTF-8 strings *and*
@@ -698,7 +698,7 @@ in the other direction is just a validation.
   another. Therefore, the only cross-platform APIs are those that work entirely
   with Unicode.
 
-### The design: `os_str`
+#### The design: `os_str`
 [The design: `os_str`]: #the-design-os_str
 
 The observations above lead to a somewhat radical new treatment of strings,
@@ -833,7 +833,7 @@ pub mod os {
 By placing these APIs under `os`, using them requires a clear *opt in*
 to platform-specific functionality.
 
-### The future
+#### The future
 [The future]: #the-future
 
 Introducing an additional string type is a bit daunting, since many
@@ -852,23 +852,23 @@ propose taking any such steps now -- but it's important that we *can*
 do so later if Rust's standard strings turn out to not be sufficient
 and OS strings become commonplace.
 
-## Deadlines
+### Deadlines
 [Deadlines]: #deadlines
 
 > To be added in a follow-up PR.
 
-## Splitting streams and cancellation
+### Splitting streams and cancellation
 [Splitting streams and cancellation]: #splitting-streams-and-cancellation
 
 > To be added in a follow-up PR.
 
-## Modules
+### Modules
 [Modules]: #modules
 
 Now that we've covered the core principles and techniques used
 throughout IO, we can go on to explore the modules in detail.
 
-### `core::io`
+#### `core::io`
 [core::io]: #coreio
 
 Ideally, the `io` module will be split into the parts that can live in
@@ -878,7 +878,7 @@ requires changes to today's `IoError` (which currently references
 `String`); if these changes cannot be performed, everything here will
 live in `std::io`.
 
-#### Adapters
+##### Adapters
 [Adapters]: #adapters
 
 The current `std::io::util` module offers a number of `Reader` and
@@ -919,7 +919,7 @@ pub struct IterReader<T> { ... }
 As with `std::iter`, these adapters are object unsafe and hence placed
 in an extension trait with a blanket `impl`.
 
-#### Free functions
+##### Free functions
 [Free functions]: #free-functions
 
 The current `std::io::util` module also includes a number of primitive
@@ -951,7 +951,7 @@ written on any error and also discard any partially read data on a `write`
 error. This method is intended to be a convenience and `write` should be used
 directly if this is not desirable.
 
-#### Seeking
+##### Seeking
 [Seeking]: #seeking
 
 The seeking infrastructure is largely the same as today's, except that
@@ -973,7 +973,7 @@ pub enum SeekFrom {
 
 The old `tell` function can be regained via `seek(SeekFrom::Current(0))`.
 
-#### Buffering
+##### Buffering
 [Buffering]: #buffering
 
 The current `Buffer` trait will be renamed to `BufRead` for
@@ -1032,7 +1032,7 @@ impl IntoInnerError<T> {
 impl<W> FromError<IntoInnerError<W>> for Error { ... }
 ```
 
-#### `Cursor`
+##### `Cursor`
 [Cursor]: #cursor
 
 Many applications want to view in-memory data as either an implementor of `Read`
@@ -1102,13 +1102,13 @@ follows:
 * `BufReader` -> `Cursor<&[u8]>` or `Cursor<&mut [u8]>`
 * `BufWriter` -> `Cursor<&mut [u8]>`
 
-### The `std::io` facade
+#### The `std::io` facade
 [The std::io facade]: #the-stdio-facade
 
 The `std::io` module will largely be a facade over `core::io`, but it
 will add some functionality that can live only in `std`.
 
-#### `Errors`
+##### `Errors`
 [Errors]: #error
 
 The `IoError` type will be renamed to `std::io::Error`, following our
@@ -1132,7 +1132,7 @@ be bubbled out. (The main downside is that higher-level operations that might
 use `Result<T, IoError>` with some `T != usize` may need to wrap `IoError` in a
 further enum if they wish to forward unexpected EOF.)
 
-#### Channel adapters
+##### Channel adapters
 [Channel adapters]: #channel-adapters
 
 The `ChanReader` and `ChanWriter` adapters will be left as they are today, and
@@ -1153,7 +1153,7 @@ can be reconsidered for stabilization after the dust settles from the I/O
 redesign as well as the recent `std::sync` redesign. At this time, however, this
 RFC recommends they remain unstable.
 
-#### `stdin`, `stdout`, `stderr`
+##### `stdin`, `stdout`, `stderr`
 [stdin, stdout, stderr]: #stdin-stdout-stderr
 
 The current `stdio` module will be removed in favor of these constructors in the
@@ -1220,7 +1220,7 @@ pub fn stderr() -> Stderr;
   impl Write for StdoutLock { ... }
   ```
 
-#### Windows and stdio
+##### Windows and stdio
 [Windows stdio]: #windows-and-stdio
 
 On Windows, standard input and output handles can work with either arbitrary
@@ -1244,7 +1244,7 @@ standard primitives listed above:
   input as UTF-8, re-encoding to UTF-16. If the input is not valid UTF-8 then an
   error will be returned and no data will be written.
 
-#### Raw stdio
+##### Raw stdio
 [Raw stdio]: #raw-stdio
 
 > **Note**: This section is intended to be a sketch of possible raw stdio
@@ -1310,7 +1310,7 @@ There are some key differences from today's API:
   operations work with `OsStr`, however, to show how they work with UCS-2 under
   the hood.
 
-#### Printing functions
+##### Printing functions
 [Printing functions]: #printing-functions
 
 The current `print`, `println`, `print_args`, and `println_args` functions will
@@ -1327,7 +1327,7 @@ local handle instead of a global handle as whether they're justified in the
 first place. It is a backwards-compatible extension to allow this sort of output
 to be redirected and can be considered if the need arises.
 
-### `std::env`
+#### `std::env`
 [std::env]: #stdenv
 
 Most of what's available in `std::os` today will move to `std::env`,
@@ -1389,13 +1389,13 @@ and the signatures will be updated to follow this RFC's
 
 This brings the constants into line with our naming conventions elsewhere.
 
-#### Items to move to `os::platform`
+##### Items to move to `os::platform`
 
 * `pipe` will move to `os::unix`. It is currently primarily used for
   hooking to the IO of a child process, which will now be done behind
   a trait object abstraction.
 
-#### Removed items
+##### Removed items
 
 * `errno`, `error_string` and `last_os_error` provide redundant,
   platform-specific functionality and will be removed for now. They
@@ -1407,7 +1407,7 @@ This brings the constants into line with our naming conventions elsewhere.
 * `make_absolute`: deprecated in favor of explicitly joining with the working directory.
 * all `_as_bytes` variants: deprecated in favor of yielding `OsString` values
 
-### `std::fs`
+#### `std::fs`
 [std::fs]: #stdfs
 
 The `fs` module will provide most of the functionality it does today,
@@ -1417,7 +1417,7 @@ Note that all path-consuming functions will now take an
 `AsPath`-bounded parameter for ergonomic reasons (this will allow
 passing in Rust strings and literals directly, for example).
 
-#### Free functions
+##### Free functions
 [Free functions]: #free-functions
 
 **Files**:
@@ -1455,7 +1455,7 @@ passing in Rust strings and literals directly, for example).
 * `soft_link` (renamed from `symlink`). Take `AsPath` bound.
 * `read_link` (renamed form `readlink`). Take `AsPath` bound.
 
-#### Files
+##### Files
 [Files]: #files
 
 The `File` type will largely stay as it is today, except that it will
@@ -1477,7 +1477,7 @@ The `open_mode` function will be removed in favor of and will take an
 `OpenOptions` struct, which will encompass today's `FileMode` and
 `FileAccess` and support a builder-style API.
 
-#### File kinds
+##### File kinds
 [File kinds]: #file-kinds
 
 The `FileType` type will be removed. As mentioned above, `is_file` and
@@ -1490,7 +1490,7 @@ It's possible that an
 [extensible](https://github.com/rust-lang/rfcs/pull/757) `Kind` will
 be added in the future.
 
-#### File permissions
+##### File permissions
 [File permissions]: #file-permissions
 
 The permission models on Unix and Windows vary greatly -- even between
@@ -1513,13 +1513,13 @@ accessors for "world readable" -- and that is all. At the moment, that
 is all that is known to be compatible across the platforms that Rust
 supports.
 
-#### `PathExt`
+##### `PathExt`
 [PathExt]: #pathext
 
 This trait will essentially remain stay as it is (renamed from
 `PathExtensions`), following the same changes made to `fs` free functions.
 
-#### Items to move to `os::platform`
+##### Items to move to `os::platform`
 
 * `lstat` will move to `os::unix` and remain `#[unstable]` *for now*
   since it is not yet implemented for Windows.
@@ -1533,7 +1533,7 @@ This trait will essentially remain stay as it is (renamed from
 * In general, offer all of the `stat` fields as an extension trait on
   `Metadata` (e.g. `os::unix::MetadataExt`).
 
-### `std::net`
+#### `std::net`
 [std::net]: #stdnet
 
 The contents of `std::io::net` submodules `tcp`, `udp`, `ip` and
@@ -1541,7 +1541,7 @@ The contents of `std::io::net` submodules `tcp`, `udp`, `ip` and
 the other modules are being moved or removed and are described
 elsewhere.
 
-#### SocketAddr
+##### SocketAddr
 
 This structure will represent either a `sockaddr_in` or `sockaddr_in6` which is
 commonly just a pairing of an IP address and a port.
@@ -1567,7 +1567,7 @@ impl SocketAddrV6 {
 }
 ```
 
-#### Ipv4Addr
+##### Ipv4Addr
 
 Represents a version 4 IP address. It has the following interface:
 
@@ -1581,7 +1581,7 @@ impl Ipv4Addr {
 }
 ```
 
-#### Ipv6Addr
+##### Ipv6Addr
 
 Represents a version 6 IP address. It has the following interface:
 
@@ -1594,7 +1594,7 @@ impl Ipv6Addr {
 }
 ```
 
-#### TCP
+##### TCP
 [TCP]: #tcp
 
 The current `TcpStream` struct will be pared back from where it is today to the
@@ -1678,7 +1678,7 @@ Some major changes from today's API include:
 
 The `TcpListener` type will also adhere to `Send` and `Sync`.
 
-#### UDP
+##### UDP
 [UDP]: #udp
 
 The UDP infrastructure will receive a similar face-lift as the TCP
@@ -1709,7 +1709,7 @@ Some important points of note are:
 
 The `UdpSocket` type will adhere to both `Send` and `Sync`.
 
-#### Sockets
+##### Sockets
 [Sockets]: #sockets
 
 The current constructors for `TcpStream`, `TcpListener`, and `UdpSocket` are
@@ -1728,7 +1728,7 @@ This RFC does, however, recommend not adding multiple constructors to the
 various types to set various configuration options. This pattern is best
 expressed via a flexible socket type to be added at a future date.
 
-#### Addresses
+##### Addresses
 [Addresses]: #addresses
 
 For the current `addrinfo` module:
@@ -1754,7 +1754,7 @@ impl ToSocketAddrs for str { ... }
 impl<T: ToSocketAddrs> ToSocketAddrs for &T { ... }
 ```
 
-### `std::process`
+#### `std::process`
 [std::process]: #stdprocess
 
 Currently `std::io::process` is used only for spawning new
@@ -1763,7 +1763,7 @@ inspecting currently-running processes, although this RFC does not
 propose any immediate support for doing so -- it merely future-proofs
 the module.
 
-#### `Command`
+##### `Command`
 [Command]: #command
 
 The `Command` type is a builder API for processes, and is largely in
@@ -1792,7 +1792,7 @@ an `Inherit` constructor (which just means to use the current IO
 object -- it does not take an argument), and a `Null` constructor. The
 equivalent of today's `InheritFd` will be added at a later point.
 
-#### `Child`
+##### `Child`
 [Child]: #child
 
 We propose renaming `Process` to `Child` so that we can add a
@@ -1815,19 +1815,19 @@ There are also a few other related changes to the module:
 * Remove `MustDieSignal`, `PleaseExitSignal`.
 * Remove `EnvMap` (which should never have been exposed).
 
-### `std::os`
+#### `std::os`
 [std::os]: #stdos
 
 Initially, this module will be empty except for the platform-specific
 `unix` and `windows` modules. It is expected to grow additional, more
 specific platform submodules (like `linux`, `macos`) over time.
 
-## Odds and ends
+### Odds and ends
 [Odds and ends]: #odds-and-ends
 
 > To be expanded in a follow-up PR.
 
-### The `io` prelude
+#### The `io` prelude
 [The io prelude]: #the-io-prelude
 
 The `prelude` submodule will contain most of the traits, types, and
@@ -1835,7 +1835,7 @@ modules discussed in this RFC; it is meant to provide maximal
 convenience when working with IO of any kind. The exact contents of
 the module are left as an open question.
 
-# Drawbacks
+## Drawbacks
 [Drawbacks]: #drawbacks
 
 This RFC is largely about cleanup, normalization, and stabilization of
@@ -1847,7 +1847,7 @@ reasonably contained, since all of the functionality is already in
 place in some form (including `os_str`, due to @SimonSapin's
 [WTF-8 implementation](https://github.com/SimonSapin/rust-wtf8)).
 
-# Alternatives
+## Alternatives
 [Alternatives]: #alternatives
 
 The main alternative design would be to continue staying with the
@@ -1859,12 +1859,12 @@ making the library more Windows-friendly will only increase its appeal.
 More radically different designs (in terms of different design
 principles or visions) are outside the scope of this RFC.
 
-# Unresolved questions
+## Unresolved questions
 [Unresolved questions]: #unresolved-questions
 
 > To be expanded in follow-up PRs.
 
-## Wide string representation
+### Wide string representation
 
 (Text from @SimonSapin)
 

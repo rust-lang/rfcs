@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#16](https://github.com/rust-lang/rfcs/pull/16)
 - Rust Issue: [rust-lang/rust#15701](https://github.com/rust-lang/rust/issues/15701)
 
-# Summary
+## Summary
 
 Allow attributes on more places inside functions, such as statements,
 blocks and expressions.
 
-# Motivation
+## Motivation
 
 One sometimes wishes to annotate things inside functions with, for
 example, lint `#[allow]`s, conditional compilation `#[cfg]`s, and even
@@ -43,7 +43,7 @@ The minimum useful functionality would be supporting attributes on
 blocks and `let` statements, since these are flexible enough to allow
 for relatively precise attribute handling.
 
-# Detailed design
+## Detailed design
 
 Normal attribute syntax on `let` statements, blocks and expressions.
 
@@ -74,7 +74,7 @@ fn foo() {
 Attributes bind tighter than any operator, that is `#[attr] x op y` is
 always parsed as `(#[attr] x) op y`.
 
-## `cfg`
+### `cfg`
 
 It is definitely an error to place a `#[cfg]` attribute on a
 non-statement expressions, that is, `attr1`--`attr4` can possibly be
@@ -87,7 +87,7 @@ the ability for attributes to be placed in specific places, it is not
 mandating that `#[cfg]` actually be stripped in those places (although
 it should be an error if it is ignored).
 
-## Inner attributes
+### Inner attributes
 
 Inner attributes can be placed at the top of blocks (and other
 structure incorporating a block) and apply to that block.
@@ -118,7 +118,7 @@ match bar {
 }
 ```
 
-## `if`
+### `if`
 
 Attributes would be disallowed on `if` for now, because the
 interaction with `if`/`else` chains are funky, and can be simulated in
@@ -174,7 +174,7 @@ match cond {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 This starts mixing attributes with nearly arbitrary code, possibly
 dramatically restricting syntactic changes related to them, for
@@ -189,7 +189,7 @@ reason about, but (also stated), this RFC is not for making such
 `#[cfg]`s be obeyed, it just opens the language syntax to possibly
 allow it.
 
-# Alternatives
+## Alternatives
 
 These instances could possibly be approximated with macros and helper
 functions, but to a low degree degree (e.g. how would one annotate a
@@ -209,7 +209,7 @@ difference between interior and exterior for an `else {` branch, and
 so `else #[attr] {` is sufficient.
 
 
-# Unresolved questions
+## Unresolved questions
 
 Are the complications of allowing attributes on arbitrary
 expressions worth the benefits?

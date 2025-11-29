@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1298](https://github.com/rust-lang/rfcs/pull/1298)
 - Rust Issue: [rust-lang/rust-roadmap-2017#4](https://github.com/rust-lang/rust-roadmap-2017/issues/4)
 
-# Summary
+## Summary
 
 Enable the compiler to cache incremental workproducts.
 
-# Motivation
+## Motivation
 
 The goal of incremental compilation is, naturally, to improve build
 times when making small edits. Any reader who has never felt the need
@@ -15,7 +15,7 @@ for such a feature is strongly encouraged to attempt hacking on the
 compiler or servo sometime (naturally, all readers are so encouraged,
 regardless of their opinion on the need for incremental compilation).
 
-## Basic usage
+### Basic usage
 
 The basic usage will be that one enables incremental compilation using
 a compiler flag like `-C incremental-compilation=TMPDIR`. The `TMPDIR`
@@ -24,7 +24,7 @@ use to store intermediate by-products; the compiler will automatically
 "GC" this directory, deleting older files that are no longer relevant
 and creating new ones.
 
-## High-level design
+### High-level design
 
 The high-level idea is that we will track the following intermediate
 workproducts for every function (and, indeed, for other kinds of items
@@ -58,7 +58,7 @@ result will be obscure errors where changes are not fully propagated,
 yielding inexplicable behavior at runtime. This RFC proposes an
 automatic scheme based on encapsulation.
 
-### Interaction with lints and compiler plugins
+#### Interaction with lints and compiler plugins
 
 Although rustc does not yet support compiler plugins through a stable
 interface, we have long planned to allow for custom lints, syntax
@@ -66,7 +66,7 @@ extensions, and other sorts of plugins. It would be nice therefore to
 be able to accommodate such plugins in the design, so that their
 inputs can be tracked and accounted for as well.
 
-## Interaction with optimization
+### Interaction with optimization
 
 It is important to clarify, though, that this design does not attempt
 to enable full optimizing for incremental compilation; indeed the two
@@ -79,13 +79,13 @@ even determine what inlining took place, though @dotdash suggested a
 clever trick of using llvm lifetime hints). Strategies for handling
 this are discussed in the [Optimization section](#optimization) below.
 
-# Detailed design
+## Detailed design
 
 We begin with a high-level execution plan, followed by sections that
 explore aspects of the plan in more detail. The high-level summary
 includes links to each of the other sections.
 
-## High-level execution plan
+### High-level execution plan
 
 Regardless of whether it is invoked in incremental compilation mode or
 not, the compiler will always parse and macro expand the entire crate,
@@ -129,7 +129,7 @@ Finally, the RFC closes with a discussion of
 [testing strategies](#testing) we can use to help avoid bugs due to
 incremental compilation.
 
-### Staging
+#### Staging
 
 One important question is how to stage the incremental compilation
 work. That is, it'd be nice to start seeing some benefit as soon as
@@ -154,7 +154,7 @@ overall, particularly since LLVM optimization time can be a very large
 portion of compilation.
 
 <a id="defid"></a>
-## Handling DefIds
+### Handling DefIds
 
 In order to correlate artifacts between compilations, we need some
 stable way to name items across compilations (and across crates).  The
@@ -194,7 +194,7 @@ struct `Foo` declared in a module `bar` would just have a path like
 which there is no syntax, such as an item declared within a function
 body.
 
-### Disambiguation
+#### Disambiguation
 
 For the most part, paths should naturally be unique. However, there
 are some cases where a single parent may have multiple children with
@@ -248,9 +248,9 @@ external crates to index into the local crate's HIR map, which is
 certainly incorrect. --nmatsakis
    
 <a id="depgraph"></a>
-## Identifying and tracking dependencies
+### Identifying and tracking dependencies
 
-### Core idea: a fine-grained dependency graph
+#### Core idea: a fine-grained dependency graph
 
 Naturally any form of incremental compilation requires a detailed
 understanding of how each work item is dependent on other work items.
@@ -277,7 +277,7 @@ is helpful here. If we supported, e.g., return type inference, than it
 would be harder to know whether a change to `bar` means `foo` must be
 recompiled.)
 
-### Categories of nodes
+#### Categories of nodes
 
 This section gives a kind of "first draft" of the set of graph
 nodes/edges that we will use. It is expected that the full set of
@@ -368,7 +368,7 @@ need not trigger a rebuild (we are assuming here that `bar` is not
 inlined into `foo`; see the [section on optimizations](#optimization)
 for more details on how to handle those sorts of dependencies).
 
-### Building the graph
+#### Building the graph
 
 It is very important the dependency graph contain *all* edges. If any
 edges are missing, it will mean that we will get inconsistent builds,
@@ -408,7 +408,7 @@ push/pop a procedure at the right time, or fail to invoke
 read/write. There are a number of refactorings we can do on the
 compiler to make this scheme more robust.
 
-#### Procedures
+##### Procedures
 
 Most of the compiler passes operate an item at a time. Nonetheless,
 they are largely encoded using the standard visitor, which walks all
@@ -428,7 +428,7 @@ could result in edges being added to the wrong procedure. It is likely
 possible to refactor things to maintain this invariant, but that has
 to be determined as we go.
 
-#### IR nodes
+##### IR nodes
 
 Adding edges to the IR nodes that represent the compiler's
 intermediate byproducts can be done by leveraging privacy. The idea is
@@ -437,7 +437,7 @@ allowing direct access. These accessors will call the `read_from` and
 `write_to` methods as appropriate to add edges to/from the current
 active procedure.
 
-#### HIR nodes
+##### HIR nodes
 
 HIR nodes are a bit trickier to encapsulate. After all, the HIR map
 itself gives access to the root of the tree, which in turn gives
@@ -466,7 +466,7 @@ item, requiring the pass itself to go through the map to fetch the
 actual HIR, thus triggering a read edge (we might also bake this
 behavior into the visitor for convenience).
 
-### Persisting the graph
+#### Persisting the graph
 
 Once we've built the graph, we have to persist it, along with some
 associated information. The idea is that the compiler, when invoked,
@@ -506,7 +506,7 @@ This list was gathered primarily by spelunking through the compiler.
 It is probably somewhat incomplete. The appendix below lists an
 exhaustive exploration.
 
-### Reusing and garbage collecting artifacts
+#### Reusing and garbage collecting artifacts
 
 The general procedure when the compiler starts up in incremental mode
 will be to parse and macro expand the input, create the corresponding
@@ -526,7 +526,7 @@ nodes reachable from those HIR nodes). As part of the deletion
 process, we remove whatever on disk artifact that may have existed.
 
 <a id="span"></a>
-### Handling spans
+#### Handling spans
 
 There are times when the precise span of an item is a significant part
 of its metadata. For example, debuginfo needs to identify line numbers
@@ -545,7 +545,7 @@ recompiling all of them. Our plan is to phase span support in incrementally:
    loading its span. This will require some refactoring and work however.
    
 <a id="optimization"></a>
-## Optimization and codegen units
+### Optimization and codegen units
 
 There is an inherent tension between incremental compilation and full
 optimization. Full optimization may perform inlining and
@@ -585,13 +585,13 @@ inlining into each module; call graphs and profiling information may
 be a good input for such heuristics.
 
 <a id="testing"></a>
-## Testing strategy
+### Testing strategy
 
 If we are not careful, incremental compilation has the potential to
 produce an infinite stream of irreproducible bug reports, so it's
 worth considering how we can best test this code.
 
-### Regression tests
+#### Regression tests
 
 The first and most obvious piece of infrastructure is something for
 reliable regression testing. The plan is simply to have a series of
@@ -602,7 +602,7 @@ the result with the result of a fresh build from scratch.  This allows
 us to build up tests for specific scenarios or bug reports, but
 doesn't help with *finding* bugs in the first place.
 
-### Replaying crates.io versions and git history
+#### Replaying crates.io versions and git history
 
 The next step is to search across crates.io for consecutive
 releases. For a given package, we can checkout version `X.Y` and then
@@ -615,7 +615,7 @@ identify pairs of consecutive commits. This has the advantage of being
 more fine-grained, but the disadvantage of being a MUCH larger search
 space.
 
-### Fuzzing
+#### Fuzzing
 
 The problem with replaying crates.io versions and even git commits is
 that they are probably much larger changes than the typical
@@ -629,18 +629,18 @@ errors are reported when code is invalid, as well.  @nrc also
 suggested a clever hybrid, where we use git commits as a source for
 the fuzzer's edits, gradually building up the commit.
 
-# Drawbacks
+## Drawbacks
 
 The primary drawback is that incremental compilation may introduce a
 new vector for bugs. The design mitigates this concern by attempting
 to make the construction of the dependency graph as automated as
 possible. We also describe automated testing strategies.
 
-# Alternatives
+## Alternatives
 
 This design is an evolution from [RFC 594][].
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

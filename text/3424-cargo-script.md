@@ -4,7 +4,7 @@
 - eRFC PR: [rust-lang/rfcs#3424](https://github.com/rust-lang/rfcs/pull/3424)
 - Tracking Issue: [rust-lang/cargo#12207](https://github.com/rust-lang/cargo/issues/12207)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This *experimental RFC* adds unstable support for single-file
@@ -47,7 +47,7 @@ Args { config: Some("file.toml") }
 
 See [`cargo-script-mvs`](https://crates.io/crates/cargo-script-mvs) for a demo.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 **Collaboration:**
@@ -93,7 +93,7 @@ into a directory and add it to the path.  Compare this to rust where
 - `cargo new` each of the "scripts" into individual directories
 - Create wrappers for each so you can access it in your path, passing `--manifest-path` to `cargo run`
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 As an eRFC, this is meant to convey what we are looking to
@@ -183,7 +183,7 @@ Cargo will cache the exact information (in a location referred to as
 Now, if `regex` gets updated, we will still build with the same revision until
 we choose to `cargo update --manifest-path hello_world.rs`.
 
-## Package Layout
+### Package Layout
 
 *(Adapted from [the cargo book](https://doc.rust-lang.org/cargo/guide/project-layout.html))*
 
@@ -284,7 +284,7 @@ automatically infers target names.
 [def-package-registry]:  https://doc.rust-lang.org/cargo/guide/../appendix/glossary.html#package-registry  '"package-registry" (glossary entry)'
 [def-manifest]:          https://doc.rust-lang.org/cargo/guide/../appendix/glossary.html#manifest          '"manifest" (glossary entry)'
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The details will be deferred to the implementation.
@@ -320,7 +320,7 @@ Initial guidelines for evaluating decisions:
     - Most likely, we'll want to muck with the errors returned by `toml_edit`
       so we render manifest errors based on the original source code which will require accurate span information.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This will likely permeate cargo's code base.  While we are
@@ -337,10 +337,10 @@ support, proc-maros, or other functionality to be added later
 with the assumption that if these features are needed, a user
 should be using a multi-file package.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Scope
+### Scope
 
 The `cargo-script` family of tools has a single command
 - Run `.rs` files with embedded manifests
@@ -357,7 +357,7 @@ However
 Therefore, this eRFC is limited in scope to running single-file
 rust packages.
 
-## First vs Third Party
+### First vs Third Party
 
 As mentioned, a reason for being first-party is to standardize the convention
 for this which also allows greater interop.
@@ -382,7 +382,7 @@ This still leaves room for third-party implementations, either differentiating t
 - Short-hand dependency syntax (e.g. `//# serde_json = "*"`)
 - Prioritizing other workflows, like runtime performance
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 See [Single-file scripts that download their
@@ -483,7 +483,7 @@ Cross-language
 - [nix-script](https://github.com/BrianHicks/nix-script)
   - Nix version of scriptisto, letting you use any Nix dependency
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Through the eRFC process, we particularly want to resolve:
@@ -557,10 +557,10 @@ the conversation on the proposed experiment.  For a previous enumeration of
 potential answers to these questions, see the [Pre-RFC on
 Internals](https://internals.rust-lang.org/t/pre-rfc-cargo-script-for-everyone/18639).
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Implicit `main` support
+### Implicit `main` support
 
 Like with doc-comment examples, we could support an implicit `main`.
 
@@ -571,7 +571,7 @@ Ideally, this would be supported at the language level
 
 Behavior can be controlled through editions
 
-## A REPL
+### A REPL
 
 See the [REPL exploration](https://github.com/epage/cargo-script-mvs/discussions/102)
 

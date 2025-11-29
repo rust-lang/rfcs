@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1651](https://github.com/rust-lang/rfcs/pull/1651)
 - Rust Issue: [rust-lang/rust#39264](https://github.com/rust-lang/rust/issues/39264)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extend `Cell` to work with non-`Copy` types.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It allows safe inner-mutability of non-`Copy` types without the overhead of `RefCell`'s reference counting.
@@ -17,7 +17,7 @@ The key idea of `Cell` is to provide a primitive building block to safely suppor
 
 While the current implementation only supports `Copy` types, this restriction isn't actually necessary to maintain Rust's aliasing invariants. The only affected API is the `get` function which, by design, is only usable with `Copy` types.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ```rust
@@ -44,19 +44,19 @@ The `into_inner` and `replace` methods are added, which allow the value in a cel
 
 Finally, a `take` method is added which is equivalent to `self.replace(Default::default())`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It makes the `Cell` type more complicated.
 
 `Cell` will only be able to derive traits like `Eq` and `Ord` for types that are `Copy`, since there is no way to non-destructively read the contents of a non-`Copy` `Cell`.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The alternative is to use the `MoveCell` type from crates.io which provides the same functionality.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

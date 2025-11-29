@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#179](https://github.com/rust-lang/rfcs/pull/179)
 - Rust Issue: [rust-lang/rust#20496](https://github.com/rust-lang/rust/issues/20496)
 
-# Summary
+## Summary
 
 Change pattern matching on an `&mut T` to `&mut <pat>`, away from its
 current `&<pat>` syntax.
 
-# Motivation
+## Motivation
 
 Pattern matching mirrors construction for almost all types, *except*
 `&mut`, which is constructed with `&mut <expr>` but destructured with
@@ -49,12 +49,12 @@ both before and after this change), but can occur if a type only
 offers a `&mut` iterator, i.e. types for which a `&` one is no more
 flexible than the `&mut` one.
 
-# Detailed design
+## Detailed design
 
 Add `<pat> := &mut <pat>` to the pattern grammar, and require that it is used
 when matching on a `&mut T`.
 
-# Drawbacks
+## Drawbacks
 
 It makes matching through a `&mut` more verbose: `for &mut (ref mut x,
 p_) in v.mut_iter()` instead of `for &(ref mut x, _) in
@@ -74,10 +74,10 @@ x;` (since disambiguating like `&(mut x)` doesn't yet work). However,
 based on some loose grepping of the Rust repo, both of these are very
 rare.
 
-# Alternatives
+## Alternatives
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3262](https://github.com/rust-lang/rfcs/pull/3262)
 - Rust Issue: n/a
 
-# Summary
+## Summary
 [summary]: #summary
 
 The Rust Compiler Team has used a co-leadership model since late 2019. This RFC
@@ -20,7 +20,7 @@ surprises here.
 
 [compiler-team#506]: https://github.com/rust-lang/compiler-team/issues/506
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 We want to enable rolling leadership, to prevent burnout for the leads
@@ -35,7 +35,7 @@ The expected outcome is that we have healthy team whose leads will expect to
 only serve in that role for a limited time (on the order of 2 to 5 years), and
 whose members can have opportunities to take on that leadership role themselves.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The Rust Compiler Team uses a rolling co-leadership model of governance, with a
@@ -46,14 +46,14 @@ Roughly every one to two years, a new junior lead is selected, the current
 junior promoted to senior, and the current senior returns to being a normal
 compiler team member.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The Rust Compiler Team uses a rolling co-leadership model of governance, with a
 senior lead and a junior lead each serving the team as team representatives and
 decision owners, for a total of two to five years.
 
-## Team Representative
+### Team Representative
 
 The leads represent the compiler team by speaking with Rust users, individual
 contributors, or organizations seeking to support development of Rust; they also
@@ -77,7 +77,7 @@ who could drive progress forward on resolving issues that face the team.
 The leads' representation of the team should manifest itself via structured
 communication, such as blog posts on https://blog.rust-lang.org/inside-rust/
 
-## Decision Owner
+### Decision Owner
 
 The leads own decisions on behalf of the compiler team.
 
@@ -96,7 +96,7 @@ future occurrences of the same event. Examples of this include the incr-comp bug
 that plagued the 1.52.0 release, which led to a 1.52.1 release four days later
 (and three steering meetings as follow-up).
 
-## Time Commitment, Expectations, and Competencies
+### Time Commitment, Expectations, and Competencies
 
 Let us recall that any compiler team member is allowed to:
 
@@ -136,7 +136,7 @@ Friday T-compiler meetings." (A record of leadership on one or more project
 groups or working groups is probably a good thing to have as well, but is not a
 strict requirement.)
 
-## Term Length and Leader Selection
+### Term Length and Leader Selection
 
 > *"Choose your leaders with wisdom and forethought.*
 > *To be led by a coward is to be controlled by all that the coward fears.*
@@ -173,7 +173,7 @@ fn roll(curr_senior: &mut Member, curr_junior: &mut Member, incoming: &mut Membe
 }
 ```
 
-### Selection process
+#### Selection process
 
 When the senior co-lead decides that they are ready to step down, and have
 confirmed that the junior co-lead feels ready to take on the senior co-lead
@@ -192,7 +192,7 @@ set of nominees. And that’s it! Then current leads just need to publish a blog
 post saying that the leadership is scheduled to roll over, who the new junior
 lead is, and the date that it takes effect.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Why should we *not* do this?
@@ -204,10 +204,10 @@ where we will need to ask the current leadership to stay on board for longer tha
 expected. At that point, the leads' ongoing goals **must** include the proactive 
 seeking of the next generation of leaders.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Rolling, not Rotation
+### Rolling, not Rotation
 
 We specify here a rolling leadership process, where we will see a shift in
 leads, but not every team member is required to serve as a leader at any point.
@@ -219,7 +219,7 @@ in becoming a lead. If we adopted a true rotation and forced someone to become a
 lead who did not really want the role, then that probably be bad for that
 individual, and probably would be bad for the team as well.
 
-## Selection, Not Election
+### Selection, Not Election
 
 We specify here that the new junior lead is *selected* (from a set of
 individuals nominated by the compiler team) by the current leads. An obvious
@@ -234,7 +234,7 @@ system where the
 current leaders have final say on who the next junior lead will be, in order to
 optimize for healthy intra-leader communications.
 
-## Do Nothing?
+### Do Nothing?
 
 If we stick with the status quo, where no protocol is specified at all, that
 would not be the end of the world. We can certainly *emulate* any model we want;
@@ -247,7 +247,7 @@ this same role, if that appeals to you, and we want it to happen in a time frame
 that is within sight, not some far off future.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Obviously the Rust governance RFC specified aspects of project leadership:
@@ -264,7 +264,7 @@ but it explicitly chose not to establish a successor.
 [python-xfer]: https://mail.python.org/pipermail/python-committers/2018-July/005664.html
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What parts of the design do you expect to resolve through the RFC process before this gets merged?
@@ -276,7 +276,7 @@ Wesley asked this question on an earlier draft of this:
 > the lead to be somebody that works on Rust as part of their job. I'm not sure
 > we want to limit our pool of candidates to just those people.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Should other large teams look into adopting this model?

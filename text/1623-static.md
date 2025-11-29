@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1623](https://github.com/rust-lang/rfcs/pull/1623)
 - Rust Issue: [rust-lang/rust#35897](https://github.com/rust-lang/rust/issues/35897)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Let's default lifetimes in static and const declarations to `'static`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, having references in `static` and `const` declarations is cumbersome 
@@ -29,7 +29,7 @@ The type declaration still causes some rightwards drift, but at least all the
 contained information is useful. There is one exception to the rule: lifetime
 elision for function signatures will work as it does now (see example below).
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The same default that RFC #599 sets up for trait object is to be used for 
@@ -85,12 +85,12 @@ It should also be noted that since statics and constants have no `self` type,
 elision will only work with distinct input lifetimes or one input+output
 lifetime.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are no known drawbacks to this change.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Leave everything as it is. Everyone using static references is annoyed by 
@@ -111,7 +111,7 @@ relation in the direction of more explicit code. Thus it is advisable to
 implement this change even with the possibility of implementing type inference 
 later.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Are there third party Rust-code handling programs that need to be updated to

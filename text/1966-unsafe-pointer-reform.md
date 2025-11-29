@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#43941](https://github.com/rust-lang/rust/issues/43941)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Copy most of the static `ptr::` functions to methods on unsafe pointers themselves.
@@ -23,7 +23,7 @@ More conveniences should probably be added to unsafe pointers, but this proposal
 
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 
@@ -38,7 +38,7 @@ And we want to be cool like Swift, right?
 
 
 
-## Static Functions
+### Static Functions
 
 `ptr::foo(ptr)` is an odd interface. Rust developers generally favour the type-directed dispatch provided by methods; `ptr.foo()`. Generally the only reason we've ever shied away from methods is when they would be added to a type that implements Deref generically, as the `.` operator will follow Deref impls to try to find a matching function. This can lead to really confusing compiler errors, or code "spuriously compiling" but doing something unexpected because there was an unexpected match somewhere in the Deref chain. This is why many of Rc's operations are static functions that need to be called as `Rc::foo(&the_rc)`.
 
@@ -51,7 +51,7 @@ However these static functions are fairly cumbersome in the common case, where y
 
 
 
-## Signed Offset
+### Signed Offset
 
 The cast in `ptr.offset(idx as isize)` is unnecessarily annoying. Idiomatic Rust code uses unsigned offsets, but low level code is forced to constantly cast those offsets. To understand why this interface is designed as it is, some background is needed.
 
@@ -87,11 +87,11 @@ In conclusion: `as isize` doesn't help developers write better code.
 
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 
-## Methodization
+### Methodization
 
 Add the following method equivalents for the static `ptr` functions on `*const T` and `*mut T`:
 
@@ -128,7 +128,7 @@ impl<T> *mut T {
 (see the alternatives for why we provide both copy_to and copy_from)
 
 
-## Unsigned Offset
+### Unsigned Offset
 
 Add the following conveniences to both `*const T` and `*mut T`:
 
@@ -147,7 +147,7 @@ I expect `ptr.add` to replace ~95% of all uses of `ptr.offset`, and `ptr.sub` to
 
 
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Docs should be updated to use the new methods over the old ones, pretty much
@@ -159,7 +159,7 @@ functions they're wrapping, with minor tweaks.
 
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The only drawback I can think of is that this introduces a "what is idiomatic" schism between the old functions and the new ones.
@@ -168,11 +168,11 @@ The only drawback I can think of is that this introduces a "what is idiomatic" s
 
 
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 
-## Overload operators for more ergonomic offsets
+### Overload operators for more ergonomic offsets
 
 Rust doesn't support "unsafe operators", and `offset` is an unsafe function because of the semantics of GetElementPointer. We could make `wrapping_add` be the implementation of `+`, but almost no code should actually be using wrapping offsets, so we shouldn't do anything to make it seem "preferred" over non-wrapping offsets.
 
@@ -181,14 +181,14 @@ Beyond that, `(ptr + idx).read_volatile()` is a bit wonky to write -- methods ch
 
 
 
-## Make `offset` generic
+### Make `offset` generic
 
 We could make `offset` generic so it accepts `usize` and `isize`. However we would still want the `sub` method, and at that point we might as well have `add` for symmetry. Also `add` is shorter which is a nice carrot for users to migrate to it.
 
 
 
 
-## Only one of `copy_to` or `copy_from`
+### Only one of `copy_to` or `copy_from`
 
 `copy` is the only mutating `ptr` operation that doesn't write to the *first* argument. In fact, it's clearly backwards compared to C's memcpy. Instead it's ordered in analogy to `fs::copy`.
 
@@ -205,7 +205,7 @@ As a compromise, we opted to provide both, forcing users of `copy` to decided wh
 
 
 
-## Deprecate the Static Functions
+### Deprecate the Static Functions
 
 To avoid any issues with the methods and static functions coexisting, we could deprecate the static functions. As noted in the motivation, these functions are currently useful for their ability to perform coercions on the first argument. However those who were taking advantage of this property can easily rewrite their code to either of the following:
 
@@ -221,7 +221,7 @@ More importantly, this would cause needless churn for old code which is still pe
 In fact, even if we decide we should deprecate these functions, we should still stagger the deprecation out several releases to minimize ecosystem churn. When a deprecation occurs, users of the latest compiler will be pressured by diagnostics to update their code to the new APIs. If those APIs were introduced in the same release, then they'll be making their library only compile on the latest release, effectively breaking the library for anyone who hasn't had a chance to upgrade yet. If the deprecation were instead done several releases later, then by the time users are pressured to use the new APIs there will be a buffer of several stable releases that can compile code using the new APIs.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#533](https://github.com/rust-lang/rfcs/pull/533)
 - Rust Issue: [rust-lang/rust#21963](https://github.com/rust-lang/rust/issues/21963)
 
-# Summary
+## Summary
 
 In order to prepare for an expected future implementation of
 [non-zeroing dynamic drop], remove support for:
@@ -14,7 +14,7 @@ In order to prepare for an expected future implementation of
 
 [non-zeroing dynamic drop]: https://github.com/rust-lang/rfcs/pull/320
 
-# Motivation
+## Motivation
 
 If we want to continue supporting dynamic drop while also removing
 automatic memory zeroing and drop-flags, then we need to either (1.)
@@ -34,7 +34,7 @@ array, as supporting this was almost certainly not intentional in the
 language design). Therefore removing the feature from the language
 will present relatively little burden.
 
-# Detailed design
+## Detailed design
 
 If an expression `e` has type `[T; n]` and `T` does not implement
 `Copy`, then it will be illegal to use `e[i]` in an r-value position.
@@ -55,7 +55,7 @@ A prototype implementation has been posted at [Rust PR 21930].
 
 [Rust PR 21930]: https://github.com/rust-lang/rust/pull/21930
 
-# Drawbacks
+## Drawbacks
 
 * Adopting this RFC is introducing a limitation on the language based
   on a hypothetical optimization that has not yet been implemented
@@ -79,13 +79,13 @@ Also, as noted in the [comment thread from RFC PR 320]
   pass in a `Vec` and do some element swapping).
 
 
-# Alternatives
+## Alternatives
 
 We can just leave things as they are; there are hypothetical
 code-generation strategies for supporting non-zeroing drop even with
 this feature, as discussed in the [comment thread from RFC PR 320].
 
-# Unresolved questions
+## Unresolved questions
 
 None
 

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2141](https://github.com/rust-lang/rfcs/pull/2141)
 - Rust Issue: [rust-lang/rust#44931](https://github.com/rust-lang/rust/issues/44931)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes the addition of the support for alternative crates.io servers to be used
 alongside the public crates.io server. This would allow users to publish crates to their own
 private instance of crates.io, while still able to use the public instance of crates.io.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Cargo currently has support for getting crates from a public server, which works well for open
@@ -20,10 +20,10 @@ discoverability that Cargo and crates.io provides is lost. We would like to chan
 it is possible to have a local crates.io server which crates can be pushed to, while still making
 use of the public crates.io server.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Registry definition specification
+### Registry definition specification
 [registry-definition-specification]: #registry-definition-specification
 
 We need a way to define what registries are valid for Cargo to pull from and publish to. For this
@@ -69,7 +69,7 @@ username = "myusername"
 password = "mypassword"
 ```
 
-### CI
+#### CI
 
 Because this system discourages checking in the registry configuration, the registry configuration
 won't be immediately available to continuous integration systems like TravisCI. However, Cargo
@@ -85,7 +85,7 @@ To configure TravisCI to use an alternate registry named `my-registry` for examp
 
 `CARGO_REGISTRIES_MY_REGISTRY_INDEX=https://my-intranet:8080/index`
 
-## Using a dependency from another registry
+### Using a dependency from another registry
 
 *Note: this syntax will initially be implemented as an [unstable cargo
 feature](https://github.com/rust-lang/cargo/pull/4433) available in nightly cargo only and
@@ -99,7 +99,7 @@ can specify that a dependency comes from an alternate registry by using the `reg
 secret-crate = { version = "1.0", registry = "my-registry" }
 ```
 
-## Publishing to another registry; preventing unwanted publishes
+### Publishing to another registry; preventing unwanted publishes
 
 Today, Cargo allows you to add a key `publish = false` to your Cargo.toml to indicate that you do
 not want to publish a crate anywhere. In order to specify that a crate should only be published to
@@ -118,7 +118,7 @@ Not having a `publish` key is equivalent to specifying `publish = true`, which m
 crates.io is allowed. `publish = []` is equivalent to `publish = false`, meaning that publishing to
 anywhere is disallowed.
 
-## Running a minimal registry
+### Running a minimal registry
 
 The most minimal form of a registry that Cargo can use will consist of:
 
@@ -126,13 +126,13 @@ The most minimal form of a registry that Cargo can use will consist of:
   section][registry-index-format-specification], which contains a pointer to:
 - A location containing the `.crate` files for the crates in the registry.
 
-## Running a fully-featured registry
+### Running a fully-featured registry
 
 This RFC does not attempt to standardize or specify any of crates.io's APIs, but it should be
 possible to take crates.io's codebase and run it along with a registry index in order to provide
 crates.io's functionality as an alternate registry.
 
-## Crates.io
+### Crates.io
 
 Because crates.io's purpose is to be a reliable host for open source crates, crates that have
 dependencies from registries other than crates.io will be rejected at publish time. Crates.io
@@ -145,7 +145,7 @@ crates.io's code, this will likely include the private registry itself plus crat
 private crates are allowed to depend on open source crates. Any crates with dependencies from
 registries not specified in this configuration option will be rejected at publish time.
 
-## Interaction with existing features
+### Interaction with existing features
 
 This RFC is not proposing any changes to the way [source
 replacement](http://doc.crates.io/source-replacement.html) and
@@ -155,10 +155,10 @@ compatible with those.
 Mirrors will still be required to serve exactly the same files (matched checksums) as the source
 they're mirroring.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Registry index format specification
+### Registry index format specification
 [registry-index-format-specification]: #registry-index-format-specification
 
 Cargo needs to be able to get a registry index containing metadata for all crates and their
@@ -282,14 +282,14 @@ current registry. By specifying the registry of a dependency in the index, cargo
 information it needs to fetch crate files from the registry indices involved without needing to
 involve an API server.
 
-## New command: `cargo generate-index-metadata`
+### New command: `cargo generate-index-metadata`
 
 Currently, the knowledge of how to create a file in the registry index format is spread between
 Cargo and crates.io. This RFC proposes the addition of a Cargo command that would generate this
 file locally for the current crate so that it can be added to the git repository using a mechanism
 other than a server running crates.io's codebase.
 
-## Related issues
+### Related issues
 
 In order to make working with multiple registries more convenient, we would also like to support:
 
@@ -337,14 +337,14 @@ In order to make working with multiple registries more convenient, we would also
   the error message will mention that usernames and passwords in URLs in `Cargo.toml` are not
   allowed.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Supporting alternative registries, and having multiple public registries, could fracture the
 ecosystem. However, we feel that supporting private registries, and the Rust adoption that could
 enable, outweighs the potential downsides of having multiple public registries.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 A [previous RFC](https://github.com/rust-lang/rfcs/pull/2006) proposed having the registry
@@ -359,7 +359,7 @@ encouraging poor practices such as checking credentials into a project's source 
 implementation of this feature would also be more complex. The upside would be supporting
 configuration in ways that would be more convenient in various situations.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Are the names of everything what we want?

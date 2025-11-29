@@ -2,14 +2,14 @@
 - RFC PR #: [rust-lang/rfcs#194](https://github.com/rust-lang/rfcs/pull/194)
 - Rust Issue: [rust-lang/rust#17490](https://github.com/rust-lang/rust/issues/17490)
 
-# Summary
+## Summary
 
 The `#[cfg(...)]` attribute provides a mechanism for conditional compilation of
 items in a Rust crate. This RFC proposes to change the syntax of `#[cfg]` to
 make more sense as well as enable expansion of the conditional compilation
 system to attributes while maintaining a single syntax.
 
-# Motivation
+## Motivation
 
 In the current implementation, `#[cfg(...)]` takes a comma separated list of
 `key`, `key = "value"`, `not(key)`, or `not(key = "value")`. An individual
@@ -28,7 +28,7 @@ This is problematic for several reasons:
     will move `#[cfg(...)]` closer to implementation as a normal syntax
     extension.
 
-# Detailed design
+## Detailed design
 
 The `<p>` inside of `#[cfg(<p>)]` will be called a *cfg pattern* and have a
 simple recursive syntax:
@@ -72,13 +72,13 @@ A `#[cfg_attr(<p>, <attr>)]` syntax extension will be added
 `#[ignore]` attribute will have its built-in cfg filtering
 functionality stripped in favor of `#[cfg_attr(<p>, ignore)]`.
 
-# Drawbacks
+## Drawbacks
 
 While the implementation of this change in the compiler will be
 straightforward, the effects on downstream code will be significant, especially
 in the standard library.
 
-# Alternatives
+## Alternatives
 
 `all` and `any` could be renamed to `and` and `or`, though I feel that the
 proposed names read better with the function-like syntax and are consistent
@@ -90,7 +90,7 @@ to result in something like `#[cfg(a || (b && c)]`. I don't favor this proposal
 since it would result in a major change to the attribute syntax for relatively
 little readability gain.
 
-# Unresolved questions
+## Unresolved questions
 
 How long should multiple `#[cfg(...)]` attributes on a single item be
 forbidden? It should probably be at least until after 0.12 releases.

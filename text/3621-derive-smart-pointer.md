@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3621](https://github.com/rust-lang/rfcs/pull/3621)
 - Rust Issue: [rust-lang/rust#123430](https://github.com/rust-lang/rust/issues/123430)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Make it possible to define custom smart pointers that work with trait objects.
@@ -15,7 +15,7 @@ references to the `Receiver` trait are references to the version defined by
 that RFC, which is different from the `Receiver` trait in nightly at the time
 of writing.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, the standard library types `Rc` and `Arc` are special. It's not
@@ -48,7 +48,7 @@ For more detailed explanations of these use-cases, please refer to:
 * The kernel's custom linked list: [Mailing list](https://lore.kernel.org/all/20240402-linked-list-v1-0-b1c59ba7ae3b@google.com/), [GitHub](https://github.com/Darksonn/linux/commits/b4/linked-list/).
 * [Discussion on the memory model issue with t-opsem](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/.E2.9C.94.20Rust.20and.20the.20Linux.20Kernel.20Memory.20Model/near/422047516)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The derive macro `SmartPointer` allows you to use custom smart pointers with
@@ -60,7 +60,7 @@ SmartPointer<Self>` in traits without making them non-object-safe.
 It is not possible to use this feature without the derive macro, as we are not
 stabilizing its expansion.
 
-## Coercions to trait objects
+### Coercions to trait objects
 
 By using the macro, the following example will compile:
 ```rust
@@ -102,7 +102,7 @@ error[E0308]: mismatched types
    = help: `i32` implements `MyTrait` so you could box the found value and coerce it to the trait object `Box<dyn MyTrait>`, you will have to change the expected type as well
 ```
 
-## Object safety
+### Object safety
 
 Consider the following trait:
 ```rust
@@ -142,7 +142,7 @@ Note that using the `self: MySmartPointer<Self>` syntax requires that you
 implement `Receiver` (or `Deref`), as the derive macro does not emit an
 implementation of `Receiver`.
 
-## Requirements for using the macro
+### Requirements for using the macro
 
 Whenever a `self: MySmartPointer<Self>` method is called on a trait object, the
 compiler will convert from `MySmartPointer<dyn MyTrait>` to
@@ -161,7 +161,7 @@ struct MySmartPointer<T: ?Sized> {
 }
 ```
 
-### Multiple type parameters
+#### Multiple type parameters
 
 If the type has multiple type parameters, then you must explicitly specify
 which one should be used for dynamic dispatch. For example:
@@ -176,7 +176,7 @@ struct MySmartPointer<#[pointee] T: ?Sized, U> {
 Specifying `#[pointee]` when the struct has only one type parameter is allowed,
 but not required.
 
-## Pinned pointers
+### Pinned pointers
 
 The `#[derive(SmartPointer)]` macro is not sufficient to coerce the smart
 pointer when it is wrapped in `Pin`. That is, even if `MySmartPointer<MyStruct>`
@@ -189,7 +189,7 @@ If you implement the unstable unsafe trait called `PinCoerceUnsized` for
 `MySmartPointer`, then the smart pointer will gain the ability to be coerced
 when wrapped in `Pin`. The trait is not being stabilized by this RFC.
 
-## Example of a custom Rc
+### Example of a custom Rc
 [custom-rc]: #example-of-a-custom-rc
 
 The macro makes it possible to implement custom smart pointers. For example,
@@ -247,7 +247,7 @@ impl<T: ?Sized> Drop for Rc<T> {
 In this example, `#[derive(SmartPointer)]` makes it possible to use `Rc<dyn
 MyTrait>`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The derive macro will expand into two trait implementations,
@@ -260,7 +260,7 @@ As mentioned in the [rationale][why-only-macro] section, this RFC only proposes
 to stabilize the derive macro. The underlying traits used by its expansion will
 remain unstable for now.
 
-## Input Requirements
+### Input Requirements
 [input-requirements]: #input-requirements
 
 The macro sets the following requirements on its input:
@@ -285,7 +285,7 @@ are verified semantically by the compiler when checking the generated
 
 The `#[pointee]` attribute may also be written as `#[smart_pointer::pointee]`.
 
-## Expansion
+### Expansion
 
 The macro will expand to two implementations, one for
 [`core::ops::CoerceUnsized`] and one for [`core::ops::DispatchFromDyn`]. This
@@ -336,7 +336,7 @@ where
 {}
 ```
 
-## `Receiver` and `Deref` implementations
+### `Receiver` and `Deref` implementations
 
 The macro does not emit a [`Receiver`][ast] implementation. Types that do not
 implement `Receiver` can still use `#[derive(SmartPointer)]`, but they can't be
@@ -348,12 +348,12 @@ annotated with `#[derive(SmartPointer)]` without an implementation of
 to `*const dyn MyTrait`, but you must first convert them to a reference before
 you can use them for dynamic dispatch.
 
-## Vtable requirements
+### Vtable requirements
 
 As seen in the `Rc` example, the macro needs to be usable even if the pointer
 is `NonNull<RcInner<T>>` (as opposed to `NonNull<T>`).
 
-## `PinCoerceUnsized`
+### `PinCoerceUnsized`
 
 The standard library defines the following unstable trait:
 ```rust
@@ -394,7 +394,7 @@ Although this RFC proposes to add the `PinCoerceUnsized` trait to ensure that
 unsizing coercions of pinned pointers cannot be used to cause unsoundness, the
 RFC does not propose to stabilize the trait.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Stabilizing this macro limits how the underlying traits can be changed in the
@@ -412,10 +412,10 @@ RFC does not propose to stabilize the trait.
   examples of macros that implement multiple traits: `#[derive(PartialEq)]`
   also implements `StructuralPartialEq`.)
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why only stabilize a macro?
+### Why only stabilize a macro?
 [why-only-macro]: #why-only-stabilize-a-macro
 
 This RFC proposes to stabilize the `#[derive(SmartPointer)]` macro without
@@ -429,7 +429,7 @@ evolution of the underlying traits.
 See also [the section on prior art][prior-art], which discusses a previous
 attempt to stabilize the underlying traits.
 
-## Receiver and Deref traits
+### Receiver and Deref traits
 
 The vast majority of custom smart pointers will implement `Receiver` (often via
 `Deref`, which results in a `Receiver` impl due to the blanket impl). So why
@@ -469,7 +469,7 @@ Note that having the macro generate a `Receiver` impl instead doesn't work
 either, because that prevents the user from implementing `Deref` at all. (There
 is a blanket impl of `Receiver` for all `Deref` types.)
 
-## Transparent containers
+### Transparent containers
 
 Smart pointers are not the only use case for implementing the [`CoerceUnsized`]
 and [`DispatchFromDyn`] traits. They are also used for "transparent containers"
@@ -501,7 +501,7 @@ scope for this RFC.
 
 [tc-pg]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2021&gist=c3fe2a11822e4c5e2dae5bfec9d77b9e
 
-## Why not two derive macros?
+### Why not two derive macros?
 
 The derive macro generates two different trait implementations:
 
@@ -542,7 +542,7 @@ custom `Rc` has a field of type `NonNull`, and this works since `NonNull` is
 
 [`Cell`]: https://doc.rust-lang.org/stable/core/cell/struct.Cell.html
 
-## What about `#[pointee]`?
+### What about `#[pointee]`?
 
 This RFC currently proposes to mark the generic parameter used for dynamic
 dispatch with `#[pointee]`. For convenience, the RFC proposes that this is only
@@ -555,7 +555,7 @@ refcounted value with multiple lists. People have argued that it would be
 better to change this to a generic type instead of a const generic, so it would
 be useful to keep the option of having multiple generic types on the struct.
 
-### Conflicts with third-party derive macros
+#### Conflicts with third-party derive macros
 
 The `#[pointee]` attribute could in principle conflict with other derive macros
 that also wish to annotate one of the parameters with an attribute called
@@ -579,7 +579,7 @@ This RFC does not propose that solution because:
 
 The authors are not aware of any macros using a `#[pointee]` attribute today.
 
-## Derive macro or not?
+### Derive macro or not?
 
 Stabilizing this as a derive macro more or less locks us in with the decision
 that the compiler will use traits to specify which types are compatible with
@@ -595,7 +595,7 @@ implementations of these traits for `Pin` with stricter trait bounds than what
 is specified on the struct. That will get much more complicated if we use a
 mechanism other than traits to specify this logic.
 
-## `PinCoerceUnsized`
+### `PinCoerceUnsized`
 
 Beyond the addition of the `#[derive(SmartPointer)]` macro, this RFC also
 proposes to add a new unstable trait called `PinCoerceUnsized`. This trait is
@@ -625,7 +625,7 @@ alternative solution is `DerefPure`. However, that solution involves a minor
 breaking change, and we can always decide to switch to `DerefPure` later even if
 we adopt `PinCoerceUnsized` now.
 
-### `StableDeref`
+#### `StableDeref`
 
 A previous version of this RFC proposed to instead add a trait called
 `StableDeref` that pretty much had the same requirements as `PinCoerceUnsized`,
@@ -647,7 +647,7 @@ pointers asserts that they are unique. This is a problem because whichever trait
 we use for pinned unsizing coercions, it *must* be implemented by `Box` and
 `&mut T`.
 
-### `DerefPure`
+#### `DerefPure`
 
 In a similar manner to the `StableDeref` option, we can use the existing
 `DerefPure` trait. This option is a reasonable way forward, but this RFC does
@@ -673,7 +673,7 @@ nonetheless.
 If this breakage is considered acceptable, then using `DerefPure` instead of a
 new `PinCoerceUnsized` would be a reasonable way forward.
 
-### Make the derive macro unsafe
+#### Make the derive macro unsafe
 
 We could just make the macro unsafe in a similar vein to [the unsafe attributes
 RFC][unsafe-attribute].
@@ -695,7 +695,7 @@ unsize coerced, which would be a breaking change. This means that
 `#[unsafe(derive(SmartPointer))]` and `#[derive(SmartPointer)]` could end up
 expanding to _different_ things.
 
-### Negative trait bounds
+#### Negative trait bounds
 
 There are also various solutions that involve negative trait bounds. For
 example, you might instead modify `CoerceUnsized` like this:
@@ -721,10 +721,10 @@ This RFC does not propose it because it is a breaking change and the
 discussed in more details in [the pre-RFC for stabilizing the underlying
 traits][pre-rfc].
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Stabilizing subsets of features
+### Stabilizing subsets of features
 
 There are several prior examples of unstable features that have been blocked
 from stabilization for various reasons, where we have been able to make
@@ -744,7 +744,7 @@ proposes to reduce the scope and instead stabilize a derive macro.
 [ast-scope]: https://github.com/rust-lang/rfcs/pull/3519#discussion_r1492385549
 [rpit]: https://blog.rust-lang.org/2023/12/21/async-fn-rpit-in-traits.html
 
-## Macros whose output is unstable
+### Macros whose output is unstable
 
 The Rust testing framework is considered unstable, and the only stable way to
 interact with it is via the `#[test]` attribute macro. The macro's output uses
@@ -755,7 +755,7 @@ Note also that the `pin!` macro expands to something that uses an unstable
 feature, though it does so for a different reason than
 `#[derive(SmartPointer)]` and `#[test]`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Bikeshedding over the name remains.
@@ -768,7 +768,7 @@ and dynamic dispatch.
 
 We will settle on the final name prior to stabilization.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 One of the design goals of this RFC is that it should make this feature

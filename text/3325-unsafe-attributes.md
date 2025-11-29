@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3325](https://github.com/rust-lang/rfcs/pull/3325)
 - Tracking Issue: [rust-lang/rust#123757](https://github.com/rust-lang/rust/issues/123757)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Consider some attributes 'unsafe', so that they must only be used like this:
@@ -12,7 +12,7 @@ Consider some attributes 'unsafe', so that they must only be used like this:
 #[unsafe(no_mangle)]
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Some of our attributes, such as `no_mangle`, can be used to
@@ -23,7 +23,7 @@ concept of 'unsafe attributes' and accompanying syntax to declare that one is
 aware of the UB risks here (and it might be good to add a SAFETY comment
 explaining why this use of the attribute is fine).
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 *Example explanation for `no_mangle`; the other attributes need something similar.*
@@ -67,7 +67,7 @@ ideally document somewhere publicly that they consider some namespace, i.e.
 every function starting with `_mycrate__`, to be reserved for their exclusive
 use.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Some attributes (e.g. `no_mangle`, `export_name`, `link_section` -- see
@@ -113,7 +113,7 @@ fn outer() {
 This matches the fact that expression-level unsafety is not inherited for items
 declared inside other items.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 I think if we had thought of this around Rust 1.0, then this would be rather
@@ -122,7 +122,7 @@ since all existing uses of these unsafe attributes need to be adjusted. The
 warning for using unsafe attributes outside `unsafe(...)` should probably have
 an auto-fix available to help ease the transition here.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - **Nothing.** We could do nothing at all, and live with the status quo. However
@@ -149,7 +149,7 @@ an auto-fix available to help ease the transition here.
   concept, but this seems like the most natural marriage of the idea of unsafe
   blocks from regular code, and the existing attributes syntax.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 We have `unsafe` blocks; this is basically the same thing for the "attributes
@@ -163,7 +163,7 @@ precedent for having a list of attributes inside a single attribute.
 I don't know of other languages that would distinguish safe and unsafe
 attributes.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - **Different lint staging.** The lint on using existing unsafe attributes like
@@ -173,7 +173,7 @@ attributes.
   on some editions -- there are lots of details here, which can be determined
   later during the process.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - **Unsafe attribute proc macros.** We could imagine something like

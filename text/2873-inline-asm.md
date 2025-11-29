@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#72016](https://github.com/rust-lang/rust/issues/72016)
 - Project group repository: [rust-lang/project-inline-asm](https://github.com/rust-lang/project-inline-asm)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC specifies a new syntax for inline assembly which is suitable for eventual stabilization.
@@ -15,7 +15,7 @@ The transition from the existing `asm!` macro is described in RFC [2843][rfc-llv
 
 [rfc-llvm-asm]: https://github.com/rust-lang/rfcs/pull/2843
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In systems programming some tasks require dropping down to the assembly level. The primary reasons are for performance, precise timing, and low level hardware access. Using inline assembly for this is sometimes convenient, and sometimes necessary to avoid function call overhead.
@@ -26,7 +26,7 @@ Inline assembly is widely used in the Rust community and is one of the top reaso
 
 [catalogue]: https://github.com/bjorn3/inline_asm_catalogue/
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Rust provides support for inline assembly via the `asm!` macro.
@@ -36,7 +36,7 @@ cannot be otherwise achieved. Accessing low level hardware primitives, e.g. in k
 
 > **Note**: the examples here are given in x86/x86-64 assembly, but ARM, AArch64 and RISC-V are also supported.
 
-## Basic usage
+### Basic usage
 
 Let us start with the simplest possible example:
 
@@ -51,7 +51,7 @@ Note that all `asm!` invocations have to be inside an `unsafe` block, as they co
 arbitrary instructions and break various invariants. The instructions to be inserted are listed
 in the first argument of the `asm!` macro as a string literal.
 
-## Inputs and outputs
+### Inputs and outputs
 
 Now inserting an instruction that does nothing is rather boring. Let us do something that
 actually acts on data:
@@ -138,7 +138,7 @@ unsafe {
 assert_eq!(y, 8);
 ```
 
-## Late output operands
+### Late output operands
 
 The Rust compiler is conservative with its allocation of operands. It is assumed that an `out`
 can be written at any time, and can therefore not share its location with any other argument.
@@ -181,7 +181,7 @@ assert_eq!(a, 8);
 
 As you can see, this assembly fragment will still work correctly if `a` and `b` are assigned to the same register.
 
-## Explicit register operands
+### Explicit register operands
 
 Some instructions require that the operands be in a specific register.
 Therefore, Rust inline assembly provides some more specific constraint specifiers.
@@ -229,7 +229,7 @@ The second operand is implicit, and must be the `rax` register, which we fill fr
 The lower 64 bits of the result are stored in `rax` from which we fill the variable `lo`.
 The higher 64 bits are stored in `rdx` from which we fill the variable `hi`.
 
-## Clobbered registers
+### Clobbered registers
 
 In many cases inline assembly will modify state that is not needed as an output.
 Usually this is either because we have to use a scratch register in the assembly,
@@ -283,7 +283,7 @@ unsafe {
 assert_eq!(x, 4 * 6);
 ```
 
-## Symbol operands
+### Symbol operands
 
 A special operand type, `sym`, allows you to use the symbol name of a `fn` or `static` in inline assembly code.
 This allows you to call a function or access a global variable without needing to keep its address in a register.
@@ -315,7 +315,7 @@ fn call_foo(arg: i32) {
 Note that the `fn` or `static` item does not need to be public or `#[no_mangle]`:
 the compiler will automatically insert the appropriate mangled symbol name into the assembly code.
 
-## Register template modifiers
+### Register template modifiers
 
 In some cases, fine control is needed over the way a register name is formatted when inserted into the template string. This is needed when an architecture's assembly language has several names for the same register, each typically being a "view" over a subset of the register (e.g. the low 32 bits of a 64-bit register).
 
@@ -340,7 +340,7 @@ The `h` modifier will emit the register name for the high byte of that register 
 
 If you use a smaller data type (e.g. `u16`) with an operand and forget the use template modifiers, the compiler will emit a warning and suggest the correct modifier to use.
 
-## Options
+### Options
 
 By default, an inline assembly block is treated the same way as an external FFI function call with a custom calling convention: it may read/write memory, have observable side effects, etc. However in many cases, it is desirable to give the compiler more information about what the assembly code is actually doing so that it can optimize better.
 
@@ -368,7 +368,7 @@ These allow the compiler to better optimize code using `asm!`, for example by el
 
 See the reference for the full list of available options and their effects.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Inline assembler is implemented as an unsafe macro `asm!()`.
@@ -394,7 +394,7 @@ The macro will initially be supported only on ARM, AArch64, x86, x86-64 and RISC
 
 [format-syntax]: https://doc.rust-lang.org/std/fmt/#syntax
 
-## Template string arguments
+### Template string arguments
 
 The assembler template uses the same syntax as [format strings][format-syntax] (i.e. placeholders are specified by curly braces). The corresponding arguments are accessed in order, by index, or by name. However, implicit named arguments (introduced by [RFC #2795][rfc-2795]) are not supported.
 
@@ -410,7 +410,7 @@ The 4 targets specified in this RFC (x86, ARM, AArch64, RISC-V) all use the asse
 
 [rfc-2795]: https://github.com/rust-lang/rfcs/pull/2795
 
-## Operand type
+### Operand type
 
 Several types of operands are supported:
 
@@ -450,7 +450,7 @@ Several types of operands are supported:
 
 Operand expressions are evaluated from left to right, just like function call arguments. After the `asm!` has executed, outputs are written to in left to right order. This is significant if two outputs point to the same place: that place will contain the value of the rightmost output.
 
-## Register operands
+### Register operands
 
 Input and output operands can be specified either as an explicit register or as a register class from which the register allocator can select a register. Explicit registers are specified as string literals (e.g. `"eax"`) while register classes are specified as identifiers (e.g. `reg`). Using string literals for register names enables support for architectures that use special characters in register names, such as MIPS (`$0`, `$1`, etc).
 
@@ -529,7 +529,7 @@ If a value is of a smaller size than the register it is allocated in then the up
 
 When separate input and output expressions are specified for an `inout` operand, both expressions must have the same type. The only exception is if both operands are pointers or integers, in which case they are only required to have the same size. This restriction exists because the register allocators in LLVM and GCC sometimes cannot handle tied operands with different types.
 
-## Register names
+### Register names
 
 Some registers have multiple names. These are all treated by the compiler as identical to the base register name. Here is the list of all supported register aliases:
 
@@ -596,7 +596,7 @@ Registers not listed in the table of register classes cannot be used as operands
 | RISC-V | `x0` | This is a constant zero register which can't be modified. |
 | RISC-V | `gp`, `tp` | These registers are reserved and cannot be used as inputs or outputs. |
 
-## Template modifiers
+### Template modifiers
 
 The placeholders can be augmented by modifiers which are specified after the `:` in the curly braces. These modifiers do not affect register allocation, but change the way operands are formatted when inserted into the template string. Only one modifier is allowed per template placeholder.
 
@@ -653,7 +653,7 @@ As stated in the previous section, passing an input value smaller than the regis
 
 [llvm-argmod]: http://llvm.org/docs/LangRef.html#asm-template-argument-modifiers
 
-## Options
+### Options
 
 Flags are used to further influence the behavior of the inline assembly block.
 Currently the following options are defined:
@@ -671,7 +671,7 @@ The compiler performs some additional checks on options:
 - It is a compile-time error to specify `pure` on an asm block with no outputs or only discarded outputs (`_`).
 - It is a compile-time error to specify `noreturn` on an asm block with outputs.
 
-## Mapping to LLVM IR
+### Mapping to LLVM IR
 
 The direction specification maps to a LLVM constraint specification as follows (using a `reg` operand as an example):
 
@@ -711,7 +711,7 @@ If the `noreturn` option is set then an `unreachable` LLVM instruction is insert
 [llvm-constraint]: http://llvm.org/docs/LangRef.html#supported-constraint-code-list
 [issue-65452]: https://github.com/rust-lang/rust/issues/65452
 
-## Supporting back-ends without inline assembly
+### Supporting back-ends without inline assembly
 
 While LLVM supports inline assembly, rustc may gain alternative backends such as Cranelift or GCC. If a back-end does not support inline assembly natively then we can fall back to invoking an external assembler. The intent is that support for `asm!` should be independent of the rustc back-end used: it should always work, but with lower performance if the backend does not support inline assembly.
 
@@ -790,7 +790,7 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 }
 ```
 
-## Rules for inline assembly
+### Rules for inline assembly
 [rules]: #rules-for-inline-assembly
 
 - Any registers not specified as inputs will contain an undefined value on entry to the asm block.
@@ -849,10 +849,10 @@ unsafe fn foo(mut a: i32, b: i32) -> (i32, i32)
 
 [local labels]: https://sourceware.org/binutils/docs/as/Symbol-Names.html#Local-Labels
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Unfamiliarity
+### Unfamiliarity
 
 This RFC proposes a completely new inline assembly format.
 It is not possible to just copy examples of GCC-style inline assembly and re-use them.
@@ -878,7 +878,7 @@ printf("L1 Cache: %i\n", ((ebx >> 22) + 1)
     * (ecx + 1));
 ```
 
-## Limited set of operand types
+### Limited set of operand types
 
 The proposed set of operand types is much smaller than that which is available through GCC-style inline assembly. In particular, the proposed syntax does not include any form of memory operands and is missing many register classes.
 
@@ -886,18 +886,18 @@ We chose to keep operand constraints as simple as possible, and in particular me
 
 If we discover that there is a demand for a new register class or special operand type, we can always add it later.
 
-## Difficulty of support
+### Difficulty of support
 
 Inline assembly is a difficult feature to implement in a compiler backend. While LLVM does support it, this may not be the case for alternative backends such as [Cranelift][cranelift] (see [this issue][cranelift-asm]). We provide a fallback implementation using an external assembler for such backends.
 
 [cranelift]: https://cranelift.readthedocs.io/
 [cranelift-asm]: https://github.com/bytecodealliance/cranelift/issues/444
 
-## Use of double braces in the template string
+### Use of double braces in the template string
 
 Because `{}` are used to denote operand placeholders in the template string, actual uses of braces in the assembly code need to be escaped with `{{` and `}}`. This is needed for AVX-512 mask registers and ARM register lists.
 
-## Post-monomorphization errors
+### Post-monomorphization errors
 
 Since the code generated by `asm!` is only evaluated late in the compiler back-end, errors in the assembly code (e.g. invalid syntax, unrecognized instruction, etc) are reported during code generation unlike every other error generated by rustc. In particular this means that:
 - Since `cargo check` skips code generation, assembly code is not checked for errors.
@@ -905,10 +905,10 @@ Since the code generated by `asm!` is only evaluated late in the compiler back-e
 
 However there is a precedent in Rust for post-monomorphization errors: linker errors. Code which references a non-existent `extern` symbol will only cause an error at link-time, and this can also vary with optimization levels as dead code elimination may removed the reference to the symbol before it reaches the linker.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Implement an embedded DSL
+### Implement an embedded DSL
 [dsl]: #dsl
 
 Both MSVC and D provide what is best described as an embedded DSL for inline assembly.
@@ -962,7 +962,7 @@ to LLVM IR's inline assembly.
 We believe it would be unfortunate to put Rust into a similar situation, making certain
 architectures a second-class citizen with respect to inline assembly.
 
-## Provide intrinsics for each instruction
+### Provide intrinsics for each instruction
 
 In discussions it is often postulated that providing intrinsics is a better solution to the
 problems at hand.
@@ -976,7 +976,7 @@ However, inline assembly is specifically designed for cases where more control i
 Also providing an intrinsic for every (potentially obscure) instruction that is needed
 e.g. during early system boot in kernel code is unlikely to scale.
 
-## Make the `asm!` macro return outputs
+### Make the `asm!` macro return outputs
 
 It has been suggested that the `asm!` macro could return its outputs like the LLVM statement does.
 The benefit is that it is clearer to see that variables are being modified.
@@ -994,13 +994,13 @@ fn mul(a: u64, b: u64) -> u128 {
 }
 ```
 
-## Use AT&T syntax by default on x86
+### Use AT&T syntax by default on x86
 
 x86 is particular in that there are [two widely used dialects][gas-syntax] for its assembly code: Intel syntax, which is the official syntax for x86 assembly, and AT&T syntax which is used by GCC (via GAS). There is no functional difference between those two dialects, they both support the same functionality but with a different syntax. This RFC chooses to use Intel syntax by default since it is more widely used and users generally find it easier to read and write.
 
 [gas-syntax]: https://sourceware.org/binutils/docs/as/i386_002dVariations.html
 
-## Validate the assembly code in rustc
+### Validate the assembly code in rustc
 
 There may be some slight differences in the set of assembly code that is accepted by different compiler back-ends (e.g. LLVM's integrated assembler vs using GAS as an external assembler). Examples of such differences are:
 
@@ -1012,7 +1012,7 @@ While it might be possible for rustc to verify that inline assembly code conform
 
 [llvm-asm-ext]: https://llvm.org/docs/Extensions.html#machine-specific-assembly-syntax
 
-## Include the target architecture name in `asm!`
+### Include the target architecture name in `asm!`
 
 Including the name of the target architecture as part of the `asm!` invocation could allow IDEs to perform syntax highlighting on the assembly code. However this has several downsides:
 - It would add a significant amount of complexity to the `asm!` macro which already has many options.
@@ -1020,46 +1020,46 @@ Including the name of the target architecture as part of the `asm!` invocation c
 - Most inline asm is small and wouldn't really benefit from syntax highlighting.
 - The `asm!` template isn't real assembly code (`{}` placeholders, `{` escaped to `{{`), which may confuse syntax highlighters.
 
-## Operands before template string
+### Operands before template string
 
 The operands could be placed before the template string, which could make the asm easier to read in some cases. However we decided against it because the benefits are small and the syntax would no longer mirror that of Rust format string.
 
-## Operands interleaved with template string arguments
+### Operands interleaved with template string arguments
 
 An asm directive could contain a series of template string arguments, each followed by the operands referenced in that template string argument. This could potentially simplify long blocks of assembly. However, this could introduce significant complexity and difficulty of reading, due to the numbering of positional arguments, and the possibility of referencing named or numbered arguments other than those that appear grouped with a given template string argument.
 
 Experimentation with such mechanisms could take place in wrapper macros around `asm!`, rather than in `asm!` itself.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## GCC inline assembly
+### GCC inline assembly
 
 The proposed syntax is very similar to GCC's inline assembly in that it is based on string substitution while leaving actual interpretation of the final string to the assembler. However GCC uses poorly documented single-letter constraint codes and template modifiers. Clang tries to emulate GCC's behavior, but there are still several cases where its behavior differs from GCC's.
 
 The main reason why this is so complicated is that GCC's inline assembly basically exports the raw internals of GCC's register allocator. This has resulted in many internal constraint codes and modifiers being widely used, despite them being completely undocumented.
 
-## D & MSVC inline assembly
+### D & MSVC inline assembly
 
 See the section [above][dsl].
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Namespacing the `asm!` macro
+### Namespacing the `asm!` macro
 
 Should the `asm!` macro be available directly from the prelude as it is now, or should it have to be imported from `std::arch::$ARCH::asm`? The advantage of the latter is that it would make it explicit that the `asm!` macro is target-specific, but it would make cross-platform code slightly longer to write.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Flag outputs
+### Flag outputs
 
 GCC supports a special type of output which allows an asm block to return a `bool` encoded in the condition flags register. This allows the compiler to branch directly on the condition flag instead of materializing the condition as a `bool`.
 
 We can support this in the future with a special output operand type.
 
-## `asm goto`
+### `asm goto`
 
 GCC supports passing C labels (the ones used with `goto`) to an inline asm block, with an indication that the asm code may jump directly to one of these labels instead of leaving the asm block normally.
 
@@ -1075,25 +1075,25 @@ asm!(
 );
 ```
 
-## Unique ID per `asm`
+### Unique ID per `asm`
 
 GCC supports `%=` which generates a unique identifier per instance of an asm block. This is guaranteed to be unique even if the asm block is duplicated (e.g. because of inlining).
 
 We can support this in the future with a special operand type.
 
-## `const` and `sym` for `global_asm!`
+### `const` and `sym` for `global_asm!`
 
 The `global_asm!` macro could be extended to support `const` and `sym` operands since those can be resolved by simple string substitution. Symbols used in `global_asm!` will be marked as `#[used]` to ensure that they are not optimized away by the compiler.
 
-## Memory operands
+### Memory operands
 
 We could support `mem` as an alternative to specifying a register class which would leave the operand in memory and instead produce a memory address when inserted into the asm string. This would allow generating more efficient code by taking advantage of addressing modes instead of using an intermediate register to hold the computed address.
 
-## Shorthand notation for operand names
+### Shorthand notation for operand names
 
 We should support some sort of shorthand notation for operand names to avoid needing to write `blah = out(reg) blah`? For example, if the expression is just a single identifier, we could implicitly allow that operand to be referred to using that identifier.
 
-## Clobbers for function calls
+### Clobbers for function calls
 
 Sometimes it can be difficult to specify the necessary clobbers for an asm block which performs a function call. In particular, it is difficult for such code to be forward-compatible if the architecture adds new registers in a future revision, which the compiler may use but will be missing from the `asm!` clobber list.
 

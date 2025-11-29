@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2521](https://github.com/rust-lang/rfcs/pull/2521)
 - Rust Issue: [rust-lang/rust#53856](https://github.com/rust-lang/rust/issues/53856)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Unify `std::os::raw::c_void` and `libc::c_void` by making them both re-exports
 of a definition in libcore.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `std::os::raw::c_void` and `libc::c_void` are different types:
@@ -60,7 +60,7 @@ This has been extensively discussed already:
 * [PR #52839: Move std::os::raw into core](https://github.com/rust-lang/rust/pull/52839)
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 With this RFC implemented in both the standard library and in the `libc` crate,
@@ -74,7 +74,7 @@ A pointer returned from one library can now be passed to the other library witho
 `#![no_std]` crates can now also access that same type at `core::ffi::c_void`.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 In the standard library:
@@ -96,7 +96,7 @@ Once the above lands in Nightly, in the `libc` crate:
   to keep compatibility with older Rust versions.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This proposal is a breaking change for users who implement a trait of theirs like this:
@@ -120,7 +120,7 @@ Rarity could be evaluated with Crater by either:
   before landing them in Rust
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 `libc` cannot reexport `std::os::raw::c_void`
@@ -152,7 +152,7 @@ If this new type is to be present if both `libc` and `std`,
  it would still have to be in `core` as well.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 What is the appropriate location for `c_void` in libcore?

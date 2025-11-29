@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3231](https://github.com/rust-lang/rfcs/pull/3231)
 - Cargo Issue: [rust-lang/cargo#10519](https://github.com/rust-lang/cargo/issues/10519)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add support for Cargo to authenticate the user to registries without sending secrets over the network. 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The word "token" is going to be used a lot in this document. For clarity the tokens created for the way things work before this RFC will be referred to as "secret tokens" and tokens created for the scheme described in this RFC are referred to as "asymmetric tokens". A "hardware token" on the other hand, refers to a physical device that stores key pairs and provides an API to interact with them without providing any way to get at the raw private key.
@@ -41,7 +41,7 @@ Different registries will have different users in mind and have different use ca
 
 In order for crates.io to support asymmetric tokens these questions will need to be answered for crates.io. If and how crates.io will implement compatibility with these new tokens will be left for a follow-up discussion/RFC.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Private registries that require authentication use asymmetric cryptography as a more secure way for cargo to log in. Each registry works a little different, but the most common workflow is:
@@ -65,10 +65,10 @@ Some registries prioritize user experience over strictest security. They can sim
 2. Go to the "generate a key pair" page, and copy the command it generated for you. It will disappear when you leave the page, the server will not have a copy of the private key!
 3. Run it on the command line. It will look like  `cargo login --registry=name --private-key` which will prompt you to put in the key value.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Setting and storing login information
+### Setting and storing login information
 
 In [`config.toml`](https://doc.rust-lang.org/cargo/reference/config.html) and `credentials.toml` files there is a field called `private-key`, which is a private key formatted in the secret [subset of `PASERK`](https://github.com/paseto-standard/paserk/blob/master/types/secret.md) and is used to sign asymmetric tokens
 
@@ -87,9 +87,9 @@ Both fields can be set with `cargo login --registry=name --private-key --private
 
 A registry can have at most one of `private-key`, `token`, or `credential-process` set.
 
-## The authentication process
+### The authentication process
 
-### How Cargo will generate an asymmetric token
+#### How Cargo will generate an asymmetric token
 
 When authenticating to a registry, Cargo will generate a PASETO in the [v3.public format](https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Version3.md). This format uses P-384 and 384-bit ECDSA secret keys, and is compatible with keys stored in contemporary hardware tokens. The generated PASETO will have specific "claims" (key-value pairs in the PASETO's JSON payload).
 
@@ -110,7 +110,7 @@ The "footer" (which is part of the signature) will be a JSON string in UTF-8 and
 PASETO includes the message that was signed, so the server does not have to reconstruct the exact string from the request in order to check the signature. The server does need to check that the signature is valid for the string in the PASETO and that the contents of that string matches the request.
 If a claim should be expected for the request but is missing in the PASETO then the request must be rejected.
 
-### How the Registry Server will validate an asymmetric token
+#### How the Registry Server will validate an asymmetric token
 
 The registry server will validate the PASETO, and check the footer and claims:
 
@@ -130,7 +130,7 @@ See the [Appendix: Token Examples](#token-examples) for a walk through of constr
 
 We recommend the use of challenges to prevent some replay attacks. For example, if I accidentally `unyank` a version and then realize my mistake and `yank` that version again, an attacker with a copy of the traffic could replay the `unyank` request, reverting my `yank`. This replay attack should be prevented by using single-use challenges that registries must invalidate when they are used.
 
-## Credential Processes
+### Credential Processes
 
 Credential Processes as defined in [RFC 2730](https://github.com/rust-lang/rfcs/pull/2730) are outside programs cargo can call on to change where and how secrets are stored. That RFC defines `special strings` which go in the `credential-process` field to describe what data the process needs from cargo. This RFC adds `{claims}`. If used Cargo will replace it with a JSON encoded set of key value pairs that should be in the generated token. Cargo will check that the output of such a process looks like a valid PASETO v3.public token that Cargo would have generated, and that the PASETO token includes all the claims Cargo provided. The credential process may add additional claims (e.g. 2fa, TOTP), as long as they are nested in `custom`.
 
@@ -139,18 +139,18 @@ Some credential processes that might be useful for people to develop include:
 - the ability to use keys embedded in common hardware tokens.
 - The ability to read keys in formats used by other tools (GPG, SSH, PKCS#12, etc.)
 
-## Note on stability
+### Note on stability
 
 This is just a reminder to check if there are newer RFCs that have had to deprecate, remove, or replace parts of this one. RFCs can always be adjusted by new RFCs. In general the Rust community takes backwards compatibility very seriously, so if an RFC says you can do something no future RFC is likely to say that you cannot do that thing. It has happened, RFCs have been amended or changed by subsequent RFCs. The content of this RFC is full of details with security implications. It is not unlikely that in the course of human events changes will need to be made to it. Hopefully, they can be made by loosening restrictions or supporting new formats. But, because security is involved the Rust community may be more likely to break backward compatibility than is our norm.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This gets Cargo involved in the cryptographic standards used by registries, which puts a lot of complexity on ourselves. Now rust teams need to be involved in conversations about what cryptographic standards alternative registries choose to use.
 
 Furthermore, this RFC attempts to make a start on solving several problems at the same time. It may be that in time we discover these problems need to be solved separately. If we end up with a separate system for code signing and a separate system for authorization, then a simpler more direct method of authentication might have been a better choice.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Continue with the existing secret tokens. Private registries that want to provide this kind of functionality can create a bespoke system for their exact needs. For example, only generating short-lived tokens and having the user log in daily.
@@ -173,7 +173,7 @@ However:
 - The current biscuit specification (2.0) does not have a rich model of authentication. If you have a token that was authorized to do the action you are attempting to do then you must be someone who is allowed to do that action. Which has a lot of the same limitations of the existing secret token system as outlined in the motivation section of this RFC.
 - It is still possible to do scopes for tokens without using biscuits. A user ID can be created for each authorized role, and then the server can make sure that the used user ID is authorized to do the intended action.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 NuGet has support for [author signing](https://github.com/NuGet/Home/wiki/Author-Package-Signing), which can be used to make sure that publishes only happen from somebody who has a private key. This system allows authenticity to be checked looking only at the crate that is downloaded. 
@@ -186,7 +186,7 @@ The npm client can pass along a `otp` option on the command line to act as [proo
 
 [TUF](https://theupdateframework.io/) exclusively deals with how a client downloading packages through a mirror can be assured they came from a non-compromised copy of the registry. Which is not the problem this RFC is addressing.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 How aggressively to push people off secret tokens? This RFC does not remove the existing use of secret tokens for publishing and yanking on private registries nor suggests a timeline for crates.io to use asymmetric tokens. There is an [RFC to allow authentication on more operations](https://github.com/rust-lang/rfcs/blob/f3aecb96eeb95542d81d6dc6b0a22c1245383604/text/0000-cargo-alternative-registry-auth.md), the expectation is that we will require the use of asymmetric tokens for this new functionality. This is a question that we will have to decide as we go through implementation and stabilization.
@@ -195,7 +195,7 @@ What default settings should `cargo login --generate-keypair` use? What process 
 
 More generally, is all the user experience exactly correct for all the new CLI flags? The expectation is that these will need to be changed and tweaked as we try using them after implementation.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Figuring out how and when crates.io should support these kinds of tokens is left to a follow-up discussion/RFC. The motivation section describes some of the things that will need to be figured out.
@@ -206,9 +206,9 @@ After that an audit log of what tokens were used to publish on crates.io and why
 
 This scheme could be augmented to allow the use of several signing technologies. We would need to add a way for a registry to express what formats it will accept. We would need to add code for cargo to check that the credential provider was following one of the accepted formats. We would need to add code for cargo to generate the additional formats. But none of this is out of the question, so there is a clear path forward when algorithm agility is required.
 
-# Appendix
+## Appendix
 
-## Threat Model
+### Threat Model
 
 If a registry were set up to exclusively use the new asymmetric tokens, how well would it handle the issues in the motivation?
 
@@ -244,9 +244,9 @@ Storing plain text secret tokens is only a problem in practice not in theory. Ho
 
 Without the private key an asymmetric token can only be used for the intended registry, for the intended action, and for a limited amount of time. This mitigates the risk of disclosure.
 
-## Token Examples
+### Token Examples
 
-### A Simple Read Operation
+#### A Simple Read Operation
 
 For example: If cargo needs to construct an asymmetric token for a simple read operation it will gather some basic information:
 - The private key ([`PASERK` secret format](https://github.com/paseto-standard/paserk/blob/master/types/secret.md)): `"k3.secret.fNYVuMvBgOlljt9TDohnaYLblghqaHoQquVZwgR6X12cBFHZLFsaU3q7X3k1Zn36"`
@@ -281,7 +281,7 @@ Given that there is no mutation claim, it will check that the request is a read.
 (A read token can be used for multiple requests. See [Rationale and alternatives](#rationale-and-alternatives) for why.) 
 At this point the server has validated the PASETO, it should now go on to determining if the user associated with this public key should be allowed to read this object.
 
-### A Complicated Publish Operation
+#### A Complicated Publish Operation
 
 For example: If cargo needs to construct an asymmetric token for a complicated publish operation it will gather some basic information:
 - The private key ([`PASERK` secret format](https://github.com/paseto-standard/paserk/blob/master/types/secret.md)): `"k3.secret.fNYVuMvBgOlljt9TDohnaYLblghqaHoQquVZwgR6X12cBFHZLFsaU3q7X3k1Zn36"`

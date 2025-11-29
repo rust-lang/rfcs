@@ -2,15 +2,13 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/378
 - Rust Issue #: https://github.com/rust-lang/rust/issues/18635
 
-Summary
-=======
+## Summary
 
 Parse macro invocations with parentheses or square brackets as expressions no
 matter the context, and require curly braces or a semicolon following the
 invocation to invoke a macro as a statement.
 
-Motivation
-==========
+## Motivation
 
 Currently, macros that start a statement want to be a whole statement, and so
 expressions such as `foo!().bar` don’t parse if they start a statement. The
@@ -39,8 +37,7 @@ expression, this would still parse successfully, but not in the way expected: it
 would be parsed as `(maybe_return!(x)) - 1`. This is an example of how it is
 impossible to resolve this ambiguity properly without breaking compatibility.
 
-Detailed design
-===============
+## Detailed design
 
 Treat all macro invocations with parentheses, `()`, or square brackets, `[]`, as
 expressions, and never attempt to parse them as statements or items in a block
@@ -54,22 +51,19 @@ structs with fields do not need to be followed by a semicolon. Many constructs
 like `match` and `if`, which use curly braces, also do not require semicolons
 when they begin a statement.
 
-Drawbacks
-=========
+## Drawbacks
 
 - This introduces a difference between different macro invocation delimiters,
   where previously there was no difference.
 - This requires the use of semicolons in a few places where it was not necessary
   before.
 
-Alternatives
-============
+## Alternatives
 
 - Require semicolons after all macro invocations that aren’t being used as
   expressions. This would have the downside of requiring semicolons after every
   `macro_rules!` declaration.
 
-Unresolved questions
-====================
+## Unresolved questions
 
 None.

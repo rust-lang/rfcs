@@ -3,17 +3,17 @@
 - RFC PR: [rust-lang/rfcs#968](https://github.com/rust-lang/rfcs/pull/968)
 - Rust Issue: [rust-lang/rust#23420](https://github.com/rust-lang/rust/issues/23420)
 
-# Summary
+## Summary
 
 Restrict closure return type syntax for future compatibility.
 
-# Motivation
+## Motivation
 
 Today's closure return type syntax juxtaposes a type and an
 expression. This is dangerous: if we choose to extend the type grammar
 to be more acceptable, we can easily break existing code.
 
-# Detailed design
+## Detailed design
 
 The current closure syntax for annotating the return type is `|Args|
 -> Type Expr`, where `Type` is the return type and `Expr` is the body
@@ -29,13 +29,13 @@ supplied, the body must be enclosed in braces: `|| -> Foo { (Foo) }`.
 Types are already juxtaposed with open braces in `fn` items, so this
 should not be an additional danger for future evolution.
 
-# Drawbacks
+## Drawbacks
 
 This design is minimally invasive but perhaps unfortunate in that it's
 not obvious that braces would be required. But then, return type
 annotations are very rarely used.
 
-# Alternatives
+## Alternatives
 
 I am not aware of any alternate designs. One possibility would be to
 remove return type annotations altogether, perhaps relying on type
@@ -47,6 +47,6 @@ implementation in other ways (in particular, we don't infer
 generalization over lifetimes at present, unless we can figure it out
 from the expected type or explicit annotations).
 
-# Unresolved questions
+## Unresolved questions
 
 None.

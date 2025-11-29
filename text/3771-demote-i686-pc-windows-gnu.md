@@ -3,15 +3,15 @@
 - RFC PR: [rust-lang/rfcs#3771](https://github.com/rust-lang/rfcs/pull/3771)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Demote target `i686-pc-windows-gnu` from Tier 1 to Tier 2 (with host tools) to better reflect its current maintenance and usage status.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Background
+### Background
 
 Rust has supported Windows for a long time, with two different flavors of Windows targets: MSVC-based and GNU-based.
 MSVC-based targets (for example the main Windows target `x86_64-pc-windows-msvc`) use Microsoft's native `link.exe` linker and libraries, while GNU-based targets (like `i686-pc-windows-gnu`) are built entirely from free software components like `gcc`, `ld`, and MinGW.
@@ -52,7 +52,7 @@ Some example problems, found by searching for `ignore-windows-gnu` in rust-lang/
 - https://github.com/rust-lang/rust/pull/116837
 - https://github.com/rust-lang/rust/issues/128911
 
-### 32-bit x86 Problems
+#### 32-bit x86 Problems
 
 While some of these issues apply to all GNU-based targets, 32-bit x86 seems to be especially affected.
 And when a 32-bit Windows GNU issue comes up, contributors rarely actually investigate it, because it is such a complex and nonstandard environment compared to 64-bit Windows GNU, which is a lot easier to set up and work with.
@@ -66,7 +66,7 @@ In response to inquiries about their opinion on reducing support for the target,
 [^1]: despite saying he is only a maintainer for x86_64-pc-windows-gnullvm, mati865 is effectively also our maintainer for x86_64-pc-windows-gnu https://rust-lang.zulipchat.com/#narrow/channel/233931-t-compiler.2Fmajor-changes/topic/Demote.20.60i686-pc-windows-gnu.60.20compiler-team.23822/near/490675824
 [^2]: https://devblogs.microsoft.com/oldnewthing/20220418-00/?p=106489
 
-## Target Tier Policy Requirements
+### Target Tier Policy Requirements
 
 With this knowledge, we can look at the [Tier 1 requirements](https://doc.rust-lang.org/1.84.1/rustc/target-tier-policy.html#tier-1-target-policy) of the target tier policy to check whether they are fulfilled.
 
@@ -113,11 +113,11 @@ There are no such requirements.
 We will not go through Tier 2 requirements here, but they are, apart from the (less strict than Tier 1) maintainer requirements, fulfilled.
 When the maintainer requirements are enforced more strictly in the future, `i686-pc-windows-gnu` (and `x86_64-pc-windows-gnu` as well) may be demoted further if no maintainers are found.
 
-## Conclusion
+### Conclusion
 
 Given the usage count and lack of maintenance leading to more than one requirement not being fulfilled, it becomes clear that `i686-pc-windows-gnu` is not worthy of being a Tier 1 target and is already getting much worse support than expected from a Tier 1 target.
 
-# Explanation
+## Explanation
 [explanation]: #explanation
 
 `i686-pc-windows-gnu` is now a [Tier 2 with Host Tools](https://doc.rust-lang.org/1.84.1/rustc/target-tier-policy.html#tier-2-target-policy) target instead of a [Tier 1 With Host Tools](https://doc.rust-lang.org/1.84.1/rustc/target-tier-policy.html#tier-1-target-policy) target.
@@ -126,7 +126,7 @@ If necessary, further demotions (for example removing host tools) will not requi
 
 A blog post will be made to describe the change.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 By no longer doing automated testing for this target, this target will likely deteriorate more quickly than with continued automated testing.
@@ -134,14 +134,14 @@ By no longer doing automated testing for this target, this target will likely de
 Additionally, this opens the door for further demotions in the future, like removing host tools, which could still be useful to some people.
 But such demotions will always have to be justified on their own.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The maintenance requirement violation can be solved by multiple people stepping up to maintain this target. This has not happened so far.
 
 The popularity requirement could be fulfilled by more people using this target, but this does not seem possible, as 32-bit x86 as been on a decline for a long time, as new CPU models for this architecture are no longer being made.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 This is the first time [since the Target Tier Policy was created](https://rust-lang.github.io/rfcs/2803-target-tier-policy.html) (note that this links to an old version, see [the rustc book](https://doc.rust-lang.org/1.84.1/rustc/target-tier-policy.html) for the latest version at the time of writing) that a Tier 1 target is being demoted.
@@ -154,12 +154,12 @@ The [promotion of `aarch64-apple-darwin` to Tier 1](https://github.com/rust-lang
 
 This is a continuation of [MCP 822](https://github.com/rust-lang/compiler-team/issues/822), which contains some additional details in the description and linked Zulip stream.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None so far.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 `x86_64-pc-windows-gnu` will remain a Tier 1 target after this RFC.

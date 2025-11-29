@@ -4,12 +4,12 @@
 - RFC PR: [rust-lang/rfcs#3101](https://github.com/rust-lang/rfcs/pull/3101)
 - Rust Issue: [rust-lang/rust#84978](https://github.com/rust-lang/rust/issues/84978)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Beginning with the 2021 edition, reserve the syntax `ident#foo`, `ident"foo"`, `ident'f'`, and `ident#123`, as a way of future-proofing against future language changes.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In [RFC 2151](https://rust-lang.github.io/rfcs/2151-raw-identifiers.html), the language syntax was expanded to allow identifiers to optionally be prefixed with `r#`, to ease migrating code when new keywords are introduced. Conversely, [RFC 3098](https://github.com/rust-lang/rfcs/pull/3098) (still under discussion as of this writing) is proposing to allow keywords to be prefixed with `k#`, as an unobtrusive way to introduce new keywords without requiring any migration effort or edition-level coordination.
@@ -101,7 +101,7 @@ The motivation here, aside from the symmetry with prefixed identifiers and [lite
 
 There is one subtle note to this reservation: because raw string literals and string literals tokenize differently, any prefix ending in `r` will tokenize as a raw string literal would tokenize, and any prefix not ending in `r` will tokenize as a non-raw string literal would tokenize. This is considered acceptable in that it is assumed that new prefixes on these literals will be "compositional" in nature, in the same sense that `b` and `r` on string literals compose today, and thus it will be natural and intentional to compose any such prefix with `r` in order to achieve raw string semantics when desired. However, any hypothetical *non*-compositional prefix would need to be chosen carefully in order to achieve its desired tokenization
 
-# Guide-level explanation
+## Guide-level explanation
 When designing DSLs via macros that take token trees as inputs, be aware that certain syntactic productions which have no meaning in Rust are nonetheless forbidden by the grammar, as they represent "reserved space" for future language development. In particular, anything of the form `<identifier>#<identifier>`, `<identifier>"<string contents>"`, `<identifier>'<char contents>'`, and `<identifier>#<numeric literal>` is reserved for exclusive use by the language; these are called *reserved prefixes*.
 
 Unless a prefix has been assigned a specific meaning by the language (e.g. `r#async`, `b"foo"`), Rust will fail to tokenize when encountering any code that attempts to make use of such prefixes. Note that these prefixes rely on the absence of whitespace, so a macro invocation can use `<identifier> # <identifier>` (note the spaces) as a way to consume individual tokens adjacent to a `#`.
@@ -120,7 +120,7 @@ Putting it all together, this means that the following are valid macro invocatio
 * `foo!(bar#123)`
 * `foo!(bar"qux")`
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 New tokenizing rules are introduced:
@@ -175,12 +175,12 @@ error: unknown prefix on string literal: bar
   = note: prefixed string literals are reserved for future use
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Complicates macro tokenizing rules.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * Reserve only prefixed identifiers, and not prefixed literals. The former has a concrete RFC that would benefit from this, but the latter is currently just aspirational.
@@ -188,12 +188,12 @@ error: unknown prefix on string literal: bar
 * Instead of `ident`, reserve only `[a-zA-Z_][a-zA-Z0-9_]*`, the set of ASCII-only identifiers. This would cover the space future Rust language design extensions are likely to use. However, the explanation of the reserved space would require presenting a distinct concept separate from the definition of identifiers. In addition, reserving only ASCII identifiers seems unlikely to provide a benefit to future Rust programs.
 * Instead of `ident`, reserve prefixes that permit any sequence of identifier continuation characters. This would allow things like preceding digits, e.g. `4#foo`.
 
-#  Unresolved questions
+##  Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * How to manage the API `proc_macro::TokenStream::from_str`, which does not take any edition information? ([raised here](https://github.com/rust-lang/rfcs/pull/3101#issuecomment-832686934))
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 * [C: Reserved names](https://www.gnu.org/software/libc/manual/html_node/Reserved-Names.html)

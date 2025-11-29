@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#230](https://github.com/rust-lang/rfcs/pull/230)
 - Rust Issue: [rust-lang/rust#17325](https://github.com/rust-lang/rust/issues/17325)
 
-# Summary
+## Summary
 
 This RFC proposes to remove the *runtime system* that is currently part of the
 standard library, which currently allows the standard library to support both
@@ -19,9 +19,9 @@ native and green threading. In particular:
 * The `std::io` module will remain completely cross-platform, though *separate*
   platform-specific modules may be added at a later time.
 
-# Motivation
+## Motivation
 
-## Background: thread/task models and I/O
+### Background: thread/task models and I/O
 
 Many languages/libraries offer some notion of "task" as a unit of concurrent
 execution, possibly distinct from native OS threads. The characteristics of
@@ -73,7 +73,7 @@ tasks vary along several important dimensions:
   continue. Unfortunately, this latter approach helps only with explicit
   blocking; it does nothing for loops, page faults and the like.
 
-### Where Rust is now
+#### Where Rust is now
 
 Rust has gradually migrated from a "green" threading model toward a native
 threading model:
@@ -117,7 +117,7 @@ and nonblocking I/O.
 The actual scheduler and I/O implementations -- `libgreen` and `libnative` --
 then live as crates "above" `libstd`.
 
-## The problems
+### The problems
 
 While the situation described above may sound good in principle, there are
 several problems in practice.
@@ -195,14 +195,14 @@ several problems in practice.
   a strictly native threading model will allow substantial simplification and
   reorganization of the structure of Rust's libraries.
 
-# Detailed design
+## Detailed design
 
 To mitigate the above problems, this RFC proposes to tie `std::io` directly to
 the native threading model, while moving `libgreen` and its supporting
 infrastructure into an external Cargo package with its own I/O API.
 
-## The near-term plan
-### `std::io` and native threading
+### The near-term plan
+#### `std::io` and native threading
 
 The plan is to entirely remove `librustrt`, including all of the traits.
 The abstraction layers will then become:
@@ -225,7 +225,7 @@ going through a trait object.
 A goal of this work is to minimize the complexity of embedding Rust code in
 other contexts. It is not yet clear what the final embedding API will look like.
 
-### Green threading
+#### Green threading
 
 Despite tying `libstd` to native threading, however, `libgreen` will still be
 supported -- at least initially. The infrastructure in `libgreen` and friends will
@@ -237,7 +237,7 @@ the focus will be on first improving the native threading API. Note, however,
 that the I/O API will be exposed separately within `libgreen`, as opposed to the
 current exposure through `std::io`.
 
-## The long-term plan
+### The long-term plan
 
 Ultimately, a large motivation for the proposed refactoring is to allow the APIs
 for native I/O to grow.
@@ -275,7 +275,7 @@ which is very much not the case today. Any abstractions to support M:N threading
 models -- including the now-external `libgreen` package -- must respect this
 constraint.
 
-# Drawbacks
+## Drawbacks
 
 The main drawback of this proposal is that green I/O will be provided by a
 forked interface of `std::io`. This change makes green threading
@@ -288,7 +288,7 @@ of mitigating this risk in general is the Java executor approach, where the
 native "worker" threads that are executing the green thread scheduler are
 monitored for blocking, and new worker threads are spun up as needed.
 
-# Unresolved questions
+## Unresolved questions
 
 There are may unresolved questions about the exact details of the refactoring,
 but these are considered implementation details since the `libstd` interface

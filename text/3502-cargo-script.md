@@ -5,7 +5,7 @@
 - RFC PR: [rust-lang/rfcs#3502](https://github.com/rust-lang/rfcs/pull/3502)
 - Rust Issue: [rust-lang/cargo#12207](https://github.com/rust-lang/cargo/issues/12207)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds support for single-file bin packages in cargo.
@@ -51,7 +51,7 @@ Args { config: Some("file.toml") }
 
 See [`-Zscript`](https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#script) for a working implementation.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 **Collaboration:**
@@ -107,7 +107,7 @@ With that said, this doesn't have to completely handle every use case for
 Collaboration, Interoperability, Prototyping, or One-off Utilities.
 Users can always scale up to normal packages with an explicit `Cargo.toml` file.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ### Creating a New Package
@@ -311,10 +311,10 @@ automatically infers target names.
 [def-package-registry]:  https://doc.rust-lang.org/cargo/guide/../appendix/glossary.html#package-registry  '"package-registry" (glossary entry)'
 [def-manifest]:          https://doc.rust-lang.org/cargo/guide/../appendix/glossary.html#manifest          '"manifest" (glossary entry)'
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Single-file packages
+### Single-file packages
 
 In addition to today's multi-file packages (`Cargo.toml` file with other `.rs`
 files),
@@ -361,7 +361,7 @@ the future, when workspaces are supported, that will allow a user to have a
 persistent lockfile.
 We may also allow customizing the non-workspace lockfile location in the [future](#future-possibilities).
 
-## `cargo <file>.rs`
+### `cargo <file>.rs`
 
 `cargo` is intended for putting in the `#!` for single-file packages:
 ```rust
@@ -401,7 +401,7 @@ To allow the xor, we enforce that
 When the stdout or stderr of `cargo <file>.rs` is not going to a terminal, cargo will assume `--quiet`.
 Further work may be done to refine the output in interactive mode.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The implicit content of the manifest will be unclear for users.
@@ -442,7 +442,7 @@ The precedence schema for `cargo foo` has limitations
 This increases the maintenance and support burden for the cargo team, a team
 that is already limited in its availability.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Initial guidelines for evaluating decisions:
@@ -476,7 +476,7 @@ Initial guidelines for evaluating decisions:
     - Most likely, we'll want to muck with the errors returned by `toml_edit`
       so we render manifest errors based on the original source code which will require accurate span information.
 
-## Misc
+### Misc
 
 - Rejected: Defaulting to `RUST_BACKTRACE=1` for `cargo foo.rs` runs
   - Enabling backtraces provides more context to problems, much like Python scripts, which helps with experiments
@@ -488,7 +488,7 @@ Initial guidelines for evaluating decisions:
   some platforms
   - See [rust-lang/cargo#12255](https://github.com/rust-lang/cargo/pull/12255)
 
-## Command-line / interactive evaluation
+### Command-line / interactive evaluation
 
 The [`cargo-script`](https://crates.io/crates/cargo-script) family of tools has a single command for
 - Run `.rs` files with embedded manifests
@@ -504,7 +504,7 @@ However
 
 Therefore, this RFC proposes we limit the scope of the new command to `cargo run` for single-file rust packages.
 
-## Naming
+### Naming
 [naming]: #naming
 
 Considerations:
@@ -551,7 +551,7 @@ Candidates
     everything special for single-file packages, whether its running them,
     expanding them into multi-file packages, etc.
 
-## First vs Third Party
+### First vs Third Party
 
 As mentioned, a reason for being first-party is to standardize the convention
 for this which also allows greater interop.
@@ -577,14 +577,14 @@ This still leaves room for third-party implementations, either differentiating t
 - Short-hand dependency syntax (e.g. `//# serde_json = "*"`)
 - Prioritizing other workflows, like runtime performance
 
-## File association on Windows
+### File association on Windows
 
 We could add a non-default association to run the file.
 We don't want it to be a default,
 to avoid unintended harm and due to the likelihood someone is going to want to
 edit these files.
 
-## File extension
+### File extension
 
 Should these files use `.rs` or a custom file extension?
 
@@ -628,7 +628,7 @@ If we adopted a unique file extensions, some options include:
 - `.rspkg`
   - No connection back to cargo but conveys its a single-file package
 
-## Embedded Manifest Format
+### Embedded Manifest Format
 
 Considerations for embedded manifest include
 - How obvious it is for new users when they see it
@@ -648,7 +648,7 @@ The `cargo` infostring was chosen because
   only be used in 1% of cases the manifest block is present, so we shouldn't
   hurt the simple, common case for the more advanced, long tail cases.
 
-## `edition`
+### `edition`
 
 [The `edition` field controls what variant of cargo and the Rust language to use to interpret everything.](https://doc.rust-lang.org/edition-guide/introduction.html)
 
@@ -805,7 +805,7 @@ This won't work for the `stdin` case (future possibility).
 > Disposition: Rejected because implicitly modifying user code, especially
 > while being edited, is a poor experience.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Rust, same space
@@ -946,12 +946,12 @@ Cross-language
 
 See also [Single-file scripts that download their dependencies](https://dbohdan.com/scripts-with-dependencies)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Considering taking [AT_EXECFN](https://www.man7.org/linux/man-pages/man3/getauxval.3.html) into account when determining precedence
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Note: we are assuming the following are **not** future possibilities in this design
@@ -960,13 +960,13 @@ Note: we are assuming the following are **not** future possibilities in this des
 - Embedding `rust-toolchain.toml` files
 - Embedding other source files or additional packages
 
-## Playground support
+### Playground support
 
 The [playground](play.rust-lang.org/) could gain support for embedded
 manifests, allowing users access to more packages, specific package versions,
 and specific feature sets.
 
-## Dealing with leaked `target/`
+### Dealing with leaked `target/`
 
 As `target/` is out of sight, it is easy to "leak" them, eating up disk space.
 Users would need to know to run `cargo clean --manifest-path foo.rs` before
@@ -976,7 +976,7 @@ deleting `foo.rs` or to just do `rm -rf ~/.cargo/target` and wipe everything
 In the future we can
 [track embedded manifests and garbage collect their `target/`](https://github.com/rust-lang/cargo/issues/12633).
 
-## `cargo new` support
+### `cargo new` support
 
 A `cargo new <flag> foo.rs` could generate a source file with an embedded manifest.
 
@@ -984,7 +984,7 @@ Questions
 - Should we do this implicitly with the `.rs` extension?
 - If we have a flag, what should we name it?
 
-## A shorter flag for `--manifest-path`
+### A shorter flag for `--manifest-path`
 
 Cargo users are used to the `--manifest-path` argument being inferred from
 their current working directory but that doesn't work for embedded manifests.
@@ -999,7 +999,7 @@ Options include
 - `p` is taken by `--package`
 - `-m`, `-M`, and `-P` are available, but are the meanings clear enough?
 
-## Cleaner output
+### Cleaner output
 
 `cargo foo.rs` is just a wrapper around `cargo run --manifest-path foo.rs` and cargo can be quite noisy.
 The out-of-tree prototype for this instead ran `cargo run --quiet
@@ -1015,12 +1015,12 @@ and [rust-lang/cargo#8889](https://github.com/rust-lang/cargo/issues/8889).
 
 Note: `--quiet` is inferred when redirecting/piping output ([rust-lang/cargo#12305](https://github.com/rust-lang/cargo/pull/12305))
 
-## Executing `<stdin>`
+### Executing `<stdin>`
 
 We could extend this to allow accepting single-file packages from stdin, either
 explicitly with `-` or implicitly when `<stdin>` is not interactive.
 
-## Implicit `main` support
+### Implicit `main` support
 
 Like with doc-comment examples, we could support an implicit `main`.
 
@@ -1031,7 +1031,7 @@ Ideally, this would be supported at the language level
 
 Behavior can be controlled through editions
 
-## `[lib]` support
+### `[lib]` support
 
 In an effort to allow low-overhead packages in a workspace, we may also allow `[lib]`s to be defined.
 
@@ -1043,7 +1043,7 @@ We could add support for this in the future by
 - Using `syn` to check if a top-level `main` function exists (this is mutually exclusive with implicit `main`)
 - Check the manifest for an empty `[lib]` table
 
-## Workspace Support
+### Workspace Support
 
 Allow scripts to be members of a workspace.
 
@@ -1068,7 +1068,7 @@ This could serve as an alternative to
 [`cargo xtask`](https://github.com/matklad/cargo-xtask) with scripts sharing
 the lockfile and `target/` directory.
 
-## Script-relative config
+### Script-relative config
 
 As `.cargo/config.toml` is loaded from `CARGO_HOME`, there isn't a way to ensure that we load the config for a script in a repo (e.g. an xtask).
 This could become more of prevalent of an issue when workspaces are supported.
@@ -1078,7 +1078,7 @@ Options
 - Key off of workspace membership (as then it won't likely be a temp file)
   - This has a chicken-and-egg problem as we need to load config before we load manifests
 
-## Access to `--release` in shebang
+### Access to `--release` in shebang
 
 While the primary target of this feature is one-off use that is not performance sensitive,
 users may want to have long-lived scripts that do intensive operations.
@@ -1095,13 +1095,13 @@ Potential options for addressing this include
   - See also [zulip: cargo build default profile](https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/cargo.20build.20default.20profile)
 - Allow built-in profiles to inherit from other built-in profiles (so `dev` could inherit from `release`)
 
-## Scaling up
+### Scaling up
 
 We provide a workflow for turning a single-file package into a multi-file
 package, on `cargo-new` / `cargo-init`.  This would help smooth out the
 transition when their program has outgrown being in a single-file.
 
-## A REPL
+### A REPL
 
 See the [REPL exploration](https://github.com/epage/cargo-script-mvs/discussions/102)
 
@@ -1114,7 +1114,7 @@ Ideally, this repl would also allow the equivalent of `python -i <file>`, not
 to run existing code but to make a specific file's API items available for use
 to do interactive whitebox testing of private code within a larger project.
 
-## Make it easier to run cargo commands on scripts
+### Make it easier to run cargo commands on scripts
 
 Running
 ```console
@@ -1127,7 +1127,7 @@ It would be good to explore ways of reducing the overhead here, for example
 
 We could allow scripts as a positional arguments but most commands already accept a positional argument and distinguishing it from a script could get messy.
 
-## Make it easier to specify package fields
+### Make it easier to specify package fields
 
 Specifying
 ```toml
@@ -1139,7 +1139,7 @@ We could allow `package` fields at the top level but
 - It could make workspace root package detection messier
 - It limits us in our table / field selections
 
-## Embedded or adjacent Lockfile
+### Embedded or adjacent Lockfile
 
 [Lockfiles](https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html)
 record the exact version used for every possible dependency to ensure

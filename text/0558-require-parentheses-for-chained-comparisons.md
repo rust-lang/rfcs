@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#558](https://github.com/rust-lang/rfcs/pull/558)
 - Rust Issue: [rust-lang/rust#20724](https://github.com/rust-lang/rust/issues/20724)
 
-# Summary
+## Summary
 
 Remove chaining of comparison operators (e.g. `a == b == c`) from the syntax.
 Instead, require extra parentheses (`(a == b) == c`).
 
-# Motivation
+## Motivation
 
 ```rust
 fn f(a: bool, b: bool, c: bool) -> bool {
@@ -29,7 +29,7 @@ Additionally, making the chain `f < b > (c)` invalid allows us to easily produce
 a diagnostic message: "Use `::<` instead of `<` if you meant to specify type arguments.",
 which would be a vast improvement over the current diagnostics for this mistake.
 
-# Detailed design
+## Detailed design
 
 Emit a syntax error when a comparison operator appears as an operand of another comparison operator
 (without being surrounded by parentheses).
@@ -39,7 +39,7 @@ This is easily implemented directly in the parser.
 
 Note that this restriction on accepted syntax will effectively merge the precedence level 4 (`<` `>` `<=` `>=`) with level 3 (`==` `!=`).
 
-# Drawbacks
+## Drawbacks
 
 It's a breaking change.
 
@@ -53,7 +53,7 @@ if a < 0 == b < 0 { /* both negative or both non-negative */ }
 However, I don't think this kind of code sees much use.
 The rustc codebase doesn't seem to have any occurrences of chained comparisons.
 
-# Alternatives
+## Alternatives
 
 As this RFC just makes the chained comparison syntax available for post-1.0 language features,
 pretty much every alternative (including returning to the status quo) can still be implemented later.
@@ -65,7 +65,7 @@ where a comparison operator appears as an operand of another comparison operator
 This minimizes the breaking changes, but does not allow full python-style chained comparison operators in the future
 (although a more limited form of them would still be possible).
 
-# Unresolved questions
+## Unresolved questions
 
 Is there real code that would get broken by this change?
 So far, I've been unable to find any.

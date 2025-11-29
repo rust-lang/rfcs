@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#418](https://github.com/rust-lang/rfcs/pull/418)
 - Rust Issue: [rust-lang/rust#18641](https://github.com/rust-lang/rust/issues/18641)
 
-# Summary
+## Summary
 
 Just like structs, variants can come in three forms - unit-like, tuple-like,
 or struct-like:
@@ -16,7 +16,7 @@ enum Foo {
 The last form is currently feature gated. This RFC proposes to remove that gate
 before 1.0.
 
-# Motivation
+## Motivation
 
 Tuple variants with multiple fields can become difficult to work with,
 especially when the types of the fields don't make it obvious what each one is.
@@ -100,7 +100,7 @@ The issue tracker does not appear have any open correctness issues related to
 struct variants and many libraries, including rustc itself, have been using
 them without trouble for a while.
 
-# Detailed design
+## Detailed design
 
 Change the `Status` of the `struct_variant` feature from `Active` to
 `Accepted`.
@@ -110,17 +110,17 @@ fields - they're private unless tagged `pub`. This is inconsistent with tuple
 variants, where the fields have inherited visibility. Struct variant fields
 will be changed to have inhereted privacy, and `pub` will no longer be allowed.
 
-# Drawbacks
+## Drawbacks
 
 Adding formal support for a feature increases the maintenance burden of rustc.
 
-# Alternatives
+## Alternatives
 
 If struct variants remain feature gated at 1.0, libraries that want to ensure
 that they will continue working into the future will be forced to avoid struct
 variants since there are no guarantees about backwards compatibility of
 feature-gated parts of the language.
 
-# Unresolved questions
+## Unresolved questions
 
 N/A

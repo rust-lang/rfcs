@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2514](https://github.com/rust-lang/rfcs/pull/2514)
 - Rust Issue: [rust-lang/rust#55149](https://github.com/rust-lang/rust/issues/55149)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Unions do not allow fields of types that require drop glue (the code that is
@@ -13,7 +13,7 @@ specify when one may move out of a union field and when the union's `drop` is
 called.  To avoid undesired implicit calls of drop, we also restrict the use of
 `DerefMut` when unions are involved.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, it is unstable to have a non-`Copy` field in the union.  The main
@@ -24,10 +24,10 @@ accidentally dropping data one meant to just overwrite).  Not much progress has
 been made on stabilizing the unstable union features.  This RFC proposes a route
 forwards that side-steps the time bomb: Do not allow fields with drop glue.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Union Definition
+### Union Definition
 
 When defining a union, it is a hard error to use a field type that requires drop glue.
 Examples:
@@ -76,7 +76,7 @@ some pitfalls that remain.)
 Reading from a union field and creating a reference remain unsafe: We cannot
 guarantee that the field contains valid data.
 
-## Union initialization and `Drop`
+### Union initialization and `Drop`
 
 In two cases, the compiler cares about whether a (field of a) variable is
 initialized: When deciding whether a move from the field/variable is allowed
@@ -178,7 +178,7 @@ When a union implementing `Drop` goes out of scope, its destructor gets called i
 }
 ```
 
-## Potential pitfalls around `DerefMut`
+### Potential pitfalls around `DerefMut`
 
 There is still a potential pitfall left around assigning to union fields: If the
 assignment implicitly happens through a `DerefMut`, it may call drop glue.  For
@@ -206,10 +206,10 @@ can never happen when no `*` is involved, and hopefully dereferencing an element
 of a union is a clear enough signal that the union better be initialized
 properly for this to make sense.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Union definition
+### Union definition
 
 When defining a union, it is a hard error to use a field type that requires drop glue.
 This is checked as follows:
@@ -224,7 +224,7 @@ Note: Currently, union fields with drop glue are allowed on nightly with an
 unstable feature.  This RFC proposes to remove support for that entirely; code using
 nightly might have to be changed.
 
-## Writing to union fields
+### Writing to union fields
 
 Writing to union fields is currently unsafe when the field has drop glue.  This
 check is no longer needed, because union fields will never have drop glue.
@@ -235,7 +235,7 @@ deref's*.  Note that this is sound only because `ManuallyDrop`'s only field is
 private (so, in fact, this is *not* sound inside the module that defines
 `ManuallyDrop`).
 
-## Union initialization tracking
+### Union initialization tracking
 
 A "fragment" is a place of the form `local_var.field.field.field`, without any
 implicit derefs.  A fragment can be either *initialized* or *uninitialized*.
@@ -278,7 +278,7 @@ stable compilers.
 (This closely follows a
 [previously proposed RFC by @petrochenkov](https://github.com/petrochenkov/rfcs/blob/e5266bd105f592f7408b8592c5c3deaccba7f1ec/text/1444-union.md#initialization-state).)
 
-## Potential pitfalls around `DerefMut`
+### Potential pitfalls around `DerefMut`
 
 When adding auto-derefs on the left-hand side of an assignment, as we traverse
 the path, once we hit a `union`, we stop adding further auto-derefs.  So with
@@ -289,7 +289,7 @@ Notice that this relies crucially on the only field of `ManuallyDrop` being
 private!  If we could project directly through that field, no `DerefMut` would
 be needed to reproduce the problematic example from the "guide" section.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This makes working with unions involving types that may have drop glue slightly
@@ -307,7 +307,7 @@ initialized.  Unfortunately, not having any initialization tracking is not an
 option when non-`Copy` fields are involved: We have to decide if moving out of a
 union field is allowed.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Ruling out fields with drop glue does not, in fact, reduce the expressiveness of
@@ -349,7 +349,7 @@ seems unnecessarily cumbersome, and it does not seem to help avoid any
 surprises.  State tracking around unions that `impl Drop` is pretty much as
 simple as it gets.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I do not know of any language combining initialization tracking and destructors
@@ -359,7 +359,7 @@ and it does not track whether fields of a data structures are initialized to
 
 [cpp_union_drop]: https://en.cppreference.com/w/cpp/language/union
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Should we even try to avoid the `DerefMut`-related pitfall?  And if yes, should

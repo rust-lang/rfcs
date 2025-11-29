@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3014](https://github.com/rust-lang/rfcs/pull/3014)
 - Rust Issue: [rust-lang/rust#83310](https://github.com/rust-lang/rust/issues/83310)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a `#[must_not_suspend]` lint in the compiler that will warn the user when they are incorrectly holding a struct across an await boundary.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Enable users to fearlessly write concurrent async code without the need to understand the internals of runtimes and how their code will be affected. The goal is to provide a best effort warning that will let the user know of a possible side effect that is not visible by reading the code right away.
@@ -17,7 +17,7 @@ One example of these side effects is holding a `MutexGuard` across an await boun
 
 The big reason for including a lint like this is because under the hood the compiler will automatically transform async fn into a state machine which can store locals. This process is invisible to users and will produce code that is different than what is in the actual rust file. Due to this it is important to inform users that their code may not do what they expect.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Provide a lint that can be attached to structs to let the compiler know that this struct can not be held across an await boundary.
@@ -60,7 +60,7 @@ This lint will enable the compiler to warn the user that the code could produce 
 
 This will be a best effort lint to signal the user about unintended side-effects of using certain types across an await boundary.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `must_not_suspend` attribute is used to issue a diagnostic warning when a value is not "used". It can be applied to user-defined composite types (structs, enums and unions), traits.
@@ -106,41 +106,41 @@ When used on a function in a trait implementation, the attribute does nothing.
 [`MetaNameValueStr`]: https://doc.rust-lang.org/reference/attributes.html#meta-item-attribute-syntax
 [trait declaration]: https://doc.rust-lang.org/reference/items/traits.html
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - There is a possibility it can produce a false positive warning and it could get noisy. But using the `allow` attribute would work similar to other [`warn-by-default`] lints. One thing to note, unlike the `#[must_use]` lint, users cannot silence this warning by using `let _ = bar()` where `bar()` returns a type which has a `#[must_use]` attribute. The `#[allow]` attribute will be the only way to silence the warning.
 
 [`warn-by-default`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Going through the prior art we see two systems currently which provide similar/semantically similar behavior:
 
-## Clippy `await_holding_lock` lint
+### Clippy `await_holding_lock` lint
 This lint goes through all types in `generator_interior_types` looking for `MutexGuard`, `RwLockReadGuard` and `RwLockWriteGuard`. While this is a first great step, we think that this can be further extended to handle not only the hardcoded lock guards, but any type which is should not be held across an await point. By marking a type as `#[must_not_suspend]` we can warn when any arbitrary type is being held across an await boundary. An additional benefit to this approach is that this behaviour can be extended to any type which holds a `#[must_not_suspend]` type inside of it.
 
-## `#[must_use]` attribute
+### `#[must_use]` attribute
 The `#[must_use]` attribute ensures that if a type or the result of a function is not used, a warning is displayed. This ensures that the user is notified about the importance of said value. Currently the attribute does not automatically get applied to any type which contains a type declared as `#[must_use]`, but the implementation for both `#[must_not_suspend]` and `#[must_use]` should be similar in their behavior.
 
-### Auto trait vs attribute
+#### Auto trait vs attribute
 `#[must_use]` is implemented as an attribute, and from prior art and [other literature][linear-types], we can gather that the decision was made due to the complexity of implementing true linear types in Rust. [`std::panic::UnwindSafe`][UnwindSafe] on the other hand is implemented as a marker trait with structural composition.
 
 [linear-types]: https://gankra.github.io/blah/linear-rust/
 [UnwindSafe]: https://doc.rust-lang.org/std/panic/trait.UnwindSafe.html
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 * [Clippy lint for holding locks across await points](https://github.com/rust-lang/rust-clippy/pull/5439)
 * [Must use for functions](https://github.com/iopq/rfcs/blob/f4b68532206f0a3e0664877841b407ab1302c79a/text/1940-must-use-functions.md)
 * Reference link on how mir transforms async fn https://tmandry.gitlab.io/blog/posts/optimizing-await-2/
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 
-# Common behavior with `#[must_use]` lint
+## Common behavior with `#[must_use]` lint
 
 Both `#[must_use]` and `#[must_not_suspend]` are [`warn-by-default`] lints, and are applied to types decorated with the attribute. Currently the `#[must_use]` lint does not automatically propagate the lint in nested structures/enums due to the additional complexity that it adds on top of the possible breaking changes introduced in the wider ecosystem
 

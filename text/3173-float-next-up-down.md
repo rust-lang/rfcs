@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3173](https://github.com/rust-lang/rfcs/pull/3173)
 - Rust Issue: [rust-lang/rust#91399](https://github.com/rust-lang/rust/issues/91399)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds two argumentless methods to `f32`/`f64`, `next_up` and
@@ -11,7 +11,7 @@ This RFC adds two argumentless methods to `f32`/`f64`, `next_up` and
 the capability to enumerate floating point values in order.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently it is not possible to answer the question 'which floating point value
@@ -34,7 +34,7 @@ Answering this question has multiple uses:
    one can write `x.clamp(0.0, 1.0.next_down())`.
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Because floating point numbers have finite precision sometimes you might want to
@@ -76,7 +76,7 @@ s.clamp((-1.0).next_up(), 1.0.next_down())
 ```
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The functions `nextUp` and `nextDown` are defined precisely (and identically)
@@ -174,7 +174,7 @@ pub const fn next_down(self) -> Self {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Two more functions get added to `f32` and `f64`, which may be considered
@@ -197,7 +197,7 @@ potential confusion holds for most methods on `f32`/`f64`, and can be avoided
 by the cautious by writing `f32::next_up(-1.0)`.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 To implement the features described in the motivation the user essentially
@@ -264,7 +264,7 @@ could be called `next_float` and `prev_float`, which are arguably more readable,
 albeit slightly more ambiguous as to which direction 'next' is.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 First we must mention that Rust used to have the `next_after` function, which
@@ -315,13 +315,13 @@ extensive:
    https://ruby-doc.org/core-3.0.2/Float.html#next_float-method
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
  - Which is the better pair of names, `next_up` and `next_down` or `next_float`
    and `prev_float`?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 In the future Rust might consider having an iterator for `f32` / `f64` ranges

@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#63063](https://github.com/rust-lang/rust/issues/63063) (existential types)
 - Rust Issue: [rust-lang/rust#63065](https://github.com/rust-lang/rust/issues/63065) (impl Trait in const/static/let)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add the ability to create named existential types and
@@ -36,7 +36,7 @@ fn my_func() {
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This RFC proposes two expansions to Rust's `impl Trait` feature.
@@ -140,10 +140,10 @@ type.
 [1951]: https://github.com/rust-lang/rfcs/blob/master/text/1951-expand-impl-trait.md
 [2010]: https://github.com/rust-lang/rfcs/pull/2010
 
-# Guide-Level Explanation
+## Guide-Level Explanation
 [guide]: #guide
 
-## Guide: `impl Trait` in `let`, `const` and `static`:
+### Guide: `impl Trait` in `let`, `const` and `static`:
 [guide-declarations]: #guide-declarations
 
 `impl Trait` can be used in `let`, `const`, and `static` declarations,
@@ -234,7 +234,7 @@ let x: impl Iterator<Item = i32> = (0..100).map(|x| x * 3).filter(|x| x % 5);
 x.bogus_missing_method();
 ```
 
-## Guide: Existential types
+### Guide: Existential types
 [guide-existential]: #guide-existential
 
 Rust allows users to declare `existential type`s.
@@ -381,10 +381,10 @@ impl<T> Foo<T> for MyStruct {
 
 However, as in 1951, lifetime parameters must be explicitly annotated.
 
-# Reference-Level Explanation
+## Reference-Level Explanation
 [reference]: #reference
 
-## Reference: `impl Trait` in `let`, `const` and `static`:
+### Reference: `impl Trait` in `let`, `const` and `static`:
 [reference-declarations]: #reference-declarations
 
 The rules for `impl Trait` values in `let`, `const`, and `static` declarations
@@ -399,7 +399,7 @@ inherit any lifetime parameters in scope. This is necessary in order for
 which last for anonymous scope-based lifetimes, and annotating these lifetimes
 manually would be impossible.
 
-## Reference: Existential Types
+### Reference: Existential Types
 [reference-existential]: #reference-existential
 
 Existential types are similar to normal type aliases, except that their
@@ -500,7 +500,7 @@ to express conditional bounds in existential type signatures
 This is a complicated design space which has not yet been explored fully
 enough. In the future, such a feature could be added backwards-compatibly.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC proposes the addition of a complicated feature that will take time
@@ -517,7 +517,7 @@ cannot, such as `impl` blocks and `struct` definitions
 (i.e. `struct Foo { x: impl Trait }`).
 This inconsistency may be surprising to users.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could instead expand `impl Trait` in a more focused but limited way,
@@ -568,7 +568,7 @@ Because of these downsides, we are open to reconsidering this question with
 more practical experience, and the final syntax is left as an unresolved
 question for the RFC.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 As discussed in the [alternatives][alternatives] section above, we will need to

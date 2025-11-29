@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2145](https://github.com/rust-lang/rfcs/pull/2145)
 - Rust Issue: [rust-lang/rust#48054](https://github.com/rust-lang/rust/issues/48054)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Type privacy rules are documented.  
 Private-in-public errors are relaxed and turned into lints.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Type privacy is implemented, but its rules still need to be documentated and
@@ -35,10 +35,10 @@ Lints, unlike errors, can use heuristics, so "private-in-public" diagnostics can
 match programmer's intuition closer now by using reachability-based heuristics
 instead of just local `pub` annotations.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Type privacy
+### Type privacy
 
 Type privacy ensures that a type private to some module cannot be used outside
 of this module (unless anonymized) without a privacy error.  
@@ -134,7 +134,7 @@ fn f<T: m::Alias>() { ... }
 (Trait objects are considered types, so they are covered by previous
 paragraphs.)
 
-## Private-in-public lints
+### Private-in-public lints
 
 Previously type privacy was ensured by so called private-in-public errors,
 that worked preventively.
@@ -193,7 +193,7 @@ cases like this, but to avoid "false positives" like the previous example with
 `outer`/`inner`.  
 Meet reachability-based private-in-public *lints*!
 
-### Lint #1: Private types in primary interface of effectively public items
+#### Lint #1: Private types in primary interface of effectively public items
 
 Effective visibility of an item is how far it's actually reexported or leaked
 through other means, like return types.  
@@ -225,7 +225,7 @@ situation in advance and this lint needs to be at least warn-by-default.
 
 Provisional name for the lint - `private_interfaces`.
 
-### Lint #2: Private traits/types in secondary interface of effectively public items
+#### Lint #2: Private traits/types in secondary interface of effectively public items
 
 This lint is reported if private types or traits are found in trait bounds or
 `where` clauses of an effectively public item.
@@ -251,7 +251,7 @@ warn-by-default or allow-by-default.
 
 Provisional name for the lint - `private_bounds`.
 
-### Lint #3: "Voldemort types" (it's reachable, but I can't name it)
+#### Lint #3: "Voldemort types" (it's reachable, but I can't name it)
 
 Consider this code
 ```rust
@@ -279,19 +279,19 @@ alternative.
 
 Provisional name for the lint - `unnameable_types`.
 
-### Lint #4: `private_in_public`
+#### Lint #4: `private_in_public`
 
 Some private-in-public errors are currently reported as a lint
 `private_in_public` for compatibility reasons.  
 This compatibility lint will be removed and its uses will be reported as
 warnings by `renamed_and_removed_lints`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Type privacy
+### Type privacy
 
-### How to determine visibility of a type?
+#### How to determine visibility of a type?
 
 - Built-in types are considered `pub` (integer and floating point types, `bool`,
 `char`, `str`, `!`).
@@ -340,7 +340,7 @@ but the definition of a "component" is a bit more complex.
     `vis(fn(A, B) -> R { <Type as Trait>::foo<C> })) = min(vis(fn(A, B) -> R), vis(C), vis(Type), vis(Trait))`.
 - "Infer me" types `_` are replaced with their inferred types before checking.
 
-### The type privacy rule
+#### The type privacy rule
 
 A type or a trait private to module `m` (`vis(in m)`) cannot be used outside of
 that module (`vis(outside) > vis(in m)`).  
@@ -353,7 +353,7 @@ privacy errors, but it will still be reported as a type privacy violation.
 This can be partially relaxed in the future, but such relaxations are out of
 scope for this RFC.
 
-### Additional restrictions for associated items
+#### Additional restrictions for associated items
 
 For technical reasons it's not always desirable or possible to fully normalize
 associated types before checking them for privacy.  
@@ -419,7 +419,7 @@ privacy rule - "can't name a private type" - if all `_`s (types to infer,
 explicit or implicit) are replaced by their inferred types before checking, so
 `Pub` and `Pub<_>` in the examples above become `Pub<Priv>`.
 
-### Lints
+#### Lints
 
 Effective visibility of an item is determined by a module into which it can be
 leaked through
@@ -457,7 +457,7 @@ This lint is allow-by-default.
 
 Compatibility lint `private_in_public` is never reported and removed.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 With
@@ -474,7 +474,7 @@ though.
 bounds, manually written documentation explaining how to use the interface
 may be required.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 Names for the lints are subject to bikeshedding.
@@ -485,7 +485,7 @@ of errors in case of lint violations.
 The first lint indicates an almost guaranteed error on client side,
 the second one is more in the "missing documentation" category.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 It's not fully clear if the restriction for associated type definitions required for

@@ -2,13 +2,13 @@
 - Start Date: 2019-09-20
 - RFC PR: [rust-lang/rfcs#2803](https://github.com/rust-lang/rfcs/pull/2803)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC codifies the requirements for each target tier, and for moving targets
 to a different tier.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust developers regularly implement new targets in the Rust compiler, and
@@ -31,7 +31,7 @@ Once accepted, the policy sections of this RFC should be posted alongside
 Tier Policy" section; this RFC will not be the canonical home of the up-to-date
 target tier policy.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Rust provides three tiers of target support:
@@ -53,7 +53,7 @@ obligated to do so). Thus, these tiers require commensurate and ongoing efforts
 from the maintainers of the target, to demonstrate value and to minimize any
 disruptions to ongoing Rust development.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Rust provides three tiers of target support:
@@ -131,7 +131,7 @@ indicates something entirely optional, and does not indicate guidance or
 recommendations. This language is based on [IETF RFC
 2119](https://tools.ietf.org/html/rfc2119).
 
-## Tier 3 target policy
+### Tier 3 target policy
 
 At this tier, the Rust project provides no official support for a target, so we
 place minimal requirements on the introduction of targets.
@@ -252,7 +252,7 @@ of the Rust codebase, we may post a PR to remove it; any such PR will be CCed
 to the target maintainers (and potentially other people who have previously
 worked on the target), to check potential interest in improving the situation.
 
-## Tier 2 target policy
+### Tier 2 target policy
 
 At this tier, the Rust project guarantees that a target builds, and will reject
 patches that fail to build on a target. Thus, we place requirements that ensure
@@ -419,7 +419,7 @@ target. If the maintainers of such targets cannot provide such support in time
 for the next stable release, this may result in demoting or removing the
 targets.
 
-### Tier 2 with host tools
+#### Tier 2 with host tools
 
 Some tier 2 targets may additionally have binaries built to run on them as a
 host (such as `rustc` and `cargo`). This allows the target to be used as a
@@ -511,7 +511,7 @@ meets all the necessary requirements, but doing so may introduce substantial
 additional complexity. If in doubt, the target should qualify for tier 2
 without host tools first.
 
-## Tier 1 target policy
+### Tier 1 target policy
 
 At this tier, the Rust project guarantees that a target builds and passes all
 tests, and will reject patches that fail to build or pass the testsuite on a
@@ -615,7 +615,7 @@ features or OS version required) requires the approval of the compiler and
 release teams, and should be widely communicated as well, but does not
 necessarily require a full RFC.
 
-### Tier 1 with host tools
+#### Tier 1 with host tools
 
 Some tier 1 targets may additionally have binaries built to run on them as a
 host (such as `rustc` and `cargo`). This allows the target to be used as a
@@ -685,7 +685,7 @@ RFC process, with approval by the compiler and release teams. Any such proposal
 will be communicated widely to the Rust community, both when initially proposed
 and before being dropped from a stable release.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The set of approving teams for each tier arose out of discussion with the
@@ -712,7 +712,7 @@ people already widely use the existing tier 1/2/3 numbering, and anything
 changing that numbering would introduce confusion; such a renumbering seems
 unlikely to provide value commensurate with that confusion.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 This attempts to formalize and document Rust policy around targets and
@@ -736,7 +736,7 @@ Some existing Rust targets use "marker teams" that support pinging via rustbot.
 We could additionally teach rustbot to automatically ping a target team when an
 issue is labeled with a target-specific label.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Eventually, as more targets seek tier 1 status, we may want to document more

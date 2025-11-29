@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3791](https://github.com/rust-lang/rfcs/pull/3791)
 - Rust Issue: [rust-lang/rust#138287](https://github.com/rust-lang/rust/issues/138287)
 
-# Summary
+## Summary
 [summary]: #summary
 
 `--crate-attr` allows injecting crate-level attributes via the command line.
@@ -11,7 +11,7 @@ It is supported by all the official rustc drivers: Rustc, Rustdoc, Clippy, Miri,
 Rustdoc extends it to doctests, discussed in further detail below.
 It is encouraged, but not required, that external `rustc_driver` tools also support this flag.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are three main motivations.
@@ -39,7 +39,7 @@ The third group is the authors of external tools. The [original motivation][impl
 [`doc(html_no_source)`]: https://github.com/rust-lang/rust/issues/75497
 [build-std]: https://github.com/rust-lang/rfcs/pull/3791#discussion_r1998684847
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `--crate-attr` flag allows you to inject attributes into the crate root.
@@ -59,10 +59,10 @@ Running (for example) `RUSTDOCFLAGS="--crate-attr='feature(strict_provenance_lin
 
 [the unstable book]: https://doc.rust-lang.org/nightly/unstable-book/compiler-flags/crate-attr.html#crate-attr
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Semantics
+### Semantics
 
 Any crate-level attribute is valid to pass to `--crate-attr`.
 
@@ -90,7 +90,7 @@ It is suggested, but not required, that the implementation not warn on idempoten
 The compiler is free to re-order steps 1 and 2 in the above order if desirable.
 This shouldn't have any user-observable effect beyond changes in diagnostics.
 
-## Doctests
+### Doctests
 
 `--crate-attr` is also a rustdoc flag. Rustdoc behaves identically to rustc for the main crate being compiled.
 For doctests, by default, `--crate-attr` applies to both the main crate and the generated doctest.
@@ -100,7 +100,7 @@ This can be overridden for the doctest using `--crate-attr=doc(test(attr(...)))`
 [shebang parsing]: https://doc.rust-lang.org/nightly/reference/input-format.html#shebang-removal
 [`Attr`]: https://doc.rust-lang.org/nightly/reference/attributes.html
 
-## Ordering
+### Ordering
 
 Attributes are applied in the order they were given on the command line; so `--crate-attr=warn(unused) --crate-attr=deny(unused)` is equivalent to `deny(unused)`.
 `crate-attr` attributes are applied before source code attributes.
@@ -126,7 +126,7 @@ Compiled on March 18 2025
 My awesome crate
 ```
 
-## Spans, modules, and editions
+### Spans, modules, and editions
 
 `include!`, `include_str!`, and `module_path!` all behave the same as when
 written in source code at the top of the crate root. That is, any module or
@@ -169,7 +169,7 @@ bytes at the start of the file.
 
 [indoc]: https://docs.rs/indoc/latest/indoc/
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It makes it harder for Rust developers to know whether it's idiomatic to use flags or attributes.
@@ -177,7 +177,7 @@ In practice, this has not be a large drawback for `crate_name` and `crate_type`,
 
 Using this feature can make code in a crate dependent on attributes provided through the build system, such that the code doesn't build if reorganized or copied to another project.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - We could require `--crate-attr=#![foo]` instead. This is more verbose and requires extensive shell quoting, for not much benefit. It does however resolve the concern around `column!` (to include the `#![` in the column number), and looks closer to the syntax in a source file.
@@ -191,19 +191,19 @@ This cannot be done in a library or macro. It can be done in an external tool, b
 
 In the author's opinion, having source injected via this mechanism does not make code any harder to read than the existing flags that are already stable (in particular `-C panic` and `--edition` come to mind).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - HTML allows `<meta http-equiv=...>` to emulate headers, which is very useful for using hosted infra where one does not control the server.
 - bash allows `-x` and similar to emulate `set -x` (for all `set` arguments). It also allows `-O shopt_...` for all `shopt ...` arguments.
 - tmux config syntax is the same as its CLI syntax (for example `tmux set-option ...` is mostly the same as writing `set-option ...` in `tmux.conf`, modulo some issues around startup order and inherited options).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Is `--crate-name` equivalent to `--crate-attr=crate_name`? As currently implemented, the answer is no. Fixing this is hard; see https://github.com/rust-lang/rust/issues/91632 and https://github.com/rust-lang/rust/pull/108221#issuecomment-1435765434 (these do not directly answer why, but I am not aware of any documentation that does).
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This proposal would make it easier to use external tools with [`#![register_tool]`][`register-tool`], since they could be configured for a whole workspace at once instead of individually; and could be configured without modifying the source code.

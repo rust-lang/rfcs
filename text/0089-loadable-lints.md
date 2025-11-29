@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#89](https://github.com/rust-lang/rfcs/pull/89)
 - Rust Issue: [rust-lang/rust#14067](https://github.com/rust-lang/rust/issues/14067)
 
-# Summary
+## Summary
 
 Allow users to load custom lints into `rustc`, similar to loadable syntax extensions.
 
-# Motivation
+## Motivation
 
 There are many possibilities for user-defined static checking:
 
@@ -24,7 +24,7 @@ Existing project-specific static checkers include:
 
 We should make it easy to build such tools and integrate them with an existing Rust project.
 
-# Detailed design
+## Detailed design
 
 In `rustc::lint` (which today is `rustc::middle::lint`):
 
@@ -149,7 +149,7 @@ User-defined lints are controlled through the usual mechanism of attributes and 
 
 See also the [full demo](https://gist.github.com/kmcallister/3409ece44ead6d280b8e).
 
-# Drawbacks
+## Drawbacks
 
 This increases the amount of code in `rustc` to implement lints, although it makes each individual lint much easier to understand in isolation.
 
@@ -159,13 +159,13 @@ There's no scoping / namespacing of the lint name strings used by attributes and
 
 The use of `&'static` means that lint plugins can't dynamically generate the set of lints based on some external resource.
 
-# Alternatives
+## Alternatives
 
 We could provide a more generic mechanism for user-defined AST visitors.  This could support other use cases like code transformation.  But it would be harder to use, and harder to integrate with the lint infrastructure.
 
 It would be nice to magically find all static `Lint`s in a crate, so we don't need `get_lints`.  Is this worth adding another attribute and another crate metadata type?  The `plugin::Registry` mechanism was meant to avoid such a proliferation of metadata types, but it's not as declarative as I would like.
 
-# Unresolved questions
+## Unresolved questions
 
 Do we provide guarantees about visit order for a lint, or the order of multiple lints defined in the same crate?  Some lints may require multiple passes.
 

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1589](https://github.com/rust-lang/rfcs/pull/1589)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Defines a best practices procedure for making bug fixes or soundness
 corrections in the compiler that can cause existing code to stop
 compiling.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 From time to time, we encounter the need to make a bug fix, soundness
@@ -50,7 +50,7 @@ policies. Here is a summary of the conditions from RFC 1122:
 
 Please see [the RFC][RFC 1122] for full details!
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The procedure for making a breaking change is as follows (each of
@@ -248,7 +248,7 @@ to the PR and avoid directly merging it. In the future we may develop
 a more polished procedure here, but the hope is that this is a
 relatively temporary state of affairs.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Following this policy can require substantial effort and slows the
@@ -256,7 +256,7 @@ time it takes for a change to become final. However, this is far
 outweighed by the benefits of avoiding sharp disruptions in the
 ecosystem.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 There are obviously many points that we could tweak in this policy:
@@ -273,7 +273,7 @@ policy and not making any sort of breaking change at all:
   has to stop evolving, or else would issue new major versions quite
   frequently, causing undue disruption.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 N/A

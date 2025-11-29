@@ -2,23 +2,23 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/234
 - Rust Issue #: https://github.com/rust-lang/rust/issues/17323
 
-# Summary
+## Summary
 
 Make enum variants part of both the type and value namespaces.
 
-# Motivation
+## Motivation
 
 We might, post-1.0, want to allow using enum variants as types. This would be
 backwards incompatible, because if a module already has a value with the same name
 as the variant in scope, then there will be a name clash.
 
-# Detailed design
+## Detailed design
 
 Enum variants would always be part of both the type and value namespaces.
 Variants would not, however, be usable as types - we might want to allow this
 later, but it is out of scope for this RFC.
 
-## Data
+### Data
 
 Occurrences of name clashes in the Rust repo:
 
@@ -65,18 +65,18 @@ Occurrences of name clashes in the Rust repo:
 That's a total of 20 in the compiler and libraries.
 
 
-# Drawbacks
+## Drawbacks
 
 Prevents the common-ish idiom of having a struct with the same name as a variant
 and then having a value of that struct be the variant's data.
 
-# Alternatives
+## Alternatives
 
 Don't do it. That would prevent us making changes to the typed-ness of enums in
 the future. If we accept this RFC, but at some point we decide we never want to
 do anything with enum variants and types, we could always roll back this change
 backwards compatibly.
 
-# Unresolved questions
+## Unresolved questions
 
 N/A

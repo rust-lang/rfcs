@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1683](https://github.com/rust-lang/rfcs/pull/1683)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Create a team responsible for documentation for the Rust project.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 1068] introduced a federated governance model for the Rust project. Several initial subteams were set up. There was a note
@@ -21,13 +21,13 @@ after the [original subteam list] saying this:
 
 Now is the time for a documentation subteam.
 
-## Why documentation was left out
+### Why documentation was left out
 
 Documentation was left out of the original list because it wasn't clear that there would be anyone but me on it. Furthermore,
 one of the original reasons for the subteams was to decide who gets counted amongst consensus for RFCs, but it was unclear
 how many documentation-related RFCs there would even be.
 
-## Chicken, meet egg
+### Chicken, meet egg
 
 However, RFCs are not only what subteams do. To quote the RFC:
 
@@ -44,7 +44,7 @@ chicken and egg situation: without a documentation team, it's unclear how to be 
 documentation, but without people to be on the team, there's no reason to form a team. For this reason, I think
 a small initial team will break this logjam, and provide room for new contributors to grow.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The Rust documentation team will be responsible for all of the things listed above. Specifically, they will pertain
@@ -66,7 +66,7 @@ than just the Rust project itself.
 We will coordinate in the `#rust-docs` IRC room, and have regular meetings, as the team sees fit. Regular meetings will be
 important to coordinate broader goals; and participation will be important for team members. We hold meetings weekly.
 
-## Membership
+### Membership
 
 * @steveklabnik, team lead
 * @GuillaumeGomez
@@ -86,12 +86,12 @@ make sense if someone is doing all of these things.
 
 [^IRC]: The #rust-docs channel on irc.mozilla.org
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is Yet Another Team. Do we have too many teams? I don't think so, but someone might.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The main alternative is not having a team. This is the status quo, so the situation is well-understood.
@@ -99,7 +99,7 @@ The main alternative is not having a team. This is the status quo, so the situat
 It's possible that docs come under the purvew of "tools", and so maybe the docs team would be an expansion
 of the tools team, rather than its own new team. Or some other subteam.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

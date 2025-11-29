@@ -3,15 +3,15 @@
 - RFC PR: [rust-lang/rfcs#3617](https://github.com/rust-lang/rfcs/pull/3617)
 - Tracking Issue: [rust-lang/rust#123432](https://github.com/rust-lang/rust/issues/123432)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds `use<..>` syntax for specifying which generic parameters should be captured in an opaque RPIT-like `impl Trait` type, e.g. `impl use<'t, T> Trait`.  This solves the problem of overcapturing and will allow the Lifetime Capture Rules 2024 to be fully stabilized for RPIT in Rust 2024.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Background
+### Background
 
 RPIT-like opaque `impl Trait` types in Rust *capture* certain generic parameters.
 
@@ -36,7 +36,7 @@ In this example, we would say that `foo` *overcaptures* the type parameter `T`. 
 
 Overcapturing limits how callers can use returned opaque types in ways that are often surprising and frustrating.  There's no good way to work around this in Rust today.
 
-## Lifetime Capture Rules 2024
+### Lifetime Capture Rules 2024
 
 All type parameters in scope are implicitly captured in RPIT-like `impl Trait` opaque types.  In Rust 2021 and earlier editions, for RPIT on bare functions and on inherent functions and methods, lifetime parameters are not implicitly captured unless named in the bounds of the opaque.  This resulted, among other things, in the use of "the `Captures` trick".  See [RFC 3498][] for more details about this.
 
@@ -59,7 +59,7 @@ We need some way to migrate this kind of code.
 
 [RFC 3498]: https://github.com/rust-lang/rfcs/blob/master/text/3498-lifetime-capture-rules-2024.md
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 In all editions, RPIT-like `impl Trait` opaque types may include `use<..>` before any bounds to specify which in-scope generic parameters are captured or that no in-scope generic parameters are captured (with `use<>`).  If `use<..>` is provided, it entirely overrides the implicit rules for which generic parameters are captured.
@@ -90,7 +90,7 @@ fn foo<'t, T, U>(_: &'t (), _: T, y: U) -> impl use<U> Sized { y }
 //                                         ^ Captures `U` only.
 ```
 
-## Generic const parameters
+### Generic const parameters
 
 In addition to type and lifetime parameters, we can use this to capture generic const parameters:
 
@@ -100,7 +100,7 @@ fn foo<'t, const C: u8>(_: &'t ()) -> impl use<C> Sized { C }
 //                                    ^ Captures `C` only.
 ```
 
-## Capturing from outer inherent impl
+### Capturing from outer inherent impl
 
 We can capture generic parameters from an outer inherent impl:
 
@@ -114,7 +114,7 @@ impl<'a, 'b> Ty<'a, 'b> {
 }
 ```
 
-## Capturing from outer trait impl
+### Capturing from outer trait impl
 
 We can capture generic parameters from an outer trait impl:
 
@@ -132,7 +132,7 @@ impl<'a, 'b> Trait<'a, 'b> for () {
 }
 ```
 
-## Capturing in trait definition
+### Capturing in trait definition
 
 We can capture generic parameters from the trait definition:
 
@@ -144,7 +144,7 @@ trait Trait<'a, 'b> {
 }
 ```
 
-## Capturing elided lifetimes
+### Capturing elided lifetimes
 
 We can capture elided lifetimes:
 
@@ -154,7 +154,7 @@ fn foo(x: &()) -> impl use<'_> Sized { x }
 //                ^ Captures `'_` only.
 ```
 
-## Combining with `for<..>`
+### Combining with `for<..>`
 
 The `use<..>` specifier applies to the entire `impl Trait` opaque type.  In contrast, a `for<..>` binder applies to an individual *bound* within an opaque type.  Therefore, when both are used within the same type, `use<..>` always appears first.  E.g.:
 
@@ -162,7 +162,7 @@ The `use<..>` specifier applies to the entire `impl Trait` opaque type.  In cont
 fn foo<T>(_: T) -> impl use<T> for<'a> FnOnce(&'a ()) { |&()| () }
 ```
 
-## Optional trailing comma
+### Optional trailing comma
 
 As with other lists of generic arguments in Rust, a trailing comma is optional in `use<..>` specifiers:
 
@@ -171,10 +171,10 @@ fn foo1<T>(_: T) -> impl use<T> Sized {} //~ OK.
 fn foo2<T>(_: T) -> impl use<T,> Sized {} //~ Also OK.
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Syntax
+### Syntax
 
 The [syntax for `impl Trait`][] is revised and extended as follows:
 
@@ -205,11 +205,11 @@ The [syntax for `impl Trait`][] is revised and extended as follows:
 [_TraitBound_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
 [_TypeParamBounds_]: https://doc.rust-lang.org/nightly/reference/trait-bounds.html
 
-## Reference desugarings
+### Reference desugarings
 
 The desugarings that follow can be used to answer questions about how `use<..>` is expected to work with respect to the capturing of generic parameters.
 
-### Reference desugaring for `use<..>` in RPIT
+#### Reference desugaring for `use<..>` in RPIT
 
 Associated type position `impl Trait` (ATPIT) can be used, more verbosely, to control capturing of generic parameters in opaque types.  We can use this to describe the semantics of `use<..>`.  If we consider the following code:
 
@@ -273,7 +273,7 @@ mod _0 {
 }
 ```
 
-### Reference desugaring for `use<..>` in RPITIT
+#### Reference desugaring for `use<..>` in RPITIT
 
 Similarly, we can describe the semantics of `use<..>` in return position `impl Trait` in trait (RPITIT) using anonymous associated types.  If we consider the following code:
 
@@ -300,7 +300,7 @@ trait Trait<'r, R, const CR: u8> {
 
 Note that this desugaring does not allow for removing from the `use<..>` specifier `Self` or any generics that are input parameters to the trait.  This is, in fact, an implementation restriction that is likely to be part of initial rounds of stabilization.
 
-## Avoiding capture of higher ranked lifetimes in nested opaques
+### Avoiding capture of higher ranked lifetimes in nested opaques
 
 According to the Lifetime Capture Rules 2024, a nested `impl Trait` opaque type *must* capture all generic parameters in scope, including higher ranked ones.  However, for implementation reasons, Rust does not yet support higher ranked lifetime bounds on nested opaque types (see [#104288][]).  Therefore, in Rust 2024, this code, which is valid in Rust 2021, fails to compile:
 
@@ -330,7 +330,7 @@ fn foo() -> impl for<'a> Trait<'a, Ty = impl use<> Sized> {
 
 [#104288]: https://github.com/rust-lang/rust/issues/104288
 
-## Capturing higher ranked lifetimes in nested opaques
+### Capturing higher ranked lifetimes in nested opaques
 
 Once higher ranked lifetime bounds on nested opaque types are supported in Rust (see [#104288][]), we'll be able to use `use<..>` specifiers to capture lifetime parameters from higher ranked `for<..>` binders on outer opaque types:
 
@@ -346,7 +346,7 @@ fn foo() -> impl for<'a> Trait<'a, Ty = impl use<'a> Sized> {
 }
 ```
 
-## Refinement
+### Refinement
 
 If we write a trait such as:
 
@@ -417,7 +417,7 @@ impl Trait for () {
 
 Similarly, for consistency, we'll lint against RPITIT cases where less is captured by RPIT in the impl as compared with the trait definition when using `use<..>`.
 
-### Examples of refinement
+#### Examples of refinement
 
 In keeping with the rule above, we consider it refining if we don't capture in the impl all of the generic parameters from the function signature that are captured in the trait definition:
 
@@ -496,7 +496,7 @@ impl<'a, 'b> Trait for S<(&'a (), &'b ())> {
 }
 ```
 
-## Lifetime equality
+### Lifetime equality
 
 While the capturing of generic parameters is generally syntactic, this is currently allowed in Rust 2021:
 
@@ -534,7 +534,7 @@ impl<'a: 'b, 'b: 'a> Trait<'a, 'b> for () {
 
 For the purposes of this RFC, in the interest of consistency with the above cases, we're going to say that this is valid.  However, as mentioned elsewhere, partial capturing of generics that are input parameters to the trait (including `Self`) is unlikely to be part of initial rounds of stabilization, and it's possible that implementation experience may lead us to a different answer for this case.
 
-## Reparameterization
+### Reparameterization
 
 In Rust, trait impls may be parameterized over a different set of generics than the trait itself.  E.g.:
 
@@ -552,7 +552,7 @@ impl<'a, B, const C: usize> Trait<(), (&'a (), B, [(); C])> for () {
 
 In these cases, what we look at is how these generics are applied as arguments to the trait in the impl header.  In this example, all of `'a`, `B`, and `C` are applied in place of the `Y` input parameter to the trait.  Since `Y` is captured in the trait definition, we're correspondingly allowed to capture `'a`, `B`, and `C` in the impl.
 
-## The `Self` type
+### The `Self` type
 
 In trait definitions (but not elsewhere), `use<..>` may capture `Self`.  Doing so means that in the impl, the opaque type may capture any generic parameters that are applied as generic arguments to the `Self` type.  E.g.:
 
@@ -569,7 +569,7 @@ impl<'a, B, const C: usize> Trait for S<(&'a (), B, [(); C])> {
 }
 ```
 
-## Handling of projection types
+### Handling of projection types
 
 If we apply, in a trait impl header, a projection type to a trait in place of a parameter that is captured in the trait definition, that does not allow us to capture in the impl the generic parameter from which the type is projected.  E.g.:
 
@@ -597,7 +597,7 @@ impl<A> Trait for () {
 }
 ```
 
-## Meaning of capturing a const generic parameter
+### Meaning of capturing a const generic parameter
 
 As with other generic parameters, a const generic parameter must be captured in the opaque type for it to be used in the hidden *type*.  E.g., we must capture `C` here:
 
@@ -615,7 +615,7 @@ fn f<const C: usize>() -> impl use<> Sized {
 }
 ```
 
-## Argument position impl Trait
+### Argument position impl Trait
 
 Note that for a generic type parameter to be captured with `use<..>` it must have a name.  Anonymous generic type parameters introduced with argument position `impl Trait` (APIT) syntax don't have names, and so cannot be captured with `use<..>`.  E.g.:
 
@@ -625,7 +625,7 @@ fn foo(x: impl Sized) -> impl use<> Sized { x }
 //                       ^ Captures nothing.
 ```
 
-## Migration strategy for Lifetime Capture Rules 2024
+### Migration strategy for Lifetime Capture Rules 2024
 
 The migration lints for Rust 2024 will insert `use<..>` as needed so as to preserve the set of generic parameters captured by each RPIT opaque type.  That is, we will convert, e.g., this:
 
@@ -683,7 +683,7 @@ As an example of what migrating to explicit `use<..>` captures looks like within
 
 [this diff]: https://github.com/rust-lang/rust/compare/efd136e5cd57789834c7555eed36c490b7be6fe7...0d15c5c62d2a6f46269e5812653900e0945738bf?expand=1
 
-## Stabilization strategy
+### Stabilization strategy
 
 Due to implementation considerations, it's likely that the initial stabilization of this feature will be partial.  We anticipate that partial stabilization will have these restrictions:
 
@@ -694,10 +694,10 @@ We anticipate lifting these restrictions over time.
 
 Since all in-scope type and const generic parameters were already captured in Rust 2021 and earlier editions, and since RPITIT already adheres to the Lifetime Capture Rules 2024, these restrictions do not interfere with the use of this feature to migrate code to Rust 2024.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## ATPIT / TAIT
+### ATPIT / TAIT
 
 As we saw in the reference desugaring above, associated type position `impl Trait` (ATPIT), once stabilized, can be used to effect precise capturing.  Originally, we had hoped that this (particularly once expanded to full type alias `impl Trait` (TAIT)) might be sufficient and that syntax such as that in this RFC might not be necessary.
 
@@ -718,7 +718,7 @@ Three, as a practical matter, an explicit `impl use<..> Trait` syntax lets us wr
 
 Four, the set of generic parameters that are captured by an opaque type is a fundamental and practical property of that opaque type.  In a language like Rust, it *feels* like there ought to be an explicit syntax for it.  We probably want this in any world.
 
-## Inferred precise capturing
+### Inferred precise capturing
 
 We had hoped that we might be able to achieve something with a similar effect to precise capturing at the cost of an extra generic lifetime parameter in each signature with improvements to the type system.  The goal would be to allow, e.g., this code to work rather than error:
 
@@ -744,11 +744,11 @@ See [Appendix G][] in [RFC 3498][] for more details.
 [#116733]: https://github.com/rust-lang/rust/pull/116733
 [Appendix G]: https://github.com/rust-lang/rfcs/blob/master/text/3498-lifetime-capture-rules-2024.md#appendix-g-future-possibility-inferred-precise-capturing
 
-## Syntax
+### Syntax
 
 We considered a number of different possible syntaxes before landing on `impl use<..> Trait`.  We'll discuss each considered.
 
-### `impl use<..> Trait`
+#### `impl use<..> Trait`
 
 This is the syntax used throughout this RFC (but see the [unresolved questions][]).
 
@@ -768,19 +768,19 @@ At three letters, the `use` keyword is short enough that it doesn't feel too noi
 
 Overall, naming is hard, but on average, people seemed to dislike this choice the least.
 
-### `impl<..> Trait`
+#### `impl<..> Trait`
 
 The original syntax proposal was `impl<..> Trait`.  This has the benefit of being somewhat more concise than `impl use<..> Trait` but has the drawback of perhaps suggesting that it's introducing generic parameters as other uses of `impl<..>` do.  Many preferred to use a different keyword for this reason.
 
 Decisive to some was that we may want this syntax to *scale* to other uses, most particularly to controlling the set of generic parameters and values that are captured by closure-like blocks.  As we discuss in the future possibilities, it's easy to see how `use<..>` can scale to address this in a way that `impl<..> Trait` cannot.
 
-### `use<..> impl Trait`
+#### `use<..> impl Trait`
 
 Putting the `use<..>` specifier *before* the `impl` keyword is potentially appealing as `use<..>` applies to the entire `impl Trait` opaque type rather than to just one of the bounds, and this ordering might better suggest that.
 
 Let's discuss some arguments for this, some arguments against it, and then discuss the fundamental tension here.
 
-#### The case for `use<..>` before `impl`
+##### The case for `use<..>` before `impl`
 
 We've been referring to the syntax for RPIT-like opaque types as `impl Trait`, as is commonly done.  But this is a bit imprecise.  The syntax is really `impl $bounds`.  We might say, e.g.:
 
@@ -818,7 +818,7 @@ fn foo<'a>(
 
 This would make it clear that `use<..>` applies to the entire type.  This seems the strongest argument for putting `use<..>` before `impl`, and it's a *good* one.
 
-#### The case for and against `use<..>` before `impl`
+##### The case for and against `use<..>` before `impl`
 
 There are some other known arguments for this ordering that may or may not resonate with the reader; we'll present these, along with the standard arguments that might be made in response, as an imagined conversation between Alice and Bob:
 
@@ -836,7 +836,7 @@ There are some other known arguments for this ordering that may or may not reson
 >
 > **Alice**: There is a key difference to keep in mind here.  Closure-like blocks are *expressions* but `impl Trait` is syntax for a *type*.  We often have different conventions between type position and expression position in Rust.  Maybe (or maybe not) this is a place where that distinction could matter.
 
-#### The case against `use<..>` before `impl`
+##### The case against `use<..>` before `impl`
 
 The `use<..>` specifier syntax *applies* the listed generic *parameters* as generic *arguments* to the opaque type.  It's analogous, e.g., with the generic arguments here:
 
@@ -862,7 +862,7 @@ Finally, there's one other practical advantage to placing `impl` before `use<..>
 [RFC 3531]: https://github.com/rust-lang/rfcs/blob/master/text/3531-macro-fragment-policy.md
 [Stroustrup's Rule]: https://www.thefeedbackloop.xyz/stroustrups-rule-and-layering-over-time/
 
-#### The fundamental tension on `impl use<..>` vs. `use<..> impl`
+##### The fundamental tension on `impl use<..>` vs. `use<..> impl`
 
 Throughout this RFC, we've given two intuitions for the semantics of `use<..>`:
 
@@ -902,7 +902,7 @@ Since both intuitions are valid, but each argues for a different syntax choice, 
 
 Nonetheless, we leave this as an [unresolved question][].
 
-### `impl Trait & ..`
+#### `impl Trait & ..`
 
 In some conceptions, the difference between `impl Trait + 'a + 'b` and `impl use<'a, 'b> Trait` is the difference between capturing the union of those lifetimes and capturing the intersection of them.  This inspires syntax proposals such as `impl Trait & 't & T` or `impl Trait & ['t, T]` to express this intersection.
 
@@ -912,7 +912,7 @@ For either of these, appearing later in the type would put these after higher ra
 
 Overall, nobody seemed to like this syntax.
 
-### `impl k#captures<..> Trait`
+#### `impl k#captures<..> Trait`
 
 We could use a new and very literal keyword such as `captures` rather than `use`.  There are three main drawbacks to this:
 
@@ -928,23 +928,23 @@ Two, each keyword takes from the space of names that users have available to the
 
 Three, `captures` would be a somewhat long keyword, especially when we consider how we might scale the use of this syntax to other places such as closure-like blocks.  We don't want people to feel punished for being explicit about the generics that they capture, and we don't want them to do other worse things (such as overcapturing where they should not) just to avoid visual bloat in their code, so if we can be more concise here, that seems like a win.
 
-### `impl move<'t, T> Trait`
+#### `impl move<'t, T> Trait`
 
 We could use the existing `move` keyword, however the word "move" is semantically worse.  In Rust, we already *use* generic parameters in types, but we don't *move* any generic parameters.  We move only *values*, so this could be confusing.  The word "use" is better.
 
-### `impl k#via<'t, T> Trait`
+#### `impl k#via<'t, T> Trait`
 
 We could use a new short keyword such as `via`.  This has the number 1 and 2 drawbacks of `k#captures` mentioned above.  As with `move`, it also seems a semantically worse word.  With `use<..>`, we can explain that it means the opaque type *uses* the listed generic parameters.  In contrast, it's not clear how we could explain the word "via" in this context.
 
-### Using parentheses or square brackets
+#### Using parentheses or square brackets
 
 We could say `use('t, T)` or `use['t, T]`.  However, in Rust today, generic parameters always fall within angle brackets, even when being applied to a type.  Doing something different here could feel inconsistent and doesn't seem warranted.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved question]: #unresolved-questions
 [unresolved questions]: #unresolved-questions
 
-## Syntax question
+### Syntax question
 
 We leave as an open question which of these two syntaxes we should choose:
 
@@ -955,10 +955,10 @@ We leave as an open question which of these two syntaxes we should choose:
 
 See the [alternatives][] section above for a detailed comparative analysis of these options.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Opting out of captures
+### Opting out of captures
 
 There will plausibly be cases where we want to capture many generic parameters and not capture only smaller number.  It could be convenient if there were a way to express this without listing out all of the in-scope type parameters except the ones not being captured.
 
@@ -976,11 +976,11 @@ Here, the `..` means to include all in-scope generic parameters and `!` means to
 
 We leave this to future work.
 
-## Explicit capturing for closure-like blocks
+### Explicit capturing for closure-like blocks
 
 Closures and closure-like blocks (e.g. `async`, `gen`, `async gen`, `async` closures, `gen` closures, `async gen` closures, etc.) return opaque types that capture both *values* and *generic parameters* from the outer scope.
 
-### Specifying captured generics for closures-like blocks
+#### Specifying captured generics for closures-like blocks
 
 The capturing of outer generics in closure-like blocks can lead to overcapturing, as in [#65442][].  Consider:
 
@@ -1022,7 +1022,7 @@ We leave this to future work, but this demonstrates how the `use<..>` syntax can
 
 [#65442]: https://github.com/rust-lang/rust/issues/65442
 
-### Specifying captured values for closure-like blocks
+#### Specifying captured values for closure-like blocks
 
 Closure-like blocks capture values either by *moving* them or by *referencing* them.  How Rust decides whether values should be captured by move or by reference is implicit and can be a bit subtle.  E.g., this works:
 

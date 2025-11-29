@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#192](https://github.com/rust-lang/rfcs/pull/192)
 - Rust Issue: [rust-lang/rust#16462](https://github.com/rust-lang/rust/issues/16462)
 
-# Summary
+## Summary
 
 - Remove the special-case bound `'static` and replace with a generalized
   *lifetime bound* that can be used on objects and type parameters.
@@ -15,7 +15,7 @@
   are always inferred; this RFC adds the ability to specify them
   explicitly, which is sometimes needed in more complex cases.
 
-# Motivation
+## Motivation
 
 Currently, the type system is not supposed to allow references to
 escape into object types. However, there are various bugs where it
@@ -24,9 +24,9 @@ frequently necessary) to store a reference into an object. Moreover,
 the current treatment of generic types is in some cases naive and not
 obviously sound.
 
-# Detailed design
+## Detailed design
 
-## Lifetime bounds on parameters
+### Lifetime bounds on parameters
 
 The heart of the new design is the concept of a *lifetime bound*. In fact,
 this (sort of) exists today in the form of the `'static` bound:
@@ -69,7 +69,7 @@ declared:
 Here, the constraint `T:'a` indicates that the data being iterated
 over must live at least as long as the collection (logically enough).
 
-## Lifetime bounds on object types
+### Lifetime bounds on object types
 
 Like parameters, all object types have a lifetime bound. Unlike
 parameter types, however, object types are *required* to have exactly
@@ -122,7 +122,7 @@ the burden.
 See Appendix B for the motivation on why object types are permitted to
 have exactly one lifetime bound.
 
-## Specifying relations between lifetimes
+### Specifying relations between lifetimes
 
 Currently, when a type or fn has multiple lifetime parameters, there
 is no facility to explicitly specify a relationship between them. For
@@ -144,7 +144,7 @@ A *lifetime bound* is written `'a:'b` and it means that "`'a` outlives
 that would indicate that the lifetime '`x` was shorter than (or equal
 to) `'y`.
   
-## The "type must outlive" and well-formedness relation
+### The "type must outlive" and well-formedness relation
 
 Many of the rules to come make use of a "type must outlive" relation,
 written `T outlives 'a`. This relation means primarily that all
@@ -178,13 +178,13 @@ For this section, it suffices to give some examples:
     // Object type with bound 'a 
     WF(SomeTrait+'a : 'b) = ['a : 'b]
 
-## Rules for when object closure is legal
+### Rules for when object closure is legal
 
 Whenever data of type `T` is closed over to form an object, the type
 checker will require that `T outlives 'a` where `'a` is the primary
 lifetime bound of the object type. 
 
-## Rules for types to be well-formed
+### Rules for types to be well-formed
 
 Currently we do not apply any tests to the types that appear in type
 declarations. Per RFC 11, however, this should change, as we intend to
@@ -201,13 +201,13 @@ any form of inference on struct declarations and instead requires all
 conditions to be spelled out (this is in contrast to fns and methods,
 see below).
 
-## Rules for expression type validity
+### Rules for expression type validity
 
 We should add the condition that for every expression with lifetime
 `'e` and type `T`, then `T outlives 'e`. We already enforce this in
 many special cases but not uniformly.
 
-## Inference
+### Inference
 
 The compiler will infer lifetime bounds on both type parameters and
 region parameters as follows. Within a function or method, we apply
@@ -247,7 +247,7 @@ Note that this sort of inference is already done. This RFC simply
 proposes a more extensive version that also includes bounds of the
 form `X:'a`, where `X` is a type parameter.
 
-# What does all this mean in practice?
+## What does all this mean in practice?
 
 This RFC has a lot of details. The main implications for end users are:
 
@@ -282,7 +282,7 @@ This RFC has a lot of details. The main implications for end users are:
    Here, we must know that the lifetime `'global` outlives `'local` in
    order for this type to be well-formed.
 
-# Phasing
+## Phasing
 
 Some parts of this RFC require new syntax and thus must be phased in.
 The current plan is to divide the implementation three parts:
@@ -303,15 +303,15 @@ snapshot. Parts 1 and 2 have largely been written. Depending on
 precisely how the timing works out, it might make sense to just merge
 parts 1 and 3.
 
-# Drawbacks / Alternatives
+## Drawbacks / Alternatives
 
 If we do not implement some solution, we could continue with the
 current approach (but patched to be sound) of banning references from
 being closed over in object types. I consider this a non-starter.
 
-# Unresolved questions
+## Unresolved questions
 
-## Inferring wellformedness bounds
+### Inferring wellformedness bounds
 
 Under this RFC, it is required to write bounds on struct types which are
 in principle inferable from their contents. For example, iterators
@@ -332,7 +332,7 @@ record for lifetime error messages is not very good so far.
 Also, there is a potential interaction between this sort of inference
 and the description of default trait bounds below.
 
-## Default trait bounds
+### Default trait bounds
 
 When referencing a trait object, it is almost *always* the case that one follows
 certain fixed patterns:
@@ -372,7 +372,7 @@ However, there are complications:
   is just to disable the `'static` default that would otherwise be
   inserted.
 
-# Appendix: Definition of the outlives relation and well-formedness
+## Appendix: Definition of the outlives relation and well-formedness
 
 To make this more specific, we can "formally" model the Rust type
 system as:
@@ -415,7 +415,7 @@ lifetime `'a` yields a list of `'b:'c` or `X:'d` pairs. For each pair
 We can then say that `T outlives 'a` if all lifetime relations
 returned by `WF(T:'a)` hold.
 
-# Appendix B: Why object types must have exactly one bound
+## Appendix B: Why object types must have exactly one bound
 
 The motivation is that handling multiple bounds is overwhelmingly
 complicated to reason about and implement. In various places,

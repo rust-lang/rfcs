@@ -5,14 +5,14 @@
 - RFC PR: [rust-lang/rfcs#2947](https://github.com/rust-lang/rfcs/pull/2947)
 - crates.io issue: [rust-lang/crates.io#5443](https://github.com/rust-lang/crates.io/issues/5443)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes implementing scopes for crates.io tokens, allowing users to
 choose which endpoints the token is allowed to call and which crates it's
 allowed to affect.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 While the current implementation of API tokens for crates.io works fine for
@@ -23,7 +23,7 @@ The implementation of scoped tokens would allow users to restrict the actions a
 token can do, decreasing the risk in case of automation bugs or token
 compromise.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 During token creation, the user will be prompted to select the permissions the
@@ -31,7 +31,7 @@ token will have. Two sets of independent scopes will be available: the
 endpoints the token is authorized to call, and the crates the token is allowed
 to act on.
 
-## Endpoint scopes
+### Endpoint scopes
 
 The user will be able to choose one or more endpoint scopes. This RFC proposes
 adding the following endpoint scopes:
@@ -51,7 +51,7 @@ dedicated RFC.
 Tokens created before the implementation of this RFC will default to the legacy
 scope.
 
-## Crates scope
+### Crates scope
 
 The user will be able to opt into limiting which crates the token can act on by
 defining a crates scope.
@@ -73,7 +73,7 @@ authorized, unless limited by an endpoint scope (see above).
 Tokens created before the implementation of this RFC will default to an empty
 crate scope filter (equivalent to no restrictions).
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Endpoint scopes and crates scope are two completely separate systems, and can be
@@ -82,7 +82,7 @@ used independently of one another.
 Token scopes will be implemented entirely on the crates.io side, and there will
 be no change necessary to `cargo` or alternate registries.
 
-## Endpoint scopes
+### Endpoint scopes
 
 The scopes proposed by this RFC allow access to the following endpoints:
 
@@ -102,7 +102,7 @@ an existing scope will be allowed only at the moment of their creation, if the
 crates.io team believes the new endpoint won't grant more privileges than the
 existing set of endpoints in that scope.
 
-## Crates scope
+### Crates scope
 
 The patterns will be evaluated during each API call, and if no match is found
 the request will be denied. Because it's evaluated every time, a crates scope
@@ -113,12 +113,12 @@ that technically permits to interact with a crate the user doesn't own will be
 accepted by the backend, but a warning will be displayed if the pattern doesn't
 match any crate owned by the user.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 No drawbacks are known at the time of writing the RFC.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 An alternative implementation for endpoint scopes could be to allow users to
@@ -138,7 +138,7 @@ Finally, an alternative could be to do nothing, and encourage users to create
 "machine accounts" for each set of crates they own. A drawback of this is that
 GitHub's terms of service limit how many accounts a single person could have.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The endpoint scopes system is heavily inspired by GitHub, while the rest of the
@@ -169,7 +169,7 @@ scoping:
 [rubygems]: https://rubygems.org/
 [packagist]: https://packagist.org/
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * Are there more scopes that would be useful to implement from the start?
@@ -177,7 +177,7 @@ scoping:
   crates the best, or should a token with crate scopes prevent access to
   endpoints that don't act on crates?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 A future extension to the crates.io authorization model could be adding an

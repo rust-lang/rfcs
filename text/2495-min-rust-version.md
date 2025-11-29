@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2495](https://github.com/rust-lang/rfcs/pull/2495)
 - Rust Issue: [rust-lang/rust#65262](https://github.com/rust-lang/rust/issues/65262)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add `rust` field to the package section of `Cargo.toml` which will be used to
@@ -15,7 +15,7 @@ version = "0.1.0"
 rust = "1.30"
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently crates have no way to formally specify MSRV. As a result users can't
@@ -27,7 +27,7 @@ inflation, which makes it harder to keep downstream crates up-to-date. More
 relaxed approach on another hand can result in broken crates for user of older
 compiler versions.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 If you target a specific MSRV add a `rust` field to the `[package]` section of
@@ -36,7 +36,7 @@ a crate with a dependency which has MSRV higher than the current version of your
 toolchain, `cargo` will return a compilation error stating the dependency and
 its MSRV. This behavior can be disabled by using `--no-msrv-check` flag.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 During build process (including `run`, `test`, `benchmark`, `verify` and `publish`
@@ -55,10 +55,10 @@ became a warning instead of an error).
 - Version can not be smaller than release version of a used edition, i.e.
 combination of `rust = "1.27"` and `edition = "2018"` is an invalid one.
 
-# Future work and extensions
+## Future work and extensions
 [future-work]: #future-work
 
-## Influencing version resolution
+### Influencing version resolution
 
 The value of `rust` field (explicit or automatically selected by `cargo`) will
 be used to select appropriate dependency versions.
@@ -85,7 +85,7 @@ bump to allow publishing backports which fix serious issues using patch version)
 Note that described MSRV constraints and checks for dependency versions resolution
 can be disabled with the `--no-msrv-check` option.
 
-## Checking MSRV during publishing
+### Checking MSRV during publishing
 
 `cargo publish` will check that upload is done with a toolchain version specified
 in the `rust` field. If toolchain version is different, `cargo` will refuse to
@@ -93,7 +93,7 @@ upload the crate. It will be a failsafe to prevent uses of incorrect `rust` valu
 due to unintended MSRV bumps. This check can be disabled by using the existing
 `--no-verify` option.
 
-## Making `rust` field mandatory
+### Making `rust` field mandatory
 
 In future (probably in a next edition) we could make `rust` field mandatory for
 a newly uploaded crates. MSRV for older crates will be determined by the `edition`
@@ -102,7 +102,7 @@ field. In other words `edition = "2018"` will imply `rust = "1.31"` and
 
 `cargo init` would use the version of the toolchain used.
 
-## `cfg`-based MSRVs
+### `cfg`-based MSRVs
 
 Some crates can have different MSRVs depending on target architecture or enabled
 features. In such cases it can be useful to describe how MSRV depends on them,
@@ -124,7 +124,7 @@ specified in the `package` section.
 If target condition is true, then `cargo ` will use `rust` value from this section.
 If several target section conditions are true, then maximum value will be used.
 
-## Nightly and stable versions
+### Nightly and stable versions
 
 Some crates may prefer to target only the most recent stable or nightly toolchain.
 In addition to the versions we could allow `stable` and `nightly` values to declare
@@ -144,7 +144,7 @@ it will take a current nightly version and will use it in a "more or equal" cons
 Such restrictions can be quite severe, but hopefully this functionality will be
 used only by handful of crates.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Declaration of MSRV, even with the checks, does not guarantee that crate
@@ -153,7 +153,7 @@ will work correctly on the specified MSRV, only appropriate CI testing can do th
 - MSRV selected by `cargo publish` with `rust = "stable"` can be too
 conservative.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Automatically calculate MSRV.
@@ -161,7 +161,7 @@ conservative.
 for bumping crate MSRVs.
 - Allow version and path based `cfg` attributes as proposed in [RFC 2523](https://github.com/rust-lang/rfcs/pull/2523).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Previous proposals:
@@ -170,7 +170,7 @@ Previous proposals:
 - [RFC 1953](https://github.com/rust-lang/rfcs/pull/1953)
 - [RFC 2182](https://github.com/rust-lang/rfcs/pull/2182) (arguably this one got off-track)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Name bike-shedding: `rust` vs `rustc` vs `min-rust-version`

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1951](https://github.com/rust-lang/rfcs/pull/1951)
 - Rust Issue: [rust-lang/rust#42183](https://github.com/rust-lang/rust/issues/42183)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes several steps forward for `impl Trait`:
@@ -19,7 +19,7 @@ This RFC proposes several steps forward for `impl Trait`:
 The first two proposals, in particular, put us into a position to stabilize the
 current version of the feature in the near future.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 To recap, the current `impl Trait` feature allows functions to write a return
@@ -52,13 +52,13 @@ This RFC is aimed squarely at resolving these questions. However, by resolving
 some of them, it also unlocks the door to an expansion of the feature to new
 locations (arguments, traits, trait impls), as we'll see.
 
-## Motivation for expanding to argument position
+### Motivation for expanding to argument position
 
 This RFC proposes to allow `impl Trait` to be used in argument position, with
 "universal" (aka generics-style) semantics. There are three lines of argument in
 favor of doing so, given here along with rebuttals from the lang team.
 
-### Argument from learnability
+#### Argument from learnability
 
 There's been a lot of discussion around universals vs. existentials (in today's
 Rust, generics vs `impl Trait`). The RFC makes a few assumptions:
@@ -122,7 +122,7 @@ with `impl Trait`, reaching for the fine distinctions only when you need them
 
 [@solson did a great job of laying this kind of argument out.](https://github.com/rust-lang/rfcs/pull/1951#issuecomment-287493061)
 
-### Argument from ergonomics
+#### Argument from ergonomics
 
 [Ergonomics is rarely about raw character count](https://blog.rust-lang.org/2017/03/02/lang-ergonomics.html),
 and the argument here isn't about shaving off a few characters. Rather, it's
@@ -158,7 +158,7 @@ syntax in argument and return position -- and it almost always has the meaning
 you want -- means less pausing to think "hm, am I dealing with an existential
 here?"
 
-### Argument from familiarity
+#### Argument from familiarity
 
 Finally, there's an argument from familiarity, which was given eloquently by @withoutboats:
 
@@ -183,7 +183,7 @@ Finally, there's an argument from familiarity, which was given eloquently by @wi
 > polymorphism system which is fundamentally one idea: parametric polymorphism
 > with trait constraints.
 
-### Critique from the lang team
+#### Critique from the lang team
 
 @nrc argued that there's also a learnability downside, because Rust programmers
 now have one additional syntax for generic arguments to learn.
@@ -256,10 +256,10 @@ fn foo<T: Trait>(t: T) -> T { t }
 In both of these functions, if you pass in an argument that is `Send`, you will
 be able to rely on `Send` in the return value.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## The proposal in a nutshell
+### The proposal in a nutshell
 
 - Expand `impl Trait` to allow use in arguments, where it behaves like an
   anonymous generic parameter. **This will be separately feature-gated**.
@@ -275,12 +275,12 @@ be able to rely on `Send` in the return value.
   scope. However, type parameters may mention lifetimes which are hence
   *indirectly* in scope.
 
-## Background
+### Background
 
 Before diving more deeply into the design, let's recap some of the background
 that's emerged over time for this corner of the language.
 
-### Universals (`any`) versus existentials (`some`)
+#### Universals (`any`) versus existentials (`some`)
 
 There are basically two ways to talk about an "unknown type" in something like a
 function signature:
@@ -329,13 +329,13 @@ fn foo<T: Default>() -> T
 fn foo() -> any Default
 ```
 
-### Scoping for lifetime and type parameters
+#### Scoping for lifetime and type parameters
 
 There's a subtle issue for the semantics of `impl Trait`: what lifetime and type
 parameters are considered "in scope" for the underlying concrete type that
 implements `Trait`?
 
-#### Type parameters and type equalities
+##### Type parameters and type equalities
 
 It's easiest to understand this issue through examples where it matters. Suppose
 we have the following function:
@@ -391,7 +391,7 @@ But there are also cases where there isn't a dependency, and tracking that
 information may be important for type equalities like the vectors above. And
 this applies equally to lifetime parameters as well.
 
-#### Lifetime parameters
+##### Lifetime parameters
 
 It's vital to know what lifetime parameters might be used in the concrete type
 underlying an `impl Trait`, because that information will affect lifetime
@@ -443,12 +443,12 @@ This is again a question of *what lifetime parameters are in scope* for the
 actual return type. It's a question that needs a clear answer (and some
 flexibility) for the `impl Trait` design.
 
-## Core assumptions
+### Core assumptions
 
 The design in this RFC is guided by several assumptions which are worth laying
 out explicitly.
 
-### Assumption 1: we will eventually have a fully expressive and explicit syntax for existentials
+#### Assumption 1: we will eventually have a fully expressive and explicit syntax for existentials
 
 The `impl Trait` syntax can be considered an "implicit" or "sugary" syntax in
 that it (1) does not introduce a name for the existential type and (2) does not
@@ -461,7 +461,7 @@ This is done under the assumption that we will eventually introduce a fully
 expressive, explicit syntax for existentials. Such a syntax is sketched in an
 appendix to this RFC.
 
-### Assumption 2: treating all *type* variables as in scope for `impl Trait` suffices for the vast majority of cases
+#### Assumption 2: treating all *type* variables as in scope for `impl Trait` suffices for the vast majority of cases
 
 The background section discussed scoping issues for `impl Trait`, and the main
 implication for *type* parameters (as opposed to lifetimes) is what type
@@ -473,7 +473,7 @@ equalities you get for an `impl Trait` return type. We're making two assumptions
 This latter point means, for example, that it's relatively unusual to do things
 like construct the vectors described in the background section.
 
-### Assumption 3: there should be an explicit marker when a lifetime could be embedded in a return type
+#### Assumption 3: there should be an explicit marker when a lifetime could be embedded in a return type
 
 As mentioned in a
 [recent blog post](https://blog.rust-lang.org/2017/03/02/lang-ergonomics.html),
@@ -505,7 +505,7 @@ impl<T> SomeType<T> {
 In any case, to avoid compounding the mistake around elision, there should be
 *some* marker when using `impl Trait` that a lifetime is being captured.
 
-### Assumption 4: existentials are vastly more common in return position, and universals in argument position
+#### Assumption 4: existentials are vastly more common in return position, and universals in argument position
 
 As discussed in the background section, it's possible to make sense of `some
 Trait` and `any Trait` in arbitrary positions in a function signature. But
@@ -513,7 +513,7 @@ experience with the language strongly suggests that `some Trait` semantics is
 virtually never wanted in argument position, and `any Trait` semantics is rarely
 used in return position.
 
-### Assumption 5: we may be interested in eventually pursuing a bare `fn foo() -> Trait` syntax rather than `fn foo() -> impl Trait`
+#### Assumption 5: we may be interested in eventually pursuing a bare `fn foo() -> Trait` syntax rather than `fn foo() -> impl Trait`
 
 Today, traits can be used directly as (unsized) types, so that you can write
 things like `Box<MyTrait>` to designate a trait object. However, with the advent
@@ -532,7 +532,7 @@ RFC. However, it's taken as an assumption that we want to keep the door open to
 such a syntax, and so shouldn't stabilize any variant of `impl Trait` that lacks
 a good story for evolving into a bare `Trait` syntax later on.
 
-## Sticking with the `impl Trait` syntax
+### Sticking with the `impl Trait` syntax
 
 This RFC proposes to stabilize the `impl Trait` feature with its current syntax,
 while also expanding it to encompass argument position. That means, in
@@ -560,7 +560,7 @@ means
 `impl Trait` "just do the right thing" seems pretty clearly to be the right
 choice ergonomically.
 
-## Expansion to arguments
+### Expansion to arguments
 
 This RFC proposes to allow `impl Trait` in function arguments, in addition to
 return position, with the `any Trait` semantics (as per assumption 4). In other
@@ -585,7 +585,7 @@ introduce nested universal quantifications (i.e., higher-ranked bounds) in at
 least some cases; we don't yet have the ability to do so. We can revisit this
 question later on, once higher-ranked bounds have gained full expressiveness.
 
-### Explicit instantiation
+#### Explicit instantiation
 
 This RFC does *not* propose any means of explicitly instantiating an `impl
 Trait` in argument position. In other words:
@@ -601,7 +601,7 @@ bar::<u32>(0) // this is not
 Thus, while `impl Trait` in argument position in some sense "desugars" to a
 generic parameter, the parameter is treated fully anonymously.
 
-## Scoping for type and lifetime parameters
+### Scoping for type and lifetime parameters
 
 In argument position, the type fulfilling an `impl Trait` is free to reference
 any types or lifetimes whatsoever. So in a signature like:
@@ -650,7 +650,7 @@ In this example, the return type can of course reference any lifetimes that `T`
 does, but this is apparent from the signature. Likewise with `impl Trait`, where
 you should assume that *all* type parameters could appear in the return type.
 
-### Relationship to trait objects
+#### Relationship to trait objects
 
 It's worth noting that this treatment of lifetimes is related but not identical
 to the way they're handled for trait objects.
@@ -679,7 +679,7 @@ generics and trait objects in general -- which is precisely that with generics,
 the actual types are *not* erased, and hence auto traits like `Send` work
 transparently, as do lifetime constraints.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Generics and traits are a fundamental aspect of Rust, so the pedagogical
@@ -732,7 +732,7 @@ trait objects can then be taught using intuitions from `impl Trait`.
 There's also some ways in which `impl Trait` can introduce confusion, which
 we'll cover in the drawbacks section below.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It's widely recognized that we need *some* form of static existentials for
@@ -741,7 +741,7 @@ types) and to ergonomically return things like iterator chains.
 
 However, there are two broad classes of drawbacks to the approach taken in this RFC.
 
-## Relatively inexpressive sugary syntax
+### Relatively inexpressive sugary syntax
 
 This RFC is built on the idea that we'll eventually have a fully expressive
 explicit syntax, and so we should tailor the "sugary" `impl Trait` syntax to
@@ -753,7 +753,7 @@ want all three.
 
 That syntax is further discussed in Alternatives below.
 
-## Potential for confusion
+### Potential for confusion
 
 There are two main avenues for confusion around `impl Trait`:
 
@@ -780,7 +780,7 @@ Trait`). However, these ways of writing a signature are not *semantically*
 distinct ways; they're just *stylistically* different. It's feasible that
 rustfmt could even make the choice automatically.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 There's been a *lot* of discussion about the `impl Trait` feature and various
@@ -816,7 +816,7 @@ alternatives. Let's look at some of the most prominent of them.
   including a `<>` section, you go from including *all* type parameters to
   including only the listed set, which is a bit counterintuitive.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 **Full evidence for core assumptions**. The assumptions in this RFC are stated
@@ -857,7 +857,7 @@ We may want to consider adding some form of generative existentials in the
 future, but would almost certainly want to do so via the fully
 expressive/explicit syntax, rather than through `impl Trait`.
 
-# Appendix: a sketch of a fully-explicit syntax
+## Appendix: a sketch of a fully-explicit syntax
 
 This section contains a **brief sketch** of a fully-explicit syntax for
 existentials. It's a strawman proposal based on many previously-discussed ideas,

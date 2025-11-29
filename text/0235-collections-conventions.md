@@ -2,7 +2,7 @@
 - RFC PR #: [rust-lang/rfcs#235](https://github.com/rust-lang/rfcs/pull/235)
 - Rust Issue #: [rust-lang/rust#18424](https://github.com/rust-lang/rust/issues/18424)
 
-# Summary
+## Summary
 
 This is a combined *conventions* and *library stabilization* RFC. The goal is to
 establish a set of naming and signature conventions for `std::collections`.
@@ -23,13 +23,13 @@ The major components of the RFC include:
 *A big thank-you to @Gankro, who helped collect API information and worked
  through an initial pass of some of the proposals here.*
 
-# Motivation
+## Motivation
 
 This RFC aims to improve the design of the `std::collections` module in
 preparation for API stabilization. There are a number of problems that need to
 be addressed, as spelled out in the subsections below.
 
-## Collection traits
+### Collection traits
 
 The `collections` module defines several traits:
 
@@ -52,7 +52,7 @@ There are several problems with the current trait design:
 * The methods defined in these traits are somewhat anemic compared to the suite
   of methods provided on the concrete collections that implement them.
 
-## Divergent APIs
+### Divergent APIs
 
 Despite the current collection traits, the APIs of various concrete collections
 has diverged; there is not a globally coherent design, and there are many
@@ -61,14 +61,14 @@ inconsistencies.
 One problem in particular is the lack of clear guiding principles for the API
 design. This RFC proposes a few along the way.
 
-## Providing slice APIs on `Vec` and `String`
+### Providing slice APIs on `Vec` and `String`
 
 The `String` and `Vec` types each provide a limited subset of the methods
 provides on string and vector slices, but there is not a clear reason to limit
 the API in this way. Today, one has to write things like
 `some_str.as_slice().contains(...)`, which is not ergonomic or intuitive.
 
-## The `Equiv` problem
+### The `Equiv` problem
 
 There is a more subtle problem related to slices. It's common to use a `HashMap`
 with owned `String` keys, but then the natural API for things like lookup is not
@@ -139,7 +139,7 @@ Besides being less convenient -- you cannot write `map.find_with("some literal")
 this function navigates the tree according to an ordering that may have no
 relationship to the actual ordering of the tree.
 
-## `MaybeOwned`
+### `MaybeOwned`
 
 Sometimes a function does not know in advance whether it will need or produce an
 owned copy of some data, or whether a borrow suffices. A typical example is the
@@ -166,7 +166,7 @@ This interface makes it possible to allocate only when necessary, but the
 specialized to `String`/`str`. It would be somewhat more palatable if there were
 a single "maybe owned" abstraction usable across a wide range of types.
 
-## `Iterable`
+### `Iterable`
 
 A frequently-requested feature for the `collections` module is an `Iterable`
 trait for "values that can be iterated over". There are two main motivations:
@@ -190,9 +190,9 @@ trait for "values that can be iterated over". There are two main motivations:
 
   and `consume_iter(some_vec)` rather than `consume_iter(some_vec.iter())`.
 
-# Detailed design
+## Detailed design
 
-## The collections today
+### The collections today
 
 The concrete collections currently available in `std` fall into roughly three categories:
 
@@ -235,7 +235,7 @@ this underlying map, and so in the long run (with HKT and other language
 changes) `LruCache` should probably add a type parameter for the underlying map,
 defaulted to `HashMap`.
 
-## Design principles
+### Design principles
 
 * *Centering on `Iterator`s*. The `Iterator` trait is a strength of Rust's
   collections library. Because so many APIs can produce iterators, adding an API
@@ -263,7 +263,7 @@ defaulted to `HashMap`.
   collections APIs. In general, APIs should be very clearly motivated by a wide
   variety of use cases, either for expressiveness, performance, or ergonomics.
 
-## Removing the traits
+### Removing the traits
 
 This RFC proposes a somewhat radical step for the collections traits: rather
 than reform them, we should eliminate them altogether -- *for now*.
@@ -273,7 +273,7 @@ trait is "forever": there are very few backwards-compatible modifications to
 traits. Thus, for something as fundamental as collections, it is prudent to take
 our time to get the traits right.
 
-### Lack of iterator methods
+#### Lack of iterator methods
 
 In particular, there is one way in which the current traits are clearly *wrong*:
 they do not provide standard methods like `iter`, despite these being
@@ -325,7 +325,7 @@ many potential use cases in the context of collections.
 Thus, the goal in this RFC is to do the best we can without HKT *for now*,
 while allowing a graceful migration if or when HKT is added.
 
-### Persistent/immutable collections
+#### Persistent/immutable collections
 
 Another problem with the current collection traits is the split between
 immutable and mutable versions. In the long run, we will probably want to
@@ -336,7 +336,7 @@ However, persistent collection APIs have not been thoroughly explored in Rust;
 it would be hasty to standardize on a set of traits until we have more
 experience.
 
-### Downsides of removal
+#### Downsides of removal
 
 There are two main downsides to removing the traits without a replacement:
 
@@ -358,7 +358,7 @@ as we will see below. Second, this RFC is the antidote: we establish a clear set
 of conventions and APIs for concrete collections up front, and stabilize on
 those, which should make it easy to add traits later on.
 
-### Why not leave the traits as "experimental"?
+#### Why not leave the traits as "experimental"?
 
 An alternative to removal would be to leave the traits intact, but marked as
 experimental, with the intent to radically change them later.
@@ -367,7 +367,7 @@ Such a strategy doesn't buy much relative to removal (given the arguments
 above), but risks the traits becoming "de facto" stable if people begin using
 them en masse.
 
-## Solving the `_equiv` and `MaybeOwned` problems
+### Solving the `_equiv` and `MaybeOwned` problems
 
 The basic problem that leads to `_equiv` methods is that:
 
@@ -379,7 +379,7 @@ The basic problem that leads to `_equiv` methods is that:
 A similar story plays out for `&Vec<T>` and `&[T]`, and with DST and custom
 slice types the same problem will arise elsewhere.
 
-### The `Borrow` trait
+#### The `Borrow` trait
 
 This RFC proposes to use a *trait*, `Borrow` to connect borrowed and owned data
 in a generic fashion:
@@ -436,7 +436,7 @@ running afoul of coherence.
 Because of the blanket `impl`, the `Borrow` trait can largely be ignored except
 when it is actually used -- which we describe next.
 
-### Using `Borrow` to replace `_equiv` methods
+#### Using `Borrow` to replace `_equiv` methods
 
 With the `Borrow` trait in place, we can eliminate the `_equiv` method variants
 by asking map keys to be `Borrow`:
@@ -491,7 +491,7 @@ On the other hand, this approach retains some of the downsides of `_equiv`:
 The [Alternatives section](#variants-of-borrow) includes a variant of `Borrow`
 that doesn't suffer from these downsides, but has some downsides of its own.
 
-### Clone-on-write (`Cow`) pointers
+#### Clone-on-write (`Cow`) pointers
 
 A side-benefit of the `Borrow` trait is that we can give a more general version
 of the `MaybeOwned` as a "clone-on-write" smart pointer:
@@ -581,7 +581,7 @@ Altogether, this RFC proposes to introduce `Borrow` and `Cow` as above, and to
 deprecate `MaybeOwned` and `MaybeOwnedVector`. The API changes for the
 collections are discussed [below](#the-apis).
 
-## `IntoIterator` (and `Iterable`)
+### `IntoIterator` (and `Iterable`)
 
 As discussed in [earlier](#iterable), some form of an `Iterable` trait is
 desirable for both expressiveness and ergonomics. Unfortunately, a full
@@ -719,7 +719,7 @@ above, it can be used to deal with embedded lifetimes as in the
 thanks to the suggested blanket `impl` for `IntoIterator` that `where` clause
 could be changed to use `Iterable` instead, again without breakage.
 
-### Benefits of `IntoIterator`
+#### Benefits of `IntoIterator`
 
 What do we gain by incorporating `IntoIterator` today?
 
@@ -743,7 +743,7 @@ ergonomic.
 In general, `IntoIterator` will allow us to move toward more `Iterator`-centric
 APIs today, in a way that's compatible with HKT tomorrow.
 
-### Additional methods
+#### Additional methods
 
 Another typical desire for an `Iterable` trait is to offer defaulted versions of
 methods that basically re-export iterator methods on containers (see
@@ -781,7 +781,7 @@ We will leave to later RFCs the incorporation of additional methods. Notice, in
 particular, that such methods can wait until we introduce an `Iterable` trait
 via HKT without breaking backwards compatibility.
 
-## Minimizing variants: `ByNeed` and `Predicate` traits
+### Minimizing variants: `ByNeed` and `Predicate` traits
 
 There are several kinds of methods that, in their most general form take
 closures, but for which convenience variants taking simpler data are common:
@@ -891,7 +891,7 @@ pub trait CharPredicate: Predicate<char> {
 }
 ```
 
-### Why not leverage unboxed closures?
+#### Why not leverage unboxed closures?
 
 A natural question is: why not use the traits for unboxed closures to achieve a
 similar effect? For example, you could imagine writing a blanket `impl` for
@@ -906,7 +906,7 @@ argument and return types as associated (output) types).
 In addition, the explicit use of traits like `Predicate` makes the intended
 semantics more clear, and the overloading less surprising.
 
-## The APIs
+### The APIs
 
 Now we'll delve into the detailed APIs for the various concrete
 collections. These APIs will often be given in tabular form, grouping together
@@ -928,7 +928,7 @@ focus on some APIs specific to particular classes of collections -- e.g. sets
 and maps.  Finally, we will briefly discuss APIs that are specific to a single
 concrete collection.
 
-### Construction
+#### Construction
 
 All of the collections should support a static function:
 
@@ -942,7 +942,7 @@ arguments needed to set up the collection, e.g. the capacity for `LruCache`.
 Several collections also support separate constructors for providing capacities in
 advance; these are discussed [below](#capacity-management).
 
-#### The `FromIterator` trait
+##### The `FromIterator` trait
 
 All of the collections should implement the `FromIterator` trait:
 
@@ -962,7 +962,7 @@ iterator. For maps, the iterator is over key/value pairs, and the semantics is
 equivalent to inserting those pairs in order; if keys are repeated, the last
 value is the one left in the map.
 
-### Insertion
+#### Insertion
 
 The table below gives methods for inserting items into various concrete collections:
 
@@ -992,7 +992,7 @@ Aside from these changes, a number of insertion methods will be deprecated
 further in the section on "specialized operations"
 [below](#specialized-operations).
 
-#### The `Extend` trait (was: `Extendable`)
+##### The `Extend` trait (was: `Extendable`)
 
 In addition to the standard insertion operations above, *all* collections will
 implement the `Extend` trait. This trait was previously called `Extendable`, but
@@ -1013,7 +1013,7 @@ pub trait Extend: FromIterator {
 As with `FromIterator`, this trait has been modified to take an `IntoIterator`
 value.
 
-### Deletion
+#### Deletion
 
 The table below gives methods for removing items into various concrete collections:
 
@@ -1046,7 +1046,7 @@ As with the insertion methods, there are some differences from today's API:
 Again, some of the more specialized methods are not discussed here; see
 "specialized operations" [below](#specialized-operations).
 
-### Inspection/mutation
+#### Inspection/mutation
 
 The next table gives methods for inspection and mutation of existing items in collections:
 
@@ -1086,7 +1086,7 @@ The biggest changes from the current APIs are:
   more clear and allows us to drop the `_copy` variants. Moreover, *all* users
   of `Option` benefit from the new convenience method.
 
-#### The `Index` trait
+##### The `Index` trait
 
 The `Index` and `IndexMut` traits provide indexing notation like `v[0]`:
 
@@ -1116,7 +1116,7 @@ This allows us to keep indexing notation maximally concise, while still
 providing convenient non-failing variants (which can be used to provide a check
 for index validity).
 
-### Iteration
+#### Iteration
 
 Every collection should provide the standard trio of iteration methods:
 
@@ -1129,7 +1129,7 @@ fn into_iter(self) -> ItemsMove;
 and in particular implement the `IntoIterator` trait on both the collection type
 and on (mutable) references to it.
 
-### Capacity management
+#### Capacity management
 
 many of the collections have some notion of "capacity", which may be fixed, grow
 explicitly, or grow implicitly:
@@ -1140,7 +1140,7 @@ explicitly, or grow implicitly:
 
 Growable collections provide functions for capacity management, as follows.
 
-#### Explicit growth
+##### Explicit growth
 
 For explicitly-grown collections, the normal constructor (`new`) takes a
 capacity argument. Capacity can later be inspected or updated as follows:
@@ -1153,7 +1153,7 @@ fn set_capacity(&mut self, capacity: uint)
 (Note, this renames `LruCache::change_capacity` to `set_capacity`, the
 prevailing style for setter method.)
 
-#### Implicit growth
+##### Implicit growth
 
 For implicitly-grown collections, the normal constructor (`new`) does not take a
 capacity, but there is an explicit `with_capacity` constructor, along with other
@@ -1179,7 +1179,7 @@ There are some important changes from the current APIs:
 * The `with_capacity` constructor does *not* take any additional arguments, for
   uniformity with `new`. This change affects `Bitv` in particular.
 
-#### Bounded iterators
+##### Bounded iterators
 
 Some of the maps (e.g. `TreeMap`) currently offer specialized iterators over
 their entries starting at a given key (called `lower_bound`) and above a given
@@ -1214,9 +1214,9 @@ These iterators should be provided for any maps over ordered keys (`TreeMap`,
 In addition, analogous methods should be provided for sets over ordered keys
 (`TreeSet`, `TrieSet`, `BitvSet`).
 
-### Set operations
+#### Set operations
 
-#### Comparisons
+##### Comparisons
 
 All sets should offer the following methods, as they do today:
 
@@ -1226,7 +1226,7 @@ fn is_subset(&self, other: &Self) -> bool;
 fn is_superset(&self, other: &Self) -> bool;
 ```
 
-#### Combinations
+##### Combinations
 
 Sets can also be combined using the standard operations -- union, intersection,
 difference and symmetric difference (exclusive or). Today's APIs for doing so
@@ -1269,9 +1269,9 @@ of names. Ideally, we would add operations like `|=` in a separate RFC, and use
 those conventionally for sets. If not, we will choose fallback names during the
 stabilization of `BitvSet`.
 
-### Map operations
+#### Map operations
 
-#### Combined methods
+##### Combined methods
 
 The `HashMap` type currently provides a somewhat bewildering set of `find`/`insert` variants:
 
@@ -1290,7 +1290,7 @@ There is [another RFC](https://github.com/rust-lang/rfcs/pull/216) already in
 the queue addressing this problem in a very nice way, and this RFC defers to
 that one
 
-#### Key and value iterators
+##### Key and value iterators
 
 In addition to the standard iterators, maps should provide by-reference
 convenience iterators over keys and values:
@@ -1303,14 +1303,14 @@ fn values(&'a self) -> Values<'a, V>
 While these iterators are easy to define in terms of the main `iter` method,
 they are used often enough to warrant including convenience methods.
 
-### Specialized operations
+#### Specialized operations
 
 Many concrete collections offer specialized operations beyond the ones given
 above. These will largely be addressed through the API stabilization process
 (which focuses on local API issues, as opposed to general conventions), but a
 few broad points are addressed below.
 
-#### Relating `Vec` and `String` to slices
+##### Relating `Vec` and `String` to slices
 
 One goal of this RFC is to supply all of the methods on (mutable) slices on
 `Vec` and `String`. There are a few ways to achieve this, so concretely the
@@ -1326,7 +1326,7 @@ actually makes a fair amount of sense, especially with DST.
 (Initially, it was unclear whether this strategy would play well with method
 resolution, but the planned resolution rules should work fine.)
 
-#### `String` API
+##### `String` API
 
 One of the key difficulties with the `String` API is that strings use utf8
 encoding, and some operations are only efficient when working at the byte level
@@ -1337,7 +1337,7 @@ index-related operations always work in terms of bytes, other operations deal
 with chars by default (but can have suffixed variants for working at other
 granularities when appropriate.)
 
-#### `DList`
+##### `DList`
 
 The `DList` type offers a number of specialized methods:
 
@@ -1349,9 +1349,9 @@ Prior to stabilizing the `DList` API, we will attempt to simplify its API
 surface, possibly by using idea from the
 [collection views RFC](https://github.com/rust-lang/rfcs/pull/216).
 
-### Minimizing method variants via iterators
+#### Minimizing method variants via iterators
 
-#### Partitioning via `FromIterator`
+##### Partitioning via `FromIterator`
 
 One place we can move toward iterators is functions like `partition` and
 `partitioned` on vectors and slices:
@@ -1430,7 +1430,7 @@ but the API is much more flexible, since the partitioned data can now be
 collected into other collections (or even differing collections). In addition,
 partitioning is supported for *any* iterator.
 
-#### Removing methods like `from_elem`, `from_fn`, `grow`, and `grow_fn`
+##### Removing methods like `from_elem`, `from_fn`, `grow`, and `grow_fn`
 
 Vectors and some other collections offer constructors and growth functions like
 the following:
@@ -1473,7 +1473,7 @@ is *memorability*: by placing greater emphasis on iterators, programmers will
 quickly learn the iterator APIs and have those at their fingertips, while
 remembering ad hoc method variants like `grow_fn` is more difficult.
 
-#### Long-term: removing `push_all` and `push_all_move`
+##### Long-term: removing `push_all` and `push_all_move`
 
 The `push_all` and `push_all_move` methods on vectors are yet more API variants
 that could, in principle, go through iterators:
@@ -1498,11 +1498,11 @@ optimization and allow us to deprecate the `push_all` and
 the methods will probably still be included with "experimental"
 status, and likely with different names.)
 
-# Alternatives
+## Alternatives
 
-## `Borrow` and the `Equiv` problem
+### `Borrow` and the `Equiv` problem
 
-### Variants of `Borrow`
+#### Variants of `Borrow`
 
 The original version of `Borrow` was somewhat more subtle:
 
@@ -1635,7 +1635,7 @@ produce hashes from owned keys by first borrowing from them.
 On the balance, the approach proposed in the RFC seems better, because using the
 map APIs in the obvious ways works by default.
 
-### The `HashMapKey` trait and friends
+#### The `HashMapKey` trait and friends
 
 An earlier proposal for solving the `_equiv` problem was given in the
 [associated items RFC](https://github.com/rust-lang/rfcs/pull/195)):
@@ -1674,7 +1674,7 @@ This solution has several drawbacks, however:
 
 * It doesn't help with the `MaybeOwned` problem.
 
-### Daniel Micay's hack
+#### Daniel Micay's hack
 
 @strcat has a [PR](https://github.com/rust-lang/rust/pull/16713) that makes it
 possible to, for example, coerce a `&str` to an `&String` value.
@@ -1697,9 +1697,9 @@ could potentially be dropped. However, there are a few downsides:
 * It exposes some representation interplay between slices and references to
   owned values, which we may not want to commit to or reveal.
 
-## For `IntoIterator`
+### For `IntoIterator`
 
-### Handling of `for` loops
+#### Handling of `for` loops
 
 The fact that `for x in v` moves elements from `v`, while `for x in v.iter()`
 yields references, may be a bit surprising. On the other hand, moving is the
@@ -1720,7 +1720,7 @@ If `for` demanded an `Iterable`, then `for x in v.iter()` and `for x in v.iter_m
 would cease to work -- we'd have to find some other approach. It might be
 doable, but it's not obvious how to do it.
 
-### Input versus output type parameters
+#### Input versus output type parameters
 
 An important aspect of the `IntoIterator` design is that the element type is an
 associated type, *not* an input type.
@@ -1739,13 +1739,13 @@ This is a tradeoff:
   implicit magic, *especially* when it can involve hidden costs like cloning, so
   the more explicit design given in this RFC seems best.
 
-# Downsides
+## Downsides
 
 Design tradeoffs were discussed inline.
 
-# Unresolved questions
+## Unresolved questions
 
-## Unresolved conventions/APIs
+### Unresolved conventions/APIs
 
 As mentioned [above](#combinations), this RFC does not resolve the question of
 what to call set operations that update the set in place.
@@ -1757,7 +1757,7 @@ process, unless radical changes are proposed.
 Finally, additional methods provided via the `IntoIterator` API are left for
 future consideration.
 
-## Coercions
+### Coercions
 
 Using the `Borrow` trait, it might be possible to safely add a coercion for auto-slicing:
 

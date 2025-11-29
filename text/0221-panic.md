@@ -2,11 +2,11 @@
 - RFC PR #: [rust-lang/rfcs#221](https://github.com/rust-lang/rfcs/pull/221)
 - Rust Issue #: [rust-lang/rust#17489](https://github.com/rust-lang/rust/issues/17489)
 
-# Summary
+## Summary
 
 Rename "task failure" to "task panic", and `fail!` to `panic!`.
 
-# Motivation
+## Motivation
 
 The current terminology of "task failure" often causes problems when
 writing or speaking about code. You often want to talk about the
@@ -24,7 +24,7 @@ We have been steadily moving away from task failure and toward
 terminology accordingly: `Result`-producing functions should be easy
 to describe.
 
-# Detailed design
+## Detailed design
 
 Not much more to say here than is in the summary: rename "task
 failure" to "task panic" in documentation, and `fail!` to `panic!` in
@@ -45,13 +45,13 @@ The connotations of panic seem fairly accurate: the process is not
 immediately ending, but it is rapidly fleeing from some problematic
 circumstance (by killing off tasks) until a recovery point.
 
-# Drawbacks
+## Drawbacks
 
 The term "panic" is a bit informal, which some consider a drawback.
 
 Making this change is likely to be a lot of work.
 
-# Alternatives
+## Alternatives
 
 Other choices include:
 

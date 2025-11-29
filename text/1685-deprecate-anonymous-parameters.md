@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1685](https://github.com/rust-lang/rfcs/pull/1685)
 - Rust Issue: [rust-lang/rust#41686](https://github.com/rust-lang/rust/issues/41686)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Currently Rust allows anonymous parameters in trait methods:
@@ -21,7 +21,7 @@ trait T {
 This RFC proposes to deprecate this syntax. This RFC intentionally does not
 propose to remove this syntax.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Anonymous parameters are a [historic accident]. They cause a number of technical
@@ -102,11 +102,11 @@ leads to syntax errors.
 [IntelliJ Rust]: https://github.com/intellij-rust/intellij-rust/commit/1bb65c47341a04aecef5fa6817e8b2b56bfc9abb#diff-66f3ba596f0ecf74a2942b3223789ab5R41
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 
-## Backward compatibility
+### Backward compatibility
 
 Removing anonymous parameters from the language is formally a breaking change.
 The breakage can be trivially and automatically fixed by adding `_:` (suggested by @nagisa):
@@ -137,7 +137,7 @@ an anonymous parameter ([full report]).
 [full report]: https://github.com/rust-lang/rfcs/pull/1685#issuecomment-238954434
 
 
-## Benefits of deprecation
+### Benefits of deprecation
 
 So the proposal is just to deprecate this syntax. Phasing the syntax out of
 usage will mostly solve the learning curve problems. The technical problems
@@ -151,30 +151,30 @@ practical. This hypothetical future may include:
 Enabling deprecation early makes potential future removal easier in practice.
 
 
-## Deprecation strategy
+### Deprecation strategy
 
 There are two possible ways to deprecate this syntax:
 
-### Hard deprecation
+#### Hard deprecation
 
 One option is to produce a warning for anonymous parameters. This is backwards
 compatible, but in practice will force crate authors to actively change their
 code to avoid the warnings, causing code churn.
 
-### Soft deprecation
+#### Soft deprecation
 
 Another option is to clearly document this syntax as deprecated and add an
 allow-by-default lint, a clippy lint, and an IntelliJ Rust inspection, but do
 not produce compiler warnings by default. This will make the update process more
 gradual, but will delay the benefits of deprecation.
 
-### Automatic transition
+#### Automatic transition
 
 Rustfmt and IntelliJ Rust can automatically change anonymous parameters to
 `_`. However it is better to manually add real names to make it obvious what
 name is expected on the `impl` side.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Hard deprecation will cause code churn.
@@ -187,7 +187,7 @@ name is expected on the `impl` side.
 * It is not clear if it will ever be possible to remove this syntax entirely.
 
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Status quo.
@@ -199,7 +199,7 @@ name is expected on the `impl` side.
   parameters and the full pattern syntax.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * What deprecation strategy should be chosen?

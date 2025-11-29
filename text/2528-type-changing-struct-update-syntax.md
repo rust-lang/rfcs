@@ -3,7 +3,7 @@
 - RFC PR: https://github.com/rust-lang/rfcs/pull/2528
 - Rust Issue: https://github.com/rust-lang/rust/issues/86555
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extend struct update syntax (a.k.a. functional record update (FRU)) to support
@@ -33,7 +33,7 @@ let updated: Foo<f64, i32> = Foo {
 };
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In today's Rust, struct update syntax is a convenient way to change a small
@@ -88,7 +88,7 @@ but this is not possible in current Rust because `Machine<State1>` and
 `Machine<State2>` are different types even though they are both the `Machine`
 struct.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 It's often useful to create a new instance of a struct that uses most of an old
@@ -162,7 +162,7 @@ Existing Rust programmers can think of this RFC as extending struct update
 syntax to cases where some of the fields change their type, as long as those
 fields are explicitly listed in the struct constructor.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Struct update syntax is now allowed for instances of the *same* struct even if
@@ -209,7 +209,7 @@ let logged_in = User {
 
 except, possibly, for type inference.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are trade-offs to be made when selecting the type inference strategy,
@@ -217,13 +217,13 @@ since the types of fields are no longer necessarily the same between the base
 and updated instances in struct update syntax. See the *Type inference* section
 under [Unresolved questions](#unresolved-questions).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This proposal is a relatively small user-facing generalization that
 significantly improves language ergonomics in some cases.
 
-## Further generalization
+### Further generalization
 
 This proposal maintains the restriction that the types of the base and updated
 instance must be the same struct. Struct update syntax could be further
@@ -256,7 +256,7 @@ is backwards-compatible with this RFC. As a result, the conservative approach
 presented in this RFC is a good first step. After the community has experience
 with this proposal, further generalization may be considered in the future.
 
-## Keep the existing behavior
+### Keep the existing behavior
 
 If we decide to keep the existing behavior, we are implicitly encouraging users
 to handle more logic with runtime checks so that they can use the concise
@@ -264,7 +264,7 @@ struct update syntax instead of the verbose syntax required due to type
 changes. By implementing this RFC, we improve the ergonomics of using the type
 system to enforce constraints at compile time.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 OCaml and Haskell allow changing the type of generic parameters with functional
@@ -308,10 +308,10 @@ Error: This expression has type foo but an expression was expected of type
          bar
 ```
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Type inference
+### Type inference
 
 What is the best type inference strategy? In today's Rust, the types of the
 explicitly listed fields are always the same in the base and updated instances.
@@ -321,7 +321,7 @@ type inference compared to today's Rust. There are choices to make regarding
 backwards compatibility of inferred types, the `i32`/`f64` fallback in type
 inference, and the conceptual simplicity of the chosen strategy.
 
-## Further generalization
+### Further generalization
 
 Should struct update syntax be further generalized to ignore the struct type
 and just consider field names and field types? This question could be answered

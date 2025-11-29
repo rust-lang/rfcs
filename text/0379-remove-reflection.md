@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#379](https://github.com/rust-lang/rfcs/pull/379)
 - Rust Issue: [rust-lang/rust#18046](https://github.com/rust-lang/rust/issues/18046)
 
-# Summary
+## Summary
 
 * Remove reflection from the compiler
 * Remove `libdebug`
 * Remove the `Poly` format trait as well as the `:?` format specifier
 
-# Motivation
+## Motivation
 
 In ancient Rust, one of the primary methods of printing a value was via the `%?`
 format specifier. This would use reflection at runtime to determine how to print
@@ -50,7 +50,7 @@ recommend removing this infrastructure entirely. It's possible to add it back in
 the future with a more modern design reflecting today's design principles of
 Rust and the many language changes since the infrastructure was created.
 
-# Detailed design
+## Detailed design
 
 * Remove all reflection infrastructure from the compiler. I am not personally
   super familiar with what exists, but at least these concrete actions will be
@@ -64,7 +64,7 @@ Rust and the many language changes since the infrastructure was created.
 * Remove `std::fmt::Poly`
 * Remove the `:?` format specifier in the formatting language syntax.
 
-# Drawbacks
+## Drawbacks
 
 The current infrastructure for reflection, although outdated, represents a
 significant investment of work in the past which could be a shame to lose. While
@@ -79,7 +79,7 @@ These two drawbacks are currently not seen as large enough to outweigh the gains
 from reducing the surface area of the `std::fmt` API and reduction in
 maintenance load on the compiler.
 
-# Alternatives
+## Alternatives
 
 The primary alternative to outright removing this infrastructure is to preserve
 it, but flag it all as `#[experimental]` or feature-gated. The compiler could
@@ -87,6 +87,6 @@ require the `fmt_poly` feature gate to be enabled to enable formatting via `:?`
 in a crate. This would mean that any backwards-incompatible changes could
 continue to be made, and any arbitrary type `T` could still be printed.
 
-# Unresolved questions
+## Unresolved questions
 
 * Can `core::intrinsics::TyDesc` be removed entirely?

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1513](https://github.com/rust-lang/rfcs/pull/1513)
 - Rust Issue: [rust-lang/rust#32837](https://github.com/rust-lang/rust/issues/32837)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Stabilize implementing panics as aborts.
@@ -13,7 +13,7 @@ Stabilize implementing panics as aborts.
   implementations of panic just before a final product is generated.
 * Add a `[profile.dev]` option to Cargo to configure how panics are implemented.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Panics in Rust have long since been implemented with the intention of being
@@ -57,7 +57,7 @@ compilation modes are linked together, causing odd or unknown errors. This RFC
 proposes a situation similar to the design of custom allocators to alleviate
 this situation.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The major goal of this RFC is to develop a work flow around managing crates
@@ -202,7 +202,7 @@ This will cause Cargo to pass `-C panic=unwind` to all `rustc` invocations for
 a crate graph. Cargo will have special knowledge, however, that for `cargo
 test` it cannot pass `-C panic=abort`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * The implementation of custom allocators was no small feat in the compiler, and
@@ -230,7 +230,7 @@ test` it cannot pass `-C panic=abort`.
   but without that option is this the best way to be implementing these switches
   for the standard library?
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Currently this RFC allows mixing multiple panic runtimes in a crate graph so
@@ -259,7 +259,7 @@ test` it cannot pass `-C panic=abort`.
   the crate graph. Additionally it may be easy to mix up crates of different
   panic strategies.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * One possible implementation of unwinding is via return-based flags. Much of

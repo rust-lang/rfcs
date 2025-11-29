@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#2867](https://github.com/rust-lang/rfcs/pull/2867)
 - Rust Issue: [rust-lang/rust#74727](https://github.com/rust-lang/rust/issues/74727)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes a new function attribute, `#[instruction_set(set)]` which allows you to declare the instruction set to be used when compiling the function. It also proposes two initial allowed values for the ARM arch (`arm::a32` and `arm::t32`). Other allowed values could be added to the language later.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Starting with `ARMv4T`, many ARM CPUs support two separate instruction sets. At the time they were called "ARM code" and "Thumb code", but with the development of `AArch64`, they're now called `a32` and `t32`. Unlike with the `x86_64` architecture, where the CPU can run both `x86` and `x86_64` code, but a single program still uses just one of the two instruction sets, on ARM you can have a single program that intersperses both `a32` and `t32` code. A particular form of branch instruction allows for the CPU to change between the two modes any time it branches, and so code can be designated as being either `a32` or `t32` on a per-function basis.
 
 In LLVM, selecting that code should be `a32` or `t32` is done by either disabling (for `a32`) or enabling (for `t32`) the `thumb-mode` target feature. Previously, Rust was able to do this using the `target_feature` attribute because it was able to either add _or subtract_ an LLVM target feature during a function. However, when [RFC 2045](https://github.com/rust-lang/rfcs/blob/master/text/2045-target-feature.md) was accepted, its final form did not allow for the subtraction of target features. Its final form is primarily designed around always opting _in_ to additional features, and it's no longer the correct tool for an "either A or B, but not both" situation like `a32`/`t32` is.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Some platforms support having more than one instruction set used within a single program. Generally, each one will be better for specific parts of a program. Every target has a default instruction set, based on the target triple. If you would like to set a specific function to use an alternate instruction set you use the `#[instruction_set(set)]` attribute.
@@ -56,7 +56,7 @@ As you can see it can get a little verbose, so projects which plan to use the `i
 
 The specifics of _when_ you should specify a non-default instruction set on a function are platform specific. Unless a piece of platform documentation has indicated a specific requirement, you do not need to think about adding this attribute at all.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Every target is now considered to have one default instruction set (for functions that lack the `instruction_set` attribute), as well as possibly supporting specific additional instruction sets:
@@ -80,7 +80,7 @@ Guarantees:
 * The exact details of an `instruction_set` guarantee vary by target.
 * Notably, the `instruction_set` attribute is most likely to interact (in a target specific way) with function inlining and use of inline assembly.
 
-## ARM
+### ARM
 
 (this portion is a little extra technical, and very platform specific)
 
@@ -106,15 +106,15 @@ Inlining:
 * Unfortunately, it's also not always clear to the programmer when inlining happens because sometimes a function might be inlined up through several layers of the call stack.
 * How to resolve this is an Unresolved Question (see below).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Adding another attribute complicates Rust's design.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Rationale
+### Rationale
 
 Here's a simple but complete-enough program of how this would be used in practice. In this example, the program is for the Game Boy Advance (GBA). I have attempted to limit it to the essentials, so all the MMIO definitions, as well as the assembly runtime you'd need to boot and call `main`, are still omitted from the example.
 
@@ -178,7 +178,7 @@ fn my_inter_fn() {
 
 In the case of this particular device, the hardware interrupts go to the device's BIOS, which then calls your interrupt handler function. However, because the BIOS is `a32` code and uses a `b` branch instead of a `bx` branch-exchange, it jumps to the handler with the CPU in an `a32` state. If the handler were written as `t32` code it would immediately trigger UB.
 
-## Alternatives 
+### Alternatives 
 
 * Extending `target_feature` to allow `#[target_feature(disable = "...")]` and adding `thumb-mode` to the whitelist would support this functionality without adding another distinct attribute; however, this does not fit with the `target_feature` attribute's current focus on features such as AVX and SSE whose absence is not necessarily compensated for by the presence of something else.
 
@@ -186,18 +186,18 @@ In the case of this particular device, the hardware interrupts go to the device'
 
 * Of note is the fact that this is a feature that mostly improves Rust's support for the more legacy end of ARM devices. Newer devices, with much larger amounts of memory (relatively), don't usually benefit as much. They could simply compile the entire program as `a32`, without needing to gain the space savings of `t32` code.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 In C you can use `__attribute__((target("arm")))` and `__attribute__((target("thumb")))` to access similar functionality. It's a compiler-specific extension, but it's supported by both GCC and Clang ([this PR](https://reviews.llvm.org/D33721) appears to be the one that added this feature to LLVM/clang).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - How do we ensure that `instruction_set` and inline assembly always interact correctly? This isn't an implementation blocker but needs to be resolved before Stabilization of the attribute.
   * Currently, LLVM will not inline `a32` functions into `t32` functions and vice versa, because they count as different code targets. However, this is not necessarily a guarantee from LLVM, it could just be the current implementation, so more investigation is needed.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * If Rust gains support for the 65C816, the `#[instruction_set(?)]` attribute might be extended to allow shifting into its 65C02 compatibility mode and back again.

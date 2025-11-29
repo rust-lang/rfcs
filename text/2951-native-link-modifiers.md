@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2951](https://github.com/rust-lang/rfcs/pull/2951)
 - Rust Issue: [rust-lang/rust#81490](https://github.com/rust-lang/rust/issues/81490)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Provide an extensible mechanism for tweaking linking behavior of native libraries
 both in `#[link]` attributes (`#[link(modifiers = "+foo,-bar")]`)
 and on command line (`-l static:+foo,-bar=mylib`).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Occasionally some tweaks to linking behavior of native libraries are necessary,
@@ -32,22 +32,22 @@ on some future edition boundary, and hopefully unblocking its stabilization.
 The generic syntax provides a way to add more such modifiers in the future
 without introducing new linking kinds.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This is an advanced feature not expected to be used commonly,
 see the reference-level explanation if you know that you need some of these modifiers.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Existing syntax of linking attributes and options
+### Existing syntax of linking attributes and options
 
 - Attributes: `#[link(name = "string", kind = "string", cfg(predicate))]`
 (some components are optional.)
 - Command line options: `-l kind=name:rename` (some components are optional).
 
-## Proposed extensions to the syntax
+### Proposed extensions to the syntax
 
 - Attributes: `#[link(/* same */, modifiers = "+foo,-bar")]`.
 - Command line options: `-l kind:+foo,-bar=name:rename`.
@@ -62,9 +62,9 @@ in general and should have the same semantics.
 If the `:rename` component is specified on the command line, then in addition to the name
 and linking kind the modifiers will be updated as well (using concatenation).
 
-## Specific modifiers
+### Specific modifiers
 
-### `bundle`
+#### `bundle`
 
 Only compatible with the `static` linking kind.
 
@@ -81,7 +81,7 @@ This modifier is supposed to supersede the `static-nobundle` linking kind define
 The default for this modifier is currently `+bundle`,
 but it could be changed later on some future edition boundary.
 
-### `verbatim`
+#### `verbatim`
 
 `+verbatim` means that `rustc` itself won't add any target-specified library prefixes or suffixes
 (like `lib` or `.a`) to the library name,
@@ -102,7 +102,7 @@ The `.dll` suffix (or other target-specified suffixes for other targets)
 is now added automatically. \
 If your DLL doesn't have the `.dll` suffix, it can be specified with `+verbatim`.
 
-### `whole-archive`
+#### `whole-archive`
 
 Only compatible with the `static` linking kind.
 
@@ -118,7 +118,7 @@ The default for this modifier is `-whole-archive`.
 A motivating example for this modifier can be found in
 [issue #56306](https://github.com/rust-lang/rust/issues/56306).
 
-### `as-needed`
+#### `as-needed`
 
 Only compatible with the `dynamic` and `framework` linking kinds.
 
@@ -136,14 +136,14 @@ some do not. We may want to try making `+as-needed` a default for all targets.
 A motivating example for this modifier can be found in
 [issue #57837](https://github.com/rust-lang/rust/issues/57837).
 
-## Stability story
+### Stability story
 
 The modifier syntax can be stabilized independently from any specific modifiers.
 
 All the specific modifiers start unstable and can be stabilized independently from each other
 given enough demand.
 
-## Relative order of `-l` and `-Clink-arg(s)` options
+### Relative order of `-l` and `-Clink-arg(s)` options
 
 This RFC also proposes to guarantee that the relative order of `-l` and `-Clink-arg(s)`
 command line options of `rustc` is preserved when passing them to linker. \
@@ -154,7 +154,7 @@ by using raw linker options. \
 An equivalent of order-preserving `-Clink-arg`, but in an attribute form,
 is not provided at this time.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Some extra complexity in parsing the modifiers
@@ -163,11 +163,11 @@ and converting them into a form suitable for the linker.
 Not all modifiers are applicable to all targets and linkers,
 but that's true for many existing `-C` options as well.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 
-## Alternative: rely on raw linker options
+### Alternative: rely on raw linker options
 
 The primary alternative for the (relatively cross-platform) `whole-archive` and `as-needed`
 modifiers is to rely on more target-specific raw linker options more.
@@ -192,7 +192,7 @@ regarding this, see the `LINKER:` modifier for
 Relying on raw linker options while linking with attributes will requires introducing
 a new attribute, see the paragraph about `#[link(arg = "string")]` in "Future possibilities".
 
-## Alternative: merge modifiers into kind in attributes
+### Alternative: merge modifiers into kind in attributes
 
 `#[link(kind = "static", modifiers = "+foo,-bar")]` -> `#[link(kind = "static:+foo,-bar")]`.
 
@@ -200,7 +200,7 @@ This make attributes closer to command line, but it's unclear whether it's a goa
 For example, we already write `kind=name` on command line,
 but `kind = "...", name = "..."` in attributes.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 `gcc` provides the `-Wl,foo` command line syntax (and some other similar options) for passing
@@ -212,17 +212,17 @@ The relative order of `-Wl` options and `-l` options linking the libraries is pr
 but the options supported by `link.exe` are generally order-independent,
 so it is not as relevant to modifying behavior of specific libraries as with `ld`-like linkers.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None currently.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## New modifiers
+### New modifiers
 
-### `dedup`
+#### `dedup`
 
 `rustc` doesn't currently deduplicate linked libraries
 [in general](https://github.com/rust-lang/rust/issues/73319).
@@ -234,7 +234,7 @@ but provide the `-dedup` modifier as an opt-out for these rare cases.
 
 Introducing the `dedup` modifier with the current `-dedup` default doesn't make much sense.
 
-## Support `#[link(arg = "string")]` in addition to the modifiers
+### Support `#[link(arg = "string")]` in addition to the modifiers
 
 `ld` supports some other niche per-library options, for example `--copy-dt-needed-entries`.
 

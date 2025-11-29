@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2102](https://github.com/rust-lang/rfcs/pull/2102)
 - Rust Issue: [rust-lang/rust#49804](https://github.com/rust-lang/rust/issues/49804)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow unnamed fields of `struct` and `union` type, contained within an outer
@@ -17,7 +17,7 @@ using the same names as the C structures, without interposing artificial field
 names that will confuse users of well-established interfaces from existing
 platforms.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Numerous C interfaces follow a common pattern, consisting of a `struct`
@@ -44,7 +44,7 @@ support for using this feature in Rust data structures using `repr(Rust)`. As
 precedent, Rust's support for variadic argument lists only permits its use on
 `extern "C"` functions.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This explanation should appear after the definition of `union`, and after an
@@ -178,7 +178,7 @@ struct S {
 }
 ```
 
-## Unnamed fields with named types
+### Unnamed fields with named types
 
 An unnamed field may also use a named `struct` or `union` type. For instance:
 
@@ -217,7 +217,7 @@ Note that the intermediate type name in the declaration must resolve to a
 concrete type, and cannot involve a generic type parameter of the containing
 structure.
 
-## Mental model
+### Mental model
 
 In the memory layout of a structure, the alternating uses of `struct { ... }`
 and `union { ... }` change the "direction" that fields are being laid out: if
@@ -260,7 +260,7 @@ sequential order. The unnamed `union` lays out `b`, the unnamed `struct`, and
 `e`, in parallel. The unnamed `struct` lays out `c` and `d` in sequential
 order.
 
-## Instantiation
+### Instantiation
 
 Given the following declaration:
 
@@ -286,7 +286,7 @@ All of the following will instantiate a value of type `S`:
 - `S { a: 1, c: 2, d: 3.0, f: 4.0 }`
 - `S { a: 1, e: 2.0, f: 3.0 }`
 
-## Pattern matching
+### Pattern matching
 
 Code can pattern match on a structure containing unnamed fields as though all
 the fields appeared at the top level. For instance, the following code matches
@@ -340,7 +340,7 @@ the unnamed struct or union, and then produces errors accordingly if a
 sub-pattern matching an unnamed struct doesn't mention all fields of that struct,
 or if a pattern doesn't mention *any* fields in an unnamed union.
 
-## Representation
+### Representation
 
 This feature exists to support the layout of native platform data structures.
 Structures using the default `repr(Rust)` layout cannot use this feature, and
@@ -383,7 +383,7 @@ second does not.
 Unnamed fields with named types use the representation attributes attached to
 the named type. The named type must use `repr(C)`.
 
-## Derive
+### Derive
 
 A `struct` or `union` containing unnamed fields may derive `Copy`, `Clone`, or
 both, if all the fields it contains (including within unnamed fields) also
@@ -393,7 +393,7 @@ A `struct` containing unnamed fields may derive `Clone` if every field
 contained directly in the `struct` implements `Clone`, and every field
 contained within an unnamed `union` (directly or indirectly) implements `Copy`.
 
-## Ambiguous field names
+### Ambiguous field names
 
 You cannot use this feature to define multiple fields with the same name. For
 instance, the following definition will produce an error:
@@ -411,7 +411,7 @@ struct S {
 
 The error will identify the duplicate `a` fields as the sources of the error.
 
-## Generics and type parameters
+### Generics and type parameters
 
 You can use this feature with a struct or union that has a generic type:
 
@@ -454,10 +454,10 @@ This avoids situations in which the compiler must delay producing an error on a
 field name conflict between `T` and `S` (or on the use of a non-struct,
 non-union type for `T`) until it knows a specific type for `T`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Parsing
+### Parsing
 
 Within a struct or union's fields, in place of a field name and value, allow
 `_: struct { fields }` or `_: union { fields }`, where `fields` allows
@@ -474,7 +474,7 @@ keyword `union` could theoretically appear as a type name, but an open brace
 cannot appear immediately after a field type, allowing disambiguation via a
 single token of context (`union {`).
 
-## Layout and Alignment
+### Layout and Alignment
 
 The layout and alignment of a `struct` or `union` containing unnamed fields
 must match the C ABI for the equivalent structure. In particular, it should
@@ -483,21 +483,21 @@ declared type and a named field of that type, rather than as if the fields
 appeared directly within the containing `struct` or `union`. This may, in
 particular, affect alignment.
 
-## Simultaneous Borrows
+### Simultaneous Borrows
 
 An unnamed `struct` within a `union` should behave the same with respect to
 borrows as a named and typed `struct` within a `union`, allowing borrows of
 multiple fields from within the `struct`, while not permitting borrows of other
 fields in the `union`.
 
-## Visibility
+### Visibility
 
 Each field within an unnamed `struct` or `union` may have an attached
 visibility. An unnamed field itself does not have its own visibility; all of
 its fields appear directly within the containing structure, and their own
 visibilities apply.
 
-## Documentation
+### Documentation
 
 Public fields within an unnamed `struct` or `union` should appear in the
 rustdoc documentation of the outer structure, along with any doc comment or
@@ -510,7 +510,7 @@ Any unnamed field that contains only non-public fields should be omitted
 entirely, rather than included with its fields omitted. Omitting an unnamed
 field should trigger the `// some fields omitted` note.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This introduces additional complexity in structure definitions. Strictly
@@ -518,10 +518,10 @@ speaking, C interfaces do not *require* this mechanism; any such interface
 *could* define named struct or union types, and define named fields of that
 type. This RFC provides a usability improvement for such interfaces.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
-## Not implementing this feature at all
+### Not implementing this feature at all
 
 Choosing not to implement this feature would force binding generators (and the
 authors of manual bindings) to invent new names for these groupings of fields.
@@ -530,7 +530,7 @@ able to rely on documentation for the underlying interface. Furthermore,
 binding generators would not have any basis on which to generate a meaningful
 name.
 
-## Not implementable as a macro
+### Not implementable as a macro
 
 We cannot implement this feature as a macro, because it affects the names used
 to reference the fields contained within an unnamed field. A macro could
@@ -538,7 +538,7 @@ extract and define types for the unnamed fields, but that macro would have to
 give a name to those unnamed fields, and accesses would have to include the
 intermediate name.
 
-## Leaving out the `_: ` in unnamed fields
+### Leaving out the `_: ` in unnamed fields
 
 Rather than declaring unnamed fields with an `_`, as in `_: union { fields }`
 and `_: struct { fields }`, we could omit the field name entirely, and write
@@ -546,7 +546,7 @@ and `_: struct { fields }`, we could omit the field name entirely, and write
 match the C syntax. However, this does not provide as natural an extension to
 support references to named structures.
 
-## Allowing type parameters
+### Allowing type parameters
 
 We could allow the type parameters of generic types as the named type of an
 unnamed field. This could allow creative flexibility in API design, such as
@@ -555,7 +555,7 @@ contains. However, this could also lead to much more complex errors that do not
 arise until the point that code references the generic type. Prohibiting the
 use of type parameters in this way will not impact common uses of this feature.
 
-## Field aliases
+### Field aliases
 
 Rather than introducing unnamed fields, we could introduce a mechanism to
 define field aliases for a type, such that for `struct S`, `s.b` desugars to
@@ -568,7 +568,7 @@ different platforms overlap those fields differently using unnamed unions.
 Finally, such a mechanism would make it harder to create bindings for this
 common pattern in C interfaces.
 
-## Alternate syntax
+### Alternate syntax
 
 Several alternative syntaxes could exist to designate the equivalent of
 `struct` and `union`. Such syntaxes would declare the same underlying types.
@@ -576,7 +576,7 @@ However, inventing a novel syntax for this mechanism would make it less
 familiar both to Rust users accustomed to structs and unions as well as to C
 users accustomed to unnamed struct and union fields.
 
-## Arbitrary field positioning
+### Arbitrary field positioning
 
 We could introduce a mechanism to declare arbitrarily positioned fields, such
 as attributes declaring the offset of each field. The same mechanism was also
@@ -584,7 +584,7 @@ proposed in response to the original union RFC. However, as in that case, using
 struct and union syntax has the advantage of allowing the compiler to implement
 the appropriate positioning and alignment of fields.
 
-## General anonymous types
+### General anonymous types
 
 In addition to introducing just this narrow mechanism for defining unnamed
 fields, we could introduce a fully general mechanism for anonymous `struct` and
@@ -599,7 +599,7 @@ This mechanism intentionally does not provide any means to reference an unnamed
 field as a whole, or its type. That intentional limitation avoids allowing such
 unnamed types to propagate.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 This proposal does *not* support anonymous `struct` and `union` types that can

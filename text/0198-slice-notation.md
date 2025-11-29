@@ -2,7 +2,7 @@
 - RFC PR #: [rust-lang/rfcs#198](https://github.com/rust-lang/rfcs/pull/198)
 - Rust Issue #: [rust-lang/rust#17177](https://github.com/rust-lang/rust/issues/17177)
 
-# Summary
+## Summary
 
 This RFC adds *overloaded slice notation*:
 
@@ -17,7 +17,7 @@ via two new traits, `Slice` and `SliceMut`.
 It also changes the notation for range `match` patterns to `...`, to
 signify that they are inclusive whereas `..` in slices are exclusive.
 
-# Motivation
+## Motivation
 
 There are two primary motivations for introducing this feature.
 
@@ -44,7 +44,7 @@ return `Option` values rather than failing. By providing similar notation for
 slicing, we open the door to following the same convention throughout
 vector-like APIs.
 
-# Detailed design
+## Detailed design
 
 The design is a straightforward continuation of the `Index` trait design. We
 introduce two new traits, for immutable and mutable slicing:
@@ -96,7 +96,7 @@ than the interpretation, is that the exclusive (respectively
 inclusive) interpretation is the right default for slicing
 (respectively matching).
 
-## Rationale for the notation
+### Rationale for the notation
 
 The choice of square brackets for slicing is straightforward: it matches our
 indexing notation, and slicing and indexing are closely related.
@@ -109,7 +109,7 @@ for slicing has precedent in Perl and D.
 See [Wikipedia](http://en.wikipedia.org/wiki/Array_slicing) for more on the
 history of slice notation in programming languages.
 
-### The `mut` qualifier
+#### The `mut` qualifier
 
 It may be surprising that `mut` is used as a qualifier in the proposed
 slice notation, but not for the indexing notation. The reason is that
@@ -129,13 +129,13 @@ slice, which we don't want to immediately deref. But the consequence
 is that we need to know the mutability of the slice up front, when we
 take it, since it determines the type of the expression.
 
-# Drawbacks
+## Drawbacks
 
 The main drawback is the increase in complexity of the language syntax. This
 seems minor, especially since the notation here is essentially "finishing" what
 was started with the `Index` trait.
 
-## Limitations in the design
+### Limitations in the design
 
 Like the `Index` trait, this forces the result to be a reference via
 `&`, which may rule out some generalizations of slicing.
@@ -157,11 +157,11 @@ without breaking backwards compatibility by using blanket
 implementations of the new traits (say, `IndexHKT`) for types that
 implement the old ones.
 
-# Alternatives
+## Alternatives
 
 For improving the ergonomics of `as_slice`, there are two main alternatives.
 
-## Coercions: auto-slicing
+### Coercions: auto-slicing
 
 One possibility would be re-introducing some kind of coercion that automatically
 slices.
@@ -192,7 +192,7 @@ Unfortunately, adding such a coercion requires choosing between the following:
   downside when reasoning about code, so we should pursue more conservative
   solutions first.
 
-## Deref
+### Deref
 
 Another possibility would be to make `String` implement `Deref<str>` and
 `Vec<T>` implement `Deref<[T]>`, once DST lands. Doing so would allow explicit

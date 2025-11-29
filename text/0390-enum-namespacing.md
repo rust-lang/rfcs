@@ -2,23 +2,23 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/390
 - Rust Issue #: https://github.com/rust-lang/rust/issues/18478
 
-# Summary
+## Summary
 
 The variants of an enum are currently defined in the same namespace as the enum
 itself. This RFC proposes to define variants under the enum's namespace.
 
-## Note
+### Note
 
 In the rest of this RFC, *flat enums* will be used to refer to the current enum
 behavior, and *namespaced enums* will be used to refer to the proposed enum
 behavior.
 
-# Motivation
+## Motivation
 
 Simply put, flat enums are the wrong behavior. They're inconsistent with the
 rest of the language and harder to work with.
 
-## Practicality
+### Practicality
 
 Some people prefer flat enums while others prefer namespaced enums. It is
 trivial to emulate flat enums with namespaced enums:
@@ -76,7 +76,7 @@ un-mangled (e.g, `EndOfFile` or `ConnectionRefused`) except for one,
 `OtherIoError`. Presumably, `Other` would be too confusing in isolation. One
 also runs the risk of running into collisions as the library grows.
 
-## Consistency
+### Consistency
 
 Flat enums are inconsistent with the rest of the language. Consider the set of
 items. Some don't have their own names, such as `extern {}` blocks, so items
@@ -132,7 +132,7 @@ contains the enum itself, such as `std::option::Option::None`.  These issues
 can of course be fixed, but that will require adding more special cases to work
 around the inconsistent behavior of enums.
 
-## Usability
+### Usability
 
 This inconsistency makes it harder to work with enums compared to other items.
 
@@ -225,7 +225,7 @@ use messages::FrontendMessage::*;
 use messages::{FrontendMessage, BackendMessage, WriteMessage, ReadMessage};
 ```
 
-# Detailed design
+## Detailed design
 
 The compiler's resolve stage will be altered to place the value and type
 definitions for variants in their enum's module, just as methods of inherent
@@ -252,7 +252,7 @@ making the minimal set of changes required to port the compiler and standard
 libraries by reexporting variants in the old location. Later work can alter
 the APIs to take advantage of the new definition locations.
 
-## Library changes
+### Library changes
 
 Library authors can use reexports to take advantage of enum namespacing without
 causing too much downstream breakage:
@@ -291,12 +291,12 @@ pub enum Item {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 The transition period will cause enormous breakage in downstream code. It is
 also a fairly large change to make to resolve, which is already a bit fragile.
 
-# Alternatives
+## Alternatives
 
 We can implement enum namespacing after 1.0 by adding a "fallback" case to
 resolve, where variants can be referenced from their "flat" definition location
@@ -312,7 +312,7 @@ would simply cause confusion, as library authors need to decide which one they
 want to use, and library consumers need to double check which place they can
 import variants from.
 
-# Unresolved questions
+## Unresolved questions
 
 A recent change placed enum variants in the type as well as the value namespace
 to allow for future language expansion. This broke some code that looked like

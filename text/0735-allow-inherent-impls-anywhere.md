@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#735](https://github.com/rust-lang/rfcs/pull/735)
 - Rust Issue: [rust-lang/rust#22563](https://github.com/rust-lang/rust/issues/22563)
 
-# Summary
+## Summary
 
 Allow inherent implementations on types outside of the module they are defined in,
 effectively reverting [RFC PR 155](https://github.com/rust-lang/rfcs/pull/155).
 
-# Motivation
+## Motivation
 
 The main motivation for disallowing such `impl` bodies was the implementation
 detail of fake modules being created to allow resolving `Type::method`, which
@@ -22,7 +22,7 @@ said about dealing with restricted inherent `impl`s: it leads to non-DRY single
 use extension traits, the worst offender being `AstBuilder` in libsyntax, with
 almost 300 lines of redundant method definitions.
 
-# Detailed design
+## Detailed design
 
 Remove the existing limitation, and only require that the `Self` type of the
 `impl` is defined in the same crate. This allows moving methods to other modules:
@@ -37,14 +37,14 @@ mod achievements {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 Consistency and ease of finding method definitions by looking at the module the
 type is defined in, has been mentioned as an advantage of this limitation.
 However, trait `impl`s already have that problem and single use extension traits
 could arguably be worse.
 
-# Alternatives
+## Alternatives
 
 - Leave it as it is. Seems unsatisfactory given that we're no longer limited
   by implementation details.
@@ -68,6 +68,6 @@ could arguably be worse.
   to present the whole situation to avoid issues in the future - even though I'm
   not aware of backwards compatibility ones or any related to compiler internals.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

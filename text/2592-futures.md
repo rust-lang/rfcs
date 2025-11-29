@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2592](https://github.com/rust-lang/rfcs/pull/2592)
 - Rust Issue: [rust-lang/rust#59113](https://github.com/rust-lang/rust/issues/59113)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes to stabilize the library component for the [first-class `async`/`await`
@@ -19,10 +19,10 @@ This is a revised and slimmed down version of the [earlier futures RFC](https://
 [pin]: https://github.com/rust-lang/rfcs/pull/2349
 [companion RFC]: https://github.com/rust-lang/rfcs/pull/2394
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Why `Future`s in `std`?
+### Why `Future`s in `std`?
 
 The core motivation for this RFC is to stabilize the supporting mechanisms for
 `async`/`await` syntax.  The syntax itself is motivated in the (already merged)
@@ -36,7 +36,7 @@ of this RFC is to stabilize this `Future` trait and the types it depends on.
 This is the last step needed before we are in a position to stabilize `async`/`await`
 itself.
 
-## How does this step fit into the bigger picture?
+### How does this step fit into the bigger picture?
 
 The `async`/`await` syntax is one of the most eagerly desired features in Rust, and
 will have a major impact on the ecosystem. It, and the APIs described here, have been
@@ -47,7 +47,7 @@ both work on stable Rust *and* to seamlessly support use of `async`/`await` on n
 It also allows us to finalize design debate on the API portion, and focus on the few
 remaining questions about `async` syntax before it, too, is stabilized.
 
-# Historical context
+## Historical context
 
 The APIs proposed for stabilization have a lengthy history:
 
@@ -76,7 +76,7 @@ The [pinning APIs](https://github.com/rust-lang/rfcs/pull/2349) were a game-chan
 
 Since the initial futures 0.3 release, relatively little has changed about the core `Future` trait and task system, other than the refinements mentioned above. The actual `Future` trait has stayed essentially as it was back in April.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `Future` trait represents an *asynchronous* and lazy computation that may
@@ -123,10 +123,10 @@ that allow tasks to request getting scheduled again.
 The `task` module provides these APIs, which are required when manually implementing
 `Future`s or executors.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `core::task` module
+### `core::task` module
 
 The fundamental mechanism for asynchronous computation in Rust is *tasks*, which
 are lightweight threads of execution; many tasks can be cooperatively scheduled
@@ -162,7 +162,7 @@ pub enum Poll<T> {
 When a task returns `Poll::Ready`, the executor knows the task has completed and
 can be dropped.
 
-### Waking up
+#### Waking up
 
 If a future cannot be directly fulfilled during execution and returns `Pending`,
 it needs a way to later on inform the executor that it needs to get polled again
@@ -320,7 +320,7 @@ impl Drop for Waker {
 An executor that instantiates a `RawWaker` must therefore make sure that all
 these requirements are fulfilled.
 
-## `core::future` module
+### `core::future` module
 
 With all of the above task infrastructure in place, defining `Future` is
 straightforward:
@@ -398,7 +398,7 @@ points"). The mechanics of pinning are explained
 in [the RFC that introduced it](https://github.com/rust-lang/rfcs/pull/2349)
 and the [blog post about the latest revisions](https://boats.gitlab.io/blog/post/rethinking-pin/).
 
-## Relation to futures 0.1
+### Relation to futures 0.1
 
 The various discussions outlined in the historical context section above cover the
 path to these APIs from futures 0.1. But, in a nutshell, there are three major shifts:
@@ -428,7 +428,7 @@ simply by using a `.compat()` combinator. These compatibility layers make it pos
 to use the existing ecosystem smoothly with the new futures APIs, and make it possible
 to transition large code bases incrementally.
 
-# Rationale, drawbacks, and alternatives
+## Rationale, drawbacks, and alternatives
 
 This RFC is one of the most substantial additions to `std` proposed since
 1.0. It commits us to including a particular task and polling model in the
@@ -463,7 +463,7 @@ available in the [companion RFC].
 For the remainder of this section, we'll dive into specific API design questions
 where this RFC differs from futures 0.2.
 
-## Rationale, drawbacks and alternatives for removing built-in errors
+### Rationale, drawbacks and alternatives for removing built-in errors
 
 There are an assortment of reasons to drop the built-in error type in the main
 trait:
@@ -497,7 +497,7 @@ All of that said, there are real downsides for error-heavy code, even with
 The error handling piece of this RFC is separable from the other pieces, so the
 main alternative would be to retain the built-in error type.
 
-## Rationale, drawbacks and alternatives to the core trait design (wrt `Pin`)
+### Rationale, drawbacks and alternatives to the core trait design (wrt `Pin`)
 
 Putting aside error handling, which is orthogonal and discussed above, the
 primary other big item in this RFC is the move to `Pin` for the core polling
@@ -550,7 +550,7 @@ It's possible to add `MoveFuture`, together with a blanket impl, at any point in
 Thus, starting with just the single `Future` trait as proposed in this RFC keeps our options
 maximally open while we gain experience.
 
-## Rationale, drawbacks and alternatives to the wakeup design (`Waker`)
+### Rationale, drawbacks and alternatives to the wakeup design (`Waker`)
 
 Previous iterations of this proposal included a separate wakeup type,
 `LocalWaker`, which was `!Send + !Sync` and could be used to implement
@@ -592,7 +592,7 @@ ecosystem will continue to be multithreaded-compatible (as they are today),
 so optimizing for the ergonomics of this case is prioritized over better
 error messages in the more heavily specialized case.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 There is substantial prior art both with async/await notation and with futures
@@ -610,7 +610,7 @@ parallelism in Haskell. What seems to be perhaps new with this RFC is the idea
 of melding the "trampoline" technique with an explicit, open-ended task/wakeup
 model.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None at the moment.

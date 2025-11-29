@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2133](https://github.com/rust-lang/rfcs/pull/2133)
 - Rust Issue: [rust-lang/rust#44496](https://github.com/rust-lang/rust/issues/44496)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add compiler-generated `Clone` implementations for tuples and arrays with `Clone` elements of all lengths.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, the `Clone` trait for arrays and tuples is implemented using a [macro] in libcore, for tuples of size 11 or less and for `Copy` arrays of size 32 or less. This breaks the uniformity of the language and annoys users.
@@ -17,12 +17,12 @@ Also, the compiler already implements `Copy` for all arrays and tuples with all 
 
 [macro]: https://github.com/rust-lang/rust/blob/f3d6973f41a7d1fb83029c9c0ceaf0f5d4fd7208/src/libcore/tuple.rs#L25
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Arrays and tuples of `Clone` arrays are `Clone` themselves. Cloning them clones all of their elements.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Make `clone` a lang-item, add the following trait rules to the compiler:
@@ -78,21 +78,21 @@ char: Clone
 
 This was considered a bug-fix (these types are all `Copy`, so it's easy to witness that they are `Clone`).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The MIR shims add complexity to the compiler. Along with the `derive(Clone)` implementation in `libsyntax`, we have 2 separate sets of implementations of `Clone`. 
 
 Having `Copy` and `Clone` impls for all arrays and tuples, but not `PartialEq` etc. impls, could be confusing to users.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 Even with all proposed expansions to Rust's type-system, for consistency, the compiler needs to have at least *some* built-in `Clone` implementations: the type `for<'a> fn(Foo<'a>)` is `Copy` for all user-defined types `Foo`, but there is no way to implement `Clone`, which is a supertrait of `Copy`, for it (an `impl<T> Clone for fn(T)` won't match against the higher-ranked type).
 
 The MIR shims for `Clone` of arrays and tuples are actually pretty simple and don't add much complexity after we have `drop_in_place` and shims for `Copy` types.
 
-## The array situation
+### The array situation
 
 In Rust 1.19, arrays are `Clone` only if they are `Copy`. This code does not compile:
 ```Rust
@@ -119,7 +119,7 @@ impl<const n: usize; T: Clone> Clone for [T; n] {
 
 OTOH, this means that making non-`Copy` arrays `Clone` is less of a bugfix and more of a new feature. It's however a nice feature - `[Box<u32>; 1]` not being `Clone` is an annoying and seemingly-pointless edge case.
 
-## Implement `Clone` only for `Copy` types
+### Implement `Clone` only for `Copy` types
 
 As of Rust 1.19, the compiler *does not* have the `Clone` implementations, which causes ICEs such as [rust-lang/rust#25733] because `Clone` is a supertrait of `Copy`.
 
@@ -129,7 +129,7 @@ This would make the shims *trivial* (a `Clone` implementation for a `Copy` type 
 
 When we get variadic generics, we could make all tuples with `Clone` elements `Clone`. When we get const generics, we could make all arrays with `Clone` elements `Clone`.
 
-## Use a MIR implementation of `Clone` for all derived impls
+### Use a MIR implementation of `Clone` for all derived impls
 
 The implementation on the other end of the conservative-radical end would be to use the MIR shims for *all* `#[derive(Clone)]` implementations. This would increase uniformity by getting rid of the separate `libsyntax` derived implementation. However:
 
@@ -139,11 +139,11 @@ The implementation on the other end of the conservative-radical end would be to 
 
 3. A MIR shim implementation would also have to deal with edge cases such as `#[repr(packed)]`, which normal type-checking would handle for ordinary `derive`. I think drop glue already encounters all of these edge cases so we have to deal with them anyway.
 
-## `Copy` and `Clone` for closures
+### `Copy` and `Clone` for closures
 
 We could also add implementations of `Copy` and `Clone` to closures. That is [RFC #2132] and should be discussed there.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 See Alternatives.

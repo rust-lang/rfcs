@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3627](https://github.com/rust-lang/rfcs/pull/3627)
 - Tracking Issue: [rust-lang/rust#123076](https://github.com/rust-lang/rust/issues/123076)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Various changes to the match ergonomics rules:
@@ -16,13 +16,13 @@ Various changes to the match ergonomics rules:
 - On all editions, the binding mode can no longer ever be implicitly set to
   `ref mut` behind an `&` pattern.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Match ergonomics have been a great success overall, but there are some surprising
 interactions that regularly confuse users.
 
-## `mut` resets the binding mode
+### `mut` resets the binding mode
 
 `mut` resets the binding mode to by-value, which users do not expect; the
 mutability of the binding would seem to be separate concern from its type
@@ -34,7 +34,7 @@ let (x, mut y) = &(true, false);
 let _: (&bool, bool) = (x, y);
 ```
 
-## Can’t cancel out an inherited reference
+### Can’t cancel out an inherited reference
 
 `&` and `&mut` patterns must correspond with a reference in the same position in
 the scrutinee, even if there is an inherited reference present. Therefore, users
@@ -53,7 +53,7 @@ fn foo(arg: &(String, Vec<i32>, u8)) {
 }
 ```
 
-## A single `&` can strip two references
+### A single `&` can strip two references
 
 When an `&` or `&mut` pattern is used in a location where there is also an
 inherited reference present, both are stripped; adding a single `&` to the
@@ -64,12 +64,12 @@ let [a] = &[&42]; // a = &&42
 let [&a] = &[&42]; // a = 42
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Match ergonomics works a little differently in edition 2024 and above.
 
-## `mut` no longer strips the inherited reference
+### `mut` no longer strips the inherited reference
 
 `mut` on a binding does not reset the binding mode on edition ≥ 2024. Instead,
 `mut` on a binding with non-default binding mode is an error.
@@ -79,7 +79,7 @@ Match ergonomics works a little differently in edition 2024 and above.
 //let (x, mut y) = &(true, false); // ERROR
 ```
 
-## `&` matches against `&mut`
+### `&` matches against `&mut`
 
 On all editions, `&` patterns can match against `&mut` references. On edition
 2024 and above, this includes "inherited" references as described below.
@@ -96,7 +96,7 @@ let [&foo] = &mut [42];
 let _: u8 = foo;
 ```
 
-## Matching against inherited references
+### Matching against inherited references
 
 In all editions, when you match against an `&` or `&mut` reference with the type
 of its referent, you get an "inherited reference": the binding mode of
@@ -130,13 +130,13 @@ let [&x] = &[&42];
 let _: &u8 = x;
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This explanation assumes familiarity with the current match ergonomics rules,
 including the "default binding mode" terminology. Refer to [RFC 2005](./2005-match-ergonomics.md#detailed-design).
 
-## The rules in brief
+### The rules in brief
 
 Building on the rules of [RFC 2005](./2005-match-ergonomics.md), this RFC adopts
 the following five rules for match ergonomics:
@@ -163,7 +163,7 @@ Rust 2024.  The other three rules will be stabilized in all editions.
 
 In the sections below, we describe these rules and their effects in more detail.
 
-## Edition 2024: `mut` does not reset binding mode to by-value
+### Edition 2024: `mut` does not reset binding mode to by-value
 
 In the new edition, `mut` no longer resets the binding mode to by-value;
 instead, `mut` on a binding with a by-reference binding mode is an error.
@@ -173,7 +173,7 @@ instead, `mut` on a binding with a by-reference binding mode is an error.
 // let [mut a] = &[42]; //ERROR
 ```
 
-## All editions: `&` patterns can match against `&mut` references
+### All editions: `&` patterns can match against `&mut` references
 
 `&` patterns can match against `&mut` references.
 
@@ -244,7 +244,7 @@ fn main() {
 }
 ```
 
-## Edition 2024: `&` and `&mut` can match against inherited references
+### Edition 2024: `&` and `&mut` can match against inherited references
 
 When the default binding mode is `ref` or `ref mut`, `&` and `&mut` patterns can
 reset it. `&` patterns will reset either `ref` or `ref mut` binding modes to
@@ -307,7 +307,7 @@ let _: &&mut u8 = x;
 //let &mut x = &&mut 3; // ERROR
 ```
 
-## All editions: the default binding mode is never set to `ref mut` behind an `&` pattern or reference
+### All editions: the default binding mode is never set to `ref mut` behind an `&` pattern or reference
 
 The binding mode is set to `ref` instead in such cases. (On older editions, this
 allows strictly more code to compile.)
@@ -331,7 +331,7 @@ let _: u8 = a;
 //let &[[&mut a]] = &[&mut [42]]; // ERROR
 ```
 
-# Migration
+## Migration
 [migration]: #migration
 
 This proposal, if adopted, would allow the same pattern to have different
@@ -350,7 +350,7 @@ rules could require editing the affected patterns twice: once to desugar the
 match ergonomics before adopting the new edition, and a second time to restore
 match ergonomics after adoption of the new edition.
 
-## Macro subpatterns
+### Macro subpatterns
 
 Unfortunately, when a subpattern derives from a macro expansion, fully
 desugaring the match ergonomics may not be possible. For example:
@@ -382,16 +382,16 @@ In such cases, there is no possible machine-applicable suggestion we could emit
 to produce code compatible with all editions (short of expanding the macro).
 However, such code should be extremely rare in practice.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is a silent change in behavior, which is considered undesirable even
 over an edition.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Desirable property
+### Desirable property
 [desirable-property]: #desirable-property
 
 The proposed rules for new editions uphold the following property:
@@ -408,18 +408,18 @@ The proposed rules for new editions uphold the following property:
 
 In other words, the new match ergonomics rules are compositional.
 
-## `mut` not resetting the binding mode
+### `mut` not resetting the binding mode
 
 Admittedly, there is not much use for mutable by-reference bindings. This is
 true even outside of pattern matching; `let mut ident: &T = ...` is not commonly
 seen (though not entirely unknown either). The motivation for making this change
 anyway is that the current behavior is unintuitive and surprising for users.
 
-## Never setting default binding mode to `ref mut` behind `&`
+### Never setting default binding mode to `ref mut` behind `&`
 
-### We can’t delay this choice
+#### We can’t delay this choice
 
-#### Patterns that work only with this rule
+##### Patterns that work only with this rule
 
 ```rust
 //! All editions: works only with this rule
@@ -437,7 +437,7 @@ let &(i, j, [ref s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s:
 let &(i, j, &mut [ref s]) = &(42, &mut [String::from("🦀")]); // i: i32, j: i32, s: &String
 ```
 
-#### Patterns that work only without this rule
+##### Patterns that work only without this rule
 
 ```rust
 //! Edition ≥ 2024: works only without this rule
@@ -453,7 +453,7 @@ let &[[&a]] = &[&mut [42]]; // x: i32
 let &[&mut [a]] = &[&mut [42]]; // x: i32
 ```
 
-### Makes behavior more consistent
+#### Makes behavior more consistent
 
 On all editions, when a structure pattern peels off a shared reference and the
 default binding mode is already `ref mut`, the binding mode gets set to `ref`:
@@ -476,7 +476,7 @@ change, in addition to being generally useful, makes the match ergonomics rules
 more consistent by ensuring that immutability *always* takes precedence over
 mutability.
 
-### Ensures that a desirable property is preserved
+#### Ensures that a desirable property is preserved
 
 The current match ergonomics rules uphold the following desirable property:
 
@@ -505,7 +505,7 @@ let &[[&mut x]] = &[&mut [42]]; // If we were allow this, with `x: i32` …
 // nothing we do will get us `&mut i32` in any form
 ```
 
-## `&` patterns matching against `&mut`
+### `&` patterns matching against `&mut`
 
 There are several motivations for allowing this:
 
@@ -534,7 +534,7 @@ that prevents the default binding mode from being set to `ref mut` behind `&`.
 adding significant complexity to the variance rules, but I do believe it to be
 possible.
 
-## Versus "eat-two-layers"
+### Versus "eat-two-layers"
 
 An alternative proposal would be to allow `&` and `&mut` patterns to reset the
 binding mode when not matching against a reference in the same position in the
@@ -549,14 +549,14 @@ concerns with certain proposals for "deref patterns".
 
 (This alternative is currently implemented under a separate feature gate.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - How much churn will be necessary to adapt code for the new edition? There are
   0 instances of affected patterns in the standard library, and 20 in the
   compiler, but that is all the data we have at the moment.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - An explicit syntax for mutable by-reference bindings should be chosen at some
@@ -565,7 +565,7 @@ concerns with certain proposals for "deref patterns".
 - Future changes to reference types (partial borrows, language sugar for `Pin`,
   etc) may interact with match ergonomics.
 
-## Deref patterns
+### Deref patterns
 
 Because it is compositional, the “eat-one-layer” model proposed by this RFC is
 fully compatible with proposals for "deref patterns", including allowing
@@ -573,7 +573,7 @@ fully compatible with proposals for "deref patterns", including allowing
 question that would need to be resolved is whether and how deref patterns
 (explicit or implicit) affect the default binding mode.
 
-## Matching `&mut` directly behind `&`
+### Matching `&mut` directly behind `&`
 
 There is one notable situation where match ergonomics cannot be used, and
 explicit `ref` is required. This happens where `&mut` is nested behind `&`:

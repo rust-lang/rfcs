@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#218](https://github.com/rust-lang/rfcs/pull/218)
 - Rust Issue: [rust-lang/rust#24266](https://github.com/rust-lang/rust/issues/24266)
 
-# Summary
+## Summary
 
 When a struct type `S` has no fields (a so-called "empty struct"),
 allow it to be defined via either `struct S;` or `struct S {}`.
@@ -11,7 +11,7 @@ and pattern-matched via either `S` or `S {}`.
 When defined via `struct S {}`, require instances to be constructed
 and pattern-matched solely via `S {}`.
 
-# Motivation
+## Motivation
 
 Today, when writing code, one must treat an empty struct as a
 special case, distinct from structs that include fields.
@@ -55,7 +55,7 @@ struct.  The parsing ambiguity that motivated removing support for
 Supporting empty braces in the syntax for empty structs is easy to do
 in the language now.
 
-# Detailed design
+## Detailed design
 
 There are two kinds of empty structs: Braced empty structs and
 flexible empty structs.  Flexible empty structs are a slight
@@ -95,7 +95,7 @@ braced empty struct (and then have a tool indicate all of the
 locations where braces need to be added); after that step has been
 completed, one can then take the next step of adding the actual field.
 
-# Drawbacks
+## Drawbacks
 
 Some people like "There is only one way to do it."  But, there is
 precedent in Rust for violating "one way to do it" in favor of
@@ -108,9 +108,9 @@ I have attempted to summarize the previous discussion from [RFC PR
 include drawbacks to this approach and to the [Always Require Braces]
 alternative.
 
-# Alternatives
+## Alternatives
 
-## Always Require Braces
+### Always Require Braces
 
 Alternative 1: "Always Require Braces".  Specifically, require empty
 curly braces on empty structs.  People who like the current syntax of
@@ -124,14 +124,14 @@ unary enum version described in the previous paragraph.
 See "I wouldn't want to force noisier syntax ..."
 in the [Recent History] appendix.
 
-## Status quo
+### Status quo
 
 Alternative 2: Status quo.  Macros and code-generators in general will
 need to handle empty structs as a special case.  We may continue
 hitting bugs like [CFG parse bug].  Some users will be annoyed but
 most will probably cope.
 
-## Synonymous in all contexts
+### Synonymous in all contexts
 
 Alternative 3: An earlier version of this RFC proposed having `struct
 S;` be entirely synonymous with `struct S { }`, and the expression
@@ -143,7 +143,7 @@ put an entry into both the type and value namespaces, while
 Thus the current draft of the RFC proposes the "flexible" versus
 "braced" distinction for empty structs.
 
-## Never synonymous
+### Never synonymous
 
 Alternative 4: Treat `struct S;` as requiring `S` at the expression
 and pattern sites, and `struct S { }` as requiring `S { }` at the
@@ -157,7 +157,7 @@ one would have the option of choosing between
 idiosyncrasies about whether you have to write `S` or `S { }`.)
 I would rather adopt "Always Require Braces" than "Never Synonymous"
 
-## Empty Tuple Structs
+### Empty Tuple Structs
 
 One might say "why are you including support for curly braces, but not
 parentheses?"  Or in other words, "what about empty tuple structs?"
@@ -197,13 +197,13 @@ the issue of how tuple structs are handled is totally orthogonal -- we
 could add support for `struct T0()` as a distinct type from `struct S0
 {}`, if we so wished, or leave it aside.)
 
-# Unresolved questions
+## Unresolved questions
 
 None
 
-# Appendices
+## Appendices
 
-## The CFG problem
+### The CFG problem
 
 A program like this works today:
 
@@ -264,7 +264,7 @@ level to support this feature at the semantic level.  But supporting
 empty-braces in the syntax still seems like the most consistent path
 to me.)
 
-## Ancient History
+### Ancient History
 
 A parsing ambiguity was the original motivation for disallowing the
 syntax `S {}` in favor of `S` for constructing an instance of
@@ -309,7 +309,7 @@ Note that there was never an ambiguity for uses of `struct S0 { }` in item
 position.  The issue was solely about expression position prior to the
 adoption of [Rust RFC 25].
 
-## Precedent for flexible syntax in Rust
+### Precedent for flexible syntax in Rust
 
 There is precedent in Rust for violating "one way to do it" in favor
 of syntactic convenience or regularity.
@@ -336,7 +336,7 @@ We do have lints for some style violations (though none catch the
 cases above), but lints are different from fundamental language
 restrictions.
 
-## Recent history
+### Recent history
 
 There was a previous [RFC PR][RFC PR 147] that was effectively the
 same in spirit to this one.  It was closed because it was not

@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#823](https://github.com/rust-lang/rfcs/pull/823)
 - Rust Issue: [rust-lang/rust#22467](https://github.com/rust-lang/rust/issues/22467)
 
-# Summary
+## Summary
 
 Pare back the `std::hash` module's API to improve ergonomics of usage and
 definitions. While an alternative scheme more in line with what Java and C++
 have is considered, the current `std::hash` module will remain largely as-is
 with modifications to its core traits.
 
-# Motivation
+## Motivation
 
 There are a number of motivations for this RFC, and each will be explained in
 term.
 
-## API ergonomics
+### API ergonomics
 
 Today the API of the `std::hash` module is sometimes considered overly
 complicated and it may not be pulling its weight. As a recap, the API looks
@@ -75,7 +75,7 @@ Overall the `std::hash` API is generic enough that its usage is somewhat verbose
 and becomes tiresome over time to work with. This RFC strives to make this API
 easier to work with.
 
-## Forcing byte-stream oriented hashing
+### Forcing byte-stream oriented hashing
 
 Much of the `std::hash` API today is oriented around hashing a stream of bytes
 (blocks of `&[u8]`). This is not a hard requirement by the API (discussed
@@ -114,7 +114,7 @@ impl Hasher for Slot {
 This form of hashing (which is useful for performance sometimes) is difficult to
 work with primarily because of the frequent bounds on `Writer` for hashing.
 
-## Non-applicability for well-known hashing algorithms
+### Non-applicability for well-known hashing algorithms
 
 One of the current aspirations for the `std::hash` module was to be appropriate
 for hashing algorithms such as MD5, SHA\*, etc. The current API has proven
@@ -141,7 +141,7 @@ for `std::hash`. It is expected that an external crate may wish to provide a
 trait for these hashing algorithms and it would not be bounded by
 `std::hash::Hash`, but instead perhaps a "byte container" of some form.
 
-# Detailed design
+## Detailed design
 
 This RFC considers two possible designs as a replacement of today's `std::hash`
 API. One is a "minor refactoring" of the current API while the
@@ -149,7 +149,7 @@ other is a much more radical change towards being conservative. This section
 will propose the minor refactoring change and the other may be found in the
 [Alternatives](#alternatives) section.
 
-## API
+### API
 
 The new API of `std::hash` would be:
 
@@ -221,7 +221,7 @@ impl Hasher for u64 {
 }
 ```
 
-## `HashMap` and `HashState`
+### `HashMap` and `HashState`
 
 For both this recommendation as well as the alternative below, this RFC proposes
 removing the `HashState` trait and `Hasher` structure (as well as the
@@ -254,7 +254,7 @@ The precise details will be affected based on which design in this RFC is
 chosen, but the general idea is to move from a custom trait to the standard `Fn`
 trait for calculating hashes.
 
-# Drawbacks
+## Drawbacks
 
 * This design is a departure from the precedent set by many other languages. In
   doing so, however, it is arguably easier to implement `Hash` as it's more
@@ -275,13 +275,13 @@ trait for calculating hashes.
   types. It would be unfortunate if the `Hasher` trait approached a full-blown
   `Encoder` trait (as `rustc-serialize` has).
 
-# Alternatives
+## Alternatives
 
 As alluded to in the "Detailed design" section the primary alternative to this
 RFC, which still improves ergonomics, is to remove the generic-ness over the
 hashing algorithm.
 
-## API
+### API
 
 The new API of `std::hash` would be:
 
@@ -303,7 +303,7 @@ to quite ergonomically work with hash values as well as hashable objects.
 > choice][cpp-hash] here as well, but it is quite easy to use one instead of
 > the other.
 
-## Hashing algorithm
+### Hashing algorithm
 
 With this definition of `Hash`, each type must pre-ordain a particular hash
 algorithm that it implements. Using an alternate algorithm would require a
@@ -328,7 +328,7 @@ code][boost-combine].
 
 [boost-combine]: https://github.com/boostorg/functional/blob/master/include/boost/functional/hash/hash.hpp#L209-L213
 
-## `HashMap` and DoS protection
+### `HashMap` and DoS protection
 
 Currently one of the features of the standard library's `HashMap` implementation
 is that it by default provides DoS protection through two measures:
@@ -369,7 +369,7 @@ against a hash map is such a common and well known exploit, however, that this
 RFC considers it critical to consider the design of `Hash` and its relationship
 with `HashMap`.
 
-## Mitigation of DoS attacks
+### Mitigation of DoS attacks
 
 Other languages have mitigated DoS attacks via a few measures:
 
@@ -404,7 +404,7 @@ of DoS protection that is available today. For example [@DaGenix explains
 well](https://github.com/rust-lang/rfcs/pull/823#issuecomment-74013800) that we
 may not be able to provide any form of DoS protection guarantee at all.
 
-## Alternative Drawbacks
+### Alternative Drawbacks
 
 * One of the primary drawbacks to the proposed `Hash` trait is that it is now
   not possible to select an algorithm that a type should be hashed with. Instead
@@ -423,7 +423,7 @@ may not be able to provide any form of DoS protection guarantee at all.
   and is not guaranteed to provide the guarantees we want. This departure from
   the may have unknown consequences.
 
-# Unresolved questions
+## Unresolved questions
 
 * To what degree should `HashMap` attempt to prevent DoS attacks? Is it the
   responsibility of the standard library to do so or should this be provided as

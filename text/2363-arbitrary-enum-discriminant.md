@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2363](https://github.com/rust-lang/rfcs/pull/2363)
 - Rust Issue: [rust-lang/rust#60553](https://github.com/rust-lang/rust/issues/60553)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC gives users a way to control the discriminants of variants of all
@@ -13,7 +13,7 @@ all the variants have no fields).
 The change is minimal: allow any variant to be adorned with an explicit
 discriminant value, whether or not that variant has any field.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Stylo, the style system of Servo, represents CSS properties with a large
@@ -168,7 +168,7 @@ impl AnimationValue {
 }
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 An enumeration with only field-less variants can currently have explicit
@@ -193,10 +193,10 @@ enum ParisianSandwichIngredient {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Grammar
+### Grammar
 
 The production for enumeration items becomes:
 
@@ -206,7 +206,7 @@ EnumItem :
     IDENTIFIER ( EnumItemTuple | EnumItemStruct)? EnumItemDiscriminant?
 ```
 
-## Semantics
+### Semantics
 
 The limitation that only field-less enumerations can have explicit discriminant
 values is lifted, and no other change is made to their semantics:
@@ -221,19 +221,19 @@ values is lifted, and no other change is made to their semantics:
    interpreted as `isize`;
  * two variants cannot share the same discriminant.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This introduces one more knob to the representation of enumerations.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Reusing the current syntax and semantics for explicit discriminants of
 field-less enumerations means that the changes to the grammar and semantics of
 the language are minimal. There are a few possible alternatives nonetheless.
 
-## Discriminant values in attributes
+### Discriminant values in attributes
 
 We could specify the discriminant values in variant attributes, but this would
 be at odds with the syntax for field-less enumerations.
@@ -249,7 +249,7 @@ enum ParisianSandwichIngredient {
 }
 ```
 
-## Use discriminants of a separate field-less enumeration
+### Use discriminants of a separate field-less enumeration
 
 We could tell rustc to tie the discriminants of the enumeration to the
 variants of a separate field-less enumeration.
@@ -273,23 +273,23 @@ This isn't applicable if such a separate field-less enumeration doesn't exist,
 and this can easily be done as a procedural macro using the feature described
 in this RFC. It also looks way more like spooky action at a distance.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 No prior art.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
-## Should discriminants of enumerations with fields be specified as variant attributes?
+### Should discriminants of enumerations with fields be specified as variant attributes?
 
 Should they?
  
-## Should this apply only to enumerations with an explicit representation?
+### Should this apply only to enumerations with an explicit representation?
 
 Should it?
 
-# Thanks
+## Thanks
 
 Thanks to Mazdak Farrokhzad (@Centril) and Simon Sapin (@SimonSapin) for
 the reviews, and my local bakery for their delicious baguettes. 🥖

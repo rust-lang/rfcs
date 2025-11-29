@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3151](https://github.com/rust-lang/rfcs/pull/3151)
 - Rust Issue: [rust-lang/rust#93203](https://github.com/rust-lang/rust/issues/93203)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add scoped threads to the standard library that allow one to spawn threads
@@ -20,7 +20,7 @@ thread::scope(|s| {
 });
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Before Rust 1.0 was released, we had
@@ -42,7 +42,7 @@ enough to be promoted into the standard library.
 
 See the [Rationale and alternatives](#rationale-and-alternatives) section for more.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The "hello world" of thread spawning might look like this:
@@ -138,7 +138,7 @@ thread::scope(|s| {
 });
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 We add two new types to the `std::thread` module:
@@ -197,12 +197,12 @@ impl Builder {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The main drawback is that scoped threads make the standard library a little bit bigger.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * Keep scoped threads in external crates.
@@ -248,7 +248,7 @@ The main drawback is that scoped threads make the standard library a little bit 
     (`scope.spawn(move || ..)`) if you want to use the scope inside that closure, which gets unergonomic.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Crossbeam has had
@@ -282,12 +282,12 @@ Rayon also has [scopes](https://docs.rs/rayon/1.0.3/rayon/struct.Scope.html),
 but they work on a different abstraction level - Rayon spawns tasks rather than
 threads. Its API is the same as the one proposed in this RFC.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Can this concept be extended to async? Would there be any behavioral or API differences?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 In the future, we could also have a threadpool like Rayon that can spawn

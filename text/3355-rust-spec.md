@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3355](https://github.com/rust-lang/rfcs/pull/3355)
 - Rust Issue: [rust-lang/rust#113527](https://github.com/rust-lang/rust/issues/113527)
 
-# Summary
+## Summary
 [summary]: #summary
 
 We should start working on a Rust specification.
 
-# Goal of this RFC
+## Goal of this RFC
 
 The goal of this RFC is to reach consensus on:
 
@@ -20,7 +20,7 @@ This RFC _does not_ define the full scope of the specification
 or discuss any details of how it would look like.
 It only provides the minimal details necessary to be able to kick off the Rust specification work.
 
-# Motivation
+## Motivation
 
 Why do we want a Rust specification at all?
 
@@ -36,7 +36,7 @@ using accurately defined terms that everyone agrees on.
 Questions about subtle interactions between features of the language could be answered
 using precise information from a specification, instead of a combination of guesses and several non-authoritative sources.
 
-# Current state
+## Current state
 
 Languages like C and C++ are standardized.
 Rust is not. Standardization comes down to, basically:
@@ -64,7 +64,7 @@ These are currently all incomplete, and/or not a good source to rely on.
 
 More background information is available in [this blog post](https://blog.m-ou.se/rust-standard/).
 
-# Goals and non-goals
+## Goals and non-goals
 
 - The goal of the Rust specification work is the creation of a document, the Rust specification.
 
@@ -116,7 +116,7 @@ More background information is available in [this blog post](https://blog.m-ou.s
 - The specification will be written in English and will be freely available under a permissive license
   that allows for translations and other derived works, just like all our existing documentation and code.
 
-# Coordination and editing
+## Coordination and editing
 
 Writing, editing, and in general coordinating all that's necessary for the creation of a Rust specification is a large amount for work.
 While there are many volunteers willing to work on specific parts of it,
@@ -133,7 +133,7 @@ to collect all relevant information and make sure that consensus is reached on e
 The relevant Rust teams keep authority on their respective parts of Rust.
 The Rust Foundation supports and coordinates the work, but the Rust teams will remain in charge of what Rust is.
 
-## Role of the Editor
+### Role of the Editor
 
 The role of the editor is more than just a technical writer; the editor will be a leader in the specification development process.
 
@@ -182,7 +182,7 @@ The tasks of the editor (as [suggested by Joel](https://github.com/rust-lang/rfc
   well-versed in programming languages and can offer potential clarifications and
   corrections for technical correctness and consistency purposes.
 
-# Questions deliberately left open
+## Questions deliberately left open
 
 This RFC deliberately leaves many questions open, to be answered later in the process.
 For example:

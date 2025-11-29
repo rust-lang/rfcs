@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1445](https://github.com/rust-lang/rfcs/pull/1445)
 - Rust Issue: [rust-lang/rust#31434](https://github.com/rust-lang/rust/issues/31434)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The current compiler implements a more expansive semantics for pattern
@@ -52,7 +52,7 @@ alternatives.
 [crater run]: https://gist.github.com/nikomatsakis/26096ec2a2df3c1fb224
 [internals thread]: https://internals.rust-lang.org/t/how-to-handle-pattern-matching-on-constants/2846
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The compiler currently permits any kind of constant to be used within
@@ -413,7 +413,7 @@ the other hand, if matching against `C` were to require a `PartialEq`
 impl, then it would be illegal. Therefore matching against an *enum
 variant* is distinct from matching against a *constant*.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The goal of this RFC is not to decide between semantic and structural
@@ -436,7 +436,7 @@ When deriving the `Eq` trait, we will add the `#[structural_match]` to
 the type in question. Attributes added in this way will be **exempt from
 the feature gate**.
 
-## Exhaustiveness and dead-code checking
+### Exhaustiveness and dead-code checking
 
 We will treat user-defined structs "opaquely" for the purpose of
 exhaustiveness and dead-code checking. This is required to allow for
@@ -469,7 +469,7 @@ We will not make this change instantaneously. Rather, for at least one
 release cycle, users who are pattern matching on struct types that
 lack `#[structural_match]` will be warned about imminent breakage.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is a breaking change, which means some people might have to
@@ -477,7 +477,7 @@ change their code. However, that is considered extremely unlikely,
 because such users would have to be pattern matching on constants that
 are not comparable for equality (this is likely a bug in any case).
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
  **Limit matching to builtin types.** An earlier version of this RFC
@@ -498,7 +498,7 @@ the semantics of existing programs (whereas the current proposal only
 causes compilation to fail, never changes what an existing program
 will do).
 
-# Discussion thread summary
+## Discussion thread summary
 
 This section summarizes various points that were raised in the
 [internals thread] which are related to patterns but didn't seem to
@@ -521,7 +521,7 @@ The author feels that pattern synonyms might be a useful feature, but
 it would be better to design them as a first-class feature, not adapt
 constants for that purpose.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 **What about exhaustiveness etc on builtin types?** Even if we ignore

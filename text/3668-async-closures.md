@@ -7,7 +7,7 @@
 
 [RFC 2394]: https://rust-lang.github.io/rfcs/2394-async_await.html#async--closures
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC adds an `async` bound modifier to the `Fn` family of trait bounds.  The combination currently desugars to a set of unstable `AsyncFn{,Mut,Once}` traits that parallel the current `Fn{,Mut,Once}` traits.
@@ -18,7 +18,7 @@ This RFC also connects these traits to the `async || {}` closure syntax, as orig
 
 [RFC 2394]: (https://rust-lang.github.io/rfcs/2394-async_await.html#async--closures)
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Users hit two major pitfalls when writing async code that uses closures and `Fn` trait bounds:
@@ -109,7 +109,7 @@ The future that is returned by the closure cannot reference any of the captures 
 
 In order for this to work, the `FnMut` trait would need to be ["lending"](https://smallcultfollowing.com/babysteps/blog/2023/05/09/giving-lending-and-async-closures/#async-closures-are-a-lending-pattern); however, there are [complications](https://hackmd.io/@compiler-errors/async-closures#Lending-closures-are-not-typically-FnOnce) with implementing general lending closures.
 
-# Guide Level Explanation
+## Guide Level Explanation
 
 (**note**: See the [naming blocking concern](#what-do-we-call-the-trait) about `async Fn*` vs `AsyncFn*` syntax. This RFC uses the `async Fn` syntax for trait bounds to avoid duplicating explanations for two different proposed syntaxes, but the syntax remains an open question.)
 
@@ -168,7 +168,7 @@ trait Gat {
 }
 ```
 
-# Detailed Explanation
+## Detailed Explanation
 
 ### `AsyncFn*`
 
@@ -487,7 +487,7 @@ where
 
 This bound is only valid if there is a corresponding `async Fn*()` trait bound.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ### Why do we need a new set of `AsyncFn*` traits?
@@ -607,7 +607,7 @@ Exposing the `Output` type for `AsyncFnOnce` complicates eventually moving onto 
 
 Given that expressivity isn't meaningfully impaired by keeping the `Output` associated type as unstable, we do not expect to stabilize this associated type at the same time as async closures, and a stabilization report for the associated type should mention how it affects future possibilities to change the desugaring of `async Fn*`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 ### Users might confusedly write `|| async {}` over `async || {}`
@@ -665,12 +665,12 @@ Secondly, even if we could name the `CallRefFuture` type directly, we still need
 
 Fixing this is a follow-up goal that we're interested in pursuing in the near future. Design work regarding naming the future types in struct position can be done additively on top of what is exposed in this RFC, and ties into the larger question of how to use RTN in struct fields and other non-inference type positions.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 [RFC 2394] described async closures at a very high level, and expressed that users would very likely want this feature eventually. This RFC confirms that suspicion.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 ### What do we call the trait?
@@ -693,7 +693,7 @@ The stabilization report for async closures should thoroughly note any cases whe
 
 One predicted shortcoming will likely be due to corner cases of closure signature inference and pre-async-closure trait bounds in a [previous section](#users-might-write-f-fn---fut-fut-futureoutput--t-over-f-async-fn---t). This is not necessarily a blocker, since as the ecosystem migrates to `async Fn()`-style trait bounds, closure signature inference will be restored.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 ### `gen Fn()`, `async gen Fn()`

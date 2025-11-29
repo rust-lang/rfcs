@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1506](https://github.com/rust-lang/rfcs/pull/1506)
 - Rust Issue: [rust-lang/rust#35626](https://github.com/rust-lang/rust/issues/35626)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Provide a simple model describing three kinds of structs and variants and their relationships.  
 Provide a way to match on structs/variants in patterns regardless of their kind (`S{..}`).  
 Permit tuple structs and tuple variants with zero fields (`TS()`).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There's some mental model lying under the current implementation of ADTs, but it is not written
@@ -19,13 +19,13 @@ Writing this model out helps to identify its missing parts.
 Some of this missing parts turn out to be practically useful.
 This RFC can also serve as a piece of documentation.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The text below mostly talks about structures, but almost everything is equally applicable to
 variants.
 
-## Braced structs
+### Braced structs
 
 Braced structs are declared with braces (unsurprisingly).
 
@@ -50,7 +50,7 @@ Fields of a braced struct can be accessed with dot syntax `s.field1`.
 Note: struct *variants* are currently defined in the value namespace in addition to type namespace,
  there are no particular reasons for this and this is probably temporary.
 
-## Unit structs
+### Unit structs
 
 Unit structs are defined without any fields or brackets.
 
@@ -88,7 +88,7 @@ to `match` exhaustiveness), but it's a close approximation.
 Note 2: the constant is pretty weirdly namespaced in case of unit *variants*, constants can't be
 defined in "enum modules" manually.
 
-## Tuple structs
+### Tuple structs
 
 Tuple structs are declared with parentheses.
 ```
@@ -135,7 +135,7 @@ lexically (they are integer literals), so such fields can't be defined manually.
 Note 2: the constructor function is not exactly a `fn` item, there are subtle differences (e.g. with
 regards to privacy checks), but it's a close approximation.
 
-## Summary of the changes.
+### Summary of the changes.
 
 Everything related to braced structs and unit structs is already implemented.
 
@@ -165,17 +165,17 @@ for braces structs (`ExprStruct`/`PatKind::Struct`), tuple structs
 changes `#[derive]` could simplify its logic and always generate braced forms for expressions and
 patterns.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

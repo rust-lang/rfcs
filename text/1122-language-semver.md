@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1122](https://github.com/rust-lang/rfcs/pull/1122)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 This RFC has the goal of defining what sorts of breaking changes we
 will permit for the Rust language itself, and giving guidelines for
 how to go about making such changes.
   
-# Motivation
+## Motivation
 
 With the release of 1.0, we need to establish clear policy on what
 precisely constitutes a "minor" vs "major" change to the Rust language
@@ -32,7 +32,7 @@ a defect in design. Such cases should be rare. But if such a change is
 deemed worthwhile, then the guidelines given here can still be used to
 mitigate its impact.
 
-# Detailed design
+## Detailed design
 
 The detailed design is broken into two major sections: how to address
 soundness changes, and how to address other, opt-in style changes. We
@@ -229,7 +229,7 @@ future as well. The `-Z` flags are of course explicitly unstable, but
 some of the `-C`, rustdoc, and linker-specific flags are expected to
 evolve over time (see e.g. [#24451]).
 
-## [Amendment] Misuse of `accessible(..)`
+### [Amendment] Misuse of `accessible(..)`
 
 [RFC 2523]: https://github.com/rust-lang/rfcs/blob/master/text/2523-cfg-path-version.md
 
@@ -239,16 +239,16 @@ When combined with `#[cfg(feature = "unstable")]`, this has certain breakage ris
 Such breakage due to misuse, as outlined in the RFC, is considered acceptable and
 not covered by our stability promises. Please see the RFC for more details.
 
-# Drawbacks
+## Drawbacks
 
 The primary drawback is that making breaking changes are disruptive,
 even when done with the best of intentions. The alternatives list some
 ways that we could avoid breaking changes altogether, and the
 downsides of each.
 
-## Notes on phasing
+### Notes on phasing
 
-# Alternatives
+## Alternatives
 
 **Rather than simply fixing soundness bugs, we could issue new major
 releases, or use some sort of opt-in mechanism to fix them
@@ -269,7 +269,7 @@ eventually rejected for the following reasons:
   complicate the compiler internally; it would also make it harder to
   reason about the type system as a whole.
 
-# Unresolved questions
+## Unresolved questions
 
 **What precisely constitutes "small" impact?** This RFC does not
 attempt to define when the impact of a patch is "small" or "not

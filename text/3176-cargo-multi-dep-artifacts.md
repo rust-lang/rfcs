@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#3176](https://github.com/rust-lang/rfcs/pull/3176)
 - Tracking Issue: [rust-lang/cargo#10030](https://github.com/rust-lang/cargo/issues/10030)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow Cargo packages to depend on the same crate multiple times with different
 dependency names, to support artifact dependencies for multiple targets.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [RFC 3028](https://github.com/rust-lang/rfcs/blob/HEAD/text/3028-cargo-binary-dependencies.md)
@@ -31,7 +31,7 @@ Note that this RFC still does not allow dependencies on different
 semver-compatible versions of the same crate, only multiple dependencies on
 exactly the same version of the same crate.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Normally, you may only have one dependency on a given crate with the same
@@ -74,7 +74,7 @@ the environment variable `CARGO_BIN_DIR_EXAMPLE_RISCV`, while binaries from
 `example` built for `aarch64-unknown-none` will appear in the directory
 specified by `CARGO_BIN_DIR_EXAMPLE_ARM`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Cargo allows specifying multiple dependencies on the same crate, as long as all
@@ -128,7 +128,7 @@ option `-Z multidep` to `cargo`. If `cargo` encounters multiple dependencies on
 the same crate and does not have this option specified, it will continue to
 emit an error.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature will require Cargo to handle multiple copies of the same crate
@@ -138,7 +138,7 @@ currently rejects multiple copies of the same crate within the dependencies of
 a single crate, and changing that may require reworking assumptions made within
 some portions of the Cargo codebase.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Cargo already allows a dependency tree to contain multiple dependencies on the
@@ -166,7 +166,7 @@ name2;` and similar. However, if it adds any substantive complexity, we could
 easily restrict this feature exclusively to artifact dependencies, without any
 harm to the primary use case.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This RFC does not provide a means of specifying different profile overrides for

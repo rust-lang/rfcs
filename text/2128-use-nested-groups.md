@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2128](https://github.com/rust-lang/rfcs/pull/2128)
 - Rust Issue: [rust-lang/rust#44494](https://github.com/rust-lang/rust/issues/44494)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Permit nested `{}` groups in imports.  
@@ -22,7 +22,7 @@ use syntax::ast::{self, *}; // * in braces
 use rustc::mir::{*, transform::{MirPass, MirSource}}; // both * and nested braces
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The motivation is ergonomics.
@@ -31,7 +31,7 @@ import names from the same crate. With this nested grouping it's more often
 possible to merge common import prefixes and write them once instead of writing
 them multiple times.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Several `use` items with common prefix can be merged into one `use` item,
@@ -82,7 +82,7 @@ pub use self::Visibility::{self, Public, Inherited};
 A `use` item with merged prefixes behaves identically to several `use` items
 with all the prefixes "unmerged".
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Syntax:
@@ -135,7 +135,7 @@ use an::*;
 use an::*; // Legal, but reported as unused by `unused_imports` lint.
 ```
 
-# Relationships with other proposal
+## Relationships with other proposal
 
 This RFC is an incremental improvement largely independent from other
 import-related proposals, but it can have effect on some other RFCs.
@@ -171,7 +171,7 @@ use {
 };
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The feature encourages (but not requires) multi-line formatting of a single
@@ -185,12 +185,12 @@ use prefix::{
 ```
 With this formatting it becomes harder to grep for `use.*MyName`.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 Status quo is always an alternative.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None so far.

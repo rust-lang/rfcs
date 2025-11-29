@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2126](https://github.com/rust-lang/rfcs/pull/2126)
 - Rust Issue: [rust-lang/rust#44660](https://github.com/rust-lang/rust/issues/44660)
 
-# This RFC was previously approved, but part of it later **withdrawn**
+## This RFC was previously approved, but part of it later **withdrawn**
 
 The `crate` visibility specifier was previously implemented, but later removed.
 For details see the [summary comment].
 
 [summary comment]: https://github.com/rust-lang/rust/issues/53120#issuecomment-1124065083
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC seeks to clarify and streamline Rust's story around paths and visibility for modules and crates. That story will look as follows:
@@ -26,7 +26,7 @@ This RFC seeks to clarify and streamline Rust's story around paths and visibilit
 
 [new edition]: https://github.com/rust-lang/rfcs/pull/2052
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 A major theme of this year's [roadmap] is improving the learning curve and
@@ -47,13 +47,13 @@ learnability and productivity:
   we’ll dig into below. Ideally, we can solve these problems while also making
   modules easier to learn.
 
-## The core problems
+### The core problems
 
 This RFC does not attempt to *comprehensively* solve the problems that have been
 raised in today's module system. The focus is instead high-impact problems with
 noninvasive solutions.
 
-### Defining versus bringing into scope
+#### Defining versus bringing into scope
 
 A persistent point of confusion is the relationship between *defining an item*
 and *bringing an item into scope*. First, let's look at the rules as they exist
@@ -147,7 +147,7 @@ clarity and readability even for users with a full understanding of the rules.
 (We'll revisit this example at the end of the Guide section to explain how the
 RFC helps.)
 
-### Nonlocal reasoning
+#### Nonlocal reasoning
 
 There are at least two ways in which today's module system doesn't support local
 reasoning. These affect newcomers and old hands alike.
@@ -168,7 +168,7 @@ reasoning. These affect newcomers and old hands alike.
   up the module tree looking for re-exports to know exactly how public an item
   is.
 
-### The `mod.rs` file
+#### The `mod.rs` file
 
 A final issue, though far less important, is the use of `mod.rs` files when
 creating a directory containing submodules. There are several downsides:
@@ -189,7 +189,7 @@ The main *benefit* to `mod.rs` is that the code for a parent module and its
 children live more closely together (not necessarily desirable!) and that it
 provides a consistent story with `lib.rs`.
 
-## Some evidence of learning struggles
+### Some evidence of learning struggles
 
 In the survey data collected in both 2016 and 2017, learnability and ergonomics
 issues were one of the major challenges for people using or considering
@@ -224,15 +224,15 @@ similar, some of which has been collected into [a gist][learning-modules].
 The problems presented above represent a boiled down subset of the problems
 raised in this feedback.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## As we would teach it
+### As we would teach it
 
 The following sections sketch a plausible way of teaching the module system once
 this RFC has been fully implemented.
 
-### Using external dependencies
+#### Using external dependencies
 
 To add an external dependency, record it in the `[dependencies]` section of
 `Cargo.toml`:
@@ -281,7 +281,7 @@ leading `::` optional for them.
 > **Note: that means that you can write `use serde::Serialize` in *any* module
 without trouble, as long as `serde` is an external dependency!**
 
-### Adding a new file to your crate
+#### Adding a new file to your crate
 
 Rust crates have a distinguished entry point (generally called `main.rs` or
 `lib.rs`) which is used to determine the crate's structure. Other files and
@@ -332,7 +332,7 @@ default, `mod` declarations assume this kind of direct mapping to the
 filesystem; they are used to tell Rust to incorporate those files, and to set
 attributes on the resulting modules (as we'll see in a moment).
 
-### Importing items from other parts of your crate
+#### Importing items from other parts of your crate
 
 In Rust, all items defined in a module are *private* by default, which means
 they can only be accessed by the module defining them (or any of its
@@ -392,7 +392,7 @@ fn main() {
 In general, then, fully qualified paths always start with an initial location: an external
 crate name, or `crate`/`self`/`super`.
 
-## Guide-level thoughts when comparing to today's system
+### Guide-level thoughts when comparing to today's system
 
 Let's revisit one of the motivating examples. Today, you might write:
 
@@ -444,7 +444,7 @@ strongly reinforces the idea that:
 - `use` brings items into scope, based on paths that start by identifying the crate
 - an item needs to be in scope before you can refer to it
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 First, a bit of terminology: a *fully qualified path* is a path starting with
@@ -456,7 +456,7 @@ system; most of the complexity comes from the migration plans.
 The proposed migration plan is minimally disruptive; **it does not require an
 edition**.
 
-## Basic changes
+### Basic changes
 
 - You can write `mod bar;` statements even when not in a `mod.rs` or equivalent;
   in this case, the submodules must appear within a subdirectory with
@@ -494,7 +494,7 @@ edition**.
   fully-`pub` path. That is, bare `pub` should truly mean *public*, and `crate`
   should be used for crate-level visibility.
 
-## Resolving fully-qualified paths
+### Resolving fully-qualified paths
 
 The only way to refer to an external crate without using `extern crate` is
 through a fully-qualified path.
@@ -522,7 +522,7 @@ this RFC.
 [macros 2.0]: https://github.com/rust-lang/rfcs/blob/master/text/1561-macro-naming.md#importing-macros
 [previous RFC]: https://github.com/rust-lang/rfcs/pull/2088
 
-## Migration experience
+### Migration experience
 
 We will provide a high-fidelity `rustfix` tool that makes changes to the a crate
 such that the lints proposed in this RFC would not fire. In particular, the tool
@@ -534,7 +534,7 @@ still get some deprecation warnings after running it).
 Such a tool should be working at with very high coverage before we consider
 changing any of the lints to warn-by-default.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The most important drawback is that this RFC pushes toward *ultimately* changing
@@ -573,7 +573,7 @@ Moving crate renaming externally has implications for procedural macros with
 dependencies: their clients must include those dependencies without renaming
 them.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 The core rationale here should be clear given the detailed analysis in the
@@ -581,7 +581,7 @@ motivation. The crucial insight of the design is that, by making absolute paths
 unambiguous about which crate they draw from, we can solve a number of
 confusions and papercuts with the module system.
 
-## Edition-based migration story
+### Edition-based migration story
 
 We can avoid the need for fallback in resolution by leveraging editions
 instead. On the current edition, we would make `crate::` paths available and
@@ -590,7 +590,7 @@ issue warnings about `extern crate`. In the next edition, we would change
 absolute path interpretations, such that warning-free code on the previous
 edition would continue to compile and have the same meaning.
 
-## Bike-sheddy choices
+### Bike-sheddy choices
 
 There are a few aspects of this proposal that could be colored a bit differently
 without fundamental change.
@@ -617,7 +617,7 @@ without fundamental change.
   annotate definitions with e.g. `pub(super)`, though maybe this is a sign that
   the `pub(restricted)` syntax is too unergonomic or underused.
 
-## The community discussion around modules
+### The community discussion around modules
 
 For the past several months, the Rust community has been investigating the
 module system, its weaknesses, strengths, and areas of potential
@@ -656,7 +656,7 @@ ideas off into a separate *experimental* RFC:
 
 > We recognize that this is a major point of controversy and so will put aside trying to complete a full RFC on the topic at this time; however, we believe the idea has enough merit that it's worth an experimental implementation in the compiler that we can use to gather more data, e.g. around the impact on workflow. We would still like to do this before the impl period, so that we can do that exploration during the impl period. (To be clear: experimental RFCs are to approve landing unstable features that seem promising but where we need more experience; they require a standard RFC to be merged before they can be stabilized.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - How should we approach migration? Via a fallback, as proposed, or via

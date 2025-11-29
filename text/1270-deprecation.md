@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1270](https://github.com/rust-lang/rfcs/pull/1270)
 - Rust Issue: [rust-lang/rust#29935](https://github.com/rust-lang/rust/issues/29935)
 
-# Summary
+## Summary
 
 This RFC proposes to allow library authors to use a `#[deprecated]` attribute,
 with optional `since = "`*version*`"` and `note = "`*free text*`"`fields. The
 compiler can then warn on deprecated items, while `rustdoc` can document their
 deprecation accordingly.
 
-# Motivation
+## Motivation
 
 Library authors want a way to evolve their APIs; which also involves
 deprecating items. To do this cleanly, they need to document their intentions
@@ -21,7 +21,7 @@ Currently there is no support from the language for this oft-wanted feature
 standard library). This RFC aims to rectify that, while giving a pleasant
 interface to use while maximizing usefulness of the metadata introduced.
 
-# Detailed design
+## Detailed design
 
 Public API items (both plain `fn`s, methods, trait- and inherent
 `impl`ementations as well as `const` definitions, type definitions, struct
@@ -59,7 +59,7 @@ before *removing* a deprecated item.
 The internally used feature can either be subsumed by this or possibly renamed
 to avoid a name clash.
 
-# Intended Use
+## Intended Use
 
 Crate author Anna wants to evolve her crate's API. She has found that one
 type, `Foo`, has a better implementation in the `rust-foo` crate. Also she has
@@ -97,11 +97,11 @@ semver number and not some random string.
 Clippy users can then activate the clippy checks and deactivate the standard
 deprecation checks.
 
-# Drawbacks
+## Drawbacks
 
 * Once the feature is public, we can no longer change its design
 
-# Alternatives
+## Alternatives
 
 * Do nothing
 * make the `since` field required and check that it's a single version
@@ -119,7 +119,7 @@ original intention of the field
 which are used to pull in other crates' documentations to link them (this is
 obviously not only relevant to deprecation)
 
-# Unresolved questions
+## Unresolved questions
 
 * What other restrictions should we introduce now to avoid being bound to a
 possibly flawed design?

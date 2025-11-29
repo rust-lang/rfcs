@@ -3,20 +3,20 @@
 - RFC PR: [rust-lang/rfcs#2535](https://github.com/rust-lang/rfcs/pull/2535)
 - Rust Issue: [rust-lang/rust#54883](https://github.com/rust-lang/rust/issues/54883)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow `|` to be arbitrarily nested within a pattern such
 that `Some(A(0) | B(1 | 2))` becomes a valid pattern.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Nothing this RFC proposes adds anything with respect to expressive power.
 Instead, the aim is to make the power we already have more easy to wield.
 For example, we wish to improve ergonomics, readability, and the mental model.
 
-## Don't repeat yourself
+### Don't repeat yourself
 
 Consider an example match arm such as (1):
 
@@ -37,7 +37,7 @@ we have to do scales linearly with the number of inner variants we mention.
 The ability to nest patterns in this way therefore results in improved
 writing ergonomics.
 
-## Mental model
+### Mental model
 
 However, as we know, code is read more than it is written. So are we trading
 readability for increased ergonomics? We believe this is not the case.
@@ -75,7 +75,7 @@ it into CNF and then understand the implications of the pattern.
 By allowing users to encode their logic in the way they think instead of going
 through more indirect routes, we can improve the understandability of code.
 
-## Reducing complexity with uniformity
+### Reducing complexity with uniformity
 
 A principal way in which programming languages accumulate complexity is by
 adding more and more rules that a programmer needs to keep in their head to
@@ -104,7 +104,7 @@ then find out that it does not.
 Furthermore, allowing `pat | pat` in the pattern grammar also allows macros to
 produce disjunctions such as `$p | $q`.
 
-## Real world use cases
+### Real world use cases
 
 This RFC wouldn't be complete without concrete use cases which it would
 facilitate. While there are not an overabundance of cases where `pat | pat`
@@ -348,7 +348,7 @@ would help, there are some where it would. Let's go through a few of them.
    BinOp(Minus | Star | Or | And) | OrOr => true,
    ```
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Simply put, `$p | $q` where `$p` and `$q` are some patterns is now itself
@@ -446,10 +446,10 @@ You can also use `p | q` in:
    Here we must wrap the pattern in parenthesis since `$p:pat | $q:pat` is
    already legal in patterns.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Grammar
+### Grammar
 
 We parameterize the `pat` grammar by the choice whether to allow top level
 `pat | pat`. We then change the pattern grammar to:
@@ -533,7 +533,7 @@ inferable_param : pat<no_top_alt> maybe_ty_ascription ;
 Finally, `pat` macro fragment specifiers will also match the `pat<no_top_alt>`
 production as opposed to `pat<allow_top_alt>`.
 
-### Error messages
+#### Error messages
 
 As previously noted, the precedence of the operator `|` is lower than that of
 the operator `@`. This results in `i @ p | q` being interpreted as `(i @ p) | q`.
@@ -582,7 +582,7 @@ error[E0408]: variable `i` is not bound in all patterns
 
 The particular design of such an error message is left open to implementations.
 
-## Static semantics
+### Static semantics
 
 1. Given a pattern `p | q` at some depth for some arbitrary patterns `p` and `q`,
    the pattern is considered ill-formed if:
@@ -615,7 +615,7 @@ The particular design of such an error message is left open to implementations.
    This includes enum variants, tuple structs, structs with named fields,
    arrays, tuples, and slices.
 
-## Dynamic semantics
+### Dynamic semantics
 
 1. The dynamic semantics of pattern matching a scrutinee expression `e_s`
    against a pattern `c(p | q, ..rest)` at depth `d` where `c` is some constructor,
@@ -623,7 +623,7 @@ The particular design of such an error message is left open to implementations.
    potential factors in `c`, is defined as being the same as that of
    `c(p, ..rest) | c(q, ..rest)`.
 
-## Implementation notes
+### Implementation notes
 
 With respect to both static and dynamic semantics,
 it is always valid to first desugar a pattern `c(p | q)`
@@ -667,27 +667,27 @@ Instead, it is more likely that a one-step case analysis will be more efficient.
 
 Which implementation technique to use is left open to each Rust compiler.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 1. Some parsers will have to be rewritten by a tiny bit;
    We do this with any syntactic change in the language so
    there should not be any problem.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #rationale-and-alternatives
 
 As for why the change as proposed in this RFC should be done,
 it is discussed in the [motivation].
 
-## Syntax
+### Syntax
 
 Since we already use `|` for alternation at the top level, the only consistent
 operator syntax for alternations in nested patterns would be `|`.
 Therefore, there are not many design choices to make with respect to *how*
 this change should be done rather than *if*.
 
-## Precedence
+### Precedence
 
 With respect to the precedence of `|`, we cannot interpret `i @ p | q`
 as `i @ (p | q)` because it is already legal to write `i @ p | j @ q`
@@ -704,7 +704,7 @@ conjunction to bind more tightly. That is, we interpret `a * b + c` as
 `(a * b) + c` and not `a * (b + c)`. Similarly, we interpret `p ∧ q ∨ r`
 as `(p ∧ q) ∨ r` and not `p ∧ (q ∨ r)`.
 
-## Leading `|`
+### Leading `|`
 
 The only real choice that we do have to make is whether the new addition to the
 pattern grammar should be `pat : .. | pat "|" pat ;` or if it instead should be
@@ -726,20 +726,20 @@ pattern:
 1. Libraries or tools such as `syn` will have *slightly* easier time parsing
    the grammar of Rust.
 
-## `fn` arguments
+### `fn` arguments
 
 In this RFC, we allow `p | q` inside patterns of `fn` arguments.
 The rationale for this is simply consistency with `let` which also permit
 these and did so before this RFC at the top level with [RFC 2175].
 
-## Macros and closures
+### Macros and closures
 
 See the section on [unresolved] questions for a brief discussion.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## CSS4 selectors
+### CSS4 selectors
 
 [CSS4]: https://drafts.csswg.org/selectors/#matches
 
@@ -747,7 +747,7 @@ In [CSS4] (draft proposal), it is possible to write a selector
 `div > *:matches(ul, ol)` which is equivalent to `div > ul, div > ol`.
 The moral equivalent of this in Rust would be: `Div(Ul | Ol)`.
 
-## Regular expressions
+### Regular expressions
 
 [regex]: https://en.wikipedia.org/wiki/Regular_expression
 
@@ -782,7 +782,7 @@ By the law of distributivity, we can rewrite this as:
 ab | ac
 ```
 
-## OCaml
+### OCaml
 [ocaml]: #ocaml
 
 [ocaml_support]: https://caml.inria.fr/pub/docs/manual-ocaml/patterns.html#sec108
@@ -818,7 +818,7 @@ let foo =
 We have chosen to impose the same restriction as OCaml here with respect to
 not allowing leading `|` in nested pattern alternations.
 
-## F#
+### F#
 
 [fsharp_patterns]: https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/pattern-matching
 
@@ -835,20 +835,20 @@ let detectZeroOR point =
 F# calls these "OR pattern"s and includes
 `pattern1 | pattern2` in the pattern grammar.
 
-## Haskell
+### Haskell
 
 [ghc_proposal_43]: https://github.com/ghc-proposals/ghc-proposals/pull/43
 
 The [equivalent proposal][ghc_proposal_43] is currently being discussed for
 inclusion in Haskell.
 
-## Lisp
+### Lisp
 
 [lisp_libs]: https://stackoverflow.com/a/3798659/1063961
 
 There is support for or-patterns in [various lisp libraries][lisp_libs].
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 1. Should we allow `top_pat` or `pat<allow_top_alt>` in `inferable_param` such

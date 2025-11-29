@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2093](https://github.com/rust-lang/rfcs/pull/2093)
 - Rust Issue: [rust-lang/rust#44493](https://github.com/rust-lang/rust/issues/44493)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Remove the need for explicit `T: 'x` annotations on structs. We will
@@ -21,7 +21,7 @@ struct Foo<'x, T> {
 Explicit annotations remain as an option used to control trait object
 lifetime defaults, and simply for backwards compatibility.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Today, when you write generic struct definitions that contain
@@ -141,7 +141,7 @@ proposes to extend this mechanism to other sorts of bounds.)
 
 [RFC 2089]: https://github.com/rust-lang/rfcs/pull/2089
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This RFC does not introduce any new concepts -- rather, it (mostly)
@@ -378,7 +378,7 @@ even if it is deeply nested within a struct hierarchy. Probably the
 best way to mitigate these sorts of subtle semver complications is to
 have a tool that detects and warns for incompatible changes.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The intention is that the outlives inference takes place at the same
@@ -558,7 +558,7 @@ Here the WF rules for the type `&'a &'b T` require that both:
 - `'b: 'a` holds, because of the outer reference; and,
 - `T: 'b` holds, because of the inner reference.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The primary drawbacks were covered in depth in the guide-level explanation,
@@ -571,7 +571,7 @@ which also covers why they are not considered to be major problems:
   - already true that changing field types can affect semver compatibility
   - semver-like tool could help to mitigate
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 Naturally, we might choose to retain the status quo, and continue to
@@ -588,7 +588,7 @@ trait solving, but we would have to do before we know the full WF
 requirements for each struct. The current setup avoids this
 complication.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

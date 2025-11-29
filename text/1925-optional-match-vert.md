@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1925](https://github.com/rust-lang/rfcs/pull/1925)
 - Rust Issue: [rust-lang/rust#44101](https://github.com/rust-lang/rust/issues/44101)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This is a proposal for the rust grammar to support a vert `|` at the
@@ -25,7 +25,7 @@ match foo {
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This is taking a feature which is nice about `F#` and allowing it by a
@@ -33,7 +33,7 @@ straightforward extension of the current rust language. After having used
 this in `F#`, it seems limiting to not even support this at the language
 level.
 
-## `F#` Context
+### `F#` Context
 
 In `F#`, enumerations (called `unions`) are declared in the following fashion where
 all of these are equivalent:
@@ -58,7 +58,7 @@ match foo with
     | B -> ""
 ```
 
-## Maximizing `|` alignment
+### Maximizing `|` alignment
 
 In Rust, about the best we can do is an inconsistent alignment with one of the
 following two options:
@@ -103,7 +103,7 @@ match foo {
 }
 ```
 
-## Flexibility in single line matches
+### Flexibility in single line matches
 
 It would allow these examples which are all equivalent:
 
@@ -126,11 +126,11 @@ match foo {
 > There should be no ambiguity about what either of these means. Preference
 between these should just come down to a choice of style.
 
-## Benefits to macros
+### Benefits to macros
 
 This benefits macros. Needs filling in.
 
-## Multiple branches
+### Multiple branches
 
 All of these matches are equivalent, each written in a different style:
 
@@ -164,7 +164,7 @@ match foo {
 }
 ```
 
-## Comparing misalignment
+### Comparing misalignment
 
 ```rust
 use E::*;
@@ -188,7 +188,7 @@ match value {
 }
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 I don't know about the implementation but the grammar could be updated so that
@@ -202,7 +202,7 @@ match_pat : pat [ '|' pat ] * [ "if" expr ] ? ;
 match_pat : '|' ? pat [ '|' pat ] * [ "if" expr ] ? ;
 ```
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Adding examples for this are straightforward. You just include an example pointing
@@ -241,17 +241,17 @@ fn main() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 N/A
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 N/A
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 N/A

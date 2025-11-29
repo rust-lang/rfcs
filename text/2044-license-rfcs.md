@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#2044](https://github.com/rust-lang/rfcs/pull/2044)
 - Rust Issue: [rust-lang/rust#43461](https://github.com/rust-lang/rust/issues/43461)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a move to dual-MIT/Apache2 licensing terms to the Rust RFCs repo, by
 requiring them for all new contributions, and asking previous contributors to
 agree on the new license.
 
-# Disclaimer
+## Disclaimer
 [disclaimer]: #disclaimer
 
 This RFC is not authored by a lawyer, so its reasoning may be wrong.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, the Rust RFCs repo is in a state where no clear open source license
@@ -52,7 +52,7 @@ terms don't fulfill any popular open source definition.
 
 [Github ToS]: https://help.github.com/articles/github-terms-of-service/#5-license-grant-to-other-users
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 After this RFC has been merged, all new RFCs will be required to be
@@ -75,7 +75,7 @@ under the new terms.
 
 [considered for merging]: https://github.com/rust-lang/rfcs/pulls
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 The issue created should @-mention all Github users who have contributed,
@@ -88,12 +88,12 @@ their RFC file.
 The note in README.md should inform new PR authors of the terms
 they put their contribution under.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is additional churn and pings a bunch of people, which they may not like.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Other licenses more suited for text may have been chosen, like the CC-BY
@@ -111,13 +111,13 @@ for years and no action has been done on this yet. If this RFC gets closed as
 too trivial or offtopic, and the issue is being acted upon, its author
 considers it a successful endeavor.
 
-# Links to previous discussion
+## Links to previous discussion
 
 * https://github.com/rust-lang/rfcs/issues/1259
 * https://github.com/rust-lang/rust/issues/25664
 * https://internals.rust-lang.org/t/license-the-rfcs-repo-under-the-cc-by-4-0-license/3870
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Should trivial contributions that don't fall under copyright be special cased?

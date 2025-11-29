@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2086](https://github.com/rust-lang/rfcs/pull/2086)
 - Rust Issue: [rust-lang/rust#44495](https://github.com/rust-lang/rust/issues/44495)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Currently when using an if let statement and an irrefutable pattern (read always match) is used the compiler complains with an `E0162: irrefutable if-let pattern`.
 The current state breaks macros who want to accept patterns generically and this RFC proposes changing this error to an error-by-default lint which is allowed to be disabled by such macros.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The use cases for this is in the creation of macros where patterns are allowed because to support the `_` patterns the code has to be rewritten to be both much larger and include an \[#allow\] statement for a lint that does not seem to be related to the problem.
@@ -31,7 +31,7 @@ if let $p = $val {
 }
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 1. Change the compiler error `irrefutable if-let-pattern` and similar patterns to an `error-by-default` lint that can be disabled by an `#[allow]` statement
@@ -57,21 +57,21 @@ macro_rules! check_five {
 }
 ```
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This can be taught by changing the second version of [The Book](https://doc.rust-lang.org/book/second-edition/ch18-02-refutability.html) to not explicitly say that it is not allowed.
 Adding that it is a lint that can be disabled.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It allows programmers to manually write the line `if let _ = expr { } else { }` which is generally obfuscating and not desirable. However, this will only be allowed with an explicit `#[allow(irrefutable_let_pattern)]`.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * The trivial alternative: Do nothing. As your motivation explains, this only matters for macros anyways plus there already is an acceptable workaround (match). Code that needs this frequently can just package this workaround in its own macro and be done.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

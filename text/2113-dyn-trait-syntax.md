@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2113](https://github.com/rust-lang/rfcs/pull/2113)
 - Rust Issue: [rust-lang/rust#44662](https://github.com/rust-lang/rust/issues/44662)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce a new `dyn Trait` syntax for trait objects using a contextual `dyn` keyword, and deprecate "bare trait" syntax for trait objects. In a future edition, `dyn` will become a proper keyword and a lint against bare trait syntax will become deny-by-default.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 ### In a nutshell
@@ -63,7 +63,7 @@ There's a natural parallel between the impl/dyn keywords and static/dynamic disp
 
 After impl Trait stabilizes, it will become more common to accidentally write a trait object without realizing it by forgetting the impl keyword. This often leads to unhelpful and cryptic errors about your trait not implementing Sized. With a switch to dyn Trait, these errors could become as simple and self-evident as "expected a type, found a trait, did you mean to write impl Trait?".
 
-# Explanation
+## Explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The functionality of `dyn Trait` is identical to today's trait object syntax.
@@ -84,7 +84,7 @@ In the next edition:
 
 This follows the policy laid out in the editions RFC, where a hard error is "only available when the deprecation is expected to hit a relatively small percentage of code." Adding the `dyn` keyword is unlikely to affect much code, but removing bare trait syntax will clearly affect a lot of code, so only the latter change is implemented as a deny-by-default lint.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Yet another (temporarily contextual) keyword.
@@ -95,7 +95,7 @@ This follows the policy laid out in the editions RFC, where a hard error is "onl
 
 - In general, favoring generics over trait objects makes Rust code take longer to compile, and this change may encourage more of that.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 We could use a different keyword such as `obj` or `virtual`. There wasn't very much discussion of these options on the original RFC thread, since the motivation was a far bigger concern than the proposed syntax, so it wouldn't be fair to say there's a consensus for or against any particular keyword.
@@ -106,7 +106,7 @@ We could also use a more radical syntax for trait objects. `Object<Trait>` was s
 
 Finally, we could repurpose bare trait syntax for something other than trait objects. It's been frequently suggested in the past that impl Trait would be a far better candidate for bare trait syntax than trait objects. Even this RFC's motivation section indirectly argues for this, e.g. impl Trait does work with all traits and does not carry a runtime cost, unlike trait objects. However, this RFC does not propose repurposing bare trait syntax yet, only deprecating and removing it. This author believes dyn Trait is worth adding even if we never repurpose bare trait, and repurposing it has some significant downsides that dyn Trait does not (such as creating the possibility of code that compiles in two different editions with radically different semantics). This author believes the repurposing debate should come later, probably after impl Trait and dyn Trait have been stabilized.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - How common are trait objects in real code? There were some requests for hard data on this in the original RFC thread, but none was ever provided.

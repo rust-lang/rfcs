@@ -4,12 +4,12 @@
 - Rust Issue: [rust-lang/rust#48594](https://github.com/rust-lang/rust/issues/48594)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow a `break` of labelled blocks with no loop, which can carry a value.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In its simplest form, this allows you to terminate a block early, the same way that `return` allows you to terminate a function early.
@@ -76,7 +76,7 @@ if result.is_none() {
 let result = result.unwrap_or(0);
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 ```rust
 'BLOCK_LABEL: { EXPR }
@@ -110,17 +110,17 @@ If the intended target of the `break` is the surrounding loop, it may not be cle
 }
 ```
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This can be taught alongside loop-based examples of labelled breaks.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The proposal adds new syntax to blocks, requiring updates to parsers and possibly syntax highlighters.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Everything that can be done with this feature can be done without it. However in my own code, I often find myself breaking something out into a function simply in order to return early, and the accompanying verbosity of passing parameters and return values with full type signatures is a real cost. 
@@ -135,7 +135,7 @@ We have three options for handling an unlabelled `break` or `continue` inside a 
 
 This RFC chooses the first option since it's the most conservative, in that it would be possible to switch to a different behaviour later without breaking working programs. The second is the simplest, but makes a large difference between labelled and unlabelled blocks, and means that a program might label a block without ever explicitly referring to that label just for this change in behavior. The third is consistent with unlabelled blocks and with Java, but seems like a rich potential source of confusion.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None outstanding that I know about.

@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1096](https://github.com/rust-lang/rfcs/pull/1096)
 - Rust Issue: https://github.com/rust-lang/rust/pull/24910
 
-# Summary
+## Summary
 
 Remove the `static_assert` feature.
 
-# Motivation
+## Motivation
 
 To recap, `static_assert` looks like this:
 
@@ -53,21 +53,21 @@ we’ve said we want in Rust. In light of it being eventually added,
 
 `static_assert` isn’t used by the compiler at all.
 
-# Detailed design
+## Detailed design
 
 Remove `static_assert`. [Implementation submitted here][here].
 
 [here]: https://github.com/rust-lang/rust/pull/24910
 
-# Drawbacks
+## Drawbacks
 
 Why should we *not* do this?
 
-# Alternatives
+## Alternatives
 
 This feature is pretty binary: we either remove it, or we don’t. We could keep the feature,
 but build out some sort of alternate version that’s not as weird.
 
-# Unresolved questions
+## Unresolved questions
 
 None with the design, only “should we do this?”

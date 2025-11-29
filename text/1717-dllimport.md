@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#1717](https://github.com/rust-lang/rfcs/pull/1717)
 - Rust Issue: [rust-lang/rust#37403](https://github.com/rust-lang/rust/issues/37403)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Make compiler aware of the association between library names adorning `extern` blocks
 and symbols defined within the block.  Add attributes and command line switches that leverage
 this association.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Most of the time a linkage directive is only needed to inform the linker about
@@ -24,7 +24,7 @@ this symbol must be generated differently than for symbols imported from a stati
 Currently the compiler is not aware of associations between the libraries and symbols
 imported from them, so it cannot alter code generation based on library kind.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 ### Library <-> symbol association
@@ -91,7 +91,7 @@ For this use case we'll introduce another library "kind", "static-nobundle".
 Such libraries would be treated in the same way as "static", except they will not be bundled into
 the target .lib/.rlib.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 For libraries to work robustly on MSVC, the correct `#[link]` annotation will
@@ -103,7 +103,7 @@ on an `extern` block are not required on any other platform to work correctly,
 meaning that it will be common that these attributes are left off by accident.
 
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Instead of enhancing `#[link]`, a `#[linked_from = "foo"]` annotation could be added.
@@ -142,7 +142,7 @@ meaning that it will be common that these attributes are left off by accident.
   This overloading the `-l` flag for this purpose may be confusinfg to developers.
   A new codegen flag might be a better fit for this, for example `-C libkind=KIND=LIB`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Should we allow dropping a library specified in the source from linking via `-l lib:` (i.e. "rename to empty")?

@@ -3,17 +3,17 @@
 - RFC PR: [rust-lang/rfcs#3309](https://github.com/rust-lang/rfcs/pull/3309)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC charters the Rust Style Team, responsible for evolving the Rust style over time. This includes styling for new Rust constructs, as well as the evolution of the existing style over the course of Rust editions (without breaking backwards compatibility).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 RFC 1607 proposed and motivated a process for determining code formatting guidelines and producing a style guide, via a temporary style team. That style guide was published as RFC 2436, and the style team wound up its operation and no longer exists. However, Rust has multiple ongoing needs for new determinations regarding Rust style, such as determining the style of new Rust constructs, and evolving the Rust style over time. Thus, this RFC re-charters the Rust Style Team as a non-temporary subteam.
 
-# Explanation and charter
+## Explanation and charter
 [explanation]: #explanation
 
 The renewed need for the Rust style team began to arise in discussions of language constructs such as `let`-chaining (RFC 2497) and `let`-`else` (RFC 3137). New constructs like these, by default, get ignored and not formatted by rustfmt, and subsequently need formatting added. The rustfmt team has expressed a preference to not make style determinations itself; the rustfmt team would prefer to implement style determinations made by another team.
@@ -25,7 +25,7 @@ This RFC proposes re-chartering the style team, as originally specified in RFC 1
 - Evolving the existing Rust style
 - Defining mechanisms to evolve the Rust style while taking backwards compatibility into account, such as via Rust editions or similar mechanisms
 
-## Team structure and membership
+### Team structure and membership
 
 The Rust style team will be a subteam of the Rust language team. In addition, the style team will maintain a close working relationship with the rustfmt team.
 
@@ -59,14 +59,14 @@ The Rust style team shall make decisions by consensus, as with other Rust teams.
 
 By way of common understanding, the style team acknowledges that the default style will not and is not expected to satisfy everyone (though it should attempt to take community preferences into account), and that having a single default style is more important than the precise details of that style. The style team may also take into account many other sources of input, including Rust community practice, practice and constructs from other languages, experience with common readings or misreadings of other languages, and research into language learnability and *transfer*.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - The rustfmt team could directly determine the Rust style. However, the rustfmt team does not wish to do so, and wouldn't have the capacity even if they did; they would prefer to implement styling but not determine the defaults.
 - The Rust language team could determine the styling for new language constructs. This would add more complexity and potential [bikeshed-painting](https://b0c4de.bikeshed.com/) to the language design process, and not all members of the language team are interested in that work. This would also not address the need for evolving the existing style, which would be even further outside the desired scope of the language team.
 - The style team could become a joint subteam of both the language team and the rustfmt team. However, several people have expressed a preference for this team to have a single parent team, and in response, the rustfmt team has recommended that this be a lang subteam.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 RFC 1607 already defined the style team; this RFC removes the time bound on its mandate, and expands it to cover style evolution.

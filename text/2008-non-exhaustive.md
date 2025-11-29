@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2008](https://github.com/rust-lang/rfcs/pull/2008)
 - Rust Issue: [rust-lang/rust#44109](https://github.com/rust-lang/rust/issues/44109)
 
-# Summary
+## Summary
 
 This RFC introduces the `#[non_exhaustive]` attribute for enums and structs,
 which indicates that more variants/fields may be added to an enum/struct in the
@@ -18,9 +18,9 @@ not a breaking change.
 
 This is a post-1.0 version of [RFC 757], with some additions.
 
-# Motivation
+## Motivation
 
-## Enums
+### Enums
 
 The most common use for non-exhaustive enums is error types. Because adding
 features to a crate may result in different possibilities for errors, it makes
@@ -95,7 +95,7 @@ match error_kind {
 Then we can add as many variants as we want without breaking any downstream
 matches.
 
-### How we do this today
+#### How we do this today
 
 We force users add this arm for [`std::io::ErrorKind`] by adding a hidden
 variant:
@@ -165,7 +165,7 @@ Additionally, while plenty of crates could benefit from the idea of
 non-exhaustiveness, plenty don't because this isn't documented in the Rust book,
 and only documented elsewhere as a hack until a better solution is proposed.
 
-### Opportunity for optimisation
+#### Opportunity for optimisation
 
 Currently, the `#[doc(hidden)]` hack leads to a few missed opportunities
 for optimisation. For example, take this enum:
@@ -212,7 +212,7 @@ Although these options will unlikely matter in this example because
 error-handling code (hopefully) shouldn't run very often, it could matter for
 other use cases.
 
-## Structs
+### Structs
 
 The most common use for non-exhaustive structs is config types. It often makes
 sense to make fields public for ease-of-use, although this can ultimately lead
@@ -269,19 +269,19 @@ But this makes it more difficult for the crate itself to construct `Config`,
 because you have to add a `non_exhaustive: ()` field every time you make a new
 value.
 
-### Other kinds of structs
+#### Other kinds of structs
 
 Because enum variants are *kind* of like a struct, any change we make to structs
 should apply to them too. Additionally, any change should apply to tuple structs
 as well.
 
-# Detailed design
+## Detailed design
 
 An attribute `#[non_exhaustive]` is added to the language, which will (for now)
 fail to compile if it's used on anything other than an enum or struct
 definition, or enum variant.
 
-## Enums
+### Enums
 
 Within the crate that defines the enum, this attribute is essentially ignored,
 so that the current crate can continue to exhaustively match the enum. The
@@ -333,7 +333,7 @@ Note that this can *potentially* cause breaking changes if a user adds
 assumed to not be a breaking change, even though users can make it a breaking
 change by manually denying lints.
 
-## Structs
+### Structs
 
 Like with enums, the attribute is essentially ignored in the crate that defines
 the struct, so that users can continue to construct values for the struct.
@@ -382,7 +382,7 @@ Although it should not be explicitly forbidden by the language to mark a struct
 with some private fields as non-exhaustive, it should emit a warning to tell the
 user that the attribute has no effect.
 
-## Tuple structs
+### Tuple structs
 
 Non-exhaustive tuple structs will operate similarly to structs, however, will
 disallow matching directly. For example, take this example on stable today:
@@ -421,7 +421,7 @@ We can think of this as lowering the visibility of the constructor to
 `pub(crate)` if it is marked as `pub`, then applying the standard structure
 rules.
 
-## Unit structs
+### Unit structs
 
 Unit structs will work very similarly to tuple structs. Consider this struct:
 
@@ -440,7 +440,7 @@ let Unit { .. } = unit;
 Similarly to tuple structs, this will simply lower the visibility of the
 constructor to `pub(crate)` if it were marked as `pub`.
 
-## Functional record updates
+### Functional record updates
 
 Functional record updates will operate very similarly to if the struct had an
 extra, private field. Take this example:
@@ -470,7 +470,7 @@ println!("{:?}", c);
 Although outside of the defining crate, it will not, because `Config` could, in
 the future, contain private fields that the user didn't account for.
 
-## Changes to rustdoc
+### Changes to rustdoc
 
 Right now, the only indicator that rustdoc gives for non-exhaustive enums and
 structs is a comment saying "some variants/fields omitted." This shows up
@@ -487,7 +487,7 @@ These two messages should be distinct; the former says "this enum/struct has
 stuff that you shouldn't see," while the latter says "this enum/struct is
 incomplete and may be extended in the future."
 
-# How We Teach This
+## How We Teach This
 
 Changes to rustdoc should make it easier for users to understand the concept of
 non-exhaustive enums and structs in the wild.
@@ -503,13 +503,13 @@ although users should be aware that adding extra fields is a potentially
 breaking change. In this chapter, users should be taught about non-exhaustive
 enum variants as well.
 
-# Drawbacks
+## Drawbacks
 
 * The `#[doc(hidden)]` hack in practice is usually good enough.
 * An attribute may be more confusing than a dedicated syntax.
 * `non_exhaustive` may not be the clearest name.
 
-# Alternatives
+## Alternatives
 
 * Provide a dedicated syntax instead of an attribute. This would likely be done
   by adding a `...` variant or field, as proposed by the original
@@ -518,7 +518,7 @@ enum variants as well.
   giving a less-hacky way to create a hidden variant/field.
 * Document the `#[doc(hidden)]` hack and make it more well-known.
 
-# Unresolved questions
+## Unresolved questions
 
 It may make sense to have a "not exhaustive enough" lint to non-exhaustive
 enums or structs, so that users can be warned if they are missing fields or
@@ -527,7 +527,7 @@ variants despite having a wildcard arm to warn on them.
 Although this is beyond the scope of this particular RFC, it may be good as a
 clippy lint in the future.
 
-## Extending to traits
+### Extending to traits
 
 Tangentially, it also makes sense to have non-exhaustive traits as well, even
 though they'd be non-exhaustive in a different way. Take this example from

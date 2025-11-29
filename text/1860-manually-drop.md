@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1860](https://github.com/rust-lang/rfcs/pull/1860)
 - Rust Issue: [rust-lang/rust#40673](https://github.com/rust-lang/rust/issues/40673)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Include the `ManuallyDrop` wrapper in `core::mem`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently Rust does not specify the order in which the destructors are run. Furthermore, this order
@@ -43,7 +43,7 @@ struct FruitBox {
 For structures with dependencies between fields it is worthwhile to have ability to explicitly
 annotate the dependencies somehow.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 This RFC proposes adding the following `struct` as a new lang item to the `core::mem` (and by extension the `std::mem`)
@@ -126,7 +126,7 @@ impl Drop for FruitBox {
 It is proposed that this pattern would become idiomatic for structures where fields must be dropped
 in a particular order.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 It is expected that the functions and wrapper added as a result of this RFC would be seldom
@@ -143,7 +143,7 @@ the structure fields gets dropped.
 No drawbacks known at the time.
 -->
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Stabilise some sort of drop order and make people to write code that’s hard to figure out at a
@@ -153,7 +153,7 @@ glance;
     * Precludes (or makes it much harder) from recommending this pattern as the idiomatic way to
     implement destructors with dependencies.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None known.

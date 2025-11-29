@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1542](https://github.com/rust-lang/rfcs/pull/1542)
 - Rust Issue: [rust-lang/rfcs#33147](https://github.com/rust-lang/rust/issues/33417)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The standard library provides the `From` and `Into` traits as standard ways to
@@ -11,7 +11,7 @@ convert between types. However, these traits only support *infallible*
 conversions. This RFC proposes the addition of `TryFrom` and `TryInto` traits
 to support these use cases in a standard way.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Fallible conversions are fairly common, and a collection of ad-hoc traits has
@@ -45,7 +45,7 @@ let value: isize = ...;
 let value: u32 = try!(value.try_into());
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Two traits will be added to the `core::convert` module:
@@ -135,20 +135,20 @@ uniform `TryFrom` implementations between all combinations of integer types. In
 addition, it's not clear what value such an implementation would actually
 provide, so this RFC does *not* propose its addition.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It is unclear if existing fallible conversion traits can backwards-compatibly
 be subsumed into `TryFrom` and `TryInto`, which may result in an awkward mix of
 ad-hoc traits in addition to `TryFrom` and `TryInto`.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could avoid general traits and continue making distinct conversion traits for
 each use case.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Are `TryFrom` and `TryInto` the right names? There is some precedent for the

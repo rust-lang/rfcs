@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1909](https://github.com/rust-lang/rfcs/pull/1909)
 - Rust Issue: [rust-lang/rust#48055](https://github.com/rust-lang/rust/issues/48055)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow for local variables, function arguments, and some expressions to have an unsized type, and implement it by storing the temporaries in variably-sized allocas.
@@ -12,7 +12,7 @@ Have repeat expressions with a length that captures local variables be such an e
 
 Provide some optimization guarantees that unnecessary temporaries will not create unnecessary allocas.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are 2 motivations for this RFC:
@@ -29,10 +29,10 @@ There are 2 motivations for this RFC:
 
 2. Allocating a runtime-sized variable on the stack is important for good performance in some use-cases - see RFC #1808, which this is intended to supersede.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Unsized Rvalues - language
+### Unsized Rvalues - language
 
 Remove the rule that requires all locals and rvalues to have a sized type. Instead, require the following:
 
@@ -75,7 +75,7 @@ fn example(f: for<'a> FnOnce(&'a X<'a>)) {
 }
 ```
 
-## VLA expressions
+### VLA expressions
 
 Allow repeat expressions to capture variables from their surrounding environment. If a repeat expression captures such a variable, it has type `[T]` with the length being evaluated at run-time. If the repeat expression does not capture any variable, the length is evaluated at compile-time. For example:
 ```Rust
@@ -94,7 +94,7 @@ fn foo(n: usize) {
 
 The last error message could have a user-helpful note, for example "extract the length to a local variable if you want a variable-length array".
 
-## Unsized Rvalues - MIR
+### Unsized Rvalues - MIR
 
 The way this is implemented in MIR is that operands, rvalues, and temporaries are allowed to be unsized. An unsized operand is always "by-ref". Unsized rvalues are either a `Use` or a `Repeat` and both can be translated easily.
 
@@ -102,20 +102,20 @@ Unsized locals can never be reassigned within a scope. When first assigning to a
 
 MIR construction remains unchanged. 
 
-## Guaranteed Temporary Elision
+### Guaranteed Temporary Elision
 
 MIR likes to create lots of temporaries for OOE reason. We should optimize them out in a guaranteed way in these cases (FIXME: extend these guarantees to locals aka NRVO?).
 
 TODO: add description of problem & solution.
     
-# How We Teach This
+## How We Teach This
 [teach]: #how-we-teach-this
 
 Passing arguments to functions by value should not be too complicated to teach. I would like VLAs to be mentioned in the book.
 
 The "guaranteed temporary elimination" rules require more work to teach. It might be better to come up with new rules entirely.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 In Unsafe code, it is very easy to create unintended temporaries, such as in:
@@ -135,10 +135,10 @@ And even if it is not as easy, it is possible to accidentally create temporaries
 
 Unsized temporaries are dangerous - they can easily cause aborts through stack overflow.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## The bikeshed
+### The bikeshed
 
 There are several alternative options for the VLA syntax.
 
@@ -164,7 +164,7 @@ There are several alternative options for the VLA syntax.
     - con: requires returning unsized values from intrinsics.
     - con: unergonomic to use.
 
-## Unsized ADT Expressions
+### Unsized ADT Expressions
 
 Allowing unsized ADT expressions would make unsized structs constructible without using unsafe code, as in:
 ```Rust
@@ -177,7 +177,7 @@ let p = Box::new(PascalString {
 
 However, without some way to guarantee that this can be done without allocas, that might be a large footgun.
 
-## Copy Slices
+### Copy Slices
 
 One somewhat-orthogonal proposal that came up was to make `Clone` (and therefore `Copy`) not depend on `Sized`, and to make `[u8]` be `Copy`, by moving the `Self: Sized` bound from the trait to the methods, i.e. using the following declaration:
 ```Rust
@@ -191,7 +191,7 @@ pub trait Clone {
 
 That would be a backwards-compatibility-breaking change, because today `T: Clone + ?Sized` (or of course `Self: Clone` in a trait context, with no implied `Self: Sized`) implies that `T: Sized`, but it might be that its impact is small enough to allow (and even if not, it might be worth it for Rust 2.0).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 How can we mitigate the risk of unintended unsized or large allocas? Note that the problem already exists today with large structs/arrays. A MIR lint against large/variable stack sizes would probably help users avoid these stack overflows. Do we want it in Clippy? rustc?

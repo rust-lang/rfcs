@@ -2,18 +2,15 @@
 - RFC PR: [490](https://github.com/rust-lang/rfcs/pull/490)
 - Rust Issue: [19607](https://github.com/rust-lang/rust/issues/19607)
 
-Summary
-=======
+## Summary
 
 Change the syntax for dynamically sized type parameters from `Sized? T` to `T:
 ?Sized`, and change the syntax for traits for dynamically sized types to `trait
 Foo for ?Sized`. Extend this new syntax to work with `where` clauses.
 
-Motivation
-==========
+## Motivation
 
-History of the DST syntax
--------------------------
+### History of the DST syntax
 
 When dynamically sized types were first designed, and even when they were first
 being implemented, the syntax for dynamically sized type parameters had not been
@@ -79,8 +76,7 @@ before being dropped.  However, many generic functions assume that any parameter
 passed to them can be dropped. `Drop` could be made a default bound to resolve
 this, and `Drop?` would remove this bound from a type parameter.
 
-The problem with `Sized? T`
----------------------------
+### The problem with `Sized? T`
 
 There is some inconsistency present with the `Sized` syntax. After going through
 multiple syntaxes for DST, all of which were keywords preceding type parameters,
@@ -123,8 +119,7 @@ attached to.
 This RFC proposes to change the syntax for dynamically sized type parameters to
 `T: ?Sized` to resolve these issues.
 
-Detailed design
-===============
+## Detailed design
 
 Change the syntax for dynamically sized type parameters to `T: ?Sized`:
 
@@ -148,8 +143,7 @@ Allow using this syntax in `where` clauses:
 fn foo<T>(x: &T) where T: ?Sized { ... }
 ```
 
-Drawbacks
-=========
+## Drawbacks
 
 - The current syntax uses position to distinguish between removing and adding
   bounds, while the proposed syntax only uses a symbol. Since `?Sized` is
@@ -162,8 +156,7 @@ Drawbacks
   already). A lint could be added to check for explicit default bounds if this
   turns out to be a problem.
 
-Alternatives
-============
+## Alternatives
 
 - Choose one of the previous syntaxes or a new syntax altogether. The drawbacks
   of the previous syntaxes are discussed in the ‘History of the DST syntax’
@@ -175,7 +168,6 @@ Alternatives
   syntax. It is, however, closer to the current syntax (`Sized? T`), and looks
   more natural because of how `?` is used in natural languages such as English.
 
-Unresolved questions
-====================
+## Unresolved questions
 
 None.

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#66](https://github.com/rust-lang/rfcs/pull/66)
 - Rust Issue: [rust-lang/rust#15023](https://github.com/rust-lang/rust/issues/15023)
 
-# Summary
+## Summary
 
 Temporaries live for the enclosing block when found in a let-binding. This only
 holds when the reference to the temporary is taken directly. This logic should
@@ -20,7 +20,7 @@ fn main() {
 }
 ```
 
-# Motivation
+## Motivation
 
 Temporary lifetimes are a bit confusing right now. Sometimes you can keep
 references to them, and sometimes you get the dreaded "borrowed value does not
@@ -30,11 +30,11 @@ operation errors, e.g. autoref of `~[T]` to `&[T]` works but calling
 being overly restrictive when it decides the temporary doesn't live long
 enough.
 
-# Drawbacks
+## Drawbacks
 
 I can't think of any drawbacks.
 
-# Detailed design
+## Detailed design
 
 When a reference to a temporary is passed to a function (either as a regular
 argument or as the `self` argument of a method), and the function returns a
@@ -48,7 +48,7 @@ For example, `~[T].as_slice()` takes `&'a self` and returns `&'a [T]`. Calling
 to extend the lifetime of the `~[T]` temporary just as taking an explicit
 reference (and skipping the method call) would.
 
-# Alternatives
+## Alternatives
 
 Don't do this. We live with the surprising borrowck errors and the ugly workarounds that look like
 
@@ -57,6 +57,6 @@ let x = os::args();
 let x = x.slice_from(1);
 ```
 
-# Unresolved questions
+## Unresolved questions
 
 None that I know of.

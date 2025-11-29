@@ -2,14 +2,14 @@
 - RFC PR #: [#169](https://github.com/rust-lang/rfcs/pull/169)
 - Rust Issue #: https://github.com/rust-lang/rust/issues/16461
 
-# Summary
+## Summary
 
 Change the rebinding syntax from `use ID = PATH` to `use PATH as ID`,
 so that paths all line up on the left side, and imported identifiers
 are all on the right side.  Also modify `extern crate` syntax
 analogously, for consistency.
 
-# Motivation
+## Motivation
 
 Currently, the view items at the start of a module look something like
 this:
@@ -52,7 +52,7 @@ new_code`:
    which makes the *actual* differences between the different paths
    more visually apparent.
 
-# Detailed design
+## Detailed design
 
 Currently, the grammar for use statements is something like:
 
@@ -94,7 +94,7 @@ and
   `"extern" "crate" ident '=' string_lit`
 are removed (or at least deprecated).
 
-# Drawbacks
+## Drawbacks
 
 * `pub use export = import_path` may be preferred over `pub use
   import_path as export` since people are used to seeing the name
@@ -106,15 +106,15 @@ are removed (or at least deprecated).
   Adopting this RFC would change that precedent.
   (See "Change the signaling token" below.)
 
-# Alternatives
+## Alternatives
 
-## Keep things as they are
+### Keep things as they are
 
 This just has the drawbacks outlined in the motivation: the left-hand
 side of the view items are less regular, and one needs to scan both
 the left- and right-hand sides to see all the imported identifiers.
 
-## Change the signaling token
+### Change the signaling token
 
 Go ahead with switch, so imported identifier is on the left-hand side,
 but use a different token than `as` to signal a rebinding.
@@ -158,7 +158,7 @@ mod new_code {
 (I cannot figure out if this is genius or madness.  Probably madness,
 especially if one is allowed to omit the whitespace around the `:`)
 
-## Have distinct rebinding syntaxes for `use` and `pub use`
+### Have distinct rebinding syntaxes for `use` and `pub use`
 
 If people really like having `ident = path` for `pub use`, by the
 reasoning presented above that people are used to seeing the name
@@ -175,7 +175,7 @@ and import simultaneously, like so:
 
 But really, is `pub use foo::bar as a` all that bad?
 
-## Allow `extern crate ident as ident`
+### Allow `extern crate ident as ident`
 
 As written, this RFC allows for two variants of `extern_crate_decl`:
 
@@ -198,7 +198,7 @@ this choice is orthogonal to the goals of this RFC (since, if this is a
 good idea, it could just as well be implemented with the `=` syntax).
 Perhaps it should just be filed as a separate RFC on its own.
 
-# Unresolved questions
+## Unresolved questions
 
 * In the revised `extern crate` form, is it best to put the
   `link_attrs` after the identifier, as written above?  Or would it be

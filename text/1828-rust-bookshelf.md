@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1828](https://github.com/rust-lang/rfcs/pull/1828)
 - Rust Issue: [rust-lang/rust#39588](https://github.com/rust-lang/rust/issues/39588)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Create a "Rust Bookshelf" of learning resources for Rust.
@@ -20,7 +20,7 @@ This is largely about how doc.rust-lang.org is organized; today, it points to
 the book, the reference, the nomicon, the error index, and the standard library
 docs. This suggests unifying the first three into one thing.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are a few independent motivations for this RFC.
@@ -34,7 +34,7 @@ There are a few independent motivations for this RFC.
 
 These will be discussed further in the detailed design.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Several new repositories will be made, one for each of:
@@ -80,14 +80,14 @@ Finally, this creates a path for more books in the future: "the FFI Book" would
 be one example of a possibility for this kind of thing. The docs team will
 develop criteria for accepting a book as part of the official project.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 The landing page on doc.rust-lang.org will show off the full bookshelf, to let
 people find the documentation they need. It will also link to their respective
 repositories.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 A ton of smaller repos can make it harder to find what goes where.
@@ -99,7 +99,7 @@ also an issue without this RFC being accepted.
 Operations are harder, but they have to change to support this use-case for
 other reasons, so this does not add any extra burden.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Do nothing.
@@ -109,7 +109,7 @@ Do only one part of this, instead of the whole thing.
 Move all of the "bookshelf" into one repository, rather than individual ones.
 This would require a lot more label-wrangling, but might be easier.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 How should the first and second editions of the book live in the same

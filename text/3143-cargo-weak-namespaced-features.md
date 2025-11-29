@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3143](https://github.com/rust-lang/rfcs/pull/3143)
 - Tracking Issues: [rust-lang/cargo#5565](https://github.com/rust-lang/cargo/issues/5565) and [rust-lang/cargo#8832](https://github.com/rust-lang/cargo/issues/8832)
 
-# Summary
+## Summary
 
 This RFC proposes to stabilize the `weak-dep-features` and `namespaced-features` enhancements to Cargo. These introduce the following additions to how Cargo's [feature system] works:
 
@@ -20,13 +20,13 @@ See [Weak dependency features] and [Namespaced features] for more information on
 [Namespaced features]: https://doc.rust-lang.org/cargo/reference/unstable.html#namespaced-features
 [optional dependency]: https://doc.rust-lang.org/cargo/reference/features.html#optional-dependencies
 
-# Motivation
+## Motivation
 
 These enhancements to Cargo's feature system unlock the ability to express certain rules for features that are currently difficult or impossible to achieve today.
 These issues can crop up for many projects that make use of optional dependencies, and are well-known pain points.
 Introducing these enhancements can alleviate some of those pain points.
 
-## Weak dependency feature use cases
+### Weak dependency feature use cases
 
 Sometimes a package may want to "forward" a feature to its dependencies. This can be done today with the `dep_name/feat_name` syntax in the `[features]` table.
 However, one drawback is that if the dependency is an optional dependency, this will implicitly enable the dependency, which may not be what you want.
@@ -44,7 +44,7 @@ serde = { version = "1.0", optional=true, default-features = false }
 std = ["serde/std"]
 ```
 
-## Namespaced features use cases
+### Namespaced features use cases
 
 Currently, optional dependencies automatically get a feature of the same name to enable that dependency.
 However, this presents a compatibility hazard because the existence of that optional dependency may be an internal detail that a package may not want to expose.
@@ -75,7 +75,7 @@ lazy_static = { version = "1.4.0", optional = true }
 regexp = ["regex", "lazy_static"]
 ```
 
-# Guide-level explanation
+## Guide-level explanation
 
 The following is a replacement of the corresponding sections in the [features guide].
 
@@ -154,9 +154,9 @@ serde = { version = "1.0", optional=true, default-features = false }
 std = ["serde?/std"]
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 
-## Index changes
+### Index changes
 
 For reference, the current index format is documented [here](https://doc.rust-lang.org/cargo/reference/registries.html#index-format).
 
@@ -187,12 +187,12 @@ This means that running `cargo update` with a version older than 1.51 (published
 
 Package authors that want to support versions of Cargo older than 1.51 may want to avoid using the new feature syntax.
 
-## Internal resolver changes
+### Internal resolver changes
 
 Internally, Cargo will switch to always using the "new" feature resolver, which can emulate the old resolver behavior if a package is using `resolver="1"` (which is the default for editions prior to 2021).
 This should not be perceptible to the user, but is a major architectural change in Cargo.
 
-# Drawbacks
+## Drawbacks
 
 * This adds complication to the features syntax. It can be difficult for someone unfamiliar with the `Cargo.toml` format to understand the syntax, and it can be difficult to search the internet and documentation for special sigils.
 * It may encourage continuing to add complexity to feature expressions. The Cargo Team wants to avoid having syntax that only experts can understand, and additions like this take us further down that road.
@@ -215,7 +215,7 @@ This should not be perceptible to the user, but is a major architectural change 
   A large number of tests of been done to try to ensure that it works the same, but there are some unusual configurations that have not been exercised.
   There is a moderately high risk that this may introduce unintended changes in resolver behavior or other bugs.
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 * The Cargo Team considered many different variants of the syntax expressed here.
   We feel that this hit a desired balance of expressiveness and terseness, but it certainly won't be the perfect match for everyone.
@@ -227,12 +227,12 @@ This should not be perceptible to the user, but is a major architectural change 
   Other registries that don't support the new syntax may reject publishing with the new syntax (if they perform validation), or they may accept it (if the don't validate), in which case it should just work.
   The `"v"` field addition is only necessary for Cargo versions between 1.51 and whenever this is stabilized, and most use cases of other registries are generally expected to have stricter control over which versions of Cargo are in use.
 
-# Prior art
+## Prior art
 
 [RFC 2957](https://rust-lang.github.io/rfcs/2957-cargo-features2.html#prior-art) contains a survey of other tools with systems similar to Cargo's features.
 Some tools treat the equivalent of "features" and "dependencies" together, and some treat them separately.
 
-## Prior issues
+### Prior issues
 
 The following issues in Cargo's issue tracker cover the initial desires and proposals that lead to this design:
 
@@ -241,12 +241,12 @@ The following issues in Cargo's issue tracker cover the initial desires and prop
 * [#5565](https://github.com/rust-lang/cargo/issues/5565) Tracking issue for namespaced features
     * [#1286](https://github.com/rust-lang/cargo/issues/1286) Original issue proposing namespaced features
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None at this time.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * The `package-name/feature-name` syntax may be deprecated in the future. The new syntax is more flexible, and by encouraging only using the new syntax, that can help simplify learning materials and ensure developers don't make mistakes using the old syntax.

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1969](https://github.com/rust-lang/rfcs/pull/1969)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes the concept of *patching sources* for Cargo. Sources can be
@@ -20,7 +20,7 @@ It can, to a degree, simulate an "atomic" change across a large number of crates
 and repositories, which can then actually be landed in a piecemeal, non-atomic
 fashion.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Large Rust projects often end up pulling in dozens or hundreds of crates from
@@ -46,7 +46,7 @@ graph (say, `xml-rs`), they face a couple of related challenges:
   crates.io. But they would like to cleanly continue local development in the
   meantime, with an easy migration as each PR lands and each crate is published.
 
-## The Goldilocks problem
+### The Goldilocks problem
 
 It's likely that a couple of Cargo's existing features have already come to
 mind as potential solutions to the challenges above. But the existing features
@@ -71,7 +71,7 @@ Prepublication dependencies add another tool to this arsenal, with just the
 right amount of dependency unification: the precise amount you'd get after
 publication to crates.io.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The design itself is relatively straightforward. The Cargo.toml file will
@@ -104,7 +104,7 @@ for patching. Eventually it's intended we'll grow support for multiple
 registries here with their own identifiers, but for now just literally
 `crates-io` and other URLs are allowed.
 
-## Examples
+### Examples
 
 It's easiest to see how the feature works by looking at a few examples.
 
@@ -121,7 +121,7 @@ With this setup, the dependency graph for Servo will contain *two* versions of
 `0.9.1` is considered a minor release against `0.9.0`, while `0.9.0` and `0.8.0`
 are incompatible.
 
-### Scenario: patching with a bugfix
+#### Scenario: patching with a bugfix
 
 Let's say that while developing `foo` we've got a lock file pointing to `xml-rs`
 `0.9.0`, and we found the `0.9.0` branch of `xml-rs` that hasn't been touched
@@ -145,7 +145,7 @@ Once we've confirmed a fix bug we then continue to run tests in `xml-rs` itself,
 and then we'll send a PR to the main `xml-rs` repo. This then leads us to the
 next section where a new version of `xml-rs` comes into play!
 
-### Scenario: prepublishing a new minor version
+#### Scenario: prepublishing a new minor version
 
 Now, suppose that `foo` needs some changes to `xml-rs`, but we want to check
 that all of Servo compiles before pushing the changes through.
@@ -201,7 +201,7 @@ published 0.9.2 may not be precisely what we thought it was going to be. For
 example more changes could have been merged, it may not actually fix the bug,
 etc.
 
-### Scenario: prepublishing a breaking change
+#### Scenario: prepublishing a breaking change
 
 What happens if `foo` instead needs to make a breaking change to `xml-rs`? The
 workflow is identical. For `foo`:
@@ -236,7 +236,7 @@ prepublication version of `xml-rs`.
 would help catch this issue at the Cargo level and give a maximally informative
 error message).
 
-## Impact on `Cargo.lock`
+### Impact on `Cargo.lock`
 
 Usage of `[patch]` will perform backwards-incompatible modifications to
 `Cargo.lock`, meaning that usage of `[patch]` will prevent previous versions
@@ -323,7 +323,7 @@ versions of `log`, instead seeing that there's an exact dependency on the git
 repository (from the `Cargo.lock`) and the repository is listed as a
 patch, so it'll follow that pointer.
 
-## Impact on `[replace]`
+### Impact on `[replace]`
 
 The `[patch]` section in the manifest can in many ways be seen as a "replace
 2.0". It is, in fact, strictly more expressive than the current `[replace]`
@@ -355,7 +355,7 @@ section seems to be working well we can issue an official deprecation for
 Documentation, however, will immediately begin to recommend `[patch]` over
 `[replace]`.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Patching is a feature intended for large-scale projects spanning many repos
@@ -375,7 +375,7 @@ instead if possible.
 
 [over]: http://doc.crates.io/specifying-dependencies.html#overriding-dependencies
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature adds yet another knob around where, exactly, Cargo is getting its
@@ -388,7 +388,7 @@ checked in even more rarely, are only used for very large projects, and cannot
 be published to crates.io, the knobs are largely invisible to the vast majority
 of Cargo users, who are unaffected by them.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The primary alternative for addressing the motivation of this RFC would be to
@@ -413,7 +413,7 @@ address the desired workflow, for a few reasons:
   0.10.0. With `[replace]`, however, we would only possibly be able to replace
   all usage of 0.9.1 with 0.10.0, not having an incremental solution.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - It would be extremely helpful to provide a first-class workflow for forking a

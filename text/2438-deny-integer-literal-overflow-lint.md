@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2438](https://github.com/rust-lang/rfcs/pull/2438)
 - Rust Issue: [rust-lang/rust#54502](https://github.com/rust-lang/rust/issues/54502)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Turn the `overflowing_literals` lint from warn to deny for the 2018 edition.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust has a strong focus on providing compile-time protection against common programmer errors. In early versions of Rust (circa 2012), integer literals were statically prevented from exceeding the range of their underlying fixed-size integral type. This was enforced syntactically, as at the time all integer literals required a suffix to denote their intended type, e.g. `let x: u8 = 0u8;`, so the parser itself was capable of rejecting e.g. `let x = 256u8;`. Eventually [integer literal type inference](https://mail.mozilla.org/pipermail/rust-dev/2012-July/002002.html) was implemented to improve ergonomics, allowing `let x: u8 = 0;`, but the property that the parser could enforce integer range checking [was lost](https://mail.mozilla.org/pipermail/rust-dev/2012-December/002734.html). It was [re-added](https://github.com/rust-lang/rust/issues/4220) as a warn-by-default lint for the following reasons:
@@ -33,14 +33,14 @@ Given that the upcoming 2018 edition allows us to change existing lints to deny-
 
 One further note: our intent here is primarily to deny overflowing integer literals, though the `overflowing_literals` lint has one other function: to warn when a floating-point literal exceeds the largest or smallest finite number that is representable by the chosen precision. However, this isn't "overflow" per se, because in this case Rust will assign the value of positive or negative infinity to the variable in question. Because this wouldn't clash with our general stance against implicit overflow, it would not be inconsistent to continue allowing this; however, we adopt the stance that it is both desirable to force someone who wants a value of infinity to explicitly use e.g. `std::f32::INFINITY`, and that it is unlikely that code in the wild would break because of this (and any potential breakage would be precisely noted by the compiler, and could be fixed quickly and trivially). Therefore we are content with the additional strictness that denying this lint would imply.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Integer literals may not exceed the numeric upper or lower bounds of the underlying integral type. For example, for the unsigned eight-bit integer type `u8`, the lowest number it can represent is 0 and the highest number is 255; therefore an assignment such as `let x: u8 = -1;` or `let x: u8 = 256;` will be rejected by the compiler.
 
 Floating-point literals may not exceed the largest or smallest finite number that is precisely representable by the underlying floating-point type, after floating-point rounding is applied. If a floating-point literal is of a sufficient size that it would round to positive or negative infinity, such as `let x: f32 = 3.5e38;`, it will be rejected by the compiler.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Since this feature is already implemented, no implementation guidance is necessary.
@@ -49,12 +49,12 @@ To document what is already implemented: any assignment operation that would res
 
 Similarly, any assignment operation that would result in a floating-point type being assigned a literal value that rounds to positive or negative infinity will be rejected by the compiler.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 No drawbacks that anyone can think of. Even the risk of breakage is remote, since the lint has existed since 2012 and we can think of no code that would bother relying on deliberately overflowing integer literals. Similarly, we do not anticipate that any code is relying upon overlarge floating-point literals as aliases for `std::f32::INFINITY`.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 The impact of not doing this will be that it is slightly harder to learn and use Rust, and users will be grumpy when they make obvious bugs that the compiler could have prevented but perplexingly chose not to.

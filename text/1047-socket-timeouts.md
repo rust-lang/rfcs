@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1047](https://github.com/rust-lang/rfcs/pull/1047)
 - Rust Issue: [rust-lang/rust#25619](https://github.com/rust-lang/rust/issues/25619)
 
-# Summary
+## Summary
 
 Add sockopt-style timeouts to `std::net` types.
 
-# Motivation
+## Motivation
 
 Currently, operations on various socket types in `std::net` block
 indefinitely (i.e., until the connection is closed or data is
@@ -22,7 +22,7 @@ and this includes support for timeouts via [sockopts][sockopt].
 
 So timeouts are well-motivated and well-suited to `std::net`.
 
-# Detailed design
+## Detailed design
 
 The proposal is to *directly expose* the timeout functionality
 provided by [`setsockopt`][sockopt], in much the same way we currently
@@ -56,7 +56,7 @@ argument; the setter methods will return an IO error of kind
 
 The corresponding socket options are `SO_RCVTIMEO` and `SO_SNDTIMEO`.
 
-# Drawbacks
+## Drawbacks
 
 One potential downside to this design is that the timeouts are set
 through direct mutation of the socket state, which can lead to
@@ -72,9 +72,9 @@ system types, and a close correspondence between Rust APIs and system
 APIs. It's not clear that this kind of composability is important
 enough in practice to justify a departure from the traditional API.
 
-# Alternatives
+## Alternatives
 
-## Taking `Duration` directly
+### Taking `Duration` directly
 
 Using an `Option<Duration>` introduces a certain amount of complexity
 -- it raises the issue of `Some(Duration::new(0, 0))`, and it's
@@ -93,7 +93,7 @@ Aside from fitting Rust idioms better, the main proposal also gives a
 somewhat stronger indication of a bug when things go wrong (rather
 than simply failing to time out, for example).
 
-## Combining with nonblocking support
+### Combining with nonblocking support
 
 Another possibility would be to provide a single method that can
 choose between blocking indefinitely, blocking with a timeout, and
@@ -112,7 +112,7 @@ timeout and put the socket in nonblocking mode. On the other hand, it
 would relinquish the one-to-one correspondence between Rust
 configuration APIs and underlying socket options.
 
-## Wrapping for compositionality
+### Wrapping for compositionality
 
 A different approach would be to *wrap* socket types with a "timeout
 modifier", which would be responsible for setting and resetting the
@@ -148,7 +148,7 @@ difficult to be "polymorphic" over timeouts.
 Ultimately, it's not clear that the extra complexities of the type
 distinction here are worth the better theoretical composability.
 
-# Unresolved questions
+## Unresolved questions
 
 Should we consider a preliminary version of this RFC that introduces
 methods like `set_read_timeout_ms`, similar to `wait_timeout_ms` on

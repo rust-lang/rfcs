@@ -3,10 +3,10 @@
 - RFC PR: [rust-lang/rfcs#2972](https://github.com/rust-lang/rfcs/pull/2972)
 - Rust Issue: [rust-lang/rust#90957](https://github.com/rust-lang/rust/issues/90957)
 
-# Summary
+## Summary
 This document attempts to increase the utility of [naked functions](https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md) by constraining their use and increasing their defined invariants.
 
-# Motivation
+## Motivation
 
 Naked functions have long been a feature of compilers. These functions are typically defined as normal functions in every regard, except that the compiler does not emit the function prologue and epilogue. Rust's early attempt to support this feature ([RFC 1201](https://github.com/rust-lang/rfcs/blob/master/text/1201-naked-fns.md)) mostly copied the existing compiler behaviors.
 
@@ -14,7 +14,7 @@ However, naked functions are often avoided in practice because their behavior is
 
 This document seeks to define naked functions in a much more constrained, positivistic way. In doing so, naked functions can become more useful.
 
-# Naked function definition
+## Naked function definition
 
 A naked function has a defined calling convention and a body which contains only assembly code which can rely upon the defined calling convention.
 
@@ -38,7 +38,7 @@ In exchange for the above constraints, the compiler commits to:
 
 As a (weaker) corollary to the last compiler commitment, the initial state of all registers in the `asm!()` statement conform to the specified calling convention.
 
-# Explanation
+## Explanation
 
 Since a naked function has no prologue, any naive attempt to use the stack can produce invalid code. This certainly includes local variables. But this can also include attempts to reference function arguments which may be placed on the stack. This is why a naked function may only contain a single `asm!()` statement.
 
@@ -52,7 +52,7 @@ Because naked functions depend upon the calling convention so heavily, inlining 
 
 Since the `const` and `sym` operands modify neither the stack nor the registers, their use is permitted.
 
-## Examples
+### Examples
 
 This function adds three to a number and returns the result:
 
@@ -75,7 +75,7 @@ pub extern "sysv64" fn add_n(number: usize) -> usize {
 
 The calling convention is defined as `extern "sysv64"`, therefore we know that the input is in the `rdi` register and the return value is in the `rax` register. The `asm!()` statement contains `options(noreturn)` and therefore we handle the return directly through the `ret` instruction. We can provide a `const` operand since it modifies neither registers nor stack. Since we have strong guarantees about the state of the registers, we can mark this function as safe and wrap the `asm!()` statement in an `unsafe` block.
 
-# Drawbacks
+## Drawbacks
 
 Implementing this will break compatibility of existing uses of the nightly `#[naked]` attribute. All of these uses likely depend on undefined behavior. If this is a problem, we could simply use a different attribute.
 
@@ -87,13 +87,13 @@ Adopting this definition changes the invariants of `asm!()`. Currently, all regi
 
 Refusing to allow argument operands means that architectures that have multiple calling conventions (i.e. x86_64 SystemV vs Windows) cannot share function bodies. This could be remedied with a future improvement.
 
-# Alternatives
+## Alternatives
 
-## Do nothing
+### Do nothing
 
 We could do nothing and let naked functions work as they currently do. However, this is likely to be a source of a long stream of difficult compiler bugs and therefore there is no clear path to stabilization. Further, because of the lack of clear constraints, naked functions today are hard to use correctly. And when the developer fails to get every detail right, the result can be hard to debug.
 
-## Remove naked functions
+### Remove naked functions
 
 Another possibility is to simply remove support for naked functions altogether. This does solve the undefined behavior problem. But it forces the developer to pursue other options. Most notably `global_asm!()` or using an external assembler.
 
@@ -101,7 +101,7 @@ It would be possible to use `global_asm!()` to define functions with existing co
 
 Alternatively, developers could use an external assembler and link in the result. This approach is similar to `global_asm!()` but offloads the problem to external tooling such as the `cc` crate. It has the same drawbacks as `global_asm!()` and also puts additional requirements on compilers of the software.
 
-# Prior art
+## Prior art
 
 All languages represented here follow the weaker definition of naked functions:
 
@@ -118,11 +118,11 @@ All languages represented here follow the weaker definition of naked functions:
 | Rust              | x         |
 | Zig               | x         |
 
-# Unresolved questions
+## Unresolved questions
 
 All outstanding questions have been resolved.
 
-# Future possibilities
+## Future possibilities
 
 It would be possible to define new calling conventions that can be used with naked functions.
 

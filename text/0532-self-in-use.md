@@ -2,13 +2,13 @@
 - RFC PR: [532](https://github.com/rust-lang/rfcs/pull/532)
 - Rust Issue: [20361](https://github.com/rust-lang/rust/issues/20361)
 
-# Summary
+## Summary
 
 This RFC proposes the `mod` keyword used to refer
 the immediate parent namespace in `use` items (`use a::b::{mod, c}`)
 to be changed to `self`.
 
-# Motivation
+## Motivation
 
 While this looks fine:
 
@@ -33,20 +33,20 @@ enum Foo { Bar, Baz }
 RFC #168 was written when there was no namespaced `enum`,
 therefore the choice of the keyword was suboptimal.
 
-# Detailed design
+## Detailed design
 
 This RFC simply proposes to use `self` in place of `mod`.
 This should amount to one line change to the parser,
 possibly with a renaming of relevant AST node (`PathListMod`).
 
-# Drawbacks
+## Drawbacks
 
 `self` is already used to denote a relative path in the `use` item.
 While they can be clearly distinguished
 (any use of `self` proposed in this RFC will appear inside braces),
 this can cause some confusion to beginners.
 
-# Alternatives
+## Alternatives
 
 Don't do this.
 Simply accept that `mod` also acts as a general term for namespaces.
@@ -64,6 +64,6 @@ However, this is not very future-proof for several reasons.
   An explicit item type in `use` will imply that we *can* selectively import,
   while we actually can't.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1194](https://github.com/rust-lang/rfcs/pull/1194)
 - Rust Issue: [rust-lang/rust#28050](https://github.com/rust-lang/rust/issues/28050)
 
-# Summary
+## Summary
 
 Add element-recovery methods to the set types in `std`.
 
-# Motivation
+## Motivation
 
 Sets are sometimes used as a cache keyed on a certain property of a type, but programs may need to
 access the type's other properties for efficiency or functionality. The sets in `std` do not expose
@@ -79,7 +79,7 @@ fn main() {
 }
 ```
 
-# Detailed design
+## Detailed design
 
 Add the following element-recovery methods to `std::collections::{BTreeSet, HashSet}`:
 
@@ -97,10 +97,10 @@ impl<T> Set<T> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 This complicates the collection APIs.
 
-# Alternatives
+## Alternatives
 
 Do nothing.

@@ -1,28 +1,28 @@
-# RFC: result_ffi_guarantees
+## RFC: result_ffi_guarantees
 
 - Feature Name: `result_ffi_guarantees`
 - Start Date: 2023-02-15
 - RFC PR: [rust-lang/rfcs#3391](https://github.com/rust-lang/rfcs/pull/3391)
 - Rust Issue: [rust-lang/rust#110503](https://github.com/rust-lang/rust/issues/110503)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC gives specific layout and ABI guarantees when wrapping "non-zero" data types from `core` in `Option` or `Result`. This allows those data types to be used directly in FFI, in place of the primitive form of the data (eg: `Result<(), NonZeroI32>` instead of `i32`).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust often needs to interact with foreign code. However, foreign function type signatures don't normally support any of Rust's rich type system. Particular function inputs and outputs will simply use 0 (or null) as a sentinel value and the programmer has to remember when that's happening.
 
 Though it's common for "raw bindings" crates to also have "high level wrapper" crates that go with them (eg: `windows-sys`/`windows`, or `sdl2-sys`/`sdl2`, etc), someone still has to write those wrapper crates which use the foreign functions directly. Allowing Rust programmers to use more detailed types with foreign functions makes their work easier.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 I'm not sure how to write a "guide" portion of this that's any simpler than the "reference" portion, which is already quite short.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When either of these two `core` types:
@@ -67,27 +67,27 @@ Which type you should use with a particular FFI function signature still depends
 Rust can't solve that part for you.
 However, once you've decided on the type you want to use, the compiler's normal type checks can guide you everywhere else in the code.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * The compiler has less flexibility with respect to discriminant computation and pattern matching optimizations when a type is niche-optimized.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 It's always possible to *not* strengthen the guarantees of the language.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The compiler already supports `Option` being combined with specific non-zero types, this RFC mostly expands the list of guaranteed support.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None at this time.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * This could be expanded to include [ControlFlow](https://doc.rust-lang.org/nightly/core/ops/enum.ControlFlow.html) and [Poll](https://doc.rust-lang.org/nightly/core/task/enum.Poll.html).

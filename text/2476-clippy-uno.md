@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2476](https://github.com/rust-lang/rfcs/pull/2476)
 - Rust Issue: [rust-lang-nursery/rust-clippy#3343](https://github.com/rust-lang-nursery/rust-clippy/issues/3343)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Release Clippy 1.0, in preparation for it being shipped via rustup and eventually available via Rust Stable.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 See also: [The Future of Clippy][future]
@@ -22,10 +22,10 @@ about its lints and their categorization.
 
 [future]: https://manishearth.github.io/blog/2018/06/05/the-future-of-clippy-the-rust-linter/
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Usage and lint philosophy
+### Usage and lint philosophy
 
 We expect Clippy to be used via `cargo clippy`.
 
@@ -35,7 +35,7 @@ In general Clippy is intended to be used with a liberal sprinkling of `#[allow()
 disagree with Clippy's choices. This is a weaker philosophy than that behind rustc's lints, where usually flipping
 one is an indication of a very specialized situation.
 
-## Lint attributes
+### Lint attributes
 
 Currently to allow/deny Clippy lints you have to `#[cfg_attr(clippy, allow(lintname))]` which is somewhat tedious.
 
@@ -43,7 +43,7 @@ The compiler should support something like `#[allow(clippy::lintname)]` which wo
 at all when not running Clippy.
 
 
-## Stability guarantees
+### Stability guarantees
 
 Clippy will have the same idea of lint stability as rustc; essentially we do not guarantee stability under `#[deny(lintname)]`.
 This is not a problem since deny only affects the current crate (dependencies have their lints capped)
@@ -76,7 +76,7 @@ The configuration file for clippy, clippy.toml, is not stabilized in this RFC. I
 
 The interface and existence of `cargo-clippy` is also not stabilized in this RFC. We will continue shipping it with rustup, but it may be replaced in the future with a combined `cargo lint` command.
 
-## Lint audit and categories
+### Lint audit and categories
 
 A couple months ago we did a lint audit to recategorize all the Clippy lints. The [Reference-Level explanation below][cat] contains a list
 of all of these lints as currently categorized.
@@ -102,7 +102,7 @@ Lints can only belong to one lint group at a time, and the lint group defines th
 the style and complexity groups -- a lot of style issues are also complexity issues and vice versa. We separate these groups
 so that people can opt in to the complexity lints without having to opt in to Clippy's style.
 
-## Compiler uplift
+### Compiler uplift
 
 The compiler has historically had a "no new lints" policy, partly with the desire that lints would
 incubate outside of the compiler (so usually in Clippy). This feels like a good time to look into uplifting these lints.
@@ -122,7 +122,7 @@ I don't think the compler will want _all_ correctness lints here, however if the
 where it being _not_ a bug is an exceedingly rare case (i.e. very low false positive frequency) it should probably belong in the
 compiler.
 
-## What lints belong in clippy?
+### What lints belong in clippy?
 
 Essentially, we consider the categorization itself to be a definition of boundaries -- if it doesn't fit in the categories,
 it doesn't fit in clippy (or needs an RFC for, specifically).
@@ -174,11 +174,11 @@ For the other categories (these are allow by default):
 
  [cat]: #lint-categorization
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 
-## Lint categorization
+### Lint categorization
 
 This categorization can be browsed [online].
 
@@ -193,7 +193,7 @@ For ease of review, the lints below are as they were listed in the original RFC.
  - `explicit_iter_loop` and `explicit_into_iter_loop` be moved from `style` to `pedantic`
 
 
-# correctness (Deny)
+## correctness (Deny)
 
 - [for_loop_over_option](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#for_loop_over_option): Checks for `for` loops over `Option` values.
 - [eq_op](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#eq_op): Checks for equal operands to comparison, logical and
@@ -285,7 +285,7 @@ which never terminates.
 `repr(isize/usize)` and have values that don't fit into an `i32`.
 
 
-# style (Warn)
+## style (Warn)
 
 - [inconsistent_digit_grouping](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#inconsistent_digit_grouping): Warns if an integral or floating-point constant is
 grouped inconsistently with underscores.
@@ -448,7 +448,7 @@ suggests the latter.
 `Option`
 
 
-# complexity (Warn)
+## complexity (Warn)
 
 - [option_option](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#option_option): Checks for use of `Option<Option<_>>` in function signatures and type
 definitions
@@ -555,7 +555,7 @@ declarations above a certain complexity threshold.
 to `u8` and suggests using a byte literal instead.
 
 
-# perf (Warn)
+## perf (Warn)
 
 - [mutex_atomic](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#mutex_atomic): Checks for usages of `Mutex<X>` where an atomic will do.
 - [large_enum_variant](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#large_enum_variant): Checks for large size differences between variants on
@@ -585,7 +585,7 @@ etc., and suggests to use `unwrap_or_else` instead
 `str` as an argument, e.g. `_.split("x")`.
 
 
-# pedantic (Allow)
+## pedantic (Allow)
 
 - [expl_impl_clone_on_copy](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#expl_impl_clone_on_copy): Checks for explicit `Clone` implementations for `Copy`
 types.
@@ -657,7 +657,7 @@ true or false, but where one side has been upcast so that the comparison is
 necessary. Only integer types are checked.
 
 
-# nursery (Allow)
+## nursery (Allow)
 
 - [empty_line_after_outer_attr](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#empty_line_after_outer_attr): Checks for empty lines after outer attributes
 - [needless_borrow](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#needless_borrow): Checks for address of operations (`&`) that are going to
@@ -670,7 +670,7 @@ upper bound, e.g. `x..(y+1)`.
 - [unnecessary_unwrap](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#unnecessary_unwrap): Checks for calls of `unwrap[_err]()` that cannot fail.
 
 
-# restriction (Allow)
+## restriction (Allow)
 
 - [integer_arithmetic](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#integer_arithmetic): Checks for plain integer arithmetic.
 - [shadow_reuse](https://rust-lang-nursery.github.io/rust-clippy/master/index.html#shadow_reuse): Checks for bindings that shadow other bindings already in
@@ -712,7 +712,7 @@ value and constant, except in functions called `*eq*` (which probably
 implement equality for a type involving floats).
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 We don't particularly _need_ a 1.0, however it's good to have a milestone here, and a general idea of stability as we move forward in this process.
@@ -720,7 +720,7 @@ We don't particularly _need_ a 1.0, however it's good to have a milestone here, 
 It's also good to have some community involvement in the lint design/categorization process since Clippy lints
 both reflect and affect the general style of the community.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Through the process of this RFC we hope to determine if there are lints which need

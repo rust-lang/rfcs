@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#44690](https://github.com/rust-lang/rust/issues/44690)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes a temporary solution to the problem of letting tools use
@@ -38,7 +38,7 @@ attributes, we propose a subset of a hypothetical long-term solution.
 
 This RFC supersedes #1755.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Attributes are a useful, general-purpose mechanism for annotating code with
@@ -78,7 +78,7 @@ compiler warning about unused lints. E.g., we want a user to be able to write
 `#![allow(clippy::some_lint)]` in their crate without warning.
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ### Attributes
@@ -123,10 +123,10 @@ provides a large suite of lints to catch common mistakes and improve your Rust
 code. Lints for tools are prefixed with the tool name, e.g., `clippy::box_vec`.
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Long-term solution
+### Long-term solution
 
 There will be some opt-in mechanism for crates to declare that they want to
 allow use of a tool's attributes. This might be in the source text (an attribute
@@ -154,7 +154,7 @@ compiler *may* suggest mis-typed attributes (declared or built-in).
 A similar opt-in mechanism will exist for lints.
 
 
-## Proposed for immediate implementation
+### Proposed for immediate implementation
 
 There is an attribute path white list of the names of tools shipped with the Rust
 distribution. Any crate can use an attribute path starting with those names and
@@ -186,7 +186,7 @@ Likewise, white-listed tools may be used as a prefix for lints. So for example,
 perspective.
 
 
-### Activation and unused attibutes/lints
+#### Activation and unused attibutes/lints
 
 For each name on the whitelist, it is indicated if the name is active for
 attributes or lints. A name is only activated if required. So for example,
@@ -205,7 +205,7 @@ check for unused attributes/lints as part of a possible long-term solution
 without introducing new warnings or errors.
 
 
-### Forward and backward compatibility
+#### Forward and backward compatibility
 
 Since custom attributes are feature gated and scoped attributes are part of the
 unstable macros 2.0 work, there is no backwards compatibility issue.
@@ -224,7 +224,7 @@ the libraries prelude) or using warning cycles or an edition to move them to
 explicit opt-in.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The proposed scheme does not allow tools or macros to use custom top-level
@@ -242,7 +242,7 @@ or API for this.
 
 No interaction with imports or other parts of the module system.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could continue to force tools to rely on `cfg_attr` - this is very
@@ -251,7 +251,7 @@ unergonomic, e.g., `#[cfg_attr(rustfmt, rustfmt_skip)]`.
 We could allow all scoped attributes without checks. This feels like it
 introduces too much scope for error.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Are there other tools that should be included on the whitelist (`#[test]` perhaps)?

@@ -6,7 +6,7 @@ Rustdoc: stabilization of the `doc(cfg*)` attributes
 - Rust Issue: [rust-lang/rust#43781](https://github.com/rust-lang/rust/issues/43781)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC aims at providing rustdoc users the possibility to add visual markers to the rendered documentation to know under which conditions an item is available (currently possible through the following unstable features: `doc_cfg`, `doc_auto_cfg` and `doc_cfg_hide`).
@@ -15,7 +15,7 @@ It does not aim to allow having a same item with different `cfg`s to appear more
 
 It does not aim to document items which are *inactive* under the current configuration (i.e., “`cfg`ed out”). More details in the [Unresolved questions section](#unresolved-questions).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The goal of this RFC is to stabilize the possibility to add visual markers to the rendered documentation to know under which conditions an item is available.
@@ -24,7 +24,7 @@ Providing this information to users will solve a common issue: “Why can I see 
 The end goal being to provide this information automatically so that the documentation maintenance cost won't increase.
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This RFC proposes to add the following attributes:
@@ -50,12 +50,12 @@ This RFC proposes to add the following attributes:
 
 All of these attributes can be added to a module or to the crate root, and they will be inherited by the child items unless another attribute overrides it. This is why "opposite" attributes like `auto_cfg(hide(...))` and `auto_cfg(show(...))` are provided: they allow a child item to override its parent.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## The attributes
+### The attributes
 
-### `#[doc(auto_cfg)`/`#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
+#### `#[doc(auto_cfg)`/`#[doc(auto_cfg = true)]`/`#[doc(auto_cfg = false)]`
 
 By default, `#[doc(auto_cfg)]` is enabled at the crate-level. When it's enabled, Rustdoc will automatically display `cfg(...)` compatibility information as-if the same `#[doc(cfg(...))]` had been specified.
 
@@ -74,7 +74,7 @@ In some situations, the detailed conditional compilation rules used to implement
 
 If no argument is specified (ie `#[doc(auto_cfg)]`), it's the same as writing `#[doc(auto_cfg = true)]`.
 
-### `#[doc(cfg(...))]`
+#### `#[doc(cfg(...))]`
 
 This attribute provides a standardized format to override `#[cfg()]` attributes to document conditionally available items. Example:
 
@@ -105,7 +105,7 @@ If `doc(auto_cfg)` is enabled on the item, `doc(cfg)` will override it anyway so
 
 This attribute works on modules and on items.
 
-### `#[doc(auto_cfg(hide(...)))]`
+#### `#[doc(auto_cfg(hide(...)))]`
 
 This attribute is used to prevent some `cfg` to be generated in the visual markers. It only applies to `#[doc(auto_cfg = true)]`, not to `#[doc(cfg(...))]`. So in the previous example:
 
@@ -196,7 +196,7 @@ pub fn foo() {}
 
 The reason behind this is that `doc(auto_cfg = ...)` enables or disables the feature, whereas `doc(auto_cfg(...))` enables it unconditionally, making the first attribute to appear useless as it will be overidden by the next `doc(auto_cfg)` attribute.
 
-### `#[doc(auto_cfg(show(...)))]`
+#### `#[doc(auto_cfg(show(...)))]`
 
 This attribute does the opposite of `#[doc(auto_cfg(hide(...)))]`: if you used `#[doc(auto_cfg(hide(...)))]` and want to revert its effect on an item and its descendants, you can use `#[doc(auto_cfg(show(...)))]`.
 It only applies to `#[doc(auto_cfg = true)]`, not to `#[doc(cfg(...))]`.
@@ -244,7 +244,7 @@ Using this attribute will re-enable `auto_cfg` if it was disabled at this locati
 pub fn foo() {}
 ```
 
-## Inheritance
+### Inheritance
 
 Rustdoc merges `cfg` attributes from parent modules to its children. For example, in this case, the module `non_unix` will describe the entire compatibility matrix for the module, and not just its directly attached information:
 
@@ -262,7 +262,7 @@ pub mod desktop {
 
 [Future versions of rustdoc][boolean simplification] may simplify this display down to "available on **Windows** only."
 
-### Re-exports and inlining
+#### Re-exports and inlining
 
 `cfg` attributes of a re-export are never merged with the re-exported item(s) attributes except if the re-export has the `#[doc(inline)]` attribute. In this case, the `cfg` of the re-exported item will be merged with the re-export's.
 
@@ -303,16 +303,16 @@ pub struct S;
 pub use dep::S as Y;
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 A potential drawback is that it adds more attributes, making documentation more complex.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why not merging cfg and doc(cfg) attributes by default?
+### Why not merging cfg and doc(cfg) attributes by default?
 
 It was debated and implemented in [rust-lang/rust#113091](https://github.com/rust-lang/rust/pull/113091).
 
@@ -338,10 +338,10 @@ When re-exporting items with different cfgs there are two things that can happen
    If the non-subset cfgs are active (e.g. compiling this example on windows), then this will be a compile error as the item doesn't exist to re-export. If the subset cfgs are active it behaves like described in 1.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## `cfg`ed out items
+### `cfg`ed out items
 
 Rustdoc doesn't take into account `cfg`ed out items. The reason for this limitation is that Rustdoc has only access to rustc's information: `cfg`ed out items, although still present, don't have enough information to be useful to rustdoc when generating documentation, hence why they are not treated.
 
@@ -361,11 +361,11 @@ pub fn function() {}
 
 There are a few leads on how Rustdoc could solve this issue, but they all come with big drawbacks, so this problem is not addressed in this RFC but will (hopefully) be in the future.
 
-# Future possibilities
+## Future possibilities
 [future possibilities]: #future-possibilities
 
 
-## Boolean simplification
+### Boolean simplification
 [boolean simplification]: #boolean-simplification
 
 > ![Available on (Windows or Unix) and non-Unix only.](https://hackmd.io/_uploads/SJrmwYeF2.png)

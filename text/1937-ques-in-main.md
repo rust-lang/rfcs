@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1937](https://github.com/rust-lang/rfcs/pull/1937)
 - Rust Issue: [rust-lang/rust#43301](https://github.com/rust-lang/rust/issues/43301)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow the `?` operator to be used in `main`, and in `#[test]`
@@ -28,7 +28,7 @@ template will be adjusted to make this unnecessary most of the time.
 [pre-rfc]: https://internals.rust-lang.org/t/rfc-mentoring-opportunity-permit-in-main/4600
 [old-issue]: https://github.com/rust-lang/rfcs/issues/1176
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It is currently not possible to use `?` in `main`, because `main`'s
@@ -163,7 +163,7 @@ and test functions.
 [to-socket-addrs]: https://doc.rust-lang.org/std/net/trait.ToSocketAddrs.html
 [process-exit]: https://doc.rust-lang.org/std/process/fn.exit.html
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The design goals for this new feature are, in decreasing order of
@@ -206,7 +206,7 @@ the level of programmer-visible interfaces, people who don't care are
 well-served by not breaking existing code (which is goal 2) and by
 removing a way in which `main` is not like other functions (goal 1).
 
-## The `Termination` trait
+### The `Termination` trait
 [the-termination-trait]: #the-termination-trait
 
 When `main` returns a nontrivial value, the runtime needs to know two
@@ -235,7 +235,7 @@ significant.
 
 [std::process::exit]: https://doc.rust-lang.org/std/process/fn.exit.html
 
-## Standard impls of Termination
+### Standard impls of Termination
 [standard-impls-of-termination]: #standard-impls-of-termination
 
 At least the following implementations of Termination will be added to
@@ -326,7 +326,7 @@ passed implements `Error` as well as `Display`, it should follow the
 Termination impl for `Result<_, Error>`, but that's an implementation
 detail).
 
-## Changes to `lang_start`
+### Changes to `lang_start`
 [changes-to-lang-start]: #changes-to-lang-start
 
 The `start` "lang item", the function that calls `main`, takes the
@@ -390,7 +390,7 @@ fn lang_start<T: Termination>
 }
 ```
 
-## Changes to doctests
+### Changes to doctests
 [changes-to-doctests]: #changes-to-doctests
 
 Simple doctests form the body of a `main` function, so they require
@@ -413,7 +413,7 @@ If the doctest specifies its own function head for `main` (visibly or
 invisibly), then it is the programmer's responsibility to give it an
 appropriate type signature, as for regular `main`.
 
-## Changes to the `#[test]` harness
+### Changes to the `#[test]` harness
 [changes-to-the-test-harness]: #changes-to-the-test-harness
 
 The appropriate semantics for test functions with rich return values
@@ -531,7 +531,7 @@ Considering also that dynamic tests are not documented and rarely used
 within libtest itself, and the compiletest harness) I think it makes
 most sense to not support rich return values from dynamic tests for now.
 
-## `main` in nostd environments
+### `main` in nostd environments
 [main-in-nostd-environments]: #main-in-nostd-environments
 
 Some no-std environments do have a notion of processes that run and
@@ -554,7 +554,7 @@ environments to refuse to let you impl Termination yourself.
 
 [divergent-main]: https://internals.rust-lang.org/t/allowing-for-main-to-be-divergent-in-embedded-environments/4717
 
-## The values used for `EXIT_SUCCESS` and `EXIT_FAILURE` by standard impls of Termination
+### The values used for `EXIT_SUCCESS` and `EXIT_FAILURE` by standard impls of Termination
 [values-used-for-success-and-failure]: #values-used-for-success-and-failure
 
 The C standard only specifies `0`, `EXIT_SUCCESS` and `EXIT_FAILURE`
@@ -587,7 +587,7 @@ anywhere.)
 [sysexits]: https://www.freebsd.org/cgi/man.cgi?query=sysexits
 [grep.1]: http://pubs.opengroup.org/onlinepubs/9699919799/utilities/grep.html
 
-# Deployment Plan
+## Deployment Plan
 [deployment-plan]: #deployment-plan
 
 This is a complicated feature; it needs two mostly-orthogonal feature
@@ -638,7 +638,7 @@ main is, and only then should rustdoc's template be changed.
 is stabilized, but it might need to wait longer, depending on how
 enthusiastic people are about changing their doctests.)
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This should be taught alongside the `?` operator and error handling in
@@ -739,7 +739,7 @@ involving `?` will need their boilerplate adjusted.
 [rfc243]: https://github.com/rust-lang/rfcs/blob/master/text/0243-trait-based-exception-handling.md
 [issue39849]: https://github.com/rust-lang/rust/issues/39849
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Generalizing the return type of `main` complicates libstd and/or the
@@ -748,7 +748,7 @@ newbies to the language get to error handling.  On the other hand,
 people coming to Rust from other languages may find this _less_
 surprising than the status quo.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Do nothing; continue to live with the trip hazard, the extra
@@ -759,7 +759,7 @@ out all the boilerplate by hand, but it's still there.
 
 [quickstart]: https://github.com/rusttemplates/quickstart
 
-# Unresolved Questions
+## Unresolved Questions
 [unresolved]: #unresolved-questions
 
 We need to decide what to call the new trait.  The names proposed in
@@ -787,7 +787,7 @@ _dynamic_ test-harness tests, but I do not think this is an urgent problem.
 All of the code samples in this RFC need to be reviewed for
 correctness and proper use of idiom.
 
-# Related Proposals
+## Related Proposals
 [related-proposals]: #related-proposals
 
 This proposal formerly included changes to `process::ExitStatus`

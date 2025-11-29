@@ -1,28 +1,28 @@
 - Feature Name: rust-lang_github_org_access_policy 
 - Start Date: 2020-03-02 
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes a policy for managing permissions to the [Rust-Lang GitHub Organization](https://www.github.com/rust-lang) and repositories within this organization.
 
 This RFC was written in consultation with the Governance Working Group and the Infrastructure team. Most discussion took place on [this issue](https://github.com/rust-lang/wg-governance/issues/4) and [this pull request](https://github.com/rust-lang/wg-governance/pull/42).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Access control for the [Rust-Lang GitHub Organization](https://www.github.com/rust-lang) and repositories within that organization is currently managed either through the [rust-lang team database][db], or ad-hoc via the GitHub UI by the org owners. We need a policy that defines how these accesses are granted and managed. This will allow us to have greater security in permissions to our GitHub org, and provide transparency and clarity on how access is managed.
 
 [db]: https://github.com/rust-lang/team/
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Rust-Lang GitHub Permissions Policy
+### Rust-Lang GitHub Permissions Policy
 
 This policy applies to both the [Rust-Lang GitHub Organization](https://github.com/rust-lang/) and all repositories within that organization.
 
-### Rust-Lang Organization
+#### Rust-Lang Organization
 
 Access to the Rust-Lang GitHub organization is managed with the [rust-lang team database][db]. The team database is managed by the [team-repo-admins], whose policies are specified in the [Team Maintenance] documentation.
 
@@ -34,7 +34,7 @@ All GitHub accounts used to interact with the Rust-Lang GitHub organization (own
 [Team Maintenance]: https://forge.rust-lang.org/infra/team-maintenance.html
 [Infrastructure Team]: https://github.com/rust-lang/team/blob/master/teams/infra.toml
 
-### Rust-Lang Repositories
+#### Rust-Lang Repositories
 
 Access to and permissions for repositories within the Rust-Lang organization must be administered through the [rust-lang team database][db]. Permissions should not be given to individuals, only to teams or groups.
 
@@ -62,21 +62,21 @@ Bot accounts controlled by the Infrastructure Team (such as the [triagebot]) can
 [bors]: https://github.com/rust-lang/homu
 [triagebot]: https://forge.rust-lang.org/triagebot/index.html
 
-## Implementation
+### Implementation
 
 It is the responsibility of the Leadership Council, the Infrastructure Team, and the team-repo-admins to finish the migration to implement this policy. New teams may need to be created, which is outside the scope of this RFC to define.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There can be exceptional cases where a team wants to give repository access to an individual to assist with their work. Requiring them to join or create a team in order to perform that work can be a significant hassle. Teams who find they need this frequently should consider creating a "contributors" subteam for that purpose, or to investigate other tooling to assist with what they need.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should these rules applied to Rust-Lang affiliated repositories and organizations that are outside of the [Rust-Lang GitHub Org](https://www.github.com/rust-lang), such as [rust-embedded](https://github.com/rust-embedded)?
 
-# Future possibilities
+## Future possibilities
 
 - [Custom GitHub Roles](https://docs.github.com/en/enterprise-cloud@latest/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/about-custom-repository-roles) could be created for use cases where the existing roles do not suffice.
 - Extend tooling, such as [triagebot], to provide extended permissions that are not normally available (for example, it currently offers [labeling](https://forge.rust-lang.org/triagebot/labeling.html)).

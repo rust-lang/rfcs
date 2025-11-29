@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1444](https://github.com/rust-lang/rfcs/pull/1444)
 - Rust Issue: [rust-lang/rust#32836](https://github.com/rust-lang/rust/issues/32836)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Provide native support for C-compatible unions, defined via a new "contextual
@@ -12,7 +12,7 @@ identifier.
 
 **Note:** This RFC has been partially superseded by `unions-and-drop`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Many FFI interfaces include unions.  Rust does not currently have any native
@@ -41,10 +41,10 @@ To preserve memory safety, accesses to union fields may only occur in unsafe
 code.  Commonly, code using unions will provide safe wrappers around unsafe
 union field accesses.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Declaring a union type
+### Declaring a union type
 
 A union declaration uses the same field declaration syntax as a struct
 declaration, except with `union` in place of `struct`.
@@ -62,7 +62,7 @@ the `#[repr(C)]` attribute will have the same layout as an equivalent C union.
 A union must have at least one field; an empty union declaration produces a
 syntax error.
 
-## Contextual keyword
+### Contextual keyword
 
 Rust normally prevents the use of a keyword as an identifier; for instance, a
 declaration `fn struct() {}` will produce an error "expected identifier, found
@@ -71,7 +71,7 @@ keyword `struct`".  However, to avoid breaking existing declarations that use
 used to introduce a union declaration.  A declaration `fn union() {}` will not
 produce such an error.
 
-## Instantiating a union
+### Instantiating a union
 
 A union instantiation uses the same syntax as a struct instantiation, except
 that it must specify exactly one field:
@@ -88,7 +88,7 @@ accessing a field of the union.  Code that wishes to maintain invariants about
 the union fields should make the union fields private and provide public
 functions that maintain the invariants.
 
-## Reading fields
+### Reading fields
 
 Unsafe code may read from union fields, using the same dotted syntax as a
 struct:
@@ -99,7 +99,7 @@ fn f(u: MyUnion) -> f32 {
 }
 ```
 
-## Writing fields
+### Writing fields
 
 Unsafe code may write to fields in a mutable union, using the same syntax as a
 struct:
@@ -128,7 +128,7 @@ implicitly implement `Drop` even if its field types do.
 The lint warning produced when declaring a union field of a type that
 implements `Drop` should document this caveat in its explanatory text.
 
-## Pattern matching
+### Pattern matching
 
 Unsafe code may pattern match on union fields, using the same syntax as a
 struct, without the requirement to mention every field of the union in a match
@@ -186,7 +186,7 @@ memory outside that field.  For example, if a union contains a `u8` and a
 `u32`, matching on the `u8` may not perform a `u32`-sized comparison over the
 entire union.
 
-## Borrowing union fields
+### Borrowing union fields
 
 Unsafe code may borrow a reference to a field of a union; doing so borrows the
 entire union, such that any borrow conflicting with a borrow of the union
@@ -240,19 +240,19 @@ fn test() {
 }
 ```
 
-## Union and field visibility
+### Union and field visibility
 
 The `pub` keyword works on the union and on its fields, as with a struct.  The
 union and its fields default to private.  Using a private field in a union
 instantiation, field access, or pattern match produces an error.
 
-## Uninitialized unions
+### Uninitialized unions
 
 The compiler should consider a union uninitialized if declared without an
 initializer.  However, providing a field during instantiation, or assigning to
 a field, should cause the compiler to treat the entire union as initialized.
 
-## Unions and traits
+### Unions and traits
 
 A union may have trait implementations, using the same `impl` syntax as a
 struct.
@@ -265,7 +265,7 @@ intentionally stores a type with Drop in a union.  The compiler must never
 implicitly generate a Drop implementation for the union itself, though Rust
 code may explicitly implement Drop for a union type.
 
-## Generic unions
+### Generic unions
 
 A union may have a generic type, with one or more type parameters or lifetime
 parameters.  As with a generic enum, the types within the union must make use
@@ -276,7 +276,7 @@ Type inference works on generic union types.  In some cases, the compiler may
 not have enough information to infer the parameters of a generic type, and may
 require explicitly specifying them.
 
-## Unions and undefined behavior
+### Unions and undefined behavior
 
 Rust code must not use unions to invoke [undefined
 behavior](https://doc.rust-lang.org/nightly/reference/behavior-considered-undefined.html).
@@ -289,7 +289,7 @@ binary layout, code reading fields of such a union or pattern-matching such a
 union must not read from a field other than the one written to.  This includes
 pattern-matching a specific value in a union field.
 
-## Union size and alignment
+### Union size and alignment
 
 A union declared with `#[repr(C)]` must have the same size and alignment as an
 equivalent C union declaration for the target platform.  Typically, a union
@@ -311,7 +311,7 @@ fn test() {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Adding a new type of data structure would increase the complexity of the
@@ -319,7 +319,7 @@ language and the compiler implementation, albeit marginally.  However, this
 change seems likely to provide a net reduction in the quantity and complexity
 of unsafe code.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Proposals for unions in Rust have a substantial history, with many variants and
@@ -401,7 +401,7 @@ would add an additional special case for writers of unsafe code.  This does
 provide further motivation for the lint for union fields implementing Drop;
 code that explicitly overrides that lint will need to take this into account.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Can the borrow checker support the rule that "simultaneous borrows of multiple
@@ -421,7 +421,7 @@ non-overlapping fields, and a struct may contain an anonymous union to define
 overlapping fields.  This RFC does not define anonymous unions or structs, but
 a subsequent RFC may wish to do so.
 
-# Edit History
+## Edit History
 
 - This RFC was amended in https://github.com/rust-lang/rfcs/pull/1663/
   to clarify the behavior when an individual field whose type

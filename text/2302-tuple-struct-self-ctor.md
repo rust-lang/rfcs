@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2302](https://github.com/rust-lang/rfcs/pull/2302)
 - Rust Issue: [rust-lang/rust#51994](https://github.com/rust-lang/rust/issues/51994)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Tuple `struct`s can now be constructed and pattern matched with
@@ -19,7 +19,7 @@ impl Default for TheAnswer {
 
 Similarly, unit structs can also be constructed and pattern matched with `Self`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This RFC proposes a consistency fix allowing `Self` to be used in more
@@ -72,10 +72,10 @@ will also extend to tuple and unit structs. Eliminating this discrepancy between
 tuple structs and those with named fields will therefore have all the benefits
 associated with this feature for structs with named fields.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Basic concept
+### Basic concept
 
 For structs with named fields such as:
 
@@ -99,7 +99,7 @@ impl Person {
 }
 ```
 
-## Through type aliases
+### Through type aliases
 
 This ability does not extend to tuple structs however in current Rust but will
 with this RFC. To continue on with the previous example, you can now also write:
@@ -130,7 +130,7 @@ impl Default for BarFoo {
 }
 ```
 
-## Patterns
+### Patterns
 
 Currently, you can pattern match using `Self { .. }` on a named struct as in
 the following example:
@@ -171,7 +171,7 @@ impl Person {
 Of course, this redundant reconstruction is not recommended in actual code,
 but illustrates what you can do.
 
-## `Self` as a function pointer
+### `Self` as a function pointer
 
 When you define a tuple struct today such as:
 
@@ -199,7 +199,7 @@ impl<T> Foo<T> {
 }
 ```
 
-## Unit structs
+### Unit structs
 
 With this RFC, you can also use `Self` in pattern and expression contexts when
 dealing with unit structs. For example:
@@ -214,14 +214,14 @@ impl Default for TheAnswer {
 }
 ```
 
-## Teaching the contents
+### Teaching the contents
 
 This RFC should not require additional effort other than spreading the
 news that this now is possible as well as the reference. The changes are
 seen as intuitive enough that it supports what the user already assumes
 should work and will probably try at some point.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When entering one of the following contexts, a Rust compiler will extend
@@ -241,7 +241,7 @@ handled by resolving them in the value namespace and checking that they
 resolve to a tuple constructor. Since by definition, `Self` referring
 to a tuple struct resolves to a tuple constructor, this is OK.
 
-## Implementation notes
+### Implementation notes
 
 As an additional check on the sanity of a Rust compiler implementation,
 a well formed expression `Self(v0, v1, ..)`, must be semantically equivalent to
@@ -290,7 +290,7 @@ with the operational semantics:
 Γ ⊢ Self    ⇓ v
 ```
 
-## In relation to other RFCs
+### In relation to other RFCs
 
 This RFC expands on [RFC 593] and [RFC 1647] with
 respect to where the keyword `Self` is allowed.
@@ -298,12 +298,12 @@ respect to where the keyword `Self` is allowed.
 [RFC 593]: 0593-forbid-Self-definitions.md
 [RFC 1647]: 1647-allow-self-in-where-clauses.md
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are potentially some, but the author could not think of any.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 This is the only design that makes sense in the sense that there really
@@ -314,7 +314,7 @@ fields supports type aliases in this respect, so should tuple structs.
 Not providing this feature would preserve papercuts
 and unintuitive surprises for developers.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are none.

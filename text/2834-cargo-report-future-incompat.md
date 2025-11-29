@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2834](https://github.com/rust-lang/rfcs/pull/2834)
 - Rust Issue: [rust-lang/rust#71249](https://github.com/rust-lang/rust/issues/71249)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Cargo should alert developers to upstream dependencies that trigger
@@ -15,7 +15,7 @@ Cargo could additionally provide feedback for tactics a maintainer of
 the downstream crate could use to address the problem (the details of
 such tactics is not specified nor mandated by this RFC).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 From [rust-lang/rust#34596][]:
@@ -141,7 +141,7 @@ forms this additional guidance could take.
    cetera).
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 After cargo finishes compiling a crate and its upstream dependencies,
@@ -299,7 +299,7 @@ switched to `bold2` (a fork of `bold`), and replaced its internal
 usage of `rash` with some local code, thus completely eliminating all
 current future-incompatibility lint triggers.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 As noted above, we want to continue to suppress normal lint checks for
@@ -383,7 +383,7 @@ The responsibilities of Cargo:
     are not mandated by this RFC, but some ideas are presented as
     [Future possibiilties][future-possibilities].
 
-## Implementation strategy: Leverage JSON error-format
+### Implementation strategy: Leverage JSON error-format
 
 The cleanest way to implement the above division of responsbilities
 without perturbing *non-cargo* uses of `rustc` is probably to make 
@@ -422,7 +422,7 @@ is already locally caching warnings emitted while building upstream
 path-dependencies.)
 
 
-## Annoyance modulation
+### Annoyance modulation
 
 Emitting a warning on all subsequent cargo invocations until the
 problem is resolved may be overkill for some users.
@@ -477,7 +477,7 @@ telescoping_schedule = true
 values laid out above. We trust the Cargo team to determine an
 appropriate set of knobs to expose to the user.)
 
-## Policy issues
+### Policy issues
 
 We probably do not want to blindly convert all lints to
 use this system. 
@@ -499,7 +499,7 @@ this mechanism.
    response to a future-incompatibility report is that user then runs 
    `cargo update`, or they ask for a (pre-existing) PR to be merged.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The change as described requires revisions to both `rustc` and
@@ -512,10 +512,10 @@ stable command line flag to `rustc`; but it also may be a confusing
 change in compiler semantics for any non-cargo client of `rustc` that
 is using `--error-format=json`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## No change needed?
+### No change needed?
 
 Some claim that "our current approach" has been working, and therefore
 no change is needed here. However, my counterargument is that the only
@@ -532,7 +532,7 @@ suggested here would hopefully encourage more Rust users *outside* of
 the compiler and language teams to address future-compatibility
 breakage.
 
-## Is there something simpler?
+### Is there something simpler?
 
 One might well ask: Is this RFC overkill? Is there not a simpler way
 to address this problem?
@@ -540,7 +540,7 @@ to address this problem?
 The following is my attempt to enumerate the simple solutions that were obvious
 to me. As we will see, these approaches would have serious drawbacks.
 
-### Can we do this in Cargo alone?
+#### Can we do this in Cargo alone?
 
 With regards to implementation, we could avoid attempt making changes
 to `rustc` itself, and isolate the implementation to `cargo` alone.
@@ -575,7 +575,7 @@ problems:
      feedback solely to a final warning of the form "the crate brash
      contains code that will be rejected by a future version of Rust."
 
-### Can we do this in Rust alone?
+#### Can we do this in Rust alone?
 
 PR [rust-lang/rust#59658][] "Minimum Lint Levels" implemented a
 solution in the compiler alone, by tagging the future-incompatibility
@@ -606,7 +606,7 @@ dependency).
    there is not in conflict with what I am proposing here; I am just saying that
    it would not be sufficient for resolving the problem at hand.
 
-## Would extending cap-lints be preferable?
+### Would extending cap-lints be preferable?
 
 One goal of the RFC as written was to try to minimize the impact on
 the Rust ecosystem. Thus it does not change the behavior of the default
@@ -642,7 +642,7 @@ bunch of diagnostics that developers cannot immediately resolve
 locally. (However, it may still be a reasonable feature to add to
 `rustc` and `cargo`!)
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 None I know of, but I'm happy to be educated.
@@ -651,7 +651,7 @@ None I know of, but I'm happy to be educated.
 Python 3? I briefly did some web searches but failed to find much of
 use.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 There are future-incompatibility warnings emitted by cargo itself,
@@ -661,7 +661,7 @@ I have not explicitly addressed nor seriously investigated this.
 
 [cargo 6313 comment]: https://github.com/rust-lang/cargo/issues/6313#issuecomment-505626509
 
-## Implementation questions
+### Implementation questions
 
 * Is using `--error-format=json` as the way to switch `rustc` into the future-incompatibility checking mode reasonable?
 
@@ -671,7 +671,7 @@ I have not explicitly addressed nor seriously investigated this.
     This way, clients already using `--error-format=json`
     would not need to know abot this change.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The main form of follow-up work I envisage for this RFC is what
@@ -682,7 +682,7 @@ instance of a future-incompatibility lint.
 
 Some ideas for suggestions follow.
 
-## Query for newer/alternate versions of the crate
+### Query for newer/alternate versions of the crate
 
 When crates trigger future-incompatibility warnings, Cargo could look for newer versions of the dependency on crates.io.
 
@@ -709,7 +709,7 @@ here: We could suggest potential *forks* of the upstream crate that
 one might switch to using. This could be useful in dealing with
 abandonware.
 
-## Suggest a bug report
+### Suggest a bug report
 
 If no newer version of the triggering crate is available, Cargo could
 emit a template for a bug report the user could file with the
