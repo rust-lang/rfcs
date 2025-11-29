@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#71](https://github.com/rust-lang/rfcs/pull/71)
 - Rust Issue: [rust-lang/rust#14181](https://github.com/rust-lang/rust/issues/14181)
 
-# Summary
+## Summary
 
 Allow block expressions in statics, as long as they only contain items
 and a trailing const expression.
@@ -19,7 +19,7 @@ static BAR: fn() -> int = {
 };
 ```
 
-# Motivation
+## Motivation
 
 This change allows defining items as part of a const expression,
 and evaluating to a value using them.
@@ -36,13 +36,13 @@ embedded and kernel, but requires a `unsafe` block to do.
 The outcome of this is that one additional expression type becomes valid as a const
 expression, with semantics that are a strict subset of its equivalent in a function.
 
-# Drawbacks
+## Drawbacks
 
 Block expressions in a function are usually just used to run arbitrary code before
 evaluating to a value. Allowing them in statics without allowing code
 execution might be confusing.
 
-# Detailed design
+## Detailed design
 
 A branch implementing this feature can be found at
 https://github.com/Kimundi/rust/tree/const_block.
@@ -62,7 +62,7 @@ very similar to a regular function.
 
 The branch also includes tests that show how this feature works in practice.
 
-# Alternatives
+## Alternatives
 
 Because this feature is a straight forward extension of the valid const expressions,
 it already causes a very minimal impact on the language, with most alternative ways
@@ -87,6 +87,6 @@ regex! {
 }
 ```
 
-# Unresolved questions
+## Unresolved questions
 
 None so far.

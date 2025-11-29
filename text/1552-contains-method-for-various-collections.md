@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1552](https://github.com/rust-lang/rfcs/pull/1552)
 - Rust Issue: [rust-lang/rust#32630](https://github.com/rust-lang/rust/issues/32630)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a `contains` method to `VecDeque` and `LinkedList` that checks if the
 collection contains a given item.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 A `contains` method exists for the slice type `[T]` and for `Vec` through
@@ -30,7 +30,7 @@ advantages:
 - programmers that are used to call `contains` on a `Vec` are confused by the
   non-existence of the method for `VecDeque` or `LinkedList`
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Add the following method to `std::collections::VecDeque`:
@@ -66,7 +66,7 @@ impl<T> LinkedList<T> {
 The new methods should probably be marked as unstable initially and be
 stabilized later.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Obviously more methods increase the complexity of the standard library, but in
@@ -78,7 +78,7 @@ inefficient nature of a linked list. Offering a method that is short to
 write and convenient to use could lead to excessive use of said method
 without knowing about the problems mentioned above.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 There are a few alternatives:
@@ -89,7 +89,7 @@ There are a few alternatives:
 - also add `BinaryHeap::contains`, since it could be convenient for some use
   cases, too
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None so far.

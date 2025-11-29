@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#1](https://github.com/rust-lang/rfcs/pull/1)
 - Rust Issue: [rust-lang/rust#8122](https://github.com/rust-lang/rust/issues/8122)
 
-# Summary
+## Summary
 
 This is an RFC to make all struct fields private by default. This includes both
 tuple structs and structural structs.
 
-# Motivation
+## Motivation
 
 Reasons for default private visibility
 
@@ -38,7 +38,7 @@ Reasons for inherited visibility (today's design)
 * Private definitions certainly want private fields (to hide implementation
   details).
 
-# Detailed design
+## Detailed design
 
 Currently, rustc has two policies for dealing with the privacy of struct fields:
 
@@ -146,13 +146,13 @@ This RFC does not impact enum variants in any way. All enum variants will
 continue to inherit privacy from the outer enum type. This includes both the
 fields of tuple variants as well as fields of struct variants in enums.
 
-# Alternatives
+## Alternatives
 
 The main alternative to this design is what is currently implemented today,
 where fields inherit the privacy of the outer structure. The pros and cons of
 this strategy are discussed above.
 
-# Unresolved questions
+## Unresolved questions
 
 As the above statistics show, almost all structures are either all public or all
 private. This RFC provides an easy method to make struct fields all private, but

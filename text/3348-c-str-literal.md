@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3348](https://github.com/rust-lang/rfcs/pull/3348)
 - Rust Issue: [rust-lang/rust#105723](https://github.com/rust-lang/rust/issues/105723)
 
-# Summary
+## Summary
 [summary]: #summary
 
 `c"…"` string literals.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Looking at the [amount of `cstr!()` invocations just on GitHub](https://cs.github.com/?scopeName=All+repos&scope=&q=cstr%21+lang%3Arust) (about 3.2k files with matches) it seems like C string literals
@@ -17,7 +17,7 @@ and is still less flexible than it should be (e.g. in terms of accepted escape c
 
 In Rust 2021, we reserved prefixes for (string) literals, so let's make use of that.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 `c"abc"` is a [`&CStr`](https://doc.rust-lang.org/stable/core/ffi/struct.CStr.html). A nul byte (`b'\0'`) is appended to it in memory and the result is a `&CStr`.
@@ -27,7 +27,7 @@ So, both UTF-8 and non-UTF-8 data can co-exist in a C string. E.g. `c"hello\x80�
 
 The raw string literal variant is prefixed with `cr`. For example, `cr"\"` and `cr##"Hello "world"!"##`. (Just like `r""` and `br""`.)
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Two new [string literal types](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings): `c"…"` and `cr#"…"#`.
@@ -48,7 +48,7 @@ Interactions with string related macros:
 
 (This might change in the future. E.g. `format_args!(c"…")` would be cool, but that would require generalizing the macro and `fmt::Arguments` to work for other kinds of strings. (Ideally also for `b"…"`.))
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * No `c""` literal, but just a `cstr!()` macro. (Possibly as part of the standard library.)
@@ -98,14 +98,14 @@ Interactions with string related macros:
 
   An alternative is to allow `c'…'` to implicitly be either a `u8` or `i8`. (Just like integer literals can implicitly become one of many types.)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - The `CStr` type needs some work. `&CStr` is currently a wide pointer, but it's supposed to be a thin pointer. See https://doc.rust-lang.org/1.65.0/src/core/ffi/c_str.rs.html#87
 
   It's not a blocker, but we might want to try to fix that before stabilizing `c"…"`.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - C has C string literals (`"…"`). :)
@@ -113,7 +113,7 @@ Interactions with string related macros:
 - COBOL has `Z"…"`.
 - Probably a lot more languages, but it's hard to search for. :)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Also add `c'…'` C character literals? (`u8`, `i8`, `c_char`, or something more flexible?)
@@ -122,7 +122,7 @@ Interactions with string related macros:
 
 - Should the (unstable) [`concat_bytes` macro](https://github.com/rust-lang/rust/issues/87555) accept C string literals? (If so, should it evaluate to a C string or byte string?)
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 (These aren't necessarily all good ideas.)

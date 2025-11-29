@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2471](https://github.com/rust-lang/rfcs/pull/2471)
 - Rust Issue: [rust-lang/rust#53911](https://github.com/rust-lang/rust/issues/53911)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a lint that warns when marking an inner function as `#[test]`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 `#[test]` is used to mark functions to be run as part of a test suite. The
@@ -17,7 +17,7 @@ marking an inner function as `#[test]` will not raise any errors or warnings,
 but the test will silently not be run. By adding a lint that identifies these
 cases, users are less likely to fail to notice.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This is a lint that triggers when a `#[test]` annotation is found in a non
@@ -47,19 +47,19 @@ LL |     #[test] //~ ERROR cannot test inner function [untestable_method]
    = note: requested on the command line with `-D untestable-method`
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This is a new lint that shouldn't interact with others. Due to the interaction
 with `cfg` attributes, the lint might only warn when run as part of a `--test`
 compilation. This would be acceptable.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Can't think of any reason not to do this.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Adding as a lint allows users to silence the error if they so wish.
@@ -67,13 +67,13 @@ Adding as a lint allows users to silence the error if they so wish.
 Not addressing this issue will let this problem continue happening without
 warning to end users.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 This would act in the same way as other lints warning for potentially
 problematic valid code.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

@@ -2,8 +2,7 @@
 - RFC PR: [rust-lang/rfcs#495](https://github.com/rust-lang/rfcs/pull/495)
 - Rust Issue: [rust-lang/rust#23121](https://github.com/rust-lang/rust/issues/23121)
 
-Summary
-=======
+## Summary
 
 Change array/slice patterns in the following ways:
 
@@ -14,8 +13,7 @@ Change array/slice patterns in the following ways:
   array or slice in array patterns (resolving rust-lang/rust [issue
   #8636](https://github.com/rust-lang/rust/issues/8636)).
 
-Motivation
-==========
+## Motivation
 
 Before DST (and after the removal of `~[T]`), there were only two types based on
 `[T]`: `&[T]` and `&mut [T]`. With DST, we can have many more types based on
@@ -63,8 +61,7 @@ match foo {
 This fails to compile, because the compiler thinks that this would allow
 multiple mutable borrows to the same value (which is not the case).
 
-Detailed design
-===============
+## Detailed design
 
 - Make array patterns match only on arrays (`[T; n]` and `[T]`). For example,
   the following code:
@@ -128,8 +125,7 @@ Detailed design
   }
   ```
 
-Drawbacks
-=========
+## Drawbacks
 
 - This will break a non-negligible amount of code, requiring people to add `&`s
   and `ref`s to their code.
@@ -137,14 +133,12 @@ Drawbacks
 - The modifications to subslice matching will require `ref` or `ref mut` to be
   used in almost all cases. This could be seen as unnecessary.
 
-Alternatives
-============
+## Alternatives
 
 - Do a subset of this proposal; for example, the modifications to subslice
   matching in patterns could be removed.
 
-Unresolved questions
-====================
+## Unresolved questions
 
 - What are the precise implications to the borrow checker of the change to
   multiple mutable borrows in the same array pattern? Since it is a

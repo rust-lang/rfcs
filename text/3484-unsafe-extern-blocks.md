@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3484](https://github.com/rust-lang/rfcs/pull/3484)
 - Tracking Issue: [rust-lang/rust#123743](https://github.com/rust-lang/rust/issues/123743)
 
-# Summary
+## Summary
 [summary]: #summary
 
 It is unsafe to declare an `extern` block.  Starting in Rust 2024, all `extern` blocks must be marked as `unsafe`.  In all editions, items within `unsafe extern` blocks may be marked as safe to use.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 When we declare the signature of items within `extern` blocks, we are asserting to the compiler that these declarations are correct.  The compiler cannot itself verify these assertions.  If the signatures we declare are in fact not correct, then using these items may result in undefined behavior.  It's *unreasonable* to expect the *caller* (in the case of function items) to have to prove that the signature is valid.  Instead, it's the responsibility of the person writing the `extern` block to ensure the correctness of all signatures within.
@@ -17,7 +17,7 @@ Since this proof obligation must be discharged at the site of the `extern` block
 
 By making clear where this proof obligation sits, we can now allow for items that can be soundly used directly from *safe* code to be declared within `unsafe extern` blocks.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Rust code can use functions and statics from foreign code.  The type signatures of these foreign items must be provided by the programmer in `extern` blocks.  These blocks must contain correct signatures to avoid undefined behavior.  The Rust compiler cannot check the correctness of the signatures in these blocks, so writing these blocks is *unsafe*.
@@ -56,7 +56,7 @@ Once unsafely declared, a `safe` item within an `unsafe extern` block may be use
 
 When an item is declared as `unsafe`, as is usual in Rust, that means that the caller (or, in general, the user) may need to uphold certain unchecked obligations so as to prevent undefined behavior, and consequently that the item may only be used within an `unsafe` block.  However, the `extern` block (not the caller or other user) is still responsible for ensuring that the signature of that item is correct.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The grammar of the language is updated so that:
@@ -91,15 +91,15 @@ Statics within external blocks are declared in the same way as statics outside o
 
 Extern statics may be either immutable or mutable just like statics outside of external blocks.  An immutable static must be initialized before any Rust code is executed.  It is not enough for the static to be initialized before Rust code reads from it.  A mutable extern static is always `unsafe` to access, the same as a Rust mutable static, and as such may not be marked with a `safe` qualifier.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This change will induce some churn.  Hopefully, allowing people to safely call some foreign functions will make up for that.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Don't prefix `extern` with `unsafe`
+### Don't prefix `extern` with `unsafe`
 
 One could ask, why not allow each item within an `extern` block to be prefixed with either `safe` or `unsafe`, but do not prefix `extern` with `unsafe`?  E.g.:
 
@@ -116,7 +116,7 @@ In Rust, we use `unsafe { .. }` (and, as of [RFC 3325][], `unsafe(..)`) to indic
 
 [RFC 3325]: https://github.com/rust-lang/rfcs/pull/3325
 
-## Don't prefix `extern` with `unsafe` and support `unsafe` items only
+### Don't prefix `extern` with `unsafe` and support `unsafe` items only
 
 One could ask, why not support only `unsafe` items within `extern` blocks and then don't require those blocks to be marked `unsafe`? E.g.:
 
@@ -135,7 +135,7 @@ One, we have to think about *who* is responsible for discharging the obligation 
 
 Two, not allowing items to be marked as `safe` would remove one of the key tangible *benefits* that the changes in this RFC provide to users.  This would reduce the motivation to make this change at all.
 
-## Prefix only `extern` with `safe` or `unsafe`
+### Prefix only `extern` with `safe` or `unsafe`
 
 One could ask, why not prefix *only* `extern` with `safe` or `unsafe`?  E.g.:
 
@@ -150,7 +150,7 @@ unsafe extern {
 
 The problem with this, as explained in the last two sections, is that the person who writes the `extern` block must discharge an unchecked obligation of proving that the signatures are correct.  This must be proven by the programmer even for the `sqrt` function.  One purpose of this RFC is to flag this obligation with `unsafe`.  This variation would fail to do that.
 
-## Wrap `extern` in `unsafe { .. }`
+### Wrap `extern` in `unsafe { .. }`
 
 Semantically, what we're trying to express is probably most precisely represented by syntax such as:
 
@@ -163,7 +163,7 @@ unsafe { extern {
 
 However, we currently don't support `unsafe { .. }` blocks at the item level, and the extra set of braces and indentation would seem unfortunate here.  One way to think of `unsafe extern { .. }` is exactly as above, but with the braces elided.
 
-## Don't add the `safe` contextual keyword, flip the default
+### Don't add the `safe` contextual keyword, flip the default
 
 One could ask, why include the `safe` contextual keyword at all?  Why not just *assume* that within an `unsafe extern` block that items not marked as `unsafe` are in fact safe to call (as is true elsewhere in Rust)?  E.g.:
 
@@ -210,7 +210,7 @@ unsafe extern {
 
 We may or may not, in a later edition, decide to switch the default and thereby make the `safe` contextual keyword redundant.  Either way, adding the `safe` keyword makes the migration more straightforward while delivering value to users and better indicating where users must make a correctness assertion to the compiler.
 
-## Don't add the `safe` contextual keyword, keep the default
+### Don't add the `safe` contextual keyword, keep the default
 
 One could ask, why not allow but not require items within an `unsafe extern` block to be prefixed with `unsafe`, but not support prefixing items with `safe`, and treat items not prefixed as `unsafe`?  E.g.:
 
@@ -225,19 +225,19 @@ Doing this would eliminate one of the key tangible benefits of this RFC, which i
 
 While we could, in a later edition, perhaps flip the default to make items safe to call, we could only do that if enough code has already been migrated.  But in the interim, we'd be asking users to accept the churn of migrating to this syntax without receiving any of the benefits.  That seems a bit like a cyclic dependency, so we've chosen not to do that.
 
-## Require all items to be marked as either `safe` or `unsafe`
+### Require all items to be marked as either `safe` or `unsafe`
 
 One could ask, why not require all items within an `unsafe extern` block to be marked as either `safe` or `unsafe` rather than making this optional?  Or alternatively, one could ask, why not *only* allow items to be marked as `unsafe` and *require* that all items be marked `unsafe`?
 
 As described in the last section, doing this would lead to a worse migration story for users, and so we chose not to do this.
 
-## Wait until we switch to `safe { .. }` blocks
+### Wait until we switch to `safe { .. }` blocks
 
 One could ask, why not wait to do this at all until we switch the language to use `safe { .. }` rather than `unsafe { .. }` blocks and then align this RFC with that?
 
 The problem with this is that there is no current plan to make such a switch.  Waiting to improve the language on a possibility that may or may not happen -- and in any case, will not happen soon -- is usually not a good plan.
 
-## Use `trusted` as the contextual keyword
+### Use `trusted` as the contextual keyword
 
 One could ask, why not use `trusted` rather than `safe` as the contextual keyword?  E.g.:
 
@@ -252,7 +252,7 @@ The Rust language already has an accepted semantic for "safe" and "unsafe".  If 
 
 If we later decide, e.g., to replace all uses of `unsafe { .. }` with `trusted { .. }`, large amounts of code would need to be changed in that migration.  Changing from `safe fn` to `trusted fn` as part of that, as this RFC would require, doesn't seem that it would make that migration markedly more painful.
 
-## Fire the `unsafe_code` lint for `extern` blocks also
+### Fire the `unsafe_code` lint for `extern` blocks also
 
 This RFC specifies that the `unsafe_code` lint will fire for `unsafe extern` but not for `extern` blocks.  One could ask, why not fire this for `extern` blocks also?
 
@@ -260,30 +260,30 @@ The problem with doing this is that it may be very noisy on existing editions.  
 
 Of course, when migrating code to the *new* edition, people will be changing from `extern` to `unsafe extern`, and so if these people have both specifically turned up the severity of the `unsafe_code` lint (which, by default, is set to `allow`) and have `extern` blocks that now must be marked as `unsafe`, they will see this lint.  That is the intention of this change, as we're making clear that the person writing an `unsafe extern` block is responsible for proving that it is correct to ensure soundness, which makes this code *unsafe*.
 
-# Questions and answers
+## Questions and answers
 [q-and-a]: #q-and-a
 
-## Why do we want to mark `extern` blocks as `unsafe`?
+### Why do we want to mark `extern` blocks as `unsafe`?
 
 In *safe* Rust, we want the compiler to *prove* that all code is *sound* and therefore cannot exhibit undefined behavior.  However, for some things, the compiler cannot complete this proof without help from the programmer.  When the programmer must make assertions that cannot be checked by the compiler to preserve soundness, we call this *unsafe* Rust.  We use the `unsafe` keyword to designate places where the programmer has this proof obligation.
 
 In the past, `extern` blocks have been an exception to this.  Programmers are required to prove that these blocks are correct, and the compiler has no way of checking this, but we had yet not thought to write `unsafe` here.  This RFC closes that gap.
 
-## Is adding this feature going to break people's existing code on existing editions?
+### Is adding this feature going to break people's existing code on existing editions?
 
 No.  Rust has a stability guarantee that is outlined in [RFC 1122][].  Adding this feature does not break any existing code on existing editions when updating to newer versions of the Rust compiler.
 
 [RFC 1122]: https://github.com/rust-lang/rfcs/pull/1122
 
-## Will `extern` blocks not marked `unsafe extern` fire the `unsafe_code` lint?
+### Will `extern` blocks not marked `unsafe extern` fire the `unsafe_code` lint?
 
 No.  This RFC specifies that `unsafe extern` blocks will fire this lint.  There are no such blocks in the ecosystem today, so people who have `#![forbid(unsafe_code)]`  will only newly encounter this lint when switching a block from `extern` to `unsafe extern`.
 
-## Does this RFC require all items in an `unsafe extern` block to be marked `safe` or `unsafe`?
+### Does this RFC require all items in an `unsafe extern` block to be marked `safe` or `unsafe`?
 
 No.  This RFC allows for items within an `unsafe extern` block to not be marked with either of `safe` or `unsafe`.  Items that are not marked in either way are assumed to be `unsafe`.
 
-## What's the #46188 situation?
+### What's the #46188 situation?
 
 Currently, an `extern` block with incorrect signatures can result in a program exhibiting undefined behavior even if none of the items within that block are used by Rust code.  See, e.g., [#46188][].
 
@@ -293,10 +293,10 @@ The key motivation for this RFC is to make clear that the person writing an `ext
 
 [#46188]: https://github.com/rust-lang/rust/issues/46188
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Interaction with extern types
+### Interaction with extern types
 
 If we were to later accept [RFC 3396][] ("Extern types v2"), that would introduce `type` items into `extern` blocks, and the interaction between those items, this RFC, and the `unsafe_code` lint would need to be addressed.
 

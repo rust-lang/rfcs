@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1665](https://github.com/rust-lang/rfcs/pull/1665)
 - Rust Issue: [rust-lang/rust#37499](https://github.com/rust-lang/rust/issues/37499)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Rust programs compiled for Windows will always allocate a console window on
@@ -15,7 +15,7 @@ the MSVC toolchain, the entry point must be named `WinMain`.
 This RFC proposes supporting this case explicitly, allowing `libstd` to
 continue to be initialized correctly.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The `WINDOWS` subsystem is commonly used on Windows: desktop applications
@@ -25,7 +25,7 @@ Currently, using the `WINDOWS` subsystem from Rust is undocumented, and the
 process is non-trivial when targeting the MSVC toolchain. There are a couple of
 approaches, each with their own downsides:
 
-## Define a WinMain symbol
+### Define a WinMain symbol
 
 A new symbol `pub extern "system" WinMain(...)` with specific argument
 and return types must be declared, which will become the new entry point for
@@ -35,14 +35,14 @@ This is unsafe, and will skip the initialization code in `libstd`.
 
 The GNU toolchain will accept either entry point.
 
-## Override the entry point via linker options
+### Override the entry point via linker options
 
 This uses the same method as will be described in this RFC. However, it will
 result in build scripts also being compiled for the `WINDOWS` subsystem, which
 can cause additional console windows to pop up during compilation, making the
 system unusable while a build is in progress.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 When an executable is linked while compiling for a Windows target, it will be
@@ -54,7 +54,7 @@ In practice, only two subsystems are very commonly used: `CONSOLE` and
 `WINDOWS`, and from a user's perspective, they determine whether a console will
 be automatically created when the program is started.
 
-## New crate attribute
+### New crate attribute
 
 This RFC proposes two changes to solve this problem. The first is adding a
 top-level crate attribute to allow specifying which subsystem to use:
@@ -68,7 +68,7 @@ The use of this attribute in a non-executable crate will result in a compiler
 warning. If compiling for a non-Windows target, the attribute will be silently
 ignored.
 
-## Additional linker argument
+### Additional linker argument
 
 For the GNU toolchain, this will be sufficient. However, for the MSVC toolchain,
 the linker will be expecting a `WinMain` symbol, which will not exist.
@@ -101,7 +101,7 @@ presence or absence of the `windows_subsystem` crate attribute, except when
 the user specifies their own entry point in the linker arguments. This will
 require `rustc` to perform some basic parsing of the linker options.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - A new platform-specific crate attribute.
@@ -114,7 +114,7 @@ require `rustc` to perform some basic parsing of the linker options.
   is identical. This seems to currently be the case, and is unlikely to change
   as this technique appears to be used fairly widely.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Only emit one of either `WinMain` or `main` from `rustc` based on a new
@@ -155,7 +155,7 @@ require `rustc` to perform some basic parsing of the linker options.
   support cross-compiling. If not compiling a binary crate, specifying the
   option is an error regardless of the target.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

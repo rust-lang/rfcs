@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#840](https://github.com/rust-lang/rfcs/pull/840)
 - Rust Issue: [rust-lang/rust#22470](https://github.com/rust-lang/rust/issues/22470)
 
-# Summary
+## Summary
 
 Remove panics from `CString::from_slice` and `CString::from_vec`, making
 these functions return `Result` instead.
 
-# Motivation
+## Motivation
 
 > As I shivered and brooded on the casting of that brain-blasting shadow,
 > I knew that I had at last pried out one of earth’s supreme horrors—one of
@@ -43,7 +43,7 @@ The conventions on failure modes elsewhere in Rust libraries tend to limit
 panics to outcomes of programmer errors. Functions validating external data
 should return `Result` to allow graceful handling of the errors.
 
-# Detailed design
+## Detailed design
 
 The return types of `CString::from_slice` and `CString::from_vec` is changed
 to `Result`:
@@ -63,13 +63,13 @@ provides the `Vec` which has been moved into `CString::from_vec`.
 types above to `std::io::Error` of the `InvalidInput` kind. This facilitates
 use of the conversion functions in input-processing code.
 
-# Proof-of-concept implementation
+## Proof-of-concept implementation
 
 The proposed changes are implemented in a crates.io project
 [c_string](https://github.com/mzabaluev/rust-c-str), where the analog of
 `CString` is named `CStrBuf`.
 
-# Drawbacks
+## Drawbacks
 
 The need to extract the data from a `Result` in the success case is annoying.
 However, it may be viewed as a speed bump to make the developer aware of a
@@ -77,7 +77,7 @@ potential failure and to require an explicit choice on how to handle it.
 Even the least graceful way, a call to `unwrap`, makes the potential panic
 apparent in the code.
 
-# Alternatives
+## Alternatives
 
 Non-panicky functions can be added alongside the existing functions, e.g.,
 as `from_slice_failing`. Adding new functions complicates the API where little
@@ -92,6 +92,6 @@ If the panicky behavior is preserved, plentiful possibilities for DoS attacks
 and other unforeseen failures in the field may be introduced by code oblivious
 to the input constraints.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

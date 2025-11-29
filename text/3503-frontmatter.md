@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/cargo#12207](https://github.com/rust-lang/cargo/issues/12207)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a frontmatter syntax to Rust as a way for [cargo to have manifests embedded in source code][RFC 3502]:
@@ -30,13 +30,13 @@ fn main() {
 }
 ````
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 ["cargo script"][RFC 3502] is in need of a syntax for embedding manifests in source.
 See that RFC for its motivations.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Static site generators use a frontmatter syntax to embed metadata in markdown files:
@@ -76,7 +76,7 @@ fn main() {
 Like with [commonmark code fences](https://spec.commonmark.org/0.30/#info-string),
 an info-string is allowed after the opening `---` for use by the command interpreting the block to identify the contents of the block.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When parsing Rust source, after stripping the shebang (`#!`), rustc will strip the frontmatter:
@@ -93,13 +93,13 @@ For example, if [`include!`](https://doc.rust-lang.org/std/macro.include.html) s
 As cargo will be the first step in the process to parse this,
 the responsibility for high quality error messages will largely fall on cargo.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - A new concept for Rust syntax, adding to overall cognitive load
 - Ecosystem tooling updates to deal with new syntax
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Within this solution,
@@ -107,7 +107,7 @@ we considered starting with only allowing this in the root `mod` (e.g. `main.rs`
 but decided to allow it in any file mostly for ease of implementation.
 Like with Python, this allows any file in a package (with the correct deps and `mod`s) to be executed, allowing easier interacting experiences in verifying behavior.
 
-## Required vs Optional Shebang
+### Required vs Optional Shebang
 
 We could require the shebang to be present for all cargo-scripts.
 This would most negatively impact Windows users as the shebang is a no-op.
@@ -119,7 +119,7 @@ However, statically analyzing a shebang is [complicated](https://stackoverflow.c
 and we are wanting to avoid it in the core workflow.
 This isn't to say that tools like rust-analyzer might choose to require it to help their workflow.
 
-## Blank lines
+### Blank lines
 
 Originally, the proposal viewed the block as being "part of" the shebang and didn't allow them to be separated by blank lines.
 However, the shebang is optional and users are likely to assume they can use blanklines
@@ -127,7 +127,7 @@ However, the shebang is optional and users are likely to assume they can use bla
 
 This could cause ordering confusion (doc comments vs attributes vs frontmatter)
 
-## Infostring
+### Infostring
 
 The main question on infostrings is whether they are tool-defined or rustc-defined.
 At one time, we proposed requiring the infostring and requiring it be `cargo` as a way to defer this decision.
@@ -145,7 +145,7 @@ We may at least defer stabilization of infostrings.
 The infostring syntax was selected to allow file names (e.g. `Cargo.lock`).
 Additional attributes are left to a future possibility.
 
-## Syntax
+### Syntax
 
 [RFC 3502] lays out some design principles, including
 - Single-file packages should have a first-class experience
@@ -168,7 +168,7 @@ When choosing the syntax, our care-abouts are
 - Leave the door open in case we want to reuse the syntax for embedded lockfiles
 - Leave the door open for single-file `lib`s
 
-### Why add to Rust syntax, rather than letting Cargo handle it
+#### Why add to Rust syntax, rather than letting Cargo handle it
 
 The most naive way for cargo to handle this is for cargo to strip the manifest, write the Rust file to a temporary file, and compile that.
 This is what has traditionally been done with various iterations of "cargo script".
@@ -188,7 +188,7 @@ We could then also special case the messages inside of cargo.
 This both adds a major support burden to keep this house of lies standing but still falls short when it comes to tooling support.
 Now every tool that wants to support the Cargo-only syntax has to build their own house of lies.
 
-### Frontmatter
+#### Frontmatter
 
 This proposed syntax builds off of the precedence of Rust having syntax specialized for an external tool
 (doc-comments for rustdoc).
@@ -230,7 +230,7 @@ Downsides:
 - Familiar syntax in an unfamiliar use may make users feel unsettled, unsure how to proceed (what works and what doesn't).
 - If viewed from the lens of a comment, it isn't a variant of comment syntax like doc-comments
 
-### Alternative 1: Vary the opening/closing character
+#### Alternative 1: Vary the opening/closing character
 
 Instead of dashes, we could do another character, like
 - backticks, like in commonmark code fences
@@ -309,7 +309,7 @@ Downsides
 Note:
 - `"` was not considered because that can feel too familiar and users might carry over their expectations for how strings work
 
-### Alternative 2: Extended Shebang
+#### Alternative 2: Extended Shebang
 
 ````rust
 #!/usr/bin/env cargo
@@ -364,7 +364,7 @@ greatly reducing the minimum syntax needed in some cases.
 fn main() {}
 ````
 
-### Alternative 3: Doc-comment
+#### Alternative 3: Doc-comment
 
 ```rust
 #!/usr/bin/env cargo
@@ -397,7 +397,7 @@ Downsides:
 - Requires pulling in a full markdown parser to extract the manifest
   - Incorrectly formatted markdown would lead to a missing manifest and confusing error messages at best or silent incorrect behavior at worse
 
-### Alternative 4: Attribute
+#### Alternative 4: Attribute
 
 ```rust
 #!/usr/bin/env cargo
@@ -429,7 +429,7 @@ Downsides
  - The attribute approach requires explaining multiple "advanced" topics: One teacher doesn't get to teaching any attributes until the second level in his crash course series and two teachers have found it difficult to teach people raw strings
 - Attributes look "scary" (and they are in some respects for the hidden stuff they do)
 
-### Alternative 5: Regular Comment
+#### Alternative 5: Regular Comment
 
 Simple header:
 ```rust
@@ -480,7 +480,7 @@ Downsides
 - New style of structured comment for the ecosystem to support with potential
   compatibility issues, likely requiring a new edition
 
-### Alternative 6: Macro
+#### Alternative 6: Macro
 
 ```rust
 #!/usr/bin/env cargo
@@ -509,7 +509,7 @@ Downsides
 
 Bazel has an [import proc-macro](https://github.com/bazelbuild/rules_rust/pull/1142) but its more for simplifying the writing of `extern crate`.
 
-### Alternative 7: Presentation Streams
+#### Alternative 7: Presentation Streams
 
 ```rust
 #!/usr/bin/env cargo
@@ -539,13 +539,13 @@ Downsides
   - Potentially an API for accessing the document from within Rust
 - Unfamiliar, new syntax, unclear how it will work out for newer users
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 See also [Single-file scripts that download their dependencies](https://dbohdan.com/scripts-with-dependencies)
 which enumerates the syntax used by different tools.
 
-## `cargo-script` family
+### `cargo-script` family
 
 There are several forks of [cargo script](https://github.com/DanielKeep/cargo-script).
 
@@ -578,7 +578,7 @@ fn main() {
 }
 ```
 
-## RustExplorer
+### RustExplorer
 
 [Rust Explorer](https://users.rust-lang.org/t/rust-playground-with-the-top-10k-crates/75746)
 uses a comment syntax for specifying dependencies
@@ -604,7 +604,7 @@ use tokio::sync::oneshot;
 use tokio::task::spawn_blocking;
 ```
 
-## PL/Rust
+### PL/Rust
 
 Example:
 ```sql
@@ -620,14 +620,14 @@ $$;
 
 See [External Dependencies](https://github.com/tcdi/plrust/blob/main/doc/src/dependencies.md)
 
-## YAML frontmatter
+### YAML frontmatter
 
 As a specialization of [YAML presentation streams](https://yaml.org/spec/1.2.2/#323-presentation-stream),
 static site generators use frontmatter to embed YAML at the top of files.
 Other systems have extended this for non-YAML use, like
 [zola using `+++` for TOML](https://www.getzola.org/documentation/content/page/#front-matter).
 
-## Proposed Python syntax
+### Proposed Python syntax
 
 Currently the draft [PEP 723](https://peps.python.org/pep-0723/) proposes allowing begin/end markers inside of regular comments:
 
@@ -649,10 +649,10 @@ data = resp.json()
 pprint([(k, v["title"]) for k, v in data.items()][:10])
 ```
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Support infostring attributes
@@ -662,7 +662,7 @@ pprint([(k, v["title"]) for k, v in data.items()][:10])
 - Add support for a `#[frontmatter(info = "", content = "")]` attribute that this syntax maps to.
   - Since nothing will read this, whether we do it now or in the future will have no affect
 
-## Multiple frontmatters
+### Multiple frontmatters
 
 At least for cargo's use cases, the only other file that we would consider supporting is `Cargo.lock`
 and we have other avenues we want to explore as future possibilities before we

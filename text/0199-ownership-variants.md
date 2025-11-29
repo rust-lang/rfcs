@@ -2,13 +2,13 @@
 - RFC PR #: [rust-lang/rfcs#199](https://github.com/rust-lang/rfcs/pull/199)
 - Rust Issue #: [rust-lang/rust#16810](https://github.com/rust-lang/rust/issues/16810)
 
-# Summary
+## Summary
 
 This is a *conventions RFC* for settling naming conventions when there
 are by value, by reference, and by mutable reference variants of an
 operation.
 
-# Motivation
+## Motivation
 
 Currently the libraries are not terribly consistent about how to
 signal mut variants of functions; sometimes it is by a `mut_` prefix,
@@ -19,7 +19,7 @@ While there are arguments in favor of each of the positions, we stand
 to gain a lot by standardizing, and to some degree we just need to
 make a choice.
 
-# Detailed design
+## Detailed design
 
 Functions often come in multiple variants: immutably borrowed, mutably
 borrowed, and owned.
@@ -36,9 +36,9 @@ In other cases, the default is owned.
 The proposed rules depend on which variant is the default, but use
 *suffixes* to mark variants in all cases.
 
-## The rules
+### The rules
 
-### Immutably borrowed by default
+#### Immutably borrowed by default
 
 If `foo` uses/produces an immutable borrow by default, use:
 
@@ -54,20 +54,20 @@ reads arguably better than `for x in v.iter_move()`, so the convention is
   iterators, not the names of the iterator types. That will be the
   subject of a follow up RFC.
 
-### Owned by default
+#### Owned by default
 
 If `foo` uses/produces owned data by default, use:
 
 * The `_ref` suffix (e.g. `foo_ref`) for the immutably borrowed variant.
 * The `_mut` suffix (e.g. `foo_mut`) for the mutably borrowed variant.
 
-### Exceptions
+#### Exceptions
 
 For mutably borrowed variants, if the `mut` qualifier is part of a
 type name (e.g. `as_mut_slice`), it should appear as it would appear
 in the type.
 
-### References to type names
+#### References to type names
 
 Some places in the current libraries, we say things like `as_ref` and
 `as_mut`, and others we say `get_ref` and `get_mut_ref`.
@@ -75,15 +75,15 @@ Some places in the current libraries, we say things like `as_ref` and
 Proposal: generally standardize on `mut` as a shortening of `mut_ref`.
 
 
-## The rationale
+### The rationale
 
-### Why suffixes?
+#### Why suffixes?
 
 Using a suffix makes it easier to visually group variants together,
 especially when sorted alphabetically. It puts the emphasis on the
 functionality, rather than the qualifier.
 
-### Why `move`?
+#### Why `move`?
 
 Historically, Rust has used `move` as a way to signal ownership
 transfer and to connect to C++ terminology. The main disadvantage is
@@ -97,14 +97,14 @@ transfer. The proposed mental model is that with `Copy` data you are
 
 See Alternatives for more discussion.
 
-### Why `mut` rather then `mut_ref`?
+#### Why `mut` rather then `mut_ref`?
 
 It's shorter, and pairs like `as_ref` and `as_mut` have a pleasant harmony
 that doesn't place emphasis on one kind of reference over the other.
 
-# Alternatives
+## Alternatives
 
-## Prefix or mixed qualifiers
+### Prefix or mixed qualifiers
 
 Using prefixes for variants is another possibility, but there seems to
 be little upside.
@@ -115,7 +115,7 @@ via
 but this seems overly subtle and complex, and requires a strong
 command of English grammar to work well.
 
-## No suffix exception
+### No suffix exception
 
 The rules here make an exception when `mut` is part of a type name, as
 in `as_mut_slice`, but we could instead *always* place the qualifier
@@ -127,7 +127,7 @@ This is perhaps not so bad, though, because as it is we often
 abbreviate type names. In any case, we need a convention (separate
 RFC) for how to refer to type names in methods.
 
-## `owned` instead of `move`
+### `owned` instead of `move`
 
 The overall narrative about Rust has been evolving to focus on
 *ownership* as the essential concept, with borrowing giving various
@@ -138,7 +138,7 @@ On the other hand, the `ref` variants do not say "borrowed", so in
 some sense this choice is inconsistent. In addition, the terminology
 is less familiar to those coming from C++.
 
-## `val` instead of `owned`
+### `val` instead of `owned`
 
 Another option would be `val` or `value` instead of `owned`. This
 suggestion plays into the "by reference" and "by value" distinction,

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1869](https://github.com/rust-lang/rfcs/pull/1869)
 - Rust Issue: [rust-lang/rust#40528](https://github.com/rust-lang/rust/issues/40528)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes the addition of two macros to the global prelude,
@@ -13,7 +13,7 @@ instead of standard output.
 
 An [implementation][] already exists.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This proposal will improve the ergonomics of the Rust language for
@@ -39,7 +39,7 @@ Because writing to stderr is more work, and requires introduction of
 more concepts, all of the tutorial documentation for the language uses
 `println!` for error messages, which teaches bad habits.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Two macros will be added to the global prelude.  `eprint!` is exactly
@@ -59,7 +59,7 @@ visibly different from them, and (c) the names chosen by several
 third-party crate authors who implemented these macros themselves for
 internal use.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 We will need to add text to the reference manual, and especially to
@@ -70,7 +70,7 @@ should be checked over for cases where `println!` is being used for a
 status report, and all such cases should be changed to use `eprintln!`
 instead; similarly for `print!`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The usual drawbacks of adding macros to the prelude apply.  In this
@@ -96,7 +96,7 @@ documentation that might be a new programmer's first exposure to the
 concept of "standard output" has a duty to explain that there is also
 "standard error", and when you should use which.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 It would be inappropriate to introduce printing-to-stderr macros whose
@@ -168,7 +168,7 @@ four fundamental problems with that, though:
    `writeln!(stdout(), ...)` is unaffected by `set_print()`).  This is
    arguably a bug.  On the other hand, it is also arguably the Right Thing.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 See discussion above.

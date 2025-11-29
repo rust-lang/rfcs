@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2789](https://github.com/rust-lang/rfcs/pull/2789)
 - Tracking Issue: [rust-lang/cargo#9069](https://github.com/rust-lang/cargo/issues/9069)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Selective download of the crates-io index over HTTP, similar to a solution used by Ruby's Bundler. Changes transport from an ahead-of-time Git clone to HTTP fetch as-needed. The existing structure and content of the index can remain unchanged. Most importantly, the proposed solution works with static files and doesn't require custom server-side APIs.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The full crate index is relatively big and slow to download. It will keep growing as crates.io grows, making the problem worse. The requirement to download the full index slows down the first use of Cargo. It's especially slow and wasteful in stateless CI environments, which download the full index, use only a tiny fraction of it, and throw it away. Caching of the index in hosted CI environments is difficult (`.cargo` dir is large) and often not effective (e.g. upload and download of large caches in Travis CI is almost as slow as a fresh index download).
@@ -17,7 +17,7 @@ The kind of data stored in the index is not a good fit for the git protocol. The
 
 Shallow clones or squashing of git history are only temporary solutions. Besides the fact that GitHub indicated they [don't want to support shallow clones of large repositories](http://blog.cocoapods.org/Master-Spec-Repo-Rate-Limiting-Post-Mortem/), and libgit2 doesn't support shallow clones yet, it still doesn't solve the problem that clients have to download index data for *all* crates.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Expose the index over HTTP as plain files. It would be enough to expose the existing index layout (like the raw.githubusercontent.com view), but the URL scheme may also be simplified for the HTTP case.
@@ -26,11 +26,11 @@ To learn about crates and resolve dependencies, Cargo (or any other client) woul
 
 It's possible to request dependency files in parallel, so the worst-case latency of such dependency resolution is limited to the maximum depth of the dependency tree. In practice it's less, because dependencies occur in multiple places in the tree, allowing earlier discovery and increasing parallelization. Additionally, if there's a lock file, all dependencies listed in it can be speculatively checked in parallel.
 
-## Offline support
+### Offline support
 
 The proposed solution fully preserves Cargo's ability to work offline. Fetching of crates (while online) by necessity downloads enough of the index to use them, and all this data remains cached for use offline.
 
-## Bandwidth reduction
+### Bandwidth reduction
 
 Cargo supports HTTP/2, which handles many similar requests efficiently.
 
@@ -42,13 +42,13 @@ Even in the worst case of downloading the entire index file by file, it should s
 
 An "incremental changelog" file (described in "Future possibilities") could be used to avoid many conditional requests.
 
-## Handling deleted crates
+### Handling deleted crates
 
 The proposed scheme may support deletion of crates, if necessary. When a client checks freshness of a crate that has been deleted, it will make a request to the server and notice a 404/410/451 HTTP status. The client can then act accordingly, and clean up local data (even tarball and source checkout).
 
 If the client is not interested in the deleted crate, it won't check it, but chances are it never did, and didn't download it. If ability to proactively erase caches of deleted crates is important, then the "incremental changelog" feature could be extended to notify about deletions.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * crates-io plans to add a cryptographic signatures to the index as an extra layer of protection on top of HTTPS. Cryptographic verification of a git index is straightforward, but signing of a sparse HTTP index may be challenging.
@@ -58,51 +58,51 @@ If the client is not interested in the deleted crate, it won't check it, but cha
 * Since the alternative registries feature is stable, the git-based index protocol is stable, and can't be removed.
 * Tools that perform fuzzy search of the index (e.g. `cargo add`) may need to make multiple requests or use some other method. URLs are already normalized to lowercase, so case-insensitivity doesn't require extra requests.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Query API
+### Query API
 
 An obvious alternative would be to create a web API that can be asked to perform dependency resolution server-side (i.e. take a list dependencies and return a lockfile or similar). However, this would require running dependency resolution algorithm server-side. Maintenance of a dynamic API, critical for daily use for nearly all Rust users, is much harder and more expensive than serving of static files.
 
 The proposed solution doesn't require any custom server-side logic. The index can be hosted on a static-file CDN, and can be easily cached and mirrored by users. It's not necessary to change how the index is populated. The canonical version of the index can be kept as a git repository with the full history. This makes it easy to keep backwards compatibility with older versions of Cargo, as well as 3rd party tools that use the index in its current format.
 
-## Initial index from rustup
+### Initial index from rustup
 
 Rust/Cargo installation could come bundled with an initial version of the index. This way when Cargo is run, it wouldn't have to download the full index over git, only a delta update from the seed version. The index would need to be packaged separately and intelligently handled by rustup to avoid downloading the index multiple times when upgrading or installing multiple versions of Cargo. This would make download and compression of the index much better, making current implementation usable for longer, but it wouldn't prevent the index from growing indefinitely.
 
 The proposed solution scales much better, because Cargo needs to download and cache only a "working set" of the index, and unused/abandoned/spam crates won't cost anything.
 
-## Rsync
+### Rsync
 
 The rsync protocol requires scanning and checksumming of source and destination files, which creates a lot of unnecessary I/O, and it requires SSH or a custom daemon running on the server, which limits hosting options for the index.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 <https://andre.arko.net/2014/03/28/the-new-rubygems-index-format/>
 
 Bundler used to have a full index fetched ahead of time, similar to Cargo's, until it grew too large. Then it used a centralized query API, until that became too problematic to support. Then it switched to an incrementally downloaded flat file index format similar to the solution proposed here.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * How to configure whether an index (including alternative registries) should be fetched over git or the new HTTP? The current syntax uses `https://` URLs for git-over-HTTP.
 * How do we ensure that the switch to an HTTP registry does not cause a huge diff to all lock files?
 * How can the current resolver be adapted to enable parallel fetching of index files? It currently requires that each index file is available synchronously, which precludes parallelism.
 
-# Implementation feasibility
+## Implementation feasibility
 
 An implementation of this RFC that uses a simple "greedy" algorithm for fetching index files has been tested in https://github.com/rust-lang/cargo/pull/8890, and demonstrates good performance, especially for fresh builds. The PR for that experimental implementation also suggests a strategy for modifying the resolver to obviate the need for the greedy fetching phase.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Incremental crate files
+### Incremental crate files
 
 Bundler uses an append-only format for individual dependency files to incrementally download only new versions' information where possible. Cargo's format is almost append-only (except yanking), so if growth of individual dependency files becomes a problem, it should be possible to fix that. However, currently the largest crate `rustc-ap-rustc_data_structures` that publishes versions daily grows by about 44 bytes per version (compressed), so even after 10 years it'll take only 190KB (compressed), which doesn't seem to be terrible enough to require a solution yet.
 
-## Incremental changelog
+### Incremental changelog
 
 The scheme as described so far must revalidate freshness of every index file with the server to update the index, even if many of the files have not changed. And index update happens on a `cargo update`, but can also happen for other reasons, such as when a project has no lockfile yet, or when a new dependency is added. While HTTP/2 pipelining and conditional GET requests make requesting many unchanged files [fairly efficient](https://github.com/rust-lang/cargo/pull/8890#issuecomment-737472043), it would still be better if we could avoid those extraneous requests, and instead only request index files that have truly changed.
 
@@ -114,7 +114,7 @@ When the log grows too big, the epoch number can be incremented, and the log res
 
 Ultimately, this RFC does not recommend such a scheme, as the changelog itself introduces [significant complexity](https://github.com/rust-lang/cargo/commit/bda120ad837e6e71edb334a44e64533119402dee) for relatively [rare gains](https://github.com/rust-lang/rfcs/pull/2789#issuecomment-738194824) that are also [fairly small in absolute value relative to a "naive" fetch](https://github.com/rust-lang/cargo/pull/8890#issuecomment-738316828). If support for index snapshots landed later for something like registry signing, the implementation of this RFC could take advantage of such a snapshot just as it could take advantage of a changelog.
 
-## Dealing with inconsistent HTTP caches
+### Dealing with inconsistent HTTP caches
 
 The index does not require all files to form one cohesive snapshot. The index is updated one file at a time, and only needs to preserve a partial order of updates. From Cargo's perspective dependencies are always allowed to update independently.
 

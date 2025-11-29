@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3559](https://github.com/rust-lang/rfcs/pull/3559)
 - Rust Issue: [rust-lang/rust#121243](https://github.com/rust-lang/rust/issues/121243)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Pointers (this includes values of reference type) in Rust have **two** components.
@@ -21,7 +21,7 @@ Most of the rest of the details, such as a specific provenance model, are intent
 
 This RFC very deliberately aims to be as **minimal** as possible, to just get the entire Rust Project on the "same page" about the long-term future development of the language.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 "Shared references (and pointers derived from them) are read-only" is a well-established principle in Rust.
@@ -48,7 +48,7 @@ After all, `ptr` and `shrptr` are identical in terms of their representation in 
 The only way for there to be a difference between them is for pointers to carry "something extra", beyond the address, that indicates how they may or may not be used.
 This "something extra" is what we call *provenance*.
 
-## Optimizations
+### Optimizations
 
 Provenance is useful because it allows powerful optimizations.
 
@@ -98,7 +98,7 @@ This demonstrates that both of them implement a language that has pointer proven
 
 [This blog post](https://www.ralfj.de/blog/2020/12/14/provenance.html) uses a variant of the above example to show what can go wrong when the interactions of provenance and compiler optimizations are being ignored.
 
-#### Optimizations for reference types
+##### Optimizations for reference types
 
 Similarly, it has long been desirable for it to be sound to optimize code like this:
 
@@ -115,7 +115,7 @@ It's very difficult to see how to make this optimization sound without provenanc
 In contrast, Ralf's successor model [Stacked Borrows](https://github.com/rust-lang/unsafe-code-guidelines/blob/a4a6e5f28b6542da759db247db7db8b34d5f0ead/wip/stacked-borrows.md) and the more recent [Tree Borrows](https://perso.crans.org/vanille/treebor/) do enable powerful optimizations for references while being compatible with the majority of existing unsafe code.
 Both of these models heavily rely on provenance.
 
-## LLVM
+### LLVM
 
 LLVM IR (despite its lack of a clear spec for provenance) recognizes a notion of allocation-level provenance. This is apparent in two ways:
 - `getelementptr` (without `inbounds`) produces a pointer that is still "tied to" its original allocation. Even if its address is now inbounds of another allocation, it would be UB to access any but the original allocation via this pointer. This can only be explained by saying that the pointer "remembers" the allocation it belongs to in a way that is independent of its actual address -- a classic example of provenance.
@@ -123,7 +123,7 @@ LLVM IR (despite its lack of a clear spec for provenance) recognizes a notion of
 
 Compiling Rust to LLVM IR if Rust does not recognize provenance is likely to be impossible. We'd probably have to insert a `black_box` after every allocation and every memory access, and it's not clear that that is enough. As far as I know there is no option to turn this off, and the assumptions are sufficiently widespread that it is unlikely that we could convince upstream to add one.
 
-## Integers do not have provenance
+### Integers do not have provenance
 
 While pointers have provenance for the reasons stated above, integers do not.
 This means that values of integer type are fully determined by the bits one can observe during execution of a compiled program.[^determined]
@@ -143,7 +143,7 @@ In fact, "arbitrary content" may be "uninitialized memory", and `u8` must be ini
 However, `MaybeUninit<u8>` *is* suited for this purpose.
 It already must be able to store and copy uninitialized memory; there is no downside to also letting it store and copy pointers with provenance.
 
-## Descriptive vs prescriptive provenance
+### Descriptive vs prescriptive provenance
 
 Note that "provenance" is a somewhat unfortunate term.
 Specifically, there are two completely distinct forms of provenance, which we might call "prescriptive" and "descriptive".
@@ -185,7 +185,7 @@ A lot of the confusion around provenance arises from the fact that many people s
 They will hence accept both "we do provenance-based alias analysis" and "pointers are just integers" as true statements, not realizing that these statements are contradicting each other.
 The standard has not (yet) been updated to clarify this, but in 2022 the committee has accepted a Technical Specification that does explicitly state that C has prescriptive provenance.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This isn't as big a deal as it might seem, since provenance is not an issue that ever needs to be considered within safe Rust code.
@@ -206,7 +206,7 @@ Code that wants to store data of arbitrary type needs to use an array of `MaybeU
 The `MaybeUninit<u8>` type is guaranteed to preserve provenance (and (un)initialization state) of all its representation bytes.
 (And `u8` is not a special case here, this works for all integer types and more generally for all types without padding bytes. It [gets tricky](https://github.com/rust-lang/rust/issues/99604) for `MaybeUninit<T>` when `T` itself has padding bytes.)
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Within the Rust Reference, the section on "Pointer types" is extended to say that pointers have provenance, i.e., two pointers can be "different" (in terms of the program semantics) even if they point to the same address.
@@ -224,7 +224,7 @@ Furthermore, the section on "Integer types" is extended to say that integers do 
 Finally, `MaybeUninit<T>` is documented to preserve provenance ([at least in non-padding bytes of `T`](https://github.com/rust-lang/rust/issues/99604)).
 (Eventually we might want to guarantee this for all `union`, but for now just guaranteeing it for `MaybeUninit` seems sufficient.)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The biggest downside of provenance is complexity. The existence of provenance means that authors of unsafe code must always not only be concerned with whether the pointer they have points to the right place, but also whether it has the right provenance (in practice, this means "was obtained in the right way"). Not having provenance ensures that this is never a problem -- all pointers that point to the right address are equally valid to use.
@@ -244,7 +244,7 @@ There has been no progress on these questions on the side of the LLVM project fo
 (a) means indefinitely blocking progress on pressing questions in the Rust semantics, so this RFC takes the position that we should do (b).
 (To the author's knowledge, GCC is not in a better position, and it suffers from [similar bugs](https://gcc.gnu.org/bugzilla/show_bug.cgi?id=82282), so we can't use their semantics for guidance either.)
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Almost all reasonably usable compiler backends use *some form* of provenance logic when optimizing code.
@@ -266,7 +266,7 @@ However, making the cast UB in MIR semantics is actually bad from an optimizatio
 To avoid these problems, an optimizing IR should declare pointer-to-integer transmutation to be UB-free, as in option (3).
 That said, (2) would still be a valid option for surface Rust, so this RFC deliberately leaves that question undecided.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 * "[N3057: A Provenance-aware Memory Object Model for C](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3057.pdf)"
@@ -312,7 +312,7 @@ ACTION: Gustedt to make up an N-document for TS 6010.<br>
 * There was a 2022-10-05 [lang team design meeting](https://github.com/rust-lang/lang-team/blob/c8f61dd9d933091b0487153d9db49034f8fa1002/design-meeting-minutes/2022-10-05-provenance.md) on this subject. The most relevant parts of those meeting notes were used as the starting point for this RFC.
 * This RFC was discussed [on Zulip](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/Pre-RFC.3A.20Rust.20Has.20Provenance).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 All the particulars about the exact provenance model are largely still undetermined.
@@ -324,7 +324,7 @@ There might be a better name than "provenance".
 But (for reasons discussed [above](#descriptive-vs-prescriptive-provenance)), it's not an entirely bad term either.
 Ultimately, the biggest hurdle is the concept itself, not its name.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Future RFCs will define more specifically how provenance works in Rust.

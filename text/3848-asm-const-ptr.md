@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3848](https://github.com/rust-lang/rfcs/pull/3848)
 - Rust Issue: [rust-lang/rust#128464](https://github.com/rust-lang/rust/issues/128464)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The `const` operand to `asm!` and `global_asm!` currently only accepts
@@ -11,7 +11,7 @@ integers. Change it to also accept pointer values. The value must be computed
 during const evaluation. The operand expands to the name of the symbol that the
 pointer references, plus an integer offset when necessary.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Right now, the only way to reference a global symbol from inline asm is to use
@@ -39,7 +39,7 @@ However, the `sym` operand has several limitations:
 * It can only be used with a hard-coded path to one specific global.
 * It can only reference the global as a whole, not a field of the global.
 
-## Generics and const-evaluation
+### Generics and const-evaluation
 
 The `sym` operand lets you use generic parameters:
 ```rs
@@ -170,7 +170,7 @@ specified by the caller. However, this has the disadvantage of being a macro
 rather than a function call, and you also cannot get around the fact that you
 must specify the name of the global directly in the macro invocation.
 
-## Accessing fields
+### Accessing fields
 
 Let's say you want to access the field of a static.
 ```rs
@@ -238,7 +238,7 @@ Having to use `offset_of!` to access a field is inconvenient. If we could pass
 a pointer instead of being limited to a symbol name, then this would be no
 issue as we could pass `&MY_GLOBAL.b`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When writing assembly, you may use the `const` operand to insert a value that
@@ -267,7 +267,7 @@ The rest of the guide-level explanation will discuss what happens in practice
 when you use the `const` operand in different scenarios. Note that all of these
 examples also apply to the `sym` operand.
 
-## Use in the `.text` section
+### Use in the `.text` section
 
 Most commonly, instructions written in an inline assembly block will be stored
 in the `.text` section. This is where your executable machine code is stored.
@@ -294,7 +294,7 @@ This will expand to a program where a `mov` instruction is used to write the
 value 42 into a register, and the value of that register is then printed. The
 value 42 is hard-coded into the mov instruction.
 
-### Position-independent code
+#### Position-independent code
 
 When you use `const` with pointers rather than integers, you must think about
 position-independent code.
@@ -347,7 +347,7 @@ does *not* use position independent code by default, then you will not get an
 error because the absolute address of `FORTY_TWO` is known at compile-time, so
 hard-coding it in `mov` is not an issue.
 
-### Relative values
+#### Relative values
 
 Note that whether it fails doesn't just depend on the instruction, but also the
 kind of expression the constant is used in. For example, consider this code:
@@ -378,7 +378,7 @@ the `mov` instruction are stored in the same object file, the linker is able to
 compute the *offset* between the two addresses, even though it doesn't know the
 absolute value of either address.
 
-### Rip-relative instructions
+#### Rip-relative instructions
 
 This comes up more often with rip-relative instructions, which are instructions
 where the hard-coded value is relative to the instruction pointer (rip
@@ -411,7 +411,7 @@ and the lea instruction.
 
 This kind of rip-relative instruction exists on basically every architecture.
 
-## Symbols from dynamically loaded libraries
+### Symbols from dynamically loaded libraries
 
 When you pass a pointer value to a symbol from a dynamically loaded library,
 then it's not possible to use either absolute or relative addresses to access
@@ -522,7 +522,7 @@ assembly block using whichever mechanism is most efficient for the given
 symbol. In this case, that is a lookup using the GOT, but for a locally-defined
 symbol it would not need a GOT lookup.
 
-## Use in other sections
+### Use in other sections
 
 The `.text` section of the binary contains the executable machine code, and
 this section is normally immutable. This ensures that if many programs load the
@@ -605,7 +605,7 @@ Note that if you try to use `stdin` with `{} - .` to make it relative, then
 this will fail to compile because there is no relocation to insert a relative
 address when the symbol is from a dynamically loaded library.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The `const` operand has different behavior depending on the provided argument.
@@ -617,7 +617,7 @@ It accepts the following types:
 
 The argument is evaluated using const evaluation.
 
-## Integer values
+### Integer values
 
 If the argument type is any integer type, then the value is inserted into the
 asm block as plain text. This behavior exists on stable Rust today.
@@ -631,7 +631,7 @@ includes cases such as:
 * `core::ptr::null().wrappind_add(1000)`
 * `core::ptr::without_provenance(1000)`
 
-## Pointer values to a named symbol
+### Pointer values to a named symbol
 
 When the argument type is a raw pointer, reference, or function pointer that
 points at a named symbol, then the compiler will insert `symbol_name` into the
@@ -648,7 +648,7 @@ The compiler may choose to emit the symbol name by inserting it into the asm
 verbatim, or by using certain backend-specific operands (e.g. `'i'` or `'s'`),
 depending on what the backend supports.
 
-## Pointer values to an unnamed global
+### Pointer values to an unnamed global
 
 Not all globals are named. For example, when using static promotion to create a
 variable stored statically, the location of the global has no name.
@@ -662,7 +662,7 @@ rustc and emitted to the backend as `symbol_name` or `symbol_name+offset` (or
 `symbol_name-offset`), or rustc may pass the pointer to the backend using a
 backend-specific operand (e.g. `'i'`) and let the backend choose the name.
 
-## Coercions
+### Coercions
 
 Const parameters will be a coercion site for function pointers. This means that
 when a function item is passed to a `const` argument, it will be coerced to a
@@ -670,17 +670,17 @@ function pointer. The same applies to closures without captures.
 
 No other coercions will happen.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The new operand supports every use-case that the `sym` operand supports (with
 the possible exception of thread-locals). It may or may not make sense to emit
 a warning if `const` is used in cases where `sym` could be used instead.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why extend the `const` operand
+### Why extend the `const` operand
 
 This RFC proposes to add pointer support to the existing `const` operand rather
 than add a new operand or extend the `sym` operand. I think this makes sense,
@@ -703,7 +703,7 @@ pointer value, then we should be careful to pick a name that can not be
 confused with the `memory` operand proposed in the future possibilities section
 at the end of this RFC. The name `const` does not have this issue.
 
-## What about wide pointers
+### What about wide pointers
 [wide-pointers]: #what-about-wide-pointers
 
 When passing a `&str` or `&[u8]` to an inline asm block, it could make sense to
@@ -758,7 +758,7 @@ const "my_string".as_ptr()
 ```
 to insert a pointer to the string.
 
-## Ambiguity in the expansion
+### Ambiguity in the expansion
 
 Const evaluation is very restrictive about what you can do to a pointer. This
 means that the pointer's provenance always unambiguously determines which
@@ -768,7 +768,7 @@ Any future language features that introduce ambiguity here must address how
 they affect the `const` operand. An example of such a feature would be casting
 pointers to integers during const eval.
 
-## What about codegen units
+### What about codegen units
 
 Rust may choose to split a crate into multiple codegen units to enable parallel
 compilation. This is not an issue for this RFC because when the codegen units
@@ -776,7 +776,7 @@ are statically linked, the offsets between symbols from different units become
 known constants. This allows the linker to resolve references between them
 correctly.
 
-## Implementation complexity
+### Implementation complexity
 
 The implementation of this feature in rustc is straightforward. The compiler's
 only responsibility is to perform const evaluation on the pointer and then
@@ -785,7 +785,7 @@ complex logic for handling relocations and symbol resolution is handled by the
 backend (LLVM) and the linker. Rustc does not need to implement any of this
 logic itself.
 
-## Large offsets and memory operands
+### Large offsets and memory operands
 
 Sarah brings up a concern about large offsets [on github](https://github.com/rust-lang/rust/issues/128464#issuecomment-2859580807).
 In this concern, the assumption is that we are going to expand
@@ -821,7 +821,7 @@ mangled by LLVM is mostly relevant if we add a Rust equivalent to the `'m'`
 operand, because that operand uses a much more complex expansion where you need
 to understand the instruction that it is expanded into.
 
-### Why not add the memory operand instead?
+#### Why not add the memory operand instead?
 
 The actual use-case that motivated this RFC is tracepoints in the Linux Kernel.
 Here, we need to place a relative symbol into a section
@@ -834,7 +834,7 @@ Here, we need to place a relative symbol into a section
 with `{}` being the address of a *field* in a `static`. The memory operand
 cannot do this.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 When compared to C inline assembly, this feature is most similar to the `'i'`
@@ -900,13 +900,13 @@ fn get_addr<T: HasGlobal>() -> *const T {
 }
 ```
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 In the future, we may wish to consider adding other operands that Rust is
 missing.
 
-## Memory operand
+### Memory operand
 
 It would make sense to add a Rust equivalent to the `'m'` operand, also called
 the memory operand. The idea is that the operand takes a pointer argument, but
@@ -933,12 +933,12 @@ Note that with the memory operand, const evaluation is not needed. If the
 pointer is a runtime value, it will just be loaded into a register and the
 operand will expand to something using that register.
 
-## Interpolation
+### Interpolation
 
 We could add an operand for interpolating a string into the assembly verbatim.
 See [the section on wide pointers][wide-pointers] for more info.
 
-## Formatting Specifiers
+### Formatting Specifiers
 
 Similar to how `println!` uses format specifiers like `{:x}` or `{:?}` to change
 how a value is printed, the `asm!` format string could be extended to support

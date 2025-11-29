@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3349](https://github.com/rust-lang/rfcs/pull/3349)
 - Tracking Issue: [rust-lang/rust#116907](https://github.com/rust-lang/rust/issues/116907)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Relax the restrictions on which characters and escape codes are allowed in string, char, byte string, and byte literals.
@@ -13,7 +13,7 @@ Most importantly, this means we accept the exact same characters and escape code
 - Allow unicode characters, including `\u{…}` escape codes, in byte string literals. E.g. `b"hello\xff我叫\u{1F980}"`
 - Also allow non-ASCII `\x…` escape codes in regular string literals, as long as they are valid UTF-8. E.g. `"\xf0\x9f\xa6\x80"`
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Byte strings (`[u8]`) are a strict superset of regular (utf-8) strings (`str`),
@@ -43,7 +43,7 @@ Allowing all characters and all known escape codes in both types of string liter
 We'd no longer have [different escape codes](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings)
 for different literal types. We'd only require regular string literals to be valid UTF-8.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Regular string literals (`""` and `r""`) must be valid UTF-8.
@@ -57,7 +57,7 @@ In a char literal (`''`), `\x` may only be used for values 0 through 0x7F.
 
 Similarly, in a byte literal (`b''`), `\u` may only be used for values 0 through 0x7F, since those are the only code points that are unambiguously represented as a single byte.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The ["characters and strings" section in the Rust Reference](https://doc.rust-lang.org/reference/tokens.html#characters-and-strings)
@@ -87,13 +87,13 @@ Compared to before, the tokenizer should start accepting:
 Regular string literals (`""`) are checked to be valid UTF-8 afterwards.
 (Either during tokenization, or at a later point in time. See future possibilities.)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 One might unintentionally write `\xf0` instead of `\u{f0}`.
 However, for regular string literals that will result in an error in nearly all cases, since that's not valid UTF-8 by itself.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Only extend `b""` (that is, accept `b"🦀"`), but still do not accept non-ASCII `\x` in regular string literals (that is, keep rejecting `"\xf0\x9f\xa6\x80"`).
@@ -101,7 +101,7 @@ However, for regular string literals that will result in an error in nearly all 
 - Stabilize `concat_bytes!()` and require writing `"hello\xff你好"` as `concat_bytes!(b"hello\xff", "你好")`.
   (Assuming we extend the macro to accept a mix of byte string literals and regular string literals.)
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - C and C++ do the same. (Assuming UTF-8 character set.)
@@ -109,14 +109,14 @@ However, for regular string literals that will result in an error in nearly all 
 - Python and Javascript do it differently: `\xff` means `\u{ff}`, because their strings behave like UTF-32 or UTF-16 rather than UTF-8.
   (Also, Python's byte strings "accept" `\u` as just `'\\', 'u'`, without any warning or error.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Should `concat!("\xf0\x9f", "\xa6\x80")` work? (The string literals are not valid UTF-8 individually, but are valid UTF-8 after being concatenated.)
 
   (I don't care. I guess we should do whatever is easiest to implement.)
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Postpone the UTF-8 validation to a later stage, such that macros can accept literals with invalid UTF-8. E.g. `cstr!("\xff")`.

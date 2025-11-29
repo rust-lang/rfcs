@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3716](https://github.com/rust-lang/rfcs/pull/3716)
 - Rust Issue: None
 
-# Summary
+## Summary
 [summary]: #summary
 
 * We introduce the concept of "target modifier". A target modifier is a flag
@@ -22,7 +22,7 @@
 * This RFC does not stabilize any target modifiers. That should happen in
   follow-up MCPs/FCPs/RFCs/etc.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 As Rust expands into low-level domains, there will be a need for precise
@@ -35,7 +35,7 @@ The primary goal of this RFC is to unblock *stabilization* of target modifier
 flags. Adding them as unstable (and unsound) flags is already happening today
 without this RFC.
 
-## The Linux Kernel
+### The Linux Kernel
 
 The Linux Kernel has run into a handful of cases where it is necessary to tweak
 the ABI used in the kernel. Often, this is done conditionally depending on a
@@ -58,7 +58,7 @@ configuration option. A few examples:
 
 We expect there to be more examples in the future.
 
-## Sanitizers
+### Sanitizers
 
 There is [an ongoing effort to stabilize some of the sanitizers][issue123615].
 However, this effort explicitly aims to stabilize sanitizers that can be used
@@ -68,7 +68,7 @@ stabilized.
 
 [issue123615]: https://github.com/rust-lang/rust/issues/123615
 
-## Embedded Targets
+### Embedded Targets
 
 Currently, embedded platforms such as `thumb*` or `rv*` use separate targets
 for configuration with significant ABI changes. For `thumb*` targets, this is
@@ -82,7 +82,7 @@ registers used by the I (integer operations) extension.
 [riscv-float]: https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/riscv-cc.adoc#named-abis
 [riscv-e]: https://github.com/riscv/riscv-isa-manual/blob/main/src/rv32e.adoc
 
-## Existing -C flags that are unsound
+### Existing -C flags that are unsound
 
 It has recently been discovered that several existing `-C` flags modify the
 ABI, making them unsound. Examples:
@@ -100,7 +100,7 @@ modifiers will be the solution for some of these flags.
 
 [issue130968]: https://github.com/rust-lang/rust/issues/130968
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The Rust compiler has many flags that affect how source code is turned into
@@ -137,7 +137,7 @@ so using these flags usually requires that you compile your own standard
 library with `-Zbuild-std` or by directly invoking `rustc`. That said, some
 flags (e.g., `-Cpanic`) have mechanisms to avoid this requirement.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 A compiler flag can be classified as a _target modifier_. When a flag is a
@@ -162,15 +162,15 @@ only one with a different value for `flagname`, then the mismatch is detected
 by rustc when compiling D, but `-Cunsafe-allow-abi-mismatch` should be used
 when compiling C.
 
-## Stabilization
+### Stabilization
 
 It is possible to stabilize target modifiers even if they cannot be utilized
 without an unstable feature such as `-Zbuild-std`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Teaching
+### Teaching
 [teaching]: #teaching
 
 We should be careful to not introduce too many concepts that end-users have to
@@ -187,16 +187,16 @@ For similar reasons, the flag for silencing the error is called
 `-Cunsafe-allow-abi-mismatch` with the word "ABI" to avoid having to teach the
 user about mismatched flags or target modifiers.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why not just add flags like normal?
+### Why not just add flags like normal?
 
 Preventing undefined behaviour is an important goal of the Rust project. If we
 add flags that change the abi, then that is in direct opposition to that goal,
 as mixing them would lead to UB.
 
-## Why not just add new targets?
+### Why not just add new targets?
 
 The flag that started this entire discussion is `-Zfixed-x18`. This flag
 changes the ABI by changing the x18 register from a caller-saved temporary
@@ -227,7 +227,7 @@ This RFC does not propose this solution because:
    ABI-affecting flags that the kernel may need, the kernel has other reasons
    that require building a custom `core`.
 
-## Why not use `target.json`
+### Why not use `target.json`
 
 Because the `target.json` feature is perma-unstable, and this RFC primarily
 concerns itself with unblocking the _stabilization_ of these flags. Adding
@@ -252,7 +252,7 @@ If `-Zfixed-x18` had to be specified in a `target.json` file, it would need to
 happen in an entirely different part of the kernel build system. It is better
 to specify the rustc flag together with the clang/gcc flag.
 
-## Stabilization of target modifiers
+### Stabilization of target modifiers
 [stabilization]: #stabilization-of-target-modifiers
 
 Using a target modifier without rebuilding the Rust stdlib is often not
@@ -266,7 +266,7 @@ the way you pass flags to `core`", but you can't break users with the reason
 "we renamed `-Cfoo` to `-Cbar`; this is okay because you're also using
 `-Zbuild-std` even though the rename is unrelated to `-Zbuild-std`".
 
-## Not all mismatches are unsound
+### Not all mismatches are unsound
 [not-all-unsound]: #not-all-mismatches-are-unsound
 
 This RFC says that mismatching target modifiers in any way results in a build
@@ -291,7 +291,7 @@ for this RFC. Such decisions will be made on a flag-by-flag basis in follow-up
 decisions (most likely an MCP). Until then, end-users can use
 `-Cunsafe-allow-abi-mismatch` to proceed in such cases.
 
-## Cases that are not caught
+### Cases that are not caught
 [not-caught]: #cases-that-are-not-caught
 
 This RFC proposes to store information in the crate metadata to detect ABI
@@ -316,7 +316,7 @@ anyway).
 The dynamic linking case is considered acceptable. Detecting it is out of scope
 of this RFC.
 
-## Name mangling
+### Name mangling
 
 It has been proposed that the modified target could be encoded in the name
 mangling scheme to help catch the two cases from [the previous
@@ -340,7 +340,7 @@ section][not-caught]. However, this raises a bunch of open questions:
 For the above reasons, name mangling is not proposed as a mechanism for
 detection for now. However, it could be a potential future addition.
 
-## Policy around flags that might not be ABI affecting
+### Policy around flags that might not be ABI affecting
 
 Some flags have an unclear status where it is unclear whether it affects the
 ABI. For example, `-Zpatchable-function-entry` (which adds nop instructions
@@ -359,7 +359,7 @@ As for flags such as `-Cllvm-args` that can do basically anything, it may make
 more sense to just rename it to `-Cunsafe-llvm-args` rather than use the target
 modifier functionality.
 
-## Problems with mixing non-target-modifiers
+### Problems with mixing non-target-modifiers
 
 I discussed this proposal with people from other communities (mainly kernel and
 C folks), and they shared several other cases where mixing flags are a problem.
@@ -377,7 +377,7 @@ mismatches mentioned below, but the precise list is out of scope of this RFC.
 Since the cases below are not unsound, the flag for overriding them should not
 include the word "unsafe".
 
-### Exploit mitigations
+#### Exploit mitigations
 
 There are some mitigations that are used to mitigate CPU speculation
 vulnerabilities (e.g., SPECTRE) or used to make exploitation of vulnerabilities
@@ -398,7 +398,7 @@ these unprotected indirect branches. This means that if you only apply the
 mitigation to some CUs, then the CUs that lack the mitigation will be
 completely unprotected, and the mitigation might be bypassable.
 
-### Sanitizers
+#### Sanitizers
 
 This case is rather similar to exploit mitigations.
 
@@ -411,7 +411,7 @@ For sanitizers used in production (such as shadow call stack or kcfi) this is
 particularly problematic, as a vulnerability in sanitized code may allow you to
 jump into unsanitized code.
 
-### .note.gnu.property
+#### .note.gnu.property
 
 In the case of BTI (`-Zbranch-protection=bti`), the mitigation relies on the
 kernel's ELF loader setting a special bit in the page table. However, setting
@@ -422,7 +422,7 @@ This means that if one CU is missing BTI, the linker will disable it for the
 entire executable, and the kernel's ELF loader will not set the bit in the page
 tables when loading the machine code, rendering BTI ineffective.
 
-### Performance
+#### Performance
 
 Another reason is performance. One some targets, the precompiled stdlib always
 comes with panic landing pads, even if you're using `-Cpanic=abort`. It's also
@@ -430,24 +430,24 @@ usually compiled with a very minimal set of target features for greater
 compatibility. These discrepancies can have an unacceptable impact on
 performance.
 
-### Code patching
+#### Code patching
 
 You might use `-Zbranch-protection=pac-ret` or `-Zpatchable-function-entry` to
 insert special instructions at the beginning/end of all functions so you can
 use runtime code-patching to replace them later. It is only because of the
 runtime code-patching logic that these flags need to be used everywhere.
 
-### Debugging information
+#### Debugging information
 
 Mixing CUs with different options for `-Cforce-unwind-tables`,
 `-Zdwarf-version`, or `-Zdebuginfo-compression` may result in a binary that you
 consider to be invalid as you may be unable to read the debugging information.
 But it would not be an ABI issue.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## The panic strategy
+### The panic strategy
 
 The Rust compiler already *has* infrastructure to detect flag mismatches: the
 flags `-Cpanic` and `-Zpanic-in-drop`. The prebuilt stdlib comes with different
@@ -455,7 +455,7 @@ pieces depending on which strategy is used, although panic landing flags are
 not entirely removed when using `-Cpanic=abort`, as only part of the prebuilt
 stdlib is switched out.
 
-## Global target modifiers
+### Global target modifiers
 
 A suggestion that has come up several times
 ([1](https://github.com/rust-lang/rust/issues/116972),
@@ -466,7 +466,7 @@ which could be called `-Cglobal-target-features=`. This is very similar to this
 RFC, though it is broader as the "target modifier" concept can apply to any
 compiler flag and not just to a single `-Cglobal-target-features=` flag.
 
-## Stabilization of things that require nightly features
+### Stabilization of things that require nightly features
 
 This RFC proposes that we shouldn't block stabilization of target modifiers on
 a stable way to build libcore. There is precedent in the rust project for
@@ -498,12 +498,12 @@ in some other way. Doing so is unstable.
 
 [rfc1184]: https://rust-lang.github.io/rfcs/1184-stabilize-no_std.html
 
-## .note.gnu.property
+### .note.gnu.property
 
 The `.note.gnu.property` section discussed previously is an example of C code
 detecting mismatches of a flag at link time.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 This RFC does not stabilize any target modifiers. Such decisions should be made
@@ -513,7 +513,7 @@ stabilizing a compiler flag.
 The `-Cunsafe-allow-abi-mismatch` flag will be stabilized when the first target
 modifier is stabilized.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 A possible future extension could be to detect inconsistencies between the ABI

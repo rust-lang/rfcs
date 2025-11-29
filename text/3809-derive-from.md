@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3809](https://github.com/rust-lang/rfcs/pull/3809)
 - Tracking Issue: [rust-lang/rust#144889](https://github.com/rust-lang/rust/issues/144889)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow deriving an implementation of the `From` trait using `#[derive(From)]` on structs with a single field.
@@ -22,7 +22,7 @@ impl From<u16> for TcpPort {
 
 This would only be allowed for single-field structs for now, where we can unambiguously determine the source type from which should the struct be convertible.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The primary motivation is to remove one of the gaps in the Rust language which prohibit combining language features in intuitive ways. Both the `#[derive(Trait)]` macro and the `From` trait are pervasively used across the Rust ecosystem, but it is currently not possible to combine them, even in situations where the resulting behavior seems *completely obvious*.
@@ -31,7 +31,7 @@ Concretely, when you have a struct with a single field and want to implement the
 
 Enabling this would make one more intuitive use-case in the language "just work", and would reduce boilerplate that Rust users either write over and over again or for which they have to use macros or external crates.
 
-## Newtype pattern
+### Newtype pattern
 As a concrete use-case, `#[derive(From)]` is particularly useful in combination with the very popular [newtype pattern](https://doc.rust-lang.org/rust-by-example/generics/new_types.html). In this pattern, an inner type is wrapped in a new type (hence the name), typically a tuple struct, to semantically make it a separate concept in the type system and thus make it harder to mix unrelated types by accident. For example, we can wrap a number to represent things like `Priority(i32)`, `PullRequestNumber(u32)` or `TcpPort(u16)`.
 
 When using the newtype pattern, it is common to implement standard library traits for it by delegating to the inner type. This is easily achievable with `#[derive]`:
@@ -51,7 +51,7 @@ Is `From` really so useful for newtypes? There are two other common alternatives
 
 To summarize, if `From` was `derive`-able, it could reduce the need for using macros or external crates and increase the number of cases where `#[derive]` takes care of all required `impl`s for a given newtype.
 
-## Why does it make sense to derive `From`?
+### Why does it make sense to derive `From`?
 There are various "standard" traits defined in the Rust standard library that are pervasively used across the ecosystem. Currently, some of these traits can already be automatically derived, for example `Hash` or `Debug`. These traits can be derived automatically because they are composable; an implementation of the trait for a struct can be composed of the trait implementations of its fields.
 
 One reason why we might not want to enable automatic derive for a specific trait is when the implementation would not be *obvious*. For example, if we allowed deriving `Display`, it is unclear how should the individual field implementations be composed. Should they be separated with a newline? Or a comma? That depends on the given type.
@@ -60,14 +60,14 @@ However, when deriving a `From` implementation for a struct with a single field,
 
 That being said, the fact that the `From` trait is generic does present more opportunities for alternative designs. These are discussed in [Rationale and alternatives](#rationale-and-alternatives).
 
-## How common is implementing and deriving `From`?
+### How common is implementing and deriving `From`?
 [This](https://github.com/search?type=code&q=lang%3ARust+%2F%5C%5Bderive%5C%28.*%5CbFrom%5B%2C+%5C%29%5D%2F) GitHub Code Search query shows tens of thousands of occurrences of the `From` trait being derived, typically using the `derive_more` crate.
 
 I have also scanned the top 100 crates from crates.io together with their dependencies using a simple [script](https://github.com/Kobzol/scan-from-impls), to find all instances of tuple structs with a single field where the struct implements `From<FieldType>`.
 
 In the analyzed 168 crates, 559 single-field tuple structs were found, and 49 out of them contained the `From` implementation from their field type.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You can use `#[derive(From)]` to automatically generate an implementation of the `From` trait for the given type, which will create a value of the struct from a value of its field:
@@ -124,7 +124,7 @@ impl<T: Debug> From<T> for Id {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Placing `#[derive(From)]` on a tuple struct or a struct with named fields named `$s` is permissible if and only if the struct has exactly one field that we will label as `$f`. We will use the name `$t` for the type of the field `$f`. In that event, the compiler shall generate the following:
@@ -150,12 +150,12 @@ Placing `#[derive(From)]` on a tuple struct or a struct with named fields named 
 
 Using `#[derive(From)]` on unit structs, enums or tuple/named field structs that do not have exactly one field produces a compiler error.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 While this does enable more Rust code to "just work", it also introduces a special case that will have to be explained to the users. In this case it seems quite easily understandable though ("it only works for structs with a single field"), and we should be able to produce high-quality error messages in the compiler, as it is trivial to detect how many fields a struct has.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Based on the popularity of the `derive_more` crate (discussed in [Prior art](#prior-art)), which had more than 125 million downloads when this RFC was proposed, it seems that there is a lot of appetite for extending the set of use-cases where deriving standard traits is allowed. This feature was discussed in the past [here](https://github.com/rust-lang/rfcs/issues/2026).
@@ -166,7 +166,7 @@ As always, an alternative is to just not do this, in that case users would conti
 
 Because the scope of the proposed change is quite minimal, it should be forward-compatible with designs that would make it work in more situations in the future (some ideas are discussed in [Future possibilities](#future-possibilities)). There is one potential (although unlikely) incompatibility discussed below.
 
-## Alternative design using tuples
+### Alternative design using tuples
 There is one possible alternative design that comes to mind which could be in theory incompatible with this proposal. We could enable `#[derive(From)]` for tuple structs with an arbitrary number of fields by generating a `From` implementation from a tuple containing the types of the struct fields:
 
 ```rust
@@ -184,14 +184,14 @@ The question then becomes what would be generated under this design when the str
 
 I think that the second approach is not a good idea, and I find it unlikely that we would want to use it.
 
-## Generating `From` in the other direction
+### Generating `From` in the other direction
 This proposed change is useful to generate a `From` impl that turns the inner field into the wrapper struct (`impl From<Inner>` for `Newtype`). However, sometimes it is also useful to generate the other direction, i.e. turning the newtype back into the inner type. This can be implemented using `impl From<Newtype> for Innertype`.
 
 We could make `#[derive(From)]` generate both directions, but that would make it impossible to only ask for the "basic" `From` direction without some additional syntax.
 
 A better alternative might be to support generating the other direction in the future through something like `#[derive(Into)]`.
 
-## More general blanket implementation
+### More general blanket implementation
 As an alternative to generating `From<Inner> for Newtype`, the compiler could generate a more generic blanket implementation, such as `impl<T> From<T> for Newtype where Inner: From<T>`[^blanket].
 
 This would allow "recursive conversions", for example:
@@ -220,7 +220,7 @@ The `derive_more` crate allows opting into the blanket implementation using a cu
 
 [^blanket]: Noted [here](https://internals.rust-lang.org/t/pre-rfc-derive-from-for-newtypes/22567/6).
 
-## Direction of the `From` impl
+### Direction of the `From` impl
 In theory, someone could be confused if this code:
 ```rust
 #[derive(From)]
@@ -238,10 +238,10 @@ However, `impl From<Inner> for Newtype` is consistent with all other standard tr
 
 Generating the other direction of the impl is best left as a separate feature, which is briefly discussed in [Future possibilities][future-possibilities].
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Ecosystem crates
+### Ecosystem crates
 There are several crates that offer deriving the `From` trait. The most popular one is [derive_more](https://crates.io/crates/derive_more), which allows deriving several standard traits that are normally not derivable, including `From`, `Display` or `Add`.
 
 [`#[derive(derive_more::From)`](https://docs.rs/derive_more/latest/derive_more/derive.From.html) works in the same way as proposed in this RFC for structs with a single field. However, it can also be used for other kinds of structs and even enums and supports more complex use-cases. For example:
@@ -283,17 +283,17 @@ The design proposed by this RFC should be forward compatible with all features o
 
 [^enums]: If we only allow the `#[derive(From)]` on structs, and not enums, see [Unresolved questions](#unresolved-questions).
 
-## Default trait
+### Default trait
 There is a precedent for a trait that can only be automatically derived in certain situations. The `Default` trait was originally only derivable on structs, not on enums, because it was not clear which enum variant should be selected as the default. This was later rectified by adding custom syntax (`#[default]`) to select the default variant.
 
 A similar solution could be used in the future to also extend `#[derive(From)]` to more use-cases; this will be discussed in [Future possibilities](#future-possibilities).
 
 The `Default` trait actually shares a similarity with `From`, in that they are both "constructor" traits that create a new value of a given type, so it feels natural that both should be automatically implementable, at least in some cases.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## Enum support
+### Enum support
 Should we also support enums? The design space there is more complex than for structs. For example, `derive_more` generates a separate `From` impl for each enum variant by default, which means that the individual variants must not contain the same inner type, otherwise an impl conflict happens:
 
 ```rust
@@ -325,10 +325,10 @@ A better solution might be to use a custom attribute (such as `#[from]`) to allo
 
 For these reasons, this RFC only proposes to support structs as the first step, similarly to the `Default` trait, which was originally also only derivable on structs. We could support more use-cases with future extensions.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## `#[from]` attribute
+### `#[from]` attribute
 In the future, we could extend the set of supported use-cases even to structs with multiple fields. For example, we could allow it in cases where the user marks a specific field with a `#[from]` attribute, and all other fields implement `Default`:
 
 ```rust
@@ -360,12 +360,12 @@ impl From<u16> for Port {
 
 This is similar to how [RFC#3107](https://rust-lang.github.io/rfcs/3107-derive-default-enum.html) extended the deriving of the `Default` trait using the `#[default]` attribute.
 
-## Deriving From in the other direction
+### Deriving From in the other direction
 
 It is also quite useful to generate `From<InnerType> for Struct`, i.e. generating `From` in the other direction. This could be done in the future using e.g. `#[derive(Into)]`.
 
-## Enum support
+### Enum support
 We could add support for enums in a similar way, where users could mark the variant that should be constructed using `#[from]`.
 
-## Supporting other traits
+### Supporting other traits
 We could extend the same logic (only allowing deriving a standard trait for structs with a single field) to more traits. For example, `AsRef`, `Deref` or even things like `FromStr` or `Iterator` could be potentially derivable in the same way, when used on a struct with a single field.

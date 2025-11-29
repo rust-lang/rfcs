@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2963](https://github.com/rust-lang/rfcs/pull/2963)
 - Rust Issue: [rust-lang/rust#76578](https://github.com/rust-lang/rust/issues/76578)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC describes the design of a JSON output for the tool `rustdoc`, to allow tools to
 lean on its data collection and refinement but provide a different front-end.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The current HTML output of `rustdoc` is often lauded as a key selling point of Rust. It's a
@@ -46,7 +46,7 @@ is just as unstable as the current HTML output of `rustdoc`, so a separate forma
 [previous-rfc]: https://github.com/QuietMisdreavus/rfcs/blob/rustdoc-json/text/0000-rustdoc-json.md#unresolved-questions
 [RA-RLS]: https://github.com/rust-lang/rfcs/pull/2912
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 (*Upon successful implementation/stabilization, this documentation should live in The Rustdoc
@@ -178,7 +178,7 @@ After running the above command, you should get a `lib.json` file like the follo
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 (*Upon successful implementation/stabilization, this documentation should live in The Rustdoc
@@ -193,7 +193,7 @@ When you request JSON output from `rustdoc`, you're getting a version of the Rus
 tree (AST), so you could see anything that you could export from a valid Rust crate. The following
 types can appear in the output:
 
-## ID
+### ID
 
 To provide various maps/references to items, the JSON output uses unique strings as IDs for each
 item. They happen to be the compiler internal DefId for that item, but in the JSON blob they should
@@ -201,7 +201,7 @@ be treated as opaque as they aren't guaranteed to be stable across compiler invo
 only valid/consistent within a single JSON blob. They cannot be used to resolve references between
 the JSON output of different crates (see [the Resolving IDs section](#resolving-ids)).
 
-## Crate
+### Crate
 
 A Crate is the root of the outputted JSON blob. It contains all doc-relevant information about the
 local crate, as well as some information about external items that are referred to locally.
@@ -217,7 +217,7 @@ Name      | Type    | Description
 `extern_crates` | Map<int, [ExternalCrate](#ExternalCrate)> | A map of "crate numbers" to metadata about that crate.
 `format_version` | int | The version of the structure of this blob. The structure described by this RFC will be version `1`, and it will be changed if incompatible changes are ever made.
 
-### Resolving IDs
+#### Resolving IDs
 
 The crate's `index` contains mostly local items, which includes impls of external traits on local
 types or local traits on external types. The exception to this is that external trait definitions
@@ -230,14 +230,14 @@ That gives [enough information](#ItemSummary) about the item to create cross ref
 provide a name without copying all of the information about external items into the local
 crate's JSON output.
 
-### ExternalCrate
+#### ExternalCrate
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
 `name`    | String  | The name of the crate.
 `html_root_url` | String  | (*Optional*) The `html_root_url` for that crate if they specify one.
 
-### ItemSummary
+#### ItemSummary
 
 Name      | Type    | Description
 ----------|---------|------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ Name      | Type    | Description
 `path`    | [String] | The fully qualified path (e.g. `["std", "io", "lazy", "Lazy"]` for `std::io::lazy::Lazy`) of this Item.
 `kind`    | String  | What type of Item this is (see [Item](#Item)).
 
-## Item
+### Item
 
 An Item represents anything that can hold documentation - modules, structs, enums, functions,
 traits, type aliases, and more. The Item data type holds fields that can apply to any of these,
@@ -264,7 +264,7 @@ Name      | Type    | Description
 `kind`    | String  | The kind of Item this is. Determines what fields are in `inner`.
 `inner`   | Object  | The type-specific fields describing this Item. Check the `kind` field to determine what's available.
 
-### Restricted visibility
+#### Restricted visibility
 When using `--document-private-items`, `pub(in path)` items can appear in the output in which case
 the visibility field will be an Object instead of a string. It will contain the single key
 `"restricted"` with the following values:
@@ -274,13 +274,13 @@ Name      | Type    | Description
 `parent`  | [ID](#ID) | The ID of the module that this items visibility is restricted to.
 `path`    | String | How that module path was referenced in the code (like `"super::super"`, or `"crate::foo"`).
 
-### `kind == "module"`
+#### `kind == "module"`
 
 Name     | Type   | Description
 ---------|--------|--------------------------------------------------------------------------------
 `items`  | [[ID](#ID)] | The list of Items contained within this module. The order of definitions is preserved.
 
-### `kind == "function"`
+#### `kind == "function"`
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -289,7 +289,7 @@ Name       | Type     | Description
 `header`   | String   | `"const"`, `"async"`, `"unsafe"`, or a space separated combination of those modifiers.
 `abi`      | String   | The ABI string on the function. Non-`extern` functions have a `"Rust"` ABI, whereas `extern` functions without an explicit ABI are `"C"`. See [the reference](https://doc.rust-lang.org/reference/items/external-blocks.html#abi) for more details.
 
-### `kind == "struct" || "union"`
+#### `kind == "struct" || "union"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -299,13 +299,13 @@ Name          | Type     | Description
 `fields`      | [[ID](#ID)] | The list of fields in the struct. All of the corresponding Items have `kind == "struct_field"`.
 `impls`       | [[ID](#ID)] | All impls (both trait and inherent) for this type. All of the corresponding Items have `kind = "impl"`
 
-### `kind == "struct_field"`
+#### `kind == "struct_field"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
 `type`        | [Type](#Type) | The type of this field.
 
-### `kind == "enum"`
+#### `kind == "enum"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -314,7 +314,7 @@ Name          | Type     | Description
 `fields_stripped` | bool | Whether any variants have been removed from the result, due to being private or hidden.
 `impls`       | [[ID](#ID)] | All impls (both trait and inherent) for this type. All of the corresponding Items have `kind = "impl"`
 
-### `kind == "variant"`
+#### `kind == "variant"`
 
 Has a `variant_kind` field with 3 possible values and an `variant_inner` field with more info if
 necessary:
@@ -323,7 +323,7 @@ necessary:
 - `"struct"` (e.g. `Enum::Variant{foo: u32, bar: String}`) with `"variant_inner": [ID]` which is a
   list of this variant's "struct_field" items.
 
-### `kind == "trait"`
+#### `kind == "trait"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -333,7 +333,7 @@ Name          | Type     | Description
 `generics`    | [Generics](#Generics) | Information about the trait's type parameters and `where` clauses.
 `bounds`      | [[GenericBound](#GenericBound)] | Trait bounds for this trait definition (e.g.  `trait Foo: Bar<T> + Clone`).
 
-### `kind == "trait_alias"`
+#### `kind == "trait_alias"`
 
 An [unstable feature](https://doc.rust-lang.org/beta/unstable-book/language-features/trait-alias.html)
 which allows writing aliases like `trait Foo = std::fmt::Debug + Send` and then using `Foo` in
@@ -344,7 +344,7 @@ Name          | Type     | Description
 `generics`    | [Generics](#Generics) | Any type parameters that the trait alias takes.
 `bounds`      | [[GenericBound](#GenericBound)] | The list of traits after the equals.
 
-### `kind == "method"`
+#### `kind == "method"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -353,7 +353,7 @@ Name          | Type     | Description
 `header`      | String   | `"const"`, `"async"`, `"unsafe"`, or a space separated combination of those modifiers.
 `has_body`    | bool     | Whether this is just a method signature (in a trait definition) or a method with an actual body.
 
-### `kind == "assoc_const"`
+#### `kind == "assoc_const"`
 
 These items only show up in trait _definitions_. When looking at a trait impl item, the item where the associated constant is defined is a `"constant"` item.
 
@@ -362,7 +362,7 @@ Name          | Type     | Description
 `type`        | [Type](#Type) | The type of this associated const.
 `default`     | String | (*Optional*) The stringified expression for the default value, if provided.
 
-### `kind == "assoc_type"`
+#### `kind == "assoc_type"`
 
 These items only show up in trait _definitions_. When looking at a trait impl item, the item where the associated type is defined is a `"typedef"` item.
 
@@ -371,7 +371,7 @@ Name          | Type     | Description
 `bounds`      | [[GenericBound](#GenericBound)] | The bounds for this associated type.
 `default`     | [Type](#Type) | (*Optional*) The default for this type, if provided.
 
-### `kind == "impl"`
+#### `kind == "impl"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -385,7 +385,7 @@ Name          | Type     | Description
 `synthetic`   | bool     | Whether this is an impl that's implied by the compiler (for autotraits, e.g. `Send` or `Sync`).
 `blanket_impl` | String | (*Optional*) The name of the generic parameter used for the blanket impl, if this impl was produced by one. For example `impl<T, U> Into<U> for T` would result in `blanket_impl == "T"`.
 
-### `kind == "constant"`
+#### `kind == "constant"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -394,7 +394,7 @@ Name          | Type     | Description
 `value`       | String   | (*Optional*) The value of the evaluated expression for this constant, which is only computed for numeric types.
 `is_literal`  | bool     | Whether this constant is a bool, numeric, string, or char literal.
 
-### `kind == "static"`
+#### `kind == "static"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
@@ -402,14 +402,14 @@ Name          | Type     | Description
 `expr`        | String   | The [unstable](#Unstable) stringified expression that this static is assigned to.
 `mutable`     | bool     | Whether this static is mutable.
 
-### `kind == "typedef"`
+#### `kind == "typedef"`
 
 Name          | Type     | Description
 --------------|----------|-------------------------------------------------------------------------
 `type`        | [Type](#Type) | The type on the right hand side of this definition.
 `generics`    | [Generics](#Generics) | Any generic parameters on the left hand side of this definition.
 
-### `kind == "opaque_ty"`
+#### `kind == "opaque_ty"`
 
 Represents [trait aliases](https://doc.rust-lang.org/beta/unstable-book/language-features/trait-alias.html)
 of the form:
@@ -423,7 +423,7 @@ Name          | Type     | Description
 `bounds`      | [[GenericBound](#GenericBound)] | The trait bounds on the right hand side.
 `generics`    | [Generics](#Generics) | Any generic parameters on the type itself.
 
-### `kind == "foreign_type"`
+#### `kind == "foreign_type"`
 
 `inner` contains no fields. This item represents a type declaration in an extern block (see [here](https://github.com/rust-lang/rfcs/blob/master/text/1861-extern-types.md)
 for more details):
@@ -434,14 +434,14 @@ extern {
 }
 ```
 
-### `kind == "extern_crate"`
+#### `kind == "extern_crate"`
 
 Name     | Type     | Description
 ---------|----------|-------------------------------------------------------------------------
 `name`   | String   | The name of the extern crate.
 `rename` | String   | (*Optional*) The renaming of this crate with `extern crate foo as bar`.
 
-### `kind == "import"`
+#### `kind == "import"`
 
 Name     | Type     | Description
 ---------|----------|-------------------------------------------------------------------------
@@ -450,7 +450,7 @@ Name     | Type     | Description
 `id`     | [ID](#ID) | (*Optional*) The ID of the item being imported.
 `glob`   | bool     | Whether this import ends in a glob: `use source::*`.
 
-### `kind == "macro"`
+#### `kind == "macro"`
 
 A `macro_rules!` declarative macro. Contains a single string with the source representation of
 the macro with the patterns stripped, for example:
@@ -465,7 +465,7 @@ macro_rules! vec {
 
 TODO: proc macros
 
-## Span
+### Span
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -473,14 +473,14 @@ Name       | Type     | Description
 `begin`    | (int, int) | The zero indexed line and column of the first character in this span.
 `end`      | (int, int) | The zero indexed line and column of the last character in this span.
 
-## Deprecation
+### Deprecation
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `since`    | String   | (*Optional*) Usually a version number when this Item first became deprecated.
 `note`     | String   | (*Optional*) The reason for deprecation and/or what alternatives to use.
 
-## FnDecl
+### FnDecl
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -488,18 +488,18 @@ Name       | Type     | Description
 `output`   | [Type](#Type) | (*Optional*) Output type.
 `c_variadic` | bool   | Whether this function uses [an unstable feature](https://doc.rust-lang.org/beta/unstable-book/language-features/c-variadic.html) for variadic FFI functions.
 
-## Generics
+### Generics
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `params`   | [[GenericParamDef](#GenericParamDef)] | A list of generic parameter definitions (e.g.  `<T: Clone + Hash, U: Copy>`).
 `where_predicates` | [[WherePredicate](#WherePredicate)] | A list of where predicates (e.g.  `where T: Iterator, T::Item: Copy`).
 
-### Examples
+#### Examples
 
 Here are a few full examples of the Generics fields for different rust code:
 
-#### Lifetime bounds
+##### Lifetime bounds
 
 ```rust
 pub fn foo<'a, 'b, 'c>(a: &'a str, b: &'b str, c: &'c str)
@@ -540,7 +540,7 @@ where
   ]
 ```
 
-#### Trait bounds
+##### Trait bounds
 
 ```rust
 pub fn bar<T, U: Clone>(a: T, b: U)
@@ -631,7 +631,7 @@ where
 }
 ```
 
-### GenericParamDef
+#### GenericParamDef
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -643,14 +643,14 @@ Name       | Type     | Description
 `bounds`   | [[GenericBound](#GenericBound)] | The bounds on this parameter.
 `default`  | [Type](#Type) | (*Optional*) The default type for this parameter (e.g `PartialEq<Rhs = Self>`).
 
-### WherePredicate
+#### WherePredicate
 
 Can be one of the 3 following objects:
 - `"bound_predicate": {"ty": Type, "bounds": [GenericBound]}` for `T::Item: Copy + Clone`
 - `"region_predicate": {"lifetime": String, "bounds": [GenericBound]}` for `'a: 'b`
 - `"eq_predicate": {"lhs": Type, "rhs": Type}`
 
-### GenericBound
+#### GenericBound
 
 Can be either `"trait_bound"` with the following fields:
 
@@ -660,13 +660,13 @@ Name       | Type     | Description
 `modifier` | String   | Either `"none"`, `"maybe"`, or `"maybe_const"`
 `generic_params` | [[GenericParamDef](#GenericParamDef)] | `for<>` parameters used for [HRTBs](https://doc.rust-lang.org/nomicon/hrtb.html)
 
-## Type
+### Type
 
 Rustdoc's representation of types is fairly involved. Like Items, they are represented by a
 `"kind"` field and an `"inner"` field with the related information. Here are the possible
 contents of that inner Object:
 
-### `kind = "resolved_path"`
+#### `kind = "resolved_path"`
 
 This is the main kind that represents all user defined types.
 
@@ -677,7 +677,7 @@ Name       | Type     | Description
 `id`       | [ID](#ID) | The ID of the trait/struct/enum/etc. that this type refers to.
 `param_names` | [GenericBound](#GenericBound) | If this type is of the form `dyn Foo + Bar + ...` then this field contains those trait bounds.
 
-#### GenericArgs
+##### GenericArgs
 
 Can be either `"angle_bracketed"` with the following fields:
 
@@ -693,7 +693,7 @@ Name       | Type     | Description
 `inputs`   | [[Type](#Type)] | The `Fn`'s parameter types for this argument.
 `output`   | [Type](#Type) | (*Optional*) The return type of this argument.
 
-#### GenericArg
+##### GenericArg
 
 Can be one of the 3 following objects:
 - `"lifetime": String`
@@ -701,7 +701,7 @@ Can be one of the 3 following objects:
 - `"const": Object` where the object has a single key `"constant"` with value that's the same object as the
   `inner` field of `Item` when `kind == "constant"`
 
-#### TypeBinding
+##### TypeBinding
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -709,38 +709,38 @@ Name       | Type     | Description
 `binding`  | Object   | Either `"equality": Type` or `"constraint": [GenericBound]`
 
 
-### `kind = "generic"`
+#### `kind = "generic"`
 
 `"inner"'` is a String which is simply the name of a type parameter.
 
-### `kind = "tuple"`
+#### `kind = "tuple"`
 
 `"inner"` is a single list with the Types of each tuple item.
 
-### `kind = "slice"`
+#### `kind = "slice"`
 
 `"inner"` is the Type the elements in the slice.
 
-### `kind = "array"`
+#### `kind = "array"`
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `type`     | [Type](#Type) | The Type of the elements in the array
 `len`      | String   | The length of the array as an [unstable](#Unstable) stringified expression.
 
-### `kind = "impl_trait"`
+#### `kind = "impl_trait"`
 
 `"inner"` is a single list of the [GenericBounds](#GenericBound) for this type.
 
-### `kind = "never"`
+#### `kind = "never"`
 
 Used to represent the `!` type, has no fields.
 
-### `kind = "infer"`
+#### `kind = "infer"`
 
 Used to represent `_` in type parameters, has no fields.
 
-### `kind = "function_pointer"`
+#### `kind = "function_pointer"`
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -749,14 +749,14 @@ Name       | Type     | Description
 `params`   | [[GenericParamDef](#GenericParamDef)] | A list of generic parameter definitions (e.g.  `<T: Clone + Hash, U: Copy>`).
 `abi`      | String   | The ABI string on the function.
 
-### `kind = "raw_pointer"`
+#### `kind = "raw_pointer"`
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
 `mutable`  | bool     | Whether this is a `*mut` or just a `*`.
 `type`     | [Type](#Type) | The Type that this pointer points at.
 
-### `kind = "borrowed_ref"`
+#### `kind = "borrowed_ref"`
 
 Name       | Type     | Description
 -----------|----------|----------------------------------------------------------------------------
@@ -764,7 +764,7 @@ Name       | Type     | Description
 `mutable`  | bool     | Whether this is a `&mut` or just a `&`.
 `type`     | [Type](#Type) | The Type that this reference references.
 
-### `kind = "qualified_path"`
+#### `kind = "qualified_path"`
 
 Used when a type is qualified by a trait (`<Type as Trait>::Name`) or associated type (`T::Item`
 where `T: Iterator`).
@@ -775,11 +775,11 @@ Name       | Type     | Description
 `self_type` | [Type](#Type) | The type being used as a trait (`Type` and `T` in the examples above).
 `trait`    | [Type](#Type) | The trait that the path is on (`Trait` and `Iterator` in the examples above).
 
-### Examples
+#### Examples
 
 Here are some function signatures with various types and their respective JSON representations:
 
-#### Primitives
+##### Primitives
 ```rust
 pub fn primitives(a: u32, b: (u32, u32), c: [u32], d: [u32; 5]) -> *mut u32 {}
 ```
@@ -846,7 +846,7 @@ pub fn primitives(a: u32, b: (u32, u32), c: [u32], d: [u32; 5]) -> *mut u32 {}
   }
 }
 ```
-#### References
+##### References
 ```rust
 pub fn references<'a>(a: &'a mut str) -> &'static MyType {}
 ```
@@ -892,7 +892,7 @@ pub fn references<'a>(a: &'a mut str) -> &'static MyType {}
   }
 }
 ```
-#### Generics
+##### Generics
 ```rust
 pub fn generics<T>(a: T, b: impl Iterator<Item = bool>) -> ! {}
 ```
@@ -951,7 +951,7 @@ pub fn generics<T>(a: T, b: impl Iterator<Item = bool>) -> ! {}
   }
 }
 ```
-#### Generic Args
+##### Generic Args
 ```rust
 pub trait MyTrait<'a, T> {
     type Item;
@@ -1028,13 +1028,13 @@ pub fn generic_args<'a>(x: impl MyTrait<'a, i32, Item = u8, Other = f32>) {
 }
 ```
 
-## Unstable
+### Unstable
 
 Fields marked as unstable have contents that are subject to change. They can be displayed to
 users, but tools shouldn't rely on being able to parse their output or they will be broken by
 internal compiler changes.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - By supporting JSON output for `rustdoc`, we should consider how much it should mirror the
@@ -1048,7 +1048,7 @@ internal compiler changes.
   complex rendering logic like the HTML one. All that is required for a new language item is
   adding an additional field to a struct.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - **Status quo.** Keep the HTML the way it is, and make users who want a machine-readable version of
@@ -1063,7 +1063,7 @@ internal compiler changes.
   users. If there are significant improvements then a future RFC could provide the necessary
   refinements, potentially as another alternative output format if necessary.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 A handful of other languages and systems have documentation tools that output an intermediate
@@ -1096,7 +1096,7 @@ representation separate from the human-readable outputs:
 [Kythe]: http://kythe.io/
 [GObject Introspection]: https://gi.readthedocs.io/en/latest/
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What is the stabilization story? As language features are added, this representation will need to
@@ -1118,7 +1118,7 @@ representation separate from the human-readable outputs:
   - If there's an `html_root_url` attribute/argument for an external crate should the behavior be
     different?
 
-## Output structure questions
+### Output structure questions
 
 These aren't essential and could be deferred to a later RFC. The current implementation does
 include spans, but doesn't do any of the other things mentioned here.

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2089](https://github.com/rust-lang/rfcs/pull/2089)
 - Rust Issue: [rust-lang/rust#44491](https://github.com/rust-lang/rust/issues/44491)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Eliminate the need for “redundant” bounds on functions and impls where those bounds can be inferred from the input types and other trait bounds. For example, in this simple program, the impl would no longer require a bound, because it can be inferred from the `Foo<T>` type:
@@ -17,10 +17,10 @@ impl<T: Debug> Foo<T> {
 ```
 Hence, simply writing `impl<T> Foo<T> { ... }` would suffice. We currently support implied bounds for lifetime bounds, super traits and projections. We propose to extend this to all where clauses on traits and types, as was already discussed [here][niko].
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Types
+### Types
 
 Let's take an example from the standard library where trait bounds are actually expressed on a type¹.
 ```rust
@@ -97,7 +97,7 @@ This RFC proposes to extend this sort of logic beyond these special cases and us
 
 ¹Actually only a few types in the standard library have bounds, for example `HashSet<T>` does not have a `T: Hash + Eq` on the type declaration, but on the impl declaration rather. Whether we should prefer bounds on types or on impls is related, but beyond the scope of this RFC.
 
-## Traits
+### Traits
 
 Traits also currently support some form of implied bounds, namely super traits bounds:
 ```rust
@@ -136,7 +136,7 @@ However, this example does not compile:
 ```
 Again we propose to uniformly support implied bounds for all where clauses on trait definitions.
 
-# Guide-Level Explanation
+## Guide-Level Explanation
 [guide]: #guide
 
 When you declare bounds on a type, you don't have to repeat them when writing impls and functions as soon as the type appear in the signature or the impl header:
@@ -230,7 +230,7 @@ fn debug_foo<U, T: Foo<Item = U>>(arg: U) {
 }
 ```
 
-# Reference-Level Explanation
+## Reference-Level Explanation
 [reference]: #reference
 
 This is the fully-detailed design and you probably don't need to read everything. This design has already been experimented on [Chalk](https://github.com/nikomatsakis/chalk), to some extent. The current design has been driven by issue [#12], it is a good read to understand why we *need* to expand where clauses as described below.
@@ -253,14 +253,14 @@ r = 'x                                  // Region name
 
 We'll use the same notations as [RFC 1214] for the set `R = <r0, ..., rn>` denoting the set of lifetimes currently bound.
 
-## Well-formedness rules
+### Well-formedness rules
 Basically, we say that something (type or trait reference) is well-formed if the bounds declared on it are met, *regardless of the well-formedness of its parameters*: this is the main difference with [RFC 1214].
 
 We will write:
 * `WF(T: Trait)` for a trait reference `T: Trait` being well-formed
 * `WF(T)` for a reference to the type `T` being well-formed
 
-### **Trait refs**
+#### **Trait refs**
 We'll start with well-formedness for trait references. The important thing is that we distinguish between `T: Trait` and `WF(T: Trait)`. The former means that an impl for `T` has been found while the latter means that `T` meets the bounds on trait `Trait`.
 
 We'll also consider a function `Expanded` applying on where clauses like this:
@@ -310,7 +310,7 @@ impl SuperTrait for f32 { }
 impl Trait for f32 { }
 ```
 
-### **Types**
+#### **Types**
 
 The well-formedness rules for types are given by:
 ```
@@ -371,7 +371,7 @@ struct Struct<T> where T: Trait {
 // But `WF(Struct<f32>)` does hold.
 ```
 
-## Reverse rules
+### Reverse rules
 This is a core element of this RFC. Morally, the well-formedness rules are "if and only if" rules. We thus add reverse rules for each relevant WF rule:
 ```
 ReverseWfTraitReferenceᵢ
@@ -422,7 +422,7 @@ WF(T: Foo)
 
 **Remark**: Reverse rules include implicit `Sized` bounds on type declarations. However, they do not include (explicit) `?Sized` bounds since those are not *real* trait bounds, but only a way to disable the implicit `Sized` bound.
 
-## Input types
+### Input types
 We define the notion of input types of a type. Basically, input types refer to all types that are accessible from referencing to a specific type. For example, a function will assume that the input types of its arguments are well-formed, hence in the body of that function we'll be able to derive implied bounds thanks to the reverse rules described earlier.
 
 We'll denote by `InputTypes` the function which maps a type to its input types, defined by:
@@ -466,10 +466,10 @@ InputTypes(<P0 as Trait<P1, ..., Pn>>::Id) = Union(
 
 Note that higher-ranked types (functions, object type fragments) do not carry input types other than themselves. This is because they are unusable *as such*, one will have to use them in a lower-ranked way at some point (e.g. calling a function) and will thus rely on `InputTypes` for normal types.
 
-## Assumptions and checking well-formedness
+### Assumptions and checking well-formedness
 This is the other core element: how to use reverse rules. Basically, functions and impls will assume that their input types are well-formed, and that (expanded) where clauses hold.
 
-### **Functions**
+#### **Functions**
 Given a function declaration:
 ```rust
 fn F<r..., X1, ..., Xn>(arg1: T1, ..., argm: Tm) -> T0 where WhereClause1, ..., WhereClausek {
@@ -547,7 +547,7 @@ fn dummy<T>(arg: Option<Struct<T>>) {
 }
 ```
 
-### **Trait impls**
+#### **Trait impls**
 Given a trait impl:
 ```rust
 impl<r..., X1, ..., Xn> Trait<r'..., T1, ..., Tn> for T0 where WhereClause1, ..., WhereClausek {
@@ -623,7 +623,7 @@ fn bar<T: Clone>(arg: T) {
 }
 ```
 
-### **Inherent impls**
+#### **Inherent impls**
 Given an inherent impl:
 ```rust
 impl<r..., X1, ..., Xn> SelfTy where WhereClause1, ..., WhereClausek {
@@ -639,7 +639,7 @@ Methods make their normal assumptions + the set of assumptions made by the impl.
 
 A caller of a method has to prove that the where clauses defined on the impl hold, in addition to the requirements for calling general fns.
 
-## Proving well-formedness for input types
+### Proving well-formedness for input types
 [proving-wf-input-types]: #proving-well-formedness-for-input-types
 
 One would have noticed that we only prove well-formedness for input types in a lazy way (e.g., inside function bodies). This means that if we have a function:
@@ -669,7 +669,7 @@ struct NotHash<T> { ... }
 fn foo<T>(arg: Set<NotHash<T>>) { ... }
 ```
 
-## Cycle detection
+### Cycle detection
 In Chalk this design often leads to cycles in the proof tree. Example:
 ```rust
 trait Foo { }
@@ -694,16 +694,16 @@ I *think* rustc would have the right behavior currently: just dismiss this branc
 
 In Chalk we have a more sophisticated cycle detection strategy based on tabling, which basically enables us to correctly answer "multiple solutions", instead of "unique solution" if a simple *error-on-cycle* strategy were used. Would rustc need such a thing?
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Implied bounds on types can feel like "implicit bounds" (although they are not: the types appear in the signature of a function / impl header, so it's self-documenting).
 * Removing a bound from a struct becomes a breaking change (note: this can already be the case for functions and traits).
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
-## Including parameters in well-formedness rules
+### Including parameters in well-formedness rules
 
 Specific to this design: instead of disregarding parameters in well-formedness checks, we could have included them, and added reverse rules of the form: "`WF(T)` holds if `WF(Struct<T>)` holds". From a theoretical point of view, this would have had the same effects as the current design, and would have avoided the whole `InputTypes` thing. However, implementation in Chalk revealed some tricky issues. Writing in Chalk-style, suppose we have rules like:
 ```
@@ -712,11 +712,11 @@ WF(T) :- WF(Struct<T>)
 ```
 then trying to prove `WF(i32)` gives birth to an infinite branch `WF(i32) :- WF(Struct<i32>) :- WF(Struct<Struct<i32>>) :- ...` in the proof tree, which is hard (at least that's what we believe) to dismiss.
 
-## Trait aliases
+### Trait aliases
 
 Trait aliases offer a way to factorize repeated constraints ([RFC 1733]), it's useful especially for bounds on types, but it does not overcome the limitations for implied bounds on traits (the `where Bar: Into<Self>` example is a good one).
 
-## Limiting the scope of implied bounds
+### Limiting the scope of implied bounds
 
 These essentially try to address the breaking change when removing a bound on a type:
 * do not derive implied bounds for types
@@ -724,7 +724,7 @@ These essentially try to address the breaking change when removing a bound on a 
 * derive implied bounds in impl bodys only
 * two distinct feature-gates, one for implied bounds on traits and another one for types
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should we try to limit the range of implied bounds to be crate-local (or module-local, etc)?

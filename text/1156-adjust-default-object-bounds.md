@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1156](https://github.com/rust-lang/rfcs/pull/1156)
 - Rust Issue: [rust-lang/rust#26438](https://github.com/rust-lang/rust/issues/26438)
 
-# Summary
+## Summary
 
 Adjust the object default bound algorithm for cases like `&'x
 Box<Trait>` and `&'x Arc<Trait>`. The existing algorithm would default
@@ -23,7 +23,7 @@ change as follows:
 - In Rust 1.3, the change will be made permanent. Any code that has
   not been updated by that time will break.
 
-# Motivation
+## Motivation
 
 When we instituted default object bounds, [RFC 599] specified that
 `&'x Box<Trait>` (and `&'x mut Box<Trait>`) should expand to `&'x
@@ -107,7 +107,7 @@ defaults can be actively harmful, and hence force you to specify
 explicit lifetimes, whereas the newer defaults do something
 reasonable.
 
-# Detailed design
+## Detailed design
 
 The rules for user-defined types from RFC 599 are altered as follows
 (text that is not changed is italicized):
@@ -132,7 +132,7 @@ The rules for user-defined types from RFC 599 are altered as follows
   required. There are no known examples of this in the standard
   library as this situation arises rarely in practice.*
 
-# Timing and breaking change implications
+## Timing and breaking change implications
 
 This is a breaking change, and hence it behooves us to evaluate the
 impact and describe a procedure for making the change as painless as
@@ -163,20 +163,20 @@ change as follows:
 - In Rust 1.3, the change will be made permanent. Any code that has
   not been updated by that time will break.
 
-# Drawbacks
+## Drawbacks
 
 The primary drawback is that this is a breaking change, as discussed
 in the previous section.
 
-# Alternatives
+## Alternatives
 
 Keep the current design, with its known drawbacks.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 
-# Appendix: Details of the dropck problem
+## Appendix: Details of the dropck problem
 
 This appendix goes into detail about the sticky interaction with
 dropck that was uncovered. The problem arises if you have a function

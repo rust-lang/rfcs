@@ -3,21 +3,21 @@
 - RFC PR: [rust-lang/rfcs#982](https://github.com/rust-lang/rfcs/pull/982)
 - Rust Issue: [rust-lang/rust#18598](https://github.com/rust-lang/rust/issues/18598)
 
-# Summary
+## Summary
 
 Custom coercions allow smart pointers to fully participate in the DST system.
 In particular, they allow practical use of `Rc<T>` and `Arc<T>` where `T` is unsized.
 
 This RFC subsumes part of [RFC 401 coercions](https://github.com/rust-lang/rfcs/blob/master/text/0401-coercions.md).
 
-# Motivation
+## Motivation
 
 DST is not really finished without this, in particular there is a need for types
 like reference counted trait objects (`Rc<Trait>`) which are not currently well-
 supported (without coercions, it is pretty much impossible to create such values
 with such a type).
 
-# Detailed design
+## Detailed design
 
 There is an `Unsize` trait and lang item. This trait signals that a type can be
 converted using the compiler's coercion machinery from a sized to an unsized
@@ -94,9 +94,9 @@ from safe to unsafe function pointers, so it really is a `CoerceUnsized` trait,
 not a general `Coerce` trait.
 
 
-## Compiler checking
+### Compiler checking
 
-### On encountering an implementation of `CoerceUnsized` (type collection phase)
+#### On encountering an implementation of `CoerceUnsized` (type collection phase)
 
 * If the impl is for a built-in pointer type, we check nothing, otherwise...
 * The compiler checks that the `Self` type is a struct or tuple struct and that
@@ -117,7 +117,7 @@ unrelated to unsizing are excluded, these could probably be added later, if need
 * We record for each impl, the index of the field in the `Self` type which is
 coerced.
 
-### On encountering a potential coercion (type checking phase)
+#### On encountering a potential coercion (type checking phase)
 
 * If we have an expression with type `E` where the type `F` is required during
 type checking and `E` is not a subtype of `F`, nor is it coercible using the
@@ -132,7 +132,7 @@ bounds. We must also check for `Unsize` bounds for the case where the receiver
 is auto-deref'ed, but not autoref'ed.
 
 
-### On encountering an adjustment (translation phase)
+#### On encountering an adjustment (translation phase)
 
 * In trans (which is post-monomorphisation) we should always be able to find an
 impl for any `CoerceUnsized` bound.
@@ -144,18 +144,18 @@ the object being coerced and coerce the field in question by recursing (the
 built-in pointers are the base cases).
 
 
-### Adjustment types
+#### Adjustment types
 
 We add `AdjustCustom` to the `AutoAdjustment` enum as a placeholder for coercions
 due to a `CoerceUnsized` bound. I don't think we need the `UnsizeKind` enum at
 all now, since all checking is postponed until trans or relies on traits and impls.
 
 
-# Drawbacks
+## Drawbacks
 
 Not as flexible as the previous proposal.
 
-# Alternatives
+## Alternatives
 
 The original [DST5 proposal](http://smallcultfollowing.com/babysteps/blog/2014/01/05/dst-take-5/)
 contains a similar proposal with no opt-in trait, i.e., coercions are completely
@@ -173,7 +173,7 @@ The proposed design could be tweaked: for example, we could change the
 `CoerceUnsized` trait in many ways (we experimented with an associated type to
 indicate the field type which is coerced, for example).
 
-# Unresolved questions
+## Unresolved questions
 
 It is unclear to what extent DST coercions should support multiple fields that
 refer to the same type parameter. `PhantomData<T>` should definitely be
@@ -181,7 +181,7 @@ supported as an "extra" field that's skipped, but can all zero-sized fields
 be skipped? Are there cases where this would enable by-passing the abstractions
 that make some API safe?
 
-# Updates since being accepted
+## Updates since being accepted
 
 Since it was accepted, the RFC has been updated as follows:
 

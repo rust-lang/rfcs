@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#231](https://github.com/rust-lang/rfcs/pull/231)
 - Rust Issue: [rust-lang/rust#16640](https://github.com/rust-lang/rust/issues/16640)
 
-# Summary
+## Summary
 
 The `||` unboxed closure form should be split into two forms—`||` for nonescaping closures and `move ||` for escaping closures—and the capture clauses and self type specifiers should be removed.
 
-# Motivation
+## Motivation
 
 Having to specify `ref` and the capture mode for each unboxed closure is inconvenient (see Rust PR rust-lang/rust#16610). It would be more convenient for the programmer if the type of the closure and the modes of the upvars could be inferred. This also eliminates the "line-noise" syntaxes like `|&:|`, which are arguably unsightly.
 
@@ -14,7 +14,7 @@ Not all knobs can be removed, however—the programmer must manually specify whe
 
 Therefore, we need two forms: one for *nonescaping* closures and one for *escaping* closures. Nonescaping closures are the commonest, so they get the `||` syntax that we have today, and a new `move ||` syntax will be introduced for escaping closures.
 
-# Detailed design
+## Detailed design
 
 For unboxed closures specified with `||`, the capture modes of the free variables are determined as follows:
 
@@ -34,13 +34,13 @@ In the trait reference grammar, we will change the `|&:|` sugar to `Fn()`, the `
 
 It is important to note that the trait reference syntax and closure construction syntax are purposefully distinct. This is because either the `||` form or the `move ||` form can construct any of `FnOnce`, `FnMut`, or `Fn` closures.
 
-# Drawbacks
+## Drawbacks
 
 1. Having two syntaxes for closures could be seen as unfortunate.
 
 2. `move` becomes a keyword.
 
-# Alternatives
+## Alternatives
 
 1. Keep the status quo: `|:|`/`|&mut:`/`|&:|` are the only ways to create unboxed closures, and `ref` must be used to get by-reference upvars.
 
@@ -50,6 +50,6 @@ It is important to note that the trait reference syntax and closure construction
 
 4. Use `fn()` syntax for trait reference sugar.
 
-# Unresolved questions
+## Unresolved questions
 
 There may be unforeseen complications in doing the inference.

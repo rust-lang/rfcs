@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1058](https://github.com/rust-lang/rfcs/pull/1058)
 - Rust Issue: [rust-lang/rust#26906](https://github.com/rust-lang/rust/issues/26906)
 
-# Summary
+## Summary
 
 Replace `slice.tail()`, `slice.init()` with new methods `slice.split_first()`,
 `slice.split_last()`.
 
-# Motivation
+## Motivation
 
 The `slice.tail()` and `slice.init()` methods are relics from an older version
 of the slice APIs that included a `head()` method. `slice` no longer has
@@ -26,7 +26,7 @@ impact on code that only wants the remainder (such code only has to add `.1` to
 the expression). This has an even more significant effect on code that uses the
 mutable variants.
 
-# Detailed design
+## Detailed design
 
 The methods `head()`, `tail()`, `head_mut()`, and `tail_mut()` will be removed,
 and new methods will be added:
@@ -76,7 +76,7 @@ let (argv0, args_) = args.split_first().unwrap();
 
 (the `clone()` ended up being unnecessary).
 
-# Drawbacks
+## Drawbacks
 
 The expression `slice.split_last().unwrap().1` is more cumbersome than
 `slice.init()`. However, this is primarily due to the need for `.unwrap()`
@@ -85,7 +85,7 @@ rather than the need for `.1`, and would affect the more conservative solution
 idiomatic translation is `&slice[..slice.len()-1]`, which can be used any time
 the slice is already stored in a local variable.
 
-# Alternatives
+## Alternatives
 
 Only change the return type to `Option` without adding the tuple. This is the
 more conservative change mentioned above. It still has the same drawback of

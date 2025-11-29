@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1328](https://github.com/rust-lang/rfcs/pull/1328)
 - Rust Issue: [rust-lang/rust#30449](https://github.com/rust-lang/rust/issues/30449)
 
-# Summary
+## Summary
 
 When a thread panics in Rust, the unwinding runtime currently prints a message
 to standard error containing the panic argument as well as the filename and
@@ -11,7 +11,7 @@ line number corresponding to the location from which the panic originated.
 This RFC proposes a mechanism to allow user code to replace this logic with
 custom handlers that will run before unwinding begins.
 
-# Motivation
+## Motivation
 
 The default behavior is not always ideal for all programs:
 
@@ -40,7 +40,7 @@ several issues:
   binary bloat and we may want to add some avenue to allow for the omission of
   those values in the future.
 
-# Detailed design
+## Detailed design
 
 A new module, `std::panic`, will be created with a panic handling API:
 
@@ -126,7 +126,7 @@ It returns an `Option` to hedge against possible future changes to the panic
 system that would allow a crate to be compiled with location metadata removed
 to minimize binary size.
 
-## Prior Art
+### Prior Art
 
 C++ has a
 [`std::set_terminate`](http://www.cplusplus.com/reference/exception/set_terminate/)
@@ -143,12 +143,12 @@ by handlers registered on an individual `Thread`, by the `Thread`'s,
 `ThreadGroup`, and by a handler registered globally. The handlers are provided
 with the `Throwable` that triggered the handler.
 
-# Drawbacks
+## Drawbacks
 
 The more infrastructure we add to interact with panics, the more attractive it
 becomes to use them as a more normal part of control flow.
 
-# Alternatives
+## Alternatives
 
 Panic handlers could be run after a panicking thread has unwound rather than
 before. This is perhaps a more intuitive arrangement, and allows `catch_panic`
@@ -178,6 +178,6 @@ a bare function pointer. This seems like a somewhat weirder API, however, and
 the implementation proposed above should not end up complex enough to justify
 the change.
 
-# Unresolved questions
+## Unresolved questions
 
 None at the moment.

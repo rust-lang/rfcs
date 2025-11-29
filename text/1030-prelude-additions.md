@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1030](https://github.com/rust-lang/rfcs/pull/1030)
 - Rust Issue: [rust-lang/rust#24538](https://github.com/rust-lang/rust/issues/24538)
 
-# Summary
+## Summary
 
 Add `Default`, `IntoIterator` and `ToOwned` trait to the prelude.
 
-# Motivation
+## Motivation
 
 Each trait has a distinct motivation:
 
@@ -24,7 +24,7 @@ Each trait has a distinct motivation:
   idiomatic way to acquire an owned copy of data (including going from
   `str` to `String`, for which `Clone` does not work).
 
-# Detailed design
+## Detailed design
 
 * Add `Default`, `IntoIterator` and `ToOwned` trait to the prelude.
 
@@ -34,7 +34,7 @@ Each trait has a distinct motivation:
   this may want to wait until you can write `Vec<T>::IntoIter` rather
   than `<Vec<T> as IntoIterator>::IntoIter`.
 
-# Drawbacks
+## Drawbacks
 
 The main downside is that prelude entries eat up some amount of
 namespace (particularly, method namespace). However, these are all
@@ -45,11 +45,11 @@ Strictly speaking, a prelude addition is a breaking change, but as
 above, this is highly unlikely to cause actual breakage. In any case,
 it can be landed prior to 1.0.
 
-# Alternatives
+## Alternatives
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 
 The exact timeline of deprecation for `IntoIter` types.
 

@@ -3,17 +3,17 @@
 - RFC PR: [rust-lang/rfcs#1733](https://github.com/rust-lang/rfcs/pull/1733)
 - Rust Issue: [rust-lang/rust#41517](https://github.com/rust-lang/rust/issues/41517)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Traits can be aliased with the `trait TraitAlias = …;` construct. Currently, the right hand side is
 a bound – a single trait, a combination with `+` traits and lifetimes. Type parameters and
 lifetimes can be added to the *trait alias* if needed.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## First motivation: `impl`
+### First motivation: `impl`
 
 Sometimes, some traits are defined with parameters. For instance:
 
@@ -63,7 +63,7 @@ the `trait bound` level between `Foo<Backend>` and `FooBackend`, there’s none 
 so all we’re left with is implementing `Foo<Backend>` – that will also provide an implementation for
 `FooBackend` because of the universal implementation just above.
 
-## Second example: ergonomic collections and scrapping boilerplate
+### Second example: ergonomic collections and scrapping boilerplate
 
 Another example is associated types. Take the following [trait from tokio](https://docs.rs/tokio-service/0.1.0/tokio_service/trait.Service.html):
 
@@ -89,12 +89,12 @@ implemented. Such an alias would be very appealing because it would remove copyi
 `Service` trait into use sites – trait bounds, or even trait impls. Scrapping such an annoying
 boilerplate is a definitive plus to the language and might be one of the most interesting use case.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Syntax
+### Syntax
 
-### Declaration
+#### Declaration
 
 The syntax chosen to declare a *trait alias* is:
 
@@ -155,7 +155,7 @@ more predicates, just like any other `where` clause.
 `GENERIC_PARAMS` is a comma-separated list of zero or more lifetime and type parameters,
 with optional bounds, just like other generic definitions.
 
-## Use semantics
+### Use semantics
 
 You cannot directly `impl` a trait alias, but you can have them as *bounds*, *trait objects* and
 *impl Trait*.
@@ -205,7 +205,7 @@ fn bar4(x: Box<IntIterator + Sink + 'static>) { ... } // ok (*)
 The lines marked with `(*)` assume that [#24010](https://github.com/rust-lang/rust/issues/24010) is
 fixed.
 
-### Ambiguous constraints
+#### Ambiguous constraints
 
 If there are multiple associated types with the same name in a trait alias,
 then it is a static error ("ambiguous associated type") to attempt to
@@ -227,7 +227,7 @@ fn better1<T: FooBar2 + Foo<Assoc = String>>() { } // (leaves Bar::Assoc unconst
 fn better2<T: FooBar2 + Foo<Assoc = String> + Bar<Assoc = i32>>() { } // constrains both
 ```
 
-# Teaching
+## Teaching
 [teaching]: #teaching
 
 [Traits](https://doc.rust-lang.org/book/traits.html) are obviously a huge prerequisite. Traits
@@ -244,7 +244,7 @@ Inherently, the *trait alias* is usable in a limited set of places:
 
 Examples should be showed for all of the three cases above:
 
-#### As a bound
+### As a bound
 
 ```rust
 trait StringIterator = Iterator<Item=String>;
@@ -252,13 +252,13 @@ trait StringIterator = Iterator<Item=String>;
 fn iterate<SI>(si: SI) where SI: StringIterator {} // used as bound
 ```
 
-#### As a trait object
+### As a trait object
 
 ```rust
 fn iterate_object(si: &StringIterator) {} // used as trait object
 ```
 
-#### In an `impl Trait`
+### In an `impl Trait`
 
 ```rust
 fn string_iterator_debug() -> impl Debug + StringIterator {} // used in an impl Trait
@@ -282,7 +282,7 @@ trait HttpService = Service<Request = http::Request, Response = http::Response, 
 trait MyHttpService = HttpService<Future = MyFuture>; // assume MyFuture exists and fulfills the rules to be used in here
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - Adds another construct to the language.
@@ -290,10 +290,10 @@ trait MyHttpService = HttpService<Future = MyFuture>; // assume MyFuture exists 
 - The syntax `trait TraitAlias = Trait` requires lookahead in the parser to disambiguate a trait
   from a trait alias.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Should we use `type` as the keyword instead of `trait`?
+### Should we use `type` as the keyword instead of `trait`?
 
 `type Foo = Bar;` already creates an alias `Foo` that can be used as a trait object.
 
@@ -305,7 +305,7 @@ that can be used as a bound, which is a confusing bit of redundancy.
 However, this mixes the concepts of types and traits, which are different, and allows nonsense like
 `type Foo = Rc<i32> + f32;` to parse.
 
-## Supertraits & universal `impl`
+### Supertraits & universal `impl`
 
 It’s possible to create a new trait that derives the trait to alias, and provide a universal `impl`
 
@@ -323,14 +323,14 @@ implement `Foo`.
 
 There’s currently no alternative to the impl problem described here.
 
-## `ConstraintKinds`
+### `ConstraintKinds`
 
 Similar to GHC’s `ConstraintKinds`, we could declare an entire predicate as a reified list of
 constraints, instead of creating an alias for a set of supertraits and predicates. Syntax would be
 something like `constraint Foo<T> = T: Bar, Vec<T>: Baz;`, used as `fn quux<T>(...) where Foo<T> { ... }`
 (i.e. direct substitution). Trait object usage is unclear.
 
-## Syntax for sole `where` clause.
+### Syntax for sole `where` clause.
 
 The current RFC specifies that it is possible to use only the `where` clause by leaving the list of traits empty:
 
@@ -344,10 +344,10 @@ This is one of many syntaxes that are available for this construct. Alternatives
  * `trait DebugDefault = _ where Self: Debug + Default;` (which was [considered and then removed](https://github.com/rust-lang/rfcs/pull/1733/commits/88d3074957276c7201147fc625f18e0ebcecc1b9#diff-ae27a1a8d977f731e67823349151bed5L116) because it is [technically unnecessary](https://github.com/rust-lang/rfcs/pull/1733#issuecomment-284252196))
  * `trait DebugDefault = Self where Self: Debug + Default;` (analogous to previous case but not formally discussed)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
  
-## Trait alias containing only lifetimes
+### Trait alias containing only lifetimes
 
 This is annoying. Consider:
 
@@ -364,14 +364,14 @@ very consistent.
 If we chose another keyword, like `constraint`, I feel less concerned and it would open further
 opportunities – see the `ConstraintKinds` alternative discussion above.
 
-## Which bounds need to be repeated when using a trait alias?
+### Which bounds need to be repeated when using a trait alias?
 
 [RFC 1927](https://github.com/rust-lang/rfcs/pull/1927) intends to change the rules here for traits,
 and we likely want to have the rules for trait aliases be the same to avoid confusion.
 
 The `constraint` alternative sidesteps this issue.
 
-## What about bounds on type variable declaration in the trait alias?
+### What about bounds on type variable declaration in the trait alias?
 
 ```rust
 trait Foo<T: Bar> = PartialEq<T>;

@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1861](https://github.com/rust-lang/rfcs/pull/1861)
 - Rust Issue: [rust-lang/rust#43467](https://github.com/rust-lang/rust/issues/43467)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add an `extern type` syntax for declaring types which are opaque to Rust's type
 system.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 When interacting with external libraries we often need to be able to handle pointers to data that we don't know the size or layout of.
@@ -48,7 +48,7 @@ This RFC instead proposes a way to directly express that a type exists but is un
 Finally, In the 2017 roadmap, [integration with other languages](https://github.com/rust-lang/rfcs/blob/master/text/1774-roadmap-2017.md#integration-with-other-languages), is listed as a priority.
 Just like unions, this is an unsafe feature necessary for dealing with legacy code in a correct and understandable manner.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Add a new kind of type declaration, an extern type:
@@ -90,7 +90,7 @@ Unifying these is out of scope for this RFC, but this feature should be used in 
 Strictly speaking, this is a breaking change, but the `std` docs explicitly say that `void` shouldn't be used without indirection.
 And `libc` can, in the worst-case, make a breaking change.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Really, the question is "how do we teach *without* this".
@@ -106,7 +106,7 @@ The benefits are such that this would soon displace the current hacks, making co
 
 This should be taught in the foreign function interface chapter of the rust book in place of where it currently tells people to use uninhabited enums (ack!).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Very slight addition of complexity to the language.
@@ -114,7 +114,7 @@ Very slight addition of complexity to the language.
 The syntax has the potential to be confused with introducing a type alias, rather than a new nominal type.
 The use of `extern` here is also a bit of a misnomer as the name of the type does not refer to anything external to Rust.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Not do this.
@@ -126,7 +126,7 @@ This has the advantage of introducing no new syntax, and issues like FFI-compati
 Another alternative is to drop the `extern` and allow a declaration to be written `type A;`.
 This removes the (arguably disingenuous) use of the `extern` keyword although it makes the syntax look even more like a type alias.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Should we allow generic lifetime and type parameters on extern types?

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3123](https://github.com/rust-lang/rfcs/pull/3123)
 - Rust Issue: [rust-lang/rust#88791](https://github.com/rust-lang/rust/issues/88791)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes an extension to Rustdoc that automatically scrapes code examples from the project's `examples/` directory. 
 
 Check out a live demo here: https://willcrichton.net/example-analyzer/warp/trait.Filter.html#method.and
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Code examples are an important tool for programmers to understand how a library works. Examples are **concrete** and **contextual**: they reference actual values rather than abstract parameters, and they show how to use a function in the context of the code around it. 
@@ -41,7 +41,7 @@ let div_with_header = math
 
 The goal of this RFC is to bridge the gap between automatically generated documentation and code examples by helping users find relevant examples within Rustdoc.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `scrape-examples` feature of Rustdoc finds examples of code where a particular function is called. For example, if we are documenting [`Filter::and`](https://willcrichton.net/example-analyzer/warp/trait.Filter.html#method.and), and a file [`examples/returning.rs`](https://github.com/seanmonstar/warp/tree/bf8bfc4134035dbff882f9b26cb9d1aa57f2c338/examples/returning.rs) contains a call to `and`, then the corresponding Rustdoc documentation looks like this:
@@ -63,7 +63,7 @@ cargo doc --scrape-examples
 ```
 
 
-# Reference-level explanation
+## Reference-level explanation
 
 I have implemented a prototype of the `scrape-examples` feature as modifications to rustdoc and cargo. You can check out the draft PRs: 
 * rustdoc: https://github.com/rust-lang/rust/pull/85833
@@ -87,14 +87,14 @@ The feature uses the following high-level flow, with some added technical detail
 
 The primary use case for this will be on docs.rs. My expectation is that docs.rs would use the `--scrape-examples` flag, and all docs hosted there would have the scraped examples.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 1. I think the biggest drawback of this feature is that it adds further complexity to the Rustdoc interface. Rustdoc already includes a lot of information, and a concern is that this feature would overload users, especially Rust novices.
 2. This feature requires pre-loading a significant amount of information into the HTML pages. If we want to keep the "view whole file" feature, then the entire source code of every referenced example would be embedded into every page. This will increase the size of the generated files and hence increase page load times.
 3. This feature requires adding more functionality to both Cargo and Rustdoc, increasing the complexity of both tools.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 * At the highest-level, this tool could be built separately from Rustdoc as an independent database mapping functions to examples. I believe it's preferable to have the function -> example connections integrated into Rustdoc so people need as few tools as possible to understand Rust libraries. Moreover, Rustdoc-generated pages are the main results that appear in Google when searching for help with Rust libraries, so it's the easiest for programmers to find.
@@ -102,12 +102,12 @@ The primary use case for this will be on docs.rs. My expectation is that docs.rs
 
 See "Unresolved questions" for more discussion of the design space.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 I have never seen a documentation generator with this exact feature before. There has been some HCI research like [Jadeite](https://dl.acm.org/doi/pdf/10.1145/1520340.1520678) and [Apatite](https://dl.acm.org/doi/pdf/10.1145/1753326.1753525) that use code examples to augment generated documentation, e.g. by sorting methods in order of usage. Other research prototypes have clustered code examples to show broad usage patterns, e.g. [Examplore](https://dl.acm.org/doi/pdf/10.1145/3173574.3174154).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 The main unresolved questions are about the UI: what is the best UI to show the examples inline? My prototype represents my best effort at a draft, but I'm open to suggestions. For example:
@@ -117,7 +117,7 @@ The main unresolved questions are about the UI: what is the best UI to show the 
 3. How should the examples be ordered? Is there a way to determine the "best" examples to show first?
 
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 To my mind, the main future extensions of this feature are:

@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#1011](https://github.com/rust-lang/rfcs/pull/1011)
 - Rust Issue: (leave this empty)
 
-# Summary
+## Summary
 
 Add a function to the `std::process` module to exit the process immediately with
 a specified exit code.
 
-# Motivation
+## Motivation
 
 Currently there is no stable method to exit a program in Rust with a nonzero
 exit code without panicking. The current unstable method for doing so is by
@@ -24,7 +24,7 @@ The purpose of this RFC is to provide at least one method on the path to
 stabilization which will provide a method to exit a process with an arbitrary
 exit code.
 
-# Detailed design
+## Detailed design
 
 The following function will be added to the `std::process` module:
 
@@ -55,14 +55,14 @@ to safely create memory leaks in Rust, however, (with `Rc` + `RefCell`), so
 this is not considered a strong enough threshold to mark the function as
 `unsafe`.
 
-# Drawbacks
+## Drawbacks
 
 * This API does not solve all use cases of exiting with a nonzero exit status.
   It is sometimes more convenient to simply return a code from the `main`
   function instead of having to call a separate function in the standard
   library.
 
-# Alternatives
+## Alternatives
 
 * One alternative would be to stabilize `set_exit_status` as-is today. The
   semantics of the function would be clearly documented to prevent against
@@ -83,7 +83,7 @@ this is not considered a strong enough threshold to mark the function as
   likely that the `exit` functionality proposed will be desired regardless of
   whether the main function can return a code or not.
 
-# Unresolved questions
+## Unresolved questions
 
 * To what degree should the documentation imply that `rt::at_exit` handlers are
   run? Implementation-wise their execution is guaranteed, but we may not wish

@@ -3,20 +3,20 @@
 - RFC PR: [rust-lang/rfcs#2195](https://github.com/rust-lang/rfcs/pull/2195)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Formally define the enum `#[repr(u32, i8, etc..)]` and `#[repr(C)]` attributes to force a non-C-like enum to have a defined layouts. This serves two purposes: allowing low-level Rust code to independently initialize the tag and payload, and allowing C(++) to safely manipulate these types.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Enums that contain data are very good and useful. Unfortunately, their layout is currently purposefully unspecified, which makes these kinds of enums unusable for FFI and for low-level code. To demonstrate this, this RFC will look at two examples from firefox development where this has been a problem.
 
 
 
-## C(++) FFI
+### C(++) FFI
 
 
 Consider a native Rust API for drawing a line, that uses a C-like LineStyle enum:
@@ -142,7 +142,7 @@ This produces a worse API for everyone, while also throwing away the type-safety
 
 
 
-## In-Place Construction
+### In-Place Construction
 
 Popular deserialization APIs in Rust generally have a signature like `deserialize<T>() -> Result<T, Error>`. This works well for small values, but optimizes very poorly for large values, as Rust ends up copying the `T` many times. Further, in many cases we just want to overwrite an old value that we no longer care about.
 
@@ -185,7 +185,7 @@ To accomplish this task, we need dedicated support from the language.
 
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 An enum can currently be adorned with `#[repr(Int)]` where `Int` is one of Rust's integer types (u8, isize, etc). For C-like enums -- enums which have no variants with associated data -- this specifies that the enum should have the ABI of that integer type (size, alignment, and calling convention). `#[repr(C)]` currently just tells Rust to try to pick whatever integer type that a C compiler for the target platform would use for an enum.
@@ -417,7 +417,7 @@ There are a few enum repr combinations that are left unspecified under this prop
 * repr(simd) on an enum
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Since the whole point of this proposal is to enable low-level control, the guide-level explanation should cover all the relevant corner-cases and details in sufficient detail. All that remains is to discuss implementation details.
@@ -429,7 +429,7 @@ However `repr(C, Int)` currently doesn't do anything different from `repr(Int)`.
 A PR [has been submitted](https://github.com/rust-lang/rust/pull/46123) to implement this, along with several tests.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Half of this proposal is already implemented, and the other half has an implementation submitted (~20 line patch). The existence of this proposal can also be completely ignored by anyone who doesn't care about it, as they can keep using the default Rust repr. This is simply making things that exist sort-of-by-accident do something useful, which is basically a pure win considering the implementation/maintenance burden is minimal.
@@ -439,20 +439,20 @@ One minor issue with this proposal is that there's no way to request the `repr(I
 The remaining drawbacks amount to "what if this is the *wrong* interpretation", which shall be addressed in the alternatives.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 There are a few alternative interpretations of `repr(Int)` on a non-C-like enum.
 
 
 
-## It should do nothing 
+### It should do nothing 
 
 In which case it should probably become an error/warning. This isn't particularly desirable, as was discussed [when we decided to maintain this behaviour](https://github.com/rust-lang/rust/issues/40029).
 
 
 
-## The tag should come after the union, and/or order should be manually specified
+### The tag should come after the union, and/or order should be manually specified
 
 With the `repr(C)` layout, there isn't a particularly compelling reason to move the tag around because of how padding and alignment are handled: you can't actually save space by putting the tag after, as long as your tag is a reasonable size.
 
@@ -462,14 +462,14 @@ With the `repr(Int)` layout, this could potentially save space (for instance, wi
 
 
 
-## Compound variants shouldn't automatically be marked as `repr(C)`
+### Compound variants shouldn't automatically be marked as `repr(C)`
 
 With the `repr(Int)` layout this isn't really possible, because the tag needs a deterministic position, and we can't "partially" `repr(C)` a struct.
 
 With either layout, one can make the payload be a single repr(Rust) struct, and that will have its layout aggressively optimized, because `repr(C)` isn't infectious. So this is just a matter of "what is a good default". The FFI case clearly wants fully defined layouts, while the pure-Rust case seems like a toss up. It seems like `repr(C)` is therefore the better default.
 
 
-## Opaque Tags
+### Opaque Tags
 
 This code isn't valid under the main proposal:
 
@@ -488,14 +488,14 @@ It would be *nice* for this to work, but if you really need it, you can just def
 
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Currently None. 🎉
 
 
 
-# Future Extensions
+## Future Extensions
 
 Here's some quick sketches of future extensions which could be done to this design.
 

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2678](https://github.com/rust-lang/rfcs/pull/2678)
 - Cargo Issue: [rust-lang/cargo#6988](https://github.com/rust-lang/cargo/issues/6988)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The proposed change to Cargo is to add the ability to specify user-defined
@@ -12,7 +12,7 @@ profiles in addition to the five predefined profiles, `dev`, `release`, `test`,
 final outputs reside, and increase the flexibility to specify the user-defined
 profile attributes.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Past proposal to increase flexibility of Cargo’s build flags for crates within
@@ -34,7 +34,7 @@ without penalty.
 
 Here's an example for a real-world user: [tikv/issue/4189](https://github.com/tikv/tikv/issues/4189)
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 With this proposal implemented, a user can define custom profiles under new
@@ -72,12 +72,12 @@ This also affects other Cargo commands:
 * `cargo bench` also receives `--profile`, but unless it is specified, uses
   the predefined `bench` profile which is described below.
 
-## Effect over the use of profile in commands
+### Effect over the use of profile in commands
 
 The mixtures of profiles used for `--all-targets` is still in effect, as
 long as `--profile` is not specified.
 
-## Combined specification with `--release`
+### Combined specification with `--release`
 
 For now, `--release` is supported for backward-compatibility.
 
@@ -85,7 +85,7 @@ Using `--profile` and `--release` together in the same invocation emits an
 error unless `--profile=release`.  Using `--release` on its own is equivalent
 to specifying `--profile=release`
 
-## New `dir-name` attribute
+### New `dir-name` attribute
 
 Some of the paths generated under `target/` have resulted in a de-facto "build
 protocol", where `cargo` is invoked as a part of a larger project build. So, to
@@ -104,12 +104,12 @@ when left unspecified, defaults to the name of the profile. For example:
 * Valid directory names are: must not be empty, use only alphanumeric
   characters or `-` or `_`.
 
-## Cross compilation
+### Cross compilation
 
 Under cross compilation with a profile, paths corresponding to
 `target/<platform-triple>/<dir-name>` will be created.
 
-## Treatment to the pre-defined profiles
+### Treatment to the pre-defined profiles
 
 * The `release` profile remains as it is, with settings overridable as
   before.
@@ -146,7 +146,7 @@ debug = false
 
 (NOTE: the `build` profile is experimental and may be removed later)
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The 'final outputs' phrasing was used in this RFC, knowing that there are
@@ -155,7 +155,7 @@ for most Cargo users. The paths that constitute the final build outputs however,
 constitute as sort of a protocol for invokers of Cargo. This RFC extends on
 that protocol, allowing for outputs in more directories.
 
-## Cargo code changes
+### Cargo code changes
 
 In implementation details, there are various hand-coded references to pre-defined
 profiles, that we would like to remove.
@@ -176,26 +176,26 @@ Release, Custom(String))`.
   based on `inherits` relationship of the specified profile, in case it is not
   `release` or `dev` directly.
 
-## Profile name and directory name exclusion
+### Profile name and directory name exclusion
 
 To prevent collisions under the target directory, predefined set of string
 excludes both the custom profile names and the dir-name. For example,
 `package`, `build`, `debug`, `doc`, and strings that start with `.`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The main drawback is that future ideas regarding Cargo workflows, if
 implemented, may supersede the benefits gained from implementing this RFC,
 making the added complexity unjustified in retrospect.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Considering the example provided above, there could be other ways to accomplish
 the same result.
 
-## Direct `cargo build` flags alternative
+### Direct `cargo build` flags alternative
 
 If comparing between final build outputs is the main concern to address, there
 could be an alternative, in the form of providing those overrides from the
@@ -214,7 +214,7 @@ to utilize a future implementation of a binary cache under the target directory
 (see 'future possibilities').
 
 
-## Workspace `Cargo.toml` auto-generation
+### Workspace `Cargo.toml` auto-generation
 
 By generating the workspace's `Cargo.toml` from a script, per build, we can
 control the parameters of the `release` profile without editing
@@ -222,13 +222,13 @@ source-controlled files. Beside build-time complexity, this has another
 drawback, for example — it would trip the timestamp comparison with
 `Cargo.lock` and cause unnecessary updates to it.
 
-## Cargo workflows
+### Cargo workflows
 
 It is unclear when the ideas concerning [Cargo
 workflows](http://aturon.github.io/2018/04/05/workflows/) will manifest in
 changes that would allow similar functionality.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 * Bikeshedding the `inherits` keyword name.
@@ -255,7 +255,7 @@ For example:
   feature is implemented, or a per-workspace `target/.cache`
   ([related discussion](https://github.com/rust-lang/cargo/pull/6577#issuecomment-459415283)).
 
-## Existing `--profile` parameters in Cargo
+### Existing `--profile` parameters in Cargo
 
 The `check`, `fix` and `rustc` commands receive a profile name via `--profile`.
 However these only control how `rustc` is invoked and is not related directly
@@ -266,7 +266,7 @@ worthwhile to remove this parameter to avoid further confusion, and provide a
 similar functionality in a different way.
 
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This RFC mentions a global binary cache. A global binary cache can reside under
@@ -274,7 +274,7 @@ This RFC mentions a global binary cache. A global binary cache can reside under
 multiple workspaces. This may further assist in reducing compilation times when
 switching between compilation flags.
 
-## Treatment to Cargo's 'Finished' print
+### Treatment to Cargo's 'Finished' print
 
 Currently, the `Finished` line being emitted when Cargo is done building, is
 confusing, and sometimes does not bear a relation to the specified profile. We

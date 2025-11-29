@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2136](https://github.com/rust-lang/rfcs/pull/2136)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 This **experimental RFC** lays out a high-level plan for improving Cargo's
@@ -16,7 +16,7 @@ letting an external build system run almost the entire show.
 
 [unstable features]: https://github.com/rust-lang/cargo/pull/4433/
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 One of the first hurdles for using Rust in production is integrating it into
@@ -70,7 +70,7 @@ extensibility points in Cargo, but rather to outline a general plan for how to
 get there over time. Individual components that add significant features to
 Cargo will need follow-up RFCs before stabilization.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The plan proposed in this RFC is to address the two use-cases from the
@@ -93,7 +93,7 @@ offer a complete spectrum of options (in terms of what Cargo controls versus an
 external system). But they start at critically different points, and working on
 those in parallel is the key to delivering value quickly and incrementally.
 
-## A high-level model of what Cargo does
+### A high-level model of what Cargo does
 
 Before delving into the details of the plan, it's helpful to lay out a mental
 model of the work that Cargo does today, broken into several stages:
@@ -143,7 +143,7 @@ The first two steps -- dependency resolution and build configuration -- need to
 operate on an entire dependency graph at once. Build lowering, by contrast, can
 be performed for any crate in isolation.
 
-### Customizing Cargo
+#### Customizing Cargo
 
 **A key point is that, in principle, each of these steps is separable from the
 others**. That is, we should be able to rearchitect Cargo so that each of these
@@ -157,7 +157,7 @@ This RFC proposes to provide *some* means of customizing Cargo's activities at
 various layers and stages. The details here are *very much* up for grabs, and
 are part of the experimentation we need to do.
 
-#### Likely design constraints
+##### Likely design constraints
 
 Some likely constraints for a Cargo customization/plugin system are:
 
@@ -182,7 +182,7 @@ Some likely constraints for a Cargo customization/plugin system are:
 We will iterate on the constraints to form core design principles as we
 experiment.
 
-#### A concrete example
+##### A concrete example
 
 Since the above is quite hand-wavy, it's helpful to see a very simple, concrete
 example of what a customization might look like. You could imagine something
@@ -216,7 +216,7 @@ instead:
 - look for the associated plugin in `.cargo/meta.toml`, and ask it to generate the manifest
 - return that instead
 
-## Specifics for the homogeneous build system case
+### Specifics for the homogeneous build system case
 
 For homogeneous build systems, there are two kinds of code that must be dealt
 with: code originally written using vanilla Cargo and a crate registry, and code
@@ -224,7 +224,7 @@ written "natively" in the context of the external build system. Any integration
 has to handle the first case to have access to crates.io or a vendored mirror
 thereof.
 
-### Using crates vendored from or managed by a crate registry
+#### Using crates vendored from or managed by a crate registry
 
 Whether using a registry server or a vendored copy, if you're building Rust code
 that is written using vanilla Cargo, you will at some level need to use Cargo's
@@ -248,7 +248,7 @@ is being managed by the external build system? That's a narrow version of a more
 general question around *native dependencies*, which will be addressed
 separately in a later section.
 
-#### Workflow and interop story
+##### Workflow and interop story
 
 On the external build system side, a rule or plugin will need to be written that
 knows how to invoke Cargo to produce a build plan corresponding to a whitelisted
@@ -257,7 +257,7 @@ appropriate rules for the build system. Thus, when doing normal builds, the
 external build system drives the entire process, but invokes Cargo for guidance
 during the planning stage.
 
-### Using crates managed by the build system
+#### Using crates managed by the build system
 
 Many organization want to employ their own strategy for maintaining and
 versioning code and for resolving dependencies, *in addition* to build
@@ -278,7 +278,7 @@ build system's rule format. Thus, Cargo acts primarily as a *workflow and tool
 orchestrator*, since it is not involved in either planning or executing the
 build. Let's dig into it.
 
-#### Workflow and interop story
+##### Workflow and interop story
 
 Even though the external build system is entirely handling both dependency
 resolution and build execution for the crates under its management, it may still
@@ -300,7 +300,7 @@ build system, via the plugin. Thus the plugin for the external build system must
 be able to translate its dependencies back into something equivalent to a
 lockfile, at least.
 
-### The complete picture
+#### The complete picture
 
 In general, any integration with a homogeneous build system needs to be able to
 handle (vendored) crate registries, because access to crates.io is a hard constraint.
@@ -311,7 +311,7 @@ effectively *two* modes of building crates at play overall. All that's needed to
 do this is a distinction within the external build system between these two
 kinds of dependencies, which then drives the plugin interactions accordingly.
 
-## Cross-cutting concern: native dependencies
+### Cross-cutting concern: native dependencies
 
 One important point left out of the above explanation is the story for
 dependencies on non-Rust code. These dependencies should be built and managed by
@@ -322,7 +322,7 @@ instead use the dependencies provided by the build system.
 
 Here, there's a short-term story and a long-term story.
 
-### Short term: white lists with build script overrides
+#### Short term: white lists with build script overrides
 
 Cargo today offers the ability to [override the build script] for any crate
 using the `links` key (which is generally how you signal *what* native
@@ -344,7 +344,7 @@ Even so, whitelisting itself is a laborious process, and in the long run there
 are advantages to offering a higher-level way of specifying native dependencies
 in the first place.
 
-### Long term: declarative native dependencies
+#### Long term: declarative native dependencies
 
 Reliably building native dependencies in a cross-platform way
 is... challenging. Today, Rust offers some help with this through crates like
@@ -374,7 +374,7 @@ Needless to say, this approach will need significant experimentation. But if
 successful, it would have benefits not just for build system integration, but
 for using external dependencies *anywhere*.
 
-### The story for externally-managed native dependencies
+#### The story for externally-managed native dependencies
 
 Finally, in the case where the external build system is the one specifying and
 providing a native dependency, all we need is for that to result in the
@@ -383,7 +383,7 @@ system is producing those lowered calls itself, it can completely manage this
 concern. Otherwise, we will need for the plugin interface to provide a way to
 plumb this information through to Cargo.
 
-## Specifics for the mixed build system case
+### Specifics for the mixed build system case
 
 Switching gears, let's look at mixed build systems. Here, we may address the
 need for customization with a mixture of plugins and new core Cargo
@@ -415,7 +415,7 @@ here, the precise problem -- let alone the solution -- it not yet clear. The
 point, though, is that these are the most important problems we want to get our
 head around in the foreseeable future.
 
-## Additional areas where revisions are expected
+### Additional areas where revisions are expected
 
 Beyond all of the above, it seems very likely that some existing features of
 Cargo will need to be revisited to fit with the build system integration
@@ -451,13 +451,13 @@ making Cargo much more modular, which is bound to reveal concerns that should be
 separated. As with everything else in this RFC, user-facing changes will require
 a full RFC prior to stabilization.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This is an experimental RFC. Reference-level details will be presented in
 follow-up RFCs after experimentation has concluded.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It's somewhat difficult to state drawbacks for such a high-level plan; they're
@@ -470,7 +470,7 @@ Cargo in the pure crates.io ecosystem should not become more complex -- if
 anything, they should become more streamlined, through improvements to features
 like profiles, build scripts, and the handling of native dependencies.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 Numerous organizations we've talked to who are considering, or already are,
@@ -514,7 +514,7 @@ with a separate interchange format, which both Cargo and other build tools can
 create. As part of the "experimental" part of this RFC, the Cargo team will work
 with the Dev Tools team to fully enumerate their needs.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Since this is an experimental RFC, there are more questions here than

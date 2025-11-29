@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#2011](https://github.com/rust-lang/rfcs/pull/2011)
 - Rust Issue: [rust-lang/rust#44838](https://github.com/rust-lang/rust/issues/44838)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Make the `assert!` macro recognize more expressions (utilizing the power of procedural macros), and extend the readability of debug dumps.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 While clippy warns about `assert!` usage that should be replaced by `assert_eq!`, it's quite annoying to migrate around.
 
 Unit test frameworks like [Catch](https://github.com/philsquared/Catch) for C++ does cool message printing already by using macros.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 We're going to parse AST and break up them by operators (excluding `.` (dot, member access operator)). Function calls and bracket surrounded blocks are considered as one block and don't get expanded. The exact expanding rules should be determined when implemented, but an example is provided for reference.
@@ -28,7 +28,7 @@ To make sure that there's no side effects involved (e.g. running `next()` twice 
 
 The new assert messages are likely to generate longer code, and it may be simplified for release builds (if benchmarks confirm the slowdown).
 
-## Examples
+### Examples
 
 These examples are purely for reference. The implementor is free to change the rules.
 
@@ -108,32 +108,32 @@ With expansion: (a) == (b)'
 ```
 
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 - Port the documentation (and optionally compiler source) to use `assert!`.
 - Mark the old macros (`assert_{eq,ne}!`) as deprecated.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - This will generate a wave of deprecation warnings, which will be some cost for users to migrate. However, this doesn't mean that this is backward-incompatible, as long as the deprecated macros aren't removed.
 - This has a potential performance degradation on complex expressions, due to creating more temporaries on stack (or register). However, if this had clear impacts confirmed through benchmarks, we should use some kind of alternative implementation for release builds.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 - Defining via `macro_rules!` was considered, but the recursive macro can often reach the recursion limit.
 - Negating the operator (`!=` to `==`) was considered, but this isn't suitable for all cases as not all types are total ordering.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 These questions should be settled during the implementation process.
 
-## Error messages
+### Error messages
 - Should we dump the AST as a formatted one?
 - How are we going to handle multi-line expressions?
 
-## Operators
+### Operators
 - Should we handle non-comparison operators?

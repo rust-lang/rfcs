@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3028](https://github.com/rust-lang/rfcs/pull/3028)
 - Tracking Issue: [rust-lang/cargo#9096](https://github.com/rust-lang/cargo/issues/9096)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow Cargo packages to depend on `bin`, `cdylib`, and `staticlib` crates, and use the artifacts built by those crates.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There are many different possible use cases.
@@ -19,7 +19,7 @@ There are many different possible use cases.
 - Building and embedding binaries for another target, such as firmware, WebAssembly, or SPIR-V shaders. This feature would allow a versioned dependency on an appropriate crate providing the binary, and then embedding the binary (or a compressed or otherwise transformed version of it) into the final crate. For instance, a virtual machine could build its system firmware, or a WebAssembly runtime could build helper libraries.
 - Building and embedding a shared library for use at runtime. For instance, a tool for profiling or debugging other programs could depend on a shared library that it loads into those programs using [`LD_PRELOAD`](https://man7.org/linux/man-pages/man8/ld.so.8.html#ENVIRONMENT). Or, an operating system kernel could build a userspace API library that it loads into userspace applications running on it, in the style of the Linux kernel's [VDSO](https://man7.org/linux/man-pages/man7/vdso.7.html).
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Cargo allows you to depend on binary or C ABI artifacts of another package; this is known as a "binary dependency" or "artifact dependency". For example, you can depend on the `cmake` binary in your `build.rs` like this:
@@ -71,7 +71,7 @@ Note that cargo only supplies these dependencies when building your crate. If yo
 
 By default, a dependency with `artifact` specified will serve only as an artifact dependency, and will not serve as a normal Rust dependency, even if the dependency normally supplies a Rust library. If you need to depend on artifacts from a crate, and also express a normal Rust dependency on the same crate, you can add `lib = true` to the dependency; for instance: `cratename = { version = "1.2.3", lib = true, artifact = "bin" }`. (This applies to Rust `lib`, `rlib`, or `proc-macro` crates, all of which use the same `lib = true` option.)
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 There are three valid values for `artifact` available:
@@ -123,14 +123,14 @@ The placement of artifact directories is an implementation detail of Cargo, and 
 
 If Cargo needs to build a crate for multiple targets, and that crate has an artifact dependency with `target="target"`, Cargo will build the artifact dependency for each target and supply it to the corresponding build of the depending crate.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Some of the motivating use cases have alternative solutions, such as extracting a library from a tool written in Rust, and making the tool a thin wrapper around the library. Making this change may potentially reduce the motivation to extract such libraries. However, many of the other use cases do not currently have any solutions available (other than using an alternative build system, per the alternatives section), and extracted libraries have additional value even after this feature becomes available, so we don't see this as a reason to avoid introducing this feature.
 
 Adding this feature will make Cargo usable for many more use cases, which may motivate people to use Cargo in more places and stretch it even further; this may, in turn, generate more support and more feature requests.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC teaches Cargo to understand artifact dependencies. As an alternative, people writing crates with artifact dependencies could invoke `cargo` from `build.rs`, or could wrap the entire build in a separate build system that invokes Cargo multiple times. This would have many drawbacks, including:
@@ -156,19 +156,19 @@ Instead of `artifact = ["bin:binary-name", "bin:another-binary"]` to specify dep
 
 As another alternative to specify dependencies on specific binaries, we could use table-based structures, such as: `artifact = [{bin = ["binary-name", "another-binary"]}, "cdylib"]`. This would avoid parsing values like `bin:binary-name`, but it seems excessively complex and excessively nested. Other variations on this theme seem similarly complex. The proposed syntax feels like the right balance.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - Cargo already provides something similar to this for C library dependencies of -sys crates. A `-sys` crate can supply arbitrary artifact paths, for libraries, headers, and similar. Crates depending on the `-sys` crate can obtain those paths via environment variables supplied via Cargo, such as to compile other libraries using the same C library. This proposal provides a similar feature for other types of crates and libraries.
 - The Swift package manager has a concept of ["products"](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html#product), which can be either libraries or executables. Expressing a dependency on a package allows you to make use of either the library or executable products of that package.
 - `make`, `cmake`, and many other build systems allow setting arbitrary goals as the dependencies of others. This allows building a binary and then running that binary in a rule that depends on that binary.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 How easily can Cargo handle a dependency with a different target specified? How will that interact with dependency resolution? Cargo already has to handle dependencies for both host and target (for cross-compilation), so those cases should already work.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Currently, there's no mechanism to obtain an environment variable's value at compile time if that value is not valid UTF-8. In the future, we may want macros like `env_os!` or `env_path!`, which return a `&'static OsStr` or `&'static Path` respectively, rather than a `&'static str`. This is already an issue for existing environment variables supplied to the build that contain file paths.

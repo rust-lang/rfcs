@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1268](https://github.com/rust-lang/rfcs/pull/1268)
 - Rust Issue: [rust-lang/rust#29864](https://github.com/rust-lang/rust/issues/29864)
 
-# Summary
+## Summary
 
 Preventing overlapping implementations of a trait makes complete sense in the
 context of determining method dispatch. There must not be ambiguity in what code
@@ -11,7 +11,7 @@ will actually be run for a given type. However, for marker traits, there are no
 associated methods for which to indicate ambiguity. There is no harm in a type
 being marked as `Sync` for multiple reasons.
 
-# Motivation
+## Motivation
 
 This is purely to improve the ergonomics of adding/implementing marker traits.
 While specialization will certainly make all cases not covered today possible,
@@ -26,7 +26,7 @@ Some examples include:
 [91]: https://github.com/rust-lang/rfcs/pull/91
 [1236]: https://github.com/rust-lang/rfcs/pull/1236
 
-# Detailed design
+## Detailed design
 
 For the purpose of this RFC, the definition of a marker trait is a trait with no
 associated items. The design here is quite straightforward. The following code
@@ -104,20 +104,20 @@ around this today. Even if you write an impl that is more specific about the
 tables, that would be considered a non-crate local blanket implementation. The
 only way to write it today is to specify each column individually.
 
-# Drawbacks
+## Drawbacks
 
 With this change, adding any methods to an existing marker trait, even
 defaulted, would be a breaking change. Once specialization lands, this could
 probably be considered an acceptable breakage.
 
-# Alternatives
+## Alternatives
 
 If the lattice rule for specialization is eventually accepted, there does not
 appear to be a case that is impossible to write, albeit with some additional
 boilerplate, as you'll have to manually specify the empty impl for any overlap
 that might occur.
 
-# Unresolved questions
+## Unresolved questions
 
 **How can we implement this design?** Simply lifting the coherence
 restrictions is easy enough, but we will encounter some challenges

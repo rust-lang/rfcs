@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3722](https://github.com/rust-lang/rfcs/pull/3722)
 - Tracking Issue: [rust-lang/rust#134986](https://github.com/rust-lang/rust/issues/134986)
 
-# Summary
+## Summary
 
 Disallow `extern` without an explicit ABI in a new edition. Write `extern "C"` (or another ABI) instead of just `extern`.
 
@@ -15,7 +15,7 @@ Disallow `extern` without an explicit ABI in a new edition. Write `extern "C"` (
 + extern "C" fn foo() { … }
 ```
 
-# Motivation
+## Motivation
 
 Originally, `"C"` was a very reasable default for `extern`.
 However, with work ongoing to add other ABIs to Rust, it is no longer obvious that `"C"` should forever stay the default.
@@ -52,34 +52,34 @@ warning: `extern` fn uses type `String`, which is not supported by the "C" ABI
 
 It would also make it clearer that swapping `"C"` for another ABI might be an option.
 
-# Guilde-level explanation
+## Guilde-level explanation
 
 Up to the previous edition, `extern` without an explicit ABI was equivalent to `extern "C"`.
 In the new edition, writing `extern` without an ABI is an error.
 Instead, you must write `extern "C"` explicitly.
 
-# Automatic migration
+## Automatic migration
 
 Automatic migration (for `cargo fix --edition`) is trivial: Insert `"C"` after `extern` if there is no ABI.
 
-# Drawbacks
+## Drawbacks
 
 - This is a breaking change and needs to be done in a new edition.
 
-# Prior art
+## Prior art
 
 This was proposed before Rust 1.0 in 2015 in [RFC 697](https://github.com/rust-lang/rfcs/pull/697).
 It was not accepted at the time, because "C" seemed like the only resonable default.
 It was later closed because it'd be a backwards incompatible change, and editions were not yet invented.
 
-# Unresolved questions
+## Unresolved questions
 
 - ~~In which edition do we make this change?~~
   - It's too late for the 2024 edition: https://github.com/rust-lang/rfcs/pull/3722#issuecomment-2447333966
 - ~~Do we warn about `extern` without an explicit ABI in previous editions?~~
    - Yes, with separate FCP: https://github.com/rust-lang/rfcs/pull/3722#issuecomment-2447719047
 
-# Future possibilities
+## Future possibilities
 
 In the future, we might want to add a new default ABI.
 For example, if `extern "stable-rust-abi"` becomes a thing and e.g. dynamically linking Rust from Rust becomes very popular, it might make sense to make that the default when writing `extern fn` without an ABI.

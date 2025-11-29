@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#503](https://github.com/rust-lang/rfcs/pull/503)
 - Rust Issue: [rust-lang/rust#20068](https://github.com/rust-lang/rust/issues/20068)
 
-# Summary
+## Summary
 
 Stabilize the `std::prelude` module by removing some of the less commonly used
 functionality of it.
 
-# Motivation
+## Motivation
 
 The prelude of the standard library is included into all Rust programs by
 default, and is consequently quite an important module to consider when
@@ -27,13 +27,13 @@ than adding it. New additions can continue to happen before 1.0 and will be
 evaluated on a case-by-case basis. The rationale for removal or inclusion will
 be provided below.
 
-# Detailed Design
+## Detailed Design
 
 The current `std::prelude` module was copied into the document of this RFC, and
 each reexport should be listed below and categorized. The rationale for
 inclusion of each type is included inline.
 
-## Reexports to retain
+### Reexports to retain
 
 This section provides the exact prelude that this RFC proposes:
 
@@ -148,7 +148,7 @@ pub use string::ToString;
 pub use vec::Vec;
 ```
 
-## Reexports to remove
+### Reexports to remove
 
 All of the following reexports are currently present in the prelude and are
 proposed for removal by this RFC.
@@ -268,7 +268,7 @@ pub use comm::{SyncSender, Sender, Receiver};
 pub use task::spawn;
 ```
 
-## Move to an inner `v1` module
+### Move to an inner `v1` module
 
 This RFC also proposes moving all reexports to `std::prelude::v1` module instead
 of just inside `std::prelude`. The compiler will then start injecting `use
@@ -286,7 +286,7 @@ possible move happening in the future.
 The versioning scheme for the prelude over time (if it happens) is also left as
 an open question by this RFC.
 
-# Drawbacks
+## Drawbacks
 
 A fairly large amount of functionality was removed from the prelude in order to
 hone in on the driving goals of the prelude, but this unfortunately means that
@@ -306,13 +306,13 @@ traits) is consistent with how many implementations will work. Similarly removal
 of synchronization primitives allows for consistence in usage of all concurrent
 primitives that Rust provides.
 
-# Alternatives
+## Alternatives
 
 A number of alternatives were discussed above, and this section can otherwise
 largely be filled with various permutations of moving reexports between the
 "keep" and "remove" sections above.
 
-# Unresolved Questions
+## Unresolved Questions
 
 This RFC is fairly aggressive about removing functionality from the prelude, but
 is unclear how necessary this is. If Rust grows the ability to

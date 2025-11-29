@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#486](https://github.com/rust-lang/rfcs/pull/486)
 - Rust Issue: [rust-lang/rust#19908](https://github.com/rust-lang/rust/issues/19908)
 
-# Summary
+## Summary
 
 Move the `std::ascii::Ascii` type and related traits to a new Cargo package on crates.io,
 and instead expose its functionality for `u8`, `[u8]`, `char`, and `str` types.
 
-# Motivation
+## Motivation
 
 The `std::ascii::Ascii` type is a `u8` wrapper that enforces
 (unless `unsafe` code is used)
@@ -27,7 +27,7 @@ Every single use of the `Ascii` type in the Rust distribution
 is only to use the `to_lowercase` or `to_uppercase` method,
 then immediately convert back to `u8` or `char`.
 
-# Detailed design
+## Detailed design
 
 The `Ascii` type
 as well as the `AsciiCast`, `OwnedAsciiCast`, `AsciiStr`, and `IntoBytes` traits
@@ -92,19 +92,19 @@ I suggest moving it into `std::u8`.
 I (@SimonSapin) can help with the implementation work.
 
 
-# Drawbacks
+## Drawbacks
 
 Code using `Ascii` (not only for e.g. `to_lowercase`)
 would need to install a Cargo package to get it.
 This is strictly more work than having it in `std`,
 but should still be easy.
 
-# Alternatives
+## Alternatives
 
 * The `Ascii` type could stay in `std::ascii`
 * Some variations per *Unresolved questions* below.
 
-# Unresolved questions
+## Unresolved questions
 
 * What to do with `std::ascii::escape_default`?
 * Rename the `AsciiExt` and `OwnedAsciiExt` traits?

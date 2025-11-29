@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1758](https://github.com/rust-lang/rfcs/pull/1758)
 - Rust Issue:https://github.com/rust-lang/rust/issues/43036
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extend the existing `#[repr]` attribute on newtypes with a `transparent` option
@@ -12,7 +12,7 @@ This matters in FFI context where `struct Foo(T)` might not behave the same
 as `T`.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 On some ABIs, structures with one field aren't handled the same way as values of
@@ -71,7 +71,7 @@ struct BogusAlign(f64);
 struct BogusPacked(f64);
 ```
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The `#[repr]` attribute on newtypes will be extended to include a form such as:
@@ -168,12 +168,12 @@ type TransparentTransparentC = Transparent<Transparent<C>>; // Transitively C.
 Coercions and casting between the transparent wrapper and its non-zero-sized
 types are forbidden.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The only alternative to such a construct for FFI purposes is to use the exact
@@ -183,7 +183,7 @@ field using interior mutability (i.e. uses `UnsafeCell<T>`) has to be passed
 to the FFI side, so this alternative does not actually cover all the uses cases
 allowed by `#[repr(transparent)]`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * None

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2333](https://github.com/rust-lang/rfcs/pull/2333)
 - Rust Issue: **self-executing**
 
-# Summary
+## Summary
 [summary]: #summary
 
 Adds a *Prior art* section to the RFC template where RFC authors
@@ -11,10 +11,10 @@ may discuss the experience of other programming languages and their
 communities with respect to what is being proposed. This section may
 also discuss theoretical work such as papers.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Precedent has some importance
+### Precedent has some importance
 
 It is arguable whether or not precedent is important or whether proposals
 should be considered solely on their own merits. This RFC argues that
@@ -30,7 +30,7 @@ of those languages, which may also be rustaceans, are used to those features.
 This is not to say that precedent alone is sufficient motivation for accepting
 an RFC; but neither is it useless.
 
-## Experiences from other languages are useful
+### Experiences from other languages are useful
 
 This is the chief motivation of this RFC. By explicitly asking authors for
 information about the similarity of their proposal to those in other languages,
@@ -41,7 +41,7 @@ A proposal need also not be a language or library proposal. If a proposal is
 made for changes to how we work as a community, it can be especially valuable
 how other communities have tackled a similar situation.
 
-### Experiences are useful to the author themselves
+#### Experiences are useful to the author themselves
 
 During the process of writing an RFC, an author may change certain aspects
 of the proposal from what they originally had in mind. They may tweak the RFC,
@@ -52,7 +52,7 @@ information, the author can come to new or better realizations about the
 trade-offs, advantages, and drawbacks of their proposal. Thus, their RFC as
 a whole is hopefully improved as a by-product.
 
-## Papers can provide greater theoretical understanding
+### Papers can provide greater theoretical understanding
 
 This RFC argues that it valuable to us to be provided with papers or similar
 that explain proposals and/or their theoretical foundations in greater detail
@@ -61,14 +61,14 @@ want a deeper understanding of an RFC. At the same time, this alleviates the
 need to explain the minutiae of the theoretical background. The finer details
 can instead be referred to the referred-to papers.
 
-## An improved historical record of Rust for posterity
+### An improved historical record of Rust for posterity
 
 Finally, by writing down and documenting where our ideas came from,
 we can better preserve the history and evolution of Rust for posterity.
 While this is not very important in right now, it will increase somewhat
 in importance as time goes by.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This Meta-RFC modifies the RFC template by adding a *Prior art* section
@@ -83,13 +83,13 @@ languages on its own is not sufficient motivation to accept an RFC.
 Please read the [reference-level-explanation] for exact details of what an RFC
 author will see in the changed template.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The implementation of this RFC consists of inserting the following
 text to the RFC template before the section *Unresolved questions*:
 
-> # Prior art
+> ## Prior art
 >
 > Discuss prior art, both the good and the bad, in relation to this proposal.
 > A few examples of what this can include are:
@@ -115,7 +115,7 @@ text to the RFC template before the section *Unresolved questions*:
 > not on its own motivate an RFC. Please also take into consideration that rust
 > sometimes intentionally diverges from common language features.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This might encourage RFC authors into the thinking that just because a feature
@@ -140,7 +140,7 @@ If an author does not have prior art to offer up right away, other participants
 in the RFC discussion may be able to provide such information which can then
 be amended into the RFC.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 If we don't change the template as proposed in this RFC, the downsides
@@ -162,7 +162,7 @@ reduce the coherence and readability of RFCs. This RFC argues that it is better
 that prior art be discussed in one coherent section. This is also similar to
 how papers are structured in that they include a "related work" section.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 In many papers, a section entitled *Related work* is included which can
@@ -189,7 +189,7 @@ mainstream programming language features a section such as this.
 [`Go`]: https://github.com/golang/proposal/blob/master/design/TEMPLATE.md
 [`Swift`]: https://github.com/apple/swift-evolution/blob/master/0000-template.md
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are none as of yet.

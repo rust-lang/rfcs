@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3591](https://github.com/rust-lang/rfcs/pull/3591)
 - Rust Issue: [rust-lang/rust#134691](https://github.com/rust-lang/rust/issues/134691)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow importing associated functions and constants from traits and then using them like regular items. 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There has for a long time been a desire to shorten the duplication needed to access certain associated functions, such as `Default::default`. Codebases like [Bevy](https://github.com/bevyengine/bevy/blob/7c7d1e8a6442a4258896b6c605beb1bf50399396/crates/bevy_utils/src/default.rs#L27) provide wrapper functions to shorten this call, and a previous, now-rejected, [RFC](https://github.com/rust-lang/rust/pull/73001) aimed to provide this function as part of the standard library. This RFC was rejected with a note that there is a desire for a more general capability to import any trait associated functions.
@@ -17,7 +17,7 @@ Additionally, if you pull in a crate like [num_traits](https://docs.rs/num-trait
 
 Similarly, associated constants, which act much like constant functions, can be imported to give easier access to them.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Importing an associated functions from a trait is the same as importing a function from any module:
@@ -128,7 +128,7 @@ fn f() -> u32 {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 When 
@@ -204,7 +204,7 @@ fn func(self, b: T, c: i32) {}
 ```
 then `Trait<T>` would be inferred to be `<typeof(x) as Trait<typeof(y)>`. Generics on `Trait` are not directly specifiable when a function is called in this way. To call a function with explicit types specified you must use the usual fully qualified syntax.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Calls to `default` are less explicit than calls to `Default::default` or to `T::default`, likewise for any other trait. Some users may see this lack of explicitness as bad style.
@@ -218,14 +218,14 @@ Because of this context sensitivity, we should allow developers to choose when r
 
 Another drawback mentioned during review for this RFC was that this adds more complication to the name resolution rules. On an implementation side, I am assured that this feature is straightforward to implement in rustc. From a user perspective, the name lookup rules for the function name are exactly the same as those used to look up any other function name. The lookup rules used to resolve the `impl` are also exactly the same ones used for non-fully qualified trait function calls. There is no fundamentally new kind of lookup happening here, just a remixing of existing lookup rules.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why is this design the best in the space of possible designs?
+### Why is this design the best in the space of possible designs?
 
 This design is minimalist, it adds no extra syntax, instead providing a natural extension of existing syntax to support a feature that is frequently requested. Users might very well already expect this feature, with this exact syntax, to be present in Rust, and surprised when it isn't.
 
-## What other designs have been considered and what is the rationale for not choosing them?
+### What other designs have been considered and what is the rationale for not choosing them?
 
 In [Zulip](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Writing.20an.20RFC.20for.20.60use.20Default.3A.3Adefault.60/near/427795694), there was some discussion of whether `use Trait::func` should bring `Trait` into scope. There are three possibilities:
 
@@ -237,7 +237,7 @@ Option 1 is what is proposed here. It has the simplest semantics, and I believe 
 
 We considered allowing `use Trait::parent_method`, but decided against it, as you can always explicitly import from the parent instead.
 
-## What is the impact of not doing this?
+### What is the impact of not doing this?
 
 Users of the language continue to create helper functions to access associated with regular function syntax. More specifically, each such instance requires a minimum of three lines when using normal rust formatting, corresponding to the following example:
 ```rust
@@ -247,23 +247,23 @@ fn my_trait_func<T: MyTrait>(args) -> ret {
 ```
 Such code is boilerplate that serves nobody's time to have to write repeatedly.
 
-## If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
+### If this is a language proposal, could this be done in a library or macro instead? Does the proposed change make Rust code easier or harder to read, understand, and maintain?
 
 A library solution has already been rejected for this. This solves the same problem as a library solution in a much more general way, that doesn't require adding new library functions every time we want shorthand access to trait function names.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 As mentioned in [motivation], there was a rejected [RFC](https://github.com/rust-lang/rust/pull/73001) for adding a function `std::default::default` to make calling `Default::default` less repetitive. This RFC was rejected, with a desire to see something like what this RFC proposes replace it.
 
 [This issue](https://github.com/rust-lang/rfcs/issues/1995) also lists some further motivation for this feature.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Is specifying this in terms of desugaring sufficient to give the desired semantics?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This RFC does not propose the ability to import `Type::method` where `method` is contained in an `impl` block. Such a feature would be a natural extension of this work, and would enable numeric features like that discussed in [motivation] without the need for the [num_traits](https://docs.rs/num-traits/latest/num_traits/) crate. This feature is not proposed in this RFC since initial investigations revealed that it would be [difficult](https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Writing.20an.20RFC.20for.20.60use.20Default.3A.3Adefault.60/near/427804375) to implement in today's rustc.

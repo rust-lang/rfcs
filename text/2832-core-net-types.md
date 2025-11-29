@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2832](https://github.com/rust-lang/rfcs/pull/2832)
 - Rust Issue: [rust-lang/rust#108443](https://github.com/rust-lang/rust/issues/108443)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Make the `IpAddr`, `Ipv4Addr`, `Ipv6Addr`, `SocketAddr`, `SocketAddrV4`,
 `SocketAddrV6`, `Ipv6MulticastScope` and `AddrParseError` types available in `no_std`
 contexts by moving them into a `core::net` module.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The motivation here is to provide common types for both `no_std` and `std`
@@ -19,7 +19,7 @@ addresses. Embedded IoT development is one area where this will be beneficial.
 IP addresses are portable across all platforms and have no external
 dependencies which is in line with the definition of the core library.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `core::net::IpAddr`, `core::net::Ipv4Addr`, `core::net::Ipv6Addr`,
@@ -30,7 +30,7 @@ available in `no_std` contexts.
 Library developers should use `core::net` to implement abstractions in order
 for them to work in `no_std` contexts as well.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Since https://github.com/rust-lang/rust/pull/78802 has been merged, IP and
@@ -45,12 +45,12 @@ on `std::io::Write`.
 This means the types are now platform-agnostic, allowing them to be moved from
 `std::net` into `core::net`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Moving the `std::net` types to `core::net` makes the core library less *minimal*.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Eliminates the need to use different abstractions for `no_std` and `std`.
@@ -58,7 +58,7 @@ Moving the `std::net` types to `core::net` makes the core library less *minimal*
 - Alternatively, move these types into a library other than `core`, so they
   can be used without `std`, and re-export them in `std`.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 There was a prior discussion at
@@ -69,12 +69,12 @@ and an experimental branch from [@Nemo157](https://github.com/Nemo157) at
 
 https://github.com/Nemo157/rust/tree/core-ip
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Move the `ToSocketAddrs` trait to `core::net` as well. This depends on having `core::io::Result`.

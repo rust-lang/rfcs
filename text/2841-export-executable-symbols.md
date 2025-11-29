@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2841](https://github.com/rust-lang/rfcs/pull/2841)
 - Rust Issue: [rust-lang/rust#84161](https://github.com/rust-lang/rust/issues/84161)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add the ability to export symbols from executables, not just dylibs, via a new
 compiler flag: `-C export-executable-symbols`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Java and C# can't statically link against C/Rust code.  Both require dylib
@@ -29,7 +29,7 @@ This is ugly, brittle, and rustc
 [already knows](https://github.com/rust-lang/rust/blob/a916ac22b9f7f1f0f7aba0a41a789b3ecd765018/src/librustc_codegen_ssa/back/linker.rs#L706-L717)
 how to do this automatically, across more platforms, and better.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 https://doc.rust-lang.org/rustc/codegen-options/index.html could gain:
@@ -56,7 +56,7 @@ would start recommending a `.cargo/config` with:
 rustflags = ["-C", "export-executable-symbols"]
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 On a technical level, this just involves preventing an early bailout when
@@ -64,13 +64,13 @@ calling `fn export_symbols` on executables with MSVC or GNU linker backends.
 Other linker backends (EmLinker, WasmLd, PtxLinker) do not have this early
 bailout in the first place, and remain unaffected.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * Options bloat
 * The burden of supporting a niche use-case in hideously platform specific code
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This is *very* simple to implement, leverages existing code to enable it to do exactly what it was meant to do, and has few drawbacks.
@@ -86,19 +86,19 @@ Alternatives:
 - Remember to always cargo build a dylib copy of a crate manually before cargo test ing, and load that instead.
   (That would also add a whole second copy of all functions and static vars in the same unit test process!)
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 C and C++ compilers can already do this via `__declspec(dllexport)` annotations.
 Most people don't really notice it, for good or for ill.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Is this a good name for it?
 - Should it be more general and export when limit_rdylib_exports or crate_type == ProcMacro?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 We could introduce a new source annotation, `#[export]`.  For backwards

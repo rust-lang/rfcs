@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1432](https://github.com/rust-lang/rfcs/pull/1432)
 - Rust Issue: [rust-lang/rust#32310](https://github.com/rust-lang/rust/issues/32310)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a `splice` method to `Vec<T>` and `String` removes a range of elements,
@@ -12,7 +12,7 @@ The new sequence does not necessarily have the same length as the range it repla
 In the `Vec` case, this method returns an iterator of the elements being moved out, like `drain`.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 An implementation of this operation is either slow or dangerous.
@@ -34,7 +34,7 @@ While it could be an external crate on crates.io,
 this operation is general-purpose enough that I think it belongs in the standard library,
 similar to `Vec::drain`.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 An example implementation is below.
@@ -131,13 +131,13 @@ Then, depending on the real length of the iterator:
 * If it’s higher, the extra iterator items well be collected into a temporary `Vec`
   in order to know exactly how many there are, and the elements after will be moved once more.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Same as for any addition to `std`:
 not every program needs it, and standard library growth has a maintenance cost.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * Status quo: leave it to every one who wants this to do it the slow way or the dangerous way.
@@ -145,7 +145,7 @@ not every program needs it, and standard library growth has a maintenance cost.
   Individual crates tend to be not very discoverable,
   so not this situation would not be so different from the status quo.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Should the input iterator be consumed incrementally at each `Splice::next` call,

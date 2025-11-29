@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#213](https://github.com/rust-lang/rfcs/pull/213)
 - Rust Issue: [rust-lang/rust#27336](https://github.com/rust-lang/rust/issues/27336)
 
-# Summary
+## Summary
 
 Rust currently includes feature-gated support for type parameters that
 specify a default value. This feature is not well-specified. The aim
@@ -25,9 +25,9 @@ aiming to address some shortcomings of the current implementation.
 
 This RFC would remove the feature gate on defaulted type parameters.
 
-# Motivation
+## Motivation
 
-## Why defaulted type parameters
+### Why defaulted type parameters
 
 Defaulted type parameters are very useful in two main scenarios:
 
@@ -85,7 +85,7 @@ Using this definition, a call like `range(0, 10)` is perfectly legal.
 If it turns out that the type argument is not other constraint, `uint`
 will be used instead.
 
-## Extending types without breaking clients.
+### Extending types without breaking clients.
 
 Without defaults, once a library is released to "the wild", it is not
 possible to add type parameters to a type without breaking all
@@ -99,13 +99,13 @@ older behavior.
 *Historical example:* Extending HashMap to support various hash
  algorithms.
 
-# Detailed Design
+## Detailed Design
 
-## Remove feature gate
+### Remove feature gate
 
 This RFC would remove the feature gate on defaulted type parameters.
 
-## Type parameters with defaults
+### Type parameters with defaults
 
 Defaults can be placed on any type parameter, whether it is declared
 on a type definition (`struct`, `enum`), type alias (`type`), trait
@@ -136,7 +136,7 @@ type parameters declared *before* `X` in the list of type parameters:
     // `B` in the list of parameters.
     fn foo<A,B=C,C=uint>() { .. }
 
-## Instantiating defaults
+### Instantiating defaults
 
 This section specifies how to interpret a reference to a generic
 type. Rather than writing out a rather tedious (and hard to
@@ -155,7 +155,7 @@ as follows:
     generally requires explicit types or a mechanical defaulting
     process outside of `fn` bodies.
 
-### References to generic types
+#### References to generic types
 
 We begin with examples of references to the generic type `Foo`:
 
@@ -223,7 +223,7 @@ information). Here are some examples:
         let x: Foo<int,uint,_,char> = ...;
     }
 
-### References to generic traits
+#### References to generic traits
 
 The rules for traits are the same as the rules for types.  Consider a
 trait `Foo`:
@@ -241,7 +241,7 @@ the same way as was shown for types:
     // Equivalent to Foo<i8,u8,char,char>:
     fn foo<T:Foo<i8,u8,char,_>>() { ... }
 
-### References to generic functions
+#### References to generic functions
 
 The rules for referencing generic functions are the same as for types,
 except that it is legal to omit values for all type parameters if
@@ -249,7 +249,7 @@ desired. In that case, the behavior is the same as it would be if `_`
 were used as the value for every type parameter. Note that functions
 can only be referenced from within a fn body.
 
-### References to generic impls
+#### References to generic impls
 
 Users never explicitly "reference" an impl. Rather, the trait matching
 system implicitly instantiates impls as part of trait matching. This
@@ -257,7 +257,7 @@ implies that all type parameters are always instantiated with type
 variables. These type variables are assigned fallbacks according to
 the defaults given.
 
-## Type variables with fallbacks
+### Type variables with fallbacks
 
 We extend the inference system so that when a type variable is
 created, it can optionally have a *fallback value*, which is another
@@ -308,7 +308,7 @@ The fallback values of `$0`, `$1`, and `$2` are as follows:
   have the fallback value of `$1`, which was the value of `A`
   within the expression where `$2` was created.
 
-## Trait resolution, fallbacking, and inference
+### Trait resolution, fallbacking, and inference
 
 Prior to this RFC, type-checking a function body proceeds roughly as
 follows:
@@ -507,7 +507,7 @@ need to iteration through the loop is still caused by trait matching
 generating recursive obligations, which have an associated depth
 limit.
 
-## Compatibility analysis
+### Compatibility analysis
 
 One of the major design goals of defaulted type parameters is to
 permit new parameters to be added to existing types or methods in a
@@ -520,9 +520,9 @@ relying on an inference fallback from some other source and there is
 now an ambiguity. Naturally clients can always fix this error by
 specifying the value of the type parameter in question manually.
 
-# Downsides and alternatives
+## Downsides and alternatives
 
-## Avoid inference
+### Avoid inference
 
 Rather than adding the notion of *fallbacks* to type variables,
 defaults could be mechanically added, even within fn bodies, as they
@@ -532,7 +532,7 @@ require explicit annotation. Without the notion of fallbacks, it is
 also difficult to say what defaulted type parameters in methods or
 impls should mean.
 
-## More advanced interaction between integer literal inference
+### More advanced interaction between integer literal inference
 
 There were some other proposals to have a more advanced interaction
 between custom fallbacks and literal inference. For example, it is
@@ -545,7 +545,7 @@ mapped to more than just the built-in integral types). Furthermore,
 these rules would create strictly fewer errors, and hence can be added
 in the future if desired.
 
-## Notation
+### Notation
 
 Allowing `_` notation outside of fn body means that it's meaning
 changes somewhat depending on context. However, this is consistent
@@ -565,7 +565,7 @@ previous defaulted typed parameters. But this is clearly annoying in
 those cases where defaulted type parameters represent distinct axes of
 customization.
 
-# Hat Tip
+## Hat Tip
 
 eddyb introduced defaulted type parameters and also opened the first
 pull request that used them to inform inference.

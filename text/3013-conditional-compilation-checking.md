@@ -3,9 +3,9 @@
 - RFC PR: [rust-lang/rfcs#3013](https://github.com/rust-lang/rfcs/pull/3013)
 - Rust Issue: [rust-lang/rust#82450](https://github.com/rust-lang/rust/issues/82450)
 
-# Checking conditional compilation at compile time
+## Checking conditional compilation at compile time
 
-# Summary
+## Summary
 
 Rust supports conditional compilation, analogous to `#ifdef` in C / C++ / C#. Experience has shown
 that managing conditional compilation is a significant burden for large-scale development. One of
@@ -27,16 +27,16 @@ conditions that are not valid will cause a diagnostic warning. This feature is o
 compatibility; if no valid configuration options are presented to `rustc` then no warnings are
 generated.
 
-# Motivation
+## Motivation
 
 * Stronger assurance that large code bases are correct.
 * Protect against typos, bad merges, etc.
 * Detect dead code, typically caused by feature flags that have been removed from a crate's
   manifest, but which still have `#[cfg(...)]` attributes that mention those features.
 
-# Guide-level explanation
+## Guide-level explanation
 
-## Background
+### Background
 
 Rust programs can use conditional compilation in order to modify programs based on the features a
 user has selected, the target CPU architecture, the target OS, or other parameters under control
@@ -58,7 +58,7 @@ A _condition_ can take one of two forms:
   `rustc --cfg feature="lighting" --cfg feature="bump_maps"`.
 * Boolean operators on conditions, such as `not(...)`, `all(...)`, and `any(...)`.
 
-## Checking conditions names
+### Checking conditions names
 
 `rustc` can optionally verify that condition names used in source code are valid. _Valid_ is
 distinct from _enabled_. A _valid_ condition is one that is allowed to appear in source code; the
@@ -85,7 +85,7 @@ names (and separately for values). Second, it specifies the set of valid conditi
 Like many `rustc` options the `--check-cfg` option can be specified in a single-argument form, with
 the option name and its argument joined by `=`, or can be specified in a two-argument form.
 
-### Well-known condition names
+#### Well-known condition names
 
 `rustc` defines a set of well-known conditions, such as `test`, `target_os`, etc. These conditions
 are always valid; it is not necessary to enable checking for these conditions. If these conditions
@@ -104,7 +104,7 @@ These are the well-known conditions:
 * `windows`
 * TODO: finish enumerating this list during implementation
 
-## Checking key-value conditions
+### Checking key-value conditions
 
 For conditions that define a list of values, such as `feature`, we want to verify that any
 `#[cfg(feature = "v")]` test uses a valid value `v`. We want to detect this kind of bug:
@@ -130,7 +130,7 @@ rustc --check-cfg 'values(feature, "derive", "parsing", "printing", "proc-macro"
 rustc --check-cfg 'values(foo, "red", "green")' --check-cfg 'values(bar, "up", "down")'
 ```
 
-## Checking is opt-in (disabled by default)
+### Checking is opt-in (disabled by default)
 
 The default behavior of `rustc` is that conditional compilation names and values are not checked.
 This maintains compatibility with existing versions of Cargo and other build systems that might
@@ -140,7 +140,7 @@ syntactic forms of the existing `--cfg` option.
 Checking condition names is independent of checking condition values, for those conditions that
 use value lists.
 
-### Example: Checking condition names, but not values
+#### Example: Checking condition names, but not values
 
 ```bash
 # This turns on checking for condition names, but not values, such as 'feature' values.
@@ -163,7 +163,7 @@ fn do_mumble_frotz() {}
 fn shoot_lasers() {}
 ```
 
-### Example: Checking feature values, but not condition names
+#### Example: Checking feature values, but not condition names
 
 ```bash
 # This turns on checking for feature values, but not for condition names.
@@ -190,7 +190,7 @@ fn shoot_lasers() {}
 fn write_shakespeare() {}
 ```
 
-### Example: Checking both condition names and feature values
+#### Example: Checking both condition names and feature values
 
 ```bash
 # This turns on checking for feature values and for condition names.
@@ -219,7 +219,7 @@ fn shoot_lasers() {}
 fn write_shakespear() {}
 ```
 
-## Cargo support
+### Cargo support
 
 Cargo is ideally positioned to enable checking for `feature` flags, since Cargo knows the set of
 valid features. Cargo will invoke `rustc --check-cfg 'values(feature, "...", ...)'`, so that
@@ -234,16 +234,16 @@ their crate now reports errors, then they will need to align their source code w
 `Cargo.toml` file in order to fix the error. (Or use `#[allow(...)]` to suppress it.) This is a
 benefit, because it exposes potential existing bugs.
 
-## Supporting build systems other than Cargo
+### Supporting build systems other than Cargo
 
 Some users invoke `rustc` using build systems other than Cargo. In this case, `rustc` will provide
 the mechanism for validating conditions, but those build systems will need to be updated in order
 to take advantage of this feature. Doing so is expected to be easy and non-disruptive, since this
 feature does not change the meaning of the existing `--cfg` option.
 
-# Reference-level explanation
+## Reference-level explanation
 
-## What Cargo does
+### What Cargo does
 
 When Cargo builds a `rustc` command line, it knows which features are enabled and which are
 disabled. Cargo normally specifies the set of enabled features like so:
@@ -264,7 +264,7 @@ In this command-line, Cargo has specified the full set of _valid_ features (`lig
 `bump_maps`, `mip_maps`, `vulkan`) while also specifying which of those features are currently
 _enabled_ (`lighting`, `bump_maps`).
 
-## Command line arguments reference
+### Command line arguments reference
 
 `rustc` accepts the `--check-cfg` option, which specifies whether to check conditions and how to
 check them. The `--check-cfg` option takes a value, called the _check cfg specification_. The
@@ -276,7 +276,7 @@ Each `--check-cfg` option can take one of two forms:
 1. `--check-cfg names(...)` enables checking condition names.
 2. `--check-cfg values(...)` enables checking the values within list-valued conditions.
 
-### The `names(...)` form
+#### The `names(...)` form
 
 This form uses a named metadata list:
 
@@ -332,7 +332,7 @@ rustc --cfg 'has_time_travel'
 rustc --cfg 'has_time_travel' --check-cfg 'names(has_time_travel)'
 ```
 
-### The `values(...)` form
+#### The `values(...)` form
 
 The `values(...)` form enables checking the values within list-valued conditions. It has this
 form:
@@ -366,7 +366,7 @@ condition are merged together.
 > checks the namespace of condition names; `values` checks the namespace of the values of
 > list-valued conditions.
 
-### Valid values can be split across multiple options
+#### Valid values can be split across multiple options
 
 The valid condition values are the union of all options specified on the command line.
 For example, this command line:
@@ -381,7 +381,7 @@ rustc --check-cfg 'values(animals, "lion", "zebra")'
 
 This is intended to give tool developers more flexibility when generating Rustc command lines.
 
-### Enabled condition names are implicitly valid
+#### Enabled condition names are implicitly valid
 
 Specifying an enabled condition name implicitly makes it valid. For example, the following
 invocations are equivalent:
@@ -394,7 +394,7 @@ rustc --check-cfg 'names(animals)' --cfg 'animals = "lion"'
 rustc --check-cfg 'names()' --cfg 'animals = "lion"'
 ```
 
-### Enabled condition values are implicitly valid
+#### Enabled condition values are implicitly valid
 
 Specifying an enabled condition _value_ implicitly makes that _value_ valid. For example, the
 following invocations are equivalent:
@@ -418,7 +418,7 @@ rustc --check-cfg 'names(other, animals)' --check-cfg 'values(animals, "lion")'
 rustc --check-cfg 'names(other)' --check-cfg 'values(animals, "lion")'
 ```
 
-### Checking condition names and values is independent
+#### Checking condition names and values is independent
 
 Checking condition names may be enabled independently of checking condition values.
 If checking of condition values is enabled, then it is enabled separately for each condition name.
@@ -446,7 +446,7 @@ rustc --check-cfg 'names(has_time_travel)' \
       --check-cfg 'values(feature, "lighting", "bump_maps")'
 ```
 
-## Stabilizing
+### Stabilizing
 
 Until this feature is stabilized, it can only be used with a `nightly` compiler, and only when
 specifying the `rustc -Z check-cfg ...` option.
@@ -458,7 +458,7 @@ Experience gained during stabilization will determine how this feature is best e
 product. Ideally, once the feature is stabilized in `rustc`, the `-Z check-cfg` requirement will
 be dropped from `rustc`. Stabilizing in Cargo may require a stable opt-in flag, however.
 
-## Diagnostics
+### Diagnostics
 
 Conditional checking can report these diagnostics:
 
@@ -475,7 +475,7 @@ Conditional checking can report these diagnostics:
 All of the diagnostics defined by this RFC are reported as warnings. They can be upgraded to
 errors or silenced using the usual diagnostics controls.
 
-## Examples
+### Examples
 
 Consider this command line:
 
@@ -513,7 +513,7 @@ fn tame_lion() { ... }
 > is not necessary to specify it in a `--check-cfg 'names(...)'` option. That option can be
 > shortened to > `--check-cfg names()` in order to enable checking condition names.
 
-## Drawbacks
+### Drawbacks
 
 * Adds complexity, in the form of additional command-line options. Fortunately, this is
   complexity that will be mainly be exposed to build systems, such as Cargo.
@@ -542,7 +542,7 @@ fn tame_lion() { ... }
   read and parsed. This is a minor drawback, and should not prevent users from benefitting
   from checking in most common situations.
 
-## Rationale and alternatives
+### Rationale and alternatives
 
 This design enables checking for a class of bugs at compile time, rather than detecting them by
 running code.
@@ -558,7 +558,7 @@ to find in relatively small systems of code, but experience shows that these kin
 harder to verify in large code bases. Rust should enable developers to scale up from small to large
 systems, without losing agility or reliability.
 
-## Prior art
+### Prior art
 
 Rust has a very strong focus on finding defects at compile time, rather than allowing defects to be
 detected much later in the development cycle. Statically checking that conditional compilation is
@@ -568,7 +568,7 @@ Many languages have similar facilities for conditional compilation. C, C++, C#, 
 variants make extensive use of conditional compilation. The author is unaware of any effort to
 systematically verify the correct usage of conditional compilation in these languages.
 
-## Unresolved questions
+### Unresolved questions
 
 This RFC specifies the exact syntax of this feature in source code and in the
 command-line options for `rustc`. However, it does not address how these will be used
@@ -593,7 +593,7 @@ flag of `foo`, but the `build.rs` file added a `--cfg feature="foo"` option, the
 could use `foo` in a condition. My guess is that this is rare, and that a Crater run will expose
 this kind of problem.
 
-# Future possibilities
+## Future possibilities
 
 * Should these checks be enabled by default in Cargo?
 * How many public crates would fail these checks?

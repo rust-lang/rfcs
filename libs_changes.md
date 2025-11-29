@@ -1,6 +1,6 @@
 # RFC guidelines - libraries sub-team
 
-# Motivation
+## Motivation
 
 * RFCs are heavyweight:
     * RFCs generally take at minimum 2 weeks from posting to land. In
@@ -42,7 +42,7 @@ the RFC process, it is important that we be maximally friendly towards their
 needs.
 
 
-# Is an RFC required?
+## Is an RFC required?
 
 The overarching philosophy is: *do whatever is easiest*. If an RFC
 would be less work than an implementation, that's a good sign that an RFC is
@@ -66,7 +66,7 @@ as `std` has become more conservative in favour of the much more agile cargovers
 * **Do the easier thing** if uncertain. (choosing a path is not final)
 
 
-# Non-RFC process
+## Non-RFC process
 
 * A (non-RFC) PR is likely to be **closed** if clearly not acceptable:
     * Disproportionate breaking change (small inference breakage may be acceptable)

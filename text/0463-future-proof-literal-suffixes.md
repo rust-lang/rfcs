@@ -2,7 +2,7 @@
 - RFC PR: [#463](https://github.com/rust-lang/rfcs/pull/463)
 - Rust Issue: [#19088](https://github.com/rust-lang/rust/issues/19088)
 
-# Summary
+## Summary
 
 Include identifiers immediately after literals in the literal token to
 allow future expansion, e.g. `"foo"bar` and a `1baz` are considered
@@ -11,7 +11,7 @@ tokens `"foo"`, `bar` and `1`, `baz` respectively. This allows future
 expansion of handling literals without risking breaking (macro) code.
 
 
-# Motivation
+## Motivation
 
 Currently a few kinds of literals (integers and floats) can have a
 fixed set of suffixes and other kinds do not include any suffixes. The
@@ -70,7 +70,7 @@ common enough to warrant adding to the language now.
 [f16]: http://en.wikipedia.org/wiki/Half-precision_floating-point_format
 [f128]: https://en.wikipedia.org/wiki/Quadruple-precision_floating-point_format
 
-# Detailed design
+## Detailed design
 
 The tokenizer will have grammar `literal: raw_literal identifier?`
 where `raw_literal` covers strings, characters and numbers without
@@ -111,19 +111,19 @@ wouldn't have to be illegal, e.g. `stringify!(1u256)` doesn't have to
 be illegal because the `1u256` never occurs at runtime/in the type
 system.)
 
-# Drawbacks
+## Drawbacks
 
 None beyond outlawing placing a literal immediately before a pattern,
 but the current behaviour can easily be restored with a space: `123u
 456`. (If a macro is using this for the purpose of hacky generalised
 literals, the unresolved question below touches on this.)
 
-# Alternatives
+## Alternatives
 
 Don't do this, or consider doing it for adjacent suffixes with an
 alternative syntax, e.g. `10'bar` or `10$bar`.
 
-# Unresolved questions
+## Unresolved questions
 
 - Should it be the parser or the tokenizer rejecting invalid suffixes?
   This is effectively asking if it is legal for syntax extensions to

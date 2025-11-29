@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1216](https://github.com/rust-lang/rfcs/pull/1216)
 - Rust Issue: [rust-lang/rust#35121](https://github.com/rust-lang/rust/issues/35121)
 
-# Summary
+## Summary
 
 Promote `!` to be a full-fledged type equivalent to an `enum` with no variants.
 
-# Motivation
+## Motivation
 
 To understand the motivation for this it's necessary to understand the concept
 of empty types. An empty type is a type with no inhabitants, ie. a type for
@@ -348,7 +348,7 @@ would greatly complicate things as it would require, for example, `Vec<!>` be a
 subtype of `Vec<T>`. This `!` is simply an empty type (albeit one that can be
 cast to any other type)
 
-# Detailed design
+## Detailed design
 
 Add a type `!` to Rust. `!` behaves like an empty enum except that it can be
 implicitly cast to any other type. ie. the following code is acceptable:
@@ -388,11 +388,11 @@ methods to `Result<T, !>` and `Result<!, E>` for safely extracting the inner
 value. Name these methods along the lines of `unwrap_nopanic`, `safe_unwrap` or
 something.
 
-# Drawbacks
+## Drawbacks
 
 Someone would have to implement this.
 
-# Alternatives
+## Alternatives
 
   * Don't do this.
   * Move @reem's `Void` type into `libcore`. This would create a standard empty
@@ -403,7 +403,7 @@ Someone would have to implement this.
     up people coming from a C/Java et al. background as `Void` is *not* `void`
     but it can be easy to confuse the two.
 
-# Unresolved questions
+## Unresolved questions
 
 `!` has a unique impl of any trait whose only items are non-static methods. It
 would be nice if there was a way to automate the creation of these impls.

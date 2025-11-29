@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#507](https://github.com/rust-lang/rfcs/pull/507)
 - Rust Issue: [rust-lang/rust#20445](https://github.com/rust-lang/rust/issues/20445)
 
-# Summary
+## Summary
 
 This RFC describes changes to the Rust release process, primarily the
 division of Rust's time-based releases into 'release channels',
@@ -22,7 +22,7 @@ Finally, it discusses how Cargo may leverage feature gates to
 determine compatibility of Rust crates with specific revisions of the
 Rust language.
 
-# Motivation
+## Motivation
 
 We soon intend to [provide stable releases][1] of Rust that offer
 backwards compatibility with previous stable releases. Still, we
@@ -33,7 +33,7 @@ guarantees to users.
 
 [1]: http://blog.rust-lang.org/2014/10/30/Stability.html
 
-# Detailed design
+## Detailed design
 
 The Rust release process moves to a 'release train' model, in which
 there are three 'release channels' through which the official Rust
@@ -66,7 +66,7 @@ train, particularly with regard to feature staging. A more detailed
 description of the impact on the development process is [available
 elsewhere][3].
 
-## Versioning and releases
+### Versioning and releases
 
 The nature of development and releases differs between channels, as
 each serves a specific purpose: nightly is for active development,
@@ -114,7 +114,7 @@ published at the beginning of each development cycle and once
 published are never refreshed or overwritten. Provisions for stable
 point releases will be made at a future time.
 
-## Exceptions for the 1.0.0 beta period
+### Exceptions for the 1.0.0 beta period
 
 Under the release train model version numbers are incremented
 automatically each release cycle on a predetermined schedule.  Six
@@ -136,7 +136,7 @@ During the beta cycles, as with the normal release cycles, primary
 development will be on the nightly branch, with only bugfixes on the
 beta branch.
 
-## Feature staging
+### Feature staging
 
 In builds of Rust distributed through the 'beta' and 'stable' release
 channels, it is impossible to turn on unstable features
@@ -182,7 +182,7 @@ the short term this will be worked-around with hacks in the
 compiler. It's likely that these hacks can be removed before 1.0 if
 globs and `macro_rules!` imports become stable.
 
-## Merging stability attributes and feature gates
+### Merging stability attributes and feature gates
 
 In addition to the feature gates that, in conjunction with the
 aforementioned `unstable_features` lint, manage the stable evolution
@@ -269,7 +269,7 @@ mechanism to explicitly forbid their use outside of the standard
 distribution. A general mechanism for indicating API stability
 will be reconsidered in the future.
 
-### API lifecycle
+#### API lifecycle
 
 These attributes alter the process of how new APIs are added to the
 standard library slightly. First an API will be proposed via the RFC
@@ -294,7 +294,7 @@ the `since` parameter.
 user transitions, in which case they receive both the `staged_stable`
 and `staged_deprecated` attributes at once.)
 
-### Checking `#[feature]`
+#### Checking `#[feature]`
 
 The names of features will no longer be a hardcoded list in the compiler
 due to the free-form nature of the `#[staged_unstable]` feature names.
@@ -317,7 +317,7 @@ Instead, the compiler will perform the following steps when inspecting
 These steps ensure that the `#[feature]` attribute is used exhaustively
 and will check unstable language and library features.
 
-## Features, Cargo and version detection
+### Features, Cargo and version detection
 
 Over time, it has become clear that with an ever-growing number of Rust
 releases that crates will want to be able to manage what versions of
@@ -383,7 +383,7 @@ candidates based on the version of the available compiler. This will
 enable authors to publish crates which rely on the current beta channel
 while not interfering with users taking advantage of the stable channel.
 
-# Drawbacks
+## Drawbacks
 
 Adding multiple release channels and reducing the release cycle from
 12 to 6 weeks both increase the amount of release engineering work
@@ -431,7 +431,7 @@ intended for general use the discrepancy is not a major problem.
 Having Cargo do version detection through feature analysis is known
 not to be foolproof, and may present further unknown obstacles.
 
-# Alternatives
+## Alternatives
 
 Leave feature gates and unstable APIs exposed to the stable
 channel, as precedented by Haskell, web vendor prefixes, and node.js.
@@ -441,7 +441,7 @@ channels, allowing some set of unstable features and APIs. This
 would allow more projects to use a 'more stable' release, but would
 make beta no longer representative of the pending stable release.
 
-# Unresolved questions
+## Unresolved questions
 
 The exact method for working around the prelude's use of feature gates
 is undetermined. Fixing [#18102] will complicate the situation as the
@@ -460,7 +460,7 @@ applicable.
 What mechanism ensures that all API's have stability coverage? Probably
 the will just default to unstable with some 'default' feature name.
 
-# See Also
+## See Also
 
 * [Stability as a deliverable][1]
 * [Prior work week discussion][2]

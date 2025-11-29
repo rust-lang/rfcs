@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2532](https://github.com/rust-lang/rfcs/pull/2532)
 - Rust Issue: [rust-lang/rust#29661](https://github.com/rust-lang/rust/issues/29661)
 
-# Summary
+## Summary
 [summary]: #summary
 
 [RFC 192]: https://github.com/rust-lang/rfcs/blob/master/text/0195-associated-items.md#defaults
@@ -14,7 +14,7 @@ such that provided methods and other items may not assume type defaults.
 This applies equally to `default` with respect to specialization.
 Finally, `dyn Trait` will assume provided defaults and allow those to be elided.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 As discussed in the [background] and mentioned in the [summary],
@@ -110,10 +110,10 @@ The following points were also noted in [RFC 192], but we expand upon them here:
 
    The implementation `Arbitrary for usize` *remains valid* even after the change.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Background and The status quo
+### Background and The status quo
 [background]: #background-and-the-status-quo
 
 Let's consider a simple trait with an associated type and another item (1):
@@ -202,7 +202,7 @@ Meanwhile, as we saw in the error message above (3),
 the current implementation takes the alternative approach of accepting
 `impl Foo for Bar` (4) but not the definition of `Foo` as in (2).
 
-## Changes in this RFC
+### Changes in this RFC
 [changes]: #changes-in-this-rfc
 
 In this RFC, we change the approach in [RFC 192] to the currently implemented
@@ -261,7 +261,7 @@ allowed to assume this. To permit this is not a problem because `Foo for Vec<T>`
 is not further specializable since `Bar` in the implementation has not been
 marked as `default`.
 
-### Trait objects
+#### Trait objects
 
 Another divergence in this RFC as compared to the current implementation is
 with respect to trait objects. Currently, if you write (7):
@@ -319,12 +319,12 @@ The compiler can infer that `Baz` is `Vec<u16>` since `Self::Bar = u16` and
 With these changes,
 we consider the design of associated type defaults to be *finalized*.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The proposal makes no changes to the dynamic semantics and the grammar of Rust.
 
-## Static semantics
+### Static semantics
 
 This section supersedes [RFC 192] with respect to associated type defaults.
 
@@ -360,7 +360,7 @@ For example, this means that you may not assume the value of an
 associated `const` item in other items with provided definition
 in a `trait` definition.
 
-### Interaction with `dyn Trait<...>`
+#### Interaction with `dyn Trait<...>`
 
 + Let `σ` denote a well-formed type.
 + Let `L` denote a well-formed lifetime.
@@ -401,7 +401,7 @@ trait X {
 then the type `dyn X<A0 = u16>` is inferred to `dyn X<A0 = u16, A1 = Vec<u16>>`
 as opposed to `dyn X<A0 = u16, A1 = Vec<u8>>`.
 
-### Interaction with `existential type`
+#### Interaction with `existential type`
 
 [RFC 2071]: https://github.com/rust-lang/rfcs/blob/master/text/2071-impl-trait-existential-types.md#reference-existential-types
 
@@ -431,7 +431,7 @@ the underlying type of `Assoc` stays the same for all implementations which
 do not change the default of `Assoc`. The same applies to specializations.
 With respect to type opacity, it is the same as that of `existential type`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The main drawbacks of this proposal are that:
@@ -445,10 +445,10 @@ The main drawbacks of this proposal are that:
    and that the nesting mechanism or other similar ideas will be sufficiently
    ergonomic for such cases. This is discussed below.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Alternatives
+### Alternatives
 
 The main alternative is to retain the behaviour in [RFC 192] such that
 you may assume the type of associated type defaults in provided methods.
@@ -467,7 +467,7 @@ surprises for crate authors and their dependents alike because it may
 be difficult at glance to decide what the dependencies are.
 This in turn reduces the maintainability and readability of code.
 
-## Consistency with associated `const`s
+### Consistency with associated `const`s
 
 Consider the following valid example from stable Rust:
 
@@ -492,7 +492,7 @@ its learning easy and to rid users of surprising corner cases and caveats.
 By staying consistent, as shown above, we can reduce the cost to our complexity
 budget that associated type defaults incur.
 
-## Overriding everything is less ergonomic
+### Overriding everything is less ergonomic
 
 We have already discussed this to some extent.
 Another point to consider is that Rust code frequently sports traits such as
@@ -500,7 +500,7 @@ Another point to consider is that Rust code frequently sports traits such as
 While these particular traits may not benefit from associated type defaults,
 many other traits, such as `Arbitrary` defined in the [motivation], would.
 
-## True API evolution by inferring in `dyn Trait`
+### True API evolution by inferring in `dyn Trait`
 
 While `impl Trait` will not take associated type defaults into account,
 `dyn trait` will. This may seem inconsistent. However, it is justified by the
@@ -565,10 +565,10 @@ and be inferable for `dyn Trait`. The opposite is true for `impl Trait`.
 To facilitate API evolution, stronger requirements must not be placed on
 `impl Trait` and therefore defaults should not be taken into account.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-## Haskell
+### Haskell
 
 [associated type defaults]: https://www.microsoft.com/en-us/research/wp-content/uploads/2005/01/at-syns.pdf
 
@@ -640,7 +640,7 @@ preserves parametricity thus lacking specialization, wherefore `default { .. }`,
 as suggested in the [future possibilities][future-possibilities],
 might not carry its weight.
 
-## Idris
+### Idris
 
 [idris_interface]: http://docs.idris-lang.org/en/latest/tutorial/interfaces.html
 [coherence]: http://blog.ezyang.com/2014/07/type-classes-confluence-coherence-global-uniqueness/
@@ -712,7 +712,7 @@ and
 
 The behaviour here is exactly as in Haskell and as proposed in this RFC.
 
-## C++
+### C++
 
 In C++, it is possible to provide associated types and specialize them as well.
 This is shown in the following example:
@@ -749,7 +749,7 @@ as well as the specialization, that `bar` is equal to the underlying type.
 This is because one cannot specialize any part of a class without specializing
 the whole of it. It's equivalent to one atomic `default { .. }` block.
 
-## Swift
+### Swift
 
 [swift_assoc]: https://docs.swift.org/swift-book/LanguageGuide/Generics.html
 
@@ -788,7 +788,7 @@ main.swift:4:23: error: protocol methods may not have bodies
     func baz() -> Bar { return 0 }
 ```
 
-## Scala
+### Scala
 
 Another language which allows for these kinds of type projections and defaults
 for them is Scala. While Scala does not have type classes like Rust and Haskell
@@ -821,10 +821,10 @@ There are a few interesting things to note here:
 5. If we change the definition of of `override type Bar` to `Double`,
    the Scala compiler will reject it.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-## 1. When do suitability of defaults need to be proven?
+### 1. When do suitability of defaults need to be proven?
 
 Consider a trait `Foo<T>` defined as:
 
@@ -875,7 +875,7 @@ However, it would also be the more conservative choice, allowing us to move
 towards (2) when necessary. As it is currently unclear what solution is best,
 this question is left unresolved.
 
-## 2. Where are cycles checked?
+### 2. Where are cycles checked?
 
 [playground]: https://play.rust-lang.org/?version=nightly&mode=debug&edition=2018&gist=e823eea5e7ecba5da78cff225e0adaf9
 
@@ -929,22 +929,22 @@ impl A for () {
 Alternatively, cycles could be checked for in `A`'s definition.
 This is similar to the previous question in (1).
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This section in the RFC used to be part of the proposal. To provide context
 for considerations made in the proposal, it is recorded here.
 
-## Summary
+### Summary
 
 [Introduce][default_groups] the concept of `default { .. }` groups in traits
 and their implementations which may be used to introduce atomic units of
 specialization (if anything in the group is specialized, everything must be).
 These groups may be nested and form a [tree of cliques].
 
-## Motivation
+### Motivation
 
-### For `default { .. }` groups
+#### For `default { .. }` groups
 
 Finally, because we are making [changes] to how associated type defaults work
 in this RFC, a new mechanism is required to regain the loss of expressive power
@@ -1059,9 +1059,9 @@ associated type include:
    }
    ```
 
-## Guide-level explanation
+### Guide-level explanation
 
-### `default` specialization groups
+#### `default` specialization groups
 [default_groups]: #default-specialization-groups
 
 Note: Overlapping implementations, where one is more specific than the other,
@@ -1233,7 +1233,7 @@ trait Quux {
 }
 ```
 
-#### Case study
+##### Case study
 [case study]: #case-study
 
 [RFC 2500]: https://github.com/rust-lang/rfcs/pull/2500
@@ -1291,7 +1291,7 @@ and therefore, the above definition will type check.
 Having done this, the API has become more ergonomic because we can
 let users define instances of `Needle<H>` with half as many requirements.
 
-#### `default fn foo() { .. }` is syntactic sugar
+##### `default fn foo() { .. }` is syntactic sugar
 
 In the section of [changes] to associated type defaults,
 snippet (5) actually indirectly introduced default groups of a special form,
@@ -1325,7 +1325,7 @@ specific implementations. With these singleton groups, you may assume
 the body of `Bar` in all other items in the same group; but it just
 happens to be the case that there are no other items in the group.
 
-#### Nesting and a tree of cliques
+##### Nesting and a tree of cliques
 [tree of cliques]: #nesting-and-a-tree-of-cliques
 
 In the summary, we alluded to the notion of groups being nested.
@@ -1446,9 +1446,9 @@ This is a good mechanism for API evolution in the sense that you can introduce
 a new associated type, rely on it in provided methods, but still perform
 no breaking change.
 
-## Reference-level explanation
+### Reference-level explanation
 
-### Grammar
+#### Grammar
 [grammar]: #grammar
 
 Productions in this section which are not defined here are taken from
@@ -1544,7 +1544,7 @@ Note also that `default default fn ..` as well as `default default { .. }` are
 intentionally recognized by the grammar to make life easier for macro authors
 even though writing `default default ..` should never be written directly.
 
-### Desugaring
+#### Desugaring
 
 After macro expansion, wherever the production `trait_default_singleton` occurs,
 it is treated in all respects as, except for error reporting -- which is left up
@@ -1552,9 +1552,9 @@ to implementations of Rust, and is desugared to `DEFAULT '{' trait_item '}'`.
 The same applies to `impl_default_singleton`.
 In other words: `default fn f() {}` is desugared to `default { fn f() {} }`.
 
-### Semantics and type checking
+#### Semantics and type checking
 
-#### Semantic restrictions on the syntax
+##### Semantic restrictions on the syntax
 
 According to the [grammar], the parser will accept items inside `default { .. }`
 without a body. However, such an item will later be rejected during type checking.
@@ -1562,7 +1562,7 @@ The parser will also accept visibility modifiers on `default { .. }`
 (e.g. `pub default { .. }`). However, such a visibility modifier will also be
 rejected by the type checker.
 
-#### Specialization groups
+##### Specialization groups
 
 Implementations of a `trait` as well as `trait`s themselves may now
 contain *"specialization default groups"* (henceforth: *"group(s)"*)
@@ -1619,7 +1619,7 @@ impl Foo for () {
 }
 ```
 
-### Linting redundant `default`s
+#### Linting redundant `default`s
 
 When in source code (but not as a consequence of macro expansion),
 any of the following occurs, a warn-by-default lint (`redundant_default`)
@@ -1647,7 +1647,7 @@ will be emitted:
     }
 ```
 
-## Drawbacks
+### Drawbacks
 
 The main drawbacks of this proposal are that:
 
@@ -1657,16 +1657,16 @@ The main drawbacks of this proposal are that:
    use by specialization and for `default impl`.
    Therefore, the syntax is only partially new.
 
-## Rationale and alternatives
+### Rationale and alternatives
 
-### Alternatives
+#### Alternatives
 
 One may consider mechanisms such as `default(Bar, BAZ) { .. }` to give
 more freedom as to which dependency graphs may be encoded.
 However, in practice, we believe that the *tree of cliques* approach proposed
 in this RFC should be more than enough for practical applications.
 
-### `default { .. }` is syntactically light-weight
+#### `default { .. }` is syntactically light-weight
 
 When you actually do need to assume the underlying default of an associated type
 in a provided method, `default { .. }` provides a syntax that is comparatively
@@ -1681,13 +1681,13 @@ over what can and can't be assumed and what must be specialized together.
 The grouping mechanism also composes well as seen in
 [the section where it is discussed][default_groups].
 
-### Tree of cliques is familiar
+#### Tree of cliques is familiar
 
 The *"can depend on"* rule is similar to the rule used to determine whether a
 non-`pub` item in a module tree is accessible or not.
 Familiarity is a good tool to limit complexity costs.
 
-### Non-special treatment for methods
+#### Non-special treatment for methods
 
 In this RFC we haven't given methods any special treatment.
 We could do so by allowing methods to assume the underlying type
@@ -1697,9 +1697,9 @@ the details of an `fn` may be tied to the definition of an associated type.
 When those details change, it may also be prudent to change the associated type.
 Default groups give users a mechanism to enforce such decisions.
 
-## Future work
+### Future work
 
-### `where` clauses on `default { .. }` groups
+#### `where` clauses on `default { .. }` groups
 
 From our [case study], we noticed that we had to depart from our `trait`
 definition into a separate `default impl..` to handle the conditionality

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2196](https://github.com/rust-lang/rfcs/pull/2196)
 - Rust Issue: [rust-lang/rust#49803](https://github.com/rust-lang/rust/issues/49803)
 
-# Summary
+## Summary
 
 Introduce a mechanism for Cargo crates to make use of declarative build
 scripts, obtained from one or more of their dependencies rather than via a
 `build.rs` file. Support experimentation with declarative build scripts in the
 crates.io ecosystem.
 
-# Motivation
+## Motivation
 
 Cargo has many potentially desirable enhancements planned for its build
 process, including integrating a Cargo build process with native dependencies,
@@ -37,7 +37,7 @@ crates.io ecosystem, in crates supplying modular components similar to
 parameters and metadata they need from `Cargo.toml`, in a form that other
 build-related software can read as well.
 
-# Guide-level explanation
+## Guide-level explanation
 
 In the `[package]` section of `Cargo.toml`, you can specify a field
 `metabuild`, whose value should be a string or list of strings, each one
@@ -80,7 +80,7 @@ between them, or orchestrate their execution in many other ways. This minimal
 specification allows for experimentation with such interfaces within the
 crates.io ecosystem, by providing an adapter from the raw metabuild interface.
 
-# Reference-level explanation
+## Reference-level explanation
 
 Cargo's logic to invoke `build.rs` should check for the `metabuild` key, and if
 present, create and invoke a temporary `build.rs` as described above. For an
@@ -108,13 +108,13 @@ As we develop other best practices for the development and implementation of
 metabuild crates, we should extract and standardize common code for those
 practices as crates.
 
-# Drawbacks
+## Drawbacks
 
 While Cargo can change this interface arbitrarily while still unstable, one
 stabilized, Cargo will have to support it forever, even if we develop a new
 build/metabuild interface in the future.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 
 `metabuild` could always point to a single crate, and not support a list of
 crate names; a crate in the crates.io ecosystem could easily provide the "list

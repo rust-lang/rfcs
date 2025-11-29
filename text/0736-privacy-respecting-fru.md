@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#736](https://github.com/rust-lang/rfcs/pull/736)
 - Rust Issue: [rust-lang/rust#21407](https://github.com/rust-lang/rust/issues/21407)
 
-# Summary
+## Summary
 
 Change Functional Record Update (FRU) for struct literal expressions
 to respect struct privacy.
 
-# Motivation
+## Motivation
 
 Functional Record Update is the name for the idiom by which one can
 write `..<expr>` at the end of a struct literal expression to fill in
@@ -110,7 +110,7 @@ hole with as little other change to the rules, implementation, and
 character of the Rust language as possible.
 
 
-# Detailed design
+## Detailed design
 
 As already stated above, the change proposed here is that a struct
 literal expression using FRU is effectively expanded into a complete
@@ -181,7 +181,7 @@ The proposed change is applied only to struct literal expressions.  In
 particular, enum struct variants are left unchanged, since all of
 their fields are already implicitly public.
 
-# Drawbacks
+## Drawbacks
 
 There is a use case for allowing private fields to be moved/copied via
 FRU, which I call the "future extensibility" library design pattern:
@@ -248,7 +248,7 @@ see the type `Bar`, even under the new rules proposed by this RFC.
 
 
 
-# Alternatives
+## Alternatives
 
 Most Important: If we do not do *something* about this, then both stdlib types like
 `Vec` and user-defined types will fundmentally be unable to enforce
@@ -321,7 +321,7 @@ Here is an attempt to transcribe/summarize them:
      contained in a separate struct with all private fields,
      much like the `BarHidden` code pattern discussed above.
 
-# Unresolved questions
+## Unresolved questions
 
 How important is the "future extensibility" library design pattern
 described in the Drawbacks section?  How many Cargo packages, if any,

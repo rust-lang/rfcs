@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#369](https://github.com/rust-lang/rfcs/pull/369)
 - Rust Issue: [rust-lang/rust#18640](https://github.com/rust-lang/rust/issues/18640)
 
-# Summary
+## Summary
 
 This RFC is preparation for API stabilization for the `std::num` module.  The
 proposal is to finish the simplification efforts started in
@@ -18,9 +18,9 @@ Thus, this RFC proposes to flatten or remove most of the traits
 currently provided by `std::num`, and generally to simplify the module
 as much as possible in preparation for API stabilization.
 
-# Motivation
+## Motivation
 
-## History
+### History
 
 Starting in early 2013, there was
 [an effort](https://github.com/rust-lang/rust/issues/4819) to design a
@@ -52,7 +52,7 @@ Along side this effort, there are already external numerics packages like
 
 But we're not finished yet.
 
-## The current state of affairs
+### The current state of affairs
 
 The `std::num` module still contains quite a few traits that subdivide out
 various features of numbers:
@@ -167,7 +167,7 @@ In addition to these traits, the `std::num` module includes a couple
 dozen free functions, most of which duplicate methods available though
 traits.
 
-## Where we want to go: a summary
+### Where we want to go: a summary
 
 The goal of this RFC is to refactor the `std::num` hierarchy with the
 following goals in mind:
@@ -186,9 +186,9 @@ following goals in mind:
   should ultimately provide choices of sophisticated numeric
   hierarchies, and `std::num` should not get in the way.
 
-# Detailed design
+## Detailed design
 
-## Overview: the new hierarchy
+### Overview: the new hierarchy
 
 This RFC proposes to collapse the trait hierarchy in `std::num` to
 just the following traits:
@@ -212,7 +212,7 @@ intended to support.
 The main reason to pull out `Signed` into its own trait is so that it
 can be added to the prelude. (Further discussion below.)
 
-## Detailed definitions
+### Detailed definitions
 
 Below is the full definition of these traits. The functionality
 remains largely as it is today, just organized into fewer traits:
@@ -319,7 +319,7 @@ pub trait FloatMath: Float {
 }
 ```
 
-## Float constants, float math, and `cmath`
+### Float constants, float math, and `cmath`
 
 This RFC proposes to:
 
@@ -332,11 +332,11 @@ This RFC proposes to:
   `FloatMath` trait. Putting this in a separate trait means that
   `libstd` depends on `cmath` but `libcore` does not.
 
-## Free functions
+### Free functions
 
 All of the free functions defined in `std::num` are deprecated.
 
-## The prelude
+### The prelude
 
 The prelude will only include the `Signed` trait, as the operations it
 provides are widely expected to be available when they apply.
@@ -352,7 +352,7 @@ The reason for removing the rest of the traits is two-fold:
   of methods and associated items remain available for external
   numerics libraries in the Cargo ecosystem.
 
-## `strconv`, `FromStr`, `ToStr`, `FromStrRadix`, `ToStrRadix`
+### `strconv`, `FromStr`, `ToStr`, `FromStrRadix`, `ToStrRadix`
 
 Currently, traits for converting from `&str` and to `String` are both
 included, in their own modules, in `libstd`. This is largely due to
@@ -370,7 +370,7 @@ This RFC proposes to:
 * Move the `FromStrRadix` into `core::num`.
 * Remove `ToStrRadix`, which is already deprecated in favor of `fmt`.
 
-## `FromPrimitive` and friends
+### `FromPrimitive` and friends
 
 Ideally, the `FromPrimitive`, `ToPrimitive`, `Primitive`, `NumCast`
 traits would all be removed in favor of a more principled way of
@@ -384,14 +384,14 @@ the discussion on
 [this issue](https://github.com/rust-lang/rust/issues/10272) about
 `Ordinal` for the rough direction forward.
 
-# Drawbacks
+## Drawbacks
 
 This RFC somewhat reduces the potential for writing generic numeric
 code with `std::num` traits. This is intentional, however: the new
 design represents "just enough" generics to cover differently-sized
 built-in types, without any attempt at general algebraic abstraction.
 
-# Alternatives
+## Alternatives
 
 The status quo is clearly not ideal, and as explained above there was
 a long attempt at providing a more complete numeric hierarchy in `std`.
@@ -421,7 +421,7 @@ The signed and unsigned operations could be offered on more types,
 allowing removal of more traits but a less clear-cut semantics.
 
 
-# Unresolved questions
+## Unresolved questions
 
 This RFC does not propose a replacement for
 `#[deriving(FromPrimitive)]`, leaving the relevant traits in limbo

@@ -5,7 +5,7 @@
 
 ----
 
-# Summary
+## Summary
 [summary]: #summary
 
 Enable accurate caller location reporting during panic in `{Option, Result}::{unwrap, expect}` with
@@ -70,7 +70,7 @@ let m = n.unwrap();
 
 <!-- /TOC -->
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It is well-known that the error message reported by `unwrap()` is useless:
@@ -89,10 +89,10 @@ This RFC introduces line numbers into `unwrap()` without requiring users to adap
 idiom, i.e. the user should be able to see the precise location without changing any source
 code.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Let's reimplement `unwrap()`
+### Let's reimplement `unwrap()`
 
 `unwrap()` and `expect()` are two methods on `Option` and `Result` that are commonly used when you
 are *absolutely sure* they contain a successful value and you want to extract it.
@@ -200,7 +200,7 @@ println!("args[1] = {}", my_unwrap!(args().nth(1)));
 What if you have already published the `my_unwrap` crate that has thousands of users, and you
 want to maintain API stability? Before Rust 1.XX, the builtin `unwrap()` had the same problem!
 
-## Track the caller
+### Track the caller
 
 The reason the `my_unwrap!` macro works is because it copy-and-pastes the entire content of its macro
 definition every time it is used.
@@ -269,7 +269,7 @@ location as an additional argument. The attribute also instructs the compiler to
 whenever it sees it. This allows us to maintain the stability guarantee while allowing the user to
 get the new behavior with just one recompile.
 
-## Location type
+### Location type
 
 Let's enhance `my_unwrap` to also log a message to the log file before panicking. We would need to
 get the caller's location as a value. This is supported using the method `Location::caller()`:
@@ -289,7 +289,7 @@ pub fn my_unwrap<T>(input: Option<T>) -> T {
 }
 ```
 
-## Propagation of tracker
+### Propagation of tracker
 
 When your `#[track_caller]` function calls another `#[track_caller]` function, the caller location
 will be propagated downwards:
@@ -320,7 +320,7 @@ pub fn my_get_index<T>(input: &[T], index: usize) -> &T {
 }
 ```
 
-## Why do we use implicit caller location
+### Why do we use implicit caller location
 
 If you are learning Rust alongside other languages, you may wonder why Rust obtains the caller
 information in such a strange way. There are two restrictions that force us to adopt this solution:
@@ -335,10 +335,10 @@ information in such a strange way. There are two restrictions that force us to a
     does not (yet) support default function arguments or function overloading because they interfere
     with type inference, so such solutions are ruled out.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Survey of panicking standard functions
+### Survey of panicking standard functions
 
 Many standard functions may panic. These are divided into three categories depending on whether they
 should receive caller information despite the inlining cost associated with it.
@@ -483,7 +483,7 @@ functions. The `index` and `index_mut` functions should also have it if possible
 currently postponed as it is not investigated yet how to insert the transformation after
 monomorphization.
 
-## Procedural attribute macro
+### Procedural attribute macro
 
 The `#[track_caller]` attribute will modify a function at the AST and MIR levels without touching
 the type-checking (HIR level) or the low-level LLVM passes.
@@ -528,7 +528,7 @@ Currently the `foo::{{closure}}` cannot inherit attributes defined on the main f
 problems regarding ABI, using `#[naked]` or `extern "ABI"` together with
 `#[rustc_implicit_caller_location]` should raise an error.
 
-## Redirection (MIR inlining)
+### Redirection (MIR inlining)
 
 After all type-checking and validation is done, we can now inject the caller location. This is done
 by redirecting all calls to `foo` to `foo::{{closure}}`.
@@ -632,7 +632,7 @@ f(None);
 g(None); // The effect of these two calls must be the same.
 ```
 
-## Standard libraries
+### Standard libraries
 
 The `caller_location()` intrinsic returns the `Location` structure which encodes the file, line and
 column of the callsite. This shares the same structure as the existing type `std::panic::Location`.
@@ -675,7 +675,7 @@ this RFC.
 the intrinsic will expand to `Location { file: file!(), line: line!(), col: column!() }` during
 trans.
 
-## “My fault” vs “Your fault”
+### “My fault” vs “Your fault”
 
 In a `#[track_caller]` function, we expect all panics being attributed to the caller (thus the
 attribute name). However, sometimes the code panics not due to the caller, but the implementation
@@ -780,7 +780,7 @@ the RFC. Thus the RFC will remain advocating for propagating caller location imp
 [insta-stable]: https://github.com/rust-lang/rust/pull/39229#issuecomment-274348420
 [swift-panics]: https://stackoverflow.com/questions/29673027/difference-between-precondition-and-assert-in-swift
 
-## Location detail control
+### Location detail control
 
 An unstable flag `-Z location-detail` is added to `rustc` to control how much factual detail will
 be emitted when using `caller_location()`. The user can toggle `file`, `line` and `column` separately,
@@ -795,10 +795,10 @@ only the line number will be real. The file and column will always be a dummy va
     thread 'main' panicked at 'error message', <redacted>:192:0
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-## Code bloat
+### Code bloat
 
 Previously, all calls to `unwrap()` and `expect()` referred to the same location. Therefore, the
 panicking branch will only needed to reuse a pointer to a single global tuple.
@@ -830,7 +830,7 @@ a.value_of_some + b.value_of_some
 
 One can use `-Z location-detail` to get the old optimization behavior.
 
-## Narrow solution scope
+### Narrow solution scope
 
 `#[track_caller]` is only useful in solving the "get caller location" problem. Introducing an
 entirely new feature just for this problem seems wasteful.
@@ -838,7 +838,7 @@ entirely new feature just for this problem seems wasteful.
 [Default function arguments](#default-function-arguments) is another possible solution for this
 problem but with much wider application.
 
-## Confusing scoping rule
+### Confusing scoping rule
 
 Consts, statics and closures are separate MIR items, meaning the following marked places will *not*
 get caller locations:
@@ -857,10 +857,10 @@ better solution.
 
 Clippy could provide a lint against using `Location::caller()` outside of `#[track_caller]`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Rationale
+### Rationale
 
 This RFC tries to abide by the following restrictions:
 
@@ -885,16 +885,16 @@ Restriction 4 "interface independence" is currently not implemented due to lack 
 post-monomorphized MIR pass, but implementing `#[track_caller]` as a language feature follows this
 restriction.
 
-## Alternatives
+### Alternatives
 
-### 🚲 Name of everything 🚲
+#### 🚲 Name of everything 🚲
 
 * Is `#[track_caller]` an accurate description?
 * Should we move `std::panic::Location` into `core`, or just use a 3-tuple to represent the
     location? Note that the former is advocated in [RFC 2070].
 * Is `Location::caller()` properly named?
 
-### Using an ABI instead of an attribute
+#### Using an ABI instead of an attribute
 
 ```rust
 pub extern "implicit-caller-location" fn my_unwrap() {
@@ -915,7 +915,7 @@ Making this pass will require supporting implicitly coercing `extern "implicit-c
 pointer to a normal function pointer. Also, an ABI is not powerful enough to implicitly insert a
 parameter, making it less competitive than just using an attribute.
 
-### Repurposing `file!()`, `line!()`, `column!()`
+#### Repurposing `file!()`, `line!()`, `column!()`
 
 We could change the meaning of `file!()`, `line!()` and `column!()` so they are only converted to
 real constants after redirection (a MIR or trans pass) instead of early during macro expansion (an
@@ -923,7 +923,7 @@ AST pass). Inside `#[track_caller]` functions, these macros behave as this RFC's
 `caller_location()`. The drawback is using these macro will have different values at compile time
 (e.g. inside `include!(file!())`) vs. runtime.
 
-### Inline MIR
+#### Inline MIR
 
 Introduced as an [alternative to RFC 1669][inline_mir], instead of the `caller_location()` intrinsic,
 we could provide a full-fledged inline MIR macro `mir!` similar to the inline assembler:
@@ -956,7 +956,7 @@ generic mechanism which requires stabilizing the MIR syntax and considering the 
 the surrounding code. Besides, `#[track_caller]` itself still exists and the magic constants
 `$CallerFile` etc are still magical.
 
-### Default function arguments
+#### Default function arguments
 
 Assume this is solved by implementing [RFC issue 323].
 
@@ -1001,7 +1001,7 @@ where
 This can be resolved if the future default argument proposal takes this into account. But again,
 this feature itself is going to be large and controversial.
 
-### Semantic inlining
+#### Semantic inlining
 
 Treat `#[track_caller]` as the same as a very forceful `#[inline(always)]`. This eliminates the
 procedural macro pass. This was the approach suggested in the first edition of this RFC, since the
@@ -1017,7 +1017,7 @@ push-back from the community as:
 Therefore the RFC is changed to the current form, and the inlining pass is now described as just an
 implementation detail.
 
-### Design-by-contract
+#### Design-by-contract
 
 This is inspired when investigating the difference in
 ["my fault" vs "your fault"](#my-fault-vs-your-fault). We incorporate ideas from [design-by-contract]
@@ -1075,13 +1075,13 @@ with the caller's location. A proper solution will be similar to what this RFC p
 [design-by-contract]: https://en.wikipedia.org/wiki/Design_by_contract
 [`hoare`]: https://crates.io/crates/hoare
 
-## Non-viable alternatives
+### Non-viable alternatives
 
 Many alternatives have been proposed before but failed to satisfy the restrictions laid out in the
 [Rationale](#rationale) subsection, thus should *not* be considered viable alternatives within this
 RFC, at least at the time being.
 
-### Macros
+#### Macros
 
 The `unwrap!()` macro introduced in [RFC 1669] allows the user to write `unwrap!(x)` instead of
 `x.unwrap()`.
@@ -1101,7 +1101,7 @@ macros~~.
 All pre-typeck rewrites are prone to false-positive failures affecting unrelated types that have an
 `unwrap()` method. Post-typeck rewrites are no different from this RFC.
 
-### Backtrace
+#### Backtrace
 
 When given debug information (DWARF section/file on Linux, `*.pdb` file on Windows, `*.dSYM` folder
 on macOS), the program is able to obtain the source code location for each address. This solution is
@@ -1136,7 +1136,7 @@ motivation.
 
 (A debuginfo-based stack trace proposal can be found at [RFC 2154].)
 
-### `SourceContext` generic parameter
+#### `SourceContext` generic parameter
 
 Introduced as an [alternative in RFC 1669][source_context], inspired by GHC's implicit parameter:
 
@@ -1155,7 +1155,7 @@ stabilized. Methods applying this solution will also lose object-safety.
 
 The same drawback exists if we base the solution on [RFC 2000]  (*const generics*).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * If we want to support adding `#[track_caller]` to trait methods, the redirection

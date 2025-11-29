@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#3533](https://github.com/rust-lang/rfcs/pull/3533)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 This RFC proposes merging the Release team into the Infrastructure team as a subteam. The membership of the Infrastructure and Release teams proper remain the same.[^subteam]
 
 [^subteam]: Note: Members of subteams are not automatically direct members of their parent team. So Release members will be part of the wider Infra team family but *not* direct members of the team proper. In practical terms this means, among other things, that Release team members would not have checkbox authority associated with direct Infra team membership, but Release team members could serve as the Leadership Council representative for Infra.
 
-# Motivation
+## Motivation
 
 Historically the Release team has had a much smaller scope than other teams. It typically only functions to execute on releases. While this is not a trivial amount of work, it is definitely much smaller than other top-level teams' purviews (e.g., the compiler team's purview to develop the Rust compiler).
 
@@ -23,7 +23,7 @@ With this proposal the Infrastructure team's purview does not grow considerably 
 
 For the purposes of actual decision making, the Release subteam retains all decision-making power with regard to release related issues (i.e., this proposal does not change who makes any particular decision and is purely a change in Council representation). This may change over time should the Infra team choose to structure itself in a different way.
 
-# Practicalities
+## Practicalities
 
 Once this proposal is accepted, the Release team will move to be a subteam of Infrastructure. The Infrastructure team does not change its top-level form.
 
@@ -33,9 +33,9 @@ As part of this change, wg-triage will move out from under the Release team and 
 
 [^plan]: It is currently the unofficial plan that Ryan Levick will step down in his role as the Infrastructure representative, and Mark Rousskov would take over as the rep, but this would be made official after the merger through internal Infrastructure team process.
 
-# Alternatives
+## Alternatives
 
-## Combining Infra and Release into a new team
+### Combining Infra and Release into a new team
 
 Instead of merging the Release team into Infrastructure, a new team is formed consisting of Infrastructure and Release as the two subteams.
 
@@ -45,9 +45,9 @@ This option is much more complex logistically speaking for the following reasons
 
 It is not clear that there are any benefits to this alternative that are worth the cost of the above complexities.
 
-# Future Possibilities
+## Future Possibilities
 
-## Merge part of crates.io into Infrastructure
+### Merge part of crates.io into Infrastructure
 
 Crates.io is arguably the other team next to Release with the smallest purview compared to other teams. We may want to merge at least part of the team (i.e., the part responsible for running the crates.io infra) into Infrastructure.
 

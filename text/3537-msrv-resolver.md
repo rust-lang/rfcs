@@ -4,7 +4,7 @@
 - RFC PR: [rust-lang/rfcs#3537](https://github.com/rust-lang/rfcs/pull/3537)
 - Rust Issue: [rust-lang/cargo#9930](https://github.com/rust-lang/cargo/issues/9930)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Provide a happy path for developers needing to work with older versions of Rust by
@@ -26,10 +26,10 @@ Cargo FCPs are now tracked in This Week in Rust to ensure the community is aware
 Even then, a change like `cargo new` can be reverted without an RFC,
 likely only needing to follow the FCP process.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Status Quo
+### Status Quo
 
 <details><summary>Ensuring you have a <code>Cargo.lock</code> with dependencies compatible with your minimum-supported Rust version (MSRV) is an arduous task of running <code>cargo update &lt;dep&gt; --precise &lt;ver&gt;</code> until it works</summary>
 
@@ -207,7 +207,7 @@ Rust version (in contrast with the example above).
 This delay can be reduced somewhat if a newer toolchain can be used for
 development version without upgrading the MSRV.
 
-## Workflows
+### Workflows
 
 In solving this, we need to keep in mind how people are using Cargo and how to prioritize when needs of different workflows conflict.
 We will then look at the potential designs within the context of this framework.
@@ -258,7 +258,7 @@ Some implications:
     [`IsTerminal`](https://doc.rust-lang.org/std/io/trait.IsTerminal.html)
     cut build time from [6s to 3s](https://github.com/rosetta-rs/argparse-rosetta-rs/commit/378cd2c30679afdf9b9843dbadea3e8951090809))
 
-### Latest Rust with no MSRV
+#### Latest Rust with no MSRV
 
 A user runs `cargo new` and starts development.
 
@@ -277,7 +277,7 @@ Otherwise, they must actively run `rustup update` or follow Rust news.
 
 For dependents, this makes it harder to know what versions are "safe" to use.
 
-### Latest Rust as the MSRV
+#### Latest Rust as the MSRV
 
 A maintainer regularly updates their MSRV to latest.
 They can choose to provide a level of support for old MSRVs by reserving MSRV
@@ -303,7 +303,7 @@ though that causes extra churn in the repo.
 A package could offer a lower MSRV in an unofficial capacity or with a lower quality of support
 but the requirement that dependents always pass `--ignore-rust-version` makes this disruptive.
 
-### Extended MSRV
+#### Extended MSRV
 
 This could be people exclusively running one version or that support a range of versions.
 So why are people on old versions?
@@ -348,7 +348,7 @@ When developing with the latest toolchain,
 feedback is delayed until CI or an embedded image build process which can be frustrating
 (using too-new dependencies, using too-new Cargo or Rust features, etc).
 
-### Extended published MSRV w/ latest development MSRV
+#### Extended published MSRV w/ latest development MSRV
 
 This is where the published package for a project claims an extended MSRV but interactions within the repo require the latest toolchain.
 The requirement on the latest MSRV could come from the `Cargo.lock` containing dependencies with the latest MSRV or they could be using Cargo features that don't affect the published package.
@@ -384,7 +384,7 @@ The two lockfile approach also has all of the problems shown earlier in writing 
 When only keeping MSRV-incompatible `dev-dependencies`,
 one lockfile can be used but it can be difficult to edit the `Cargo.lock` to ensure you get new `dev-dependencies` without infecting other dependency types.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 We are introducing several new concepts
@@ -398,9 +398,9 @@ We are introducing several new concepts
   - `cargo new` will default to `package.rust-version = "tbd-name-representing-currently-running-rust-toolchain"`
 - A deny-by-default lint will replace the build error from a package having an incompatible Rust version, allowing users to opt-in to overriding it
 
-## Example documentation updates
+### Example documentation updates
 
-### The `rust-version` field
+#### The `rust-version` field
 
 *(update to [manifest documentation](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field))*
 
@@ -432,7 +432,7 @@ the package, including test suites, benchmarks, binaries, examples, etc.
 *Note: The first version of Cargo that supports this field was released with Rust 1.56.0.
 In older releases, the field will be ignored, and Cargo will display a warning.*
 
-### Rust Version
+#### Rust Version
 
 *(update to [Dependency Resolution's Other Constraints documentation](https://doc.rust-lang.org/cargo/reference/resolver.html))*
 
@@ -441,7 +441,7 @@ cargo will prefer those with a compatible `package.rust-version` over those that
 aren't compatible.
 Some details may change over time though `cargo check && rustup update && cargo check` should not cause `Cargo.lock` to change.
 
-##### `resolver.precedence`
+###### `resolver.precedence`
 
 *(update to [Configuration](https://doc.rust-lang.org/cargo/reference/config.html))*
 
@@ -456,11 +456,11 @@ Controls how `Cargo.lock` gets updated on changes to `Cargo.toml` and with `carg
 
 `rust-version` can be overridden with `--ignore-rust-version` which will fallback to `maximum`.
 
-## Example workflows
+### Example workflows
 
 We'll step through several scenarios to highlight the changes in the user experience.
 
-### Latest Rust with MSRV
+#### Latest Rust with MSRV
 
 I'm learning Rust and wanting to write my first application.
 The book suggested I install using `rustup`.
@@ -577,7 +577,7 @@ relying on the `cargo publish`s verify step to verify the correctness of that MS
 
 </details>
 
-### Extended "MSRV" with an application
+#### Extended "MSRV" with an application
 
 I am developing an application using a certified toolchain.
 I specify this toolchain using a `rust-toolchain.toml` file.
@@ -621,7 +621,7 @@ Assuming (1) or (2) applies, I ignore the warning and move on.
 
 </details>
 
-### Extended MSRV with an application targeting multiple Rust versions
+#### Extended MSRV with an application targeting multiple Rust versions
 
 *(this is a re-imagining of the Motivation's example)*
 
@@ -707,7 +707,7 @@ Updating foo's rust-version from 1.92 to 1.93
 
 </details>
 
-### Extended MSRV for a Library
+#### Extended MSRV for a Library
 
 I'm developing a new library and am willing to take on some costs for supporting people on older toolchains.
 
@@ -774,12 +774,12 @@ Instead, if a newer clap version was out needing 1.94 or 1.95, I would instead e
 
 </details>
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 We expect these changes to be independent enough and beneficial on their own that they can be stabilized as each is completed.
 
-## Cargo Resolver
+### Cargo Resolver
 
 We will be adding a v3 resolver, specified through `workspace.resolver` / `package.resolver`.
 This will become default with the next Edition.
@@ -817,7 +817,7 @@ As this is just a preference for resolving dependencies, rather than prescriptiv
 this shouldn't cause churn of the `Cargo.lock` file.
 We already call `rustc` for feature resolution, so hopefully this won't have a performance impact.
 
-## Cargo config
+### Cargo config
 
 We'll add a `resolver.precedence ` field to `.cargo/config.toml` which will control the package version prioritization policy.
 
@@ -840,7 +840,7 @@ with potential values being:
 
 If a `rust-version` value is used, we'd switch to `maximum` when `--ignore-rust-version` is set.
 
-## `cargo build`
+### `cargo build`
 
 The MSRV-compatibility build check will be demoted from an error to a `deny`-by-default workspace
 [diagnostic](https://github.com/rust-lang/cargo/issues/12235),
@@ -855,7 +855,7 @@ to help raise awareness of `package.rust-version` being able to reduce future
 resolution errors.
 This would benefit from knowing the oldest MSRV.
 
-## `cargo update`
+### `cargo update`
 
 `cargo update` will inform users when an MSRV or semver incompatible version is available.
 `cargo update --dry-run` will also report this information so that users can check on the status of this at any time.
@@ -869,7 +869,7 @@ We expect the notice to inform users of these options for allowing them to upgra
 
 Those flags will also be added to `cargo generate-lockfile`
 
-## Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command
+### Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command
 
 In addition to the `cargo update` output to report when things are held back (both MSRV and semver),
 we will try having dependency resolves highlight newly selected dependency versions that were held back due to MSRV or semver.
@@ -893,7 +893,7 @@ could explore hashing the resolve inputs and storing that in the lockfile,
 allowing us to detect if the inputs have changed and only resolving then.
 
 
-## `cargo add`
+### `cargo add`
 
 `cargo add <pkg>` (no version) will pick a version requirement that is low
 enough so that when it resolves, it can pick a dependency that is
@@ -904,7 +904,7 @@ Users may pass
 - `--ignore-rust-version` to pick the latest dependencies, ignoring all `rust-version` fields (your own and from dependencies)
 - `--update-rust-version` to pick the `rustc --version`-compatible dependencies, updating your `package.rust-version` if needed to match the highest of your dependencies
 
-## `cargo publish`
+### `cargo publish`
 
 `package.rust-version` will gain support for an `"tbd-name-representing-currently-running-rust-toolchain"` value, in addition to partial versions.
 On `cargo publish` / `cargo package`, the generated `*.crate`s `Cargo.toml` will have `"tbd-name-representing-currently-running-rust-toolchain"` replaced with `rustc --version`.
@@ -912,7 +912,7 @@ If `rustc --version` is a pre-release, publish will fail.
 
 `cargo new` will include `package.rust-version = "tbd-name-representing-currently-running-rust-toolchain"`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Users upgrading to the next Edition (or changing to `resolver = '3"`), will have to manually update their CI to test the latest dependencies with `CARGO_RESOLVER_PRECEDENCE=maximum`.
@@ -931,7 +931,7 @@ However, we already recommend people
 so the only scenario this further degrades is when lockfiles are verified by always updating to the latest, like with RenovateBot,
 and only in the sense that the user needs to know to explicitly take action to add another verification job to CI.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Misc alternatives
@@ -962,7 +962,7 @@ Misc alternatives
   - This comes at the cost of inconsistency with `--ignore-rust-version`.
 - Nightly `cargo publish` with `"tbd-name-representing-currently-running-rust-toolchain"` fails because there isn't a good value to use and this gives us flexibility to change it later (e.g. just leaving the `rust-version` as unset).
 
-## Ensuring the registry Index has `rust-version` without affecting quality
+### Ensuring the registry Index has `rust-version` without affecting quality
 
 The user experience for this is based on the extent and quality of the data.
 Ensuring we have `package.rust-version` populated more often (while maintaining
@@ -1023,7 +1023,7 @@ When there still isn't an MSRV set, the resolver could
   - This runs into quality issues with version requirements that are likely too low for what the package actually needs
   - For dependencies that never set their MSRV, this effectively switches us from maximal versions to minimal versions.
 
-## Configuring the resolver mode on the command-line or `Cargo.toml`
+### Configuring the resolver mode on the command-line or `Cargo.toml`
 
 The Cargo team is very interested in [moving project-specific config to manifests](https://github.com/rust-lang/cargo/issues/12738).
 However, there is a lot more to define for us to get there.  Some routes that need further exploration include:
@@ -1035,7 +1035,7 @@ However, there is a lot more to define for us to get there.  Some routes that ne
 
 By relying on config we can have a stabilized solution sooner and we can work out more of the details as we better understand the relevant problems.
 
-## Add `workspace.rust-version`
+### Add `workspace.rust-version`
 
 Instead of using the lowest MSRV among workspace members, we could add `workspace.rust-version`.
 
@@ -1049,7 +1049,7 @@ This opens its own set of questions
 The proposed solution does not block us from later going down this road but
 allows us to move forward without having to figure out all of these details.
 
-## Resolver behavior
+### Resolver behavior
 
 Effects of current solution on workflows (including non-resolver behavior):
 1. Latest Rust with no MSRV
@@ -1071,7 +1071,7 @@ A short term benefit (hence why this is separate) is that an MSRV-aware resolver
 (which will likely need a lot of work in cargo after we finish stabilizing it for rustc).
 A polyfill package can exist that has multiple maintained semver-compatible versions with different MSRVs with the older ones leveraging external libraries while the newer ones leverage the standard library.
 
-### Make this opt-in rather than opt-out
+#### Make this opt-in rather than opt-out
 
 Instead of adding `resolver = "3"`, we could keep the default resolver the same as today but allow opt-in to MSRV-aware resolver via `CARGO_RESOLVER_PRECEDENCE=rust-version`.
 - When building with old Rust versions, error messages could suggest re-resolving with `CARGO_RESOLVER_PRECEDENCE=rust-version`.
@@ -1099,7 +1099,7 @@ Effects on workflows (including non-resolver behavior):
   - 🟰 ~~Maintainers will have to opt-in to latest dependencies, in a `.cargo/config.toml`~~
   - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
-### Make `CARGO_RESOLVER_PRECEDENCE=rustc` the default
+#### Make `CARGO_RESOLVER_PRECEDENCE=rustc` the default
 
 Instead of `resolver = "3"` changing the behavior to `CARGO_RESOLVER_PRECEDENCE=rust-version`,
 it is changed to `CARGO_RESOLVER_PRECEDENCE=rustc` where the resolver selects packages compatible with current toolchain,
@@ -1131,7 +1131,7 @@ Effects on workflows (including non-resolver behavior):
   - ❌ Maintainers will have to opt-in to ensure they get the latest dependencies in a `.cargo/config.toml`
   - ✅ Verifying MSRV will no longer require juggling `Cargo.lock` files or using unstable features
 
-### Hard-error
+#### Hard-error
 
 Instead of *preferring* MSRV-compatible dependencies, the resolver could hard error if only MSRV-incompatible versions are available.
 - `--ignore-rust-version` would need to be "sticky" in the `Cargo.lock` to avoid the next run command from rolling back the `Cargo.lock` which might be confusing because it is "out of sight; out of mind".
@@ -1162,7 +1162,7 @@ Effects on workflows (including non-resolver behavior):
   - ❌ If this is done unconditionally, then the `Cargo.lock` will change on upgrade
   - ❌ This is incompatible with per-`feature` MSRVs
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - Python: instead of tying packages to a particular tooling version, the community instead focuses on their equivalent of the [`rustversion` crate](https://crates.io/crates/rustversion) combined with tool-version-conditional dependencies that allow polyfills.
@@ -1176,7 +1176,7 @@ Effects on workflows (including non-resolver behavior):
   - When run on an incompatible system, it will error and require running a command to re-resolve the dependencies for the current system
   - One difference is that PHP is interpreted and that their lockfile must encompass not just development dependencies but deployment dependencies.  This is in contrast to Rust which has development and deployment-build dependencies tracked with a lockfile while deployment uses OS-specific dependencies, like shared-object dependencies of ELF binaries which are not locked by their nature but instead developers rely on other technologies like docker or Nix (not even static linking can help as they that still leaves them subject to the kernel version in non-bare metal deployments).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 The config field is fairly rough
@@ -1205,21 +1205,21 @@ Should we instead pick the previous stable release (e.g. nightly 1.77 would reso
 Whether we report stale dependencies only on `cargo update` or on every command.
 See "Syncing `Cargo.toml` to `Cargo.lock` on any Cargo command".
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Integrate `cargo audit`
+### Integrate `cargo audit`
 
 If we [integrate `cargo audit`](https://github.com/rust-lang/cargo/issues/7678),
 we can better help users on older dependencies identify security vulnerabilities,
 reducing the risks associated with being on older versions.
 
-## "cargo upgrade"
+### "cargo upgrade"
 
 As we pull [`cargo upgrade` into cargo](https://github.com/rust-lang/cargo/issues/12425),
 we'll want to make it respect MSRV as well
 
-## cargo install
+### cargo install
 
 `cargo install` could auto-select a top-level package that is compatible with the version of rustc that will be used to build it.
 
@@ -1239,7 +1239,7 @@ See [rust-lang/cargo#10903](https://github.com/rust-lang/cargo/issues/10903) for
 suggesting a version of the package to use and to pass `--locked` assuming the
 bundled `Cargo.lock` has MSRV compatible dependencies.
 
-## cargo publish
+### cargo publish
 
 If you publish a library using your MSRV and MSRV-incompatible dependencies exist, the publish verification step will fail.
 You can workaround this by
@@ -1248,17 +1248,17 @@ You can workaround this by
 
 See [rust-lang/cargo#13306](https://github.com/rust-lang/cargo/issues/13306).
 
-## `resolver.precedence = "rust-version=<X>[.<Y>[.<Z>]]"`
+### `resolver.precedence = "rust-version=<X>[.<Y>[.<Z>]]"`
 
 We could allow people setting an effective rust-version within the config.
 This would be useful for people who have a reason to not set `package.rust-version`
 as well as to reproduce behavior with different Rust versions.
 
-## rustup supporting `+msrv`
+### rustup supporting `+msrv`
 
 See https://github.com/rust-lang/rustup/issues/1484#issuecomment-1494058857
 
-## Language-version lints
+### Language-version lints
 
 We could make developing with the latest toolchain with old MSRVs easier if we provided lints.
 Due to accuracy of information, this might start as a clippy lint, see
@@ -1268,12 +1268,12 @@ This doesn't have to be perfect (covering all facets of the language) to be usef
 If we allowed this to bypass caplints,
 then you could more easily track when a dependency with an unspecified MSRV is incompatible.
 
-## Language-version awareness for rust-analyzer
+### Language-version awareness for rust-analyzer
 
 rust-analyzer could mark auto-complete options as being incompatible with the MSRV and
 automatically bump the MSRV if selected, much like auto-adding a `use` statement.
 
-## Establish a policy on MSRV
+### Establish a policy on MSRV
 
 For us to say "your MSRV should be X" would likely be both premature and would have a lot of caveats for different use cases.
 
@@ -1288,14 +1288,14 @@ Ideally, we'd at least facilitate people in setting their MSRV.  Some data that 
 Once people have more data to help them in picking an MSRV policy,
 it would help to also document trade-offs on whether an MSRV policy should proactive or reactive on when to bump it.
 
-## Warn when adding dependencies with unspecified MSRVs
+### Warn when adding dependencies with unspecified MSRVs
 
 When adding packages without an MSRV,
 its not clear whether it will work with your project.
 Knowing that they haven't declared support for your toolchain version could be important,
 after we've made it easier to declare an MSRV.
 
-## Track version maintenance status on crates.io
+### Track version maintenance status on crates.io
 
 If you `cargo add` a dependency and it says that a newer version is available but it supports a dramatically different MSRV than you,
 it would be easy to assume there is a mismatch in expectations and you shouldn't use that dependency.

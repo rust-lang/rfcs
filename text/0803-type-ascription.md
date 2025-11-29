@@ -3,7 +3,7 @@
 - Rust Issue: [rust-lang/rust#23416](https://github.com/rust-lang/rust/issues/23416)
 - Feature: `ascription`
 
-# Summary
+## Summary
 
 Add type ascription to expressions. (An earlier version of this RFC covered type
 ascription in patterns too, that has been postponed).
@@ -14,7 +14,7 @@ See also discussion on [#354](https://github.com/rust-lang/rfcs/issues/354) and
 [rust issue 10502](https://github.com/rust-lang/rust/issues/10502).
 
 
-# Motivation
+## Motivation
 
 Type inference is imperfect. It is often useful to help type inference by
 annotating a sub-expression with a type. Currently, this is only possible by
@@ -34,7 +34,7 @@ to precisely communicate expectations to the compiler or other programmers.
 By allowing type ascription in more places, we remove the inconsistency that
 type ascription is currently only allowed on top-level patterns.
 
-## Examples:
+### Examples:
 
 (Somewhat simplified examples, in these cases there are sometimes better
 solutions with the current syntax).
@@ -92,7 +92,7 @@ let x: T = foo(): U<_>;
 ```
 
 
-# Detailed design
+## Detailed design
 
 The syntax of expressions is extended with type ascription:
 
@@ -188,7 +188,7 @@ match <expr> { .. ref [mut] x .. => { .. } .. }
 <expr> = ...;
 ```
 
-# Drawbacks
+## Drawbacks
 
 More syntax, another feature in the language.
 
@@ -200,7 +200,7 @@ If we introduce named arguments in the future, then it would make it more
 difficult to support the same syntax as field initialisers.
 
 
-# Alternatives
+## Alternatives
 
 We could do nothing and force programmers to use temporary variables to specify
 a type. However, this is less ergonomic and has problems with scopes/lifetimes.
@@ -216,7 +216,7 @@ which require more programmer attention. This also does not help with patterns.
 We could use a different symbol or keyword instead of `:`, e.g., `is`.
 
 
-# Unresolved questions
+## Unresolved questions
 
 Is the suggested precedence correct?
 

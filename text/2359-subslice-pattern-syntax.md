@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2359](https://github.com/rust-lang/rfcs/pull/2359)
 - Rust Issue: [rust-lang/rust#62254](https://github.com/rust-lang/rust/issues/62254)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Permit matching sub-slices and sub-arrays with the syntax `..`.  
@@ -18,23 +18,23 @@ let [x, y @ .., z] = [1, 2, 3, 4]; // `y: [i32, 2] = [2, 3]`
 let [x, y @ .., z]: &[u8] = &[1, 2, 3, 4]; // `y: &[i32] = &[2, 3]`
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## General motivation
+### General motivation
 Stabilization of slice pattern with subslices is currently blocked on finalizing syntax for
 these subslices.  
 This RFC proposes a syntax for stabilization.
 
-## Motivation for the specific syntax
+### Motivation for the specific syntax
 
-### The shortcut form: `..`
+#### The shortcut form: `..`
 
 This form is already used in the meaning "rest of the list" in struct patterns, tuple struct
 patterns and tuple patterns so it would be logical to use it for slice patterns as well.  
 And indeed, in unstable Rust `..` is used in this meaning since long before 1.0.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Sub-slices and sub-arrays can be matched using `..` and `<IDENT> @ ..` can be used to bind
@@ -106,7 +106,7 @@ match &mut v {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 `..` can be used as a pattern fragment for matching sub-slices and sub-arrays.
@@ -135,12 +135,12 @@ struct pattern syntaxes. In particular, `..` is not accepted by the `pat` macro 
 `BINDING @ ..` is also not a full pattern syntax, but rather a part of slice pattern syntax, so
 it is not accepted by the `pat` macro matcher either.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None known.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 More complex syntaxes derived from `..` are possible, they use additional tokens to avoid the
@@ -193,7 +193,7 @@ variant `Variant(..)` and tuple `(a, b, ..)` patterns, but it's unlikely that th
 will ever be used in patterns in the range meaning because it duplicates functionality of the
 wildcard pattern `_`.
 
-#### `..PAT` vs `PAT..`
+### `..PAT` vs `PAT..`
 
 Originally Rust used syntax `..PAT` for subslice patterns.  
 In 2014 the syntax was changed to `PAT..` by [RFC 202](https://github.com/rust-lang/rfcs/pull/202).
@@ -232,7 +232,7 @@ slices (only identifiers), whereas `PAT..`/`..PAT` suggest the ability to write 
 `..SomeStruct { x }` sub-patterns, which wouldn't be possible since the resulting bound variables
 don't form a slice (since they're spread out in memory).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Some other languages like Haskell (`first_elem : rest_of_the_list`),
@@ -242,12 +242,12 @@ syntactic choices are quite different from Rust's general style.
 "Rest of the list" in patterns was previously discussed in
 [RFC 1492](https://github.com/rust-lang/rfcs/pull/1492)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None known.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 Turn `..` into a full pattern syntactically accepted in any pattern position,

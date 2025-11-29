@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#2836](https://github.com/rust-lang/rfcs/pull/2836)
 - Rust Issue: [rust-lang/rust#29722](https://github.com/rust-lang/rust/issues/29722)
 
-# Summary
+## Summary
 [summary]: #summary
 
 To create a [project group] with the purpose of designing subsequent RFCs to extend the language to support inline assembly in Rust code.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 In systems programming some tasks require dropping down to the assembly level. The primary reasons are for performance, precise timing, and low level hardware access. Using inline assembly for this is sometimes convenient, and sometimes necessary to avoid function call overhead.
 
 The inline assembler syntax currently available in nightly Rust is very ad-hoc. It provides a thin wrapper over the inline assembly syntax available in LLVM IR. For stabilization a more user-friendly syntax that lends itself to implementation across various backends is preferable.
 
-# Project group details
+## Project group details
 
 [Repository][asm project]
 
@@ -29,7 +29,7 @@ Lang team liaisons:
 
 * [joshtriplett (Josh Triplett)](https://github.com/joshtriplett)
 
-# Charter
+## Charter
 [charter]: #charter
 
 The main goal of the asm project group is to design and implement an `asm!` macro using a syntax that we feel we can maintain, easily write, and stabilize.

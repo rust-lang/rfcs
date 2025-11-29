@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1183](https://github.com/rust-lang/rfcs/pull/1183)
 - Rust Issue: [rust-lang/rust#27389](https://github.com/rust-lang/rust/issues/27389)
 
-# Summary
+## Summary
 
 Add support to the compiler to override the default allocator, allowing a
 different allocator to be used by default in Rust programs. Additionally, also
@@ -12,7 +12,7 @@ the system malloc instead of jemalloc.
 
 *Note:* this RFC has been superseded by [RFC 1974][].
 
-# Motivation
+## Motivation
 
 Note that this issue was [discussed quite a bit][babysteps] in the past, and
 the meat of this RFC draws from Niko's post.
@@ -33,7 +33,7 @@ programs may want to simply instrument allocations or shim in additional
 functionality (such as memory tracking statistics). This is currently quite
 difficult to do, and would be accommodated with a custom allocation scheme.
 
-# Detailed design
+## Detailed design
 
 The high level design can be found [in this gist][gist], but this RFC intends to
 expound on the idea to make it more concrete in terms of what the compiler
@@ -191,7 +191,7 @@ Finally, providers of allocators will simply provide a crate to do so, and then
 applications and/or libraries can make explicit use of the allocator by
 depending on it as usual.
 
-# Drawbacks
+## Drawbacks
 
 A significant amount of API surface area is being added to the compiler and
 standard distribution as part of this RFC, but it is possible for it to all
@@ -215,7 +215,7 @@ It's possible to define an allocator API (e.g. define the symbols) but then
 forget the `#![allocator]` annotation, causing the compiler to wind up linking
 two allocators, which may cause link errors that are difficult to debug.
 
-# Alternatives
+## Alternatives
 
 The compiler's knowledge about allocators could be simplified quite a bit to the
 point where a compiler flag is used to just turn injection on/off, and then it's
@@ -228,7 +228,7 @@ Many of the names (such as `alloc_system`) have a number of alternatives, and
 the naming of attributes and functions could perhaps follow a stronger
 convention.
 
-# Unresolved questions
+## Unresolved questions
 
 Does this enable jemalloc to be built without a prefix on Linux? This would
 enable us to direct LLVM allocations to jemalloc, which would be quite nice!
@@ -236,7 +236,7 @@ enable us to direct LLVM allocations to jemalloc, which would be quite nice!
 Should BSD-like systems use Rust's jemalloc by default? Many of them have
 jemalloc as the system allocator and even the special APIs we use from jemalloc.
 
-# Updates since being accepted
+## Updates since being accepted
 
 *Note:* this RFC has been superseded by [RFC 1974][].
 

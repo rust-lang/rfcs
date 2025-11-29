@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#115](https://github.com/rust-lang/rfcs/pull/115)
 - Rust Issue: [rust-lang/rust#6023](https://github.com/rust-lang/rust/issues/6023)
 
-# Summary
+## Summary
 
 Currently we use inference to find the current type of
 otherwise-unannotated integer literals, and when that fails the type
@@ -13,7 +13,7 @@ This proposal removes the integer inference fallback and strengthens
 the types required for several language features that interact with
 integer inference.
 
-# Motivation
+## Motivation
 
 With the integer fallback, small changes to code can change the
 inferred type in unexpected ways. It's not clear how big a problem
@@ -26,7 +26,7 @@ See also https://github.com/mozilla/rust/issues/6023.
 
 [1]: https://gist.github.com/nikomatsakis/11179747
 
-# Detailed design
+## Detailed design
 
 The primary change here is that, when integer type inference fails,
 the compiler will emit an error instead of assigning the value the
@@ -56,7 +56,7 @@ type; assigning an integer to an enum will behave as if casting from
 from the type of the integer to an unsigned integer with the size of
 the enum discriminant.
 
-# Drawbacks
+## Drawbacks
 
 This will force users to type hint somewhat more often. In particular,
 ranges of unsigned ints may need to be type-hinted:
@@ -65,11 +65,11 @@ ranges of unsigned ints may need to be type-hinted:
 for _ in range(0u, 10) { }
 ```
 
-# Alternatives
+## Alternatives
 
 Do none of this.
 
-# Unresolved questions
+## Unresolved questions
 
 * If we're putting new restrictions on shift operators, should we
   change the traits, or just make the primitives special?

@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#738](https://github.com/rust-lang/rfcs/pull/738)
 - Rust Issue: [rust-lang/rust#22212](https://github.com/rust-lang/rust/issues/22212)
 
-# Summary
+## Summary
 
 - Use inference to determine the *variance* of input type parameters.
 - Make it an error to have unconstrained type/lifetime parameters.
@@ -12,9 +12,9 @@
   analyses, notably OIBIT, that can otherwise be deceived into yielding
   incorrect results.
 
-# Motivation
+## Motivation
 
-## Why variance is good
+### Why variance is good
 
 Today, all type parameters are invariant. This can be problematic
 around lifetimes. A particular common example of where problems
@@ -63,7 +63,7 @@ respect to its argument type, it means that the lifetimes of `field1`
 and `field2` must match *exactly*. It is not good enough for them to
 have a common subset. This is not good.
 
-## What variance is
+### What variance is
 
 [Variance][v] is a general concept that comes up in all languages that
 combine subtyping and generic types. However, because in Rust all
@@ -160,7 +160,7 @@ Finally, there can be cases where it is ok to make a lifetime
 
 [v]: http://en.wikipedia.org/wiki/Covariance_and_contravariance_%28computer_science%29
 
-## Why variance should be inferred
+### Why variance should be inferred
 
 Actually, lifetime parameters already have a notion of variance, and
 this variance is fully inferred. In fact, the proper variance for type
@@ -181,7 +181,7 @@ wrong. There is one example later on where the author did this, but
 using the mechanisms described in this RFC to guide the inference
 actually led to the correct solution.
 
-## The corner case: unused parameters and parameters that are only used unsafely
+### The corner case: unused parameters and parameters that are only used unsafely
 
 Unfortunately, variance inference only works if type parameters are
 actually *used*. Otherwise, there is no data to go on. You might think
@@ -211,14 +211,14 @@ parameter in question or insert a *marker type*. Marker types
 basically inform the inference engine to pretend as if the type
 parameter were used in particular ways. They are discussed in the next section.
 
-## Revamping the marker types
+### Revamping the marker types
 
-### The UnsafeCell type
+#### The UnsafeCell type
 
 As today, the `UnsafeCell<T>` type is well-known to `rustc` and is
 always considered invariant with respect to its type parameter `T`.
 
-### Phantom data
+#### Phantom data
 
 This RFC proposes to replace the existing marker types
 (`CovariantType`, `ContravariantLifetime`, etc) with a single type,
@@ -279,7 +279,7 @@ fields. Another example is the ongoing work for removing the
 `#[unsafe_dtor]` annotation, which also sometimes requires a recursive
 analysis of a similar nature.
 
-### Phantom functions
+#### Phantom functions
 
 One limitation of the marker type `PhantomData` is that it cannot be
 used to constrain unused parameters appearing on traits. Consider
@@ -310,7 +310,7 @@ trait Dummy<T> : PhantomFn() -> T { }
 As you can see, the `()` notation can be used with `PhantomFn` as
 well.
 
-### Designating marker traits
+#### Designating marker traits
 
 In addition to phantom fns, there is a convenient trait `MarkerTrait`
 that is intended for use as a supertrait for traits that designate
@@ -374,12 +374,12 @@ quickly found the counterexample I give above. This gives me
 confidence that expressing variance in terms of data and fns is more
 reliable than trying to divine the correct results directly.*
 
-# Detailed design
+## Detailed design
 
 Most of the detailed design has already been covered in the motivation
 section.
 
-#### Summary of changes required
+### Summary of changes required
 
 - Use variance results to inform subtyping of nominal types
   (structs, enums).
@@ -400,7 +400,7 @@ ASAP).
 
 [b]: https://github.com/nikomatsakis/rust/tree/variance-3
 
-#### Variance inference algorithm
+### Variance inference algorithm
 
 I won't dive too deeply into the inference algorithm that we are using
 here. It is based on Section 4 of the paper
@@ -412,7 +412,7 @@ detailed (and hopefully only slightly outdated) description in
 [taming]: http://people.cs.umass.edu/~yannis/variance-pldi11.pdf
 [the code]: https://github.com/nikomatsakis/rust/blob/variance-3/src/librustc_typeck/variance.rs#L11-L205
 
-#### Bivariance yields an error
+### Bivariance yields an error
 
 One big change from today is that if we compute a result of bivariance
 as the variance for any type or lifetime parameter, we will report a
@@ -428,7 +428,7 @@ the right choice (the ability to easily attach documentation to the
 marker type was in fact the major factor that led us to adopt marker
 types in the first place).
 
-#### Rules for associated types
+### Rules for associated types
 
 The only exception is when this type parameter is in fact
 an output that is implied by where clauses declared on the type.  As
@@ -457,7 +457,7 @@ parameters is the same as that specified in [RFC 447][447].
 [447]: https://github.com/rust-lang/rfcs/blob/master/text/0447-no-unused-impl-parameters.md#detailed-design
 [587]: https://github.com/rust-lang/rfcs/blob/master/text/0587-fn-return-should-be-an-associated-type.md
 
-# Future possibilities
+## Future possibilities
 
 **Make phantom data and fns more first-class.** One thing I would
 consider in the future is to integrate phantom data and fns more
@@ -489,7 +489,7 @@ instance of a type and (being anonymous) could never be named. They
 exist solely to aid the analysis. This would improve the usability of
 phantom markers greatly.
 
-# Alternatives
+## Alternatives
 
 **Default to a particular variance when a type or lifetime parameter
 is unused.** A prior RFC advocated for this approach, mostly because
@@ -515,7 +515,7 @@ lightweight. Moreover, explicit annotations are error-prone when
 compared to the phantom data and fn approach (see example in the
 section regarding marker traits).
 
-# Unresolved questions
+## Unresolved questions
 
 There is one significant unresolved question: the correct way to
 handle a `*mut` pointer. It was revealed recently that while the

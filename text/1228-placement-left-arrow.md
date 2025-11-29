@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1228](https://github.com/rust-lang/rfcs/pull/1228)
 - Rust Issue: [rust-lang/rust#27779](https://github.com/rust-lang/rust/issues/27779)
 
-# This RFC was previously approved, but later **withdrawn**
+## This RFC was previously approved, but later **withdrawn**
 
 For details see the [summary comment].
 
 [summary comment]: https://github.com/rust-lang/rust/issues/27779#issuecomment-378416911
 
-# Summary
+## Summary
 
 Rather than trying to find a clever syntax for placement-new that leverages
 the `in` keyword, instead use the syntax `PLACE_EXPR <- VALUE_EXPR`.
@@ -17,7 +17,7 @@ the `in` keyword, instead use the syntax `PLACE_EXPR <- VALUE_EXPR`.
 This takes advantage of the fact that `<-` was reserved as a token via
 historical accident (that for once worked out in our favor).
 
-# Motivation
+## Motivation
 
 One sentence: the syntax `a <- b` is short, can be parsed without
 ambiguity, and is strongly connotated already with assignment.
@@ -87,7 +87,7 @@ let ref_1 = in arena { value_expression };
 let ref_2 = in arena { value_expression };
 ```
 
-# Detailed design
+## Detailed design
 
 Extend the parser to parse `EXPR <- EXPR`. The left arrow operator is
 right-associative and has precedence higher than assignment and
@@ -140,7 +140,7 @@ even when they are later outdated.
 (An easier option though may be to just add a forward reference to this
 RFC from [RFC 809], if this RFC is accepted.)
 
-# Drawbacks
+## Drawbacks
 
 The only drawback I am aware of is this [comment from nikomataskis](https://github.com/rust-lang/rfcs/pull/809#issuecomment-73903777)
 
@@ -152,7 +152,7 @@ overloading of the `=` operator (at least that is my understanding).
 I think the use of the `<-` operator can be considered sufficiently
 "devoted" (i.e. separate) syntax to placate the above concern.
 
-# Alternatives
+## Alternatives
 
 See [different surface syntax] from the alternatives from [RFC 809].
 
@@ -166,7 +166,7 @@ let ref_1 = in arena <- value_expression;
 let ref_2 = in arena <- value_expression;
 ```
 
-## Precedence
+### Precedence
 
 Finally, precedence of this operator may be defined to be anything from being
 less than assignment/binop-assignment (set of right associative operators with
@@ -200,7 +200,7 @@ lowest precedence) to highest in the language. The most prominent choices are:
     most of the time. This option would get `x <- y <- z * a` parsed as `(x <-
     (y <- z)) * a`.
 
-# Unresolved questions
+## Unresolved questions
 
 **What should the precedence of the `<-` operator be?** In particular,
 it may make sense for it to have the same precedence of `=`, as argued
@@ -212,7 +212,7 @@ was more usage in the wild.
 [huon1]: https://github.com/rust-lang/rfcs/pull/1319#issuecomment-206627750
 [huon2]: https://github.com/rust-lang/rfcs/pull/1319#issuecomment-207090495
 
-# Change log
+## Change log
 
 **2016.04.22.** Amended by [rust-lang/rfcs#1319](https://github.com/rust-lang/rfcs/pull/1319)
 to adjust the precedence.

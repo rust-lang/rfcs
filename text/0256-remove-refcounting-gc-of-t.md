@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#256](https://github.com/rust-lang/rfcs/pull/256)
 - Rust Issue: https://github.com/rust-lang/rfcs/pull/256
 
-# Summary
+## Summary
 
 Remove the reference-counting based `Gc<T>` type from the standard
 library and its associated support infrastructure from `rustc`.
@@ -11,9 +11,9 @@ Doing so lays a cleaner foundation upon which to prototype a proper
 tracing GC, and will avoid people getting incorrect impressions of
 Rust based on the current reference-counting implementation.
 
-# Motivation
+## Motivation
 
-## Ancient History
+### Ancient History
 
 Long ago, the Rust language had integrated support for automatically
 managed memory with arbitrary graph structure (notably, multiple
@@ -47,13 +47,13 @@ still in place; the move to a library type `Gc<T>` was just a shift in
 perspective from the end-user's point of view (and that of the
 parser).
 
-## Recent history: Removing uses of `Gc<T>` from the compiler
+### Recent history: Removing uses of `Gc<T>` from the compiler
 
 Largely due to the tireless efforts of `eddyb`, one of the primary
 clients of `Gc<T>`, namely the `rustc` compiler itself, has little to
 no remaining uses of `Gc<T>`.
 
-## A new hope
+### A new hope
 
 This means that we have an opportunity now, to remove the `Gc<T>` type
 from `libstd`, and its associated built-in reference-counting support
@@ -82,7 +82,7 @@ The expected outcome of removing reference-counting `Gc<T>` are as follows:
    future.  (Note that `Gc<T>` is already marked "experimental", so
    this particular motivation is not very strong.)
 
-# Detailed design
+## Detailed design
 
 Remove the `std::gc` module.  This, I believe, is the extent of the
 end-user visible changes proposed by this RFC, at least for users who
@@ -96,7 +96,7 @@ terribly to me.  The important thing is that once `std::gc` is gone,
 then we can remove the support code associated with those two lang
 items, which is the important thing.
 
-# Drawbacks
+## Drawbacks
 
 Taking out the reference-counting `Gc<T>` now may lead people to think
 that Rust will never have a `Gc<T>`.
@@ -119,7 +119,7 @@ Users may be using `Gc<T>` today, and they would have to switch to
 some other option (such as `Rc<T>`, though note that the two are not
 100% equivalent; see [Gc versus Rc] appendix).
 
-# Alternatives
+## Alternatives
 
 Keep the `Gc<T>` implementation that we have today, and wait until we
 have a tracing GC implemented and ready to be deployed before removing
@@ -130,13 +130,13 @@ reference-counting `Gc<T>` until we eventually do decide to remove
 `Gc<T>` in the future.  So this RFC is just suggesting we be proactive
 and pull that band-aid off now.
 
-# Unresolved questions
+## Unresolved questions
 
 None yet.
 
-# Appendices
+## Appendices
 
-## Gc versus Rc
+### Gc versus Rc
 
 There are performance differences between the current ref-counting
 `Gc<T>` and the library type `Rc<T>`, but such differences are beneath

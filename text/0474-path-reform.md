@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#474](https://github.com/rust-lang/rfcs/pull/474)
 - Rust Issue: [rust-lang/rust#20034](https://github.com/rust-lang/rust/issues/20034)
 
-# Summary
+## Summary
 
 This RFC reforms the design of the `std::path` module in preparation for API
 stabilization. The path API must deal with many competing demands, and the
@@ -11,7 +11,7 @@ given in "Motivation" below. The RFC proposes a redesign modeled loosely on the
 current API that addresses these problems while maintaining the advantages of
 the current design.
 
-# Motivation
+## Motivation
 
 The design of a path abstraction is surprisingly hard. Paths work radically
 differently on different platforms, so providing a cross-platform abstraction is
@@ -24,12 +24,12 @@ easy and pleasant to use.
 The current `std::path` module makes a strong effort to balance these design
 constraints, but over time a few key shortcomings have emerged.
 
-## Semantic problems
+### Semantic problems
 
 Most importantly, the current `std::path` module makes some semantic assumptions
 about paths that have turned out to be incorrect.
 
-### Normalization
+#### Normalization
 
 Paths in `std::path` are always *normalized*, meaning that `a/../b` is treated
 like `b` (among other things). Unfortunately, this kind of normalization changes
@@ -46,7 +46,7 @@ the contents of the underlying file system.
 Since our current normalization scheme can silently and incorrectly alter the
 meaning of paths, it needs to be changed.
 
-### Unicode and Windows
+#### Unicode and Windows
 
 In the original `std::path` design, it was assumed that all paths on Windows
 were Unicode. However, it
@@ -59,7 +59,7 @@ The current `std::path` implementation is built around the assumption that
 Windows paths can be represented as Rust string slices, and will need to be
 substantially revised.
 
-## Ergonomic problems
+### Ergonomic problems
 
 Because paths in general are not in Unicode, the `std::path` module cannot rely on
 an internal string or string slice representation. That in turn causes trouble
@@ -85,7 +85,7 @@ You might be tempted to provide only the third option, but `Path` values are
 operation. For applications like Cargo that work heavily with paths, this would
 be an unfortunate (and seemingly unnecessary) overhead.
 
-## Organizational problems
+### Organizational problems
 
 Finally, the `std::path` module presents a somewhat complex API organization:
 
@@ -104,7 +104,7 @@ One thing to note: with the current organization, it is possible to work with
 non-native paths, which can sometimes be useful for interoperation. The new
 design should retain this functionality.
 
-# Detailed design
+## Detailed design
 
 Note: this design is influenced by the
 [Boost filesystem library](www.boost.org/doc/libs/1_57_0/libs/filesystem/doc/reference.html)
@@ -112,7 +112,7 @@ and [Scheme48](http://s48.org/1.8/manual/manual-Z-H-6.html#node_sec_5.15) and
 [Racket's](http://plt.eecs.northwestern.edu/snapshots/current/doc/reference/windowspaths.html#%28part._windowspathrep%29)
 approach to encoding issues on windows.
 
-## Overview
+### Overview
 
 The basic design uses DST to follow the same pattern as `Vec<T>/[T]` and
 `String/str`: there is a `PathBuf` type for owned, mutable paths and an unsized
@@ -133,7 +133,7 @@ The proposed API deals with the other problems mentioned above, and also brings
 the module in line with current Rust patterns and conventions. These details
 will be discussed after getting a first look at the core API.
 
-## The cross-platform API
+### The cross-platform API
 
 The proposed core, cross-platform API provided by the new `std::path` is as follows:
 
@@ -269,7 +269,7 @@ comment:
   method here will begin with `root_path` if there is one. Thus, `a/b/c` will
   yield `a`, `b` and `c`, while `/a/b/c` will yield `/`, `a`, `b` and `c`.
 
-## Important semantic rules
+### Important semantic rules
 
 The path API is designed to satisfy several semantic rules described below.
 **Note that `==` here is *lazily* normalizing**, treating `./b` as `b` and
@@ -310,7 +310,7 @@ p == match (p.file_stem(), p.extension()) {
 }
 ```
 
-## Representation choices, Unicode, and normalization
+### Representation choices, Unicode, and normalization
 
 A lot of the design in this RFC depends on a key property: both Unix and Windows
 paths can be easily represented as a flat byte sequence "compatible" with
@@ -342,7 +342,7 @@ components (unless it is the entire path), and similarly for methods like
 and comparisons between paths should also behave as if the paths had been
 normalized in this way.
 
-## Organization and platform-specific APIs
+### Organization and platform-specific APIs
 
 Finally, the proposed API is organized as `std::path` with `unix` and `windows`
 submodules, as today. However, there is no `GenericPath` or `GenericPathUnsafe`;
@@ -368,7 +368,7 @@ explicitly "opting-in" to platform-specific features by importing from
 `os::some_platform` (where the `some_platform` submodule is available only on
 that platform.)
 
-### Unix
+#### Unix
 
 On Unix platforms, the only additional functionality is to let you work directly
 with the underlying byte representation of various path types:
@@ -388,7 +388,7 @@ pub trait UnixPathExt {
 This is acceptable because the platform supports arbitrary byte sequences
 (usually interpreted as UTF-8).
 
-### Windows
+#### Windows
 
 On Windows, the additional APIs allow you to convert to/from UCS-2 (roughly,
 arbitrary `u16` sequences interpreted as UTF-16 when applicable); because the
@@ -420,12 +420,12 @@ enum PathPrefix<'a> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 
 The DST/slice approach is conceptually more complex than today's API, but in
 practice seems to yield a much tighter API surface.
 
-# Alternatives
+## Alternatives
 
 Due to the known semantic problems, it is not really an option to retain the
 current path implementation. As explained above, supporting UCS-2 also means
@@ -437,7 +437,7 @@ DST/slices, and instead use owned paths everywhere (probably doing some
 normalization of `.` at the same time). While the resulting API would be simpler
 in some respects, it would also be substantially less efficient for common operations.
 
-# Unresolved questions
+## Unresolved questions
 
 It is not clear how best to incorporate the
 [WTF-8 implementation](https://github.com/SimonSapin/rust-wtf8) (or how much to

@@ -2,11 +2,11 @@
 - RFC PR: [rust-lang/rfcs#100](https://github.com/rust-lang/rfcs/pull/100)
 - Rust Issue: [rust-lang/rust#14987](https://github.com/rust-lang/rust/issues/14987)
 
-# Summary
+## Summary
 
 Add a `partial_cmp` method to `PartialOrd`, analogous to `cmp` in `Ord`.
 
-# Motivation
+## Motivation
 
 The `Ord::cmp` method is useful when working with ordered values. When the
 exact ordering relationship between two values is required, `cmp` is both
@@ -28,7 +28,7 @@ the default implementations for `PartialOrd` will need to be removed and an
 implementation of the trait will require four repetitive implementations of
 the required methods.
 
-# Detailed design
+## Detailed design
 
 Add a method to `PartialOrd`, changing the default implementations of the other
 methods:
@@ -78,13 +78,13 @@ impl PartialOrd for Foo {
 This can be done automatically if/when RFC #48 or something like it is accepted
 and implemented.
 
-# Drawbacks
+## Drawbacks
 
 This does add some complexity to `PartialOrd`. In addition, the more commonly
 used methods (`lt`, etc) may become more expensive than they would normally be
 if their implementations call into `partial_ord`.
 
-# Alternatives
+## Alternatives
 
 We could invert the default implementations and have a default implementation
 of `partial_cmp` in terms of `lt` and `gt`. This may slightly simplify things
@@ -95,7 +95,7 @@ currently planned `cmp` reform has finished as noted above.
 `partial_cmp` could just be called `cmp`, but it seems like UFCS would need to
 be implemented first for that to be workable.
 
-# Unresolved questions
+## Unresolved questions
 
 We may want to add something similar to `PartialEq` as well. I don't know what
 it would be called, though (maybe `partial_eq`?):

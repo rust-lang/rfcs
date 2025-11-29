@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#3007](https://github.com/rust-lang/rfcs/pull/3007)
 - Rust Issue: [#80162](https://github.com/rust-lang/rust/issues/80162)
 
-# Summary
+## Summary
 
 This RFC proposes to make `core::panic!` and `std::panic!` identical and consistent in Rust 2021,
 and proposes a way to deal with the differences in earlier editions without breaking code.
 
-# Problems
+## Problems
 
 `core::panic!` and `std::panic!` behave mostly the same, but have their own incompatible quirks for the single-argument case.
 
@@ -15,7 +15,7 @@ This leads to several different problems, which would all be solved if they didn
 
 For multiple-arguments (e.g. `panic!("error: {}", e)`), both already behave identical.
 
-## Panic
+### Panic
 
 Both do not use `format_args!("..")` for `panic!("..")` like they do for multiple arguments, but use the string literally.
 
@@ -35,7 +35,7 @@ This means that `core::panic!("{}")` and `core::panic!(string.as_str())` compile
 
 *💔 **Problem 5:** `panic!(CustomError::Error);` works with std, but no longer compiles when switching `no_std` on.*
 
-## Assert
+### Assert
 
 `assert!(expr, args..)` and `assert_debug(expr, args..)` expand to `panic!(args..)` and therefore will have all the same problems.
 In addition, these can result in confusing mistakes:
@@ -52,7 +52,7 @@ This also means that the panic of an assert can be accidentally 'hijacked' by a 
 
 *💔 **Problem 7:** `assert!` and related macros need to choose between `core::panic!` and `std::panic!`, and can't use `$crate::panic!` for proper hygiene.*
 
-## Implicit formatting arguments
+### Implicit formatting arguments
 
 [RFC 2795] adds implicit formatting args, as follows:
 
@@ -80,7 +80,7 @@ panic!("{a} {}", 4); // panics with `4 4`
 
 *💔 **Problem 8:** `panic!("error: {error}")` will silently not work as expected, after [RFC 2795] is implemented.*
 
-## Bloat
+### Bloat
 
 `core::panic!("hello {")` produces the same `fmt::Arguments` as `format_args!("hello {{")`, not `format_args!("{}", "hello {")` to avoid pulling in string's `Display` code,
 which can be quite big.
@@ -93,7 +93,7 @@ this optimization is only applied to what macro_rules consider a `$_:literal`, w
 but will silently result in a lot more generated code than `core::panic!("hi")`.
 (And also needs [special handling](https://github.com/rust-lang/rust/pull/78069) to make `const_panic` work.)*
 
-# Solution if we could go back in time
+## Solution if we could go back in time
 
 None of these these problems would have existed if
 1\) `panic!()` did not handle the single-argument case differently, and
@@ -118,7 +118,7 @@ The examples from problems 1, 2, 3, 4, 5, 6 and 9 would simply not compile, and 
 
 However, that would break too much existing code.
 
-# Proposed solution
+## Proposed solution
 
 Considering we should not break existing code, I propose we gate the breaking changes on the 2021 edition.
 
@@ -172,14 +172,14 @@ Specifically:
 
 Together, these actions address all problems, without breaking any existing code.
 
-# Drawbacks
+## Drawbacks
 
 - This results in subtle differences between Rust editions.
 
 - This requires `assert!` and `panic!` to behave differently depending on the Rust edition of the crate it is used in.
   `panic!` is just a `macro_rules` macro right now, which does not natively support that.
 
-# Alternatives
+## Alternatives
 
 - Instead of the last step, we could also simply break `assert!(expr, non_string_literal)` in all editions.
   This usage is probably way less common than `panic!(non_string_literal)`.

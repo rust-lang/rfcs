@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2457](https://github.com/rust-lang/rfcs/pull/2457)
 - Rust Issue: [rust-lang/rust#55467](https://github.com/rust-lang/rust/issues/55467)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow non-ASCII letters (such as accented characters, Cyrillic, Greek, Kanji, etc.) in Rust identifiers.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Writing code using domain-specific terminology simplifies implementation and discussion as opposed to translating words from the project requirements. When the code is only intended for a limited audience such as with in-house projects or in teaching it can be beneficial to write code in the group's language as it boosts communication and helps people not fluent in English to participate and write Rust code themselves.
@@ -21,7 +21,7 @@ The rationale from [PEP 3131] nicely explains it:
 
 Additionally some math oriented projects may want to use identifiers closely resembling mathematical writing.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Identifiers include variable names, function and trait names and module names. They start with a letter or an underscore and may be followed by more letters, digits and some connecting punctuation.
@@ -48,7 +48,7 @@ To disallow any Unicode identifiers in a project (for example to ease collaborat
 
 Some Unicode character look confusingly similar to each other or even identical like the Latin **A** and the Cyrillic **А**. The compiler may warn you about names that are easy to confuse with keywords, names from the same crate and imported items. If needed (but not recommended) this warning can be silenced with a `#[allow(confusable_idents)]` annotation on the enclosing function or module.
 
-## Usage notes
+### Usage notes
 
 All code written in the Rust Language Organization (*rustc*, tools, std, common crates) will continue to only use ASCII identifiers and the English language.
 
@@ -56,7 +56,7 @@ For open source crates it is suggested to write them in English and use ASCII-on
 
 Private projects can use any script and language the developer(s) desire. It is still a good idea (as with any language feature) not to overdo it.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Identifiers in Rust are based on the [Unicode® Standard Annex #31 Unicode Identifier and Pattern Syntax][UAX31].
@@ -79,7 +79,7 @@ Rust lexers normalize identifiers to [NFC][UAX15]. Every API accepting identifie
 
 A `non_ascii_idents` lint is added to the compiler. This lint is `allow` by default. The lint checks if any identifier in the current context contains a codepoint with a value equal to or greater than 0x80 (outside ASCII range). Not only locally defined identifiers are checked but also those imported from other crates and modules into the current context.
 
-## Remaining ASCII-only names
+### Remaining ASCII-only names
 
 Only ASCII identifiers are allowed within an external block and in the signature of a function declared `#[no_mangle]`.
 Otherwise an error is reported.
@@ -95,7 +95,7 @@ The allowed character set for names on crates.io is not changed.
 Note: This is to avoid dealing with file systems on different systems *right now*.
 A future RFC may allow non-ASCII characters after the file system issues are resolved.
 
-## Confusable detection
+### Confusable detection
 
 Rust compilers should detect confusingly similar Unicode identifiers and warn the user about it.
 
@@ -109,7 +109,7 @@ The confusable detection algorithm is based on [Unicode® Technical Standard #39
 
 Note: A fast way to implement this is to compute `skeleton` for each identifier once and place the result in a hashmap as a key. If one tries to insert a key that already exists check if the two identifiers differ from each other. If so report the two confusable identifiers.
 
-## Exotic codepoint detection
+### Exotic codepoint detection
 
 A new `less_used_codepoints` lint is added to the compiler. The default setting is to `warn`.
 
@@ -125,7 +125,7 @@ There are some specific interesting code points that we feel necessary to call o
  - `less_used_codepoints` will not warn about U+02BB MODIFIER LETTER TURNED COMMA or U+02BC MODIFIER LETTER APOSTROPHE. These look somewhat like punctuation relevant to Rust's syntax, so they're a bit tricky. However, these code points are important in Ukrainian, Hawaiian, and a bunch of other languages (U+02BB is considered a full-fledged letter in Hawaiian). For now this RFC follows the recommendation of the specification and allows these, however we can change this in the future. The hope is that syntax highlighting is enough to deal with confusions caused by such characters.
 
 
-## Adjustments to the "bad style" lints
+### Adjustments to the "bad style" lints
 
 Rust [RFC 0430] establishes naming conventions for Rust ASCII identifiers. The *rustc* compiler includes lints to promote these recommendations.
 
@@ -142,7 +142,7 @@ These are the three different naming conventions and how their corresponding lin
 
 Note: Scripts with upper- and lowercase variants ("bicameral scripts") behave similar to ASCII. Scripts without this distinction ("unicameral scripts") are also usable but all identifiers look the same regardless if they refer to a type, variable or constant. Underscores can be used to separate words in unicameral scripts even in UpperCamelCase contexts.
 
-## Mixed script confusables lint
+### Mixed script confusables lint
 
 We keep track of the script groups in use in a document using the comparison heuristics in [Unicode® Technical Standard #39 Unicode Security Mechanisms Section 5.2 Restriction-Level Detection][TR39RestrictionLevel].
 
@@ -157,7 +157,7 @@ As an implementation note, it may be worth dealing with confusable modifiers via
 The exception for `Latin` is made because the standard library is Latin-script. It could potentially be removed since a code base using the standard library (or any Latin-using library) is likely to be using enough of it that there will be non-confusable characters in use. (This is in unresolved questions)
 
 
-## Reusability
+### Reusability
 
 The code used for implementing the various lints and checks will be released to crates.io. This includes:
 
@@ -168,7 +168,7 @@ The code used for implementing the various lints and checks will be released to 
 
 Confusables detection works well when there are other identifiers to compare against, but in some cases there's only one instance of an identifier in the code, and it's compared with user-supplied strings. For example we have crates that use proc macros to expose command line options or REST endpoints. Crates that do things like these can use such algorithms to ensure better error handling; for example if we accidentally end up having an `/арр` endpoint (in Cyrillic) because of a `#[annotation] fn арр()`, visiting `/app` (in Latin) may show a comprehensive error (or pass-through, based on requirements)
 
-## Conformance Statement
+### Conformance Statement
 
 * UAX31-C1: The Rust language conforms to the Unicode® Standard Annex #31 for Unicode Version 10.0.0.
 * UAX31-C2: It observes the following requirements:
@@ -182,7 +182,7 @@ Confusables detection works well when there are other identifiers to compare aga
 
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * "ASCII is enough for anyone." As source code should be written in English and in English only (source: various people) no characters outside the ASCII range are needed to express identifiers. Therefore support for Unicode identifiers introduces unnecessary complexity to the compiler.
@@ -191,7 +191,7 @@ Confusables detection works well when there are other identifiers to compare aga
 * "My favorite terminal/text editor/web browser" has incomplete Unicode support." Even in 2018 some characters are not widely supported in all places where source code is usually displayed.
 * Homoglyph attacks are possible. Without confusable detection identifiers can be distinct for the compiler but visually the same. Even with confusable detection there are still similar looking characters that may be confused by the casual reader.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 As stated in [Motivation](#motivation) allowing Unicode identifiers outside the ASCII range improves Rusts accessibility for developers not working in English. Especially in teaching and when the application domain vocabulary is not in English it can be beneficial to use names from the native language. To facilitate this it is necessary to allow a wide range of Unicode character in identifiers. The proposed implementation based on the Unicode TR31 is already used by other programming languages and is implemented behind the `non_ascii_idents` in *rustc* but lacks the NFC normalization proposed.
@@ -216,18 +216,18 @@ It always a possibility to do nothing and limit identifiers to ASCII.
 
 It has been suggested that Unicode identifiers should be opt-in instead of opt-out. The proposal chooses opt-out to benefit the international Rust community. New Rust users should not need to search for the configuration option they may not even know exists. Additionally it simplifies tutorials in other languages as they can omit an annotation in every code snippet.
 
-## Confusable detection
+### Confusable detection
 
 The current design was chosen because the algorithm and list of similar characters are already provided by the Unicode Consortium. A different algorithm and list of characters could be created. I am not aware of any other programming language implementing confusable detection. The confusable detection was primarily included because homoglyph attacks are a huge concern for some members of the community.
 
 Instead of offering confusable detection the lint `forbid(non_ascii_idents)` is sufficient to protect a project written in English from homoglyph attacks. Projects using different languages are probably either written by students, by a small group or inside a regional company. These projects are not threatened as much as large open source projects by homoglyph attacks but still benefit from the easier debugging of typos.
 
 
-## Alternative mixed script lints
+### Alternative mixed script lints
 
 These are previously-proposed lints attempting to prevent problems caused by mixing scripts, which were ultimately replaced by the current mixed script confusables lint.
 
-### Mixed script detection
+#### Mixed script detection
 
 A new `mixed_script_idents` lint would be added to the compiler. The default setting is to `warn`.
 
@@ -235,7 +235,7 @@ The lint is triggered by identifiers that do not qualify for the "Moderately Res
 
 Note: The definition of "Moderately Restrictive" can be changed by future versions of the Unicode standard to reflect changes in the natural languages used or for other reasons.
 
-### Global mixed script detection with confusables
+#### Global mixed script detection with confusables
 
 As an additional measure, we would try to detect cases where a codebase primarily using a certain script has identifiers from a different script confusable with that script.
 
@@ -252,7 +252,7 @@ There are many confusables _within_ scripts -- Arabic has a bunch of these as do
 For reference, a list of all possible Rust identifier characters that do not trip `less_used_codepoints` but have confusables can be found [here][unicode-set-confusables], with their confusable skeleton and script group mentioned on the right. Note that in many cases the confusables are visually distinguishable, or are diacritic marks.
 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 "[Python PEP 3131][PEP 3131]: Supporting Non-ASCII Identifiers" is the Python equivalent to this proposal. The proposed identifier grammar **XID_Start&nbsp;XID_Continue<sup>\*</sup>** is identical to the one used in Python 3. While Python uses KC normalization this proposes to use normalization form C.
@@ -265,7 +265,7 @@ The [CPP reference][C++] describes the allowed Unicode identifiers it is based o
 
 The [Go language][Go] allows identifiers in the form **Letter (Letter | Number)\*** where **Letter** is a Unicode letter and **Number** is a Unicode decimal number. This is more restricted than the proposed design mainly as is does not allow combining characters needed to write some languages such as Hindi.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * Which context is adequate for confusable detection: file, current scope, crate?

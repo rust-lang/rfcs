@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#341](https://github.com/rust-lang/rfcs/pull/341)
 - Rust Issue: [rust-lang/rust#17861](https://github.com/rust-lang/rust/issues/17861)
 
-# Summary
+## Summary
 
 Removes the "virtual struct" (aka struct inheritance) feature, which
 is currently feature gated.
 
-# Motivation
+## Motivation
 
 Virtual structs were added experimentally prior to the RFC process as
 a way of inheriting fields from one struct when defining a new struct.
@@ -28,18 +28,18 @@ The motivations for removing this feature altogether are:
 3. Although it's behind a feature gate, keeping the feature around is
    still a maintenance burden.
 
-# Detailed design
+## Detailed design
 
 Remove the implementation and feature gate for virtual structs.
 
 Retain the `virtual` keyword as reserved for possible future use.
 
-# Drawbacks
+## Drawbacks
 
 The language will no longer offer any built-in mechanism for avoiding
 repetition of struct fields. Macros offer a reasonable workaround
 until a more general mechanism is added.
 
-# Unresolved questions
+## Unresolved questions
 
 None known.

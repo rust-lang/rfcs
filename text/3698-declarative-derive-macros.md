@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3698](https://github.com/rust-lang/rfcs/pull/3698)
 - Rust Issue: [rust-lang/rust#143549](https://github.com/rust-lang/rust/issues/143549)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Support implementing `derive(Trait)` via a `macro_rules!` macro.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Many crates support deriving their traits with `derive(Trait)`. Today, this
@@ -40,7 +40,7 @@ give the macro more power to rewrite the underlying definition. Derive macros
 simplify tools like rust-analyzer, which can know that a derive macro will
 never change the underlying item definition.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 You can define a macro to implement `derive(MyTrait)` by defining a
@@ -99,7 +99,7 @@ compiler error. Using the unsafe derive syntax without an unsafe derive will
 trigger an "unused unsafe" lint. (RFC 3715 defines the equivalent mechanism for
 proc macro derives.)
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The grammar for macros is extended as follows:
@@ -133,7 +133,7 @@ If a user invokes a macro as a derive and that macro does not have any `derive`
 rules, the compiler should give a clear error stating that the macro is not
 usable as a derive because it does not have any `derive` rules.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature will not be sufficient for *all* uses of proc macros in the
@@ -149,7 +149,7 @@ evaluate many new use cases that previously weren't written using
 `macro_rules`, and we should consider quality-of-life improvements to better
 support those use cases.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Adding this feature will allow many crates in the ecosystem to drop their proc
@@ -185,7 +185,7 @@ function-like macro. This has the potential for confusion, given the
 append-only nature of derive macros versus the behavior of normal function-like
 macros. It might potentially be useful for code reuse, however.
 
-## Syntax alternatives
+### Syntax alternatives
 
 Rather than using `derive()` rules, we could have `macro_rules!` macros use a
 `#[macro_derive]` attribute, similar to the `#[proc_macro_derive]` attribute
@@ -195,7 +195,7 @@ However, this would be inconsistent with `attr()` rules as defined in RFC 3697.
 This would also make it harder to add parameterized derives in the future (e.g.
 `derive(MyTrait(params))`).
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 We have had proc-macro-based derive macros for a long time, and the ecosystem
@@ -210,7 +210,7 @@ syntax as a proc macro.
 The derive feature of the crate has [various uses in the
 ecosystem](https://github.com/search?q=macro_rules_attribute%3A%3Aderive&type=code).
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Before stabilizing this feature, we should ensure there's a mechanism macros
@@ -233,7 +233,7 @@ recommending against pressuring crate maintainers to adopt this feature
 rapidly, and encourage crate maintainers to link to that guidance if such
 requests arise.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 We should provide a way for derive macros to invoke other derive macros. The
@@ -278,7 +278,7 @@ We may want to add a lint for macro names, encouraging macros with derive rules
 to use `CamelCase` names, and encouraging macros without derive rules to use
 `snake_case` names.
 
-## Helper attribute namespacing and hygiene
+### Helper attribute namespacing and hygiene
 
 We should provide a way for derive macros to define helper attributes ([inert
 attributes](https://doc.rust-lang.org/reference/attributes.html#active-and-inert-attributes)

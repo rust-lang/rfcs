@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#40](https://github.com/rust-lang/rfcs/pull/40)
 - Rust Issue: [rust-lang/rust#13851](https://github.com/rust-lang/rust/issues/13851)
 
-# Summary
+## Summary
 
 Split the current libstd into component libraries, rebuild libstd as a facade in
 front of these component libraries.
 
-# Motivation
+## Motivation
 
 Rust as a language is ideal for usage in constrained contexts such as embedding
 in applications, running on bare metal hardware, and building kernels. The
@@ -18,7 +18,7 @@ possible, without compromising its usability in any context.
 This RFC is meant to expand the usability of the standard library into these
 domains where it does not currently operate easily
 
-# Detailed design
+## Detailed design
 
 In summary, the following libraries would make up part of the standard
 distribution. Each library listed after the colon are the dependent libraries.
@@ -368,7 +368,7 @@ crates only depending on liballoc are good candidates for being embedded into
 other languages. Having a clear delineation for the usability of a crate in
 various environments seems beneficial.
 
-# Alternatives
+## Alternatives
 
 * There are many alternatives to the above sharding of libstd and its dependent
   crates. The one that is most rigid is likely libmini, but the contents of all
@@ -392,7 +392,7 @@ various environments seems beneficial.
   possibly be difficult to juggle the large number of crates to choose from
   where one could otherwise just look at libstd.
 
-# Unresolved questions
+## Unresolved questions
 
 * Compile times. It's possible that having so many upstream crates for each rust
   crate will increase compile times through reading metadata and invoking the

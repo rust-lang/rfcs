@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1260](https://github.com/rust-lang/rfcs/pull/1260)
 - Rust Issue: [rust-lang/rust#28937](https://github.com/rust-lang/rust/issues/28937)
 
-# Summary
+## Summary
 
 Allow a re-export of a function as entry point `main`.
 
-# Motivation
+## Motivation
 
 Functions and re-exports of functions usually behave the same way, but they do
 not for the program entry point `main`. This RFC aims to fix this inconsistency.
@@ -38,20 +38,20 @@ fix an inconsistency with re-exports and directly defined functions.
 Nevertheless, it can be pointed out that the `#[main]` attribute does not cover
 all the above-mentioned use cases.
 
-# Detailed design
+## Detailed design
 
 Use the symbol `main` at the top-level of a crate that is compiled as a program
 (`--crate-type=bin`) – instead of explicitly only accepting directly-defined
 functions, also allow (possibly non-`pub`) re-exports.
 
-# Drawbacks
+## Drawbacks
 
 None.
 
-# Alternatives
+## Alternatives
 
 None.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

@@ -1,11 +1,11 @@
-# `unsafe_pinned`
+## `unsafe_pinned`
 
 - Feature Name: `unsafe_pinned`
 - Start Date: 2022-11-05
 - RFC PR: [rust-lang/rfcs#3467](https://github.com/rust-lang/rfcs/pull/3467)
 - Tracking Issue: [rust-lang/rust#125735](https://github.com/rust-lang/rust/issues/125735)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a type `UnsafePinned` that indicates to the compiler that this field is "pinned" and there might be pointers elsewhere that point to the same memory.
@@ -15,7 +15,7 @@ You need to use mechanisms such as `Pin` to ensure that mutable references canno
 
 This type is then used in generator lowering, finally fixing [#63818](https://github.com/rust-lang/rust/issues/63818).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Let's say you want to write a type with a self-referential pointer:
@@ -158,7 +158,7 @@ When a function takes a mutable reference to its stack-allocated node, that will
 The goal of this RFC is to offer a way of writing such self-referential types and intrusive collections without UB.
 We don't want to change the rules for mutable references in general (that would also affect all the code that doesn't do anything self-referential), instad we want to be able to tell the compiler that this code is doing funky aliasing and that should be taken into account for optimizations.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 To write this code in a UB-free way, wrap the fields that are *targets* of self-referential pointers in an `UnsafePinned`:
@@ -209,7 +209,7 @@ To hand such references to safe code, use `Pin`: the type `Pin<&mut S>` can be s
 
 Similarly, the intrusive linked list from the motivation can be fixed by wrapping the entire `UnsafeListEntry` in `UnsafePinned`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 **API sketch:**
@@ -373,7 +373,7 @@ Here is a [polyfill on current Rust](https://play.rust-lang.org/?version=stable&
 - `UnsafePinned`: disables aliasing (and affects but does not fully disable dereferenceable) behind mutable refs, i.e. `&mut UnsafePinned<T>` is special. `UnsafePinned<&mut T>` (by-val, fully owned) is not special at all and basically like `&mut T`; `&UnsafePinned<T>` is also not special. Safe wrappers around this type can expose sharing that involves *pinned* mutable references, such as `Pin<&mut MyFuture>`.
 - [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336): disables aliasing and dereferencable *of all references (and boxes) directly inside it*, i.e. `MaybeDangling<&[mut] T>` is special. `&[mut] MaybeDangling<T>` is not special at all and basically like `&[mut] T`.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - It's yet another wrapper type adjusting our aliasing rules and very easy to mix up with `UnsafeCell` or [`MaybeDangling`](https://github.com/rust-lang/rfcs/pull/3336).
@@ -394,7 +394,7 @@ Maybe in a future edition `Unpin` can be transitioned to an unsafe trait and the
 - It is unfortunate that `&mut UnsafePinned` and `&mut TypeThatContainsUnsafePinned` lose their no-alias assumptions even when they are not currently pinned.
 However, since pinning was implemented as a library concept, there's not really any way the compiler can know whether an `&mut UnsafePinned` is pinned or not -- working with `Pin<&mut TypeThatContainsUnsafePinned>` generally requires using `Pin::get_unchecked_mut` and `Pin::map_unchecked_mut`, which exposes `&mut TypeThatContainsUnsafePinned` and `&mut UnsafePinned` that still need to be considered aliased.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The proposal in this RFC matches [what was discussed with the lang team a long time ago](https://github.com/rust-lang/rust/issues/63818#issuecomment-526579977).
@@ -445,7 +445,7 @@ For instance, it may be tempting to use an `UnsafeAliased` type to mark a single
 However, due to `mem::swap`, that would not be sound.
 One cannot hand out an `&mut` to such aliased memory as part of a safe-to-use abstraction -- except by using pinning.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 This is somewhat like `UnsafeCell`, but for mutable instead of shared references.
@@ -454,7 +454,7 @@ Adding something like this to Rust has been discussed many times throughout the 
 - [Zulip, Nov 2022](https://rust-lang.zulipchat.com/#narrow/stream/136281-t-opsem/topic/UnsafeCellMut/near/308124014)
 - [IRLO, May 2023](https://internals.rust-lang.org/t/an-alternative-to-the-current-unpin-hack-unsafealias/18810)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - Is there a better name than `UnsafePinned` for the type? What about the trait -- `UnsafeUnpin` is awkward. Maybe `Unique` is better?
@@ -467,7 +467,7 @@ Adding something like this to Rust has been discussed many times throughout the 
 - Relatedly, in which module should this type live?
 - `Unpin` [also affects the `dereferenceable` attribute](https://github.com/rust-lang/rust/pull/106180), so the same would happen for this type. Is that something we want to guarantee, or do we hope to get back `dereferenceable` when better semantics for it materialize on the LLVM side?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Similar to how we might want the ability to project from `&UnsafeCell<Struct>` to `&UnsafeCell<Field>`, the same kind of projection could also be interesting for `UnsafePinned`.

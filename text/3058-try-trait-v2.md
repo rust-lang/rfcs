@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3058](https://github.com/rust-lang/rfcs/pull/3058)
 - Rust Issue: [rust-lang/rust#84277](https://github.com/rust-lang/rust/issues/84277)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Replace [RFC #1859, `try_trait`](https://rust-lang.github.io/rfcs/1859-try-trait.html),
@@ -21,7 +21,7 @@ or [`yeet e`](https://twitter.com/josh_triplett/status/1248658754976927750) expr
 or [`Iterator::try_find`](https://github.com/rust-lang/rust/issues/63178),
 but the statuses of those features are **not** themselves impacted by this RFC.*
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The motivations from the previous RFC still apply (supporting more types, and restricted interconversion).
@@ -41,10 +41,10 @@ This RFC proposes a solution that _mixes_ the two major options considered last 
 Why are we doing this? What use cases does it support? What is the expected outcome?
 -->
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## The `ops::ControlFlow` type
+### The `ops::ControlFlow` type
 
 This is a simple enum:
 ```rust
@@ -77,7 +77,7 @@ impl<T> TreeNode<T> {
 
 Now, you *could* write the same thing with `Result<(), B>` instead.  But that would require that the passed-in closure use `Err(value)` to early-exit the traversal, which can cause mental dissonance when that exit is because it successfully found the value for which it was looking.  Using `ControlFlow::Break(value)` instead avoids that prejudice, the same way that `break val` in a `loop` doesn't inherently mean success nor failure.
 
-## The `Try` trait
+### The `Try` trait
 
 The `ops::Try` trait describes a type's behavior when used with the `?` operator, like how the `ops::Add` trait describes its behavior when used with the `+` operator.
 
@@ -116,7 +116,7 @@ Most importantly, this gives each family of types (`Result`s, `Option`s, `Contro
 Using `!` is then just a convenient yet efficient way to create those residual types.  It's nice as a user, too, not to need to understand an additional type.  Just the same "it can't be that one" pattern that's also used in `TryFrom`, where for example `i32::try_from(10_u8)` gives a `Result<i32, !>`, since it's a widening conversion which cannot fail.  Note that there's nothing special going on with `!` here -- any uninhabited `enum` would work fine.
 
 
-## How error conversion works
+### How error conversion works
 
 One thing [The Book mentions](https://doc.rust-lang.org/stable/book/ch09-02-recoverable-errors-with-result.html#a-shortcut-for-propagating-errors-the--operator),
 if you recall, is that error values in `?` have `From::from` called on them, to convert from one error type to another.
@@ -172,7 +172,7 @@ In your own types, it's up to you to decide how much freedom is appropriate.  Yo
 > This is another notable difference: The `From::from` is up to the trait implementation, not part of the desugaring.
 
 
-## Implementing `Try` for a non-generic type
+### Implementing `Try` for a non-generic type
 
 The examples in the standard library are all generic, so serve as good examples of that, but non-generic implementations are also possible.
 
@@ -241,7 +241,7 @@ impl<T, E: From<FancyError>> FromResidual<ResultCodeResidual> for Result<T, E> {
 *The split between different error strategies in this section is inspired by [`windows-rs`](https://github.com/microsoft/windows-rs), which has both [`ErrorCode`](https://microsoft.github.io/windows-docs-rs/doc/bindings/windows/struct.ErrorCode.html) -- a simple newtype over `u32` -- and [`Error`](https://microsoft.github.io/windows-docs-rs/doc/bindings/windows/struct.Error.html) -- a richer type that can capture a stack trace, has an `Error` trait implementation, and can carry additional debugging information -- where the former can be converted into the latter.*
 
 
-## Using these traits in generic code
+### Using these traits in generic code
 
 `Iterator::try_fold` has been stable to call (but not to implement) for a while now.  To illustrate the flow through the traits in this RFC, let's implement our own version.
 
@@ -335,10 +335,10 @@ Explain the proposal as if it was already included in the language and you were 
 For implementation-oriented RFCs (e.g. for compiler internals), this section should focus on how compiler contributors should think about the change, and give examples of its concrete impact. For policy RFCs, this section should provide an example-driven introduction to the policy, and explain its impact in concrete terms.
 -->
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## `ops::ControlFlow`
+### `ops::ControlFlow`
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -350,7 +350,7 @@ pub enum ControlFlow<B, C = ()> {
 }
 ```
 
-## The traits
+### The traits
 
 ```rust
 pub trait Try: FromResidual {
@@ -375,7 +375,7 @@ pub trait FromResidual<Residual = <Self as Try>::Residual> {
 }
 ```
 
-## Expected laws
+### Expected laws
 
 What comes out is what you put in:
 - `<T as Try>::from_output(x).branch()` ⇒ `ControlFlow::Continue(x)` (aka `try { x }?` ⇒ `x`)
@@ -384,7 +384,7 @@ What comes out is what you put in:
 You can recreate what you split up:
 - `match x.branch() { ControlFlow::Break(r) => Try::from_residual(r), ControlFlow::Continue(v) => Try::from_output(v) }` ⇒ `x` (aka `try { x? }` ⇒ `x`)
 
-## Desugaring `?`
+### Desugaring `?`
 
 The previous desugaring of `x?` was
 
@@ -406,9 +406,9 @@ match Try::branch(x) {
 
 The critical difference is that conversion (such as `From::from`) is left up to the implementation instead of forcing it in the desugar.
 
-## Standard implementations
+### Standard implementations
 
-### `Result`
+#### `Result`
 
 ```rust
 impl<T, E> ops::Try for Result<T, E> {
@@ -438,7 +438,7 @@ impl<T, E, F: From<E>> ops::FromResidual<Result<!, E>> for Result<T, F> {
 }
 ```
 
-### `Option`
+#### `Option`
 
 ```rust
 impl<T> ops::Try for Option<T> {
@@ -468,7 +468,7 @@ impl<T> ops::FromResidual for Option<T> {
 }
 ```
 
-### `Poll`
+#### `Poll`
 
 These reuse `Result`'s residual type, and thus interconversion between `Poll` and `Result` is allowed without needing additional `FromResidual` implementations on `Result`.
 
@@ -527,7 +527,7 @@ impl<T, E, F: From<E>> ops::FromResidual<Result<!, E>> for Poll<Option<Result<T,
 }
 ```
 
-### `ControlFlow`
+#### `ControlFlow`
 
 ```rust
 impl<B, C> ops::Try for ControlFlow<B, C> {
@@ -555,7 +555,7 @@ impl<B, C> ops::FromResidual for ControlFlow<B, C> {
 }
 ```
 
-## Use in `Iterator`
+### Use in `Iterator`
 
 The provided implementation of `try_fold` is already just using `?` and `try{}`, so doesn't change.  The only difference is the name of the associated type in the bound:
 ```rust
@@ -583,7 +583,7 @@ This is the technical portion of the RFC. Explain the design in sufficient detai
 The section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
 -->
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - While this handles a known accidental stabilization, it's possible that there's something else unknown that will keep this from being doable while meeting Rust's stringent stability guarantees.
@@ -597,10 +597,10 @@ The section should return to the examples given in the previous section, and exp
 Why should we *not* do this?
 -->
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why `ControlFlow` pulls its weight
+### Why `ControlFlow` pulls its weight
 
 The previous RFC discussed having such a type, but ended up deciding that defining a new type for the desugar wasn't worth it, and just used `Result`.
 
@@ -608,7 +608,7 @@ This RFC does use a new type because one already [exists in nightly](https://doc
 It's being used in [the library](https://github.com/rust-lang/rust/blob/fd34606ddf02d1e9364e459b373a6ad665c3d8a4/library/core/src/iter/traits/iterator.rs#L2239-L2252) and [the compiler](https://github.com/rust-lang/rust/blob/c609b2eaf323186a1167ec1a9ffa69a7d4a5b1b9/compiler/rustc_middle/src/ty/fold.rs#L184-L206), demonstrating that it's useful beyond just this desugaring, so the desugar might as well use it too for extra clarity.
 There are also [ecosystem changes waiting on something like it](https://github.com/rust-itertools/itertools/issues/469#issuecomment-677729589), so it's not just a compiler-internal need.
 
-## Methods on `ControlFlow`
+### Methods on `ControlFlow`
 
 On nightly there are a [variety of methods](https://doc.rust-lang.org/nightly/std/ops/enum.ControlFlow.html#implementations) available on `ControlFlow`.  However, none of them are needed for the stabilization of the traits, so they left out of this RFC.  They can be considered by libs at a later point.
 
@@ -622,7 +622,7 @@ impl<B, C> ControlFlow<B, C> {
 }
 ```
 
-## Traits for `ControlFlow`
+### Traits for `ControlFlow`
 
 `ControlFlow` derives a variety of traits where they have obvious behaviour.  It does not, however, derive `PartialOrd`/`Ord`.  They're left out as it's unclear which order, if any, makes sense between the variants.
 
@@ -630,7 +630,7 @@ For `Option`s, `None < Some(_)`, but for `Result`s, `Ok(_) < Err(_)`.  So there'
 
 Leaving it out also leaves us free to change the ordering of the variants in the definition in case doing so can allow us to optimize the `?` operator.  (For a similar previous experiment, see [PR #49499](https://github.com/rust-lang/rust/pull/49499).)
 
-## Naming the variants on `ControlFlow`
+### Naming the variants on `ControlFlow`
 
 The variants are given those names as they serve the same purpose as the corresponding keywords when used in `Iterator::try_fold` or `Iterator::try_for_each`.
 
@@ -657,7 +657,7 @@ iter.try_for_each(|x| {
 ```
 (Of course, one wouldn't normally use the `continue` keyword at the end of a `for` loop like that, but I've included it here to emphasize that even the `ControlFlow::Continue(())` as the final expression of the block it ends up working like the keyword would.)
 
-## Why `ControlFlow` has `C = ()`
+### Why `ControlFlow` has `C = ()`
 
 The type that eventually became `ControlFlow` was originally added way back in 2017 as [the internal-only type `LoopState`](https://github.com/rust-lang/rust/commit/b32267f2c1344d37c4aa30eccd5a9ab77642b3e6#diff-6f95fa6b66f447d11bb7507f832027237ee240310c159c74495a2363c82e76d7R357-R376) used to make some default implementations in `Iterator` easier to read.  It had no type parameter defaults.
 
@@ -679,7 +679,7 @@ As an additional anecdote that `C = ()` is particularly common, [Hytak mentioned
 
 So when thinking about `ControlFlow`, it's often best to think of it not like `Result`, but like an `Option` which short-circuits the other variant.  While it *can* flow a `Continue` value, that seems to be a fairly uncommon use in practice.
 
-## Was this considered last time?
+### Was this considered last time?
 
 Interestingly, a [previous version](https://github.com/rust-lang/rfcs/blob/f89568b1fe5db4d01c4668e0d334d4a5abb023d8/text/0000-try-trait.md#using-an-associated-type-for-the-success-value) of RFC #1859 _did_ actually mention a two-trait solution, splitting the "associated type for ok" and "generic type for error" like is done here.  It's no longer  mentioned in the version that was merged.  To speculate, it may have been unpopular due to a thought that an extra traits just for the associated type wasn't worth it.
 
@@ -687,7 +687,7 @@ Current desires for the solution, however, have more requirements than were incl
 
 Also, ok-wrapping was decided [in #70941](https://github.com/rust-lang/rust/issues/70941), which needs such a constructor, making this ["much more appealing"](https://github.com/rust-lang/rust/issues/42327#issuecomment-379882998).
 
-## Why not make the output a generic type?
+### Why not make the output a generic type?
 
 It's helpful that type information can flow both ways through `?`.
 
@@ -699,7 +699,7 @@ Similar scenarios exist for `try`, though of course they're not yet stable:
 - `let y: anyhow::Result<_> = try { x };` doesn't need to repeat the type of `x`.
 - `let x: i16 = { 4 };` works for infallible code, so for consistency it's good for `let x: anyhow::Result<i16> = try { 4 };` to also work (rather than default the literal to `i32` and fail).
 
-## Why does `FromResidual` take a generic type?
+### Why does `FromResidual` take a generic type?
 
 The simplest case is that the already-stable error conversions require a generic *somewhere* in the error path in the desugaring.  In the RFC #1859 implementation, that generic comes from using `From::from` in the desugaring.
 
@@ -711,7 +711,7 @@ But even for the error path, forcing `From` causes problems, notably because of 
 
 As a bonus, moving conversion (if any) into the `FromResidual` implementation may actually speed up the compiler -- the simpler desugar means generating less HIR, and thus less work for everything thereafter (up to LLVM optimizations, at least).  The `serde` crate has [their own macro](https://github.com/serde-rs/serde/blob/b0c99ed761d638f2ca2f0437522e6c35ad254d93/serde_derive/src/try.rs#L3-L6) for error propagation which omits `From`-conversion as they see a "significant improvement" from doing so.
 
-## Why not merge `Try` and `FromResidual`?
+### Why not merge `Try` and `FromResidual`?
 
 This RFC treats them as conceptually the same trait -- there are no types proposed here to implement `FromResidual<_>` which don't also implement `Try` -- so one might wonder why they're not merged into one `Try<R>`.  After all, that would seem to remove the duplication between the associated type and the generic type, as something like
 ```rust
@@ -727,7 +727,7 @@ This, however, is technically too much freedom.  Looking at the error propagatio
 
 And even for a human, it's not clear that this freedom is helpful.  While any trait can be implemented weirdly, one good part of RFC #1859 that this one hopes to retain is that one doesn't need to know contextual information to understand what comes out of `?`.  Whereas any design that puts `branch` on a generic trait would mean it'd be possible for `?` to return different things depending on that generic type parameter -- unless the associated type were split out into a separate trait, but that just reopens the "why are they different traits" conversation again, without solving the other issues.
 
-## Naming the `?`-related traits and associated types
+### Naming the `?`-related traits and associated types
 
 This RFC introduces the *residual* concept as it was helpful to have a name to talk about in the guide section.  (A previous version proved unclear, perhaps in part due to it being difficult to discuss something without naming it.)  But the `fn branch(self) -> ControlFlow<Self::Residual, Self::Output>` API is not necessarily obvious.
 
@@ -750,7 +750,7 @@ However the "boring" `Output` name does have the advantage that one doesn't need
 
 > ℹ Per feedback from T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
 
-## Splitting up `Try` more
+### Splitting up `Try` more
 
 This RFC encourages one to think of a `Try` type holistically, as something that supports all three of the core operations, with expected rules between them.
 
@@ -818,25 +818,25 @@ There are probably also useful intermediary designs here.  Perhaps the `IgnoreAl
 
 > ℹ Per feedback from T-libs, this is left as an unresolved question for the RFC, to be resolved in nightly.
 
-## Why a "residual" type is better than an "error" type
+### Why a "residual" type is better than an "error" type
 
 Most importantly, for any type generic in its "output type" it's easy to produce a residual type using an uninhabited type.  That works for `Option` -- no `NoneError` residual type needed -- as well as for the `StrandFail<T>` type from the experience report.  And thanks to enum layout optimizations, there's no space overhead to doing this: `Option<!>` is a ZST, and `Result<!, E>` is no larger than `E` itself.  So most of the time one will not need to define anything additional.
 
 In those cases where a separate type *is* needed, it's still easier to make a residual type because they're transient and thus can be opaque: there's no point at which a user is expected to *do* anything with a residual type other than convert it back into a known `Try` type.  This is different from the previous design, where less-restrictive interconversion meant that anything could be exposed via a `Result`.  That has lead to requests, [such as for `NoneError` to implement `Error`](https://github.com/rust-lang/rust/issues/46871#issuecomment-618186642), that are perfectly understandable given that the instances are exposed in `Result`s.  As residual types aren't ever exposed like that, it would be fine for them to implement nothing but `FromResidual` (and probably `Debug`), making them cheap to define and maintain.
 
-## Use of `!`
+### Use of `!`
 
 This RFC uses `!` to be concise.  It would work fine with `convert::Infallible` instead if `!` has not yet stabilized, though a few more match arms would be needed in the implementations.  (For example, `Option::from_residual` would need `Some(c) => match c {}`.)
 
-## Why `FromResidual` is the supertrait
+### Why `FromResidual` is the supertrait
 
 It's nicer for `try_fold` implementations to just mention the simpler `Try` name.  It being the subtrait means that code needing only the basic scenario can just bound on `Try` and know that both `from_output` and `from_residual` are available.
 
-## Default `Residual` on `FromResidual`
+### Default `Residual` on `FromResidual`
 
 The default here is provided to make the basic case simple.  It means that when implementing the trait, the simple case (like in `Option`) doesn't need to think about it -- similar to how you can `impl Add for Foo` for the homogeneous case even though that trait also has a generic parameter.
 
-## `FromResidual::from_residual` vs `Residual::into_try`
+### `FromResidual::from_residual` vs `Residual::into_try`
 
 Either of these directions could be made to work.  Indeed, an early experiment while drafting this had a method on a required trait for the residual that created the type implementing `Try` (not just the associated type).  However that method was removed as unnecessary once `from_residual` was added, and then the whole trait was moved to future work in order to descope the RFC, as it proved unnecessary for the essential `?`/`try_fold` functionality.
 
@@ -855,7 +855,7 @@ impl<R: std::fmt::Debug> FromResidual<R> for LogAndIgnoreErrors {
 
 And, ignoring the coherence implications, a major difference between the two sides is that the target type is typically typed out visibly (in a return type) whereas the source type (going into the `?`) is often the result of some called function.  So it's preferable for any behaviour extensions to be on the type that can more easily be seen in the code.
 
-## Can we just remove the accidental interconversions?
+### Can we just remove the accidental interconversions?
 
 This depends on how we choose to read the rules around breaking changes.
 
@@ -877,7 +877,7 @@ That means it's using `?` on an `Option`, but the closure ends up returning `Res
 
 This RFC thus proposes removing the accidental interconversions.
 
-### Compatibility with accidental interconversions (if needed)
+#### Compatibility with accidental interconversions (if needed)
 
 If something happens that turns out they need to be supported, the following approach can work.
 
@@ -942,7 +942,7 @@ mod sadness {
 - What is the impact of not doing this?
 -->
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Previous approaches used on nightly
@@ -988,14 +988,14 @@ Note that while precedent set by other languages is some motivation, it does not
 Please also take into consideration that rust sometimes intentionally diverges from common language features.
 -->
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Questions from T-libs to be resolved in nightly:
 - [ ] What vocabulary should `Try` use in the associated types/traits?  Output+residual, continue+break, or something else entirely?
 - [ ] Is it ok for the two traits to be tied together closely, as outlined here, or should they be split up further to allow types that can be only-created or only-destructured?
 
-## Implementation and Stabilization Sequencing
+### Implementation and Stabilization Sequencing
 
 - `ControlFlow` is implemented in nightly already.
 - The traits and desugaring could go into nightly immediately.
@@ -1010,7 +1010,7 @@ Questions from T-libs to be resolved in nightly:
 -->
 
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 While it isn't directly used in this RFC, a particular residual type can be used to define a "family" of types which all share that residual.
@@ -1043,7 +1043,7 @@ This can be thought of as the type-level inverse of `Try`'s associated types: It
 
 A previous version of this RFC included a trait along these lines, but it wasn't needed for the stable-at-time-of-writing scenarios.  Furthermore, some experiments demonstrated that having a bound in `Try` requiring it (something like `where Self::Residual: GetCorrespondingTryType<Self::Output>`) wasn't actually even helpful for unstable scenarios, so there was no need to include it in normative section of the RFC.
 
-## Possibilities for `try_find`
+### Possibilities for `try_find`
 
 Various library methods, such as `try_map` for arrays ([PR #79713](https://github.com/rust-lang/rust/pull/79713#issuecomment-739075171)), would like to be able to do HKT-like things to produce their result types.  For example, `Iterator::try_find` wants to be able to return a `Foo<Option<Item>>` from a predicate that returned a `Foo<bool>`.
 
@@ -1094,7 +1094,7 @@ where
 
 ```
 
-## Possibilities for `try{}`
+### Possibilities for `try{}`
 
 A core problem with [try blocks](https://doc.rust-lang.org/nightly/unstable-book/language-features/try-blocks.html) as implemented in nightly, is that they require their contextual type to be known.
 
@@ -1138,7 +1138,7 @@ So a future RFC could define a way (syntax, code inspection, heuristics, who kno
 
 *Note that the `?` desugaring in nightly is already different depending whether it's inside a `try {}` (since it needs to block-break instead of `return`), so making it slightly more different shouldn't have excessive implementation cost.*
 
-## Possibilities for `yeet`
+### Possibilities for `yeet`
 
 As previously mentioned, this RFC neither defines nor proposes a `yeet` operator.  However, like the previous design could support one with its `Try::from_error`, it's important that this design would be sufficient to support it.
 

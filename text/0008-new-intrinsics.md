@@ -6,7 +6,7 @@
 design may still be useful in the future, but before implementing we
 would prefer to revisit it so as to be sure it is up to date.**
 
-# Summary
+## Summary
 
 The way our intrinsics work forces them to be wrapped in order to
 behave like normal functions. As a result, rustc is forced to inline a
@@ -17,7 +17,7 @@ in the language so that they behave the same as normal Rust functions
 by removing the "rust-intrinsic" foreign ABI and reusing the "Rust"
 ABI.
 
-# Motivation
+## Motivation
 
 A number of commonly-used intrinsics, including `transmute`, `forget`,
 `init`, `uninit`, and `move_val_init`, are accessed through wrappers
@@ -39,7 +39,7 @@ let transmute: fn(int) -> uint = intrinsics::transmute;
 This incongruity means that we can't just expose the intrinsics
 directly as part of the public API.
 
-# Detailed design
+## Detailed design
 
 `extern "Rust" fn` is already equivalent to `fn`, so if intrinsics
 have the "Rust" ABI then the problem is solved.
@@ -66,7 +66,7 @@ abstractions.
 Currently, "Rust" foreign functions may not be generic; this change
 will require a special case that allows intrinsics to be generic.
 
-# Alternatives
+## Alternatives
 
 1. Instead of making intrinsics lang items we could create a slightly
 different mechanism, like an `#[intrinsic]` attribute, that would
@@ -78,6 +78,6 @@ continue letting intrinsics to be redeclared.
 3. We could also make "rust-intrinsic" coerce or otherwise be the same
 as "Rust" externs and normal Rust functions.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

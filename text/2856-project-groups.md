@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#2856](https://github.com/rust-lang/rfcs/pull/2856)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 - Formalize project groups as groups dedicated to specific projects within the
   context of a Rust team.
@@ -17,7 +17,7 @@
   - An associated repository.
   - Dedicated streams on Discord/Zulip/etc.
  
-# Motivation
+## Motivation
 
 Working groups in Rust were not created through the RFC process, as such
 there's not much documentation on exactly what a working group does, what are
@@ -39,7 +39,7 @@ new groups.
 
 [rust-lang#54445]: https://github.com/rust-lang/rust/issues/54445
 
-# Guide-level explanation
+## Guide-level explanation
 
 To address this confusion this RFC proposes switching from using "Team Working
 Group" in favour of "Project Group". This would serve as a catch all term for
@@ -49,7 +49,7 @@ as certain project or effort in the Rust team.
 **Note:** Currently existing working groups should remain working groups unless
 explicitly re-proposed through the project group process detailed in this RFC.
 
-## Life-cycle of a Project Group
+### Life-cycle of a Project Group
 This is a high level overview of the complete process of a project group.
 
 <p align="center">
@@ -59,7 +59,7 @@ This is a high level overview of the complete process of a project group.
     <p align="center">Figure 1. Project Group Lifecycle</p>
 </p>
 
-### Steps
+#### Steps
 
 1. Exploratory period.
 
@@ -131,7 +131,7 @@ This is a high level overview of the complete process of a project group.
 [`rust-lang/team`]: https://github.com/rust-lang/team
 [internals]: https://internals.rust-lang.org
 
-# Reference-level explanation
+## Reference-level explanation
 
 A Project Group is a group of people working on a particular project or
 responsibilities at the behest of an official Rust team. Some project groups are
@@ -168,7 +168,7 @@ can be hard to know their current status.
 [triage]: https://github.com/rust-lang/team/blob/master/teams/wg-triage.toml
 [rustup]: https://github.com/rust-lang/team/blob/master/teams/wg-rustup.toml
 
-## Project Group Creation
+### Project Group Creation
 A project group should have the following;
 
 - **Leads** — At least one person who acts as the leader of the group and is
@@ -206,7 +206,7 @@ A project group should have the following;
     ease communication, though there may be cases where the team agrees to
     a group trying out a different platform.
 
-### Creating The Charter
+#### Creating The Charter
 Since project groups are approved by their relevant parent team over the core
 team, it's up to each team decide their specific requirements. However the
 author recommends that a group should try to make a charter that addresses 
@@ -235,7 +235,7 @@ the following questions.
 [discord]: https://discord.gg/rust-lang
 [code of conduct]: https://www.rust-lang.org/policies/code-of-conduct
 
-## Initial Setup
+### Initial Setup
 
 Once a group has been approved, a pull request with the initial set of members
 should be made to [`rust-lang/team`]. Please refer to team's documentation for
@@ -248,7 +248,7 @@ relevant changes and personalisation.
 [`rust-lang/team`]: https://github.com/rust-lang/team
 [project group template]: https://github.com/rust-lang/project-group-template
 
-## Evaluation
+### Evaluation
 
 Parent teams should add checking in with their project groups as part of their
 regular triage. The project group is also encouraged to post their progress
@@ -256,14 +256,14 @@ updates and meeting minutes as blog posts on the ["Inside Rust" blog][inside-rus
 
 [inside-rust]: https://blog.rust-lang.org/inside-rust
 
-## Archival
+### Archival
 
 At some point, the group's work will conclude. Whether because the work is
 complete, or the members cannot finish the work, or the group feels like the
 project isn't worth pursuing further. The author is calling this process
 "Archival".
 
-### Announcement
+#### Announcement
 
 A group that is considering archival should first figure out what should happen to
 any crates, repositories, or projects that they started. In general these
@@ -273,7 +273,7 @@ there is there isn't any suitable candidate for maintaining the project.
 Once that has been resolved the group should write an announcement of their archival
 along with any relevant details about the migration and/or archival of projects.
 
-### Retrospective
+#### Retrospective
 
 While this RFC attempts to address some of the current organisational problems
 within the organisation, the author doesn't believe will be a panacea to those
@@ -296,13 +296,13 @@ written as a single post. However there will be times where having a timely
 retrospective will not be possible, and in that case a shorter separate
 announcement post is appropriate.
 
-# Drawbacks
+## Drawbacks
 
 - There's a lot of inertia around the Working Group terminology, and switching
   to new terminology will likely cause some confusion, though hopefully
   only in the short term.
 
-# Future Work
+## Future Work
 
 - An initial version of this RFC also specified Working & Community Groups,
   however we found that we want to discuss that topic in more depth, and
@@ -318,6 +318,6 @@ announcement post is appropriate.
 [wg-governance#38]: https://github.com/rust-lang/wg-governance/issues/38
 [wg-governance#46]: https://github.com/rust-lang/wg-governance/issues/46
 
-# Unresolved questions
+## Unresolved questions
 
 [unresolved-questions]: #unresolved-questions

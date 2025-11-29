@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#453](https://github.com/rust-lang/rfcs/pull/453)
 - Rust Issue: [rust-lang/rust#20008](https://github.com/rust-lang/rust/issues/20008)
 
-# Summary
+## Summary
 
 Various enhancements to macros ahead of their standardization in 1.0.
 
@@ -11,7 +11,7 @@ it addresses the largest usability problems within the limited time frame for
 1.0.  It's my hope that a lot of these problems can be solved in nicer ways
 in the long term (there is some discussion of this below).
 
-# Motivation
+## Motivation
 
 `macro_rules!` has [many rough
 edges](https://github.com/rust-lang/rfcs/issues/440).  A few of the big ones:
@@ -26,12 +26,12 @@ edges](https://github.com/rust-lang/rfcs/issues/440).  A few of the big ones:
 These issues in particular are things we have a chance of addressing for 1.0.
 This RFC contains plans to do so.
 
-# Semantic changes
+## Semantic changes
 
 These are the substantial changes to the macro system.  The examples also use
 the improved syntax, described later.
 
-## `$crate`
+### `$crate`
 
 The first change is to disallow importing macros from an `extern crate` that is
 not at the crate root.  In that case, if
@@ -57,7 +57,7 @@ We can add a lint to warn about cases where an exported macro has paths that
 are not absolute-with-crate or `$crate`-relative.  This will have some
 (hopefully rare) false positives.
 
-## Macro scope
+### Macro scope
 
 In this document, the "syntax environment" refers to the set of syntax
 extensions that can be invoked at a given position in the crate.  The names in
@@ -128,11 +128,11 @@ them.
 Procedural macros need their own way to manipulate the syntax environment, but
 that's an unstable internal API, so it's outside the scope of this RFC.
 
-# New syntax
+## New syntax
 
 We also clean up macro syntax in a way that complements the semantic changes above.
 
-## `#[macro_use(...)] mod`
+### `#[macro_use(...)] mod`
 
 The `macro_use` attribute can be applied to a `mod` item as well.  The
 specified macros will "escape" the module and become visible throughout the
@@ -152,7 +152,7 @@ current `#[macro_escape]`.  However, the new convention is to use an outer
 attribute, in the file whose syntax environment is affected, rather than an
 inner attribute in the file defining the macros.
 
-## Macro export and re-export
+### Macro export and re-export
 
 Currently in Rust, a macro definition qualified by `#[macro_export]` becomes
 available to other crates.  We keep this behavior in the new system.  A macro
@@ -195,7 +195,7 @@ Because macros are exported in crate metadata as strings, macro re-export "just
 works" as soon as `$crate` is available.  It's implemented as part of the
 `$crate` branch mentioned above.
 
-## `#[plugin]` attribute
+### `#[plugin]` attribute
 
 `#[phase(plugin)]` becomes simply `#[plugin]` and is still feature-gated.  It
 only controls whether to search for and run a plugin registrar function.  The
@@ -216,19 +216,19 @@ to the plugin through a `Registry` method.  This facilitates plugin
 configuration.  The alternative in many cases is to use interacting side
 effects between procedural macros, which are harder to reason about.
 
-## Syntax convention
+### Syntax convention
 
 `macro_rules!` already allows `{ }` for the macro body, but the convention is
 `( )` for some reason.  In accepting this RFC we would change to a `{ }`
 convention for consistency with the rest of the language.
 
-## Reserve `macro` as a keyword
+### Reserve `macro` as a keyword
 
 A lot of the syntax alternatives discussed for this RFC involved a `macro`
 keyword.  The consensus is that macros are too unfinished to merit using the
 keyword now.  However, we should reserve it for a future macro system.
 
-# Implementation and transition
+## Implementation and transition
 
 I will coordinate implementation of this RFC, and I expect to write most of the
 code myself.
@@ -236,7 +236,7 @@ code myself.
 To ease the transition, we can keep the old syntax as a deprecated synonym, to
 be removed before 1.0.
 
-# Drawbacks
+## Drawbacks
 
 This is big churn on a major feature, not long before 1.0.
 
@@ -246,7 +246,7 @@ much of this reform until after 1.0.  The main reason not to is macro
 import/export.  Right now every macro you import will be expanded using your
 local copy of `macro_rules!`, regardless of what the macro author had in mind.
 
-# Alternatives
+## Alternatives
 
 We could try to implement proper hygienic capture of crate names in macros.
 This would be wonderful, but I don't think we can get it done for 1.0.
@@ -272,7 +272,7 @@ reform.  Two ways this could work out:
   user's hand as to which file a particular piece of code goes in seems
   un-Rusty.
 
-# Unresolved questions
+## Unresolved questions
 
 Should we forbid `$crate` in non-exported macros?  It seems useless, however I
 think we should allow it anyway, to encourage the habit of writing `$crate::`
@@ -281,7 +281,7 @@ for any references to the local crate.
 Should `#[macro_reexport]` support the "glob" behavior of `#[macro_use]` with
 no names listed?
 
-# Acknowledgements
+## Acknowledgements
 
 This proposal is edited by Keegan McAllister.  It has been refined through many
 engaging discussions with:

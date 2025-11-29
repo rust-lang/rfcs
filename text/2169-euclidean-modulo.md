@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#2169](https://github.com/rust-lang/rfcs/pull/2169)
 - Rust Issue: [rust-lang/rust#49048](https://github.com/rust-lang/rust/issues/49048)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes the addition of a modulo method with more useful and mathematically regular properties over the built-in remainder `%` operator when the dividend or divisor is negative, along with the associated division method.
 
 For previous discussion, see: https://internals.rust-lang.org/t/mathematical-modulo-operator/5952.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The behaviour of division and modulo, as implemented by Rust's (truncated) division `/` and remainder (or truncated modulo) `%` operators, with respect to negative operands is unintuitive and has fewer useful mathematical properties than that of other varieties of division and modulo, such as flooring and Euclidean[[1]](https://dl.acm.org/citation.cfm?doid=128861.128862). While there are good reasons for this design decision[[2]](https://mail.mozilla.org/pipermail/rust-dev/2013-April/003786.html), having convenient access to a modulo operation, in addition to the remainder is very useful, and has often been requested[[3]](https://mail.mozilla.org/pipermail/rust-dev/2013-April/003680.html)[[4]](https://github.com/rust-lang/rust/issues/13909)[[5]](https://stackoverflow.com/questions/31210357/is-there-a-modulus-not-remainder-function-operation)[[6]](https://users.rust-lang.org/t/proper-modulo-support/903)[[7]](https://www.reddit.com/r/rust/comments/3yoo1q/remainder/).
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 ```rust
@@ -26,7 +26,7 @@ The behaviour of division and modulo, as implemented by Rust's (truncated) divis
 ```
 Euclidean division & modulo for integers and floating-point numbers will be achieved using the `div_euc` and `mod_euc` methods. The `%` operator has identical behaviour to `mod_euc` for unsigned integers. However, when using signed integers or floating-point numbers, you should be careful to consider the behaviour you want: often Euclidean modulo will be more appropriate.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 It is important to have both division and modulo methods, as the two operations are intrinsically linked[[8]](https://en.wikipedia.org/wiki/Modulo_operation), though it is often the modulo operator that is specifically requested.
@@ -88,12 +88,12 @@ fn mod_euc(self, rhs: f64) -> f64 {
 The unsigned implementations of these methods are trivial.
 The `checked_*`, `overflowing_*` and `wrapping_*` methods would operate analogously to their non-Euclidean `*_div` and `*_rem` counterparts that already exist. The edge cases are identical.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Standard drawbacks of adding methods to primitives apply. However, with the proposed method names, there are unlikely to be conflicts downstream[[9]](https://github.com/search?q=div_euc+language%3ARust&type=Code&utf8=%E2%9C%93)[[10]](https://github.com/search?q=mod_euc+language%3ARust&type=Code&utf8=%E2%9C%93).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Flooring modulo is another variant that also has more useful behaviour with negative dividends than the remainder (truncating modulo). The difference in behaviour between flooring and Euclidean division & modulo come up rarely in practice, but there are arguments in favour of the mathematical properties of Euclidean division and modulo[[1]](https://dl.acm.org/citation.cfm?doid=128861.128862). Alternatively, both methods (flooring _and_ Euclidean) could be made available, though the difference between the two is likely specialised-enough that this would be overkill.
@@ -106,7 +106,7 @@ This functionality could instead reside in a separate crate, such as `num` (floo
 - The previous support for this functionality in core shows that many are keen to have this available.
 - The Euclidean or flooring modulo is used (or reimplemented) commonly enough that it is worth having it generally accessible, rather than in a separate crate that must be depended on by each project.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

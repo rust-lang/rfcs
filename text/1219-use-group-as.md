@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1219](https://github.com/rust-lang/rfcs/pull/1219)
 - Rust Issue: [rust-lang/rust#27578](https://github.com/rust-lang/rust/issues/27578)
 
-# Summary
+## Summary
 
 Allow renaming imports when importing a group of symbols from a module.
 
@@ -16,7 +16,7 @@ use std::io::{
 }
 ```
 
-# Motivation
+## Motivation
 
 The current design requires the above example to be written like this:
 
@@ -30,7 +30,7 @@ It's unfortunate to duplicate `use std::io::` on the 3 lines, and the proposed
 example feels logical, and something you reach for in this instance, without
 knowing for sure if it worked.
 
-# Detailed design
+## Detailed design
 
 The current grammar for use statements is something like:
 
@@ -65,8 +65,8 @@ to alias to the same name, e.g. `use foo::{bar}` expands to `use foo::{bar as ba
 This includes being able to rename `self`, such as `use std::io::{self
 as stdio, Result as IoResult};`.
 
-# Drawbacks
+## Drawbacks
 
-# Alternatives
+## Alternatives
 
-# Unresolved Questions
+## Unresolved Questions

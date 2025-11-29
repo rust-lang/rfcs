@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#90](https://github.com/rust-lang/rfcs/pull/90)
 - Rust Issue: [rust-lang/rust#14504](https://github.com/rust-lang/rust/issues/14504)
 
-# Summary
+## Summary
 
 Simplify Rust's lexical syntax to make tooling easier to use and easier to
 define.
 
-# Motivation
+## Motivation
 
 Rust's lexer does a lot of work. It un-escapes escape sequences in string and
 character literals, and parses numeric literals of 4 different bases. It also
@@ -18,7 +18,7 @@ mind), after lexing it is impossible to tell if a given character was escaped
 or unescaped in the source, making the lexer difficult to test against a
 model.
 
-# Detailed design
+## Detailed design
 
 The following (antlr4) grammar completely describes the proposed lexical
 syntax:
@@ -237,7 +237,7 @@ There are a few notable changes from today's lexical syntax:
 The output of the lexer then becomes annotated spans -- which part of the
 document corresponds to which token type. Even whitespace is categorized.
 
-# Drawbacks
+## Drawbacks
 
 Including comments and whitespace in the token stream is very non-traditional
 and not strictly necessary.

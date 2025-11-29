@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2056](https://github.com/rust-lang/rfcs/pull/2056)
 - Rust Issue: [rust-lang/rust#48214](https://github.com/rust-lang/rust/issues/48214)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow constraints to appear in where clauses which are trivially known to either
 always hold or never hold. This would mean that `impl Foo for Bar where i32:
 Iterator` would become valid, and the impl would never be satisfied.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 It may seem strange to ever want to include a constraint that is always known to
@@ -38,7 +38,7 @@ One would never write this impl normally since we always know the type of
 can't always easily know whether that constraint would hold or not at the time
 when we're generating code.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Concretely implementing this means the removal of [`E0193`]. Interestingly, as of
@@ -63,23 +63,23 @@ and would be set to warn by default.
 
 [`E0193`]: https://doc.rust-lang.org/error-index.html#E0193
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This feature does not need to be taught explicitly. Knowing the basic rules of
 where clauses, one would naturally already expect this to work.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - The changes to the compiler could potentially increase complexity quite a bit
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 n/a
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Should the lint error by default instead of warn?

@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#2585](https://github.com/rust-lang/rfcs/pull/2585)
 - Rust Issue: [rust-lang/rust#71688](https://github.com/rust-lang/rust/issues/71668)
 
-# Summary
+## Summary
 [summary]: #summary
 
 No longer treat the body of an `unsafe fn` as being an `unsafe` block.  To avoid
 a breaking change, this is a warning now and may become an error in a future
 edition.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Marking a function as `unsafe` is one of Rust's key protections against
@@ -58,7 +58,7 @@ inconsistent with `unsafe fn` when viewed through this lens.)
 
 [unsafe-dual]: https://github.com/rust-lang/rfcs/pull/2585#issuecomment-577852430
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The `unsafe` keyword in Rust serves two related purposes.
@@ -100,7 +100,7 @@ This lint is allow-by-default initially, and will be warn-by-default across all
 editions eventually.  In future editions, it may become deny-by-default, or even
 a hard error.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The new `unsafe_op_in_unsafe_fn` lint triggers when an unsafe operation is used
@@ -135,7 +135,7 @@ unsafe fn get_unchecked<T>(x: &[T], i: usize) -> &T {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Many `unsafe fn` are actually rather short (no more than 3 lines) and will end
@@ -148,7 +148,7 @@ unsafe fn foo(...) -> ... { unsafe {
 } }
 ```
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 To achieve the goals laid out in the motivation section, the proposed approach
@@ -173,7 +173,7 @@ those `unsafe fn` that contain at least one `unsafe` block, meaning short
 
 And of course, the lint name is subject to bikeshedding.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The only other language that I am aware of that has a notion of `unsafe` blocks
@@ -184,7 +184,7 @@ without a further `unsafe` block.  However, based on @Ixrec's experience,
 `unsafe` plays hardly any role in the C# ecosystem and they do not have a
 culture of thinking about this in terms of proof obligations.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 What is the timeline for adding the lint, and cranking up its default level?

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1985](https://github.com/rust-lang/rfcs/pull/1985)
 - Rust Issue: [rust-lang/rust#43035](https://github.com/rust-lang/rust/issues/43035)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Official web content produced by the Rust teams for consumption by Rust users
@@ -17,7 +17,7 @@ support.
 
 [forge]: https://forge.rust-lang.org/platform-support.html
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 [This pull request to remove JQuery from rustdoc's output][jquery-pr] had
@@ -56,10 +56,10 @@ platforms.
 [BrowserStack]: https://www.browserstack.com/pricing
 [bs-support]: https://www.browserstack.com/support
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Rust web content
+### Rust web content
 
 Officially produced web content includes:
 
@@ -91,7 +91,7 @@ almost-official Rust web content:
 [irlo]: https://internals.rust-lang.org/
 [mdBook]: https://github.com/azerupi/mdBook/
 
-## Proposed browser support tiers
+### Proposed browser support tiers
 
 Based on [actual usage metrics][] and with a goal of spending our time in an
 effective way, the browser support tiers would be defined as:
@@ -102,7 +102,7 @@ Browsers are listed in [browserslist][] format.
 
 [browserslist]: https://github.com/ai/browserslist
 
-### Supported browsers
+#### Supported browsers
 
 Goal: Ensure functionality of our web content for 80% of users.
 
@@ -129,7 +129,7 @@ Support:
 - Bugs affecting the functionality of the sites in these browsers are
   prioritized highly.
 
-### Unsupported browsers
+#### Unsupported browsers
 
 Goal: Avoid spending large amounts of time and code complexity debugging and
 hacking around quirks in older or more obscure browsers.
@@ -146,7 +146,7 @@ Support:
   they're deemed to not add an inordinate amount of complexity or maintenance
   burden (subjective, reviewers' judgment).
 
-## Orthogonal but related non-proposals
+### Orthogonal but related non-proposals
 
 The following principles are assumptions I'm making that we currently follow
 and that we should continue to strive for, no matter what browser support
@@ -171,14 +171,14 @@ policy we end up with:
 Please comment if you think any of these should **not** be assumed, but rest
 assured it is not the intent of this RFC to get rid of these kinds of support.
 
-# Relevant data
+## Relevant data
 
 [CanIUse.com][] has some statistics on global usage of browsers and versions,
 but our audience (developers) isn't the same as the general public.
 
 [CanIUse.com]: http://caniuse.com/usage-table
 
-## Google analytics browser usage stats
+### Google analytics browser usage stats
 
 We have Google Analytics on crates.io and on rust-lang.org. The entire data set
 of the usage stats by browser, browser version, and OS are available [in this
@@ -214,7 +214,7 @@ will also be an ESR but it was just released). Firefox 52 was the current major
 version for most of this past month; I'm guessing the early adopters of 53 and
 54 are likely Mozilla employees.
 
-## What do other sites in our niche support?
+### What do other sites in our niche support?
 
 - [GitHub][] - Current versions of Chrome, Firefox, Safari, Edge and IE 11.
   Best effort for Firefox ESR.
@@ -225,7 +225,7 @@ version for most of this past month; I'm guessing the early adopters of 53 and
 [GitHub]: https://help.github.com/articles/supported-browsers/
 [Discourse]: https://github.com/discourse/discourse#requirements
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 We should call this "Rust Browser Support", and we should have the tiers listed
@@ -236,12 +236,12 @@ content is developed and on the [Rust FAQ][].
 
 [Rust FAQ]: https://www.rust-lang.org/en-US/faq.html
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 We exclude some people who are unwilling or unable to use a modern browser.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could adopt the tiers proposed above but with different browser versions.
@@ -250,7 +250,7 @@ We could adopt the browsers proposed above but with different levels of support.
 
 Other alternatives:
 
-## Not have official browser support tiers (status quo)
+### Not have official browser support tiers (status quo)
 
 By not creating official levels of browser support, we will continue to have the
 situation we have today: discussions and decisions are happening that affect
@@ -261,7 +261,7 @@ We continue to not test in multiple browsers, instead relying on bug reports
 from users. The people doing the work continue to decide on an ad-hoc basis
 whether a fix is worth making or not.
 
-## Support all browsers in all configurations
+### Support all browsers in all configurations
 
 We could choose to attempt to support any version of any browser on any device,
 testing with as much as we can. We would still have to rely on bug reports and
@@ -269,7 +269,7 @@ help from the community to test with some configurations, but we wouldn't close
 any bug report or pull request due to the browser or version required to
 reproduce it.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - Am I missing any official web content that this policy should apply to?

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2124](https://github.com/rust-lang/rfcs/pull/2124)
 - Rust Issue: [rust-lang/rust#45860](https://github.com/rust-lang/rust/issues/45860)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add the method `Option::filter<P>(self, predicate: P) -> Self` to the
@@ -17,7 +17,7 @@ assert_eq!(Some(3).filter(|_| false)), None);
 assert_eq!(None.filter(|_| true), None);
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The `Option` type has plenty of methods, every single one intended to help the
@@ -95,7 +95,7 @@ two main ways to achieve something equivalent to `filter(p)`:
 
 [issue]: https://github.com/rust-lang/rfcs/issues/1485
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 A possible documentation of the method:
@@ -116,7 +116,7 @@ A possible documentation of the method:
 > `Option<T>` being an iterator over one or zero elements. `filter()` lets
 > you decide which elements to keep.
 >
-> # Examples
+> ## Examples
 >
 > ```rust
 > fn is_even(n: i32) -> bool {
@@ -129,7 +129,7 @@ A possible documentation of the method:
 > ```
 >
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 It is hopefully sufficiently clear how `filter()` is supposed to work from the
@@ -154,17 +154,17 @@ impl<T> Option<T> {
 }
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It increases the size of the standard library by a tiny bit.
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 - Don't do anything.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 ### Maybe `filter()` wouldn't be used a lot.

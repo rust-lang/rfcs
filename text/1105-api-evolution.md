@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1105](https://github.com/rust-lang/rfcs/pull/1105)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 This RFC proposes a comprehensive set of guidelines for which changes to
 *stable* APIs are considered breaking from a semver perspective, and which are
@@ -26,7 +26,7 @@ The stability promise specifically does *not* apply to unstable features,
 even if they are accidentally usable on the Stable release channel
 under certain conditions such as because of bugs in the compiler.
 
-# Motivation
+## Motivation
 
 Both Rust and its library ecosystem have adopted [semver](http://semver.org/), a
 technique for versioning platforms/libraries partly in terms of the effect on
@@ -49,7 +49,7 @@ The goal of this RFC is to lay out a comprehensive policy for what *must* be
 considered a breaking API change from the perspective of semver, along with some
 guidance about non-semver-breaking changes.
 
-# Detailed design
+## Detailed design
 
 For clarity, in the rest of the RFC, we will use the following terms:
 
@@ -66,9 +66,9 @@ not all breaking changes are equal.
 So, this RFC proposes that **all major changes are breaking, but not all breaking
 changes are major.**
 
-## Overview
+### Overview
 
-### Principles of the policy
+#### Principles of the policy
 
 The basic design of the policy is that **the same code should be able to run
 against different minor revisions**. Furthermore, minor changes should require
@@ -103,7 +103,7 @@ often in practice. The RFC will discuss measures that should be employed in the
 standard library to ensure that even these minor forms of breakage do not cause
 widespread pain in the ecosystem.
 
-### Scope of the policy
+#### Scope of the policy
 
 The policy laid out by this RFC applies to *stable*, *public* APIs in the
 standard library. Eventually, stability attributes will be usable in external
@@ -111,7 +111,7 @@ libraries as well (this will require some design work), but for now public APIs
 in external crates should be understood as de facto stable after the library
 reaches 1.0.0 (per semver).
 
-## Policy by language feature
+### Policy by language feature
 
 Most of the policy is simplest to lay out with reference to specific language
 features and the way that APIs using them can, and cannot, evolve in a minor
@@ -121,9 +121,9 @@ release.
 The RFC covers many, but not all breaking changes that are major; it covers
 *all* breaking changes that are considered minor.
 
-### Crates
+#### Crates
 
-#### Major change: going from stable to nightly
+##### Major change: going from stable to nightly
 
 Changing a crate from working on stable Rust to *requiring* a nightly is
 considered a breaking change. That includes using `#[feature]` directly, or
@@ -131,7 +131,7 @@ using a dependency that does so. Crate authors should consider using Cargo
 ["features"](http://doc.crates.io/manifest.html#the-[features]-section) for
 their crate to make such use opt-in.
 
-#### Minor change: altering the use of Cargo features
+##### Minor change: altering the use of Cargo features
 
 Cargo packages can provide
 [opt-in features](http://doc.crates.io/manifest.html#the-[features]-section),
@@ -144,9 +144,9 @@ However, such breakage always represents a bug: packages are supposed to support
 any combination of features, and if another client of the package depends on a
 given feature, that client should specify the opt-in themselves.
 
-### Modules
+#### Modules
 
-#### Major change: renaming/moving/removing any public items.
+##### Major change: renaming/moving/removing any public items.
 
 Although renaming an item might seem like a minor change, according to the
 general policy design this is not a permitted form of breakage: it's not
@@ -159,7 +159,7 @@ afraid to do so! In the long run, we should consider hiding at least some old
 deprecated items from the docs, and could even consider putting out a major
 version solely as a kind of "garbage collection" for long-deprecated APIs.
 
-#### Minor change: adding new public items.
+##### Minor change: adding new public items.
 
 Note that adding new public items is currently a breaking change, due to glob
 imports. For example, the following snippet of code will break if the `foo`
@@ -182,22 +182,22 @@ crate's dependencies, to prevent breakage in the first place.
 item. This has been the intended semantics of globs, but has not been
 implemented. The details are left to a future RFC, however.)
 
-### Structs
+#### Structs
 
 See "[Signatures in type definitions](#signatures-in-type-definitions)" for some
 general remarks about changes to the actual types in a `struct` definition.
 
-#### Major change: adding a private field when all current fields are public.
+##### Major change: adding a private field when all current fields are public.
 
 This change has the effect of making external struct literals impossible to
 write, which can break code irreparably.
 
-#### Major change: adding a public field when no private field exists.
+##### Major change: adding a public field when no private field exists.
 
 This change retains the ability to use struct literals, but it breaks existing
 uses of such literals; it likewise breaks exhaustive matches against the struct.
 
-#### Minor change: adding or removing private fields when at least one already exists (before and after the change).
+##### Minor change: adding or removing private fields when at least one already exists (before and after the change).
 
 No existing code could be relying on struct literals for the struct, nor on
 exhaustively matching its contents, and client code will likewise be oblivious
@@ -207,7 +207,7 @@ For tuple structs, this is only a minor change if furthermore *all* fields are
 currently private. (Tuple structs with mixtures of public and private fields are
 bad practice in any case.)
 
-#### Minor change: going from a tuple struct with all private fields (with at least one field) to a normal struct, or vice versa.
+##### Minor change: going from a tuple struct with all private fields (with at least one field) to a normal struct, or vice versa.
 
 This is technically a breaking change:
 
@@ -223,12 +223,12 @@ Changing `Foo` to a normal struct can break code that matches on it -- but there
 is never any real reason to match on it in that circumstance, since you cannot
 extract any fields or learn anything of interest about the struct.
 
-### Enums
+#### Enums
 
 See "[Signatures in type definitions](#signatures-in-type-definitions)" for some
 general remarks about changes to the actual types in an `enum` definition.
 
-#### Major change: adding new variants.
+##### Major change: adding new variants.
 
 Exhaustiveness checking means that a `match` that explicitly checks all the
 variants for an `enum` will break if a new variant is added. It is not currently
@@ -239,7 +239,7 @@ language feature that allows an enum to be marked as "extensible", which
 modifies the way that exhaustiveness checking is done and would make it possible
 to extend the enum without breakage.
 
-#### Major change: adding new fields to a variant.
+##### Major change: adding new fields to a variant.
 
 If the enum is public, so is the full contents of all of its variants. As per
 the rules for structs, this means it is not allowed to add any new fields (which
@@ -248,9 +248,9 @@ will automatically be public).
 If you wish to allow for this kind of extensibility, consider introducing a new,
 explicit struct for the variant up front.
 
-### Traits
+#### Traits
 
-#### Major change: adding a non-defaulted item.
+##### Major change: adding a non-defaulted item.
 
 Adding any item without a default will immediately break all trait implementations.
 
@@ -259,7 +259,7 @@ It's possible that in the future we will allow some kind of
 to provide new implementations; such a trait *would* allow arbitrary items to be
 added.
 
-#### Major change: any non-trivial change to item signatures.
+##### Major change: any non-trivial change to item signatures.
 
 Because traits have both implementors and consumers, any change to the signature
 of e.g. a method will affect at least one of the two parties. So, for example,
@@ -267,7 +267,7 @@ abstracting a concrete method to use generics instead might work fine for
 clients of the trait, but would break existing implementors. (Note, as above,
 the potential for "sealed" traits to alter this dynamic.)
 
-#### Minor change: adding a defaulted item.
+##### Minor change: adding a defaulted item.
 
 Adding a defaulted item is technically a breaking change:
 
@@ -318,15 +318,15 @@ There are two circumstances when adding a defaulted item is still a major change
   the trait has defaulted methods, since it will invalidate use of those
   defaults for the methods in existing trait impls.
 
-#### Minor change: adding a defaulted type parameter.
+##### Minor change: adding a defaulted type parameter.
 
 As with "[Signatures in type definitions](#signatures-in-type-definitions)",
 traits are permitted to add new type parameters as long as defaults are provided
 (which is backwards compatible).
 
-### Trait implementations
+#### Trait implementations
 
-#### Major change: implementing any "fundamental" trait.
+##### Major change: implementing any "fundamental" trait.
 
 A [recent RFC](https://github.com/rust-lang/rfcs/pull/1023) introduced the idea
 of "fundamental" traits which are so basic that *not* implementing such a trait
@@ -337,7 +337,7 @@ The coherence rules take advantage of fundamental traits in such a way that
 *adding a new implementation of a fundamental trait to an existing type can
 cause downstream breakage*. Thus, such impls are considered major changes.
 
-#### Minor change: implementing any non-fundamental trait.
+##### Minor change: implementing any non-fundamental trait.
 
 Unfortunately, implementing any existing trait can cause breakage:
 
@@ -371,9 +371,9 @@ breaking change!* Completely prohibiting such a change is clearly a non-starter.
 However, as before, this kind of breakage is considered "minor" by the
 principles of this RFC (see "Adding a defaulted item" above).
 
-### Inherent implementations
+#### Inherent implementations
 
-#### Minor change: adding any inherent items.
+##### Minor change: adding any inherent items.
 
 Adding an inherent item cannot lead to dispatch ambiguity, because inherent
 items trump any trait items with the same name.
@@ -418,16 +418,16 @@ meaningfully different behavior is considered unlikely enough that the RFC is
 willing to permit it to be labeled as a minor change -- and otherwise, inherent
 methods could never be added after the fact.
 
-### Other items
+#### Other items
 
 Most remaining items do not have any particularly unique items:
 
 * For type aliases, see "[Signatures in type definitions](#signatures-in-type-definitions)".
 * For free functions, see "[Signatures in functions](#signatures-in-functions)".
 
-## Cross-cutting concerns
+### Cross-cutting concerns
 
-### Behavioral changes
+#### Behavioral changes
 
 This RFC is largely focused on API changes which may, in particular, cause
 downstream code to stop compiling. But in some sense it is even more pernicious
@@ -444,9 +444,9 @@ version bumps are required.)
 This policy will likely require some revision over time, to become more explicit
 and perhaps lay out some best practices.
 
-### Signatures in type definitions
+#### Signatures in type definitions
 
-#### Major change: tightening bounds.
+##### Major change: tightening bounds.
 
 Adding new constraints on existing type parameters is a breaking change, since
 existing uses of the type definition can break. So the following is a major
@@ -462,7 +462,7 @@ struct Foo<A> { .. }
 struct Foo<A: Clone> { .. }
 ```
 
-#### Minor change: loosening bounds.
+##### Minor change: loosening bounds.
 
 Loosening bounds, on the other hand, cannot break code because when you
 reference `Foo<A>`, you *do not learn anything about the bounds on `A`*. (This
@@ -479,7 +479,7 @@ struct Foo<A: Clone> { .. }
 struct Foo<A> { .. }
 ```
 
-#### Minor change: adding defaulted type parameters.
+##### Minor change: adding defaulted type parameters.
 
 All existing references to a type/trait definition continue to compile and work
 correctly after a new defaulted type parameter is added. So the following is
@@ -495,7 +495,7 @@ struct Foo { .. }
 struct Foo<A = u8> { .. }
 ```
 
-#### Minor change: generalizing to generics.
+##### Minor change: generalizing to generics.
 
 A struct or enum field can change from a concrete type to a generic type
 parameter, provided that the change results in an identical type for all
@@ -547,17 +547,17 @@ struct Foo<T, U = T>(pub T, pub U);
 since, again, all existing uses of the type `Foo<T>` will yield the same field
 types as before.
 
-### Signatures in functions
+#### Signatures in functions
 
 All of the changes mentioned below are considered major changes in the context
 of trait methods, since they can break implementors.
 
-#### Major change: adding/removing arguments.
+##### Major change: adding/removing arguments.
 
 At the moment, Rust does not provide defaulted arguments, so any change in arity
 is a breaking change.
 
-#### Minor change: introducing a new type parameter.
+##### Minor change: introducing a new type parameter.
 
 Technically, adding a (non-defaulted) type parameter can break code:
 
@@ -581,7 +581,7 @@ them open-ended (see suggested language changes).
 Such changes are an important ingredient of abstracting to use generics, as
 described next.
 
-#### Minor change: generalizing to generics.
+##### Minor change: generalizing to generics.
 
 The type of an argument to a function, or its return value, can be *generalized*
 to use generics, including by introducing a new type parameter (as long as it
@@ -635,9 +635,9 @@ fn foo<T: Trait + ?Sized>(t: &T);
 (The use of `?Sized` is essential; otherwise you couldn't recover the original
 signature).
 
-### Lints
+#### Lints
 
-#### Minor change: introducing new lint warnings/errors
+##### Minor change: introducing new lint warnings/errors
 
 Lints are considered advisory, and changes that cause downstream code to receive
 additional lint warnings/errors are still considered "minor" changes.
@@ -646,9 +646,9 @@ Making this work well in practice will likely require some infrastructure work
 along the lines of
 [this RFC issue](https://github.com/rust-lang/rfcs/issues/1029)
 
-## Mitigation for minor changes
+### Mitigation for minor changes
 
-### The Crater tool
+#### The Crater tool
 
 @brson has been hard at work on a tool called "Crater" which can be used to
 exercise changes on the entire crates.io ecosystem, looking for
@@ -663,14 +663,14 @@ problems.
 Any breaking, but minor change to the standard library must be evaluated through
 Crater before being committed.
 
-### Nightlies
+#### Nightlies
 
 One line of defense against a "minor" change causing significant breakage is the
 nightly release channel: we can get feedback about breakage long before it makes
 even into a beta release. And of course the beta cycle itself provides another
 line of defense.
 
-### Elaborated source
+#### Elaborated source
 
 When compiling upstream dependencies, it is possible to generate an "elaborated"
 version of the source code where all dispatch is resolved to explicit UFCS form,
@@ -688,14 +688,14 @@ While this RFC does not propose any such tooling change right now, the point is
 mainly that there are a lot of options if minor changes turn out to cause
 breakage more often than anticipated.
 
-### Trait item renaming
+#### Trait item renaming
 
 One very useful mechanism would be the ability to import a trait while renaming
 some of its items, e.g. `use some_mod::SomeTrait with {foo_method as bar}`. In
 particular, when methods happen to conflict across traits defined in separate
 crates, a user of the two traits could rename one of the methods out of the way.
 
-## Thoughts on possible language changes (unofficial)
+### Thoughts on possible language changes (unofficial)
 
 The following is just a quick sketch of some focused language changes that would
 help our API evolution story.
@@ -763,7 +763,7 @@ type parameter to `foo` can break code, even if a default is provided.
 This could be easily addressed by adding a notation like `...` to leave
 additional parameters unspecified: `foo::<T, ...>(x, y)`.
 
-## [Amendment] Misuse of `accessible(..)`
+### [Amendment] Misuse of `accessible(..)`
 
 [RFC 2523]: https://github.com/rust-lang/rfcs/blob/master/text/2523-cfg-path-version.md
 
@@ -773,7 +773,7 @@ When combined with `#[cfg(feature = "unstable")]`, this has certain breakage ris
 Such breakage due to misuse, as outlined in the RFC, is considered acceptable and
 not covered by our stability promises. Please see the RFC for more details.
 
-# Drawbacks and Alternatives
+## Drawbacks and Alternatives
 
 The main drawback to the approach laid out here is that it makes the stability
 and semver guarantees a bit fuzzier: the promise is not that code will never
@@ -801,9 +801,9 @@ minor forms of breakage permitted here are, in the long run, too much to
 tolerate; at that point we could revise the policies here and explore some
 opt-in scheme, for example.
 
-# Unresolved questions
+## Unresolved questions
 
-## Behavioral issues
+### Behavioral issues
 
 - Is it permitted to change a contract from "abort" to "panic"? What about from
   "panic" to "return an `Err`"?

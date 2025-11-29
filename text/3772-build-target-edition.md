@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3772](https://github.com/rust-lang/rfcs/pull/3772)
 - Rust Issue: [rust-lang/cargo#15283](https://github.com/rust-lang/cargo/issues/15283)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Deprecate `lib.edition`, etc in favor of only setting `package.edition`, removing the fields in the next Edition.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Cargo supports setting the edition per-build-target:
@@ -76,12 +76,12 @@ Drawbacks of this feature include:
   a file back to its edition which requires heuristics to associate a `.rs`
   file with a `Cargo.toml` and then to associate it with a specific build-target.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Documentation updates:
 
-## Configuring a target
+### Configuring a target
 
 *From the [Cargo book](https://doc.rust-lang.org/cargo/reference/cargo-targets.html#configuring-a-target)*
 
@@ -105,7 +105,7 @@ edition = "2015"       # Deprecated, N/A for Edition 20XX+
 
 ...
 
-### The `edition` field
+#### The `edition` field
 
 The `edition` field defines the [Rust edition] the target will use. If not
 specified, it defaults to the [`edition` field][package-edition] for the
@@ -113,11 +113,11 @@ specified, it defaults to the [`edition` field][package-edition] for the
 
 This field is deprecated and unsupported for Edition 20XX+
 
-## Migration guide
+### Migration guide
 
 *From [Rust Edition Guide: Advanced migration strategies](https://doc.rust-lang.org/nightly/edition-guide/editions/advanced-migrations.html#migrating-a-large-project-or-workspace)*
 
-### Migrating a large project or workspace
+#### Migrating a large project or workspace
 
 You can migrate a large project incrementally to make the process easier if you run into problems.
 
@@ -129,7 +129,7 @@ By default, `cargo fix` uses `--all-targets`.
 
 *(removed talk of the build-target `edition` field)*
 
-### Migrating macros
+#### Migrating macros
 
 ...
 
@@ -146,7 +146,7 @@ editions.
 
 *(added a testing strategy which was previously left unspoken)*
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 A non-`None` edition will be considered deprecated
@@ -154,17 +154,17 @@ A non-`None` edition will be considered deprecated
   - Timing depends on if this will be blocked on having `[lints]` control over this or not
 - When `package.edition` is set to Edition 20XX+, an error will be reported when a `<build-target>.edition` field is set.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 - This makes testing macros more difficult as they are limited to either
   - doctests
   - creating packages just for the sake of defining tests
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## One Edition field controlling another
+### One Edition field controlling another
 
 The exact semantics of `package.edition` vs `<build-target>.edition` have not been well defined when it comes to the manifest format itself.
 
@@ -183,17 +183,17 @@ By having `package.edition` affect `<build-target>.edition`,
 we are effectively saying that `package.edition` affects the manifest format
 while `<build-target>.edition` affects only affects the source code of the build-target.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - When will Cargo start to report the deprecation message?
   - Cargo currently lacks lint control for itself ([cargo#12235](https://github.com/rust-lang/cargo/issues/12235)) which we could wait for
   - We could unconditionally report the warning but the Cargo team avoids adding warnings without a way of suppressing them without changing behavior
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 - Reporting the Edition to `build.rs`

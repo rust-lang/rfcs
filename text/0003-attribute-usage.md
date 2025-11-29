@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#3](https://github.com/rust-lang/rfcs/pull/3)
 - Rust Issue: [rust-lang/rust#14373](https://github.com/rust-lang/rust/issues/14373)
 
-# Summary
+## Summary
 
 Rust currently has an attribute usage lint but it does not work particularly
 well. This RFC proposes a new implementation strategy that should make it
 significantly more useful.
 
-# Motivation
+## Motivation
 
 The current implementation has two major issues:
 
@@ -39,7 +39,7 @@ pub struct Foo {
 }
 ```
 
-# Detailed design
+## Detailed design
 
 The current implementation is implemented as a simple fold over the AST,
 comparing attributes against a whitelist. Crate-level attributes use a separate
@@ -82,7 +82,7 @@ Attributes in code that has been eliminated with `#[cfg()]` will not be linted,
 but I feel that this is consistent with the way `#[cfg()]` works in general
 (e.g. the code won't be type-checked either).
 
-# Alternatives
+## Alternatives
 
 An alternative would be to rewrite `rustc::middle::lint` to robustly check
 that attributes are used where they're supposed to be. This will be fairly
@@ -90,7 +90,7 @@ complex and be prone to failure if/when more nodes are added to the AST. This
 also doesn't solve motivation #2, which would require externally loaded lint
 support.
 
-# Unresolved questions
+## Unresolved questions
 
 + This implementation doesn't allow for a distinction between "unused" and
 "unknown" attributes. The `#[phase(syntax)]` crate loading infrastructure could

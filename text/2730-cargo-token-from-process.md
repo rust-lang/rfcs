@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2730](https://github.com/rust-lang/rfcs/pull/2730)
 - Cargo Issue: [rust-lang/cargo#8933](https://github.com/rust-lang/cargo/issues/8933)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a cargo setting to fetch registry authentication tokens by calling an
 external process.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Some interactions with a registry require an authentication token, and Cargo
@@ -24,7 +24,7 @@ keyring.
 
 [creds]: https://doc.rust-lang.org/stable/cargo/reference/config.html#credentials
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Suppose a user has their authentication token stored in a password manager, and
@@ -44,7 +44,7 @@ token, which will never be stored by Cargo on disk.
 It will be possible to use `credential-process` on both crates.io and alternative
 registries.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 A new key, `credential-process`, will be added to the `[registry]` and
@@ -87,7 +87,7 @@ supported by the `credential-process` definition. If it contains the
 `{action}` argument, then it uses the advanced style, otherwise it assumes it
 only supports the "basic" kind.
 
-## Basic authenticator
+### Basic authenticator
 
 A basic authenticator is a process that returns a token on stdout. Newlines
 will be trimmed. The process inherits the user's stdin and stderr. It should
@@ -96,7 +96,7 @@ exit 0 on success, and nonzero on error.
 With this form, `cargo login` and `cargo logout` are not supported and return
 an error if used.
 
-## Cargo authenticator
+### Cargo authenticator
 
 The protocol between the Cargo and the process is very basic, intended to
 ensure the credential process is kept as simple as possible. Cargo will
@@ -131,7 +131,7 @@ interactions are:
   name. If the token is not found, the process should exit with a 0 exit
   status.
 
-## Environment
+### Environment
 
 The following environment variables will be provided to the executed command:
 
@@ -139,19 +139,19 @@ The following environment variables will be provided to the executed command:
 * `CARGO_REGISTRY_NAME` — Name of the registry the authentication token is for.
 * `CARGO_REGISTRY_API_URL` — The URL of the registry API.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 *No known drawbacks yet.*
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The solution proposed by this RFC isn't tied to any secret storage services and
 can be adapted to work with virtually any secret storage the user might rely
 on, while being relatively easy to understand and use.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Multiple command line tools implement this system or a similar one to retrieve
@@ -174,12 +174,12 @@ authentication tokens or other secrets:
 [ansible]: https://docs.ansible.com/ansible/latest/user_guide/vault.html#providing-vault-passwords
 [git]: https://git-scm.com/docs/gitcredentials#_custom_helpers
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 *No known unresolved questions yet.*
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 To allow for a better user experience for users of popular secret storages,

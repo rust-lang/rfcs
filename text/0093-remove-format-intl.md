@@ -2,14 +2,14 @@
 - RFC PR: [rust-lang/rfcs#93](https://github.com/rust-lang/rfcs/pull/93)
 - Rust Issue: [rust-lang/rust#14812](https://github.com/rust-lang/rust/issues/14812)
 
-# Summary
+## Summary
 
 Remove localization features from format!, and change the set of escapes
 accepted by format strings. The `plural` and `select` methods would be removed,
 `#` would no longer need to be escaped, and `{{`/`}}` would become escapes for
 `{` and `}`, respectively.
 
-# Motivation
+## Motivation
 
 Localization is difficult to implement correctly, and doing so will
 likely not be done in the standard library, but rather in an external library.
@@ -22,7 +22,7 @@ Instead of having a half-baked unused system adding complexity to the compiler
 and libraries, the support for this functionality would be removed from format
 strings.
 
-# Detailed design
+## Detailed design
 
 The primary localization features that `format!` supports today are the
 `plural` and `select` methods inside of format strings. These methods are
@@ -54,7 +54,7 @@ parameter := integer '$'
 The current syntax can be found at http://doc.rust-lang.org/std/fmt/#syntax to
 see the diff between the two
 
-## Choosing a new escape sequence
+### Choosing a new escape sequence
 
 Upon landing, there was a significant amount of discussion about the escape
 sequence that would be used in format strings. Some context can be found on some
@@ -75,7 +75,7 @@ Adopting this scheme would avoid clashing with Rust's string literal escapes.
 There would be no "double escape" problem. More details on this can be found in
 the comments of an [old PR][1].
 
-# Drawbacks
+## Drawbacks
 
 The localization methods of select/plural are genuinely used for
 applications that do not involve localization. For example, the compiler
@@ -88,7 +88,7 @@ Raw string literals serve as a good use case for format strings that must escape
 the `{` and `}` characters. The current system is arguably good enough to pass
 with for today.
 
-# Alternatives
+## Alternatives
 
 The major localization approach explored has been l20n, which has shown
 itself to be fairly incompatible with the way format strings work today.
@@ -103,7 +103,7 @@ off an localization library before 1.0, and it is currently seen as
 undesirable to have a half-baked system in the libraries rather than a
 first-class well designed system.
 
-# Unresolved questions
+## Unresolved questions
 
 * Should localization support be left in `std::fmt` as a "poor man's"
   implementation for those to use as they see fit?

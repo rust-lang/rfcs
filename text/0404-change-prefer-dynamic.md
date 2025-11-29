@@ -2,14 +2,14 @@
 - RFC PR: [#404](https://github.com/rust-lang/rfcs/pull/404)
 - Rust Issue: [#18499](https://github.com/rust-lang/rust/issues/18499)
 
-# Summary
+## Summary
 
 When the compiler generates a dynamic library, alter the default behavior to
 favor linking all dependencies statically rather than maximizing the number of
 dynamic libraries. This behavior can be disabled with the existing
 `-C prefer-dynamic` flag.
 
-# Motivation
+## Motivation
 
 Long ago rustc used to only be able to generate dynamic libraries and as a
 consequence all Rust libraries were distributed/used in a dynamic form. Over
@@ -39,7 +39,7 @@ objects by default).
 The purpose of this RFC is to remedy this use case while largely retaining the
 current abilities of the compiler today.
 
-# Detailed design
+## Detailed design
 
 In english, the compiler will change its heuristics for when a dynamic library
 is being generated. When doing so, it will attempt to link all dependencies
@@ -76,14 +76,14 @@ index 8e2d4d0..dc248eb 100644
      }
 ```
 
-# Drawbacks
+## Drawbacks
 
 None currently, but the next section of alternatives lists a few other methods
 of possibly achieving the same goal.
 
-# Alternatives
+## Alternatives
 
-## Disallow intermediate dynamic libraries
+### Disallow intermediate dynamic libraries
 
 One possible solution to this problem is to completely disallow dynamic
 libraries as a possible intermediate format for rust libraries. This would solve
@@ -121,7 +121,7 @@ as any runtime-related operations is performed. Note, however, that the runtime
 of the standard library will likely be phased out soon, but this RFC considers
 the cons listed above to be reasons to not take this course of action.
 
-## Allow fine-grained control of linkage
+### Allow fine-grained control of linkage
 
 Another possible alternative is to allow fine-grained control in the compiler to
 explicitly specify how each library should be linked (as opposed to a blanked
@@ -142,6 +142,6 @@ As a result, this RFC does not recommend pursuing this alternative too far, but
 rather considers the alteration above to the compiler's heuristics to be
 satisfactory for now.
 
-# Unresolved questions
+## Unresolved questions
 
 None yet!

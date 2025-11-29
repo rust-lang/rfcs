@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1398](https://github.com/rust-lang/rfcs/pull/1398)
 - Rust Issue: [rust-lang/rust#32838](https://github.com/rust-lang/rust/issues/32838)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a standard allocator interface and support for user-defined
@@ -26,7 +26,7 @@ specification of such integration for a later RFC. (The design
 describes a way to add such a feature in the future while ensuring
 that clients do not accidentally opt-in and risk unsound behavior.)
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 As noted in [RFC PR 39][] (and reiterated in [RFC PR 244][]), modern general purpose allocators are good,
@@ -38,7 +38,7 @@ in papers such as
 Therefore, the standard library should allow clients to plug in their
 own allocator for managing memory.
 
-## Allocators are used in C++ system programming
+### Allocators are used in C++ system programming
 
 The typical reasons given for use of custom allocators in C++ are among the
 following:
@@ -66,7 +66,7 @@ following:
      allocator that collects data such as number of allocations,
      or time for requests to be serviced.
 
-## Allocators should feel "rustic"
+### Allocators should feel "rustic"
 
 In addition, for Rust we want an allocator API design that leverages
 the core type machinery and language idioms (e.g. using `Result` to
@@ -75,7 +75,7 @@ premade functions for common patterns for allocator clients (such as
 allocating either single instances of a type, or arrays of some types
 of dynamically-determined length).
 
-## Garbage Collection integration
+### Garbage Collection integration
 
 Finally, we want our allocator design to allow for a garbage
 collection (GC) interface to be added in the future.
@@ -86,10 +86,10 @@ choosing an allocator API that is fundamentally incompatible with it.
 (However, this RFC does not actually propose a concrete solution for
 how to integrate allocators with GC.)
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## The `Allocator` trait at a glance
+### The `Allocator` trait at a glance
 
 The source code for the `Allocator` trait prototype is provided in an
 [appendix][Source for Allocator]. But since that section is long, here
@@ -152,7 +152,7 @@ individual sections of code.)
      expand into that excess memory, without doing round-trip requests
      through the allocator itself.
 
-## Semantics of allocators and their memory blocks
+### Semantics of allocators and their memory blocks
 [semantics of allocators]: #semantics-of-allocators-and-their-memory-blocks
 
 In general, an allocator provide access to a memory pool that owns
@@ -209,13 +209,13 @@ interfacing with an allocator, which we discuss in a
 later [section on lifetimes][lifetimes].
 
 
-## Example Usage
+### Example Usage
 [example]: #example-usage
 
 Lets jump into a demo. Here is a (super-dumb) bump-allocator that uses
 the `Allocator` trait.
 
-### Implementing the `Allocator` trait
+#### Implementing the `Allocator` trait
 
 First, the bump-allocator definition itself: each such allocator will
 have its own name (for error reports from OOM), start and limit
@@ -364,7 +364,7 @@ demo.)
 
 And that is it; we are done with our allocator implementation.
 
-### Using an `A:Allocator` from the client side
+#### Using an `A:Allocator` from the client side
 
 We assume that `Vec` has been extended with a `new_in` method that
 takes an allocator argument that it uses to satisfy its allocation
@@ -443,7 +443,7 @@ fn main() {
 
 And that's all to the demo, folks.
 
-### What about standard library containers?
+#### What about standard library containers?
 
 The intention of this RFC is that the Rust standard library will be
 extended with parameteric allocator support: `Vec`, `HashMap`, etc
@@ -461,7 +461,7 @@ with an allocator type parameter, i.e.: `Vec<T, A:Allocator>` and
 There are two reasons why such extension is left to later work, after
 this RFC.
 
-#### Default type parameter fallback
+##### Default type parameter fallback
 
 On its own, such a change would be backwards incompatible (i.e. a huge
 breaking change), and also would simply be just plain inconvenient for
@@ -483,7 +483,7 @@ are a motivating use case), as one can see by reading the following:
 
 * Feature gate defaulted type parameters appearing outside of types: https://github.com/rust-lang/rust/pull/30724
 
-#### Fully general container integration needs Dropck Eyepatch
+##### Fully general container integration needs Dropck Eyepatch
 
 The previous problem was largely one of programmer
 ergonomics. However, there is also a subtle soundness issue that
@@ -509,14 +509,14 @@ allocators as a specific motivating use case.
 
  * Nonparametric dropck RFC https://github.com/rust-lang/rfcs/blob/master/text/1238-nonparametric-dropck.md
 
-#### Standard library containers conclusion
+##### Standard library containers conclusion
 
 Rather than wait for the above issues to be resolved, this RFC
 proposes that we at least stabilize the `Allocator` trait interface;
 then we will at least have a starting point upon which to prototype
 standard library integration.
 
-## Allocators and lifetimes
+### Allocators and lifetimes
 [lifetimes]: #allocators-and-lifetimes
 
 As mentioned above, allocators provide access to a memory pool. An
@@ -664,10 +664,10 @@ in a formal manner, in the style of [IETF RFC 2119][].)
     outset of this paragraph.)
 
 
-## A walk through the Allocator trait
+### A walk through the Allocator trait
 [walk thru]: #a-walk-through-the-allocator-trait
 
-### Role-Based Type Aliases
+#### Role-Based Type Aliases
 
 Allocation code often needs to deal with values that boil down to a
 `usize` in the end. But there are distinct roles (e.g. "size",
@@ -676,7 +676,7 @@ worth hard-coding into the method signatures.
 
  * Therefore, I made [type aliases][] for `Size`, `Capacity`, `Alignment`, and `Address`.
 
-### Basic implementation
+#### Basic implementation
 
 An instance of an allocator has many methods, but an implementor of
 the trait need only provide two method bodies: [alloc and dealloc][].
@@ -692,7 +692,7 @@ The `alloc` method returns an `Address` when it succeeds, and
 provide metadata for the allocated block like its size and alignment.
 This is encapsulated in the `Layout` argument to `alloc` and `dealloc`.
 
-### Memory layouts
+#### Memory layouts
 
 A `Layout` just carries the metadata necessary for satisfying an
 allocation request. Its (current, private) representation is just a
@@ -702,7 +702,7 @@ The more interesting thing about `Layout` is the
 family of public methods associated with it for building new layouts via
 composition; these are shown in the [layout api][].
 
-### Reallocation Methods
+#### Reallocation Methods
 
 Of course, real-world allocation often needs more than just
 `alloc`/`dealloc`: in particular, one often wants to avoid extra
@@ -713,7 +713,7 @@ round-tripping through the allocator API.
 
 For this, the [memory reuse][] family of methods is appropriate.
 
-### Type-based Helper Methods
+#### Type-based Helper Methods
 
 Some readers might skim over the `Layout` API and immediately say "yuck,
 all I wanted to do was allocate some nodes for a tree-structure and
@@ -724,7 +724,7 @@ I agree with the sentiment; that's why the `Allocator` trait provides
 a family of methods capturing [common usage patterns][],
 for example, `a.alloc_one::<T>()` will return a `Unique<T>` (or error).
 
-## Unchecked variants
+### Unchecked variants
 
 Almost all of the methods above return `Result`, and guarantee some
 amount of input validation. (This is largely because I observed code
@@ -752,7 +752,7 @@ of the preconditions hold.
    offered to impl's; but there is no guarantee that an arbitrary impl
    takes advantage of the privilege.)
 
-## Object-oriented Allocators
+### Object-oriented Allocators
 
 Finally, we get to object-oriented programming.
 
@@ -769,12 +769,12 @@ Nonetheless, it *is* an option to write `Box<Allocator>` or `&Allocator`.
    a whole to become non-object-safe.)
 
 
-## Why this API
+### Why this API
 [Why this API]: #why-this-api
 
 Here are some quick points about how this API was selected
 
-### Why not just `free(ptr)` for deallocation?
+#### Why not just `free(ptr)` for deallocation?
 
 As noted in [RFC PR 39][] (and reiterated in [RFC PR 244][]), the basic `malloc` interface
 {`malloc(size) -> ptr`, `free(ptr)`, `realloc(ptr, size) -> ptr`} is
@@ -792,7 +792,7 @@ Therefore, in the name of (potential best-case) speed, we want to
 require client code to provide the metadata like size and alignment
 to both the allocation and deallocation call sites.
 
-### Why not just `alloc`/`dealloc` (or `alloc`/`dealloc`/`realloc`)?
+#### Why not just `alloc`/`dealloc` (or `alloc`/`dealloc`/`realloc`)?
 
 * The `alloc_one`/`dealloc_one` and `alloc_array`/`dealloc_array`
   capture a very common pattern for allocation of memory blocks where
@@ -807,7 +807,7 @@ to both the allocation and deallocation call sites.
   callers who can make use of excess memory to avoid unnecessary calls
   to `realloc`.
 
-### Why the `Layout` abstraction?
+#### Why the `Layout` abstraction?
 
 While we do want to require clients to hand the allocator the size and
 alignment, we have found that the code to compute such things follows
@@ -816,7 +816,7 @@ into a common abstraction; this is what `Layout` provides: a high-level
 API for describing the memory layout of a composite structure by
 composing the layout of its subparts.
 
-### Why return `Result` rather than a raw pointer?
+#### Why return `Result` rather than a raw pointer?
 
 My hypothesis is that the standard allocator API should embrace
 `Result` as the standard way for describing local error conditions in
@@ -829,7 +829,7 @@ Rust.
    `Error` type. But during the RFC process we decided that this
    was not necessary.
 
-### Why return `Result` rather than directly `oom` on failure
+#### Why return `Result` rather than directly `oom` on failure
 
 Again, my hypothesis is that the standard allocator API should embrace
 `Result` as the standard way for describing local error conditions in
@@ -843,7 +843,7 @@ contextual information about *which* allocator is reporting memory
 exhaustion, I have made `oom` a method of the `Allocator` trait, so
 that allocator clients have the option of calling that on error.
 
-### Why is `usable_size` ever needed? Why not call `layout.size()` directly, as is done in the default implementation?
+#### Why is `usable_size` ever needed? Why not call `layout.size()` directly, as is done in the default implementation?
 
 `layout.size()` returns the minimum required size that the client needs.
 In a block-based allocator, this may be less than the *actual* size
@@ -857,7 +857,7 @@ clients to use `alloc_excess` and `realloc_excess` instead, if they
 can, as a way to directly observe the *actual* amount of slop provided
 by the particular allocator.)
 
-### Why is `Allocator` an `unsafe trait`?
+#### Why is `Allocator` an `unsafe trait`?
 
 It just seems like a good idea given how much of the standard library
 is going to assume that allocators are implemented according to their
@@ -867,7 +867,7 @@ specification.
 that is putting the burden of proof (of soundness) in the *wrong*
 direction...)
 
-## The GC integration strategy
+### The GC integration strategy
 [gc integration]: #the-gc-integration-strategy
 
 One of the main reasons that [RFC PR 39] was not merged as written
@@ -886,7 +886,7 @@ designs come around. But the same is not true for user-defined
 allocators: we want to ensure that adding support for them does not
 inadvertently kill any chance for adding GC later.
 
-### The inspiration for Layout
+#### The inspiration for Layout
 
 Some aspects of the design of this RFC were selected in the hopes that
 it would make such integration easier. In particular, the introduction
@@ -905,7 +905,7 @@ higher-kinded types (HKT).)
 So, this RFC offers the `Layout` abstraction without promising that it
 solves the GC problem. (It might, or it might not; we don't know yet.)
 
-### Forwards-compatibility
+#### Forwards-compatibility
 
 So what *is* the solution for forwards-compatibility?
 
@@ -932,7 +932,7 @@ crates that require GC support. (In other words, when GC support
 comes, we assume that the linking component of the Rust compiler will
 be extended to check such compatibility requirements.)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The API may be over-engineered.
@@ -944,10 +944,10 @@ The core set of methods (the ones without `unchecked`) return
    for clients who take care to validate the many preconditions
    themselves in order to minimize the allocation code paths.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Just adopt [RFC PR 39][] with this RFC's GC strategy
+### Just adopt [RFC PR 39][] with this RFC's GC strategy
 
 The GC-compatibility strategy described here (in [gc integration][])
 might work with a large number of alternative designs, such as that
@@ -963,7 +963,7 @@ layout of values they are planning to allocate, which is the main
 ingredient I believe to be necessary for the kind of dynamic
 reflection that a GC will require of a user-defined allocator.
 
-## Make `Layout` an associated type of `Allocator` trait
+### Make `Layout` an associated type of `Allocator` trait
 
 I explored making an `AllocLayout` bound and then having
 
@@ -995,7 +995,7 @@ implement," and therefore it would be unreasonable to make the `Layout`
 an associated type of the `Allocator` trait without having at least a
 few motivating examples that *are* clearly feasible and useful.
 
-## Variations on the `Layout` API
+### Variations on the `Layout` API
 
  * Should `Layout` offer a `fn resize(&self, new_size: usize) -> Layout` constructor method?
    (Such a method would rule out deriving GC tracers from layouts; but we could
@@ -1034,7 +1034,7 @@ few motivating examples that *are* clearly feasible and useful.
 
  * Should the `Layout` methods that might "fail" return `Result` instead of `Option`?
 
-## Variations on the `Allocator` API
+### Variations on the `Allocator` API
 
  * Should the allocator methods take `&self` or `self` rather than `&mut self`.
 
@@ -1168,7 +1168,7 @@ few motivating examples that *are* clearly feasible and useful.
    on the RFC thread that some forms of static analysis, to prove `oom` is
    never invoked, would prefer it to be a free function.)
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
  * Since we cannot do `RefCell<Pool>` (see FIXME above), what is
@@ -1202,7 +1202,7 @@ few motivating examples that *are* clearly feasible and useful.
    part of the original input `Layout` argument? (I have not done this
    mainly because I do not want to introduce a dependency on `libstd`.)
 
-# Change History
+## Change History
 
 * Changed `fn usable_size` to return `(l, m)` rather than just `m`.
 
@@ -1234,45 +1234,45 @@ few motivating examples that *are* clearly feasible and useful.
 [PR 42313]: https://github.com/rust-lang/rust/pull/42313
 [nightly API docs]: https://doc.rust-lang.org/nightly/alloc/allocator/trait.Alloc.html
 
-# Appendices
+## Appendices
 
-## Bibliography
+### Bibliography
 [Bibliography]: #bibliography
 
-### RFC Pull Request #39: Allocator trait
+#### RFC Pull Request #39: Allocator trait
 [RFC PR 39]: https://github.com/rust-lang/rfcs/pull/39/files
 
 Daniel Micay, 2014. RFC: Allocator trait. https://github.com/thestinger/rfcs/blob/ad4cdc2662cc3d29c3ee40ae5abbef599c336c66/active/0000-allocator-trait.md
 
-### RFC Pull Request #244: Allocator RFC, take II
+#### RFC Pull Request #244: Allocator RFC, take II
 [RFC PR 244]: https://github.com/rust-lang/rfcs/pull/244
 
 Felix Klock, 2014, Allocator RFC, take II, https://github.com/pnkfelix/rfcs/blob/d3c6068e823f495ee241caa05d4782b16e5ef5d8/active/0000-allocator.md
 
-### Dynamic Storage Allocation: A Survey and Critical Review
+#### Dynamic Storage Allocation: A Survey and Critical Review
 Paul R. Wilson, Mark S. Johnstone, Michael Neely, and David Boles, 1995. [Dynamic Storage Allocation: A Survey and Critical Review](https://parasol.tamu.edu/~rwerger/Courses/689/spring2002/day-3-ParMemAlloc/papers/wilson95dynamic.pdf) ftp://ftp.cs.utexas.edu/pub/garbage/allocsrv.ps .  Slightly modified version appears in Proceedings of 1995 International Workshop on Memory Management (IWMM '95), Kinross, Scotland, UK, September 27--29, 1995 Springer Verlag LNCS
 
-### Reconsidering custom memory allocation
+#### Reconsidering custom memory allocation
 [ReCustomMalloc]: http://dl.acm.org/citation.cfm?id=582421
 
 Emery D. Berger, Benjamin G. Zorn, and Kathryn S. McKinley. 2002. [Reconsidering custom memory allocation][ReCustomMalloc]. In Proceedings of the 17th ACM SIGPLAN conference on Object-oriented programming, systems, languages, and applications (OOPSLA '02).
 
-### The memory fragmentation problem: solved?
+#### The memory fragmentation problem: solved?
 [MemFragSolvedP]: http://dl.acm.org/citation.cfm?id=286864
 
 Mark S. Johnstone and Paul R. Wilson. 1998. [The memory fragmentation problem: solved?][MemFragSolvedP]. In Proceedings of the 1st international symposium on Memory management (ISMM '98).
 
-### EASTL: Electronic Arts Standard Template Library
+#### EASTL: Electronic Arts Standard Template Library
 [EASTL]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html
 
 Paul Pedriana. 2007. [EASTL] -- Electronic Arts Standard Template Library. Document number: N2271=07-0131
 
-### Towards a Better Allocator Model
+#### Towards a Better Allocator Model
 [Halpern proposal]: http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1850.pdf
 
 Pablo Halpern. 2005. [Towards a Better Allocator Model][Halpern proposal]. Document number: N1850=05-0110
 
-### Various allocators
+#### Various allocators
 
 [jemalloc], [tcmalloc], [Hoard]
 
@@ -1286,7 +1286,7 @@ Pablo Halpern. 2005. [Towards a Better Allocator Model][Halpern proposal]. Docum
 
 [malloc/free]: http://en.wikipedia.org/wiki/C_dynamic_memory_allocation
 
-## ASCII art version of Allocator message sequence chart
+### ASCII art version of Allocator message sequence chart
 [ascii-art]: #ascii-art-version-of-allocator-message-sequence-chart
 
 This is an ASCII art version of the SVG message sequence chart
@@ -1377,7 +1377,7 @@ Program             Vec<Widget, &mut Allocator>         Allocator
 ```
 
 
-## Transcribed Source for Allocator trait API
+### Transcribed Source for Allocator trait API
 [Source for Allocator]: #transcribed-source-for-allocator-trait-api
 
 Here is the whole source file for my prototype allocator API,
@@ -1410,7 +1410,7 @@ use core::ptr::{self, Unique};
 
 ```
 
-### Type Aliases
+#### Type Aliases
 [type aliases]: #type-aliases
 
 ```rust
@@ -1430,7 +1430,7 @@ fn size_align<T>() -> (usize, usize) {
 
 ```
 
-### Layout API
+#### Layout API
 [layout api]: #layout-api
 
 ```rust
@@ -1695,7 +1695,7 @@ impl Layout {
 
 ```
 
-### AllocErr API
+#### AllocErr API
 [error api]: #allocerr-api
 
 ```rust
@@ -1741,7 +1741,7 @@ pub struct CannotReallocInPlace;
 
 ```
 
-### Allocator trait header
+#### Allocator trait header
 [trait header]: #allocator-trait-header
 
 ```rust
@@ -1774,7 +1774,7 @@ pub unsafe trait Allocator {
 
 ```
 
-### Allocator core alloc and dealloc
+#### Allocator core alloc and dealloc
 [alloc and dealloc]: #allocator-core-alloc-and-dealloc
 
 ```rust
@@ -1820,7 +1820,7 @@ pub unsafe trait Allocator {
     }
 ```
 
-### Allocator-specific quantities and limits
+#### Allocator-specific quantities and limits
 [quantites and limits]: #allocator-specific-quantities-and-limits
 
 ```rust
@@ -1857,7 +1857,7 @@ pub unsafe trait Allocator {
 
 ```
 
-### Allocator methods for memory reuse
+#### Allocator methods for memory reuse
 [memory reuse]: #allocator-methods-for-memory-reuse
 
 ```rust
@@ -1974,7 +1974,7 @@ pub unsafe trait Allocator {
     }
 ```
 
-### Allocator convenience methods for common usage patterns
+#### Allocator convenience methods for common usage patterns
 [common usage patterns]: #allocator-convenience-methods-for-common-usage-patterns
 
 ```rust
@@ -2083,7 +2083,7 @@ pub unsafe trait Allocator {
 
 ```
 
-### Allocator unchecked method variants
+#### Allocator unchecked method variants
 [unchecked variants]: #allocator-unchecked-method-variants
 
 ```rust

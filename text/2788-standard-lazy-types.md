@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2788](https://github.com/rust-lang/rfcs/pull/2788)
 - Rust Issue: [rust-lang/rust#74465](https://github.com/rust-lang/rust/issues/74465), [rust-lang/rust#109736](https://github.com/rust-lang/rust/issues/109736), [rust-lang/rust#109737](https://github.com/rust-lang/rust/issues/109737)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add support for lazy initialized values to standard library, effectively superseding the popular [`lazy_static`] crate.
@@ -18,7 +18,7 @@ static BACKTRACE: Lazy<Option<String>> = Lazy::new(|| {
 });
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Working with lazy initialized values is ubiquitous, [`lazy_static`] and [`lazycell`] crates are used throughout the ecosystem.
@@ -34,7 +34,7 @@ At the same time, working with lazy values in Rust is not easy:
 
 We can have a single canonical API for a commonly used tricky unsafe concept, so we probably should have it!
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Lazy values are a form of interior mutability.
@@ -200,7 +200,7 @@ fn main() {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The proposed API is directly copied from [`once_cell`] crate.
@@ -246,7 +246,7 @@ For this reason, most of `std::sync::OnceLock` API can not be provided in `core`
 In the `sync` case, reliably panicking on re-entrant initialization is not trivial.
 For this reason, the implementation would simply deadlock, with a note that a deadlock might be elevated to a panic in the future.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 * This is a moderately large addition to stdlib, there's a chance we do something wrong.
@@ -256,10 +256,10 @@ For this reason, the implementation would simply deadlock, with a note that a de
 
 * We use the same name for unsync and sync types, which might be confusing.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why not `LazyCell` as a primitive?
+### Why not `LazyCell` as a primitive?
 
 On the first look, it may seem like we don't need `OnceCell`, and should only provide `LazyCell`.
 The critical drawback of `LazyCell` is that it's not always possible to provide the closure at creation time.
@@ -313,7 +313,7 @@ fn main() {
 }
 ```
 
-## Why `OnceCell` as a primitive?
+### Why `OnceCell` as a primitive?
 
 It is possible to imagine a type, slightly more general than `OnceCell`:
 
@@ -333,7 +333,7 @@ That is, we can store some initial state in the cell and consume it during initi
 In practice, such flexibility seems to be rarely required.
 Even if we add a type, similar to `OnceFlipCell`, having a dedicated `OnceCell` (which *could* be implemented on top of `OnceFlipCell`) type simplifies a common use-case.
 
-## Variations of `set`
+### Variations of `set`
 
 The RFC proposes "obvious" signature for the `set` method:
 
@@ -358,7 +358,7 @@ fn try_set(&self, value: T) -> Result<&T, (Option<&T>, T)>
 That is, if value is set successfully, a reference is returned.
 Otherwise, the cell is either fully initialized, and a reference is returned as well, or the cell is being initialized, and no valid reference exist yet.
 
-## Support for `no_std`
+### Support for `no_std`
 
 The RFC proposes to add `cell::OnceCell` and `cell::LazyCell` to `core`, while keeping `sync::OnceLock` and `sync::LazyLock` `std`-only.
 However, there's a subset of `OnceLock` that can be provided in `core`:
@@ -381,7 +381,7 @@ Spin locks are a sharp tool, which should only be used in specific circumstances
 
 A spin-lock based implementation of `OnceCell` is provided on crates.io in [`conquer-once`] crate.
 
-## Poisoning
+### Poisoning
 
 As a cell can be empty or fully initialized, the proposed API does not use poisoning.
 If an initialization function panics, the cell remains uninitialized.
@@ -394,7 +394,7 @@ impl<T: UnwindSafe>                    UnwindSafe for OnceCell<T> {}
 impl<T: UnwindSafe + RefUnwindSafe> RefUnwindSafe for OnceCell<T> {}
 ```
 
-## Default type parameter on `Lazy`
+### Default type parameter on `Lazy`
 
 `Lazy` is defined with default type parameter.
 
@@ -423,13 +423,13 @@ There are two drawbacks of using fn pointer type:
   Lazy locals will generally rely on type-inference and will use more specific closure type.
 * Specifying type for local lazy value might be tricky: `let x: Lazy<i32> = Lazy::new(|| closed_over_var)` fails with type error, the correct syntax is `let x: Lazy<i32, _> = Lazy::new(|| closed_over_var)`.
 
-## Only thread-safe flavor
+### Only thread-safe flavor
 
 It is possible to add only `sync` version of the types, as they are the most useful.
 However, this would be against zero cost abstractions spirit.
 Additionally, non thread-safe version is required to replace `thread_local!` macro without imposing synchronization.
 
-## Synchronization Guarantees
+### Synchronization Guarantees
 
 In theory, it is possible to specify two different synchronization guarantees for `get` operation, release/acquire or release/consume.
 They differ in how they treat side effects.
@@ -461,7 +461,7 @@ However, the situation with `consume` ordering is cloudy right now:
 
 Given the cost of `consume` ordering for minimal benefit, this crate proposes to specify and implement `acquire/release` ordering. If at some point Rust adds a `consume/release` option to `std::sync::atomic::Ordering`, the option of adding API methods that accept an `Ordering` can be considered.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The primary bit of prior art here is the [`once_cell`] library, which itself draws on multiple sources:
@@ -476,7 +476,7 @@ Many languages provide library-defined lazy values, for example [Kotlin](https:/
 Typically, a lazy value is just a wrapper around closure.
 This design doesn't always work in Rust, as closing over `self` runs afoul of the borrow checker, we need a more primitive `OnceCell` type.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - What is the best naming/place for these types?
@@ -484,7 +484,7 @@ This design doesn't always work in Rust, as closing over `self` runs afoul of th
 - Is the `F = fn() -> T` hack worth it?
 - Which synchronization guarantee should we pick?
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * Once `#[thread_local]` attribute is stable, `cell::Lazy` can serve as a replacement for `std::thread_local!` macro.

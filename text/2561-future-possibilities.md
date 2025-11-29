@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2561](https://github.com/rust-lang/rfcs/pull/2561)
 - Rust Issue: N/A. The RFC is self-executing.
 
-# Summary
+## Summary
 [summary]: #summary
 
 Adds a *"Future possibilities"* section to the `0000-template.md` RFC template
@@ -11,10 +11,10 @@ that asks authors to elaborate on what natural extensions there might to their
 RFC and what future directions this may take the project into.
 This section asks authors to think *holistically*.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## The benefit for the author
+### The benefit for the author
 
 Often times, when an RFC is written, the only thing an author considers
 may be the feature or change proposal itself but not the larger picture
@@ -40,7 +40,7 @@ author to think more clearly about interactions in each of the written RFCs.
 If for no other reason, these sections offer a permanent space to idea-dump
 while writing an RFC.
 
-## For the team
+### For the team
 
 The holistic perspective that a future-possibilities section can offer may also
 help the relevant sub-team to understand:
@@ -50,7 +50,7 @@ help the relevant sub-team to understand:
 4. how said proposals fit with the product vision and roadmap that the team
    currently has.
 
-## For readers in general
+### For readers in general
 
 More generally, the benefits for the teams described above also hold for
 all readers. In particular, a reader can better infer what sort of language
@@ -58,7 +58,7 @@ Rust is turning into given the information in a future-possibilities section.
 Having such a section may also help generate interest in subsequent proposals
 which a different author may then write.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 This Meta-RFC modifies the RFC template by adding a *"Future possibilities"*
@@ -69,13 +69,13 @@ on the big picture effects that a specific RFC proposal has.
 Please read the [reference-level-explanation] for exact details of what an
 RFC author will see in the changed template.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The implementation of this RFC consists of inserting the following text to the
 RFC template *after* the section *Unresolved questions*:
 
-> # Future possibilities
+> ## Future possibilities
 >
 > Think about what the natural extension and evolution of your proposal would
 > be and how it would affect the language and project as a whole in a holistic
@@ -95,12 +95,12 @@ RFC template *after* the section *Unresolved questions*:
 > in the section on motivation or rationale in this or subsequent RFCs.
 > The section merely provides additional information.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are three main potential drawbacks:
 
-## The section will be unused
+### The section will be unused
 
 There's some risk that the section will simply be left empty and unused.
 However, in the recent RFCs written by the author as noted in the [motivation],
@@ -113,7 +113,7 @@ sections. Therefore, if an RFC leaves the newly introduced section empty,
 it is not the end of the world. The section is intended as encouragement and
 recommendation; it is not mandatory as no section in an RFC has ever really been. 
 
-## Higher barrier to entry
+### Higher barrier to entry
 
 [RFC 2333]: https://github.com/rust-lang/rfcs/blob/master/text/2333-prior-art.md#drawbacks
 
@@ -123,14 +123,14 @@ This can raise the barrier to entry somewhat.
 However, we argue that it is worth the minor raise in the bar since
 it is OK for RFCs to leave the section empty.
 
-## Readers reacting negatively on the future possibilities
+### Readers reacting negatively on the future possibilities
 
 Another potential drawback is that readers of the RFC will focus too much
 on what is written in the future-possibilities section and not the actual proposal
 that is made in the RFC. This has not been the case in the RFCs mentioned
 in the [motivation].
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 1. We could rephrase the section in various ways.
@@ -148,7 +148,7 @@ in the [motivation].
    of providing such a section. It might otherwise not occur to the author
    that such a section could be written.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 None of the languages enumerated in [RFC 2333] have such a section proposed
@@ -157,12 +157,12 @@ do contain sections pertaining to future possibilities. It is customary for
 such sections to be at the end of papers so as to not bore readers and keep
 them reading.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None as of yet.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 [staged]: http://smallcultfollowing.com/babysteps/blog/2018/06/20/proposal-for-a-staged-rfc-process/

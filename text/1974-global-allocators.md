@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1974](https://github.com/rust-lang/rfcs/pull/1974)
 - Rust Issue: [rust-lang/rust#27389](https://github.com/rust-lang/rust/issues/27389)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Overhaul the global allocator APIs to put them on a path to stabilization, and
@@ -14,10 +14,10 @@ This RFC is a refinement of the previous [RFC 1183][].
 
 [RFC 1183]: https://github.com/rust-lang/rfcs/blob/master/text/1183-swap-out-jemalloc.md
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## The current API
+### The current API
 
 The unstable `allocator` feature allows developers to select the global
 allocator which will be used in a program. A crate identifies itself as an
@@ -43,7 +43,7 @@ this currently, the underlying allocator would need to be split into two
 crates, one which contains all of the functionality and another which is tagged
 as an `#![allocator]`.
 
-## jemalloc
+### jemalloc
 
 Rust's default allocator has historically been jemalloc. While jemalloc does
 provide significant speedups over certain system allocators for some allocation
@@ -61,10 +61,10 @@ pinning, and diagnostic output dumps for code that depends on jemalloc directly.
 
 [this comment]: https://github.com/rust-lang/rust/issues/36963#issuecomment-252029017
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Defining an allocator
+### Defining an allocator
 
 Global allocators will use the `Allocator` trait defined in [RFC 1398][].
 However `Allocator`'s methods take `&mut self` since it's designed to be used
@@ -84,7 +84,7 @@ impl<'a> Allocator for &'a Jemalloc {
 
 [RFC 1398]: https://github.com/rust-lang/rfcs/blob/master/text/1398-kinds-of-allocators.md
 
-## Using an allocator
+### Using an allocator
 
 The `alloc::heap` module will contain several items:
 
@@ -175,7 +175,7 @@ errors where the liballoc rlib references symbols defined in the "allocator
 crate". With this RFC the compiler has far more control over the ABI and linkage
 here, so this restriction is no longer necessary.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Global allocator selection would be a somewhat advanced topic - the system
@@ -192,7 +192,7 @@ in the _Nomicon_.
 
 [RFC 1398]: https://github.com/rust-lang/rfcs/pull/1398
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Dropping the default of jemalloc will regress performance of some programs until
@@ -217,7 +217,7 @@ They're purely convenience functions, but if a global allocator overrides them,
 the custom implementations will not be used when going through the `Heap` type.
 This may be confusing.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could define a separate `GlobalAllocator` trait with methods taking `&self`
@@ -231,7 +231,7 @@ implementation for references issues in the other possibilities, but can't be
 defined in a reasonable way without HKT, and is a somewhat strange layer of
 indirection.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Are `System` and `Heap` the right names for the two `Allocator` implementations

@@ -2,19 +2,19 @@
 - RFC PR: [rust-lang/rfcs#505](https://github.com/rust-lang/rfcs/pull/505)
 - Rust Issue: N/A
 
-# Note
+## Note
 
 This RFC has been amended by [RFC 1574], which contains [a combined version of the conventions][combined].
 
 [RFC 1574]: https://github.com/rust-lang/rfcs/blob/master/text/1574-more-api-documentation-conventions.md
 [combined]: https://github.com/rust-lang/rfcs/blob/master/text/1574-more-api-documentation-conventions.md#appendix-a-full-conventions-text
 
-# Summary
+## Summary
 
 This is a conventions RFC, providing guidance on providing API documentation
 for Rust projects, including the Rust language itself.
 
-# Motivation
+## Motivation
 
 Documentation is an extremely important part of any project. It's important
 that we have consistency in our documentation.
@@ -22,13 +22,13 @@ that we have consistency in our documentation.
 For the most part, the RFC proposes guidelines that are already followed today,
 but it tries to motivate and clarify them.
 
-# Detailed design
+## Detailed design
 
 There are a number of individual guidelines. Most of these guidelines are for
 any Rust project, but some are specific to documenting `rustc` itself and the
 standard library. These are called out specifically in the text itself.
 
-## Use line comments
+### Use line comments
 
 Avoid block comments. Use line comments instead:
 
@@ -66,7 +66,7 @@ mod tests {
 }
 ```
 
-## Formatting
+### Formatting
 
 The first line in any doc comment should be a single-line short sentence
 providing a summary of the code. This line is used as a summary description
@@ -78,7 +78,7 @@ Prefer full sentences to fragments.
 The summary line should be written in third person singular present indicative
 form. Basically, this means write "Returns" instead of "Return".
 
-## Using Markdown
+### Using Markdown
 
 Within doc comments, use Markdown to format your documentation.
 
@@ -131,7 +131,7 @@ to
 [Rust website](http://www.rust-lang.org)
 ```
 
-## English
+### English
 
 This section applies to `rustc` and the standard library.
 
@@ -140,14 +140,14 @@ spelling, grammar, and punctuation conventions. Language changes over time,
 so this doesn't mean that there is always a correct answer to every grammar
 question, but there is often some kind of formal consensus.
 
-# Drawbacks
+## Drawbacks
 
 None.
 
-# Alternatives
+## Alternatives
 
 Not having documentation guidelines.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

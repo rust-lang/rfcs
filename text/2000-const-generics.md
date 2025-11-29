@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2000](https://github.com/rust-lang/rfcs/pull/2000)
 - Rust Issue: [rust-lang/rust#44580](https://github.com/rust-lang/rust/issues/44580)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow types to be generic over constant values; among other things this will
 allow users to write impls which are abstract over all array types.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust currently has one type which is parametric over constants: the built-in
@@ -36,7 +36,7 @@ orphan rules can enable a crate to ensure that only some safe values are used,
 with the check performed at compile time (this is especially relevant to
 cryptographic libraries for example).
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Today, types in Rust can be parameterized by two kinds: types and lifetimes. We
@@ -51,7 +51,7 @@ RFC. For our purposes we assume that integers and their basic arithmetic
 operations can be computed at compile time, and we will use them in all
 examples.)
 
-## Glossary
+### Glossary
 
 * __Const (constant, const value):__ A Rust value which is guaranteed to be
 fully evaluated at compile time. Unlike statics, consts will be inlined at
@@ -89,7 +89,7 @@ variable).
 except by substituting it with names in scope. This includes all literals as
 well all idents - e.g. `3`, `"Hello, world"`, `foo_bar`.
 
-## Declaring a const parameter
+### Declaring a const parameter
 
 In any sequence of type parameter declarations (such as in the definition of a
 type or on the `impl` header of an impl block) const parameters can also be
@@ -109,7 +109,7 @@ parameters is restricted later in this RFC.
 The const parameter is in scope for the entire body of the item (type, impl,
 function, method, etc) in which it is declared.
 
-## Applying a const as a parameter
+### Applying a const as a parameter
 
 Any const expression of the type ascribed to a const parameter can be applied
 as that parameter. When applying an expression as const parameter (except for
@@ -124,12 +124,12 @@ let x: RectangularArray<i32, 2, 4>;
 let y: RectangularArray<i32, X, {2 * 2}>;
 ```
 
-### Arrays
+#### Arrays
 Arrays have a special construction syntax: `[T; CONST]`. In array syntax,
 braces are not needed around any const expressions; `[i32; N * 2]` is a
 syntactically valid type.
 
-## When a const variable can be used
+### When a const variable can be used
 
 A const variable can be used as a const in any of these contexts:
 
@@ -163,7 +163,7 @@ in types constructed in the body of functions - all of these declarations,
 though private to this item, must be independent of it, and do not have any
 of its parameters in scope.
 
-## Theory of equality for type equality of two consts
+### Theory of equality for type equality of two consts
 
 During unification and the overlap check, it is essential to determine when two
 types are equivalent or not. Because types can now be dependent on consts, we
@@ -173,7 +173,7 @@ For most cases, the equality of two consts follows the same reasoning you would
 expect - two constant values are equal if they are equal to one another. But
 there are some particular caveats.
 
-### Structural equality
+#### Structural equality
 
 Const equality is determined according to the definition of structural equality
 defined in [RFC 1445][1445]. Only types which have the "structural match"
@@ -196,7 +196,7 @@ cannot be enforced for a type variable, it is not possible to introduce a const
 parameter which is ascribed to a type variable (`Foo<T, const N: T>` is not
 valid).
 
-### Equality of two abstract const expressions
+#### Equality of two abstract const expressions
 
 When comparing the equality of two abstract const expressions (that is, those
 that depend on a variable) we cannot compare the equality of their values
@@ -239,7 +239,7 @@ fn foo<const N: usize>() -> Foo<N> {
 }
 ```
 
-#### Future extensions
+##### Future extensions
 
 Someday we could introduce knowledge of the basic properties of some operations
 - such as the commutativity of addition and multiplication - to begin making
@@ -247,7 +247,7 @@ smarter judgments on the equality of const projections. However, this RFC does
 not proposing building any knowledge of that sort into the language and doing
 so would require a future RFC.
 
-## Specialization on const parameters
+### Specialization on const parameters
 
 It is also necessary for specialization that const parameters have a defined
 ordering of specificity. For this purpose, literals are defined as more
@@ -262,7 +262,7 @@ of understanding that `(i32, U)` is more specific than the type `(T, U)`. We
 could also someday support intersectional and other more advanced definitions
 of specialization on constants.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 Const generics is a large feature, and will require significant educational
@@ -273,7 +273,7 @@ will be a big project in itself.
 However, const generics should be treated as an advanced feature, and it should
 not be something we expose to new users early in their use of Rust.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature adds a significant amount of complexity to the type system,
@@ -286,7 +286,7 @@ However, we have already introduced a type which is determined by a constant -
 the array type. Generalizing this feature seems natural and even inevitable
 given that early decision.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 There are not really alternatives other than not doing this, or staging it
@@ -301,7 +301,7 @@ but this would make the implementation more complex up front.
 We could choose a slightly different syntax, such as separating consts from
 types with a semicolon.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - **Unification of abstract const expressions:** This RFC performs the most

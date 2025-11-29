@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2397](https://github.com/rust-lang/rfcs/pull/2397)
 - Rust Issue: [rust-lang/rust#51992](https://github.com/rust-lang/rust/issues/51992)
 
-# Summary
+## Summary
 [summary]: #summary
 
 A new attribute can be placed on trait implementations: `#[do_not_recommend]`.
@@ -13,7 +13,7 @@ as a way to implement another trait. For example, this would be placed on
 IntoIterator` fails, the error message will only mention `IntoIterator`. It will
 not say "perhaps `Iterator` should be implemented?".
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 When a type fails to implement a trait, Rust has the wonderful behavior of
@@ -29,7 +29,7 @@ error messages to be more confusing. These are usually (but not always) very
 broad blanket impls on traits with names like `IntoFoo` or `AsBar`. One such
 problem impl is `impl<T: Iterator> IntoIterator for T`.
 
-## `IntoIterator` confusion
+### `IntoIterator` confusion
 
 Let's look at the struggles of a hypothetical Python programmer who is getting
 into Rust for the first time. In Python, tuples are iterable. So our python
@@ -92,7 +92,7 @@ If nothing else, *in this particular case*, there was at least a note saying
 at the bottom is not where most people look, and as we'll see later, is also not
 always there or helpful.
 
-## Ecosystem Examples
+### Ecosystem Examples
 
 Let's look at another example from outside the standard library. This is a
 problem Diesel has run into numerous times. The most common is with our
@@ -177,7 +177,7 @@ With this annotation, Rust would know that it should *never* recommend the impl
 related to `Iterators`, and will always give diagnostics as if the "normal way
 to insert a thing" impl were the only one that existed.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Since the diagnostics around this RFC aren't ever mentioned in a guide, I'm not
@@ -207,7 +207,7 @@ implemented, it would never make sense to implement `Foo` for that type. In this
 case, we can put `#[do_not_recommend]` above our impl, and Rust will *never*
 recommend implementing `Foo` as a way to get to `Bar`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 During trait resolution, Rust will attempt to lower a query like
@@ -220,14 +220,14 @@ With this RFC, for the purposes of diagnostics only, impls annotated with
 cases where there would have been one subquery will be treated as if there were
 0, and cases where there were 2 will be treated as if there were 1.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 While this attribute only affects diagnostics, it is inherently tied to how
 trait resolution works. This could potentially complicate work happening on the
 trait system today (particularly with regards to chalk).
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 - The vast majority of cases where this would be used are for traits and impls
@@ -235,12 +235,12 @@ trait system today (particularly with regards to chalk).
   T`. We could potentially instead try to improve the compiler's diagnostics
   without this attribute, to detect those cases.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The author is not aware of any prior art regarding this feature.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 - What other names could we go with besides `#[do_not_recommend]`?

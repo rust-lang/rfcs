@@ -4,7 +4,7 @@
 - Rust Issue: N/A
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC proposes a process for deciding detailed guidelines for code
@@ -21,7 +21,7 @@ expected to be temporary. Once the style guide is complete, the team can be
 disbanded and the repository frozen.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 There is a need to decide on detailed guidelines for the format of Rust code. A
@@ -55,10 +55,10 @@ but is now part of the main Rust repository. That seems like a poor venue for
 discussion of these guidelines due to visibility.
 
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## Process
+### Process
 
 The process for style RFCs will mostly follow the [process for other RFCs](https://github.com/rust-lang/rfcs).
 Anyone may submit an RFC. An overview of the process is:
@@ -83,7 +83,7 @@ Anyone may submit an RFC. An overview of the process is:
   discussion of the RFC), and defaults are set.
 
 
-### Scope of the process
+#### Scope of the process
 
 This process is specifically limited to formatting style guidelines which can be
 enforced by Rustfmt with its current architecture. Guidelines that cannot be
@@ -94,7 +94,7 @@ Note whether Rustfmt should be configurable at all, and if so how configurable
 is a decision that should be dealt with using the formatting RFC process. That
 will be a rather exceptional RFC.
 
-### Size of RFCs
+#### Size of RFCs
 
 RFCs should be self-contained and coherent, whilst being as small as possible to
 keep discussion focused. For example, an RFC on 'arithmetic and logic
@@ -102,7 +102,7 @@ expressions' is about the right size; 'expressions' would be too big, and
 'addition' would be too small.
 
 
-### When is a guideline ready for RFC?
+#### When is a guideline ready for RFC?
 
 The purpose of the style RFC process is to foster an open discussion about style
 guidelines. Therefore, RFC PRs should be made early rather than late. It is
@@ -124,7 +124,7 @@ however, it should have been used in *some* real code, rather than just being
 sketched out.
 
 
-### Triage
+#### Triage
 
 RFC PRs are triaged by the style team. An RFC may be closed during triage (with
 feedback for the author) if the style team think it is not specified in enough
@@ -133,13 +133,13 @@ applies to more than just formatting). Otherwise, the PR will be assigned a
 shepherd as for other RFCs.
 
 
-### FCP
+#### FCP
 
 FCP will last for two weeks (assuming the team decide to meet every two weeks)
 and will be announced in the style team sub-team report.
 
 
-### Decision and post-decision process
+#### Decision and post-decision process
 
 The style team will make the ultimate decision on accepting or closing a style
 RFC PR. Decisions should be by consensus. Most discussion should take place on
@@ -158,7 +158,7 @@ determine if someone else is already working on it, feel free to ask (e.g. by
 leaving a comment on the associated issue).
 
 
-## The fmt-rfcs repository
+### The fmt-rfcs repository
 
 The form of the fmt-rfcs repository will follow the rfcs repository. Accepted
 RFCs will live in a `text` directory, the `README.md` will include information
@@ -223,7 +223,7 @@ The repository should be updated as this RFC develops, and moved to the rust-lan
 GitHub organisation if this RFC is accepted.
 
 
-## The style team
+### The style team
 
 The style [sub-team](https://github.com/rust-lang/rfcs/blob/master/text/1068-rust-governance.md#subteams)
 will be responsible for handling style RFCs and making decisions related to
@@ -249,7 +249,7 @@ There will be a dedicated irc channel for discussion on formatting issues:
 `#rust-style`.
 
 
-## Style guide
+### Style guide
 
 The [existing style guide](https://github.com/rust-lang/rust/tree/master/src/doc/style)
 will be split into two guides: one dealing with API design and similar issues
@@ -264,7 +264,7 @@ of the process, the style team should audit and edit the guide to ensure it is a
 coherent document.
 
 
-## Material goals
+### Material goals
 
 Hopefully, the style guideline process will have limited duration, one year
 seems reasonable. After that time, style guidelines for new syntax could be
@@ -280,7 +280,7 @@ more human-friendly source of formatting guidelines, and should be in sync with
 the fmt-rfcs repo.
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC introduces more process and bureaucracy, and requires more meetings for
@@ -288,7 +288,7 @@ some core Rust contributors. Precious time and energy will need to be devoted to
 discussions.
 
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Benevolent dictator - a single person dictates style rules which will be
@@ -320,5 +320,5 @@ However, the language team has very little free bandwidth, and the tools team is
 probably not broad enough to effectively handle the style decisions.
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions

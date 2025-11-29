@@ -5,7 +5,7 @@
 - RFC PR: [rust-lang/rfcs#2904](https://github.com/rust-lang/rfcs/pull/2904)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 Introduce the **major change process** for the compiler team. This process has the following goals:
@@ -19,14 +19,14 @@ The intent here is that if you have a plan to make some "major change" to the co
 
 This process does not apply to adding new language features, but it can be used for minor features such as adding new `-C` flags to the compiler.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 As the compiler grows in complexity, it becomes harder and harder to track what's going on. We don't currently have a clear channel for people to signal their intention to make "major changes" that may impact other developers in a lightweight way (and potentially receive feedback).
 
 Our goal is to create a channel for signaling intentions that lies somewhere between opening a PR (and perhaps cc'ing others on that PR) and creating a compiler team design meeting proposal or RFC.
 
-## Goals
+### Goals
 
 Our goals with the MCP are as follows:
 
@@ -37,10 +37,10 @@ Our goals with the MCP are as follows:
 * Avoid the phenomenon of large, sweeping PRs landing "out of nowhere" onto someone's review queue.
 * Avoid the phenomenon of PRs living in limbo because it's not clear what level of approval is required for them to land.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-## Major Change Proposals
+### Major Change Proposals
 
 If you would like to make a [major change] to the compiler, the process
 is as follows:
@@ -61,11 +61,11 @@ is as follows:
       code, then either the MCP or the PR(s) must be approved with a
       `rfcbot fcp merge` comment.
 
-## Conditional acceptance
+### Conditional acceptance
 
 Some major change proposals will be conditionally accepted. This indicates that we'd like to see the work land, but we'd like to re-evaluate the decision of whether to commit to the design after we've had time to gain experience. We should try to be clear about the things we'd like to evaluate, and ideally a timeline.
 
-## Deferred or not accepted
+### Deferred or not accepted
 
 Some proposals will not be accepted. Some of the possible reasons:
 
@@ -77,10 +77,10 @@ Some proposals will not be accepted. Some of the possible reasons:
 [rust-lang/compiler-team]: https://github.com/rust-lang/compiler-team
 [design meeting proposal]: https://forge.rust-lang.org/compiler/steering-meeting.html
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## What happens if someone opens a PR that seems like a major change *without* doing this process?
+### What happens if someone opens a PR that seems like a major change *without* doing this process?
 
 The PR should be closed or marked as blocked, with a request to create
 a major change proposal first.
@@ -90,11 +90,11 @@ as an MCP, then simply copy and paste that into an MCP issue. Using an
 issue consistently helps to ensure that the tooling and process works
 smoothly.
 
-## Can I work on code experimentally before a MCP is accepted?
+### Can I work on code experimentally before a MCP is accepted?
 
 Of course!  You are free to work on PRs or write code. But those PRs should be marked as experimental and they should not land, nor should anyone be expected to review them (unless folks want to).
 
-## What constitutes a major change?
+### What constitutes a major change?
 
 The rough intuition is "something that would require updates to the [rustc-dev-guide] or the [rustc book]". In other words:
 
@@ -109,7 +109,7 @@ Note that whether something is a major change proposal is not necessarily relate
 [rustc-dev-guide]: https://rustc-dev-guide.rust-lang.org
 [rustc book]: https://doc.rust-lang.org/rustc/index.html
 
-## Public-facing changes require rfcbot fcp
+### Public-facing changes require rfcbot fcp
 
 The MCP "seconding" process is only meant to be used to get agreement
 on the technical architecture we plan to use. It is not sufficient to
@@ -124,7 +124,7 @@ moving it to `-C` in a PR later (which would require `rfcbot fcp`).
 Major change proposals are not sufficient for language changes or
 changes that affect cargo.
 
-## Steps to open a MCP
+### Steps to open a MCP
 
 * Open a tracking issue on the [rust-lang/compiler-team] repo using the
   [major change template].
@@ -134,7 +134,7 @@ changes that affect cargo.
     to the tracking issue.
   * The stream will be used for people to ask questions or propose changes.
 
-## What kinds of comments should go on the tracking issue in compiler-team repo?
+### What kinds of comments should go on the tracking issue in compiler-team repo?
 
 Please direct technical conversation to the Zulip stream.
 
@@ -145,15 +145,15 @@ The compiler-team repo issues are intended to be low traffic and used for proced
 * Noting a concern that you don't want to be overlooked.
 * Announcing that the proposal will be entering FCP or is accepted.
 
-## How does one register as reviewer, register approval, or raise an objection?
+### How does one register as reviewer, register approval, or raise an objection?
 
 These types of procedural comments can be left on the issue (it's also good to leave a message in Zulip). See the previous section.
 
-## Who decides whether a concern is unresolved?
+### Who decides whether a concern is unresolved?
 
 Usually the experts in the given area will reach a consensus here. But if there is some need for a "tie breaker" vote or judgment call, the compiler-team leads make the final call.
 
-## What are some examples of major changes from the past?
+### What are some examples of major changes from the past?
 
 Here are some examples of changes that were made in the past that would warrant the major change process:
 
@@ -163,7 +163,7 @@ Here are some examples of changes that were made in the past that would warrant 
 * introducing cargo pipelining 
 * adding a new `-C` flag that exposes some minor variant
 
-## What are some examples of things that are too big for the major change process?
+### What are some examples of things that are too big for the major change process?
 
 Here are some examples of changes that are too big for the major change process, or which at least would require auxiliary design meetings or a more fleshed out design before they can proceed:
 
@@ -172,7 +172,7 @@ Here are some examples of changes that are too big for the major change process,
 * introducing parallel execution
 * adding ThinLTO support
 
-## What are some examples of things that are too small for the major change process?
+### What are some examples of things that are too small for the major change process?
 
 Here are some examples of things that don't merit any MCP:
 
@@ -180,7 +180,7 @@ Here are some examples of things that don't merit any MCP:
 * fixing an ICE or tweaking diagnostics
 * renaming "less widely used" methods
 
-## When should Major Change Proposals be closed?
+### When should Major Change Proposals be closed?
 
 Major Change Proposals can be closed:
 
@@ -191,7 +191,7 @@ Major Change Proposals can be closed:
   inactivity. In this case, people should feel free to re-open the
   issue if they would like to "rejuvenate" it.
 
-# Template for major change proposals
+## Template for major change proposals
 
 [major change template]: #Template-for-major-change-proposals
 
@@ -236,19 +236,19 @@ also leave it blank if you are looking for a reviewer. (Multiple names are ok
 too.)*
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 It adds procedural overhead.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why not use the FCP process to do approvals?
+### Why not use the FCP process to do approvals?
 
 We opted not to require an ordinary rfcbot fcp because that feels too cumbersome. We want this to be lightweight. Requesting at least one person to approve seems like the minimal process.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The state of the art for these sorts of things in practice is that either people just write PRs, or perhaps someone opens a Zulip topic and pings a suitable set of people. This often works well in practice but can also lead to surprises, where stakeholders are overlooked. Moreover, it offers no means to manage review load or to have a chance to express concerns before a lot of code is written.
@@ -257,12 +257,12 @@ This idea was loosely based on the "intent to ship" convention that many browser
 
 RFCs themselves are a form of "major change proposal", but they are much more heavyweight and suitable for longer conversations or more controversial decisions. They wind up requesting feedback from a broader audience and they require all team members to actively agree before being accepted. The MCP process is meant to be something we can use to float and advertise ideas and quickly either reach consensus or else -- if controversy is discovered -- move the proposal to a more involved process.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The details of this procedure are sure to evolve, and we don't expect to use the RFC process for each such evolution. The main focus of this RFC is to approve of a **mandatory major change process** for major changes to the compiler.

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2325](https://github.com/rust-lang/rfcs/pull/2325)
 - Rust Issue: [rust-lang/rust#48556](https://github.com/rust-lang/rust/issues/48556)
 
-# Summary
+## Summary
 [summary]: #summary
 
 The purpose of this RFC is to provide a framework for SIMD to be used on stable
@@ -11,7 +11,7 @@ Rust. It proposes stabilizing x86-specific vendor intrinsics, but includes the
 scaffolding for other platforms as well as a future portable SIMD design (to be
 fleshed out in another RFC).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Stable Rust today does not typically expose all of the capabilities of the
@@ -46,7 +46,7 @@ stable interface.
 [i1]: https://internals.rust-lang.org/t/getting-explicit-simd-on-stable-rust/4380
 [i2]: https://internals.rust-lang.org/t/whats-the-next-step-towards-the-stabilization-of-simd/5867
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Let's say you've just heard about this fancy feature called "auto vectorization"
@@ -244,7 +244,7 @@ an RFC for the `std::simd` module!
 
 [simd.js]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SIMD
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Stable SIMD in Rust ends up requiring a surprising number of both language and
@@ -253,7 +253,7 @@ bit of experimentation over time with SIMD in Rust and we've gotten a lot of
 good experience along the way! In this section, though, we'll be going into the
 various features in detail.
 
-## The `#[target_feature]` Attribute
+### The `#[target_feature]` Attribute
 
 The `#[target_feature]` attribute was specified in [RFC 2045][rfc2045] and
 remains unchanged from that specification. As a quick recap it allows you to add
@@ -303,7 +303,7 @@ first pass of stabilization. AMD also has some specific features supported
 (`sse4a`, `tbm`), and so do ARM, MIPS, and PowerPC, but none of these feature
 names a proposed for becoming stable in the first pass.
 
-## The `target_feature` value in `#[cfg]`
+### The `target_feature` value in `#[cfg]`
 
 In addition to enabling target features for a function the compiler will also
 allow statically testing whether a particular target feature is enabled. This
@@ -335,7 +335,7 @@ runtime dispatch**. Tweaking these functions is currently done via the `-C
 target-feature` flag to the compiler. This flag to the compiler accepts a
 similar set of strings to the ones specified above and is already "stable".
 
-## The `is_target_feature_detected!` Macro
+### The `is_target_feature_detected!` Macro
 
 One mode of operation with intrinsics is to compile *part* of a program with
 certain CPU features enabled but not the entire program. This way a portable
@@ -394,7 +394,7 @@ where it is possible to do CPU feature detection in libcore (as it's just the
 be available in libstd for now. This placement can of course be relaxed in the
 future if necessary.
 
-## The `std::arch` Module
+### The `std::arch` Module
 
 This is where the real meat is. A new module will be added to the standard
 library, `std::arch`. This module will also be available in `core::arch`
@@ -465,7 +465,7 @@ implemented AVX-512 intrinsics, but that doesn't mean we won't implement them!
 Rather once implemented they'll be stabilized and included in libstd following
 the Rust release model.
 
-## The types in `std::arch`
+### The types in `std::arch`
 
 It's worth paying close attention to the types in `std::arch`. Types like
 `__m128i` are intended to represent a 128-bit packed SIMD register on x86, but
@@ -495,7 +495,7 @@ Again though, note that this section is largely an implementation detail of SIMD
 in Rust today, though it's enabling usage without a lot of codegen errors
 popping up all over the place.
 
-## Intrinsics in `std::arch` and constant arguments
+### Intrinsics in `std::arch` and constant arguments
 
 There are a number of intrinsics on x86 (and other) platforms that require their
 arguments to be constants rather than decided at runtime. For example
@@ -521,7 +521,7 @@ It's hoped that this restriction will allow `stdsimd` to be forward compatible
 with a future const-powered world of Rust but in the meantime not otherwise
 block stabilization of these intrinsics.
 
-## Portable packed SIMD
+### Portable packed SIMD
 
 So-called "portable" packed SIMD types are currently implemented in both the
 [stdsimd] and [simd][simd-crate] crates. These types look like `u8x16` and
@@ -554,7 +554,7 @@ will necessarily depend on the other.
 
 [soundbug]: https://github.com/rust-lang/rust/issues/44367
 
-## Not stabilizing MMX in this RFC
+### Not stabilizing MMX in this RFC
 
 This RFC proposed notably omitting the MMX intrinsics, or those related to
 `__m64` in other words. The MMX type `__m64` and the intrinsics have been
@@ -572,7 +572,7 @@ Due to these issues having an unclear conclusion as well as a seeming lack of
 desire to stabilize MMX intrinsics, the `__m64` and all related intrinsics
 **will not be stabilized** via this RFC.
 
-# Drawbacks
+## Drawbacks
 
 [drawbacks]: #drawbacks
 
@@ -592,7 +592,7 @@ number of automatic verifications in place we're likely to inevitably make a
 mistake when stabilizing something. *Fixing* a stabilization can often be quite
 difficult and costly.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Over the years quite a few iterations have happened for SIMD in Rust. This RFC
@@ -601,7 +601,7 @@ exposing functionality while still allowing us to implement everything in a
 stable fashion for years to come (and without blocking us from updating LLVM,
 for example). Despite this there's a few alternatives we could do as well.
 
-## Portable types in architecture interfaces
+### Portable types in architecture interfaces
 
 It was initially attempted in the [stdsimd] crate that we would use the portable
 types on all of the intrinsics. For example instead of:
@@ -641,7 +641,7 @@ There is interest by both current `stdsimd` maintainers and users to expose
 a "better-typed" SIMD API in crates.io that builds on top of the intrinsics
 proposed for stabilization here.
 
-## Stabilizing SIMD implementation details
+### Stabilizing SIMD implementation details
 
 Another alternative to the bulk of this RFC is allowing more raw access to the
 internals of LLVM. For example stabilizing `#[repr(simd)]` or the ability to
@@ -664,14 +664,14 @@ As a result, it's intended that instead of exposing raw building blocks (and
 allowing `stdsimd` to live on crates.io) we'll instead pull in `stdsimd` to the
 standard library and expose it as the stable interface to SIMD in Rust.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There's a number of unresolved questions around stabilizing SIMD today which
 don't pose serious blockers and may also wish to be considered open bugs rather
 than blocking stabilization:
 
-## Relying on unexported LLVM APIs
+### Relying on unexported LLVM APIs
 
 The static detection performed by `cfg!` and `#[cfg]` currently relies on a
 [Rust-specific patch to LLVM][llvm-patch]. LLVM internal knows all about
@@ -695,7 +695,7 @@ been no attempts to upstream this patch into LLVM itself.
 [llvm-patch]: https://github.com/rust-lang/llvm/commit/68e1e29618b2bd094d82faac16cf8e89959bbd68
 [clang]: https://github.com/llvm-mirror/clang/blob/679d846fcc73bd213347785185006d591698a132/lib/Basic/Targets/X86.cpp
 
-## Packed SIMD types in `extern` functions are not sound
+### Packed SIMD types in `extern` functions are not sound
 
 The packed SIMD types have particular care paid to them with respect to their
 ABI in Rust and how they're passed between functions, notably to ensure that
@@ -709,7 +709,7 @@ implement a "lint" or a compiler error of sorts to forbid this situation in the
 short term. We could also possibly accept this as a known bug for the time
 being.
 
-## What if we're wrong?
+### What if we're wrong?
 
 Despite the CI infrastructure of the `stdsimd` crate it seems inevitable that
 we'll get an intrinsic wrong at some point. What do we do in a situation like

@@ -6,11 +6,11 @@
 
 This RFC went through a pre-RFC phase at <https://internals.rust-lang.org/t/pre-rfc-allow-for-a-syntax-with-closures-for-explicit-higher-ranked-lifetimes/15888>
 
-# Summary
+## Summary
 
 Allow explicitly specifying lifetimes on closures via `for<'a> |arg: &'a u8| { ... }`. This will always result in a higher-ranked closure which can accept *any* lifetime (as in `fn bar<'a>(val: &'a u8) {}`). Closures defined without the `for<'a>` syntax retain their current behavior: lifetimes will be inferred as either some local region (via an inference variable), or a higher-ranked lifetime.
 
-# Motivation
+## Motivation
 
 There are several open issues around closure lifetimes (https://github.com/rust-lang/rust/issues/91966 and https://github.com/rust-lang/rust/issues/41078), all of which stem from type inference incorrectly choosing either a higher-ranked lifetime, or a local lifetime.
 
@@ -88,7 +88,7 @@ See https://github.com/rust-lang/rust/pull/72493#issuecomment-633307151
 
 These impls are accepted because `for<'a> fn(&'a T)` and `fn(T)` are distinct types. While this not does *directly* apply to closures, closures *can* be cast to function pointers, which will have a different impl of `Trait` apply depending on whether they contain a higher-ranked lifetime parameter. Thus, the closure lifetimes inferred by the compiler can end up influencing what code is executed at runtime (provided that the user inserts the necessary cast to the correct function pointer type). While this is definitely an unusual case, it highlights the subtlety of lifetimes. Allowing greater control over how closure lifetimes are determined will allow users to better understand and control the behavior of their code in unusual situations like this one.
 
-# Guide-level explanation
+## Guide-level explanation
 
 When writing a closure, you will often take advantage of type inference to avoid the need to explicitly specify types. For example:
 
@@ -177,7 +177,7 @@ Since `closure` cannot accept *any* lifetime, it cannot be written as `for<'a> |
 
 Unfortunately, Rust does not currently allow the signature of such a closure to be written explicitly. Instead, you must rely on type inference to choose the correct lifetime for you.
 
-# Reference-level explanation
+## Reference-level explanation
 
 We now allow closures to be written with a `for<'a .. 'z>` prefix, where `'a .. 'z` is a comma-separated sequence of zero or more lifetimes. The syntax is parsed identically to the `for<'a .. 'z>` in the function pointer type `for<'a .. 'z> fn(&'a u8, &'b u8) -> &'a u8`.
 This can be use with or without the `move` keyword:
@@ -211,7 +211,7 @@ for<'a> async move |arg: &'a u8| -> () {}; // Compare error: `for<>` syntax cann
 
 This restriction may be lifted in the future, but the interactions between this feature and the `async` desugaring will need to be considered.
 
-# Drawbacks
+## Drawbacks
 
 This slightly increases the complexity of the language and the compiler implementation. However, the syntax introduced (`for<'a>`) can already be used in both trait bounds and function pointer types, so we are not introducing any new concepts in the languages.
 
@@ -230,7 +230,7 @@ We will handle disambiguation in the same way that we handle disambiguation for 
 
 In its initial form, this feature may be of limited usefulness - it can only be used with closures that have all higher-ranked lifetimes, prevents type elision from being used, and does not provide a way of explicitly indicating *non*-higher-ranked lifetimes. However, this proposal has been explicitly designed to be forwards-compatible with such additions. It represents a small, (hopefully) uncontroversial step towards better control over closure signatures.
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 * We could use a syntax other than `for<>` for binding lifetimes - however, this syntax is already used, and has the same meaning here as it does in the other positions where it is allowed.
 * We could allow mixing elided and explicit lifetimes in a closure signature - for example, `for<'a> |first: &'a u8, second: &bool|`. However, this would force us to commit to one of several options for the interpretation of `second: &bool`
@@ -244,7 +244,7 @@ We can choose at most one of these options. By banning this ambiguous case altog
 * We could try to design a 'perfect' or 'ideal' closure region inference algorithm that always correctly chooses between a higher-ranked and non-higher-ranked region, eliminating the need for users to explicitly specify their choice. Even if this is possible and easy to implement, there's still value in allowing closures to be explicitly desugared for teaching purposes. Currently: function definitions, function pointers, and higher-ranked trait bounds (e.g. `Fn(&u8)`) can all have their lifetimes (mostly) manually desugared - however, closures do not support this.
 * We could do nothing, and accept the status quo for closure region inference. Given the number of users that have run into issues in practice, this would mean keeping a fairly significant wart in the Rust language.
 
-# Prior Art
+## Prior Art
 
 I previously discussed this topic in Zulip: https://rust-lang.zulipchat.com/#narrow/stream/213817-t-lang/topic/Explicit.20closure.20lifetimes
 
@@ -252,15 +252,15 @@ The `for<>` syntax is used with function pointers (`for<'a> fn(&'a u8)`) and hig
 
 I'm not aware of any languages that have anything analogous to Rust's distinction between higher-ranked and non-higher-ranked lifetimes, let alone an interaction with closure/lambda type inference.
 
-# Unresolved questions
+## Unresolved questions
 
 None at this time
 
-# Future possibilities
+## Future possibilities
 
 We could allow a lifetime to be explicitly indicated to be *non*-higher-ranked. The `'_` lifetime could be given special meaning in closures - for example, `for<'a> |first: &'a u8, second: &'_ bool| {}` could be used to indicate a closure that takes in a `&u8` with any lifetime, and an `&bool` with some specific lifetime. However, we already accept `|second: &'_ bool| {}` as a closure, so this would require changing the behavior of `&'_` when a `for<>` binder is present.
 
-## Appendix: Late-bound regions, early-bound regions, and region variables
+### Appendix: Late-bound regions, early-bound regions, and region variables
 
 
 There are three 'kinds' of lifetimes we need to consider for closures:

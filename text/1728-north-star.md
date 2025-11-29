@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1728](https://github.com/rust-lang/rfcs/pull/1728)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 [summary]: #summary
 
 A refinement of the Rust planning and reporting process, to establish a shared
@@ -31,7 +31,7 @@ consistent way to:
 - Advertise our goals as a published roadmap.
 - Celebrate our achievements with an informative publicity-bomb.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Rust is a massive project and ecosystem, developed by a massive team of
@@ -109,7 +109,7 @@ management structure. Let's make a few incremental improvements that will have
 the greatest impact, and that we can accomplish without disruptive changes to
 the way we work today.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Rust's roadmap will be established in year-long cycles, where we identify up
@@ -131,7 +131,7 @@ enabled by the new features we've delivered, celebrate those contributors who
 helped achieve our goals, honestly evaluate our performance, and look forward to
 the year to come.
 
-## Summary of terminology
+### Summary of terminology
 
 Key terminology used in this RFC:
 
@@ -163,7 +163,7 @@ Key terminology used in this RFC:
   cycle milestone corresponding to the time period in which the work is
   completed.
 
-## Problem statements and the north star RFC
+### Problem statements and the north star RFC
 
 The full planning cycle spans one year. At the beginning of the cycle we
 identify areas of Rust that need the most improvement, and at the end of the
@@ -243,7 +243,7 @@ arise during the year, it may be amended, even to the extent of adding
 additional problem statements; though it is not appropriate for the project
 to continually rehash the RFC.
 
-## Goal setting and tracking progress
+### Goal setting and tracking progress
 
 During the regular 6-week release cycles is where the solutions take shape and
 are carried out. Each cycle teams are expected to set concrete _goals_ that work
@@ -296,7 +296,7 @@ will compile all the team reports and post them to internals.rust-lang.org.
 In addition to providing visibility into progress, these will be sources
 to draw from for the subsequent release announcements.
 
-## The retrospective (rallying point)
+### The retrospective (rallying point)
 
 The retrospective is an opportunity to showcase the best of Rust and its
 community to the world.
@@ -325,7 +325,7 @@ Since the retrospective must be a high-quality document, and cover a lot of
 material, it is expected to require significant planning, editing and revision.
 The details of how this will work are to be determined.
 
-## Presenting the roadmap
+### Presenting the roadmap
 
 As a result of this process the Rust roadmap for the year is encoded in three
 main ways, that evolve over the year:
@@ -350,7 +350,7 @@ available [here].
 
 Again, the details are to be determined.
 
-## Calendar
+### Calendar
 
 The timing of the events specified by this RFC is precisely specified in order
 to set clear expectations and accountability, and to avoid process slippage. The
@@ -375,7 +375,7 @@ month of August.
 The survey and other forms of outreach and data gathering should be timed to fit
 well into the overall calendar.
 
-## References
+### References
 
 - [Refining RFCs part 1: Roadmap]
   (https://internals.rust-lang.org/t/refining-rfcs-part-1-roadmap/3656),
@@ -401,7 +401,7 @@ well into the overall calendar.
   (https://brson.github.io/rust-z),
   a prototype tool to organize the roadmap.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The yearly north star RFC could be an unpleasant bikeshed, because it
@@ -418,7 +418,7 @@ The end-of-year retrospective will require significant effort. It's not clear
 who will be motivated to do it, and at the level of quality it demands. This is
 the piece of the proposal that will probably need the most follow-up work.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Instead of imposing further process structure on teams we might attempt to
@@ -431,7 +431,7 @@ product than the existing rustc+cargo pair could accomplish this, i.e.
 
 Another rallying point could be a long-term support release.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Are 1 year cycles long enough?

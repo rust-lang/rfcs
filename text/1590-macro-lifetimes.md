@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1590](https://github.com/rust-lang/rfcs/pull/1590)
 - Rust Issue: [rust-lang/rust#34303](https://github.com/rust-lang/rust/issues/34303)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a `lifetime` specifier for `macro_rules!` patterns, that matches any valid
 lifetime.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Certain classes of macros are completely impossible without the ability to pass
@@ -24,7 +24,7 @@ compile. This is extremely limiting, as it becomes difficult to sanitize input,
 and `tt` is extremely difficult to use in a sequence without using awkward
 separators.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 This RFC proposes adding `lifetime` as an additional specifier to
@@ -36,19 +36,19 @@ almost identically.
 A preliminary implementation can be found at
 https://github.com/rust-lang/rust/pull/33135
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 A more general specifier, such as a "type parameter list", which would roughly
 map to `ast::Generics` would cover most of the cases that matching lifetimes
 individually would cover.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2565](https://github.com/rust-lang/rfcs/pull/2565)
 - Rust Issue: [rust-lang/rust#60406](https://github.com/rust-lang/rust/issues/60406)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow attributes in formal function parameter position.
@@ -23,7 +23,7 @@ impl MyResource {
 }
 ```
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Allowing attributes on formal function parameters enables external tools and
@@ -38,7 +38,7 @@ these parameters and thereby richer DSLs may be encoded by users.
 We already saw an example of such a DSL in the [summary].
 To further illustrate potential usages, let's go through a few examples.
 
-## Compiler internals: Improving `#[rustc_args_required_const]`
+### Compiler internals: Improving `#[rustc_args_required_const]`
 
 [memory_grow]: https://doc.rust-lang.org/nightly/core/arch/wasm32/fn.memory_grow.html
 
@@ -64,7 +64,7 @@ pub fn memory_grow(
 }
 ```
 
-## Property based testing of polymorphic functions
+### Property based testing of polymorphic functions
 
 [QuickCheck]: https://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf
 [proptest]: https://github.com/altsysrq/proptest
@@ -104,7 +104,7 @@ fn prop_my_property_u32(elem: Vec<u32>, ..) { .. }
 By allowing attributes on function parameters, the test can be specified
 more succinctly and without repetition as done in the first example.
 
-## FFI and interoperation with other languages
+### FFI and interoperation with other languages
 
 [wasm_bindgen]: https://github.com/rustwasm/wasm-bindgen
 
@@ -136,7 +136,7 @@ are all `any[]`. By using allowing the annotations above, tighter types can
 be used which can help in catching problems at compile time rather than
 having UI bugs later.
 
-## Greater control over optimizations in low-level code
+### Greater control over optimizations in low-level code
 
 For raw pointers that are oftentimes used when operating with C code,
 additional information could be given to the compiler about the set of parameters.
@@ -156,7 +156,7 @@ This would tell the compiler or some static analysis tool that the pointers
 `overlaps_with` and `restrict` are part of this proposal; rather, they are
 examples of what this RFC facilities.
 
-## Handling of unused parameter
+### Handling of unused parameter
 
 In today's Rust it is possible to prefix the name of an identifier to silence
 the compiler about it being unused. With attributes on formal parameters,
@@ -176,7 +176,7 @@ fn foo(_bar: u32) -> bool { .. }
 
 Especially Rust beginners might find the meaning of (1) to be clearer than (2).
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Formal parameters of `fn` definitions as well closures parameters may have
@@ -185,7 +185,7 @@ attributes attached to them. Thereby, additional information may be provided.
 For the purposes of illustration, let's assume we have the attributes
 `#[orange]` and `#[lemon]` available to us.
 
-## Basic examples
+### Basic examples
 
 The syntax for attaching attributes to parameters is shown in the snippet below:
 
@@ -217,7 +217,7 @@ fn foo() {
 }
 ```
 
-## Trait definitions
+### Trait definitions
 
 An `fn` definition doesn't need to have a body to permit parameter attributes.
 Thus, in `trait` definitions, we may write:
@@ -238,7 +238,7 @@ trait Beta {
 }
 ```
 
-## `fn` types
+### `fn` types
 
 You can also use attributes in function pointer types.
 For example, you may write:
@@ -248,7 +248,7 @@ type Foo = fn(#[orange] x: u8);
 type Bar = fn(#[orange] String, #[lemon] y: String);
 ```
 
-## Built-in attributes
+### Built-in attributes
 
 Attributes attached to formal parameters do not have an inherent meaning in
 the type system or in the language. Instead, the meaning is what your
@@ -307,10 +307,10 @@ For example, you may not write:
 fn foo(#[inline] bar: u32) { .. }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Grammar
+### Grammar
 
 Let `OuterAttr` denote the production for an attribute `#[...]`.
 
@@ -345,7 +345,7 @@ More generally, an `fn` item contains a list of formal parameters separated or
 terminated by `,` and delimited by `(` and `)`. Each parameter in that list may
 optionally be prefixed by `OuterAttr+`.
 
-### Variadics
+#### Variadics
 
 Attributes may also be attached to `...` on variadic functions, e.g.
 
@@ -357,7 +357,7 @@ extern "C" {
 
 That is, for the purposes of this RFC, `...` is considered as a parameter.
 
-### Anonymous parameters in Rust 2015
+#### Anonymous parameters in Rust 2015
 
 In Rust 2015 edition, as `fn`s may have anonymous parameters, e.g.
 
@@ -371,7 +371,7 @@ attributes are allowed on those, e.g.
 trait Foo { fn bar(#[attr] u8); }
 ```
 
-### `fn` pointers
+#### `fn` pointers
 
 [lykenware/gll]: https://github.com/lykenware/gll/
 
@@ -412,7 +412,7 @@ FnSigInput = OuterAttr* { pat:Pat ":" }? ty:Type;
 Similar to parameters in `fn` items, the attributes here also apply to the
 pattern and the type if both are present, i.e. `pat: ty` as opposed to `pat`.
 
-### Closures
+#### Closures
 
 Given roughly the following expression grammar for closures:
 
@@ -438,14 +438,14 @@ ClosureArg = OuterAttr* pat:Pat { ":" ty:Type }?;
 As before, when the type is specified, `OuterAttr*` applies to `pat: Type`
 as opposed to just `pat`.
 
-## Static semantics
+### Static semantics
 
 Attributes on formal parameters of functions, closures and function pointers
 have no inherent meaning in the type system or elsewhere. Semantics, if there
 are any, are given by the attributes themselves on a case by case basis or by
 tools external to a Rust compiler.
 
-### Built-in attributes
+#### Built-in attributes
 
 The built-in attributes that are permitted on the parameters are:
 
@@ -461,7 +461,7 @@ The built-in attributes that are permitted on the parameters are:
 All other built-in attributes are for the time being rejected with a *semantic*
 check resulting in a compilation error.
 
-### Macro attributes
+#### Macro attributes
 
 Finally, a registered `#[proc_macro_attribute]` may not be attached directly
 to a formal parameter. For example, if given:
@@ -477,27 +477,27 @@ then it is not legal to write:
 fn foo(#[attr] x: u8) { .. }
 ```
 
-## Dynamic semantics
+### Dynamic semantics
 
 No changes.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 All drawbacks for attributes in any location also count for this proposal.
 
 Having attributes in many different places of the language complicates its grammar.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## Why is this proposal considered the best in the space of available ideas?
+### Why is this proposal considered the best in the space of available ideas?
 
 This proposal goes the path of having attributes in more places of the language.
 It nicely plays together with the advance of procedural macros and macros 2.0
 where users can define their own attributes for their special purposes.
 
-## Alternatives
+### Alternatives
 
 An alternative to having attributes for formal parameters might be to just use
 the current set of available attributable items to store meta information about
@@ -515,14 +515,14 @@ Note that this does not work in all situations (for example closures) and might
 involve even more complexity in user's code than simply allowing attributes on
 formal function parameters.
 
-## Impact
+### Impact
 
 The impact will be that users might create custom attributes when designing
 procedural macros involving formal function parameters.
 
 There should be no breakage of existing code.
 
-## Variadics and `fn` pointers
+### Variadics and `fn` pointers
 
 In this proposal it is legal to write `#[attr] ...` as well as `fn(#[attr] u8)`.
 The primary justification for doing so is that conditional compilation with
@@ -530,7 +530,7 @@ The primary justification for doing so is that conditional compilation with
 that of `fn` items is somewhat shared, and since `...` is the tail of a
 list, allowing attributes there makes for a simpler grammar.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Some example languages that allow for attributes on formal function parameter
@@ -539,21 +539,21 @@ positions are Java, C#, and C++.
 Also note that attributes in other parts of the Rust language could be
 considered prior art to this proposal.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None as of yet.
 
-# Future possibilities
+## Future possibilities
 
-## Attributes in more places
+### Attributes in more places
 
 [RFC 2602]: https://github.com/rust-lang/rfcs/pull/2602
 
 In the pursuit of allowing more flexible DSLs and more ergonomic conditional
 compilation, [RFC 2602] builds upon this RFC.
 
-## Documentation comments
+### Documentation comments
 
 In this RFC, we have not allowed documentation comments on parameters.
 For example, you may not write:
@@ -581,7 +581,7 @@ fn foo(
 In the future, we may want to consider supporting this form of documentation.
 This will require support in `rustdoc` to actually display the information.
 
-## `#[proc_macro_attribute]`
+### `#[proc_macro_attribute]`
 
 In this RFC we stated that `fn foo(#[attr] x: u8) { .. }`,
 where `#[attr]` is a `#[proc_macro_attribute]` is not allowed.

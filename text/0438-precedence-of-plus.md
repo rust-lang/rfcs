@@ -2,12 +2,12 @@
 - RFC PR: [rust-lang/rfcs#438](https://github.com/rust-lang/rfcs/pull/438)
 - Rust Issue: [rust-lang/rust#19092](https://github.com/rust-lang/rust/issues/19092)
 
-# Summary
+## Summary
 
 Change the precedence of `+` (object bounds) in type grammar so that
 it is similar to the precedence in the expression grammars.
 
-# Motivation
+## Motivation
 
 Currently `+` in types has a much higher precedence than it does in expressions.
 This means that for example one can write a type like the following:
@@ -34,7 +34,7 @@ fn foo<F>(f: F)
 In this example, it is unclear whether `F` returns an object which is
 `Send`, or whether `F` itself is `Send`.
 
-# Detailed design
+## Detailed design
 
 This RFC proposes that the precedence of `+` be made lower than unary
 type operators. In addition, the grammar is segregated such that in
@@ -78,15 +78,15 @@ require a terminator as it has no "open-ended" expansions. `SUM`, in
 contrast, can be extended any number of times via the `+` token. Hence
 is why `SUM` must be enclosed in parens to make it into a `TYPE`.
     
-# Drawbacks
+## Drawbacks
 
 Common types like `&'a Foo+'a` become slightly longer (`&'a (Foo+'a)`).
 
-# Alternatives
+## Alternatives
 
 We could live with the inconsistency between the type/expression
 grammars and disambiguate where clauses in an ad-hoc way.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1868](https://github.com/rust-lang/rfcs/pull/1868)
 - Rust Issue: [rust-lang/rust#41619](https://github.com/rust-lang/rust/issues/41619)
 
-# Summary
+## Summary
 [summary]: #summary
 
 There has long been a desire to expand the number of platform- and
@@ -20,10 +20,10 @@ The lint is intended to make the existing `std::os` module obsolete, to allow
 expansion (and subsetting) of the standard library, and to provide deeper
 checking for portability across the ecosystem.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Background: portability and the standard library
+### Background: portability and the standard library
 
 One of the goals of the standard library is to provide an interface to hardware
 and system services. In doing so, there were several competing principles that
@@ -56,7 +56,7 @@ The way we balanced these principles was roughly as follows:
   but *still* makes some hardware assumptions (e.g. about atomics and floating
   point support).
 
-## Problems with the status quo
+### Problems with the status quo
 
 The above strategy has served us fairly well in the first year since Rust 1.0,
 but it's increasingly holding us back from enhancements we'd like to make.
@@ -118,7 +118,7 @@ It's also suboptimal in a few ways, even for the needs it covers.
 [no floats]: https://github.com/rust-lang/rfcs/pull/1596
 [facade]: https://github.com/rust-lang/rfcs/pull/40
 
-## What are our portability goals?
+### What are our portability goals?
 
 Taking a step back from the specific problems with the status quo, **it's worth
 thinking about what it means for Rust to be "portable", and what is realistic to
@@ -159,10 +159,10 @@ Rust code toward at least mainstream portability, we will need to do so in a way
 that doesn't require actually compiling and testing for all mainstream
 scenarios**.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## The basic idea
+### The basic idea
 
 The core problem we want to solve is:
 
@@ -297,7 +297,7 @@ using `cfg`, which means a "speedbump" has already been passed.
 
 With that overview in mind, let's dig into the details.
 
-## The lint definition
+### The lint definition
 
 The lint is structured somewhat akin to a type and effect system: roughly
 speaking, items that are labeled with a given `cfg` assumption can only be used
@@ -330,7 +330,7 @@ could invoke an item with portability `unix` and/or `target_pointer_width =
 To fully define the lint, though, we need to give more details about what
 "narrower" means, and how referenced item portability is determined.
 
-### Comparing portabilities
+#### Comparing portabilities
 
 **What does it mean for a portability to be narrower?** In general, portability
 is a logical expression, using the operators `all`, `any`, `not` on top of
@@ -347,7 +347,7 @@ specific to our use-case. In the limit, there are also many well-known
 techniques for solving SAT efficiently even on very large examples that arise in
 real-world usage.
 
-#### Axioms
+##### Axioms
 
 Another aspect of portability comparison is the relationship between things like
 `unix` and `linux`. In logical terms, we want to assume that `linux` implies
@@ -377,7 +377,7 @@ such nonsensical situations. However, the precise details of how these
 implications are specified---and what implications are desired---are left as
 implementation details that need to be worked out with real-world experience.
 
-### Determining the portability of referenced items
+#### Determining the portability of referenced items
 
 **How is the portability of a referenced item determined?** The lint will
 resolve an item to its definition, and use the portability of that definition,
@@ -411,14 +411,14 @@ fn invoke() {
 }
 ```
 
-## The story for `std`
+### The story for `std`
 
 With these basic mechanisms in hand, let's sketch out how we might apply them to
 the standard library to achieve our initial goals. This part of the RFC should
 not be considered normative; it's left to the implementation to make the final
 determination about how to set up the standard library.
 
-### The mainstream platform
+#### The mainstream platform
 
 The "mainstream platform" will be expressed via a new primitive `cfg` pattern
 called `std`. This is the **default portability of all crates**, unless
@@ -427,7 +427,7 @@ opted-out (see below on "subsetting `std`"). Likewise, most items in `std` will
 below). These two facts together mean that existing uses of `std` will continue
 to work without issuing any warnings.
 
-### Expanding `std`
+#### Expanding `std`
 
 With the above setup, handling extensions to `std` with APIs like `as_raw_fd` is
 straightforward. In particular, we can write:
@@ -459,7 +459,7 @@ will also do the right thing for the lint.
 In short, for expansions there's basically nothing to do. You just add the API
 in its natural location, with its natural `cfg`, and everything works out.
 
-### Subsetting `std`
+#### Subsetting `std`
 
 What about subsets of `std`?
 
@@ -513,7 +513,7 @@ out of `cfg(std)`, and use `cfg` as little as possible, adding features to their
 whitelist only after deciding they're truly needed, or abstracting over them
 (such as using threading for parallelism only when it was available).
 
-## Proposed rollout
+### Proposed rollout
 
 The most pressing problem in `std` is the desire for expansion, rather than
 subsetting, so we should start there. The `cfg` needed for expansion is totally
@@ -522,7 +522,7 @@ straightforward, and will allow us to gain experience with the lint.
 Later, we can start exploring subsets of `std`, which will likely require some
 more thoughtful design to find the right granularity.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are several potential drawbacks to the approach of this RFC:
@@ -545,7 +545,7 @@ While the fact that it's a lint gives us more leeway to experiment, it's also a
 lint that could produce widespread warnings throughout the ecosystem, so we need
 to exercise care.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 The main alternatives are:
@@ -564,7 +564,7 @@ The main alternatives are:
   downside is that you get much less help making sure that your APIs are
   properly labeled in place.
 
-# How we teach this
+## How we teach this
 [how-we-teach-this]: #how-we-teach-this
 
 For people simply using libraries, this feature "teaches itself" by generating
@@ -576,7 +576,7 @@ For library authors, the documentation for `cfg` and `match_cfg` would explain
 the implications for the lint, and walk through several examples illustrating
 the scenarios that arise in practice.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 ### Extensions to `cfg` itself
@@ -604,9 +604,9 @@ It's unclear whether, or how, to extend this approach to deal with Cargo
 features. In particular, features are namespaced per crate, so there's no way to
 use the `cfg` system today to talk about upstream features.
 
-# Appendix: possible extensions
+## Appendix: possible extensions
 
-## `match_cfg`
+### `match_cfg`
 
 The original version of this RFC was more expansive, and proposed a `match_cfg`
 macro that provided some additional checking.

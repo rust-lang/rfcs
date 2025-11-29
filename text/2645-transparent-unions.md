@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2645](https://github.com/rust-lang/rfcs/pull/2645)
 - Rust Issue: [rust-lang/rust#60405](https://github.com/rust-lang/rust/issues/60405)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow `#[repr(transparent)]` on `union`s and univariant `enum`s that have exactly one non-zero-sized field (just like `struct`s).
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Some `union` types are thin newtype-style wrappers around another type, like `MaybeUninit<T>` (and [once upon a time](https://doc.rust-lang.org/1.28.0/src/core/mem.rs.html#955), `ManuallyDrop<T>`). This type is intended to be used in the same places as `T`, but without being `#[repr(transparent)]` the actual compatibility between it and `T` is left unspecified.
@@ -23,7 +23,7 @@ Making types like these `#[repr(transparent)]` would be useful in certain cases.
 
 Transparent `union`s and univariant `enum`s are a nice complement to transparent `struct`s, and this RFC rounds out the `#[repr(transparent)]` feature.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 A `union` may be `#[repr(transparent)]` in exactly the same conditions in which a `struct` may be `#[repr(transparent)]`. An `enum` may be `#[repr(transparent)]` if it has exactly one variant, and that variant matches the same conditions which `struct` requires for transparency. Some concrete illustrations follow.
@@ -126,7 +126,7 @@ pub enum TooManyVariants {
 }
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The logic controlling whether a `union` of type `U` may be `#[repr(transparent)]` should match the logic controlling whether a `struct` of type `S` may be `#[repr(transparent)]` (assuming `U` and `S` have the same generic parameters and fields). An `enum` of type `E` may be `#[repr(transparent)]` if it has exactly one variant, and that variant follows all the rules and logic controlling whether a `struct` of type `S` may be `#[repr(transparent)]` (assuming `E` and `S` have the same generic parameters, and `E`'s variant and `S` have the same and fields).
@@ -137,12 +137,12 @@ Like transparent `struct`s, transparent `union`s and `enum`s are FFI-safe if and
 
 A `union` may not be eligible for the same nonnull-style optimizations that a `struct` or `enum` (with the same fields) are eligible for. Adding `#[repr(transparent)]` to  `union` does not change this. To give a more concrete example, it is unspecified whether `size_of::<T>()` is equal to `size_of::<Option<T>>()`, where `T` is a `union` (regardless of whether it is transparent). The Rust compiler is free to perform this optimization if possible, but is not required to, and different compiler versions may differ in their application of these optimizations.  
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 `#[repr(transparent)]` on a `union` or `enum` is of limited use. There are cases where it is useful, but they're not common and some users might unnecessarily apply `#[repr(transparent)]` to a type in a cargo-cult fashion.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 It would be nice to make `MaybeUninit<T>` `#[repr(transparent)]`. This type is a `union`, and thus this RFC is required to allow making it transparent. One example in which a transparent representation would be useful is for unused parameters in an FFI-function:
@@ -194,7 +194,7 @@ pub extern "C" fn init_cryptor(cryptor: &mut core::mem::MaybeUninit<Cryptor>) ->
 }
 ```
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (which introduced `#[repr(transparent)]`) for some discussion on applying the attribute to a `union` or `enum`. A summary of the discussion:
@@ -216,14 +216,14 @@ See [the discussion on RFC #1758](https://github.com/rust-lang/rfcs/pull/1758) (
 
 In summary, many of the questions regarding `#[repr(transparent)]` on a `union` or `enum` were the same as applying it to a multi-field `struct`. These questions have since been answered, so there should be no problems with applying those same answers to `union` univariant `enum`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 The role of `#[repr(transparent)]` in nonnull-style optimizations is not entirely clear. Specifically, it is unclear whether the user can rely on these optimizations to be performed when they make a type transparent. [Transparent `union`s somewhat complicate the matter](https://github.com/rust-lang/rfcs/pull/2645#issuecomment-470699497). General consensus seems to be that the compiler is free to decide where and when to perform nonnull-style optimizations on `union`s (regardless of whether or not the `union` is transparent), and no guarantees are made to the user about when and if those optimizations will be applied. It is still an open question exactly what guarantees (if any) Rust makes about transparent `struct`s (and `enum`s) and nonnull-style optimizations.
 
 This RFC doesn't propose any changes to transparent `struct`s, and so does not strictly depend on this question being resolved. But since this RFC is attempting to round out the `#[repr(transparent)]` feature, it seems reasonable to dedicate some time to attempting to round out the guarantees about `#[repr(transparent)]` on `struct`s.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 If a `union` has multiple non-ZST fields, a future RFC could propose a way to choose the representation of that `union` ([example](https://internals.rust-lang.org/t/pre-rfc-transparent-unions/9441/6)).

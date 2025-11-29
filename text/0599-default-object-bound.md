@@ -2,7 +2,7 @@
 - RFC PR: [rust-lang/rfcs#599](https://github.com/rust-lang/rfcs/pull/599)
 - Rust Issue: [rust-lang/rust#22211](https://github.com/rust-lang/rust/issues/22211)
 
-# Summary
+## Summary
 
 Add a default lifetime bound for object types, so that it is no longer
 necessary to write things like `Box<Trait+'static>` or `&'a
@@ -23,9 +23,9 @@ Examples:
 Cases where the lifetime bound is either given explicitly or can be
 inferred from the traits involved are naturally unaffected.
 
-# Motivation
+## Motivation
 
-#### Current situation
+### Current situation
 
 As described in [RFC 34][34], object types carry a single lifetime
 bound. Sometimes, this bound can be inferred based on the traits
@@ -83,7 +83,7 @@ Box<Message> // ERROR: 'static no longer inferred from `Send` supertrait
 Box<Writer+Send> // ERROR: 'static no longer inferred from `Send` bound
 ```
 
-#### The proposed rule
+### The proposed rule
 
 This RFC proposes to use the context in which an object type appears
 to derive a sensible default. Specifically, the default begins as
@@ -145,7 +145,7 @@ could in fact employ the proposed defaults without a problem, though
 the types would be different than the types as they appear in the
 source today, but this has not been fully verified.)
 
-# Detailed design
+## Detailed design
 
 This section extends the high-level rule above with support for
 user-defined types, and also describes potential interactions with
@@ -300,7 +300,7 @@ object types give the user less power than if the user had direct
 access to the underlying data; the user is confined to accessing the
 underlying data through a known interface.
 
-# Drawbacks
+## Drawbacks
 
 **A. Breaking change.** This change has the potential to break some
 existing code, though given the statistics gathered we believe the
@@ -334,7 +334,7 @@ that this gave rise to particularly confounding errors, since the
 errors were based on annotations that were inferred and hence not
 always obvious.
 
-# Alternatives
+## Alternatives
 
 1. **Leave things as they are with an improved error message.**
 Besides the general dissatisfaction with the current system, a big
@@ -357,7 +357,7 @@ the option of inferring `T:'a` annotations, it means that objects
 appearing in user-defined types like `Ref<'a, Trait>` get the wrong
 default.
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 

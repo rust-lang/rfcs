@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3697](https://github.com/rust-lang/rfcs/pull/3697)
 - Rust Issue: [rust-lang/rust#143547](https://github.com/rust-lang/rust/issues/143547)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Support defining `macro_rules!` macros that work as attribute macros.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Many crates provide attribute macros. Today, this requires defining proc
@@ -33,7 +33,7 @@ using declarative macros; for instance, see
 [smol-macros](https://crates.io/crates/smol-macros), which provides a `main!`
 macro and recommends using it with `macro_rules_attribute::apply`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 When defining a `macro_rules!` macro, you can prefix some of the macro's rules
@@ -75,7 +75,7 @@ An `attr` rule may be prefixed with `unsafe`. Invoking an attribute macro in a
 way that makes use of a rule declared with `unsafe attr` requires the unsafe
 attribute syntax `#[unsafe(attribute_name)]`.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The grammar for macros is extended as follows:
@@ -115,7 +115,7 @@ If a user invokes a macro as an attribute and that macro does not have any
 `attr` rules, the compiler should give a clear error stating that the macro is
 not usable as an attribute because it does not have any `attr` rules.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This feature will not be sufficient for *all* uses of proc macros in the
@@ -129,7 +129,7 @@ evaluate many new use cases that previously weren't written using
 `macro_rules`, and we should consider quality-of-life improvements to better
 support those use cases.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 Adding this feature will allow many crates in the ecosystem to drop their proc
@@ -175,7 +175,7 @@ except for the most common constructs; however, `cfg_attr` provides precedent
 for this abbreviation, and `attr` appears repeatedly in multiple rules which
 motivates abbreviating it.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 We have had proc-macro-based attribute macros for a long time, and the
@@ -192,7 +192,7 @@ using declarative macros; for instance, see
 [smol-macros](https://crates.io/crates/smol-macros), which provides a `main!`
 macro and recommends using it with `macro_rules_attribute::apply`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 Is an attribute macro allowed to recursively invoke itself by emitting the
@@ -215,7 +215,7 @@ evaluate many new use cases that previously weren't written using
 `macro_rules`, and we should consider quality-of-life improvements to better
 support those use cases.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 We should provide a way to define `derive` macros declaratively, as well.

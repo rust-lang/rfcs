@@ -133,7 +133,7 @@ The full slate of project goals are as follows. These goals all have identified 
 | [rustc-perf improvements](https://rust-lang.github.io/rust-project-goals/2025h1/perf-improvements.html)                                                             | [David Wood][]       | [compiler], [infra]                                            |
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The following table highlights the asks from each affected team.
@@ -432,7 +432,7 @@ Teams often use these notes to indicate the person on the team signed up to do t
 \*1: Discussed with [Eric Holk][] and [Vincenzo Palazzo][]; lang would decide whether to delegate specific matters to wg-macros ([from here](https://rust-lang.github.io/rust-project-goals/2025h1/macro-improvements.html))
 
 
-### Definitions
+## Definitions
 
 Definitions for terms used above:
 
@@ -466,9 +466,9 @@ Definitions for terms used above:
 [SC]: ./Rust-for-SciComp.md
 [OC]: ./optimize-clippy.md
 
-# Frequently asked questions
+## Frequently asked questions
 
-## What goals were not accepted?
+### What goals were not accepted?
 
 The following goals were proposed but ultimately not accepted, either for want of resources or consensus. In some cases narrower versions of these goals were prepared.
 
@@ -478,7 +478,7 @@ The following goals were proposed but ultimately not accepted, either for want o
 | [Rust Specification Testing](https://rust-lang.github.io/rust-project-goals/2025h1/spec-testing.html) | [Connor Horman][] | (no tracking issue) |
 
 
-## What do the column names like "Ded. r?" mean?
+### What do the column names like "Ded. r?" mean?
 
 [valid_team_asks]: #what-do-the-column-names-like-ded-r-mean
 

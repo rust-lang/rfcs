@@ -2,14 +2,12 @@
 - RFC PR #: https://github.com/rust-lang/rfcs/pull/184
 - Rust Issue #: https://github.com/rust-lang/rust/issues/16950
 
-Summary
-=======
+## Summary
 
 Add simple syntax for accessing values within tuples and tuple structs behind a
 feature gate.
 
-Motivation
-==========
+## Motivation
 
 Right now accessing fields of tuples and tuple structs is incredibly painful—one
 must rely on pattern-matching alone to extract values. This became such a
@@ -23,8 +21,7 @@ is still a hack which is not a real solution to the problem at hand. It also
 only supports tuples of length up to twelve, which is normally not a problem but
 emphasises how bad the current situation is.
 
-Detailed design
-===============
+## Detailed design
 
 Add syntax of the form `<expr>.<integer>` for accessing values within tuples and
 tuple structs. This (and the functionality it provides) would only be allowed
@@ -54,13 +51,11 @@ assert_eq!(foo2._0, 5);
 Effectively, a tuple or tuple struct field is just a normal named field with an
 integer for a name.
 
-Drawbacks
-=========
+## Drawbacks
 
 This adds more complexity that is not strictly necessary.
 
-Alternatives
-============
+## Alternatives
 
 Stay with the status quo. Either recommend using a struct with named fields or
 suggest using pattern-matching to extract values. If extracting individual
@@ -68,7 +63,6 @@ fields of tuples is really necessary, the `TupleN` traits could be used instead,
 and something like `#[deriving(Tuple3)]` could possibly be added for tuple
 structs.
 
-Unresolved questions
-====================
+## Unresolved questions
 
 None.

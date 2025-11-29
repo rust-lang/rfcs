@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2043](https://github.com/rust-lang/rfcs/pull/2043)
 - Rust Issue: [rust-lang/rust#44488](https://github.com/rust-lang/rust/issues/44488)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add an intrinsic (`fn align_offset(ptr: *const (), align: usize) -> usize`)
@@ -18,7 +18,7 @@ the unaligned prefix, the aligned center part and the unaligned trailing element
 The function is unsafe because it produces a `&U` to the memory location of a `T`,
 which might expose padding bytes or violate invariants of `T` or `U`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The standard library (and most likely many crates) use code like
@@ -37,10 +37,10 @@ means that `miri` cannot do utf8-checking, since that code contains such
 optimizations. Without utf8-checking, Rustc's future const evaluation would not
 be able to convert a `[u8]` into a `str`.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
-## supporting intrinsic
+### supporting intrinsic
 
 Add a new intrinsic
 
@@ -77,7 +77,7 @@ fn align_offset(ptr: *const (), align: usize) -> usize {
 The `align` parameter must be a power of two and smaller than `2^32`.
 Usually one should pass in the result of an `align_of` call.
 
-## standard library functions
+### standard library functions
 
 Add a new method `align_offset` to `*const T` and `*mut T`, which forwards to the
 `align_offset` intrinsic.
@@ -133,10 +133,10 @@ cannot rely on any behaviour except that the `&[U]`'s elements are correctly
 aligned and that all bytes of the original slice are present in the resulting
 three slices.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
-## By example
+### By example
 
 On most platforms alignment is a well known concept independent of Rust.
 Currently unsafe Rust code doing alignment checks needs to reproduce the known
@@ -151,7 +151,7 @@ choice:
     * `align_to` has a slight overhead for creating the slices in case not all
         slices are used
 
-### Example 1 (pointers)
+#### Example 1 (pointers)
 
 The standard library uses an alignment optimization for quickly
 skipping over ascii code during utf8 checking a byte slice. The current code
@@ -176,7 +176,7 @@ let align = unsafe {
 };
 ```
 
-## Example 2 (slices)
+### Example 2 (slices)
 
 The `memchr` impl in the standard library explicitly uses the three phases of
 the `align_to` functions:
@@ -263,7 +263,7 @@ if let Some(index) = position {
 tail.iter().position(|elt| *elt == x).map(|i| head.len() + mid.len() + i)
 ```
 
-## Documentation
+### Documentation
 
 A lint could be added to `clippy` which detects hand-written alignment checks and
 suggests to use the `align_to` function instead.
@@ -274,21 +274,21 @@ in order to increase the visibility of the function. The documentation of
 since that might not be supported on all platforms and is prone to implementation
 errors.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 None known to the author.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
-## Duplicate functions without optimizations for miri
+### Duplicate functions without optimizations for miri
 
 Miri could intercept calls to functions known to do alignment checks on pointers
 and roll its own implementation for them. This doesn't scale well and is prone
 to errors due to code duplication.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * produce a lint in case `sizeof<T>() % sizeof<U>() != 0` and in case the expansion

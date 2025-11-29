@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1399](https://github.com/rust-lang/rfcs/pull/1399)
 - Rust Issue: [rust-lang/rust#33158](https://github.com/rust-lang/rust/issues/33158)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extend the existing `#[repr]` attribute on structs with a `packed = "N"` option to
 specify a custom packing for `struct` types.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Many C/C++ compilers allow a packing to be specified for structs which
@@ -25,7 +25,7 @@ because the overall alignment of the struct would end up as 1 even though it
 needs to be N (or the default if that is smaller than N), so this fills in a gap
 which is impossible to do in Rust at the moment.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The `#[repr]` attribute on `struct`s will be extended to include a form such as:
@@ -74,10 +74,10 @@ Specifying `#[repr(packed = "A")]` and `#[repr(align = "B")]` should still pack
 together fields with the packing specified, but then increase the overall
 alignment to the alignment specified. Depends on [RFC #1358][rfc1358] landing.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 * The alternative is not doing this and forcing people to continue using
@@ -85,7 +85,7 @@ alignment to the alignment specified. Depends on [RFC #1358][rfc1358] landing.
   an alignment of 1 which is often wrong.
 * Alternatively a new attribute could be used such as `#[pack]`.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * The behavior specified here should match the behavior of MSVC at least. Does

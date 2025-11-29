@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2396](https://github.com/rust-lang/rfcs/pull/2396)
 - Rust Issue: [rust-lang/rust#69098](https://github.com/rust-lang/rust/issues/69098)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This RFC attempts to resolve some of the unresolved questions in [RFC 2045
@@ -18,7 +18,7 @@ without adding run-time overhead.
 
 [RFC 2045 (`target_feature`)]: https://github.com/rust-lang/rfcs/pull/2045
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 > This is a brief recap of [RFC 2045 (`target_feature`)].
@@ -59,7 +59,7 @@ reasons:
 
 The solution proposed in this RFC solves these problems.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Currently, we require that `#[target_feature]` functions be declared as `unsafe
@@ -162,7 +162,7 @@ static x: fn () -> () = meow;
 static y: unsafe fn () -> () = meow as unsafe fn()->(); // OK
 ```
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 This RFC proposes to changes to the language with respect to [RFC 2045 (`target_feature`)]:
@@ -175,35 +175,35 @@ are not marked as `unsafe`
 
 * safe `#[target_feature]` functions are not assignable to safe `fn` pointers.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This RFC extends the typing rules for `#[target_feature]`, which might
 unnecessarily complicate future language features like an effect system.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 Since `#[target_feature]` are effects or restrictions (depending on whether we
 `enable` or `disable` them), the alternative would be to integrate them with an
 effect system. 
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 [RFC2212 target feature unsafe](https://github.com/rust-lang/rfcs/pull/2212)
 attempted to solve this problem. This RFC builds on the discussion that was
 produced by that RFC and by many discussions in the `stdsimd` repo.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
-## Negative features
+### Negative features
 
 [RFC 2045 (`target_feature`)] introduced the `#[target_feature(enable = "x")]`
 syntax to allow introducing negative features in future RFCs in the form of
@@ -226,7 +226,7 @@ fn baz() {
 }
 ```
 
-## Effect system
+### Effect system
 
 It is unclear how `#[target_feature]` would interact with an effect system for
 Rust like the one being tracked

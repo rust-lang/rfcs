@@ -3,17 +3,17 @@
 - RFC PR: [rust-lang/rfcs#3027](https://github.com/rust-lang/rfcs/pull/3027)
 - Rust Issue: [rust-lang/rust#80619](https://github.com/rust-lang/rust/issues/80619)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Restrict (implicit) [promotion][rfc1414], such as lifetime extension of rvalues, to infallible operations.
 
 [rfc1414]: https://github.com/rust-lang/rfcs/blob/master/text/1414-rvalue_static_promotion.md
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
-## Background on promotion and lifetime extension 
+### Background on promotion and lifetime extension 
 
 Rvalue promotion (as it was originally called) describes the process of taking an rvalue that can be computed at compile-time, and "promoting" it to a constant, so that references to that rvalue can have `'static` lifetime.
 It has been introduced by [RFC 1414][rfc1414].
@@ -34,7 +34,7 @@ These uses of promotion fall into two categories:
 
 For more details, see the [const-eval WG writeup][promotion-status].
 
-## The problem with implicit promotion
+### The problem with implicit promotion
 
 Explicit promotion is mostly fine as-is.
 This RFC is concerned with implicit promotion.
@@ -81,7 +81,7 @@ For more details, see [the MCP that preceded this RFC](https://github.com/rust-l
 
 [promotion-status]: https://github.com/rust-lang/const-eval/blob/33053bb2c9a0c6a17acd3116dd47bbb360e060db/promotion.md
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 (Based on [RFC 1414][rfc1414])
@@ -134,13 +134,13 @@ Notably absent from *both* of the above list is dereferencing a reference.
 This operation is, in principle, infallible---but due to the concern mentioned above about validity of consts, it is only infallible if the validity check in constants traverses through references.
 Currently, the check stops when hitting a reference to a static, so currently, dereferencing a reference can *not* be considered an infallible operation for the purpose of promotion.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 See above for (hopefully) all the required details.
 What exactly the rules will end up being for which operations can be promoted will depend on experimentation to avoid breaking too much existing code, as discussed below.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The biggest drawback is that this will break some existing code.
@@ -157,7 +157,7 @@ The long-term plan is that such code can switch to [inline `const` expressions](
 However, inline `const` expressions are still in the process of being implemented, and for now are specified to not support code that depends on generic parameters in the context, which is a loss of expressivity when compared with implicit promotion.
 More complex work-around are possible for this using associated `const`, but they can become quite tedious.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 The rationale has been described with the motivation.
@@ -185,14 +185,14 @@ Conversely, if this plan all works out, one alternative proposal that goes even 
 This would avoid adding a new class of expression in between "patterns" and "const-evaluable".
 On the other hand, it is much more restrictive (basically allowing only literals and constructors), and does not actually help simplify the compiler.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 A few changes have landed in the recent past that already move us, step-by-step, towards the goal outlined in this RFC:
 * Treat `const fn` like `fn` for promotability: https://github.com/rust-lang/rust/pull/75502, https://github.com/rust-lang/rust/pull/76411
 * Do not promote `union` field accesses: https://github.com/rust-lang/rust/pull/77526
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 The main open question is to what extend existing code relies on lifetime extension of fallible operations, i.e., if we can get away with the plan outlined here.
@@ -201,7 +201,7 @@ In `fn` and `const fn`, only a few fallible operations remain: division, modulo,
 In `const` and `static`, we additionally promote calls to arbitrary `const fn`, which of course could fail in arbitrary ways -- crater experiments will have to show if code actually relies on this.
 A fall-back plan in case this RFC would break too much code has been [described above][rationale-and-alternatives].
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 A potential next step after this RFC could be to tackle the remaining main promotion "hack", the `#[rustc_promotable]` attribute.

@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2027](https://github.com/rust-lang/rfcs/pull/2027)
 - Rust Issue: [rust-lang/rust#43561](https://github.com/rust-lang/rust/issues/43561)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Tweak the object safety rules to allow using trait object types for static
 dispatch, even when the trait would not be safe to instantiate as an object.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Because Rust features a very expressive type system, users often use the type
@@ -52,7 +52,7 @@ object at runtime.
 This RFC proposes to lift that restriction, allowing trait object types to be
 used for static dispatch even when the trait is not object safe.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Today, the rules for object safey work like this:
@@ -79,7 +79,7 @@ object-safe case. The new rules will be:
 This change to the rules will allow trait object types to be used for static
 dispatch.
 
-# How We Teach This
+## How We Teach This
 [how-we-teach-this]: #how-we-teach-this
 
 This is just a slight tweak to how object safety is implemented. We will need
@@ -90,7 +90,7 @@ However, this does not need to be **highlighted** to users per se in the
 explanation of object safety. This tweak will only impact advanced uses of the
 trait system.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is a change to an existing system, its always possible it could cause
@@ -104,7 +104,7 @@ unsafe code, by transmuting from `std::raw::TraitObject`. This would be
 extremely unsafe and users almost certainly should not do this. In the status
 quo, they just can't.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 We could instead make it possible for every trait to be object safe, by
@@ -126,7 +126,7 @@ However, this puts the burden on users to add all of these additional bounds.
 Possibly we should add bounds like this in addition to this RFC, since they
 are already valid on functions, just not types and consts.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 How does this impact the implementation in rustc?

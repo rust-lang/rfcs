@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#1581](https://github.com/rust-lang/rfcs/pull/1581)
 - Rust Issue: [rust-lang/rust#35602](https://github.com/rust-lang/rust/issues/35602)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a marker trait `FusedIterator` to `std::iter` and implement it on `Fuse<I>` and
@@ -12,7 +12,7 @@ promises to behave as if `Iterator::fuse()` had been called on it (i.e. return
 `None` forever after returning `None` once). Then, specialize `Fuse<I>` to be a
 no-op if `I` implements `FusedIterator`.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Iterators are allowed to return whatever they want after returning `None` once.
@@ -134,7 +134,7 @@ fn range(b: &mut test::Bencher) {
 }
 ```
 
-# Detailed Design
+## Detailed Design
 [design]: #detailed-design
 
 ```
@@ -182,7 +182,7 @@ impl<I> Iterator for Fuse<I> where I: FusedIterator {
 
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 1. Yet another special iterator trait.
@@ -197,13 +197,13 @@ impl<I> Iterator for Fuse<I> where I: FusedIterator {
    time.
 
 
-# Alternatives
+## Alternatives
 
-## Do Nothing
+### Do Nothing
 
 Just pay the overhead on the rare occasions when fused is actually used.
 
-## IntoFused
+### IntoFused
 
 Use an associated type (and set it to `Self` for iterators that already provide
 the fused guarantee) and an `IntoFused` trait:
@@ -246,7 +246,7 @@ associated types is a breaking change), and can't be used to optimize the
 iterators returned from `Iterator::fuse` (users would *have* to call
 `IntoFused::into_fused`).
 
-## Associated Type
+### Associated Type
 
 If we add the ability to condition associated types on `Self: Sized`, I believe
 we can add them without it being a breaking change (associated types only need
@@ -270,7 +270,7 @@ trait Iterator {
 However, changing an iterator to take advantage of this would be a breaking
 change.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 Should this trait be unsafe? I can't think of any way generic unsafe code could

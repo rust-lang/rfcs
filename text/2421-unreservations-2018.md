@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2421](https://github.com/rust-lang/rfcs/pull/2421)
 - Rust Issue: [rust-lang/rust#51115](https://github.com/rust-lang/rust/issues/51115)
 
-# Summary
+## Summary
 [summary]: #summary
 
 We unreserve:
@@ -12,7 +12,7 @@ We unreserve:
 + `alignof`
 + `offsetof`
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 We are currently not using any of the reserved keywords listed in the [summary]
@@ -20,12 +20,12 @@ for anything in the language at the moment. We also have no intention of using
 the keywords for anything in the future, and as such, we want to unreserve them
 so that rustaceans can use them as identifiers.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 See the [reference-level-explanation].
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 [list of reserved keywords]: https://doc.rust-lang.org/book/second-edition/appendix-01-keywords.html#keywords-currently-in-use
@@ -40,7 +40,7 @@ The keywords to unreserve are:
 + `alignof`
 + `offsetof`
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The only drawback is that we're not able to use each listed word as a keyword
@@ -49,7 +49,7 @@ made a mistake.
 
 See the rationale for potential risks with each keyword.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 There's only one alternative: Not unreserving all listed / some keywords.
@@ -57,7 +57,7 @@ There's only one alternative: Not unreserving all listed / some keywords.
 Not unreserving a keyword would make the word unavailable for use as an
 identifier.
 
-## General policy around unreservations
+### General policy around unreservations
 
 This RFC establishes a general rationale and policy for keyword unreservation:
 *If we are not using a keyword for anything in the language, and we are sure
@@ -66,7 +66,7 @@ permissible to unreserve a keyword and it is motivated.
 Additionally, if there is a desire for a keyword to be used as an identifier,
 this can in some cases outweigh very hypothetical and speculative language features.*
 
-## Rationale for `pure`
+### Rationale for `pure`
 
 This keyword used to be used for `pure fn`, that is: as an effect.
 
@@ -76,11 +76,11 @@ When *generic associated types* (GATs) lands, it is likely that people would
 like to use this in their [applicative functor][applicative] and monad libraries,
 which speaks in favour of unreserving `pure`. This use case explicitly mentioned by [`@ubsan`](https://github.com/ubsan/) who requested that the keyword be unreserved for this purpose.
 
-### Potential drawbacks
+#### Potential drawbacks
 
 Examples / The reasons why we might want to keep `pure` reserved are:
 
-#### 1. Effects
+##### 1. Effects
 
 ```rust
 pure fn foo(x: Type) -> Type {
@@ -93,7 +93,7 @@ for more or less the same, and it is unlikely that we would introduce an effect
 (or restriction thereof) that is essentially `const fn` but not entirely.
 So this use case is unlikely to happen.
 
-#### 2. Explicit *`Ok`-wrapping*
+##### 2. Explicit *`Ok`-wrapping*
 
 ```rust
 fn foo() -> Result<i32, Error> {
@@ -125,12 +125,12 @@ The desugaring is also not particularly obvious when `pure` is used.
 If we did add sugar for explicit `Ok`-wrapping, we'd probably go with something
 other than `pure`.
 
-#### Summary
+##### Summary
 
 In both 1. and 2., `pure` can be contextual.
 We also don't think that the drawbacks are significant for `pure`.
 
-## Rationale for `sizeof`, `alignof`, and `offsetof`
+### Rationale for `sizeof`, `alignof`, and `offsetof`
 
 We already have [`std::mem::size_of`](https://doc.rust-lang.org/nightly/std/mem/fn.size_of.html) and similar which
 are `const fn`s or can be. In the case of `offsetof`, we would instead use
@@ -143,21 +143,21 @@ and so the error messages could be improved saying
 *"go look at `std::mem::size_of` instead"*. However, we believe it is better
 to allow users the freedom to use these keywords instead.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Not applicable.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are none.
 All reservations we will do should be resolved before merging the RFC.
 
-# Appendix
+## Appendix
 [appendix]: #appendix
 
-## Reserved keywords we probably don't want to unreserve
+### Reserved keywords we probably don't want to unreserve
 
 The following keywords are used in the nightly compiler and we are sure
 that we want to keep them:
@@ -216,9 +216,9 @@ Additionally, there are known potential use cases / RFCs for:
     }
     ```
 
-## Possible future unreservations
+### Possible future unreservations
 
-### `unsized`
+#### `unsized`
 
 This would be a modifier on types, but we already have `<T: ?Sized>` and we
 could have `T: !Sized` so there seems to be no need for keeping `unsized`.
@@ -229,7 +229,7 @@ Therefore, we will hold off on unreserving `unsized` until we have a better
 ideas of how custom DSTs will work and it's clear we don't need `unsized`
 as a keyword.
 
-### `priv`
+#### `priv`
 
 Here, `priv` is a privacy / visibility modifier on things like fields, and items.
 An example:
@@ -266,12 +266,12 @@ However, right now (2018-04-26), there is a lot of movement around the module
 system. So we would like to wait and discuss unreserving this keyword at some
 later time.
 
-### `box`
+#### `box`
 
 We use this in nightly for box patterns.
 We might want to unreserve this eventually however.
 
-### `virtual`
+#### `virtual`
 
 This annotation would be for something like virtual functions (see `dyn`).
 However, we already have `dyn`, so why would we need `virtual`?
@@ -292,7 +292,7 @@ However, there might be some use case related to specialization.
 After specialization is stable, we would like to revisit unreservation of
 `virtual`.
 
-### `final`
+#### `final`
 
 The `final` keyword is currently reserved. It is used in Java to mean two
 separate things:

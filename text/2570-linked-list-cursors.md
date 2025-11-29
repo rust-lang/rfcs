@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2570](https://github.com/rust-lang/rfcs/pull/2570)
 - Rust Issue: [rust-lang/rust#58533](https://github.com/rust-lang/rust/issues/58533)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Many of the benefits of linked lists rely on the fact that most operations
@@ -12,7 +12,7 @@ reaches the desired element. To take advantage of this, a `Cursor` interface
 can be created to efficiently edit linked lists. Furthermore, unstable
 extensions like the `IterMut` changes will be removed.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 From Programming Rust:
@@ -36,7 +36,7 @@ elements and insertion and splitting of lists at its position. This would allow
 for simplification of the `IterMut` API and a complete LinkedList
 implementation.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The cursor interface would provides two new types: `Cursor` and `CursorMut`.
@@ -50,7 +50,7 @@ splitting and splicing).
 
 Lets look at where these might be useful.
 
-## Examples
+### Examples
 
 This interface is helpful most times insertion and deletion are used together.
 
@@ -115,7 +115,7 @@ In general, the cursor interface is not the easiest way to do something.
 However, it provides a basic API that can be built on to perform more
 complicated tasks.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 One gets a cursor the exact same way as one would get an iterator. The
@@ -239,7 +239,7 @@ removed or depreciated:
 The rest of the iterator methods are stable and should probably stay untouched
 (but see below for comments).
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The cursor interface is rather clunky, and while it allows for efficient code,
@@ -252,7 +252,7 @@ However, the purpose of iterators seems to be simple, abstract and easy to use
 rather than efficient mutation, so cursors and iterators should be used
 in different places.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 There are several alternatives to this:
@@ -289,7 +289,7 @@ efficient way. Efficient code can be written by splitting linked lists often,
 and while this is a complicated way to do things, the rarity of the use case may
 justify keeping things how they are.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [cursors pseudo-rfc](https://internals.rust-lang.org/t/pseudo-rfc-cursors-reversible-iterators/386/18)
@@ -312,7 +312,7 @@ Discussion on the issue tracker about how this is currently managed with
 modifications to `IterMut`. The consensus seems to be that it is incomplete, and
 it is suggested to create a new `Cursor` and `CursorMut` types.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - How will this interface interact with iterators?

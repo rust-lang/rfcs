@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3228](https://github.com/rust-lang/rfcs/pull/3228)
 - Rust Issue: [rust-lang/rust#93857](https://github.com/rust-lang/rust/issues/93857)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a `process_group` method to `std::os::unix::process::CommandExt` that
@@ -11,7 +11,7 @@ allows setting the process group id (i.e. calling `setpgid`) in the child, thus
 enabling users to set process groups while leveraging the `posix_spawn` fast
 path.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The Unix process spawn code has two paths: a fast path that uses `posix_spawn`,
@@ -36,14 +36,14 @@ However, `posix_spawn` supports setting the process group
 (`posix_spawnattr_setpgroup`). This RFC proposes exposing that functionality,
 which allows users to set the process group id without forcing the slow path.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 `std::os::unix::process::CommandExt::process_group` allows you to set the
 process group ID of the child process. This translates to a `setpgid` call
 in the child.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 The changes needed are:
@@ -53,12 +53,12 @@ The changes needed are:
 - Add a call to `posix_spawnattr_setpgroup` on the fast path.
 - Add a call to `setpgid` on the slow path.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This marginally expands the API surface on `CommandExt`.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 - Using `pre_exec` this is a viable alternative for programs where `fork` is
@@ -68,19 +68,19 @@ This marginally expands the API surface on `CommandExt`.
   `tokio::process::Command`, which currently can be created using a
   `Command` from the std lib.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 The primary prior art here is all the other calls that already exist on
 `CommandExt` that translate to parameterizing `posix_spawn`, such as
 configuring groups, signal mask, current working directory, open pipes.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 - None known at this point.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 There are a few other `posix_spawn` options that are not supported, such as

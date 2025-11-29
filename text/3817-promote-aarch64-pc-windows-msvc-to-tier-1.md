@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#3817](https://github.com/rust-lang/rfcs/pull/3817)
 - Rust Issue: [rust-lang/rust#145671](https://github.com/rust-lang/rust/issues/145671)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Promote aarch64-pc-windows-msvc to Tier 1 with Host Tools.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 About [30% of Rust users use Windows][survey-2024], while the majority of these developers and their
@@ -16,13 +16,13 @@ customers are using x64 hardware, the usage of Arm64 Windows has been growing si
 made available in Windows 10, and has been accelerating, especially with the availability of the
 SnapDragon X processors.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 No changes required: Rust tooling for Arm64 Windows has been available for a while now so this
 doesn't affect the end user experience.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Tier 1 targets must adhere to the [Tier 1 Target Policy][tier-1-policy]. Going through these
@@ -155,13 +155,13 @@ Understood.
 
 Understood, and this will be automated once promoted to Tier 1.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The `windows-11-arm` runners provided by GitHub are relatively new, and so we do not know what the
 availability or reliability of these runners will be.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 `aarch64-pc-windows-msvc` could be left as a Tier 2 with Host Tools target, but given the importance
@@ -169,7 +169,7 @@ of this target to Microsoft and the increasing usage of Arm64 by Windows users, 
 and more likely that issues with this target will need to be treated as critical. Catching issues
 early in development will prevent the need to Beta and Stable backports.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 - [RFC 2959][rfc-2959] promoted `aarch64-unknown-linux-gnu` to Tier 1.
@@ -177,12 +177,12 @@ early in development will prevent the need to Beta and Stable backports.
 - [`stdarch` has been using using `windows-11-arm` runners][stdarch-pr] since early May.
 - LLVM has dedicated [Arm64 Windows builders][llvm-builders].
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 * Adding Arm64 Windows jobs to more Rust repos, such as `cargo`.

@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2420](https://github.com/rust-lang/rfcs/pull/2420)
 - Rust Issue: N/A. Already implemented.
 
-# Summary
+## Summary
 [summary]: #summary
 
 The keyword `proc` gets unreserved.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 We are currently not using `proc` as a keyword for anything in the language.
@@ -20,12 +20,12 @@ In the specific case of `proc`, it is a useful identifier for many things.
 In particular, it is useful when dealing with processes, OS internals and
 kernel development.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 See the [reference-level-explanation].
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 [list of reserved keywords]: https://doc.rust-lang.org/book/second-edition/appendix-01-keywords.html#keywords-currently-in-use
@@ -33,7 +33,7 @@ See the [reference-level-explanation].
 The keyword `proc` is removed from the [list of reserved keywords] and is no
 longer reserved. This is done immediately and on edition 2015.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 The only drawback is that we're not able to use `proc` as a keyword in the
@@ -50,7 +50,7 @@ Rust which has a community mixed with users used to FP, systemsy and dynamically
 checked programming languages. Moreover, `Arrow`s would most likely require HKTs
 which we might not get.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 There's only one alternative: Not doing anything.
@@ -61,12 +61,12 @@ but `proc` is no longer used for anything.
 Not unreserving this keyword would make the word unavailable for use as an
 identifier.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Not applicable.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 There are none.

@@ -3,11 +3,11 @@
 - RFC PR: [rust-lang/rfcs#1192](https://github.com/rust-lang/rfcs/pull/1192)
 - Rust Issue: [rust-lang/rust#28237](https://github.com/rust-lang/rust/issues/28237)
 
-# Summary
+## Summary
 
 Allow a `x...y` expression to create an inclusive range.
 
-# Motivation
+## Motivation
 
 There are several use-cases for inclusive ranges, that semantically
 include both end-points. For example, iterating from `0_u8` up to and
@@ -21,7 +21,7 @@ of the representation.
 The `...` syntax mirrors the current `..` used for exclusive ranges:
 more dots means more elements.
 
-# Detailed design
+## Detailed design
 
 `std::ops` defines
 
@@ -88,7 +88,7 @@ could become `(a+1)...a` where possible and `a...(a-1)` otherwise.
 
 [step_trait]: https://github.com/rust-lang/rust/issues/27741
 
-# Drawbacks
+## Drawbacks
 
 There's a mismatch between pattern-`...` and expression-`...`, in that
 the former doesn't undergo the same desugaring as the
@@ -101,7 +101,7 @@ This proposal makes the post-iteration values of the `start` and `end` fields
 constant, and thus useless.  Some of the alternatives would expose the
 last value returned from the iteration, through a more complex interface.
 
-# Alternatives
+## Alternatives
 
 An alternate syntax could be used, like
 `..=`. [There has been discussion][discuss], but there wasn't a clear
@@ -138,11 +138,11 @@ reevaluated for usefulness and conflicts with other proposed syntax.
   its different (inclusive) semantics from the `end` (exclusive) field on
   the other ranges.
 
-# Unresolved questions
+## Unresolved questions
 
 None so far.
 
-# Amendments
+## Amendments
 
 * In rust-lang/rfcs#1320, this RFC was amended to change the `RangeInclusive`
   type from a struct with a `finished` field to an enum.

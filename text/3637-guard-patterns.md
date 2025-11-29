@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#3637](https://github.com/rust-lang/rfcs/pull/3637)
 - Tracking Issue: [rust-lang/rust#129967](https://github.com/rust-lang/rust/issues/129967)
 
-# Summary
+## Summary
 
 [summary]: #summary
 
 This RFC proposes to add a new kind of pattern, the **guard pattern.** Like match arm guards, guard patterns restrict another pattern to match only if an expression evaluates to `true`. The syntax for guard patterns, `pat if condition`, is compatible with match arm guard syntax, so existing guards can be superceded by guard patterns without breakage.
 
-# Motivation
+## Motivation
 
 [motivation]: #motivation
 
 Guard patterns, unlike match arm guards, can be nested within other patterns. In particular, guard patterns nested within or-patterns can depend on the branch of the or-pattern being matched. This has the potential to simplify certain match expressions, and also enables the use of guards in other places where refutable patterns are acceptable. Furthermore, by moving the guard condition closer to the bindings upon which it depends, pattern behavior can be made more local.
 
-# Guide-level explanation
+## Guide-level explanation
 
 [guide-level-explanation]: #guide-level-explanation
 
@@ -58,15 +58,15 @@ pattern if expr
 
 This is a **guard pattern**. It matches a value if `pattern` (the pattern it wraps) matches that value, _and_ `expr` evaluates to `true`. Like in match arm guards, `expr` can use values bound in `pattern`.
 
-## For New Users
+### For New Users
 
 For new users, guard patterns are better explained without reference to match arm guards. Instead, they can be explained by similar examples to the ones currently used for match arm guards, followed by an example showing that they can be nested within other patterns and used outside of match arms.
 
-# Reference-level explanation
+## Reference-level explanation
 
 [reference-level-explanation]: #reference-level-explanation
 
-## Supersession of Match Arm Guards
+### Supersession of Match Arm Guards
 
 Rather than being parsed as part of the match expression, guards in match arms will instead be parsed as a guard pattern. For this reason, the `if` pattern operator must have lower precedence than all other pattern operators.
 
@@ -80,7 +80,7 @@ x @ A(..) if pred       <=> (x @ A(..)) if pred
 A(..) | B(..) if pred   <=> (A(..) | B(..)) if pred
 ```
 
-## Precedence Relative to `|`
+### Precedence Relative to `|`
 
 Consider the following match expression:
 
@@ -101,7 +101,7 @@ This match arm is currently parsed as `(A | B) if (c | d)`, with the first `|` b
 (a if b) | (c if d)
 ```
 
-## In Assignment-Like Contexts
+### In Assignment-Like Contexts
 
 There's an ambiguity between `=` used as the assignment operator within the guard
 and used outside to indicate assignment to the pattern (e.g. in `if let`)
@@ -131,7 +131,7 @@ Therefore the syntax for patterns becomes
 
 With `if let` and `while let` expressions now using `PatternNoTopGuard`. `let` statements and function parameters can continue to use `PatternNoTopAlt`.
 
-## Bindings Available to Guards
+### Bindings Available to Guards
 
 The only bindings available to guard conditions are
 
@@ -162,7 +162,7 @@ let (Struct { x, y } if x == y) = Struct { x: 0, y: 0 } else { /* ... */ }
 
 In general, guards can, without changing meaning, "move outwards" until they reach an or-pattern where the condition can be different in other branches, and "move inwards" until they reach a level where the identifiers they reference are not bound.
 
-## As Macro Arguments
+### As Macro Arguments
 
 Currently, `if` is in the follow set of `pat` and `pat_param` fragments, so top-level guards cannot be used as arguments for the current edition. This is identical to the situation with top-level or-patterns as macro arguments, and guard patterns will take the same approach:
 
@@ -170,17 +170,17 @@ Currently, `if` is in the follow set of `pat` and `pat_param` fragments, so top-
 2. Introduce a new fragment specifier, `pat_no_top_guard`, which works in all editions and accepts `PatternNoTopGuard`.
 3. In the next edition, update `pat` fragments to accept `Pattern` once again.
 
-# Drawbacks
+## Drawbacks
 
 [drawbacks]: #drawbacks
 
 Rather than matching only by structural properties of ADTs, equality, and ranges of certain primitives, guards give patterns the power to express arbitrary restrictions on types. This necessarily makes patterns more complex both in implementation and in concept.
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-## "Or-of-guards" Patterns
+### "Or-of-guards" Patterns
 
 Earlier it was mentioned that guards can "move outwards" up to an or-pattern without changing meaning:
 
@@ -200,7 +200,7 @@ Therefore, to achieve the effect of forcing patterns as far out as possible guar
 
 There are, however, a couple reasons where it could be desirable to allow guards further inwards than strictly necessary.
 
-### Localization of Behavior
+#### Localization of Behavior
 
 Sometimes guards are only related to information from a small part of a large structure being matched.
 
@@ -235,7 +235,7 @@ match order {
 }
 ```
 
-### Pattern Macros
+#### Pattern Macros
 
 If guards can only appear immediately within or-patterns, then either
 
@@ -244,7 +244,7 @@ If guards can only appear immediately within or-patterns, then either
 
 This can also be seen as a special case of the previous argument, as pattern macros fundamentally assume that patterns can be built out of composable, local pieces.
 
-## Deref and Const Patterns Must Be Pure, But Not Guards
+### Deref and Const Patterns Must Be Pure, But Not Guards
 
 It may seem odd that we explicitly require const patterns to use pure `PartialEq` implementations (and the upcoming [proposal](https://hackmd.io/4qDDMcvyQ-GDB089IPcHGg) for deref patterns to use pure `Deref` implementations), but allow arbitrary side effects in guards. The ultimate reason for this is that, unlike const patterns and the proposed deref patterns, guard patterns are always refutable.
 
@@ -281,7 +281,7 @@ match EvilBool(false) {
 
 But this will always be a compilation error because the `match` statement is no longer assumed to be exhaustive.
 
-# Prior art
+## Prior art
 
 [prior-art]: #prior-art
 
@@ -289,11 +289,11 @@ This feature has been implemented in the [Unison](https://www.unison-lang.org/do
 
 Guard patterns are also very similar to Haskell's [view patterns](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/view_patterns.html), which are more powerful and closer to a hypothetical "`if let` pattern" than a guard pattern as this RFC proposes it.
 
-# Unresolved questions
+## Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
 
-## Allowing Mismatching Bindings When Possible
+### Allowing Mismatching Bindings When Possible
 
 Ideally, users would be able to write something to the effect of
 
@@ -311,7 +311,7 @@ This is also very useful for macros, because it allows
 
 As mentioned above, this case is not covered by this RFC, because `x` would need to be bound in both cases of the disjunction.
 
-### Possible Design
+#### Possible Design
 
 [@tmandry proposed](https://github.com/rust-lang/rfcs/pull/3637#issuecomment-2307839511) amending the rules for how names can be bound in patterns to the following:
 
@@ -320,7 +320,7 @@ As mentioned above, this case is not covered by this RFC, because `x` would need
 3. Removed: ~~Bindings introduced in one branch of a disjunction must be introduced in all branches.~~
 4. Added: If a name is bound in multiple parts of a disjunction, it must be bound to the same type in every part. (Enforced today by the combination of 2 and 3.)
 
-## How to Refer to Guard Patterns
+### How to Refer to Guard Patterns
 
 Some possibilities:
 
@@ -330,9 +330,9 @@ Some possibilities:
 
 [future-possibilities]: #future-possibilities
 
-# Future Possibilities
+## Future Possibilities
 
-## Allowing `if let`
+### Allowing `if let`
 
 Users expect to be able to write `if let` where they can write `if`. Allowing this in guard patterns would make them significantly more powerful, but also more complex.
 

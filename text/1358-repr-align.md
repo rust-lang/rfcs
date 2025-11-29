@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#1358](https://github.com/rust-lang/rfcs/pull/1358)
 - Rust Issue: [rust-lang/rust#33626](https://github.com/rust-lang/rust/issues/33626)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Extend the existing `#[repr]` attribute on structs with an `align = "N"` option
 to specify a custom alignment for `struct` types.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 The alignment of a type is normally not worried about as the compiler will "do
@@ -38,7 +38,7 @@ the most ergonomic as programmers must manually manage alignment. The purpose of
 this RFC is to provide a lightweight annotation to alter the compiler-inferred
 alignment of a structure to enable these situations much more easily.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 The `#[repr]` attribute on `struct`s will be extended to include a form such as:
@@ -116,7 +116,7 @@ assert_eq!(mem::align_of::<Align8Many>(), 8);
 assert_eq!(mem::size_of::<Align8Many>(), 16);
 ```
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 Specifying a custom alignment isn't always necessarily easy to do so via a
@@ -132,7 +132,7 @@ struct field (as C compilers also allow doing) without the usage of a newtype
 structure. Currently `#[repr]` is not recognized here, but it would be a
 backwards compatible extension to start reading it on struct fields.
 
-# Alternatives
+## Alternatives
 [alternatives]: #alternatives
 
 Instead of using the `#[repr]` attribute as the "house" for the custom
@@ -141,7 +141,7 @@ perhaps more extensible to alignment in other locations such as a local variable
 (with attributes on expressions), a struct field (where `#[repr]` is more of an
 "outer attribute"), or enum variants perhaps.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * It is likely best to simply match the semantics of C/C++ in the regard of

@@ -2,13 +2,13 @@
 - RFC PR: [rust-lang/rfcs#501](https://github.com/rust-lang/rfcs/pull/501)
 - Rust Issue: [rust-lang/rust#20561](https://github.com/rust-lang/rust/issues/20561)
 
-# Summary
+## Summary
 
 Make name and behavior of the `#![no_std]` and `#![no_implicit_prelude]` attributes
 consistent by renaming the latter to `#![no_prelude]` and having it only apply to the current
 module.
 
-# Motivation
+## Motivation
 
 Currently, Rust automatically inserts an implicit `extern crate std;` in the crate root that can be
 disabled with the `#[no_std]` attribute.
@@ -53,7 +53,7 @@ Of course, for the cases where you want the prelude disabled for a whole sub tre
 would now become necessary to add a `#[no_prelude]` attribute in each of them - but that
 is consistent with imports in general.
 
-# Detailed design
+## Detailed design
 
 `libsyntax` needs to be changed to accept both the name `no_implicit_prelude` and `no_prelude` for
 the attribute. Then the attributes effect on the AST needs to be changed to not deeply remove all
@@ -65,12 +65,12 @@ changed to `#[no_prelude]` in both the main code base, and user code.
 
 Finally, the old attribute name should emit a deprecated warning, and be removed in time.
 
-# Drawbacks
+## Drawbacks
 
 - The attribute is a rare use case to begin with, so any effort put into this would
   distract from more important stabilization work.
 
-# Alternatives
+## Alternatives
 
  - Keep the current behavior
  - Remove the `#[no_implicit_prelude]` attribute all together, instead forcing users to use

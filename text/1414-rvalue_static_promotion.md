@@ -3,7 +3,7 @@
 - RFC PR: [#1414](https://github.com/rust-lang/rfcs/pull/1414)
 - Rust Issue: [#38865](https://github.com/rust-lang/rust/issues/38865)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Promote constexpr rvalues to values in static memory instead of
@@ -11,7 +11,7 @@ stack slots, and expose those in the language by being able to directly create
 `'static` references to them. This would allow code like
 `let x: &'static u32 = &42` to work.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Right now, when dealing with constant values, you have to explicitly define
@@ -68,7 +68,7 @@ let s: &'static str = "foo";
 With the proposed change, those special cases would instead become
 part of a general language feature usable for custom code.
 
-# Detailed design
+## Detailed design
 [design]: #detailed-design
 
 Inside a function body's block:
@@ -113,7 +113,7 @@ const X: &'static T = &<constexpr foo>;
 let x: &'static T = &<constexpr foo>;
 ```
 
-## Implementation
+### Implementation
 
 The necessary changes in the compiler did already get implemented as
 part of codegen optimizations (emitting references-to or memcopies-from values in static memory instead of embedding them in the code).
@@ -124,12 +124,12 @@ https://github.com/rust-lang/rust/blob/29ea4eef9fa6e36f40bc1f31eb1e56bf5941ee72/
 
 (And of course fixing any fallout/bitrot that might have happened, adding tests, etc.)
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 One more feature with seemingly ad-hoc rules to complicate the language...
 
-# Alternatives, Extensions
+## Alternatives, Extensions
 [alternatives]: #alternatives
 
 It would be possible to extend support to `&'static mut` references,
@@ -192,7 +192,7 @@ Not doing this means:
 types, though that part could also be achieved by allowing mutable references to
 zero-sized types in constants.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None, beyond "Should we do alternative 1 instead?".

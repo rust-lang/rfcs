@@ -4,7 +4,7 @@
 - Rust Issue: [rust-lang/rust#34826](https://github.com/rust-lang/rust/issues/34826)
               [rust-lang/rust#34827](https://github.com/rust-lang/rust/issues/34827)
 
-# Summary
+## Summary
 This RFC proposes an update to error reporting in rustc. Its focus is to change the format of Rust
 error messages and improve --explain capabilities to focus on the user's code. The end goal is for
 errors and explain text to be more readable, more friendly to new users, while still helping Rust
@@ -12,9 +12,9 @@ coders fix bugs as quickly as possible. We expect to follow this RFC with a supp
 provides a writing style guide for error messages and explain text with a focus on readability and
 education.
 
-# Motivation
+## Motivation
 
-## Default error format
+### Default error format
 
 Rust offers a unique value proposition in the landscape of languages in part by codifying concepts
 like ownership and borrowing. Because these concepts are unique to Rust, it's critical that the
@@ -84,7 +84,7 @@ error[E0499]: cannot borrow `foo.bar1` as mutable more than once at a time
 
 *Example of the same borrow check error in the proposed format*
 
-## Expanded error format (revised --explain)
+### Expanded error format (revised --explain)
 
 Languages like Elm have shown how effective an educational tool error messages can be if the
 explanations like our --explain text are mixed with the user's code. As mentioned earlier, it's
@@ -137,12 +137,12 @@ move. A naive fix might look this:
 
 ```
 
-# Detailed design
+## Detailed design
 
 The RFC is separated into two parts: the format of error messages and the format of expanded error
 messages (using `--explain errors`).
 
-## Format of error messages
+### Format of error messages
 
 The proposal is a lighter error format focused on the code the user wrote. Messages that help
 understand why an error occurred appear as labels on the source. The goals of this new format are
@@ -173,7 +173,7 @@ for a more graphical error in the future.
 * Where possible, use labels on the source itself rather than sentence "notes" at the end.
 * Keep filename:line easy to spot for people who use editors that let them click on errors
 
-### Header
+#### Header
 
 ```
 error[E0499]: cannot borrow `foo.bar1` as mutable more than once at a time
@@ -184,7 +184,7 @@ The header still serves the original purpose of knowing: a) if it's a warning or
 of the warning/error, and c) the location of this warning/error. We keep the error code, now a part
 of the error indicator, as a way to help improve search results.
 
-### Line number column
+#### Line number column
 
 ```
    |
@@ -213,7 +213,7 @@ to also support span-less notes and hints. For example:
    = note: expected type `&core::workspace::Workspace<'_>`
    = note:    found type `&core::package::Package`
 ```
-### Source area
+#### Source area
 
 ```
       let bar1 = &mut foo.bar1;
@@ -249,7 +249,7 @@ update their code.
 Note: We'll talk more about additional style guidance for wording to help create flow in the
 subsequent style RFC.
 
-## Expanded error messages
+### Expanded error messages
 
 Currently, --explain text focuses on the error code. You invoke the compiler with `--explain
 <error code>` and receive a verbose description of what causes errors of that number. The resulting
@@ -295,7 +295,7 @@ but would be available in the expanded error format. This gives the explain text
 flexibility without impacting the readability of the default message. I'm currently prototyping an
 implementation of how this templating could work in practice.
 
-## Tying it together
+### Tying it together
 
 Lastly, we propose that the final error message:
 
@@ -309,7 +309,7 @@ Be changed to notify users of this ability:
 note: compile failed due to 2 errors. You can compile again with `--explain errors` for more information
 ```
 
-# Drawbacks
+## Drawbacks
 
 Changes in the error format can impact integration with other tools. For example, IDEs that use a
 simple regex to detect the error would need to be updated to support the new format. This takes
@@ -322,7 +322,7 @@ well as the original format.
 There is a fair amount of work involved to update the errors and explain text to the proposed
 format.
 
-# Alternatives
+## Alternatives
 
 Rather than using the proposed error format format, we could only provide the verbose --explain
 style that is proposed in this RFC. Respected programmers like
@@ -361,7 +361,7 @@ favor an error format that puts heavy emphasis on quickly guiding the user to wh
 why it occurred, with an easy way to get the richer explanations (using --explain) when the user
 wants them.
 
-# Stabilization
+## Stabilization
 
 Currently, this new rust error format is available on nightly using the
 ```export RUST_NEW_ERROR_FORMAT=true``` environment variable. Ultimately, this should become the
@@ -381,7 +381,7 @@ Likewise, while some of us have been dogfooding these errors, we don't know what
 like. For example, after a time does the use of color feel excessive?  We can always update the
 errors as we go, but it'd be helpful to catch it early if possible.
 
-# Unresolved questions
+## Unresolved questions
 
 There are a few unresolved questions:
 * Editors that rely on pattern-matching the compiler output will need to be updated. It's an open

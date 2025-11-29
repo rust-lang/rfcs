@@ -4,7 +4,7 @@
 - Rust Issue #: [rust-lang/rust#31436](https://github.com/rust-lang/rust/issues/31436)
 
 
-# Summary
+## Summary
 
 Add syntactic sugar for working with the `Result` type which models common
 exception handling constructs.
@@ -22,7 +22,7 @@ The idea for the `?` operator originates from [RFC PR 204][204] by
 [204]: https://github.com/rust-lang/rfcs/pull/204
 
 
-# Motivation and overview
+## Motivation and overview
 
 Rust currently uses the `enum Result` type for error handling. This solution is
 simple, well-behaved, and easy to understand, but often gnarly and inconvenient
@@ -46,7 +46,7 @@ them. By an "exception", for now, we essentially just mean the `Err`
 variant of a `Result`, though the Unresolved Questions includes some
 discussion of extending to other types.
 
-## `?` operator
+### `?` operator
 
 The postfix `?` operator can be applied to `Result` values and is equivalent to
 the current `try!()` macro. It either returns the `Ok` value directly, or
@@ -86,7 +86,7 @@ in the type system, and there is no silent propagation of exceptions, and all
 points where an exception may be thrown are readily apparent visually, this also
 means that we do not have to worry very much about "exception safety".
 
-### Exception type upcasting
+#### Exception type upcasting
 
 In a language with checked exceptions and subtyping, it is clear that if a
 function is declared as throwing a particular type, its body should also be able
@@ -118,7 +118,7 @@ forwarding from `From`). The precise requirements for a conversion to be "like"
 a subtyping coercion are an open question; see the "Unresolved questions"
 section.
 
-## `catch` expressions
+### `catch` expressions
 
 This RFC also introduces an expression form `catch {..}`, which serves
 to "scope" the `?` operator. The `catch` operator executes its
@@ -137,14 +137,14 @@ exceptions -- `catch { foo()?.bar()?.baz()? }` -- into a single
 function, rather than analyze yourself. (The last example could also
 be expressed using a series of `and_then` calls.)
 
-# Detailed design
+## Detailed design
 
 The meaning of the constructs will be specified by a source-to-source
 translation. We make use of an "early exit from any block" feature
 which doesn't currently exist in the language, generalizes the current
 `break` and `return` constructs, and is independently useful.
 
-## Early exit from any block
+### Early exit from any block
 
 The capability can be exposed either by generalizing `break` to take an optional
 value argument and break out of any block (not just loops), or by generalizing
@@ -188,7 +188,7 @@ it is only used as a way to explain the meaning of the constructs it does
 propose.
 
 
-## Definition of constructs
+### Definition of constructs
 
 Finally we have the definition of the new constructs in terms of a
 source-to-source translation.
@@ -259,7 +259,7 @@ As a result of this RFC, both `Into` and `Result` would have to become lang
 items.
 
 
-## Laws
+### Laws
 
 Without any attempt at completeness, here are some things which should be true:
 
@@ -270,18 +270,18 @@ Without any attempt at completeness, here are some things which should be true:
 (In the above, `foo()` is a function returning any type, and `try_foo()` is a
 function returning a `Result`.)
 
-## Feature gates
+### Feature gates
 
 The two major features here, the `?` syntax and `catch` expressions,
 will be tracked by independent feature gates. Each of the features has
 a distinct motivation, and we should evaluate them independently.
 
-# Unresolved questions
+## Unresolved questions
 
 These questions should be satisfactorily resolved before stabilizing the
 relevant features, at the latest.
 
-## Optional `match` sugar
+### Optional `match` sugar
 
 Originally, the RFC included the ability to `match` the errors caught
 by a `catch` by writing `catch { .. } match { .. }`, which could be translated
@@ -341,7 +341,7 @@ It may be worth adding such a sugar in the future, or perhaps a
 variant that binds irrefutably and does not immediately lead into a
 `match` block.
  
-## Choice of keywords
+### Choice of keywords
 
 The RFC to this point uses the keyword `catch`, but there are a number
 of other possibilities, each with different advantages and drawbacks:
@@ -374,7 +374,7 @@ Among the considerations:
  * Language-level backwards compatibility when adding new keywords. I'm not sure
    how this could or should be handled.
 
-## Semantics for "upcasting"
+### Semantics for "upcasting"
 
 What should the contract for a `From`/`Into` `impl` be? Are these even the right
 `trait`s to use for this feature?
@@ -416,12 +416,12 @@ Some further thoughts and possibilities on this matter, only as brainstorming:
    (This perhaps ties into the subtyping angle: `Ipv4Addr` is clearly not a
    supertype of `u32`.)
 
-## Forwards-compatibility
+### Forwards-compatibility
 
 If we later want to generalize this feature to other types such as `Option`, as
 described below, will we be able to do so while maintaining backwards-compatibility?
 
-## Monadic do notation
+### Monadic do notation
 
 There have been many comparisons drawn between this syntax and monadic
 do notation. Before stabilizing, we should determine whether we plan
@@ -431,7 +431,7 @@ notation (for example, by removing the implicit `Ok` at the end of a
 standard monadic bind to accommodate rich control flow like `break`,
 `continue`, and `return`.
 
-# Drawbacks
+## Drawbacks
 
  * Increases the syntactic surface area of the language.
 
@@ -450,7 +450,7 @@ standard monadic bind to accommodate rich control flow like `break`,
    does not do this, and it's not clear whether it can), and potentially others.
 
 
-# Alternatives
+## Alternatives
 
  * Don't.
 
@@ -481,13 +481,13 @@ standard monadic bind to accommodate rich control flow like `break`,
 [notes]: https://github.com/glaebhoerl/rust-notes/blob/268266e8fbbbfd91098d3bea784098e918b42322/my_rfcs/Exceptions.txt
 
 
-# Future possibilities
+## Future possibilities
 
-## Expose a generalized form of `break` or `return` as described
+### Expose a generalized form of `break` or `return` as described
 
 This RFC doesn't propose doing so at this time, but as it would be an independently useful feature, it could be added as well.
 
-## `throw` and `throws`
+### `throw` and `throws`
 
 It is possible to carry the exception handling analogy further and also add
 `throw` and `throws` constructs.
@@ -509,7 +509,7 @@ overhead from both "normal" and "throwing" code paths and (apart from `?` to
 propagate exceptions) matches what code might look like in a language with
 native exceptions.
 
-## Generalize over `Result`, `Option`, and other result-carrying types
+### Generalize over `Result`, `Option`, and other result-carrying types
 
 `Option<T>` is completely equivalent to `Result<T, ()>` modulo names, and many
 common APIs use the `Option` type, so it would be useful to extend all of the
@@ -562,7 +562,7 @@ The third law says that translating to a different result-carrying type and then
 translating back should be a no-op.
 
 
-## `impl`s of the trait
+### `impl`s of the trait
 
 ```rust
 impl<T, E> ResultCarrier for Result<T, E> {
@@ -624,7 +624,7 @@ information.
 The `bool` impl may be surprising, or not useful, but it *is* well-behaved:
 `bool` is, after all, isomorphic to `Result<(), ()>`.
 
-### Other miscellaneous notes about `ResultCarrier`
+#### Other miscellaneous notes about `ResultCarrier`
 
  * Our current lint for unused results could be replaced by one which warns for
    any unused result of a type which implements `ResultCarrier`.
@@ -650,7 +650,7 @@ The `bool` impl may be surprising, or not useful, but it *is* well-behaved:
    functors, but I'm not category theorist enough for it to be obvious.
 
 
-### Alternative formulations of the `ResultCarrier` trait
+#### Alternative formulations of the `ResultCarrier` trait
 
 All of these have the form:
 
@@ -664,7 +664,7 @@ trait ResultCarrier {
 
 and differ only in the methods, which will be given.
 
-#### Explicit isomorphism with `Result`
+##### Explicit isomorphism with `Result`
 
 ```rust
 fn from_result(Result<Normal, Exception>) -> Self;
@@ -687,7 +687,7 @@ Laws:
 Laws for the remaining formulations below are left as an exercise for the
 reader.
 
-#### Avoid privileging `Result`, most naive version
+##### Avoid privileging `Result`, most naive version
 
 ```rust
 fn embed_normal(Normal) -> Self;
@@ -700,7 +700,7 @@ fn assert_exception(Self) -> Exception;
 
 Of course this is horrible.
 
-#### Destructuring with HOFs (a.k.a. Church/Scott-encoding)
+##### Destructuring with HOFs (a.k.a. Church/Scott-encoding)
 
 ```rust
 fn embed_normal(Normal) -> Self;
@@ -713,7 +713,7 @@ This is probably the right approach for Haskell, but not for Rust.
 With this formulation, because they each take ownership of them, the two
 closures may not even close over the same variables!
 
-#### Destructuring with HOFs, round 2
+##### Destructuring with HOFs, round 2
 
 ```rust
 trait BiOnceFn {

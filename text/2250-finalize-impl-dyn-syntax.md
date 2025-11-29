@@ -3,13 +3,13 @@
 - RFC PR: [rust-lang/rfcs#2250](https://github.com/rust-lang/rfcs/pull/2250)
 - Rust Issue: [rust-lang/rust#34511](https://github.com/rust-lang/rust/issues/34511)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Finalize syntax of `impl Trait` and `dyn Trait` with multiple bounds before
 stabilization of these features.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Current priority of `+` in `impl Trait1 + Trait2` / `dyn Trait1 + Trait2` brings
@@ -17,7 +17,7 @@ inconsistency in the type grammar.
 This RFC outlines possible syntactic
 alternatives and suggests one of them for stabilization.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 "Alternative 2" (see reference-level explanation) is selected for stabilization.
@@ -34,10 +34,10 @@ For example, `Fn() -> impl A + B` can be interpreted as both
 priority plus), so we are refusing to disambiguate and require explicit
 parentheses.
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-## Current situation
+### Current situation
 
 In the current implementation when we see `impl` or `dyn` we start parsing
 following bounds separated by `+`s greedily regardless of context, so `+`
@@ -63,7 +63,7 @@ In general, binary operations like `+` have lower priority than unary operations
 in all contexts - expressions, patterns, types. So the priorities as implemented
 bring inconsistency and may break intuition.
 
-## Alternative 1: high priority `+` (status quo)
+### Alternative 1: high priority `+` (status quo)
 
 Pros:
 - The greedy parsing with high priority of `+` after `impl` / `dyn`
@@ -81,7 +81,7 @@ it needs to be done like this `(impl A + B)`, and not `impl (A + B)`. The second
 variant is a parsing error, but some people find it surprising and expect it to
 work, as if `impl` were an unary operator.
 
-## Alternative 2: low priority `+`
+### Alternative 2: low priority `+`
 
 Basically, `impl A + B` is parsed using same rules as `A + B`.
 
@@ -125,7 +125,7 @@ Cons:
 - `impl` / `dyn` is still a somewhat weird prefix construction and `dyn (A + B)`
 is not a valid syntax.
 
-## Alternative 3: Unary operator
+### Alternative 3: Unary operator
 
 `impl` and `dyn` can become usual unary operators in type grammar like `&` or
 `*const`.
@@ -153,14 +153,14 @@ Parentheses are noise, there may be even less desire to use `dyn` in trait
 objects now, if something like `Box<Write + Send>` turns into
 `Box<dyn(Write + Send)>`.
 
-## Other alternatives
+### Other alternatives
 
 Two separate grammars can be used depending on context
 (https://github.com/rust-lang/rfcs/pull/2250#issuecomment-352435687) -
 Alternative 1/2 in lists of arguments like `Box<dyn A + B>` or
 `Fn(impl A + B, impl A + B)`, and Alternative 3 otherwise (`&dyn (A + B)`).
 
-## Compatibility
+### Compatibility
 
 The alternatives are ordered by strictness from the most relaxed Alternative 1
 to the strictest Alternative 3, but switching from more strict alternatives to
@@ -187,7 +187,7 @@ interpret `Fn() -> impl A + B` (and maybe even `Fn() -> A + B` after long
 deprecation period) as `Fn() -> (impl A + B)` (and `Fn() -> (A + B)`,
 respectively).
 
-## Experimental check
+### Experimental check
 
 An application of all the alternatives to rustc and libstd codebase can be found
 in [this branch](https://github.com/petrochenkov/rust/commits/impldyntest).
@@ -202,17 +202,17 @@ The number of parenthesis required by Alternative 2 is limited and they seem
 appropriate because they follow "normal" priorities for unary and binary
 operators.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 See above.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 See above.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 None.

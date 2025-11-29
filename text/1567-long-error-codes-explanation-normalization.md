@@ -3,19 +3,19 @@
 - RFC PR: [rust-lang/rfcs#1567](https://github.com/rust-lang/rfcs/pull/1567)
 - Rust Issue: N/A
 
-# Summary
+## Summary
 
 Rust has extend error messages that explain each error in more detail. We've been writing lots of them, which is good, but they're written in different styles, which is bad. This RFC intends to fix this inconsistency by providing a template for these long-form explanations to follow.
 
-# Motivation
+## Motivation
 
 Long error codes explanations are a very important part of Rust. Having an explanation of what failed helps to understand the error and is appreciated by Rust developers of all skill levels. Providing an unified template is needed in order to help people who would want to write ones as well as people who read them.
 
-# Detailed design
+## Detailed design
 
 Here is what I propose:
 
-## Error description
+### Error description
 
 Provide a more detailed error message. For example:
 
@@ -26,7 +26,7 @@ extern crate b as a;
 
 We get the `E0259` error code which says "an extern crate named `a` has already been imported in this module" and the error explanation says: "The name chosen for an external crate conflicts with another external crate that has been imported into the current module.".
 
-## Minimal example
+### Minimal example
 
 Provide an erroneous code example which directly follows `Error description`. The erroneous example will be helpful for the `How to fix the problem`. Making it as simple as possible is really important in order to help readers to understand what the error is about. A comment should be added with the error on the same line where the errors occur. Example:
 
@@ -50,19 +50,19 @@ fn super_long_function_name_and_thats_problematic() {}
 
 Of course, it the comment is too long, the split rules still applies.
 
-## Error explanation
+### Error explanation
 
 Provide a full explanation about "__why__ you get the error" and some leads on __how__ to fix it. If needed, use additional code snippets to improve your explanations.
 
-## How to fix the problem
+### How to fix the problem
 
 This part will show how to fix the error that we saw previously in the `Minimal example`, with comments explaining how it was fixed.
 
-## Additional information
+### Additional information
 
 Some details which might be useful for the users, let's take back `E0109` example. At the end, the supplementary explanation is the following: "Note that type parameters for enum-variant constructors go after the variant, not after the enum (`Option::None::<u32>`, not `Option::<u32>::None`).". It provides more information, not directly linked to the error, but it might help user to avoid doing another error.
 
-## Template
+### Template
 
 In summary, the template looks like this:
 
@@ -128,14 +128,14 @@ Now let's take a full example:
 > ```
 > "##,
 
-# Drawbacks
+## Drawbacks
 
 This will make contributing slightly more complex, as there are rules to follow, whereas right now there are none.
 
-# Alternatives
+## Alternatives
 
 Not having error codes explanations following a common template.
 
-# Unresolved questions
+## Unresolved questions
 
 None.

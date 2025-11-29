@@ -2,14 +2,14 @@
 - RFC PR: [520](https://github.com/rust-lang/rfcs/pull/520)
 - Rust Issue: [19999](https://github.com/rust-lang/rust/issues/19999)
 
-# Summary
+## Summary
 
 Under this RFC, the syntax to specify the type of a fixed-length array
 containing `N` elements of type `T` would be changed to `[T; N]`. Similarly, the
 syntax to construct an array containing `N` duplicated elements of value `x`
 would be changed to `[x; N]`.
 
-# Motivation
+## Motivation
 
 [RFC 439](https://github.com/rust-lang/rfcs/blob/master/text/0439-cmp-ops-reform.md)
 (cmp/ops reform) has resulted in an ambiguity that must be resolved. Previously,
@@ -23,7 +23,7 @@ for creating an array of repeated values, or the new range syntax. This RFC
 proposes the former, in order to preserve existing functionality while avoiding
 modifications that would make the range syntax less intuitive.
 
-# Detailed design
+## Detailed design
 
 The syntax `[T, ..N]` for specifying array types will be replaced by the new
 syntax `[T; N]`.
@@ -49,14 +49,14 @@ to this:
 let a: [uint; 2] = [0u; 2];
 ```
 
-## Match patterns
+### Match patterns
 
 In match patterns, `..` is always interpreted as a wildcard for constructor
 arguments (or for slice patterns under the `advanced_slice_patterns` feature
 gate). This RFC does not change that. In a match pattern, `..` will always be
 interpreted as a wildcard, and never as sugar for a range constructor.
 
-## Suggested implementation
+### Suggested implementation
 
 While not required by this RFC, one suggested transition plan is as follows:
 
@@ -68,15 +68,15 @@ While not required by this RFC, one suggested transition plan is as follows:
 - When RFC 439 range literals are implemented, remove the deprecated syntax and
   thus complete the implementation of this RFC.
 
-# Drawbacks
+## Drawbacks
 
-## Backwards incompatibility
+### Backwards incompatibility
 
 - Changing the method for specifying an array size will impact a large amount of
   existing code. Code conversion can probably be readily automated, but will
   still require some labor.
 
-## Implementation time
+### Implementation time
 
 This proposal is submitted very close to the anticipated release of Rust
 1.0. Changing the array repeat syntax is likely to require more work than
@@ -88,13 +88,13 @@ a preference for implementing the RFC 439 slicing syntax as currently specified
 rather than preserving the existing array repeat syntax. This cannot be resolved
 in a backwards-compatible manner if the array repeat syntax is kept.
 
-# Alternatives
+## Alternatives
 
 Inaction is not an alternative due to the ambiguity introduced by RFC 439. Some
 resolution must be chosen in order for the affected modules in `std` to be
 stabilized.
 
-## Retain the type syntax only
+### Retain the type syntax only
 
 In theory, it seems that the type syntax `[T, ..N]` could be retained, while
 getting rid of the expression syntax `[x, ..N]`. The problem with this is that,
@@ -105,7 +105,7 @@ Retaining the current type syntax, but changing the expression syntax, would
 make the language somewhat more complex and inconsistent overall. There seem to
 be no advocates of this alternative so far.
 
-## Different array repeat syntax
+### Different array repeat syntax
 
 The comments in [pull request #498](https://github.com/rust-lang/rfcs/pull/498)
 mentioned many candidates for new syntax other than the `[x; N]` form in this
@@ -133,20 +133,20 @@ RFC. The comments on the pull request of this RFC mentioned many more.
 
 - Any of several more radical changes.
 
-## Change the range syntax
+### Change the range syntax
 
 The main problem here is that there are no proposed candidates that seem as
 clear and ergonomic as `i..j`. The most common alternative for slicing in other
 languages is `i:j`, but in Rust this simply causes an ambiguity with a different
 feature, namely type ascription.
 
-## Limit range syntax to the interior of an index (use `i..j` for slicing only)
+### Limit range syntax to the interior of an index (use `i..j` for slicing only)
 
 This resolves the issue since indices can be distinguished from arrays. However,
 it removes some of the benefits of RFC 439. For instance, it removes the
 possibility of using `for i in 1..10` to loop.
 
-## Remove `RangeTo` from RFC 439
+### Remove `RangeTo` from RFC 439
 
 The proposal in pull request #498 is to remove the sugar for `RangeTo` (i.e.,
 `..j`) while retaining other features of RFC 439. This is the simplest
@@ -155,9 +155,9 @@ counterintuitive, because `RangeFrom` (i.e. `i..`) is retained, and because `..`
 still has several different meanings in the language (ranges, repetition, and
 pattern wildcards).
 
-# Unresolved questions
+## Unresolved questions
 
-## Match patterns
+### Match patterns
 
 There will still be two semantically distinct uses of `..`, for the RFC 439
 range syntax and for wildcards in patterns. This could be considered harmful
@@ -172,7 +172,7 @@ This RFC does not attempt to address any of these issues, because the current
 pattern syntax does not allow use of the repeated array syntax, and does not
 contain an ambiguity.
 
-## Behavior of `for` in array expressions
+### Behavior of `for` in array expressions
 
 It may be useful to allow `for` to take on a new meaning in array expressions.
 This RFC keeps this possibility open, but does not otherwise propose any

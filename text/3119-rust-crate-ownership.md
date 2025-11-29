@@ -6,12 +6,12 @@
 - Rust Issue: [rust-lang/rust#88867](https://github.com/rust-lang/rust/issues/88867)
 
 
-# Summary
+## Summary
 [summary]: #summary
 
 Have a more intentional policy around crates published by the Rust project, to be applied to existing and future crates published by us.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 
@@ -21,12 +21,12 @@ Given that the stamp of an official Rust team carries a degree of weight, it is 
 
 Furthermore, these crates are not necessarily clear on who owns them. Some are owned (in the crates.io sense) by the generic `rust-lang-owner` crates.io account, some are owned by a GitHub team (like `rust-lang/libs`), and yet others are only owned by personal accounts. It seems like we should have some consistency here.
 
-# Reference-Level Explanation
+## Reference-Level Explanation
 
 Once accepted, the policy sections of this RFC should be posted on
 <https://forge.rust-lang.org/> in a "Rust-lang Crates Policy" section; this RFC will not be the canonical home of the up-to-date crates policy.
 
-## Categories
+### Categories
 
 We propose the following categories of published crates:
 
@@ -40,7 +40,7 @@ We propose the following categories of published crates:
  - **Placeholder**: Not a functional crate, used for holding on to the name of an official tool, etc. Example: [rustup](https://crates.io/crates/rustup)
  - **Expatriated**: This may have been an “intentional artifact”, and still is intended to be used by external users, but is no longer intended to be official. In such cases the crate is no longer owned/managed by the Rust project. Example: [rand](https://crates.io/crates/rand)
 
-## Policy
+### Policy
 
 Every crate in the organization must be owned by at least one team on crates.io. Teams should use `rust-lang/foo` teams for this. Non-expatriated crates may not have personal accounts as owners; if a crate needs additional owners that are not part of teams; the team should create a project group. Note that this does not forbid non-team (or project group) users from having maintainer access to the repository; it simply forbids them from _publishing_.
 
@@ -50,7 +50,7 @@ Each crate in the organization, and any future crates in the organization, must 
 
 Each published crate must contain a README. At a minimum, this README must mention the primary owning team. Based on their categories, crates are also required to include the following information in their READMEs and documentation roots:
 
-### Intentional artifact
+#### Intentional artifact
 
 “Intentional artifact” crates can choose their commitments but should be clear about what they are in their messaging. If and when a team has a charter, the crate should also be mentioned in the charter as an intentional artifact. Deprecating an intentional artifact should not be taken lightly and will require an RFC.
 
@@ -61,7 +61,7 @@ An example of such messaging would be text like:
 
 Security issues in these crates should be handled with the appropriate weight and careful messaging by the Security Response WG, and should be reported [according to the project's security policy](https://www.rust-lang.org/policies/security).
 
-### Internal use
+#### Internal use
 “Internal use” crates should contain the following text near the top of the readme/documentation:
 
 > This crate is maintained by \[team\], primarily for use by \[rust project(s)\] and not intended for external use (except as a transitive dependency). This crate may make major changes to its APIs or be deprecated without warning.
@@ -72,7 +72,7 @@ The "except as a transitive dependency" text should be included if the crate is 
 Security issues in transitively intentional libraries should be handled as if they were intentional artifacts.
 
 
-### Experiment
+#### Experiment
 
 “Experiment” crates should mention they are experiments. Experiment crates may be intended to be used in a scoped sort of way; so if they are intended to be used they should be clear about what they are guaranteeing.
 
@@ -86,12 +86,12 @@ or, for experiments that are not intended to be used at all:
 
 Ideally, experimental crates that are published for feedback purposes will have a document to link to that lists out the purpose, rough duration, and processes of the experiment.
 
-### Deprecated
+#### Deprecated
 “Deprecated” crates should contain the following text near the top of the readme/documentation:
 
 > This crate is deprecated and not intended to be used.
 
-### Placeholder
+#### Placeholder
 
 “Placeholder” crates should contain the following text in their published readme/documentation:
 
@@ -100,13 +100,13 @@ Ideally, experimental crates that are published for feedback purposes will have 
 In general it is better to have an empty placeholder crate published instead of reserving the crate via yanking, so that there is a readme that helps people understand why the crate is unavailable.
 
 
-### Expatriated
+#### Expatriated
 
 It's unclear if any action should be taken on these beyond removing any semblance of officialness (including rust-lang/foo team owners). We currently have only one such crate (`rand`).
 
 These should by and large not be considered to be "team managed" crates; this category is in this RFC for completeness to be able to talk about expatriation as an end state.
 
-## Transitions and new crates
+### Transitions and new crates
 
 Teams should feel free to create new crates in any of these categories; however "Intentional Artifact" crates must be accompanied with an RFC. As we move towards having team charters, this can transition to being a charter change (which may require an RFC or use its own process). Teams should notify core@rust-lang.org when they've created such crates so that the core team may track these crates and ensure this policy is applied.
 
@@ -125,7 +125,7 @@ If "transitively intentional" crates are being deprecated care should be taken t
 Transitions between the other types can be made at will since they explicitly and clearly state their lack of a strong stability/maintenance guarantee.
 
 
-## Applying this to existing crates
+### Applying this to existing crates
 
 An audit should be performed on all existing potentially "official" crates, collecting them in a list and roughly determining what their team and category should be.
 
@@ -139,20 +139,20 @@ For crates that are in direct use by a lot of the wider community, if we end up 
 
 A large part of this work can be parallelized; and it does not need to occur all at once.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This is a lot of work, but as we move towards a more deliberately structured project, it is probably necessary work.
 
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 An alternative here is mostly to continue as is. This will become increasingly untenable as we add more and more crates; with the constant danger of internal crates becoming accidental artifacts that the ecosystem depends on.
 
 Another alternative is to ask teams to be clear about the level of support offered in their crates without standardizing the process. This could work, but could lead to less cross-team legibility and would be harder to track.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
  - How should we handle expatriated crates?

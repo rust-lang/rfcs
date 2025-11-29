@@ -3,12 +3,12 @@
 - RFC PR: [rust-lang/rfcs#2318](https://github.com/rust-lang/rfcs/pull/2318)
 - Rust Issue: [rust-lang/rust#50297](https://github.com/rust-lang/rust/issues/50297)
 
-# Summary
+## Summary
 [summary]: #summary
 
 This is an *experimental RFC* for adding the ability to integrate custom test/bench/etc frameworks ("test frameworks") in Rust.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Currently, Rust lets you write unit tests with a `#[test]` attribute. We also have an unstable `#[bench]` attribute which lets one write benchmarks.
@@ -54,7 +54,7 @@ are at the same level of integration as `test` or `bench` as
  [criterion]: https://github.com/japaric/criterion.rs
  [Compiletest]: http://github.com/laumann/compiletest-rs
 
-# Detailed proposal
+## Detailed proposal
 [detailed-proposal]: #detailed-proposal
 
 (As an eRFC I'm merging the "guide-level/reference-level" split for now; when we have more concrete
@@ -66,7 +66,7 @@ and then crates using these can declare them in their Cargo.toml, which will let
 crate developers invoke various test-like steps using the framework.
 
 
-## Procedural macro for a new test framework
+### Procedural macro for a new test framework
 
 A test framework is like a procedural macro that is evaluated after all other macros in the target
 crate have been evaluated. The exact mechanism is left up to the experimentation phase, however we
@@ -75,7 +75,7 @@ have some proposals at the end of this RFC.
 
 A crate may only define a single framework.
 
-## Cargo integration
+### Cargo integration
 
 Alternative frameworks need to integrate with cargo.
 In particular, when crate `a` uses a crate `b` which provides an
@@ -126,17 +126,17 @@ To invoke a particular framework, a user invokes `cargo test` or `cargo bench`. 
 arguments are passed to the testing binary. By convention, the first position argument should allow
 filtering which targets (tests/benchmarks/etc.) are run.
 
-## To be designed
+### To be designed
 
 This contains things which we should attempt to solve in the course of this experiment, for which this eRFC
 does not currently provide a concrete proposal.
 
-## Procedural macro design
+### Procedural macro design
 
 
 We have a bunch of concrete proposals here, but haven't yet chosen one.
 
-### main() function generation with test collector
+#### main() function generation with test collector
 
 One possible design is to have a proc macro that simply generates `main()`
 
@@ -216,7 +216,7 @@ all their parent modules public). `#[test]` and `#[bench]` items will only exist
 with `--cfg test` (or bench), which is automatically set when running tests.
 
 
-### Whole-crate procedural macro
+#### Whole-crate procedural macro
 
 An alternative proposal was to expose an extremely general whole-crate proc macro:
 
@@ -252,7 +252,7 @@ these tools usually operate at a different layer of abstraction so it might not 
 A major drawback of this proposal is that it is very general, and perhaps too powerful. We're currently using the
 more focused API in the eRFC, and may switch to this during experimentation if a pressing need crops up.
 
-### Alternative procedural macro with minimal compiler changes
+#### Alternative procedural macro with minimal compiler changes
 
 The above proposal can be made even more general, minimizing the impact on the compiler.
 
@@ -276,7 +276,7 @@ The cargo functionality will basically compile the file with the right dependenc
 and `--attribute=your_crate::harness`.
 
 
-### Standardizing the output
+#### Standardizing the output
 
 We should probably provide a crate with useful output formatters and stuff so that if test harnesses desire, they can
 use the same output formatting as a regular test. This also provides a centralized location to standardize things
@@ -284,7 +284,7 @@ like json output and whatnot.
 
 @killercup is working on a proposal for this which I will try to work in.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
  - This adds more sections to `Cargo.toml`.
@@ -294,7 +294,7 @@ like json output and whatnot.
    between testing frameworks, which may confuse users as they move
    between crates.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [alternatives]: #alternatives
 
 We could stabilize `#[bench]` and extend libtest with setup/teardown and
@@ -302,7 +302,7 @@ other requested features. This would complicate the in-tree libtest,
 introduce a barrier for community contributions, and discourage other
 forms of testing or benchmarking.
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 These are mostly intended to be resolved during the experimental
@@ -310,7 +310,7 @@ feature. Many of these have strawman proposals -- unlike the rest of this RFC,
 these proposals have not been discussed as thoroughly. If folks feel like
 there's consensus on some of these we can move them into the main RFC.
 
-## Integration with doctests
+### Integration with doctests
 
 Documentation tests are somewhat special, in that they cannot easily be
 expressed as `TokenStream` manipulations. In the first instance, the
@@ -323,14 +323,14 @@ demonstrate code that the user of a library would write. They're there
 to document *how* something should be used, and it then makes somewhat
 less sense to have different "ways" of running them.
 
-## Standardizing the output
+### Standardizing the output
 
 We should probably provide a crate with useful output formatters and
 stuff so that if test harnesses desire, they can use the same output
 formatting as a regular test. This also provides a centralized location
 to standardize things like json output and whatnot.
 
-## Namespacing
+### Namespacing
 
 Currently, two frameworks can both declare interest in the same
 attributes. How do we deal with collisions (e.g., most test crates will
@@ -338,7 +338,7 @@ want the attribute `#[test]`). Do we namespace the attributes by the
 framework name (e.g., `#[mytest::test]`)? Do we require them to be behind
 `#[cfg(mytest)]`?
 
-## Runtime dependencies and flags
+### Runtime dependencies and flags
 
 The code generated by the framework may itself have dependencies.
 Currently there's no way for the framework to specify this. One
@@ -356,7 +356,7 @@ dev-dependencies will be semver-merged with the frameworks's
 Custom derives have a similar problem and they solve it by just asking
 users to import the correct crate.
 
-## Naming
+### Naming
 
 The general syntax and toml stuff should be approximately settled on before this eRFC merges, but
 iterated on later. Naming the feature is hard, some candidates are:
@@ -368,7 +368,7 @@ iterated on later. Naming the feature is hard, some candidates are:
 
 None of these are particularly great, ideas would be nice.
 
-## Bencher
+### Bencher
 
 Should we be shipping a bencher by default at all (i.e., in libtest)? Could we instead default
 `cargo bench` to a `rust-lang-nursery` `bench` crate?
@@ -377,7 +377,7 @@ If this RFC lands and [RFC 2287] is rejected, we should probably try to stabiliz
 `test::black_box` in some form (maybe `mem::black_box` and `mem::clobber` as detailed
 in [this amendment]).
 
-## Cargo integration
+### Cargo integration
 
 A previous iteration of this RFC allowed for test frameworks to declare new attributes
 and folders, so you would have `cargo test --kind quickcheck` look for tests in the

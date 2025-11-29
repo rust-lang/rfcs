@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3086](https://github.com/rust-lang/rfcs/pull/3086)
 - Rust Issue: [rust-lang/rust#83527](https://github.com/rust-lang/rust/issues/83527)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add new syntax to declarative macros to give their authors easy access to
 additional metadata about macro metavariables, such as the index, length, or
 count of macro repetitions.
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Macros with repetitions often expand to code that needs to know or could
@@ -38,7 +38,7 @@ preallocate the vector with the correct length.  However, there is no standard
 facility in declarative macros to achieve this, as there is no way to obtain
 the *number* of repetitions of `$x`.
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 The [example `vec` macro definition in the guide][guide-vec] could be made
@@ -81,7 +81,7 @@ The following metavariable expressions are available:
 | `${ignore(ident)}`         | Binds `$ident` for repetition, but expands to nothing. |
 | `$$`                       | Expands to a single `$`, for removing ambiguity in recursive macro definitions. |
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 Metavariable expressions in declarative macros provide expansions for
@@ -94,7 +94,7 @@ The metavariable expressions added in this RFC are concerned with declarative
 macro metavariable repetitions, and obtaining the information that the
 compiler knows about the repetitions that are being processed.
 
-## Count
+### Count
 
 The `${count(x)}` metavariable expression shown in the `vec` example in the
 previous section counts the number of repetitions that will occur if the
@@ -123,7 +123,7 @@ number of times `a` would be generated), the sum of the number of middle
 repetitions (the number of times `b` would be generated), and the total number
 of repetitions of `$x`.
 
-## Index and length
+### Index and length
 
 Within a repetition, the `${index()}` and `${length()}` metavariable
 expressions give the index of the current repetition and the length of the
@@ -149,7 +149,7 @@ repetition, the second pair are the index and length of the middle
 repetition, and the third pair are the index and length of the outer-most
 repetition.
 
-## Ignore
+### Ignore
 
 Sometimes it is desired to repeat an expansion the same number of times as a
 metavariable repeats but without actually expanding the metavariable.  It may
@@ -166,7 +166,7 @@ of repetition, but expands to nothing.  This means a macro expansion like:
 
 will expand to a sequence of `a` tokens repeated the number of times that `x` repeats.
 
-## Dollar dollar
+### Dollar dollar
 
 Since metavariable expressions always apply during the expansion of the macro,
 they cannot be used in recursive macro definitions.  To allow recursive macro
@@ -191,7 +191,7 @@ fn main() { foo!(); }
 
 [issue 35853]: https://github.com/rust-lang/rust/issues/35853
 
-## Larger example
+### Larger example
 
 For a larger example of these metavariable expressions in use, consider the
 following macro that operates over three nested repetitions:
@@ -265,7 +265,7 @@ The macro would expand to:
 ```
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 This adds additional syntax to the language, that program authors must learn
@@ -280,7 +280,7 @@ Furthermore, the additional syntax is limited to declarative macros, and its
 use should be limited to specific circumstances where it is more understandable
 than the alternatives.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This RFC proposes a modest but powerful extension to macro syntax that makes
@@ -312,7 +312,7 @@ expressions.  Available alternatives are:
 * Another sigil, although `#` should be avoided to avoid clashes with the
   `quote!` macro.
 
-## Why not a proc macro or built-in macro?
+### Why not a proc macro or built-in macro?
 
 To avoid extending the language with new syntax, we could consider writing
 something that looks like a macro invocation, such as `count!(value)`, which
@@ -355,7 +355,7 @@ to understand what the macro transcriber is going to do with arbitrary code
 without remembering all of the special macros that don't work like other
 macros.
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 Declarative macros with repetition are commonly used in Rust for things that
@@ -382,14 +382,14 @@ counting it again.
 
 [RFC 88]: https://github.com/rust-lang/rfcs/pull/88
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 No unresolved questions at present.
 
 While more expressions are possible, expressions beyond those defined in this RFC are out-of-scope.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 The metavariable expression syntax (`${...}`) is purposefully generic, and may

@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#2116](https://github.com/rust-lang/rfcs/pull/2116)
 - Rust Issue: [rust-lang/rust#48043](https://github.com/rust-lang/rust/issues/48043)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add minimal support for fallible allocations to the standard collection APIs. This is done in two ways:
@@ -14,7 +14,7 @@ Add minimal support for fallible allocations to the standard collection APIs. Th
 The former is sufficient to unwinding users, but the latter is insufficient for the others (although it is a decent 80/20 solution). Completing the no-unwinding story is left for future work.
 
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 Many collection methods may decide to allocate (push, insert, extend, entry, reserve, with_capacity, ...) and those allocations may fail. Early on in Rust's history we made a policy decision not to expose this fact at the API level, preferring to abort. This is because most developers aren't prepared to handle it, or interested. Handling allocation failure haphazardly is likely to lead to many never-tested code paths and therefore bugs. We call this approach *infallible* collection allocation, because the developer model is that allocations just don't fail.
@@ -32,7 +32,7 @@ There are 4 user profiles we will be considering in this RFC:
 
 
 
-## User Profile: Embedded
+### User Profile: Embedded
 
 Embedded devs are primarily well-aligned with Rust's current strategy. First and foremost, embedded devs just try to *not* dynamically allocate. Memory should ideally all be allocated at startup. In cases where this isn't practical, simply aborting the process is often the next-best choice. Robust embedded systems need to be able to recover from a crash anyway, and aborting is completely fool-proof.
 
@@ -45,7 +45,7 @@ It seems they would be happy to have some system to prevent infallible allocatio
 
 
 
-## User Profile: Gecko
+### User Profile: Gecko
 
 Gecko is also primarily well-aligned with Rust's current strategy. For the most part, they liberally allocate and are happy to crash on OOM. This is especially palatable now that firefox is multiprocess. However as a *quality of implementation* matter, they occasionally make some subroutines fallible. For instance, it would be unfortunate if a single giant image prevented a page from loading. Similarly, running out of memory while processing a style sheet isn't significantly different from failing to download it.
 
@@ -61,7 +61,7 @@ Gecko's need for this API as soon as possible will result in it temporarily fork
 
 
 
-## User Profile: Server
+### User Profile: Server
 
 This represents a commodity server which handles tasks using threads or futures.
 
@@ -75,7 +75,7 @@ With unwinding there isn't any apparent use for an infallible allocation checker
 
 
 
-## User Profile: Runtime
+### User Profile: Runtime
 
 A garbage-collected runtime (such as SpiderMonkey or the Microsoft CLR), is generally expected to avoid crashing due to out-of-memory conditions. Different strategies and allocators are used for different situations here. Most notably, there are allocations on the GC heap for the running script, and allocations on the global heap for the actual runtime's own processing (e.g. performing a JIT compilation).
 
@@ -96,7 +96,7 @@ Aside: many devs in this space have a testing feature which can repeatedly run t
 
 
 
-## Additional Background: How Collections Handle Allocation Now
+### Additional Background: How Collections Handle Allocation Now
 
 All of our collections consider there to be two interesting cases:
 
@@ -114,7 +114,7 @@ This is enough of a mess (which to be clear can be significantly blamed on the a
 
 
 
-## Additional Background: Allocation Failure in C(++)
+### Additional Background: Allocation Failure in C(++)
 
 There are two ways that collection allocation failure is handled in C(++): with error return values, and with unwinding (C++ only). The C++ standard library (STL) only provides fallible allocations through exceptions, but the broader ecosystem also uses return values. For example, mozilla's own standard library (MFBT) only uses return values.
 
@@ -131,7 +131,7 @@ Both of these concerns are partially mitigated in Rust. For return values, Resul
 
 
 
-## Additional Background: Overcommit and Killers
+### Additional Background: Overcommit and Killers
 
 Some operating systems can be configured to pretend there's more memory than there actually is. Generally this is the result of pretending to allocate physical pages of memory, but only actually doing so when the page is accessed. For instance, forking a process is supposed to create two separate copies of the process's memory, but this can be avoided by simply marking all the pages as *copy on write* and having the processes share the same physical memory. The first process to mutate the shared page triggers a page fault, which the OS handles by properly allocating a new physical page for it. Similarly, to postpone zeroing fresh pages of memory, the OS may use a copy-on-write zero page.
 
@@ -145,7 +145,7 @@ Some developers will try to use this as an argument for never *trying* to handle
 
 
 
-## Additional Background: Recovering From Allocation Failure Without Data Loss
+### Additional Background: Recovering From Allocation Failure Without Data Loss
 
 The most common collection interfaces in Rust expect you to move data into them, and may fail to allocate in the middle of processing this data. As a basic example, `push` consumes a T. To avoid data loss, this T should be returned, so a fallible `push` would need a signature like:
 
@@ -175,7 +175,7 @@ Note that this API only even works because Iterator's signature currently guaran
 
 
 
-# Guide-level explanation
+## Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
 Due to the diversity of requirements between our user profiles, there isn't any one-size fits all solution. This RFC proposes two solutions which will require minimal work for maximal impact:
@@ -185,7 +185,7 @@ Due to the diversity of requirements between our user profiles, there isn't any 
 
 
 
-## oom=panic
+### oom=panic
 
 Applying this configuration in a Cargo.toml would change the behaviour of the global allocator's `oom()` function, which currently aborts, to instead panic. As discussed in the Server user profile, this would allow OOM to be handled at task boundaries with minimal effort for server developers, and no effort from library maintainers.
 
@@ -229,7 +229,7 @@ fn main() {
 
 
 
-## try_reserve
+### try_reserve
 
 `try_reserve` and `try_reserve_exact` would be added to `HashMap`, `Vec`, `String`, and `VecDeque`. These would have the exact same APIs as their infallible counterparts, except that OOM would be exposed as an error case, rather than a call to `Alloc::oom()`. They would have the following signatures:
 
@@ -287,12 +287,12 @@ Note that iterator-consuming implementations are limited to ExactSizeIterator, a
 
 
 
-# Reference-level explanation
+## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
 
 
-## oom=panic
+### oom=panic
 
 Disclaimer: not super familiar with all the mechanics here, so this is a sketch that hopefully someone whose worked on these details can help flesh out.
 
@@ -304,7 +304,7 @@ Cargo would also add a `oom=abort=panic` profile configuration, to set the rustc
 
 
 
-## try_reserve
+### try_reserve
 
 [An implementation of try_reserve for Vec can be found for here](https://github.com/rust-lang/rust/pull/43890)
 
@@ -313,7 +313,7 @@ The guide-level explanation otherwise covers all the interesting details.
 
 
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There doesn't seem to be any drawback for adding support for `oom=panic`.
@@ -324,12 +324,12 @@ There doesn't seem to be any drawback for adding support for `oom=panic`.
 
 
 
-# Rationale and Alternatives
+## Rationale and Alternatives
 [alternatives]: #alternatives
 
 
 
-## Always panic on OOM
+### Always panic on OOM
 
 We probably shouldn't mandate this in the actual Alloc trait, but certainly we could change how our global Alloc impls behave. This RFC doesn't propose this for two reasons.
 
@@ -340,7 +340,7 @@ The second is that the author still considers it legitimately correct to discour
 
 
 
-## Eliminate the CapacityOverflow distinction
+### Eliminate the CapacityOverflow distinction
 
 Collections could potentially just create an `AllocErr::Unsupported("capacity overflow")` and feed it to their allocator. Presumably this wouldn't do something bad to the allocator? Then the oom=abort flag could be used to completely control whether allocation failure is a panic or abort (for participating allocators).
 
@@ -349,7 +349,7 @@ Again this is avoided simply to leave things "as they are". In this case it woul
 
 
 
-## Eliminate the 64-bit difference
+### Eliminate the 64-bit difference
 
 This difference literally exists to save a single perfectly-predictable compare-and-branch on 64-bit platforms when allocating collections, which is probably insignificant considering how expensive the success path is. Also the difference here would be a bit exacerbated by exposing the CapacityOverflow variant here.
 
@@ -358,7 +358,7 @@ Again, not proposed to avoid rocking the boat.
 
 
 
-## CollectionAllocErr
+### CollectionAllocErr
 
 There were a few different possible designs for CollectionAllocErr:
 
@@ -377,7 +377,7 @@ We simply opted for the version that had maximum information, on the off-chance 
 
 
 
-## Future Work: Infallible Allocation Effect System (w/ Portability Lints)
+### Future Work: Infallible Allocation Effect System (w/ Portability Lints)
 
 Several of our users have expressed desire for some kind of system to prevent a function from ever infallibly allocating. This is ultimately an effect system.
 
@@ -386,7 +386,7 @@ One possible way to implement this would be to use the *portability lint* system
 This system is supposed to handle things like "I don't have float support" or "I don't have AtomicU64". "I don't have infallible allocation support" is much the same idea. This could be scoped to modules or functions.
 
 
-## Future Work: Complete Result APIs
+### Future Work: Complete Result APIs
 
 Although this RFC handles the "wants to unwind" case pretty cleanly and completely, it leaves no-unwind world with an imperfect one. In particular, it's completely useless for collections which have unpredictable allocations like BTreeMap. This proposal punts on this problem because solving it will be a big change which will likely make a bunch of people mad no matter what.
 
@@ -432,7 +432,7 @@ All of the type-based solutions also suffer from a fairly serious problem: they 
 With all that said, these are the proposed solutions:
 
 
-### Method-Based
+#### Method-Based
 
 Fairly straight-forward, but a bunch of duplicate code. Probably we would either end up implementing `push` in terms of `try_push` (which would be inefficient but easy), or with macros.
 
@@ -451,7 +451,7 @@ impl<T> Vec<T> {
 ```
 
 
-### Generic (on Vec)
+#### Generic (on Vec)
 
 This is a sketch, didn't want to put enough effort in to crack this puzzle.
 
@@ -512,13 +512,13 @@ impl<T, ..., F> Vec<T, ..., F> {
 
 
 
-### Generic (on Alloc)
+#### Generic (on Alloc)
 
 Same basic idea as the previous design, but the Fallibility trait is folded into the Alloc trait. Then one would use `FallibleHeap` or `InfallibleHeap`, or maybe `Infallible<Heap>`? This forces anyone who wants to support generic allocators to support generic fallibility. It would require a complete redesign of the allocator API, blocking it on generic associated types.
 
 
 
-### FallibleVec
+#### FallibleVec
 
 Just make a completely separate type. Includes an `into_fallible(self)`/`into_infallible(self)` conversion which is free since there's no actual representation change. Makes it possible to change "phases" between fallibility/infallibly for different parts of the program if that's valuable. Implementation-wise, basically identical to the method approach, but we also need to duplicate non-allocating methods just to mirror the API.
 
@@ -540,7 +540,7 @@ return vec.into_fallible()
 
 
 
-# Unresolved questions
+## Unresolved questions
 [unresolved]: #unresolved-questions
 
 * How exactly should oom=panic be implemented in the compiler?
