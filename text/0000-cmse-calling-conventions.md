@@ -1,6 +1,6 @@
 - Feature Name:  `cmse_nonsecure_entry` and `abi_cmse_nonsecure_call`
 - Start Date: 2025-11-24
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/3884)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
@@ -35,7 +35,7 @@ Trustzone is growing in availability and use. More and more of the new medium an
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
 
-The cmse calling conventions are part of the *Cortex-M Security Extension* that are available on thumbv8 systems. They are used together with Trustzone (hardware isolation) to create more secure embedded applications.
+The cmse calling conventions are part of the *Cortex-M Security Extension* that are available on Armv8-M systems (the relevant targets start with `thumbv8m`). They are used together with Trustzone (hardware isolation) to create more secure embedded applications.
 
 The main idea of Trustzone  is to split an embedded application into two executables. The secure executable has access to secrets (e.g. encryption keys), and must be careful not to leak those secrets. The non-secure executable cannot access these secrets or any memory that is marked as secure: the system will raise a SecureFault when a program dereferences a pointer to memory that it does not have access to. In this way a whole class of security issues is prevented in the non-secure app.
 
@@ -52,7 +52,7 @@ Both calling conventions are based on the platform's C calling convention, but w
 Arm defines the toolchain requirements in  [ARMv8-M Security Extensions: Requirements on Development Tools - Engineering Specification](https://developer.arm.com/documentation/ecm0359818/latest/), but of course this specification needs to be interpreted in a Rust context.
 ## ABI Details
 
-The `cmse-nonsecure-call` and `cmse-nonsecure-entry` ABIs are only accepted on `thumbv8m` targets. On all other targets their use emits an invalid ABI error.
+The `cmse-nonsecure-call` and `cmse-nonsecure-entry` ABIs are only accepted on `thumbv8m-*` targets, . On all other targets their use emits an invalid ABI error.
 
 The foundation of the cmse ABIs is the platform's standard AAPCS calling convention. On `thumbv8m` targets `extern "aapcs"` is the default C ABI and equivalent to `extern "C"`.
 
