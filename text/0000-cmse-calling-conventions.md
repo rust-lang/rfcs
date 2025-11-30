@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-Support for the `cmse-nonsecure-entry` and `cmse-nonsecure-call` calling conventions on   `thumbv8` targets, and a lint preventing (partially) uninitialized values from crossing the security boundary.
+Support for the `cmse-nonsecure-entry` and `cmse-nonsecure-call` calling conventions on   Armv8-M (`thumbv8m*`) targets, and a lint preventing (partially) uninitialized values from crossing the security boundary.
 
 The implementation is tracked in:
 
@@ -52,7 +52,7 @@ Both calling conventions are based on the platform's C calling convention, but w
 Arm defines the toolchain requirements in  [ARMv8-M Security Extensions: Requirements on Development Tools - Engineering Specification](https://developer.arm.com/documentation/ecm0359818/latest/), but of course this specification needs to be interpreted in a Rust context.
 ## ABI Details
 
-The `cmse-nonsecure-call` and `cmse-nonsecure-entry` ABIs are only accepted on `thumbv8m-*` targets, . On all other targets their use emits an invalid ABI error.
+The `cmse-nonsecure-call` and `cmse-nonsecure-entry` ABIs are only accepted on Armv8-M targets (currently `thumbv8m.base-*-eabi`, `thumbv8m.main-*-eabi{,hf}`). On all other targets their use emits an invalid ABI error.
 
 The foundation of the cmse ABIs is the platform's standard AAPCS calling convention. On `thumbv8m` targets `extern "aapcs"` is the default C ABI and equivalent to `extern "C"`.
 
