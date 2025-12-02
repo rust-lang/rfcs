@@ -775,6 +775,39 @@ trait Subtrait: Supertrait {
 }
 ```
 
+### Extension: `auto impl` support for higher-kinded superbound
+
+Today a higher-kinded superbound is allowed as a superbound as long as only lifetime parameters are
+used.
+
+```rust
+trait Supertrait<'a> {}
+trait Subtrait: for<'a> Supertrait<'a> {}
+```
+
+We propose to extend `auto impl` support to superbounds like this. In order to achieve this,
+the `auto impl` item in traits and `impl` blocks are equipped with exclusively lifetime generic
+parameters.
+
+```rust
+trait Supertrait<'a> {}
+trait Subtrait: for<'a> Supertrait<'a> {
+    auto impl<'a> Supertrait<'a>;
+}
+```
+
+The usual no-shadowing rule applies when it comes to lifetime parameters.
+
+```rust
+trait Subtrait<'a>: for<'a> Supertrait<'a> {
+    //         ~~ first declared here
+    auto impl<'a> Supertrait<'a> {
+        //~^ ERROR lifetime name `'a` shadows a lifetime name that is already in scope
+        //~|  lifetime `'a` already in scope
+    }
+}
+```
+
 ## Unsafe auto implementations
 
 The `auto impl` items can be marked `unsafe`, which declares that implementing the sub-trait without using the auto implementation is unsafe.
