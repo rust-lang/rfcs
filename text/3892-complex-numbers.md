@@ -70,10 +70,6 @@ If the values are floating point, you can even calculate the complex sine, cosin
 let val = Complex::new(3.0, 4.0);
 let sine_cmplx = csin(val); // 3.8537380379 - 27.016813258i
 ```
-It's not too much of a problem to print them:
-```rust
-println!("{}", Complex::new(1.0, 2.0)); // prints 1 + 2i
-```
 If you want to call certain C libraries with complex numbers, you use this type:
 ```C
 // in the C library
@@ -85,7 +81,7 @@ extern "C" {
   fn computes_function(x: Complex<f64>) -> Complex<f64>;
 }
 fn main() {
-  let returned_value = computes_function(Complex::<f64>::new(3, 4))
+  let returned_value = computes_function(Complex::<f64>::new(3.0, 4.0))
 }
 ```
 
@@ -248,4 +244,5 @@ that could help simplify the life of people who otherwise would have to keep wri
 - Should we support Imaginary eventually? This RFC doesn't cover it, but I think we can do this later in another RFC.
 - Eventually we may support Gaussian integers (an extension of the real integers) which have a Euclidean division procedure with remainder. We could theoretically eventually support these integers?
 - We can also support f16 and f128 once methods for them are stabilised.
+- We should also think about a `Display` implementation. Should we support something like `1 + 2i` or something else? Should we not make a `Display` impl at all, and just use re() and im() for the implementation?
 - We should also consider adding aliases (like c32 and c64) for floating points once they are established, to allow for a shorthand syntax.
