@@ -98,40 +98,28 @@ trait Float: Copy + Clone {}
 impl Float for f32 {}
 impl Float for f64 {}
 ```
-Calls to some `libgcc` functions will also be needed:
-```rust
-#[link(name="libgcc")]
-unsafe extern "C" {
-  fn mulsc3(a: f32, b: f32, c: f32, d: f32);
-  fn divsc3(a: f32, b: f32, c: f32, d: f32);
-  fn muldc3(a: f64, b: f64, c: f64, d: f64);
-  fn divdc3(a: f64, b: f64, c: f64, d: f64);
-}
+Calls to some `libgcc` functions will also be needed and will be emitted by the backend via compiler-builtins, specifically `__mulsc3`, `__muldc3`, `__divsc3` and `__divdc3` for the proper and complete implementation of these types.
 ```
-to properly classify all types complex numbers can be implemented on.
-They will have an internal representation of a Tx2 array:
+They will have an internal representation similar to this:
 ```rust
 // in core::complex
 #[lang = "complex"] // For matching the calling convention (special repr needed?)
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub struct Complex<T: Float>([T; 2]);
+pub struct Complex<T: Float>(re: T, im: T);
 ```
 have construction methods and `From` impls:
 ```rust
 impl Complex<T> {
   fn new(re: T, im: T) {
-    Complex([re, im])
   }
 }
 
 impl<T: Float> From<(T, T)> for Complex<T> {
   fn from(value: (T, T)) {
-    Complex(value.0, value.1)
   }
 }
 impl<T: Float> From<(T, T)> for Complex<T> {
   fn from(value: [T; 2]) {
-    Complex(value)
   }
 }
 ```
@@ -140,10 +128,8 @@ have methods to calculate their real and imaginary part (`.re()` and `.im()`):
 ```rust
 impl<T: Float> Complex<T> {
   fn re(self) {
-    self.0[0]
   }
   fn im(self) {
-    self.0[1]
   }
 }
 ```
@@ -151,118 +137,50 @@ polar conversions:
 ```rust
 impl<T: Float + Mul + Add> Complex<T> {
   fn modulus(self) {
-    (self.0 * self.0) + (other.0 * other.0)
   }
 }
 
 impl Complex<f32> {
   fn angle(self) {
-    f32::atan2(self.re(), self.im())
   }
   fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
-    Complex::new(modulus * f32::cos(angle), modulus * f32::sin(angle))
   }
 }
 
 impl Complex<f64> {
   fn angle(self) {
-    f32::atan2(self.re(), self.im())
   }
   fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
-    Complex::new(modulus * f32::cos(angle), modulus * f32::sin(angle))
   }
 }
 ```
 and have arithmetic implementations similar to this:
 ```rust
-impl<T: Add + Float> Add for Complex<T> {
+impl<T: Add + Float> Add for Complex<T> { // and for corresponding real types
   fn add(self, other: Self) {
-    Complex::new(self.0.re() + other.0.re(), self.0.im() + other.0.im())
   }
 }
-impl<T: Add + Float> Add<T> for Complex<T> {
-  fn add(self, other: T) {
-    self + Complex::new(other, 0)
-  }
-}
-impl<T: Add + Float> Add<Complex<T>> for T {
-  fn add(self, other: Complex<Self>) {
-    Complex::new(self, 0) + other
-  }
-}
-impl<T: Sub + Float> Sub for Complex<T> {
+
+impl<T: Sub + Float> Sub for Complex<T> { // and for corresponding real types 
   fn sub(self, other: Self) {
-    Complex::new(self.0.re() - other.0.re(), self.0.im() - other.0.im())
   }
 }
-impl<T: Sub + Float> Sub<T> for Complex<T> {
-  fn sub(self, other: T) {
-    self - Complex::new(other, 0)
-  }
-}
-impl<T: Sub + Float> Sub<Complex<T>> for T {
-  fn sub(self, other: Complex<Self>) {
-    Complex::new(self, 0) - other
-  }
-}
-impl Mul for Complex<f32> {
+impl Mul for Complex<f32> { // calls to __mulsc3 will be required here for implementation details and corresponding real types will also be implemented
   fn mul(self, other: Self) {
     __mulsc3(self.re(), self.im(), other.re(), other.im())
   }
 }
-impl Mul for Complex<f64> {
+impl Mul for Complex<f64> { // calls to __muldc3 will be required here for implementation details and corresponding real types will also be implemented
   fn mul(self, other: Self) {
     __muldc3(self.re(), self.im(), other.re(), other.im())
   }
 }
-impl Mul<f32> for Complex<f32> {
-  fn mul(self, other: T) {
-    self * Complex::new(other, 0);
-  }
-}
-impl Mul<f64> for Complex<f64> {
-  fn mul(self, other: T) {
-    self * Complex::new(other, 0);
-  }
-}
-impl Mul<Complex<f32>> for f32 {
-  fn mul(self, other: Complex<Self>) {
-    Complex::new(self, 0) * other
-  }
-}
-impl Mul<Complex<f64>> for f64 {
-  fn mul(self, other: Complex<Self>) {
-    Complex::new(self, 0) * other
-  }
-}
-impl Div for Complex<f32> {
+impl Div for Complex<f32> { // calls to __divsc3 will be required here for implementation details and corresponding real types will also be implemented
   fn Div(self, other: Self) {
-    __divsc3(self.re(), self.im(), other.re(), other.im())
   }
 }
-impl Div for Complex<f64> {
+impl Div for Complex<f64> { // calls to __divdc3 will be required here for implementation details and corresponding real types will also be implemented
   fn Div(self, other: Self) {
-    __divdc3(self.re(), self.im(), other.re(), other.im())
-  }
-}
-impl Div<f32> for Complex<f32> {
-  fn div(self, other: T) {
-    self / Complex::new(other, 0);
-  }
-}
-impl Div<f64> for Complex<f64> {
-  fn div(self, other: T) {
-    self / Complex::new(other, 0);
-  }
-}
-impl Div<Complex<f32>> for f32 {
-  fn div(self, other: Complex<Self>) {
-    Complex::new(self, 0) / other
-  }
-}
-impl Div<Complex<f64>> for f64 {
-  fn div(self, other: Complex<Self>) {
-    Complex::new(self, 0) / other
   }
 }
 ```
@@ -297,7 +215,8 @@ or in C:
 ```c
 float _Complex cmplx = 1 + 2*I;
 float _Complex two_cmplx = 3 + 4*I;
-printf("%.1f%+.1fi\n", creal(cmplx * two_cmplx), cimag(cmplx * two_cmplx)
+printf("%.1f%+.1fi\n", creal(cmplx * two_cmplx), cimag(cmplx * two_cmplx));
+```
 Even in Rust, it has been discussed two times in IRLO:
 - [First discussion](https://internals.rust-lang.org/t/c-compatible-complex-types-using-traits/13757)
 - [Second discussion](https://internals.rust-lang.org/t/standard-complex-number-in-std-library/23748)
