@@ -131,7 +131,7 @@ impl<T: Float> From<(T, T)> for Complex<T> {
 }
 impl<T: Float> From<(T, T)> for Complex<T> {
   fn from(value: [T; 2]) {
-    Complex(value[0], value[1])
+    Complex(value)
   }
 }
 ```
@@ -159,11 +159,17 @@ impl Complex<f32> {
   fn angle(self) {
     f32::atan2(self.re(), self.im())
   }
+  fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
+    Complex::new(modulus * f32::cos(angle), modulus * f32::sin(angle))
+  }
 }
 
 impl Complex<f64> {
   fn angle(self) {
     f32::atan2(self.re(), self.im())
+  }
+  fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
+    Complex::new(modulus * f32::cos(angle), modulus * f32::sin(angle))
   }
 }
 ```
