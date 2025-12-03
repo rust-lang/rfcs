@@ -34,7 +34,7 @@ using the standard library's FFI-compatible complex numbers.
 
 `Complex<T>` numbers can be instantiated as of any type using `Complex::new(re, im)` where `re` and `im` are of the same type (this includes all numbers).
 ```rust
-let x = Complex::new(3.0, 4.0); // this instantiates them as integers, not floats!
+let x = Complex::new(3.0, 4.0);
 ```
 They can even be passed as an array:
 ```rust
