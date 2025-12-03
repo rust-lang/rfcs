@@ -141,16 +141,16 @@ impl<T: Float + Mul + Add> Complex<T> {
 }
 
 impl Complex<f32> {
-  fn angle(self) {
+  fn angle(self) -> f32 {
   }
   fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
   }
 }
 
 impl Complex<f64> {
-  fn angle(self) {
+  fn angle(self) -> f64{
   }
-  fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
+  fn from_polar(modulus: f64, angle: f64) -> Complex<f64> {
   }
 }
 ```
