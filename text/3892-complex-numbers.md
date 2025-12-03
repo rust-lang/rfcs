@@ -106,78 +106,61 @@ pub struct Complex<T: Float>(re: T, im: T);
 have construction methods and `From` impls:
 ```rust
 impl Complex<T> {
-  fn new(re: T, im: T) {
-  }
+  fn new(re: T, im: T);
 }
 
 impl<T: Float> From<(T, T)> for Complex<T> {
-  fn from(value: (T, T)) {
-  }
+  fn from(value: (T, T));
 }
 impl<T: Float> From<(T, T)> for Complex<T> {
-  fn from(value: [T; 2]) {
-  }
+  fn from(value: [T; 2]);
 }
 ```
 
 have methods to calculate their real and imaginary part (`.re()` and `.im()`):
 ```rust
 impl<T: Float> Complex<T> {
-  fn re(self) {
-  }
-  fn im(self) {
-  }
+  fn re(self);
+  fn im(self);
 }
 ```
 polar conversions:
 ```rust
 impl<T: Float + Mul + Add> Complex<T> {
-  fn modulus(self) {
-  }
+  fn modulus(self);
 }
 
 impl Complex<f32> {
-  fn angle(self) -> f32 {
-  }
+  fn angle(self) -> f32;
   fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
-  }
 }
 
 impl Complex<f64> {
   fn angle(self) -> f64{
   }
-  fn from_polar(modulus: f64, angle: f64) -> Complex<f64> {
-  }
+  fn from_polar(modulus: f64, angle: f64) -> Complex<f64>;
 }
 ```
 and have arithmetic implementations similar to this:
 ```rust
 impl<T: Add + Float> Add for Complex<T> { // and for corresponding real types
-  fn add(self, other: Self) {
-  }
+  fn add(self, other: Self);
 }
 
 impl<T: Sub + Float> Sub for Complex<T> { // and for corresponding real types 
-  fn sub(self, other: Self) {
-  }
+  fn sub(self, other: Self);
 }
 impl Mul for Complex<f32> { // calls to __mulsc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn mul(self, other: Self) {
-    __mulsc3(self.re(), self.im(), other.re(), other.im())
-  }
+  fn mul(self, other: Self);
 }
 impl Mul for Complex<f64> { // calls to __muldc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn mul(self, other: Self) {
-    __muldc3(self.re(), self.im(), other.re(), other.im())
-  }
+  fn mul(self, other: Self);
 }
 impl Div for Complex<f32> { // calls to __divsc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn Div(self, other: Self) {
-  }
+  fn div(self, other: Self);
 }
 impl Div for Complex<f64> { // calls to __divdc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn Div(self, other: Self) {
-  }
+  fn div(self, other: Self) ;
 }
 ```
 The floating point numbers shall have sine and cosine and tangent functions, their inverses, their hyperbolic variants, and their inverses defined as per the C standard and with Infinity and Nan values defined as per the C standard.
@@ -228,9 +211,11 @@ Should this type be in `core::ffi`? This type's purpose is mostly FFI, but it mi
 
 - Maybe later on, we can think of adding a special custom suffix for complex numbers (`1+2j` for example), and using that as a simpler way of writing complex numbers if this RFC is accepted? This is very similar to how most languages implement complex numbers? Or perhaps we could consider a constant:
 ```rust
-const I: T = Complex::new(T::zero(), T::one());
+impl<T: Float> Complex<T: Float> {
+  const I: T = Complex::new(T::zero(), T::one());
+}
 ```
-where `zero` and `one` is implemented on a trait similar to `num_traits`?
+where `zero` and `one` is implemented on the `Float` trait similar to `num_traits`?
 Or maybe we could have a method on normal numbers:
 ```rust
 // for example
