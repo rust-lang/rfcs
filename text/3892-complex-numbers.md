@@ -112,27 +112,27 @@ impl Complex<T> {
 impl<T: Float> From<(T, T)> for Complex<T> {
   fn from(value: (T, T));
 }
-impl<T: Float> From<(T, T)> for Complex<T> {
-  fn from(value: [T; 2]);
+impl<T: Float> From<[T; 2]> for Complex<T> {
+  fn from(value: [T; 2]) -> Self;
 }
 ```
 
 have methods to calculate their real and imaginary part (`.re()` and `.im()`):
 ```rust
 impl<T: Float> Complex<T> {
-  fn re(self);
-  fn im(self);
+  fn re(self) -> T;
+  fn im(self) -> T;
 }
 ```
 polar conversions:
 ```rust
 impl<T: Float + Mul + Add> Complex<T> {
-  fn modulus(self);
+  fn modulus(self) -> T;
 }
 
 impl Complex<f32> {
   fn angle(self) -> f32;
-  fn from_polar(modulus: f32, angle: f32) -> Complex<f32> {
+  fn from_polar(modulus: f32, angle: f32) -> Self;
 }
 
 impl Complex<f64> {
@@ -144,23 +144,33 @@ impl Complex<f64> {
 and have arithmetic implementations similar to this:
 ```rust
 impl<T: Add + Float> Add for Complex<T> { // and for corresponding real types
-  fn add(self, other: Self);
+  type Output = Self;
+
+  fn add(self, other: Self) -> Self::Output;
 }
 
 impl<T: Sub + Float> Sub for Complex<T> { // and for corresponding real types 
-  fn sub(self, other: Self);
+  type Output = Self;
+
+  fn sub(self, other: Self) -> Self::Output;
 }
 impl Mul for Complex<f32> { // calls to __mulsc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn mul(self, other: Self);
+  type Output = Self;
+
+  fn mul(self, other: Self) -> Self::Output;
 }
 impl Mul for Complex<f64> { // calls to __muldc3 will be required here for implementation details and corresponding real types will also be implemented
   fn mul(self, other: Self);
 }
 impl Div for Complex<f32> { // calls to __divsc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn div(self, other: Self);
+  type Output = Self;
+
+  fn div(self, other: Self) -> Self::Output;
 }
 impl Div for Complex<f64> { // calls to __divdc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn div(self, other: Self) ;
+  type Output = Self;
+
+  fn div(self, other: Self) -> Self::Output;
 }
 ```
 The floating point numbers shall have sine and cosine and tangent functions, their inverses, their hyperbolic variants, and their inverses defined as per the C standard and with Infinity and Nan values defined as per the C standard.
