@@ -345,9 +345,11 @@ https://doc.rust-lang.org/reference/abi.html should get a new section:
     >
     > Intro-tag: The _`export_visibility` attribute_ overrides if or how the
     > item is exported from the produced library or object file.
+    > The `export_visibility` attribute can only be applied to
+    > items with `#[no_mangle]` or `#[export_name = ...]` attributes.
     >
-    > Syntax-tag: The export_name attribute uses the MetaNameValueStr syntax to
-    > specify the symbol name.
+    > Syntax-tag: The export_visibility attribute uses the MetaNameValueStr
+    > syntax to specify the symbol name.
     >
     > Target-default-tag: Currently only `#[export_visibility =
     > “target_default”]` is supported.  When used, it means that the item will
@@ -355,14 +357,33 @@ https://doc.rust-lang.org/reference/abi.html should get a new section:
     > be overridden by the unstable `-Zdefault-visibility=...` command-line
     > flag.
 
+Note that the applicability wording proposed above
+is based on the following factors:
+
+* Desire to only apply the `#[export_visibility = ...]` attribute to items
+  for which
+  [`contains_extern_indicator`](https://github.com/rust-lang/rust/blob/3bc767e1a215c4bf8f099b32e84edb85780591b1/compiler/rustc_middle/src/middle/codegen_fn_attrs.rs#L174-L184)
+  is `true`.  Today this covers:
+    - All items that use the `#[no_mangle]` attribute
+    - All items that use the `#[export_name = ...]` attribute
+    - All items that use the `#[rustc_std_internal_symbol]` attribute
+    - Some items that use `#[linkage = ...]`
+      (note that this attribute has not yet been
+      [stabilized](https://doc.rust-lang.org/beta/unstable-book/language-features/linkage.html?highlight=linkage#linkage)
+      and this is why it is not yet mentioned in the proposed reference text
+      above)
+- Desire to forbid applying the `#[export_visibility = ...]` attribute
+  in cases where doing so may increase an item visibility.
+    - This is why `#[rustc_std_internal_symbol]` is intentionally omitted
+      and why the RFC proposes that using `#[export_visibility = ...]` for
+      `#[rustc_std_internal_symbol]` items should be an error.  See also
+      the [why-new-attr-cant-increase-visibility] section below.
+
 ## Other details
 
 Other details (probably not important enough to include in the official
 reference documentation for Rust):
 
-* It is an error to use `#[export_visibility = ...]` on an item
-  _without_ either `#[no_mangle]` or `#[export_name = ...]`
-  attribute.
 * The proposal in this RFC has been prototyped in
   https://github.com/anforowicz/rust/tree/export-visibility
 
@@ -382,19 +403,17 @@ No drawbacks have been identified at this point.
 The `#[export_visibility = ...]` attribute may only be applied to item
 definitions with an "extern" indicator as checked by [`fn
 contains_extern_indicator`](https://github.com/rust-lang/rust/blob/3bc767e1a215c4bf8f099b32e84edb85780591b1/compiler/rustc_middle/src/middle/codegen_fn_attrs.rs#L174-L184).
-Therefore it may only be applied to items to which `#[no_mangle]`,
-`#[export_name = ...]`, and similar already-existing attributes may be already
-applied.
 
 Based on the above, the `#[export_visibility = ...]` attribute may never
 _increase_ visibility of a symbol.  This is because:
 
-* `#[no_mangle]`, `#[export_name = ...]` and similar attributes force the
+* `#[no_mangle]` and `#[export_name = ...]` force the
   _maximum_ possible visiblity.  See
   [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_monomorphize/src/partitioning.rs#L930-L937)
+* It seems that `#[linkage = ...]` should have no impact on symbol visibility
 * One known exception is `#[rustc_std_internal_symbol]` - see
   [here](https://github.com/rust-lang/rust/blob/8111a2d6da405e9684a8a83c2c9d69036bf23f12/compiler/rustc_codegen_ssa/src/back/symbol_export.rs#L527-L542).
-  The RFC suggests to avoid this exception by disallowing using
+  The RFC avoids this exception by disallowing using
   `#[export_visibility = ...]` with `#[rustc_std_internal_symbol]`.
 
 ## Rationale for not supporting `interposable` visibility
