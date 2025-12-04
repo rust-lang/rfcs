@@ -48,21 +48,19 @@ They can even be passed in polar form (but only as a float):
 ```rust
 let polar = Complex::from_polar(3.0, f32::PI/2.0);
 ```
-where .i() turns a real number into a complex one transposing the real value to a complex value.
-
 They are added and multiplied as complexes are:
 ```rust
 let first = Complex::new(1.0, 2.0);
 let second = Complex::new(3.0, 4.0);
-let added = first + second; // 4 + 6.i()
-let multiplied = first * second; // -4 + 10.i()
+let added = first + second; // 4 + 6i
+let multiplied = first * second; // -4 + 10i
 ```
 
 They can be divided using normal floating-point division
 ```rust
 let float_first = Complex::new(1.0, 2.0);
 let float_second = Complex::new(3.0, 4.0);
-let divided = float_second / float_first; // 2.4 - 0.2.i()
+let divided = float_second / float_first; // 2.4 - 0.2i
 ```
 
 If the values are floating point, you can even calculate the complex sine, cosine and more:
