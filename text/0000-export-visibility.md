@@ -776,10 +776,11 @@ use one of those three binary formats:
 * `i686-pc-windows-msvc`: PE/COFF (same documentation as above)
 * `i686-unknown-linux-gnu`: ELF
 * `x86_64-pc-windows-gnu`: PE (documented
-  [here](https://doc.rust-lang.org/beta/rustc/platform-support/windows-gnu.html#requirements)) 
+  [here](https://doc.rust-lang.org/beta/rustc/platform-support/windows-gnu.html#requirements))
 * `x86_64-unknown-linux-gnu`: ELF
 
-Ad-hoc, manual tests (TODO: link to a GitHub comment)
+Ad-hoc, manual tests (e.g. see
+[here](https://github.com/rust-lang/rfcs/pull/3834#issuecomment-3403039933))
 of `#[export_visibility = "target_default"]` provide some
 reassurance that such definitions should be possible in the future.
 OTOH, when future RFCs or PRs consider implementing specific visibility levels,
