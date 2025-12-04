@@ -833,12 +833,6 @@ the following functions:
 /// C/C++ libraries we may /// use `#[export_visibility = "hidden"]`.  We will
 /// see below how the hidden visibility may have some undesirable
 /// interactions with `dylib`s.
-///
-/// TODO: Do we need `rustc` command-line examples that would show how such
-/// static linking would be done when building a `staticlib`, `bin`, `cdylib`,
-/// or a `dylib` (I haven't checked how/if this would work in all of those
-/// cases;  i.e. I haven't checked how to ask `rustc` to link with static
-/// libraries produced by a C/C++ compiler).
 #[no_mangle]
 #[export_visibility = "hidden"]
 fn internal_helper_called_from_rust_or_cpp() { todo!() }
