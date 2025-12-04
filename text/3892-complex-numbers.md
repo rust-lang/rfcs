@@ -106,11 +106,11 @@ pub struct Complex<T: Float>(re: T, im: T);
 have construction methods and `From` impls:
 ```rust
 impl Complex<T> {
-  fn new(re: T, im: T);
+  fn new(re: T, im: T) -> Self;
 }
 
 impl<T: Float> From<(T, T)> for Complex<T> {
-  fn from(value: (T, T));
+  fn from(value: (T, T)) -> Self;
 }
 impl<T: Float> From<[T; 2]> for Complex<T> {
   fn from(value: [T; 2]) -> Self;
@@ -138,7 +138,7 @@ impl Complex<f32> {
 impl Complex<f64> {
   fn angle(self) -> f64{
   }
-  fn from_polar(modulus: f64, angle: f64) -> Complex<f64>;
+  fn from_polar(modulus: f64, angle: f64) -> Self;
 }
 ```
 and have arithmetic implementations similar to this:
@@ -160,7 +160,9 @@ impl Mul for Complex<f32> { // calls to __mulsc3 will be required here for imple
   fn mul(self, other: Self) -> Self::Output;
 }
 impl Mul for Complex<f64> { // calls to __muldc3 will be required here for implementation details and corresponding real types will also be implemented
-  fn mul(self, other: Self);
+  type Output = Self;
+
+  fn mul(self, other: Self) -> Self::Output;
 }
 impl Div for Complex<f32> { // calls to __divsc3 will be required here for implementation details and corresponding real types will also be implemented
   type Output = Self;
