@@ -63,7 +63,7 @@ let float_second = Complex::new(3.0, 4.0);
 let divided = float_second / float_first; // 2.4 - 0.2i
 ```
 
-If the values are floating point, you can even calculate the complex sine, cosine and more:
+You can even calculate the complex sine, cosine and more:
 ```rust
 let val = Complex::new(3.0, 4.0);
 let sine_cmplx = csin(val); // 3.8537380379 - 27.016813258i
