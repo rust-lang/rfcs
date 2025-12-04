@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3873](https://github.com/rust-lang/rfcs/pull/3873)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Summary
+## Summary
 [summary]: #summary
 
 While Rust's pre-built standard library has proven itself sufficient for the
@@ -50,7 +50,7 @@ There is also a [literature review appendix][appendix] in a HackMD which
 contains a summary of all literature found during the process of writing this
 RFC.
 
-## Scope
+### Scope
 [scope]: #scope
 
 build-std has a long and storied history of previous discussions and proposals
@@ -65,7 +65,7 @@ the foundation for future proposals to lift restrictions and enable build-std to
 support more use cases, without those proposals having to survey the ten-plus
 years of issues, pull requests and discussion that this RFC has.
 
-## Acknowledgements
+### Acknowledgements
 [acknowledgements]: #acknowledgements
 
 This RFC would not have been possible without the advice, feedback and support
@@ -84,7 +84,7 @@ well as [Amanieu D'Antras][amanieu], [Tobias Bieniek][turbo87],
 [Weihang Lo][weihanglo], and [Mark Rousskov][simulacrum] for providing feedback
 from their areas of expertise on later drafts.
 
-## Terminology
+### Terminology
 [terminology]: #terminology
 
 The following terminology is used throughout the RFC:
@@ -111,7 +111,7 @@ could proceed.
 > This is an example of a "note alert" that will be used to separate
 > implementation detail from the proposal proper.
 
-# Background
+## Background
 [background]: #background
 
 This section aims to introduce any relevant details about the standard library
@@ -121,7 +121,7 @@ RFCs.
 See [*Implementation summary*][implementation-summary] for a summary of the
 current unstable build-std feature in Cargo.
 
-## Standard library
+### Standard library
 [background-standard-library]: #standard-library
 
 Since the first stable release of Rust, the standard library has been distributed
@@ -192,7 +192,7 @@ but there are crates on GitHub that use this pattern, such as
 [embed-rs/stm32f7-discovery][embed-rs-cargo-toml], which are used as `git`
 dependencies of other crates on GitHub.
 
-### Dependencies
+#### Dependencies
 [background-dependencies]: #dependencies
 
 Behind the facade, the standard library is split into multiple crates, some of
@@ -241,7 +241,7 @@ implementation. There are still some C dependencies:
 Dependencies of the standard library may use unstable or internal compiler and
 language features only when they are a dependency of the standard library.
 
-### Features
+#### Features
 [background-features]: #features
 
 There are a handful of features defined in the standard library crates'
@@ -256,7 +256,7 @@ It is also common for user crates to depend on the standard library (via
 `#![no_std]`) conditional on Cargo features being enabled or disabled (e.g. a
 `std` feature or if `--test` is used).
 
-### Target support
+#### Target support
 [background-target-support]: #target-support
 
 The `std` crate's [`build.rs`][std-build.rs] checks for supported values of the
@@ -286,7 +286,7 @@ use `-Zbuild-std`, their use is relegated to nightly toolchains in practice.
 Custom targets may have `restricted_std` set depending on their `cfg`
 configuration options.
 
-## Prelude
+### Prelude
 [background-prelude]: #prelude
 
 rustc has the concept of the "extern prelude" which is the set of crates that
@@ -314,7 +314,7 @@ it to the extern prelude. This could allow a path for crates like `alloc` or
 `test` to be provided without affecting the observable behaviour of the
 language.
 
-## Panic strategies
+### Panic strategies
 [background-panic-strategies]: #panic-strategies
 
 Rust has the concept of a *panic handler*, which is a crate that is responsible
@@ -359,7 +359,7 @@ strategy by modifying the `core::panic!` macro to immediately call the abort
 intrinsic without calling the panic handler, which can dramatically reduce code
 size. `std` also adds an immediate abort to its `panic!` macro.
 
-## Cargo
+### Cargo
 [background-cargo]: #cargo
 
 Cargo's building of the dependency graph is largely driven by the registry
@@ -403,7 +403,7 @@ Registries can have different policies for what crates are accepted. For
 example, crates.io does not permit publishing packages named `std` or `core` but
 other registries might.
 
-### Public/private dependencies
+#### Public/private dependencies
 [background-pubpriv-dependencies]: #publicprivate-dependencies
 
 [Public and private dependencies][rust#44663] are an unstable feature which
@@ -419,7 +419,7 @@ rustc for backwards compatibility reasons. rust emits the
 `exported-private-dependencies` lint if an item from a private dependency is
 re-exported.
 
-## Target modifiers
+### Target modifiers
 [background-target-modifiers]: #target-modifiers
 
 [rfcs#3716] introduced the concept of *target modifiers* to rustc. Flags marked
@@ -430,14 +430,14 @@ For example, flags are made target modifiers when they change the ABI of
 generated code and could result in unsound ABI mismatches if two crates are
 linked together with different values of the flag set.
 
-# History
+## History
 [history]: #history
 
 *The following summary of the prior art is necessarily less detailed than the
 source material, which is exhaustively surveyed in
 [Appendix: Exhaustive literature review][appendix].*
 
-## [rfcs#1133] (2015)
+### [rfcs#1133] (2015)
 [rfcs-1133-2015]: #rfcs1133-2015
 
 build-std was first proposed in a [2015 RFC (rfcs#1133)][rfcs#1133] by
@@ -463,7 +463,7 @@ Despite this, the RFC appeared to be close to acceptance before being blocked
 by Cargo having a mechanism to have unstable features and then closed in favour
 of [cargo#4959].
 
-## [xargo] and [cargo#4959] (2016)
+### [xargo] and [cargo#4959] (2016)
 [xargo-and-cargo-4959-2016]: #xargo-and-cargo4959-2016
 
 While the discussions around [rfcs#1133] were ongoing, [xargo] was released in
@@ -493,7 +493,7 @@ updated after submission so ultimately stalled and remains open.
 machinery to users and [rfcs#1133] attempting to take a more first-class and
 user-friendly approach that has many tricky design implications.
 
-## [rfcs#2663] (2019)
+### [rfcs#2663] (2019)
 [rfcs-2663-2019]: #rfcs2663-2019
 
 In 2019, [*rfcs#2663: `std` Aware Cargo*][rfcs#2663] was opened as the most
@@ -526,7 +526,7 @@ more clearly elucidating a potential user experience that build-std could aim
 for, and the feedback provided was incorporated into the [wg-cargo-std-aware]
 effort, described below.
 
-## [wg-cargo-std-aware] (2019-)
+### [wg-cargo-std-aware] (2019-)
 [wg-cargo-std-aware-2019-]: #wg-cargo-std-aware-2019-
 
 [rfcs#2663] demonstrated that there was demand for a mechanism for being able to
@@ -768,7 +768,7 @@ Since around 2020, activity in the [wg-cargo-std-aware] repository largely
 trailed off and there have not been any significant developments related to
 build-std since.
 
-### Implementation summary
+#### Implementation summary
 [implementation-summary]: #implementation-summary
 
 *An exhaustive review of implementation-related issues, pull requests and
@@ -880,7 +880,7 @@ Cargo's subcommands including `metadata`, `clean`, `vendor`, `pkgid` and the
 `-p` options for various commands. Support for `cargo fetch` was implemented in
 [cargo#10129].
 
-## `no_std` Usability
+### `no_std` Usability
 [no_std-usability]: #no_std-usability
 
 There are also issues related to the usability of `no_std` crates:
@@ -892,7 +892,7 @@ There are also issues related to the usability of `no_std` crates:
 - `no_std` crates can accidentally and easily depend on crates that use `std`
   which can result in build failures in some targets ([cargo#8798]).
 
-## Related work
+### Related work
 [related-work]: #related-work
 
 There are a variety of ongoing efforts, ideas, RFCs or draft notes describing
@@ -913,7 +913,7 @@ features that are related or would be beneficial for build-std:
     - Optimising dependencies - dependencies could always be optimised when they
       are unlikely to be needed during debugging
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 > [!IMPORTANT]
@@ -1051,12 +1051,12 @@ which make these motivations harder to solve in future:
         standard library in the sysroot. Removing the sysroot has no advantages
         to the end-user of Rust in itself.
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 These rationales and alternatives apply to the build-std proposal as a whole:
 
-## Why have rationale sections?
+### Why have rationale sections?
 [rationale-rationale]: #why-have-rationale-sections
 
 A separate rationale section makes for easier reading by letting the proposal
@@ -1064,7 +1064,7 @@ sections of the RFCs flow better without interruptions or tangents.
 
 ↩ [*Terminology*][terminology]
 
-## Why not do nothing?
+### Why not do nothing?
 [rationale-why-not-do-nothing]: #why-not-do-nothing
 
 Support for rebuilding the standard library is a long-standing feature request
@@ -1075,7 +1075,7 @@ Inaction forces these users to remain on nightly and depend on the unstable
 stable release of the language demonstrate the longevity of build-std as a
 need.
 
-## Shouldn't build-std be part of rustup?
+### Shouldn't build-std be part of rustup?
 [rationale-in-rustup]: #shouldnt-build-std-be-part-of-rustup
 
 build-std is effectively creating a new sysroot with a customised standard
