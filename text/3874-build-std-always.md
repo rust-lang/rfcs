@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3874](https://github.com/rust-lang/rfcs/pull/3874)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Add a new Cargo configuration option, `build-std = "always|never"`, which will
@@ -52,7 +52,7 @@ RFCs:**
 [rfcs#3875-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#unresolved-questions
 [rfcs#3875-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#future-possibilities
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This RFC builds on a large collection of prior art collated in the
@@ -70,7 +70,7 @@ enabling and disabling of arbitrary standard library features is handled by
 
 [rfcs#3875-features]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#features
 
-# Proposal
+## Proposal
 [proposal]: #proposal
 
 This proposal section is quite broad, and a
@@ -243,7 +243,7 @@ target in the project.
 
 [Opaque dependencies]: https://hackmd.io/@epage/ByGfPtRell
 
-## Standard library crate stability
+### Standard library crate stability
 [standard-library-crate-stability]: #standard-library-crate-stability
 
 An optional `standard_library_support` field
@@ -298,7 +298,7 @@ supported: core, alloc, std
 - [*Why introduce `standard_library_support`?*][rationale-why-standard-library-support]
 - [*Should target specifications own knowledge of which standard library crates are supported?*][rationale-target-spec-purpose]
 
-## Interactions with `#![no_std]`
+### Interactions with `#![no_std]`
 [interactions-with-no_std]: #interactions-with-no_std
 
 Behaviour of crates using `#![no_std]` will not change whether or not `std` is
@@ -313,7 +313,7 @@ possibility for how the `no_std` mechanism could be replaced.
 
 [future-replace-no_std]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#replace-no_std-as-the-source-of-truth-for-whether-a-crate-depends-on-std
 
-## `restricted_std`
+### `restricted_std`
 [restricted_std]: #restricted_std
 
 The existing `restricted_std` mechanism will be removed from `std`'s
@@ -325,7 +325,7 @@ The existing `restricted_std` mechanism will be removed from `std`'s
 
 [std-build.rs]: https://github.com/rust-lang/rust/blob/f315e6145802e091ff9fceab6db627a4b4ec2b86/library/std/build.rs#L17
 
-## Custom targets
+### Custom targets
 [custom-targets]: #custom-targets
 
 Cargo will detect when the standard library is to be built for a custom target
@@ -358,7 +358,7 @@ that `-Zunstable-options` is provided to Cargo.
 
 - [*Allow custom targets with build-std*][future-custom-targets]
 
-## Preventing implicit sysroot dependencies
+### Preventing implicit sysroot dependencies
 [preventing-implicit-sysroot-dependencies]: #preventing-implicit-sysroot-dependencies
 
 Cargo will pass a new flag to rustc which will prevent rustc from loading
@@ -376,7 +376,7 @@ top-level dependencies from the sysroot ([?][rationale-root-sysroot-deps]).
 
 - [*Why prevent rustc from loading root dependencies from the sysroot?*][rationale-root-sysroot-deps]
 
-## Vendored `rust-src`
+### Vendored `rust-src`
 [vendored-rust-src]: #vendored-rust-src
 
 When it is necessary to build the standard library, Cargo will look for sources
@@ -406,7 +406,7 @@ of standard library dependencies will not need be fetched from crates.io.
 
 - [*Should `rust-src` be a default component?*][unresolved-rust-src]
 
-## Panic strategies
+### Panic strategies
 [panic-strategies]: #panic-strategies
 
 Panic strategies are unlike other profile settings insofar as they influence
@@ -465,7 +465,7 @@ crates to be built for compilation to succeed.
 
 - [*Avoid building `panic_unwind` unnecessarily*][future-panic_unwind]
 
-## Building the standard library on a stable toolchain
+### Building the standard library on a stable toolchain
 [building-the-standard-library-on-a-stable-toolchain]: #building-the-standard-library-on-a-stable-toolchain
 
 rustc will automatically assume `RUSTC_BOOTSTRAP` when the source path of the
@@ -479,7 +479,7 @@ detect whether a nightly version is being used.
 
 - [*Why allow building from the sysroot with implied `RUSTC_BOOTSTRAP`?*][rationale-implied-bootstrap]
 
-## Self-contained objects
+### Self-contained objects
 [self-contained-objects]: #self-contained-objects
 
 A handful of targets require linking against special object files, such as
@@ -524,7 +524,7 @@ otherwise) will be used.
 [rust#76158]: https://github.com/rust-lang/rust/pull/76158
 [compiler-team#343]: https://github.com/rust-lang/compiler-team/issues/343
 
-## `compiler-builtins`
+### `compiler-builtins`
 [compiler-builtins]: #compiler-builtins
 
 `compiler-builtins` is always built with `-Ccodegen-units=10000` to force each
@@ -537,7 +537,7 @@ for discussion of the `compiler-builtins-c` feature.
 
 [future-compiler-builtins-c]: https://github.com/davidtwco/rfcs/blob/build-std-part-three-explicit-dependencies/text/3875-build-std-explicit-dependencies.md#allow-local-builds-of-compiler-rt-intrinsics
 
-### `compiler-builtins/mem`
+#### `compiler-builtins/mem`
 [compiler-builtins-mem]: #compiler-builtinsmem
 
 It is not possible to use weak linkage to make the symbols provided by
@@ -564,7 +564,7 @@ Those users providing their own mem symbols can override on weak linkage of the
 - [*Why not rely on weak linkage for `compiler-builtins/mem` symbols?*][rationale-no-weak-linkage]
 - [*Why invert the `mem` feature?*][rationale-no-mem]
 
-## `profiler-builtins`
+### `profiler-builtins`
 [profiler-builtins]: #profiler-builtins
 
 `profiler-builtins` will not be built by build-std, thus preventing
@@ -577,7 +577,7 @@ part of the standard library build.
 
 - [*Allow building `profiler-builtins`*][future-profiler-builtins]
 
-## Caching
+### Caching
 [caching]: #caching
 
 Standard library artifacts built by build-std will be reused equivalently to
@@ -588,7 +588,7 @@ default, this limits sharing to a single workspace ([?][rationale-caching]).
 
 - [*Why not globally cache builds of the standard library?*][rationale-caching]
 
-## Generated documentation
+### Generated documentation
 [generated-documentation]: #generated-documentation
 
 When running `cargo doc` for a project to generate documentation and rebuilding
@@ -601,7 +601,7 @@ built standard libraries.
 
 - [*Why not link to hosted standard library documentation in generated docs?*][rationale-generated-docs]
 
-## Cargo subcommands
+### Cargo subcommands
 [cargo-subcommands]: #cargo-subcommands
 
 Any Cargo command which accepts a package spec with `-p` will not recognise
@@ -716,7 +716,7 @@ This part of the RFC has no implications for the following Cargo subcommands:
 [cargo-version]: https://doc.rust-lang.org/cargo/commands/cargo-version.html
 [cargo-yank]: https://doc.rust-lang.org/cargo/commands/cargo-yank.html
 
-## Stability guarantees
+### Stability guarantees
 [stability-guarantees]: #stability-guarantees
 
 build-std enables a much greater array of configurations of the standard library
@@ -761,7 +761,7 @@ a stable toolchain and stable compiler flags, despite that the standard library
 uses unstable features in its source code, not as a general mechanism for
 bypassing Rust's stability mechanisms.
 
-# Drawbacks
+## Drawbacks
 [drawbacks]: #drawbacks
 
 There are some drawbacks to build-std:
@@ -770,13 +770,13 @@ There are some drawbacks to build-std:
   in Cargo, thereby introducing a risk of constraining or conflicting with the
   eventual complete design for opaque dependencies
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This section aims to justify all of the decisions made in the proposed design
 from [*Proposal*][proposal] and discuss why alternatives were not chosen.
 
-## Why put `build-std` in the Cargo config?
+### Why put `build-std` in the Cargo config?
 [rationale-build-std-in-config]: #why-put-build-std-in-the-cargo-config
 
 There are various alternatives to putting `build-std` in the Cargo configuration:
@@ -820,7 +820,7 @@ other Cargo options exposed to dependencies -
 
 ↩ [*Proposal*][proposal]
 
-## Why accept `never` as a value for `build-std`?
+### Why accept `never` as a value for `build-std`?
 [rationale-build-std-never]: #why-accept-never-as-a-value-for-build-std
 
 The user can specify `never` (the default value) if they prefer which will never
@@ -833,7 +833,7 @@ toolchain has undergone.
 
 ↩ [*Proposal*][proposal]
 
-## Why add `build-std` to the `[target.<triple>]` and `[target.<cfg>]` sections?
+### Why add `build-std` to the `[target.<triple>]` and `[target.<cfg>]` sections?
 [rationale-build-std-target-section]: #why-add-build-std-to-the-targettriple-and-targetcfg-sections
 
 Supporting `build-std` as a key of both `[build]` and `[target]` sections allows
@@ -843,7 +843,7 @@ targets which do not ship a pre-built standard library.
 
 ↩ [*Proposal*][proposal]
 
-## Why does `[target]` take precedence over `[build]` for `build-std`?
+### Why does `[target]` take precedence over `[build]` for `build-std`?
 [rationale-build-std-precedence]: #why-does-target-take-precedence-over-build-for-build-std
 
 `[target]` configuration is necessarily more narrowly scoped so it makes sense
@@ -851,7 +851,7 @@ for it to override a global default in `[build]`.
 
 ↩ [*Proposal*][proposal]
 
-## Why have a manual "always" option instead of a "when-needed" mode?
+### Why have a manual "always" option instead of a "when-needed" mode?
 [rationale-unconditional]: #why-have-a-manual-always-option-instead-of-a-when-needed-mode
 
 Always using a locally-built standard library avoids the complexity associated
@@ -866,7 +866,7 @@ option with an automatic mechanism.
 
 ↩ [*Proposal*][proposal]
 
-## Why does "always" rebuild in release profile?
+### Why does "always" rebuild in release profile?
 [rationale-release-profile]: #why-does-always-rebuild-in-release-profile
 
 The release profile most closely matches the existing pre-built standard
@@ -880,7 +880,7 @@ profile.
 
 ↩ [*Proposal*][proposal]
 
-## Why add `build-std.crates`?
+### Why add `build-std.crates`?
 [rationale-build-std-crate]: #why-add-build-stdcrates
 
 Not all standard library crates will build on all targets. In a `no_std` project
@@ -892,7 +892,7 @@ which crates are built to those they know they need and will build successfully.
 
 ↩ [*Proposal*][proposal]
 
-## Why use the lockfile of the `rust-src` component?
+### Why use the lockfile of the `rust-src` component?
 [rationale-lockfile]: #why-use-the-lockfile-of-the-rust-src-component
 
 Using different dependency versions for the standard library would invalidate
@@ -915,7 +915,7 @@ See
 
 ↩ [*Proposal*][proposal]
 
-## Why not build the standard library in incremental?
+### Why not build the standard library in incremental?
 [rationale-incremental]: #why-not-build-the-standard-library-in-incremental
 
 The standard library sources are not intended to be modified locally, similarly
@@ -925,7 +925,7 @@ change.
 
 ↩ [*Proposal*][proposal]
 
-## Why not produce a `dylib` for the standard library?
+### Why not produce a `dylib` for the standard library?
 [rationale-no-dylib]: #why-not-produce-a-dylib-for-the-standard-library
 
 The standard library supports being built as both a `rlib` and a `dylib` and
@@ -942,7 +942,7 @@ compilation.
 
 ↩ [*Proposal*][proposal]
 
-## Why use the pre-built standard library for procedural macros and build scripts in cross-compile mode?
+### Why use the pre-built standard library for procedural macros and build scripts in cross-compile mode?
 [rationale-host-deps-cross]: #why-use-the-pre-built-standard-library-for-procedural-macros-and-build-scripts-in-cross-compile-mode
 
 Procedural macros always run on the host and need to be built with a
@@ -961,7 +961,7 @@ rebuilding the standard library does respect `RUSTFLAGS`.
 
 ↩ [*Proposal*][proposal]
 
-## Why use the pre-built standard library for procedural macros and build scripts in host mode?
+### Why use the pre-built standard library for procedural macros and build scripts in host mode?
 [rationale-host-deps-host]: #why-use-the-pre-built-standard-library-for-procedural-macros-and-build-scripts-in-host-mode
 
 Unlike when in cross-compile mode, if Cargo is in host mode (i.e. `--target` is
@@ -977,7 +977,7 @@ script, respectively.
 
 ↩ [*Proposal*][proposal]
 
-## Should target specifications own knowledge of which standard library crates are supported?
+### Should target specifications own knowledge of which standard library crates are supported?
 [rationale-target-spec-purpose]: #should-target-specifications-own-knowledge-of-which-standard-library-crates-are-supported
 
 It is much simpler to record this information in a target's specification than
@@ -995,7 +995,7 @@ relevant teams.
 
 ↩ [*Standard library crate stability*][standard-library-crate-stability]
 
-## Why introduce `standard_library_support`?
+### Why introduce `standard_library_support`?
 [rationale-why-standard-library-support]: #why-introduce-standard_library_support
 
 Attempting to compile the standard library crates may fail for some targets
@@ -1110,7 +1110,7 @@ For example, consider the following targets:
 
 ↩ [*Standard library crate stability*][standard-library-crate-stability]
 
-## Why remove `restricted_std`?
+### Why remove `restricted_std`?
 [rationale-remove-restricted-std]: #why-remove-restricted_std
 
 `restricted_std` was originally added as part of a mechanism to enable the
@@ -1130,7 +1130,7 @@ layer, but this mechanism does not use `restricted_std`.
 
 ↩ [*`restricted_std`*][restricted_std]
 
-## Why disallow custom targets?
+### Why disallow custom targets?
 [rationale-disallow-custom-targets]: #why-disallow-custom-targets
 
 While custom targets can be used on stable today, in practice, they are only
@@ -1153,7 +1153,7 @@ of custom targets.
 
 [rust#71009]: https://github.com/rust-lang/rust/pull/71009
 
-## Why prevent rustc from loading root dependencies from the sysroot?
+### Why prevent rustc from loading root dependencies from the sysroot?
 [rationale-root-sysroot-deps]: #why-prevent-rustc-from-loading-root-dependencies-from-the-sysroot
 
 Loading root dependencies from the sysroot could be a source of bugs.
@@ -1185,7 +1185,7 @@ providing an empty path.
 
 ↩ [*Preventing implicit sysroot dependencies*][preventing-implicit-sysroot-dependencies]
 
-## Why use `noprelude` with `--extern`?
+### Why use `noprelude` with `--extern`?
 [rationale-noprelude-with-extern]: #why-use-noprelude-with---extern
 
 Using `noprelude` allows `build-std` to closer match rustc's behaviour when it
@@ -1205,7 +1205,7 @@ implementations.
 
 [wg-cargo-std-aware#40]: https://github.com/rust-lang/wg-cargo-std-aware/issues/40
 
-## Why not allow the source path for the standard library be customised?
+### Why not allow the source path for the standard library be customised?
 [rationale-custom-src-path]: #why-not-allow-the-source-path-for-the-standard-library-be-customised
 
 It is not a goal of this proposal to enable or improve the usability of custom
@@ -1213,7 +1213,7 @@ or modified standard libraries.
 
 ↩ [*Vendored `rust-src`*][vendored-rust-src]
 
-## Why vendor the standard library's dependencies?
+### Why vendor the standard library's dependencies?
 [rationale-vendoring]: #why-vendor-the-standard-librarys-dependencies
 
 Vendoring the standard library is possible since it currently has its own
@@ -1256,7 +1256,7 @@ See
 
 ↩ [*Vendored `rust-src`*][vendored-rust-src]
 
-## Why not check if `rust-src` has been modified?
+### Why not check if `rust-src` has been modified?
 [rationale-src-modifications]: #why-not-check-if-rust-src-has-been-modified
 
 This is in line with other immutable dependency sources (like registry or git).
@@ -1269,7 +1269,7 @@ included.
 
 ↩ [*Vendored `rust-src`*][vendored-rust-src]
 
-## Why allow building from the sysroot with implied `RUSTC_BOOTSTRAP`?
+### Why allow building from the sysroot with implied `RUSTC_BOOTSTRAP`?
 [rationale-implied-bootstrap]: #why-allow-building-from-the-sysroot-with-implied-rustc_bootstrap
 
 Cargo needs to be able to build the standard library crates, which inherently
@@ -1290,7 +1290,7 @@ special-case all of these crates.
 
 ↩ [*Building the standard library on a stable toolchain*][building-the-standard-library-on-a-stable-toolchain]
 
-## Why invert the `mem` feature?
+### Why invert the `mem` feature?
 [rationale-no-mem]: #why-invert-the-mem-feature
 
 While "negative" features are typically discouraged due to how features unify
@@ -1304,7 +1304,7 @@ enables.
 
 ↩ [*`compiler-builtins-mem`*][compiler-builtins-mem]
 
-## Why not use weak linkage for `compiler-builtins/mem` symbols?
+### Why not use weak linkage for `compiler-builtins/mem` symbols?
 [rationale-no-weak-linkage]: #why-not-use-weak-linkage-for-compiler-builtinsmem-symbols
 
 Since [compiler-builtins#411], the relevant symbols in `compiler_builtins`
@@ -1321,7 +1321,7 @@ remove the `mem` feature and have the symbols always be present:
 
 [compiler-builtins#411]: https://github.com/rust-lang/compiler-builtins/pull/411
 
-## Why not globally cache builds of the standard library?
+### Why not globally cache builds of the standard library?
 [rationale-caching]: #why-not-globally-cache-builds-of-the-standard-library
 
 The standard library is no different than regular dependencies in being able to
@@ -1334,7 +1334,7 @@ artifact caching in Cargo.
 
 [cargo#5931]: https://github.com/rust-lang/cargo/issues/5931
 
-## Why not link to hosted standard library documentation in generated docs?
+### Why not link to hosted standard library documentation in generated docs?
 [rationale-generated-docs]: #why-not-link-to-hosted-standard-library-documentation-in-generated-docs
 
 Cargo would need to pass `-Zcrate-attr="doc(html_root_url=..)"` to the standard
@@ -1344,14 +1344,14 @@ channel to build the correct url and doesn't know this.
 
 ↩ [*Generated documentation*][generated-documentation]
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 The following are aspects of the proposal which warrant further discussion or
 small details are likely to be bikeshed prior to this part of the RFC's
 acceptance or stabilisation and aren't pertinent to the overall design:
 
-## What should the `build-std.when` configuration in `.cargo/config` be named?
+### What should the `build-std.when` configuration in `.cargo/config` be named?
 [unresolved-config-name]: #what-should-the-build-stdwhen-configuration-in-cargoconfig-be-named
 
 What should this configuration option be named? `build-std`?
@@ -1359,7 +1359,7 @@ What should this configuration option be named? `build-std`?
 
 ↩ [*Proposal*][proposal]
 
-## What should the "always" and "never" values of `build-std` be named?
+### What should the "always" and "never" values of `build-std` be named?
 [unresolved-config-values]: #what-should-the-always-and-never-values-of-build-std-be-named
 
 What is the most intuitive name for the values of the `build-std` setting?
@@ -1372,14 +1372,14 @@ standard library and caches the newly-built standard library.
 
 ↩ [*Proposal*][proposal]
 
-## What should `build-std.crates` be named?
+### What should `build-std.crates` be named?
 [unresolved-build-std-crate-name]: #what-should-build-stdcrates-be-named
 
 What should this configuration option be named?
 
 ↩ [*Proposal*][proposal]
 
-## Should the standard library inherit RUSTFLAGS?
+### Should the standard library inherit RUSTFLAGS?
 [unresolved-inherit-rustflags]: #should-the-standard-library-inherit-rustflags
 
 Existing designs for *[Opaque dependencies]* intended that `RUSTFLAGS` would not
@@ -1390,7 +1390,7 @@ that every stable target modifier be exposed via Cargo to be usable in practice.
 
 ↩ [*Proposal*][proposal]
 
-## Should `rust-src` be a default component?
+### Should `rust-src` be a default component?
 [unresolved-rust-src]: #should-rust-src-be-a-default-component
 
 Ensuring `rust-src` is a default component reduces friction for users, and CI,
@@ -1403,18 +1403,18 @@ to once per toolchain as the component persists through updates.
 
 ↩ [*Vendored rust-src*][vendored-rust-src]
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 See the [*Background*][rfcs#3873-background] and [*History*][rfcs#3873-history]
 of the build-std context RFC.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 There are many possible follow-ups to this part of the RFC:
 
-## Allow reusing sysroot artifacts if available
+### Allow reusing sysroot artifacts if available
 [future-reuse-sysroot]: #allow-reusing-sysroot-artifacts-if-available
 
 This part of the RFC proposes rebuilding all required crates unconditionally as
@@ -1425,7 +1425,7 @@ build, but this is complex enough to warrant its own proposal if desired.
 
 ↩ [*Proposal*][proposal]
 
-## Allow custom targets with build-std
+### Allow custom targets with build-std
 [future-custom-targets]: #allow-custom-targets-with-build-std
 
 This would require a decision from the relevant teams on the exact stability
@@ -1434,7 +1434,7 @@ the format are desirable prior to broader use.
 
 ↩ [*Custom targets*][custom-targets]
 
-## Avoid building `panic_unwind` unnecessarily
+### Avoid building `panic_unwind` unnecessarily
 [future-panic_unwind]: #avoid-building-panic_unwind-unnecessarily
 
 This would require adding a `--print default-unwind-strategy` flag to rustc and
@@ -1443,7 +1443,7 @@ given target and `panic` is not set in the profile.
 
 ↩ [*Panic strategies*][panic-strategies]
 
-## Enable local recompilation of special object files/sanitizer runtimes
+### Enable local recompilation of special object files/sanitizer runtimes
 [future-recompile-special]: #enable-local-recompilation-of-special-object-filessanitizer-runtimes
 
 These files are shipped pre-compiled for relevant targets and are not compiled
@@ -1452,7 +1452,7 @@ standard library, then there is no mechanism to do so.
 
 ↩ [*Self-contained objects*][self-contained-objects]
 
-## Allow building `profiler-builtins`
+### Allow building `profiler-builtins`
 [future-profiler-builtins]: #allow-building-profiler-builtins
 
 It may be possible to ship a rustup component with pre-compiled native
@@ -1466,14 +1466,14 @@ included in part of the standard library build.
 
 ↩ [*profiler-builtins*][profiler-builtins]
 
-## Build both `dylib` and `rlib` variants of the standard library
+### Build both `dylib` and `rlib` variants of the standard library
 [future-crate-type]: #build-both-dylib-and-rlib-variants-of-the-standard-library
 
 build-std could build both the `dylib` and `rlib` of the standard library.
 
 ↩ [*Why not produce a `dylib` for the standard library?*][rationale-no-dylib]
 
-# Summary of proposed changes
+## Summary of proposed changes
 [summary-of-changes]: #summary-of-proposed-changes
 
 These are each of the changes which would need to be implemented in the Rust
@@ -1501,7 +1501,7 @@ toolchain grouped by the project team whose purview the change would fall under:
   - [Removing `restricted_std`][restricted_std]
   - [Moving configuration into the standard library's profile][proposal]
 
-## New constraints on the standard library, compiler and bootstrap
+### New constraints on the standard library, compiler and bootstrap
 [summary-constraints]: #new-constraints-on-the-standard-library-compiler-and-bootstrap
 
 A stable mechanism for building the standard library imposes some constraints on
