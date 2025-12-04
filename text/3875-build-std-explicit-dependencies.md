@@ -3,7 +3,7 @@
 - RFC PR: [rust-lang/rfcs#3875](https://github.com/rust-lang/rfcs/pull/3875)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Summary
+## Summary
 [summary]: #summary
 
 Allow users to add explicit dependencies on standard library crates in the
@@ -46,7 +46,7 @@ RFCs:**
 [rfcs#3874-unresolved-questions]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#unresolved-questions
 [rfcs#3874-future-possibilities]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#future-possibilities
 
-# Motivation
+## Motivation
 [motivation]: #motivation
 
 This RFC builds on a large collection of prior art collated in the
@@ -59,7 +59,7 @@ features of the standard library. Allowing the standard library to behave
 similarly to other dependencies also reduces user friction and can improve build
 times.
 
-# Proposal
+## Proposal
 [proposal]: #proposal
 
 Users can now optionally declare explicit dependencies on the standard library
@@ -236,7 +236,7 @@ files ([?][rationale-cargo-lock]).
 [rfcs#3874-standard-library-crate-stability]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#standard-library-crate-stability
 [rfcs#3874-noprelude]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#why-use-noprelude-with---extern
 
-## Non-`builtin` standard library dependencies
+### Non-`builtin` standard library dependencies
 [non-builtin-standard-library-dependencies]: #non-builtin-standard-library-dependencies
 
 Cargo already supports `path` and `git` dependencies for crates named `core`,
@@ -269,7 +269,7 @@ core = { builtin = true }
 Crates with these dependency sources will remain unable to be published to
 crates.io.
 
-## Patches
+### Patches
 [patches]: #patches
 
 Under a perma-unstable feature it is permitted to patch standard library
@@ -303,7 +303,7 @@ As with dependencies, crates with `path`/`git` patches for `core`, `alloc` or
 
 - [*What syntax is used to patch dependencies on the standard library in `Cargo.toml`?*][unresolved-patch-syntax]
 
-## Features
+### Features
 [features]: #features
 
 On a stable toolchain, it is not permitted to enable or disable features of
@@ -330,7 +330,7 @@ std = { builtin = true, default-features = false } # not permitted
 
 - [*Allow enabling/disabling features with build-std*][future-features]
 
-## Public and private dependencies
+### Public and private dependencies
 [public-and-private-dependencies]: #public-and-private-dependencies
 
 Implicit and explicit dependencies on the standard library default to being
@@ -365,7 +365,7 @@ std = { builtin = true, public = true }
 
 - [*Why default to public for standard library dependencies?*][rationale-default-public]
 
-## `dev-dependencies` and `build-dependencies`
+### `dev-dependencies` and `build-dependencies`
 [dev-dependencies-and-build-dependencies]: #dev-dependencies-and-build-dependencies
 
 Explicit dependencies on the standard library can be specified in
@@ -383,7 +383,7 @@ standard library are not supported in `build-dependencies`.
 
 - [*Should we support `build-dependencies`?*][unresolved-build-deps]
 
-## Registries
+### Registries
 [registries]: #registries
 
 Standard library dependencies will be present in the registry index
@@ -453,7 +453,7 @@ similarly be updated to support `builtin_deps`.
 
 [cargo-registry-web-publish]: https://doc.rust-lang.org/cargo/reference/registry-web-api.html#publish
 
-## Cargo subcommands
+### Cargo subcommands
 [cargo-subcommands]: #cargo-subcommands
 
 Any Cargo command which accepts a package spec with `-p` will now additionally
@@ -690,13 +690,13 @@ This part of the RFC has no implications for the following Cargo subcommands:
 [cargo-version]: https://doc.rust-lang.org/cargo/commands/cargo-version.html
 [cargo-yank]: https://doc.rust-lang.org/cargo/commands/cargo-yank.html
 
-# Rationale and alternatives
+## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 This section aims to justify all of the decisions made in the proposed design
 from [*Proposal*][proposal] and discuss why alternatives were not chosen.
 
-## Why explicitly declare dependencies on the standard library in `Cargo.toml`?
+### Why explicitly declare dependencies on the standard library in `Cargo.toml`?
 [rationale-why-explicit-deps]: #why-explicitly-declare-dependencies-on-the-standard-library-in-cargotoml
 
 If there are no explicit dependencies on standard library crates, Cargo would
@@ -739,7 +739,7 @@ existing Cargo features that crates already have.
 
 ↩ [*Proposal*][proposal]
 
-## Why disallow builtin dependencies to be combined with other sources?
+### Why disallow builtin dependencies to be combined with other sources?
 [rationale-builtin-other-sources]: #why-disallow-builtin-dependencies-to-be-combined-with-other-sources
 
 If using `path`/`git` sources with `builtin` dependencies worked in the same way
@@ -764,7 +764,7 @@ of supporting per-target/per-profile MSRVs, but this has limited utility.
 
 ↩ [*Proposal*][proposal]
 
-## Why disallow builtin dependencies on other crates?
+### Why disallow builtin dependencies on other crates?
 [rationale-no-builtin-other-crates]: #why-disallow-builtin-dependencies-on-other-crates
 
 `builtin` dependencies could be accepted on two other crates - dependencies of
@@ -781,7 +781,7 @@ added manually by users, however:
 
 ↩ [*Proposal*][proposal]
 
-## Why unstably allow all names for `builtin` crates?
+### Why unstably allow all names for `builtin` crates?
 [rationale-unstable-builtin-crates]: #why-unstably-allow-all-names-for-builtin-crates
 
 For any crate shipped with the standard library in the sysroot, the user can
@@ -799,7 +799,7 @@ hardcode the names of many crates in the sysroot which are inherently unstable.
 
 ↩ [*Proposal*][proposal]
 
-## Why not use `noprelude` for explicit `builtin` dependencies?
+### Why not use `noprelude` for explicit `builtin` dependencies?
 [rationale-explicit-noprelude]: #why-not-use-noprelude-for-explicit-builtin-dependencies
 
 Explicit builtin dependencies without the `noprelude` modifier behave more
@@ -814,7 +814,7 @@ is required).
 
 ↩ [*Proposal*][proposal]
 
-## Why not require builtin dependencies instead of supporting implicit ones?
+### Why not require builtin dependencies instead of supporting implicit ones?
 [rationale-no-migration]: #why-not-require-builtin-dependencies-instead-of-supporting-implicit-ones
 
 Requiring explicit `builtin` dependencies over an edition would increase the
@@ -829,7 +829,7 @@ the graph with [`build-std.crates`][rfcs#3874-proposal].
 
 ↩ [*Proposal*][proposal]
 
-## Why disallow renaming standard library dependencies?
+### Why disallow renaming standard library dependencies?
 [rationale-package-key]: #why-disallow-renaming-standard-library-dependencies
 
 Cargo allows [renaming dependencies][cargo-docs-renaming] with the `package`
@@ -848,7 +848,7 @@ of the user's names for `builtin` crates.
 [cargo-docs-renaming]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#renaming-dependencies-in-cargotoml
 [rust-extern-prelude]: https://doc.rust-lang.org/reference/names/preludes.html#extern-prelude
 
-## Why disallow source replacement on `builtin` packages?
+### Why disallow source replacement on `builtin` packages?
 [rationale-source-replacement]: #why-disallow-source-replacement-on-builtin-packages
 
 Modifying the source code of the standard library in the `rust-src` component is
@@ -859,7 +859,7 @@ See [*Allow `builtin` source replacement*][future-source-replacement].
 
 ↩ [*Proposal*][proposal]
 
-## Why not permit overriding dependencies with `replace` or `paths`?
+### Why not permit overriding dependencies with `replace` or `paths`?
 [rationale-overriding-builtins]: #why-not-permit-overriding-dependencies-with-replace-or-paths
 
 Similarly to [source replacement][rationale-source-replacement], easing
@@ -867,7 +867,7 @@ modification of the standard library sources is out-of-scope for this proposal.
 
 ↩ [*Proposal*][proposal]
 
-## Why add standard library dependencies to `Cargo.lock`?
+### Why add standard library dependencies to `Cargo.lock`?
 [rationale-cargo-lock]: #why-add-standard-library-dependencies-to-cargolock
 
 `Cargo.lock` is a direct serialisation of a resolve and that must be a two-way
@@ -876,7 +876,7 @@ resolution to fill in missing `builtin` packages.
 
 ↩ [*Proposal*][proposal]
 
-## Why unstably permit patching of the standard library dependencies?
+### Why unstably permit patching of the standard library dependencies?
 [rationale-patching]: #why-unstably-permit-patching-of-the-standard-library-dependencies
 
 Being able to patch `builtin = true` dependencies and replace their source with
@@ -888,7 +888,7 @@ all that is required for it to be used in replacing `rustc_dep_of_std`.
 
 ↩ [*Patches*][patches]
 
-## Why limit enabling standard library features to an unstable feature?
+### Why limit enabling standard library features to an unstable feature?
 [rationale-features]: #why-limit-enabling-standard-library-features-to-an-unstable-feature
 
 If it were possible to enable features of the standard library crates on stable
@@ -899,7 +899,7 @@ desirable. See
 
 ↩ [*Features*][features]
 
-## Why default to public for standard library dependencies?
+### Why default to public for standard library dependencies?
 [rationale-default-public]: #why-default-to-public-for-standard-library-dependencies
 
 There are crates building on stable which re-export from the standard library.
@@ -909,7 +909,7 @@ version of Cargo with a implicit standard library dependency.
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
-## Why add standard library crates to Cargo's index?
+### Why add standard library crates to Cargo's index?
 [rationale-cargo-index]: #why-add-standard-library-crates-to-cargos-index
 
 When Cargo builds the dependency graph, it is driven by the index (not
@@ -917,7 +917,7 @@ When Cargo builds the dependency graph, it is driven by the index (not
 
 ↩ [*Registries*][registries]
 
-## Why add a new key to Cargo's registry index JSON schema?
+### Why add a new key to Cargo's registry index JSON schema?
 [rationale-cargo-builtindeps]: #why-add-a-new-key-to-cargos-registry-index-json-schema
 
 Cargo's [registry index schema][cargo-json-schema] is versioned and making a
@@ -963,7 +963,7 @@ take today, using `path` dependencies for the standard library to shadow it).
 [cargo-json-schema]: https://doc.rust-lang.org/cargo/reference/registry-index.html#json-schema
 [embed-rs-source]: https://github.com/embed-rs/stm32f7-discovery/blob/e2bf713263791c028c2a897f2eb1830d7f09eceb/core/src/lib.rs#L7
 
-## Why can `builtin_deps` shadow other packages in the registry?
+### Why can `builtin_deps` shadow other packages in the registry?
 [rationale-cargo-index-shadowing]: #why-can-builtin_deps-shadow-other-packages-in-the-registry
 
 While `crates.io` forbids certain crate names including `std`, `alloc` and
@@ -976,13 +976,13 @@ these would conflict when passed to rustc via `--extern`.
 
 ↩ [*Registries*][registries]
 
-# Unresolved questions
+## Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
 The following small details are likely to be bikeshed prior to this part of the
 RFC's acceptance or stabilisation and aren't pertinent to the overall design:
 
-## What syntax is used to identify dependencies on the standard library in `Cargo.toml`?
+### What syntax is used to identify dependencies on the standard library in `Cargo.toml`?
 [unresolved-dep-syntax]: #what-syntax-is-used-to-identify-dependencies-on-the-standard-library-in-cargotoml
 
 What syntax should be used for the explicit standard library dependencies?
@@ -991,7 +991,7 @@ we typically introduce to end-users)?
 
 ↩ [*Proposal*][proposal]
 
-## What is the format for builtin dependencies in `Cargo.lock`?
+### What is the format for builtin dependencies in `Cargo.lock`?
 [unresolved-lockfile]: #what-is-the-format-for-builtin-dependencies-in-cargolock
 
 How should `builtin` deps be represented in lockfiles? Is `builtin = true`
@@ -1000,7 +1000,7 @@ should it stay only as a URL+scheme?
 
 ↩ [*Proposal*][proposal]
 
-## What syntax is used to patch dependencies on the standard library in `Cargo.toml`?
+### What syntax is used to patch dependencies on the standard library in `Cargo.toml`?
 [unresolved-patch-syntax]: #what-syntax-is-used-to-patch-dependencies-on-the-standard-library-in-cargotoml
 
 `[patch.builtin]` is the natural syntax given `builtin` is a new source, but may
@@ -1008,7 +1008,7 @@ be needlessly different to existing packages.
 
 ↩ [*Patches*][patches]
 
-## Should standard library dependencies default to public?
+### Should standard library dependencies default to public?
 [unresolved-std-default-public]: #should-standard-library-dependencies-default-to-public
 
 Standard library dependencies defaulting to public is a trade-off between
@@ -1023,7 +1023,7 @@ the manifest.
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
-## Should we support `build-dependencies`?
+### Should we support `build-dependencies`?
 [unresolved-build-deps]: #should-we-support-build-dependencies
 
 Allowing `builtin` dependencies to be used in `dependencies` and
@@ -1035,7 +1035,7 @@ would be desirable.
 
 ↩ [*`dev-dependencies` and `build-dependencies`*][dev-dependencies-and-build-dependencies]
 
-## Should `cargo metadata` include the standard library's dependencies?
+### Should `cargo metadata` include the standard library's dependencies?
 [unresolved-cargo-metadata]: #should-cargo-metadata-include-the-standard-librarys-dependencies
 
 `cargo metadata` is used by tools like rust-analyzer to determine the entire
@@ -1045,13 +1045,13 @@ counter to the intent behind opaque dependencies.
 
 ↩ [*Cargo subcommands*][cargo-subcommands]
 
-# Prior art
+## Prior art
 [prior-art]: #prior-art
 
 See the [*Background*][rfcs#3873-background] and [*History*][rfcs#3873-history]
 of the build-std context RFC.
 
-# Future possibilities
+## Future possibilities
 [future-possibilities]: #future-possibilities
 
 This RFC unblocks fixing [rust-lang/cargo#8798], enabling no-std crates from
@@ -1061,7 +1061,7 @@ There are also many possible follow-ups to this part of the RFC:
 
 [rust-lang/cargo#8798]: https://github.com/rust-lang/cargo/issues/8798
 
-## Replace `#![no_std]` as the source-of-truth for whether a crate depends on `std`
+### Replace `#![no_std]` as the source-of-truth for whether a crate depends on `std`
 [future-replace-no_std]: #replace-no_std-as-the-source-of-truth-for-whether-a-crate-depends-on-std
 
 Crates can currently use the crate attribute `#![no_std]` to indicate a lack of
@@ -1092,7 +1092,7 @@ lint which would prevent use of items from `std`.
 
 ↩ [*Proposal*][proposal]
 
-## Allow unstable crate names to be referenced behind cfgs without requiring nightly
+### Allow unstable crate names to be referenced behind cfgs without requiring nightly
 [future-cfg-unstable-crate-name]: #allow-unstable-crate-names-to-be-referenced-behind-cfgs-without-requiring-nightly
 
 It is possible to allow builtin dependencies on unstable crate names to exist
@@ -1103,7 +1103,7 @@ using nightly or doing MSRV bumps.
 
 ↩ [*Proposal*][proposal]
 
-## Allow `builtin` source replacement
+### Allow `builtin` source replacement
 [future-source-replacement]: #allow-builtin-source-replacement
 
 This involves allowing the user to blanket-override the standard library sources
@@ -1114,7 +1114,7 @@ or if it's even something the Rust project wishes to support.
 
 ↩ [*Proposal*][proposal]
 
-## Remove `rustc_dep_of_std`
+### Remove `rustc_dep_of_std`
 [future-rustc_dep_of_std]: #remove-rustc_dep_of_std
 
 With first-class explicit dependencies on the standard library,
@@ -1129,7 +1129,7 @@ the standard library can depend on them.
 
 ↩ [*Proposal*][proposal]
 
-## Allow enabling/disabling features with build-std
+### Allow enabling/disabling features with build-std
 [future-features]: #allow-enablingdisabling-features-with-build-std
 
 This would require the library team be comfortable with the features declared on
@@ -1152,7 +1152,7 @@ prevent some otherwise stable features from being toggled as it controls those.
 [rfcs#3874-panic-strategies]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#panic-strategies
 [rfcs#3874-compiler-builtins-mem]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#compiler-builtinsmem
 
-## Allow local builds of `compiler-rt` intrinsics
+### Allow local builds of `compiler-rt` intrinsics
 [future-compiler-builtins-c]: #allow-local-builds-of-compiler-rt-intrinsics
 
 The [`c` feature][rfcs#3873-dependencies] of `compiler_builtins` (which is also
