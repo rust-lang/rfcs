@@ -35,6 +35,7 @@ There are some cases in which none of those goals are applicable, but we still p
 - rust-analyzer and RustRover need all values in `rustc --print=cfg` to build the standard library (see [#139892](https://github.com/rust-lang/rust/issues/139892#issuecomment-2808505610) for an explanation of why this is affected by unstable features)
 - `cargo semver-checks` needs `rustdoc --output-format=json` in order to work at all
 - Rust for Linux needs a way to build a custom version of core. In particular, they mentioned they need to disable float support, because using float registers can cause unsoundness.
+- `rustc_public`'s entire mission is to wrap unstable APIs with stable ones and therefore needs access to all `rustc_private` features.
 
 Why are these uses ok? Two reasons:
 - Each of these tools accept responsibility for breakage. `semver-checks` and RfL both explicitly adapt to each new release of rustc, and their feedback on breakage is very useful for improving the features they use. rust-analyzer and RustRover don't break at all for `--print=cfg`—they're not using it in code, only in the CLI—and adapt to any changes in libtest json format.
