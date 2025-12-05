@@ -183,7 +183,7 @@ Also, the multiple emitted calls to `libgcc.so` (`__mulsc3` and the like) may ca
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The rationale for this type is mostly FFI: C libraries that may be linked from Rust code currently cannot provide functions with direct struct implementations of Complex - they must be hidden under at least a layer of indirection. However, it is not always possible to write a C complex-valued function that wraps the first function in a pointer. Thus, FFI becomes a problem if such complex-valued functions are passed by value and not by reference.
+The rationale for this type is mostly FFI: C libraries that may be linked from Rust code currently cannot provide functions with direct struct implementations of Complex - they must be hidden under at least a layer of indirection. This is because of the undefined calling convention of complex numbers in C. For example: on powerpc64-linux-gnu, [returning double _Complex doesn't do the same thing as returning a struct with a field of type double[2].](https://gcc.godbolt.org/z/hh7zYcnK6) However, it is not always possible to write a C complex-valued function that wraps the first function in a pointer. Thus, FFI becomes a problem if such complex-valued functions are passed by value and not by reference.
 
 You could theoretically do something like this:
 ```c
