@@ -82,6 +82,15 @@ Each variable takes one of three arguments:
 
 Note that on most platforms, it is impossible to set an environment variable more than once, so be careful not to overwrite any existing variable.
 
+## Build scripts
+
+Setting these is not allowed in build scripts and will cause the build to fail.
+
+Reading these variables and using them to do feature detection is allowed, but strongly discouraged.
+Be sure to read the variables for *all* relevant features; respect `-Z allow-features`; and compile a real crate to make sure that your expected usage matches up with the version of the feature that's implemented.
+Set `cargo::rerun-if-env-changed` for all feature gates that could possibly be enabled by your build script.
+Do *not* simply check whether this is a nightly compiler or not.
+
 ## Stability policy
 
 Despite being usable on stable, this is an unstable feature. Like any other unstable feature, we reserve the right to change or remove this feature in the future, as well as any other unstable feature that it enables. Using this feature is opting out of the normal stability/backwards compatibility guarantee of stable.
@@ -94,6 +103,8 @@ If you do use this to enable an unstable feature, please contact a member of the
 [Zulip]: https://rust-lang.zulipchat.com/
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
+
+## Determining variable names
 
 Each environment variable name is determined as follows:
 1. Start with the prefix `RUSTC_ALLOW_UNSTABLE_`
@@ -112,6 +123,17 @@ For example, `-Z ub-checks` and `feature(ub_checks)` cause an overlap under this
 Note that this is only relevant to the compiler, since other tools are already pseudo-namespaced and can't have conflicts.
 
 As a quality-of-implementation concern, the compiler should verify (through testing) that there are no conflicts between a compiler feature and an official tool feature; for example, it should verify that `feature(rustdoc_internals)` does not conflict with a rustdoc flag named `-Z internals`.
+
+## Restricting variables in build scripts
+
+Currently, Cargo restricts setting `cargo::rustc-env=RUSTC_BOOSTRAP=1` from a build script.
+Once this RFC is accepted, it will also restrict any variable starting with `RUSTC_ALLOW_UNSTABLE_`. This does not require coordination between the compiler and Cargo and so I do not expect it to be a high maintenance burden.
+
+## Caching
+
+Currently, changing `RUSTC_BOOTSTRAP` does not invalidate Cargo's build cache.
+We suggest keeping this state of affairs so that setting a single variable does not require rebuilding the whole dependency tree; the whole point of not using `RUSTFLAGS` is to avoid rebuilding unnecessarily.
+Cache invalidation should be done by build scripts setting `rerun-if-env-changed` if necessary.
 
 # Drawbacks
 [drawbacks]: #drawbacks
