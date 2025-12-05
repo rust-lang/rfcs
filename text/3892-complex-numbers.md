@@ -185,6 +185,15 @@ Also, the multiple emitted calls to `libgcc.so` (`__mulsc3` and the like) may ca
 
 The rationale for this type is mostly FFI: C libraries that may be linked from Rust code currently cannot provide functions with direct struct implementations of Complex - they must be hidden under at least a layer of indirection. However, it is not always possible to write a C complex-valued function that wraps the first function in a pointer. Thus, FFI becomes a problem if such complex-valued functions are passed by value and not by reference.
 
+You could theoretically do something like this:
+```c
+double _Complex function(double _Complex value);
+double _Complex *wrapper_function(double _Complex* value) {
+  return &function(*value);
+}
+```
+for all functions you wish for. But this still needs to happen in C.
+
 ### Alternatives:
 - Don't do this: There are, obviously, millions of alternatives on crates.io, the foremost being `num-complex`. However, I believe that if we wish to support proper FFI with C, then a standard type that matches calling conventions with C complex numbers is an important feature of the language. Hence, I do not recommend this idea.
 - Use a polar layout: Polar complex numbers, are undoubtedly a more optimal solution for multiplying complexes. However, I believe that if we wish to have proper FFI with C, then complex number layout should be chosen in accordance with the layout that is used in the C standard, and that is the orthogonal layout. This is also the layout used by most of other languages and crates on crates.io.
