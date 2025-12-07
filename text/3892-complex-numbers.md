@@ -177,7 +177,7 @@ The floating point numbers shall have sine and cosine and tangent functions, the
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-If there is suddenly a standard-library Complex type, people may rush to include it in their current implementations, which would leave people behind if they didn't know about it. I really don't think this is a drawback though, since similar things have happened in Rust before: the inclusion of `OnceCell` in Rust, for example.
+The implementation surface of the complex types means more items for the libs and lang teams to maintain.
 Also, the multiple emitted calls to `libgcc.so` (`__mulsc3` and the like) may cause a bit of overhead and may not be what the Rust lang team and compiler team want.
 
 ## Rationale and alternatives
