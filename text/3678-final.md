@@ -152,6 +152,8 @@ None yet.
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+`final` could enable calling non-dyn-compatible methods on a `dyn Trait`.
+
 We could add the optimization of not putting `final` methods in the trait
 vtable. A design for this should take into account cases where people *do* want
 `final` methods to appear in the vtable, because they benefit substantially
