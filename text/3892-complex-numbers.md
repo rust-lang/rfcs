@@ -56,7 +56,7 @@ let added = first + second; // 4 + 6i
 let multiplied = first * second; // -4 + 10i
 ```
 
-They can be divided using normal floating-point division
+They can be divided using normal floating-point division:
 ```rust
 let float_first = Complex::new(1.0, 2.0);
 let float_second = Complex::new(3.0, 4.0);
@@ -93,7 +93,6 @@ impl Float for f32 {}
 impl Float for f64 {}
 ```
 Calls to some `libgcc` functions will also be needed and will be emitted by the backend via compiler-builtins, specifically `__mulsc3`, `__muldc3`, `__divsc3` and `__divdc3` for the proper and complete implementation of these types.
-```
 They will have an internal representation similar to this:
 ```rust
 // in core::complex
@@ -115,7 +114,7 @@ impl<T: Float> From<[T; 2]> for Complex<T> {
 }
 ```
 
-have methods to calculate their real and imaginary part (`.re()` and `.im()`):
+have methods to return their real and imaginary part (`.re()` and `.im()`):
 ```rust
 impl<T: Float> Complex<T> {
   fn re(self) -> T;
@@ -183,7 +182,8 @@ Also, the multiple emitted calls to `libgcc.so` (`__mulsc3` and the like) may ca
 ## Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
 
-The rationale for this type is mostly FFI: C libraries that may be linked from Rust code currently cannot provide functions with direct struct implementations of Complex - they must be hidden under at least a layer of indirection. This is because of the undefined calling convention of complex numbers in C. For example: on powerpc64-linux-gnu, [returning double _Complex doesn't do the same thing as returning a struct with a field of type double[2].](https://gcc.godbolt.org/z/hh7zYcnK6) However, it is not always possible to write a C complex-valued function that wraps the first function in a pointer. Thus, FFI becomes a problem if such complex-valued functions are passed by value and not by reference.
+The rationale for this type is mostly FFI: C libraries that may be linked from Rust code currently cannot provide functions with direct struct implementations of Complex - they must be hidden under at least a layer of indirection. This is because of the undefined calling convention of complex numbers in C. For example: on powerpc64-linux-gnu, [returning double _Complex doesn't do the same thing as returning a struct with a field of type double[2].](https://gcc.godbolt.org/z/hh7zYcnK6) However, it is not always possible to write a C complex-valued function that wraps the first function in a pointer. Thus, FFI becomes a problem if such complex-valued functions are passed by value and not by reference. This 
+Additionally, another issue this solves is to have a unified API for complex numbers. Right now, many crates are using their own implementation (`num-complex` could serve as a unifying factor, but other crates do not implement the same complex numbers like `nalgebra`), which makes it difficult to implement unifying interfaces without complicating the code with too many conversion functions. This serves a problem for crates that use different implementations of complex numbers for different tasks (`sprs` relying on `num-complex` and `nalgebra` implementing its own variation)
 
 You could theoretically do something like this:
 ```c
