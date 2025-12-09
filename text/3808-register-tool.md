@@ -271,6 +271,13 @@ How does this interact with [proc-macro lints][`proc_macro_lint`]?
 - We could allow proc-macros to register a scoped tool, such that e.g. `#[serde::flatten]` is valid while the proc-macro is expanding, but not elsewhere in the crate. This is similar to [derive helpers], but namespaced. We would have to take care to avoid ambiguity between the scoped tool and globally registered tools in such a way that external tools still do not need to perform name resolution.
 - Once [expression attributes] are stabilized, this would also allow tool attributes on expressions.
 - Some existing attributes, such as [`coverage`], have exactly the semantics of a tool attribute: they add additional meaning when a specific feature or flag is enabled, and ignored otherwise. They could use this mechanism (over an edition boundary, as described above).
+- We can allow defining and exporting tool attributes from crates using declarative macro syntax, which would enable IDE tooling to provide suggestions.
+  - This would require tools to do name resolution, which is a drawback. However, the compiler can provide an extension point akin to rustdoc JSON that exports tool attributes as metadata.
+  - Taking advantage of this would require users to move away from register_tool and use a crate dependency with the name of the tool instead. This would be a benefit for users who already depend on a support crate from their tool, like [crubit_annotate](https://github.com/rust-lang/rfcs/pull/3808#issuecomment-2866000525), as they would no longer also need register_tool macros at their own crate root.
+  - One danger of accepting this proposal now is that tools will use the crate name for their binary instead of saving it for an eventual support library that can declare attribute macros and potentially other things. This could be mitigated with explicit guidance to use another crate name. For example, kani uses [kani-verifier](https://crates.io/crates/kani-verifier) for the binary while reserving [kani](https://crates.io/crates/kani) for an eventual library.
+  - This is somewhat akin to the way the [proc_macro_lint](https://github.com/rust-lang/rust/pull/135432) proposal puts declared lints in the macro namespace.
+- We can allow defining and exporting tool attributes from crates using Rust types. This would enable the use of versioned, structured metadata that can be shared among different tools and reflection APIs.
+  - This could be combined with attribute macros to present more flexible syntax options.
 
 [runnable dependency]: https://github.com/rust-lang/cargo/issues/2267
 [`proc_macro_lint`]: https://github.com/rust-lang/rust/pull/135432
