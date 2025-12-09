@@ -1034,7 +1034,7 @@ integer is a valid discriminant.
   - Casting from other integer types is rejected.
 - If an expression with the `{integer}` inference variable type is used as the
   source for an `as` cast to an open enum, it is uniquely constrained to the
-  backing integer type.
+  explicit backing integer type. This excludes `repr(C)`; see below.
 
     ```rust
     #[repr(u8)]
@@ -1063,7 +1063,7 @@ A `repr(C)` unit-only open enum may be `as` cast from:
   visible effect.
   - This means that authors who don't know or care about short-enum platforms
     can cast from `c_int` and `c_uint` to most `repr(C)` open enums, while
-    preventing those unexpected truncations when necessary.
+    preventing unexpected truncations when necessary.
 
 ```rust
 const TEN: isize = 10;
@@ -1236,7 +1236,7 @@ However, this pattern has some distinct disadvantages when used to emulate
 an open enum, as described in the
 [Motivation](#newtype-integers-are-bad-for-enumeration) section above.
 
-[Pattern types][pattern types] can contrain the valid values for an integer
+[Pattern types][pattern types] can constrain the valid values for an integer
 newtype, but do not help with the enum ergonomics issue.
 
 ## As an `enum` attribute
