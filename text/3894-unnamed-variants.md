@@ -206,11 +206,10 @@ This has drawbacks:
 
 ## Zero-copy deserialization
 
-A common pattern on embedded systems is to read data structures directly from
-a `[u8]`, facilitated by libraries like
-[`zerocopy`][zerocopy-frombytes-derive] or
-[`bytemuck`][bytemuck-checkedbitpattern]. In order to do this, the bytes in
-flash must always be validated to be one of the known discriminants.
+A common pattern on embedded systems is to read data structures directly from a
+`[u8]`, facilitated by libraries like [`zerocopy`][zerocopy-frombytes-derive] or
+[`bytemuck`][bytemuck-checkedbitpattern]. In order to do this, the bytes must
+always be validated to be one of the known discriminants.
 
 This scales poorly for performance and code bloat as more enums are added to be
 deserialized in a message. It is more flexible to defer wildcard branches for
