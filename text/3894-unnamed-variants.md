@@ -760,16 +760,16 @@ enum Foo {
 enum Bar {
     X = 2,
     // error: empty range assigned to `_` variant
-    // help: variant has discriminant range `-2..0`
+    // help: variant has discriminant range `2..0`
     _ = Self::X..Self::Y,
     Y = 0,
 }
 ```
 
-- It is usually a mistake to specify an empty range.
+- It is almost always a mistake to specify an empty range.
 - An empty or negative range could accidentally cause UB if certain
   discriminants are expected to be reserved but are not due to reversing the
-  `start` and `end` of the range.
+  `start` and `end` of the range. Thus, it is `deny`-by-default.
 - If `allow`ed, the unnamed variant declaration has no effect.
 - There are rare use cases involving macro or non-literal discriminants
   in which in may be intentional to declare an empty variant in order to
