@@ -1332,6 +1332,11 @@ This has the same interaction with `#[non_exhaustive]`. The drawbacks:
 
 - Unnamed variants meld well with [unnamed fields] in `struct`/`union` for ABI
   stability, if that is ever stabilized.
+- An `#[repr(u8)] enum E { A, B }` has two possible values, but an open enum
+  would instead have 256. Attributes are not typically used to adjust a type's
+  validity to this degree. `#[non_exhaustive]` is barely an exception; it merely
+  prevents exhaustive matches. Therefore, something stronger than an attribute
+  should be required to open an enum.
 
 ### Unbounded ranges select discriminants based on surrounding variants
 
