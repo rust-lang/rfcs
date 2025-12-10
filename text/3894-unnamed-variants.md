@@ -4,7 +4,7 @@
 - Rust Issue:
   [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
-# Summary
+## Summary
 
 Enable ranges of enum discriminants to be reserved ahead of time, requiring
 all users of that enum to consider those values as valid. This includes within
@@ -18,7 +18,7 @@ for an enum, it becomes an _open enum_. If it is [unit-only], it can then be
 
 [unit-only]: https://doc.rust-lang.org/reference/items/enumerations.html#r-items.enum.unit-only
 
-# Motivation
+## Motivation
 
 Enums in Rust have a _closed_ representation, meaning the only valid
 representations of that type are the variants listed, with any violation of this
@@ -89,7 +89,7 @@ existing binaries using this definition to add `Paused = 2`. The `_ = ..` has
 required _every_ exhaustive `match` of `TaskState`, including in the defining
 crate, to handle the case where it's not one of the currently-named variants.
 
-## Protobuf
+### Protobuf
 
 Protocol Buffers (Protobuf), a language-neutral serialization mechanism, is
 designed to be forwards and backwards compatible when extending a schema.
@@ -110,7 +110,7 @@ associated constants for each variant.
 While this allows Protobuf enums in Rust to be used _mostly_ like enums, this is
 a suboptimal experience.
 
-### Newtype integers are bad for enumeration
+#### Newtype integers are bad for enumeration
 
 When the point of a type is to give an integer a set of well-known names (like
 in C++), a newtype integer isn't as ergonomic to use as an `enum`:
@@ -138,7 +138,7 @@ in C++), a newtype integer isn't as ergonomic to use as an `enum`:
 If Protobuf instead declared generated Rust enums with a `_ = ..` variant, users
 could have a first-class enum experience with compatible open semantics.
 
-## C interop
+### C interop
 
 A closed `#[repr(C)]` field-less `enum`s is [hazardous][repr-c-field-less] to
 use when interoperating with C, mostly because it is so easy to trigger
@@ -162,7 +162,7 @@ default, instead of a exposing a less-effective `non_exhaustive` attribute.
 
 [bindgen-enum-variation]: https://docs.rs/bindgen/0.72.1/bindgen/enum.EnumVariation.html
 
-## Dynamic Linking
+### Dynamic Linking
 
 Dynamically linked libraries, Rust or otherwise, are prone to ABI compatibility
 breakage.
@@ -178,7 +178,7 @@ others listed.
 
 [non-exhaustive-ub]: https://github.com/rust-lang/rust-bindgen/issues/1763
 
-## Embedded syscalls
+### Embedded syscalls
 
 TockOS is an embedded OS with a separate user space and kernel space. Its
 syscall ABI defines that kernel error codes are between 1 and 1024. It's highly
@@ -204,7 +204,7 @@ This has drawbacks:
 
 [libtock-errorcode]: https://github.com/tock/libtock-rs/blob/master/platform/src/error_code.rs#L30-L33
 
-## Zero-copy deserialization
+### Zero-copy deserialization
 
 A common pattern on embedded systems is to read data structures directly from a
 `[u8]`, facilitated by libraries like [`zerocopy`][zerocopy-frombytes-derive] or
@@ -221,7 +221,7 @@ integer newtype.
 [bytemuck-checkedbitpattern]: https://docs.rs/bytemuck/latest/bytemuck/checked/trait.CheckedBitPattern.html
 [zerocopy-frombytes-derive]: https://docs.rs/zerocopy/0.6.1/zerocopy/derive.FromBytes.html
 
-## Restricted range integers
+### Restricted range integers
 
 Unnamed variants can be used to define integers that are statically restricted
 to a particular range, including with niches.
@@ -282,7 +282,7 @@ type FuelLevel = Ranged<u32, 0..=100>;
 
 [pattern types]: https://github.com/rust-lang/rust/pull/107606
 
-# Guide-level explanation
+## Guide-level explanation
 
 Enums have a _closed_ representation by default, meaning that any enum value
 must be represented by one of the listed variants. Constructing any enum value
@@ -391,7 +391,7 @@ let fruit2 = 5isize as Fruit;
 This open enum is much like a `struct Fruit(u32)`, except it is treated as an
 enum by IDEs and developers.
 
-## Interaction with `#[non_exhaustive]`
+### Interaction with `#[non_exhaustive]`
 
 An enum declared both `non_exhaustive` and with an unnamed variant is rejected.
 On a field-less enum, it is not a breaking change to replace a
@@ -417,9 +417,9 @@ By contrast, an unnamed variant affects API _and_ ABI semver compatibility:
 For enums that have relevant discriminant values, an unnamed variant may be the
 better choice. This is often the case for enums declaring an explicit `repr`.
 
-# Reference-level explanation
+## Reference-level explanation
 
-## Unnamed variants
+### Unnamed variants
 
 An **unnamed variant** is an enum variant with `_` declared for its name. It is
 assigned to one or many **reserved discriminants**. These discriminants are
@@ -591,7 +591,7 @@ these types:
     }
     ```
 
-### Type Inference
+#### Type Inference
 
 The discriminant expression for an unnamed variant has its type inferred as if
 it were an argument to a generic function accepting the valid types for the
@@ -618,7 +618,7 @@ impl<Int> ReserveDiscriminants<Int> for RangeToInclusive<Int> {}
 impl<Int> ReserveDiscriminants<Int> for RangeFull {}
 ```
 
-### `repr(C)` behavior
+#### `repr(C)` behavior
 
 `repr(C)` enums have special semantics in Rust because the discriminant
 expression type, `isize`, is not the same as the actual backing integer. These
@@ -725,7 +725,7 @@ enum Foo {
 }
 ```
 
-### Grammar changes
+#### Grammar changes
 
 [EnumVariant] is extended to allow an underscore instead of a variant's name:
 
@@ -738,12 +738,12 @@ EnumVariant ->
 
 [EnumVariant]: https://doc.rust-lang.org/reference/items/enumerations.html#grammar-EnumVariant
 
-### No field data
+#### No field data
 
 This RFC only defines adding unnamed variants to field-less enums, leaving this
 as future work.
 
-### `non_exhaustive`
+#### `non_exhaustive`
 
 The `non_exhaustive` attribute on enums and unnamed variants are mutually
 exclusive:
@@ -763,7 +763,7 @@ enum Color {
 An unnamed variant is more impactful than `non_exhaustive`, since it affects the
 declaring crate - the enum is "universally non-exhaustive".
 
-### Compatibility
+#### Compatibility
 
 Given enum versions A and B with some change between them:
 
@@ -798,9 +798,9 @@ It is an API and ABI backwards-compatible change to:
 - Add an unnamed variant to an enum without `#[non_exhaustive]` or another
   unnamed variant. The same caveat regarding unused wildcard branches applies.
 
-### Applicable lints
+#### Applicable lints
 
-#### Truncatable ranges
+##### Truncatable ranges
 
 A new `warn`-by-default lint is produced if an unnamed variant's discriminant
 range can be shortened to avoid overlapping with named variants.
@@ -875,7 +875,7 @@ enum ImplicitNextDiscriminant {
 }
 ```
 
-#### Gap of length one caused by an exclusive range
+##### Gap of length one caused by an exclusive range
 
 The existing [`non_contiguous_range_endpoints`] lint is produced if:
 
@@ -911,7 +911,7 @@ enum Bar {
 }
 ```
 
-#### Forgot to mention a named variant
+##### Forgot to mention a named variant
 
 The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint is
 produced if a `match` on an enum with reserved discriminants mentions some, but
@@ -949,7 +949,7 @@ let name = match b {
 };
 ```
 
-### Next variant's implicit discriminant
+#### Next variant's implicit discriminant
 
 When a named variant without an implicit discriminant follows an unnamed
 variant, the assigned implicit discriminant is the next integer after the
@@ -989,7 +989,7 @@ enum Overflow {
 }
 ```
 
-### Non-literal discriminant expression
+#### Non-literal discriminant expression
 
 A non-literal range or integer is allowed for an unnamed variant.
 
@@ -1007,7 +1007,7 @@ enum Foo {
 let _: Foo = unsafe { mem::transmute(15u32) };
 ```
 
-### Only variant
+#### Only variant
 
 An unnamed variant may be the only variant for an enum. In this case, an `as`
 cast or `transmute` is the only way to construct an enum value.
@@ -1019,7 +1019,7 @@ enum NothingYet { _ = .. }
 (10 as NothingYet > 5 as NothingYet)
 ```
 
-## Open enum conversion
+### Open enum conversion
 
 An _open enum_ is defined as an `enum` for which every value of its backing
 integer is a valid discriminant.
@@ -1047,7 +1047,7 @@ integer is a valid discriminant.
     // let _: u32 = x;
     ```
 
-### `repr(C)` open enum behavior
+#### `repr(C)` open enum behavior
 
 The actual backing integer type for a `repr(C)` enum changes based on the
 variants' numeric discriminant values as described above.
@@ -1153,7 +1153,7 @@ _ = signed_byte as Small;
 _ = signed_byte as SmallSigned;
 ```
 
-## Interaction with the standard library
+### Interaction with the standard library
 
 - `derive(Debug)` formats as `EnumName(X)` when `X` is a reserved discriminant.
   A `Debug` format changing is not considering an API-breaking change.
@@ -1166,7 +1166,7 @@ _ = signed_byte as SmallSigned;
   field-less enum values with the same discriminant integers as equal and
   those with different discriminant integers as non-equal.
 
-# Drawbacks
+## Drawbacks
 
 - The mutual-exclusion with `non_exhaustive` despite having similar motivations
   could be confusing to explain to new users.
@@ -1175,7 +1175,7 @@ _ = signed_byte as SmallSigned;
 - Rust has not put significant efforts towards ABI compatibility in language
   constructs in the past.
 
-## Flag enums
+### Flag enums
 
 It is possible to define `bitflags` style enums using `enum` syntax with
 unnamed variants. However, if `BitOr` is defined on such an enum, then, rather
@@ -1186,7 +1186,7 @@ is why the library defines a `bitflags_match!` macro that avoids it.
 As future work, a lint could trigger when `|` is used in a pattern with a
 non-integer type that defines `BitOr` and has structural equality.
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 Unnamed variants enable a large range of discriminants to be reserved for an
 enum, whether it's all or some of them. `NonZero`, and an `enum` spelling out
@@ -1195,7 +1195,7 @@ each discriminant are the only other ways to achieve this in stable Rust today.
 The open enum conversion from backing integer is an ergonomic benefit that is
 made possible by unnamed variants.
 
-## Do nothing
+### Do nothing
 
 Why not just use an integer newtype or macro?
 
@@ -1238,7 +1238,7 @@ an open enum, as described in the
 [Pattern types][pattern types] can constrain the valid values for an integer
 newtype, but do not help with the enum ergonomics issue.
 
-## As an `enum` attribute
+### As an `enum` attribute
 
 An enum could be made open by specifying it as part of its `repr`:
 
@@ -1277,7 +1277,7 @@ This has the same interaction with `#[non_exhaustive]`. The drawbacks:
   }
   ```
 
-## Unbounded ranges select discriminants based on surrounding variants
+### Unbounded ranges select discriminants based on surrounding variants
 
 ```rust
 #[repr(u32)]
@@ -1349,7 +1349,7 @@ enum Foo {
 }
 ```
 
-## Forbid unnamed variants' discriminants from overlapping named ones
+### Forbid unnamed variants' discriminants from overlapping named ones
 
 ```rust
 #[repr(u32)]
@@ -1374,7 +1374,7 @@ desirable.
   - It cannot be reasonably be equivalent to `Int::MIN..=Int::MAX` without that
     range allowing named variant overlap.
 
-## Declare niches instead of reserving values
+### Declare niches instead of reserving values
 
 If an enum selects its discriminants such that a desirable niche exists, like
 `0`, perhaps it is better to declare ranges of niches rather than reserving
@@ -1387,7 +1387,7 @@ declaration.
 Unnamed variants use the same syntax to assign discriminants, except they do not
 have to have a name and thus can be assigned to discontiguous ranges.
 
-## Discriminant ranges for named variants instead of unnamed variants
+### Discriminant ranges for named variants instead of unnamed variants
 
 What if instead this were valid?
 
@@ -1420,7 +1420,7 @@ leave reserved ranges of discriminants as anonymous to keep the feature simple.
 
 This can be left as future work for the language.
 
-## `..` at the end
+### `..` at the end
 
 ```rust
 #[repr(u8)]
@@ -1442,7 +1442,7 @@ enum IpProto {
 [rest pattern]: https://doc.rust-lang.org/reference/patterns.html?#rest-patterns
 [wildcard pattern]: https://doc.rust-lang.org/reference/patterns.html?#wildcard-pattern
 
-## An "other" variant carries unknown discriminants like a tuple variant
+### An "other" variant carries unknown discriminants like a tuple variant
 
 An alternative way to specify a field-less open enum could be to write this:
 
@@ -1500,7 +1500,7 @@ assert!(!(3u32 as IpProto).is_named_variant());
 assert!((6u32 as IpProto).is_named_variant());
 ```
 
-## Require `non_exhaustive`, don't forbid it
+### Require `non_exhaustive`, don't forbid it
 
 Perhaps an unnamed variant could _require_ `#[non_exhaustive]`, rather than
 forbid it? This RFC opts against that, with the following considerations:
@@ -1542,15 +1542,15 @@ Cons:
   variant by changing the `repr`. This is non-obvious and can be avoided by
   forbidding `non_exhaustive` when a valid unnamed variant exists.
 
-# Prior art
+## Prior art
 
 _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
 
-## Enum openness in other languages
+### Enum openness in other languages
 
 - C++'s [scoped enumerations][cpp-scoped-enums] and C enums are both open
   enums.
-- C# uses [open enums][cs-open-enums], with a [proposal][cs-closed-enums] to
+- C## uses [open enums][cs-open-enums], with a [proposal][cs-closed-enums] to
   add closed enums for guaranteed exhaustiveness.
 - Java uses closed enums.
 - [Protobuf][protobuf-enum] uses closed enums with the `proto2` syntax, treating
@@ -1568,7 +1568,7 @@ _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
 [cs-closed-enums]: https://github.com/dotnet/csharplang/issues/3179
 [protobuf-enum]: https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#enum
 
-## Other crates that use open enums
+### Other crates that use open enums
 
 Users today are simulating open enums with other language constructs, but it's
 a suboptimal experience:
@@ -1596,14 +1596,14 @@ than what is described here.
 [`with_unknown!`]: https://github.com/lowRISC/opentitan/blob/06584dc620c633e88631f97f1fc1e22c1980c21c/sw/host/ot_hal/src/util/unknown.rs#L7-L48
 [winapi-enum]: https://github.com/retep998/winapi-rs/blob/77426a9776f4328d2842175038327c586d5111fd/src/macros.rs#L358-L380
 
-## `bitflags`
+### `bitflags`
 
 The bitflags crate also uses [an unnamed value][bitflags-unnamed] with `_` to
 specify valid bits without assigning a name to them.
 
 [bitflags-unnamed]: https://docs.rs/bitflags/latest/bitflags/macro.bitflags.html#named-and-unnamed-flags
 
-## `abi_stable`
+### `abi_stable`
 
 [`abi_stable::NonExhaustive`] uses an associated type to hold a typed raw
 discriminant for an enum. It is not ergonomic to `match` on discriminant values
@@ -1611,7 +1611,7 @@ directly, but another macro could improve this.
 
 [`abi_stable::NonExhaustive`]: https://docs.rs/abi_stable/0.11.3/abi_stable/nonexhaustive_enum/struct.NonExhaustive.html
 
-## Unnamed fields
+### Unnamed fields
 
 The [Unnamed fields] RFC reserves space for future extension in a `struct` or
 `union` for FFI purposes, allowing ABI to be planned ahead of time. Unnamed
@@ -1621,20 +1621,20 @@ concepts by reserving space for `payload` to be held in the enum.
 
 [Unnamed fields]: https://github.com/rust-lang/rfcs/blob/master/text/2102-unnamed-fields.md
 
-## `repr(open)` RFC
+### `repr(open)` RFC
 
 There's an [unmerged RFC][enum-repr-open] that defines a `repr(open)` syntax as
 described in the Alternatives section above.
 
 [enum-repr-open]: https://github.com/madsmtm/rfcs/blob/enum-repr-no-niches/text/3803-enum-repr-open.md
 
-# Unresolved questions
+## Unresolved questions
 
 None.
 
-# Future possibilities
+## Future possibilities
 
-## Discriminant ranges for named variants
+### Discriminant ranges for named variants
 
 A future extension could allow for named variants to specify ranges as
 discriminants. This bikeshed syntax avoids many of the drawbacks in the
@@ -1680,7 +1680,7 @@ let e = match d {
 assert_eq!(e as u8, 10);
 ```
 
-## Unnamed variants on enums with field data
+### Unnamed variants on enums with field data
 
 Unnamed variants on enums with field data would allow library authors to plan
 for future ABI compatibility by reserving discriminants and data space for an
@@ -1724,7 +1724,7 @@ pub enum Shape {
 }
 ```
 
-## Tuple-like syntax for `repr` enums
+### Tuple-like syntax for `repr` enums
 
 A very useful thing this RFC enables is that replacing this:
 
@@ -1760,7 +1760,7 @@ requires that `Color(discriminant)` and `color.0` also function as originally.
 
 These each have their own independent utility:
 
-### Tuple constructor
+#### Tuple constructor
 
 The enum name is a constructor `fn(Repr) -> Enum`:
 
@@ -1777,7 +1777,7 @@ assert!(
   callsite. Thus it may be worth adding to Rust even if `.0` isn't.
 - When should one prefer the constructor over the `as` cast? Always?
 
-### Discriminant field access
+#### Discriminant field access
 
 `.0` provides direct access to the discriminant value:
 
@@ -1840,7 +1840,7 @@ assert!(matches!(x, X::B));
 
 [unsafe field]: https://rust-lang.github.io/rust-project-goals/2025h2/unsafe-fields.html
 
-## Extracting the integer value of the discriminant for fielded enums
+### Extracting the integer value of the discriminant for fielded enums
 
 A fielded enum with `#[repr(Int)]` and/or `#[repr(C)]` is guaranteed to have its
 discriminant values starting from 0. However, for any given value of that enum,
@@ -1852,7 +1852,7 @@ could be entirely unknown and the programmer may want to know its value.
 Perhaps this uses the same `.0` syntax as above, or an extension to
 `mem::Discriminant`?
 
-## `match` on ranges of enums
+### `match` on ranges of enums
 
 ```rust
 #[repr(u32)]
