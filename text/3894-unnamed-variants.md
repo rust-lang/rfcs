@@ -118,7 +118,6 @@ in C++), a newtype integer isn't as ergonomic to use as an `enum`:
 - It is arduous to read the generated definition - the variants are inside of an
   `impl` instead of next to the name. It hides the type's nature as an enum.
 - It's invalid to `use` the pseudo-variants like with `use EnumName::*`.
-- `Debug` derives are less useful.
 - The third-party macro ecosystem built around enums can't be used.
 - Rust is a systems language that can move data around efficiently, and so
   first-class support for named integers is valuable for embedded programmers.
@@ -126,12 +125,18 @@ in C++), a newtype integer isn't as ergonomic to use as an `enum`:
   - No "fill match arms" in rust-analyzer.
   - The [`non-exhaustive patterns` error][E0004] lists only integer values, and
     cannot suggest the named variants of the enum.
-  - The unstable `non_exhaustive_omitted_patterns` lint has no way to work with
-    this enum-alike, even though treating it like a `non_exhaustive` enum would
-    be more helpful.
+  - The unstable [`non_exhaustive_omitted_patterns`] lint has no easy way to
+    work with this enum-alike, even though treating it like a `non_exhaustive`
+    enum would be more helpful.
 - Generated rustdoc is less clear (the pseudo-enum is grouped with `struct`s).
 - In order for a pseudo-variant name to match the normal style for an enum
   variant name, `allow(non_uppercase_globals)` is required.
+- `derive`s that work with names are less useful. The built-in `derive(Debug)`
+  can't know the variant names to list. The `open-enum` crate, which provides an
+  attribute macro to construct newtype integers from an `enum` declaration,
+  requires a disctinct `derive` ecosystem for operations like `TryFrom`,
+  `Debug`, `IsKnownVariant`, ser/de, etc. - a worse experience than if all
+  derives were capable of reading a first-class open `enum` definition.
 
 [E0004]: https://doc.rust-lang.org/stable/error-index.html#E0004
 
@@ -421,8 +426,8 @@ better choice. This is often the case for enums declaring an explicit `repr`.
 
 ### Unnamed variants
 
-An **unnamed variant** is an enum variant with `_` declared for its name. It is
-assigned to one or many **reserved discriminants**. These discriminants are
+An **unnamed variant** is an enum variant with `_` declared for its name. It
+is assigned to a set of **reserved discriminants**. These discriminants are
 valid for the enum, and may be assigned to a named variant in the future. It is
 valid to `transmute` to an enum type from a reserved discriminant.
 
@@ -492,79 +497,12 @@ these types:
     }
     ```
 
-  - The range must be non-empty.
-
-    ```rust
-    #[repr(u8)]
-    enum Foo {
-        X = 0,
-        // error: empty range assigned to `_` variant
-        // help: variant has discriminant range `0..1`
-        _ = Self::X..Self::Y,
-        Y = 1,
-    }
-
-    #[repr(isize)]
-    enum Bar {
-        X = 2,
-        // error: empty range assigned to `_` variant
-        // help: variant has discriminant range `-2..0`
-        _ = Self::X..Self::Y,
-        Y = 0,
-    }
-    ```
-
-    - It is usually a mistake to specify an empty range.
-    - Allowing this would enable this peculiar situation:
-
-      ```rust
-      #[repr(u8)]
-      enum Foo {
-          X = CONST1,
-          _ = (CONST1 + 1)..CONST2,
-          Y = CONST2,
-      }
-      ```
-
-      If `CONST1 + 1 >= CONST2`, then `E` has no reserved discriminants, and
-      thus no wildcard arm is needed in a `match`, even though an unnamed
-      variant is syntactically present.
-    - An empty or negative range could accidentally cause UB if fewer
-      discriminants are reserved than expected.
-    - If edge cases are found that necessitate allowing this, this can be made
-      a `deny`-by-default lint in the future.
-  - There must be at least one discriminant available to reserve in the range.
-
-    ```rust
-    enum Foo {
-        X,
-        Y,
-        // error: all discriminants in range `0..=1u8` already assigned
-        // help: `0` is assigned here: `X`
-        // help: `1` is assigned here: `Y`
-        _ = 0..2,
-    }
-    ```
-
-    - Thus, an unnamed variant cannot be specified on an enum that is already
-      open:
-
-      ```rust
-      #[repr(u8)]
-      enum NamedU8 {
-          James = 0,
-          Fernando = 1,
-          Sally = 2,
-          // ... Named variant for every other u8 ...
-          Jolene = 255,
-
-          // error: all discriminants in range `0..=255` already assigned
-          // help: `0` is assigned here: `James = 0`
-          // help: `255` is assigned here: `Jolene = 255`
-          _ = ..,
-      }
-      ```
-
+  - The range should be non-empty. A
+    [`deny`-by-default lint](#empty-discriminant-ranges) is produced if this is
+    violated.
+  - There should be at least one discriminant available to reserve in the range.
+    A [`warn`-by-default lint](#taken-discriminant-ranges) is produced if this
+    is violated.
 - `start..` (`core::ops::RangeFrom<Int>`)
   - Equivalent to `start..=Int::MAX`.
 - `..end` (`core::ops::RangeTo<Int>`)
@@ -713,6 +651,9 @@ enum Foo {
 as this Rust enum, regardless of the discriminant values assigned:
 
 ```rust
+// `allow` effective when there are 256 variants within the `u8`/`i8` range on
+// a short-enum platform. Only macros/codegen like bindgen bother with this.
+#[allow(taken_discriminant_ranges)]
 #[repr(C)]
 enum Foo {
     Name1 = Value1,
@@ -800,14 +741,92 @@ It is an API and ABI backwards-compatible change to:
 
 #### Applicable lints
 
+##### Empty discriminant ranges
+
+`empty_discriminant_ranges` is a new `deny`-by-default lint. It should be
+produced if the discriminant range assigned to an unnamed variant is empty.
+
+```rust
+#[repr(u8)]
+enum Foo {
+    X = 0,
+    // error: empty range assigned to `_` variant
+    // help: variant has discriminant range `0..1`
+    _ = Self::X..Self::Y,
+    Y = 1,
+}
+
+#[repr(isize)]
+enum Bar {
+    X = 2,
+    // error: empty range assigned to `_` variant
+    // help: variant has discriminant range `-2..0`
+    _ = Self::X..Self::Y,
+    Y = 0,
+}
+```
+
+- It is usually a mistake to specify an empty range.
+- An empty or negative range could accidentally cause UB if certain
+  discriminants are expected to be reserved but are not due to reversing the
+  `start` and `end` of the range.
+- If `allow`ed, the unnamed variant declaration has no effect.
+- There are rare use cases involving macro or non-literal discriminants
+  in which in may be intentional to declare an empty variant in order to
+  avoid complex discriminant analysis.
+
+##### Taken discriminant ranges
+
+`taken_discriminant_ranges` is a new `warn`-by-default lint. It should be
+produced if every discriminant in the range assigned to an unnamed variant is
+already assigned to a named variant. Thus, the unnamed variant does not
+introduce any reserved discriminants and has no effect on the enum.
+
+```rust
+#[repr(u8)]
+enum Foo {
+    X,
+    Y,
+    // warning: all discriminants in range `0..=1` already assigned
+    // help: remove the `_` variant; it has no effect
+    // help: `0` is assigned here: `X`
+    // help: `1` is assigned here: `Y`
+    _ = 0..2,
+}
+```
+
+This warning should thus be produced when specifying an unnamed variant on an
+enum that is already open. Any macro or codegen that intends to make an enum
+open can ignore this lint when adding `_ = ..`:
+
+```rust
+// Say bindgen generated this from a C enum.
+// It shouldn't have to count the number of variants and compare that against
+// the `repr` to know if the enum's already open and must avoid placing the
+// `_ = ..`. It can just allow the warning.
+#[allow(taken_discriminant_ranges)]
+#[repr(u8)]
+enum NamedU8 {
+    James = 0,
+    Fernando = 1,
+    Sally = 2,
+    // ... Named variant for every other u8 ...
+    Jolene = 255,
+
+    _ = ..,
+}
+```
+
 ##### Truncatable ranges
 
-A new `warn`-by-default lint is produced if an unnamed variant's discriminant
-range can be shortened to avoid overlapping with named variants.
+`overlong_discriminant_ranges` is a new `warn`-by-default lint. It should be
+produced if an unnamed variant's discriminant range can be shortened to avoid
+overlapping with named variants.
 
 Let `start..=end` be the range of discriminants that an unnamed variant
 definition is assigned to, regardless of the actual range type used. An
-`overlong_discriminant_ranges` lint is produced if all of the below are true:
+`overlong_discriminant_ranges` lint should be produced if all of the below are
+true:
 
 - The bound is specified as a range expression in the variant's discriminant
   expression, and not as an identifier or block.
@@ -820,6 +839,7 @@ definition is assigned to, regardless of the actual range type used. An
   defined by an unbounded range.
 - The prefix is an overlong side _or_ the following variant, if any, has an
   explicit discriminant.
+- The `taken_discriminant_ranges` lint is not produced for this unnamed variant.
 
 ```rust
 #[repr(u32)]
@@ -877,7 +897,7 @@ enum ImplicitNextDiscriminant {
 
 ##### Gap of length one caused by an exclusive range
 
-The existing [`non_contiguous_range_endpoints`] lint is produced if:
+The existing [`non_contiguous_range_endpoints`] lint should be produced if:
 
 [`non_contiguous_range_endpoints`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_CONTIGUOUS_RANGE_ENDPOINTS.html
 
@@ -913,9 +933,9 @@ enum Bar {
 
 ##### Forgot to mention a named variant
 
-The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint is
-produced if a `match` on an enum with reserved discriminants mentions some, but
-not all, of the named variants.
+The unstable [`non_exhaustive_omitted_patterns`] `allow`-by-default lint should
+be produced if a `match` on an enum with reserved discriminants mentions some,
+but not all, of the named variants.
 
 [`non_exhaustive_omitted_patterns`]: https://doc.rust-lang.org/stable/nightly-rustc/rustc_lint_defs/builtin/static.NON_EXHAUSTIVE_OMITTED_PATTERNS.html
 
@@ -1238,6 +1258,41 @@ an open enum, as described in the
 [Pattern types][pattern types] can constrain the valid values for an integer
 newtype, but do not help with the enum ergonomics issue.
 
+### Attribute to improve diagnostic behavior for associated `const`
+
+Newtype integers could improve the ergonomics for a "fill match arms" analyzer
+capabilities and other diagnostics with an attribute placed on pseudo-variants:
+
+```rust
+#[repr(transparent)]
+#[derive(PartialEq, Eq)]
+struct Color(pub i8);
+
+#[allow(non_upper_case_globals)]
+impl Color {
+    // Tells rust-analyzer "this is like an enum variant"
+    #[diagnostic::enum_variant]
+    pub const Red: Color = Color(0);
+
+    #[diagnostic::enum_variant]
+    pub const Blue: Color = Color(1);
+
+    #[diagnostic::enum_variant]
+    pub const Black: Color = Color(2);
+}
+```
+
+However:
+
+- Open enums require even more typing for the desired semantics.
+- `derive`s cannot be easily written with enum variant names. In order to avoid
+  duplicating the names, a `derive` macro must directly inter-operate with
+  another macro that generates these pseudo-variants like `open-enum`.
+- This is less discoverable than a user trying to `as` cast to an enum and
+  having the compiler inform them of `_ = ..` as an option.
+- It's not clear how this would relate to the functionality of the
+  [`non_exhaustive_omitted_patterns`] lint.
+
 ### As an `enum` attribute
 
 An enum could be made open by specifying it as part of its `repr`:
@@ -1259,8 +1314,6 @@ This has the same interaction with `#[non_exhaustive]`. The drawbacks:
 - It's not as clear what the attribute does, in contrast to the `_ = ..` syntax
   mirroring known concepts: we're introducing new valid values, `_` means
   "unnamed/wildcard", and `..` means "the rest" as the discriminants.
-- Unnamed variants meld well with unnamed fields in `struct`/`union` for ABI
-  stability.
 - It is not clear why a `repr` would affect `match`/`as` behavior, even though
   this does affect how it is valid to represent the type.
   - There are many alternative syntaxes for this, such as
@@ -1276,6 +1329,9 @@ This has the same interaction with `#[non_exhaustive]`. The drawbacks:
       Two = 2,
   }
   ```
+
+- Unnamed variants meld well with [unnamed fields] in `struct`/`union` for ABI
+  stability, if that is ever stabilized.
 
 ### Unbounded ranges select discriminants based on surrounding variants
 
@@ -1348,31 +1404,6 @@ enum Foo {
     _ = ..,
 }
 ```
-
-### Forbid unnamed variants' discriminants from overlapping named ones
-
-```rust
-#[repr(u32)]
-// error: discriminant `200` assigned more than once
-enum HttpStatusCode {
-    Ok = 200,
-    _ = 100..=599,
-}
-```
-
-This makes it entirely unambiguous which discriminant is assigned to which
-variant, without precedence rules. However, `_ = ..` to "make it open" is still
-desirable.
-
-- Forbidding named variant overlaps with `_ = ..` makes it nearly useless, since
-  it then must be the only variant for the enum.
-- Giving `..` special behavior to reserve "the rest" of the variants is then
-  inconsistent with other ranges' behavior.
-  - There is precedent for `..` acting differently than other ranges, such as
-    when `match`ing a number or `char`. This `..`, however, is an expression and
-    not a pattern.
-  - It cannot be reasonably be equivalent to `Int::MIN..=Int::MAX` without that
-    range allowing named variant overlap.
 
 ### Declare niches instead of reserving values
 
@@ -1500,6 +1531,47 @@ assert!(!(3u32 as IpProto).is_named_variant());
 assert!((6u32 as IpProto).is_named_variant());
 ```
 
+### Forbid unnamed variants' discriminants from overlapping named ones
+
+```rust
+#[repr(u32)]
+// error: discriminant `200` assigned more than once
+enum HttpStatusCode {
+    Ok = 200,
+    _ = 100..=599,
+}
+```
+
+This makes it entirely unambiguous which discriminant is assigned to which
+variant, without precedence rules. However, `_ = ..` to "make it open" is still
+desirable.
+
+- Forbidding named variant overlaps with `_ = ..` makes it nearly useless, since
+  it then must be the only variant for the enum.
+- Giving `..` special behavior to reserve "the rest" of the variants is then
+  inconsistent with other ranges' behavior.
+  - There is precedent for `..` acting differently than other ranges, such as
+    when `match`ing a number or `char`. This `..`, however, is an expression and
+    not a pattern.
+  - It cannot be reasonably be equivalent to `Int::MIN..=Int::MAX` without that
+    range allowing named variant overlap.
+
+### Require an unnamed variant reserve at least one discriminant
+
+It is a desirable property for an unnamed variant to always introduce a reserved
+discriminant.
+
+This would mean that an unnamed variant's presence in an enum always requires a
+wildcard branch when `match`ing. Otherwise, a peculiar situation is possible in
+which an enum definition declares an unnamed variant, but does not have any
+reserved discriminants and thus no wildcard branch is needed.
+
+However, upholding this requirement prevents `_ = ..` from always working to
+mean "ensure this enum is open". In order for macros or codegen like `bindgen`
+to ensure an enum is open, they would need to handle the particular edge case of
+an enum with 256 variants and an 8-bit discriminant and leave out the variant.
+Instead, the lints can be `allow`ed for carefully-considered macros/codegen.
+
 ### Require `non_exhaustive`, don't forbid it
 
 Perhaps an unnamed variant could _require_ `#[non_exhaustive]`, rather than
@@ -1613,13 +1685,13 @@ directly, but another macro could improve this.
 
 ### Unnamed fields
 
-The [Unnamed fields] RFC reserves space for future extension in a `struct` or
+The [unnamed fields] RFC reserves space for future extension in a `struct` or
 `union` for FFI purposes, allowing ABI to be planned ahead of time. Unnamed
 variants have similar motivations, but no great workaround. The future work
 proposed below to allow `_(payload) = discriminants` further unifies these
 concepts by reserving space for `payload` to be held in the enum.
 
-[Unnamed fields]: https://github.com/rust-lang/rfcs/blob/master/text/2102-unnamed-fields.md
+[unnamed fields]: https://github.com/rust-lang/rfcs/blob/master/text/2102-unnamed-fields.md
 
 ### `repr(open)` RFC
 
