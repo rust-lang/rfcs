@@ -1,4 +1,4 @@
-- Feature Name: (`unnamed_variants`)
+- Feature Name: (`unnamed_enum_variants`)
 - Start Date: 2025-12-09
 - RFC PR: [rust-lang/rfcs#3894](https://github.com/rust-lang/rfcs/pull/3894)
 - Rust Issue:
@@ -208,15 +208,15 @@ This has drawbacks:
 
 A common pattern on embedded systems is to read data structures directly from a
 `[u8]`, facilitated by libraries like [`zerocopy`][zerocopy-frombytes-derive] or
-[`bytemuck`][bytemuck-checkedbitpattern]. In order to do this, the bytes must
-always be validated to be one of the known discriminants.
+[`bytemuck`][bytemuck-checkedbitpattern]. In order to do this, the bytes for an
+enum must always be validated to be one of the known discriminants.
 
-This scales poorly for performance and code bloat as more enums are added to be
-deserialized in a message. It is more flexible to defer wildcard branches for
-unknown discriminants to the point when the enum is `match`ed on, rather than
-up-front during deserialization. When these checks are undesirable, ergonomics
-must be sacrificed for compatibility and performance by using an integer
-newtype.
+This scales poorly for performance and code bloat as more enums and variants are
+added to be deserialized in a message. It is more flexible to defer wildcard
+branches for unknown discriminants to the point when the enum is `match`ed on,
+rather than up-front during deserialization. When these checks are undesirable,
+ergonomics must be sacrificed for compatibility and performance by using an
+integer newtype.
 
 [bytemuck-checkedbitpattern]: https://docs.rs/bytemuck/latest/bytemuck/checked/trait.CheckedBitPattern.html
 [zerocopy-frombytes-derive]: https://docs.rs/zerocopy/0.6.1/zerocopy/derive.FromBytes.html
