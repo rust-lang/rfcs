@@ -98,7 +98,7 @@ They will have an internal representation similar to this:
 // in core::complex
 #[lang = "complex"] // For matching the calling convention (special repr needed?)
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub struct Complex<T: Float>(re: T, im: T);
+pub struct Complex<T>(re: T, im: T);
 ```
 have construction methods and `From` impls:
 ```rust
@@ -106,17 +106,17 @@ impl Complex<T> {
   fn new(re: T, im: T) -> Self;
 }
 
-impl<T: Float> From<(T, T)> for Complex<T> {
+impl<T> From<(T, T)> for Complex<T> {
   fn from(value: (T, T)) -> Self;
 }
-impl<T: Float> From<[T; 2]> for Complex<T> {
+impl<T> From<[T; 2]> for Complex<T> {
   fn from(value: [T; 2]) -> Self;
 }
 ```
 
 have methods to return their real and imaginary part (`.re()` and `.im()`):
 ```rust
-impl<T: Float> Complex<T> {
+impl<T> Complex<T> {
   fn re(self) -> T;
   fn im(self) -> T;
 }
@@ -140,13 +140,13 @@ impl Complex<f64> {
 ```
 and have arithmetic implementations similar to this:
 ```rust
-impl<T: Add + Float> Add for Complex<T> { // and for corresponding real types
+impl<T: Add> Add for Complex<T> { // and for corresponding real types
   type Output = Self;
 
   fn add(self, other: Self) -> Self::Output;
 }
 
-impl<T: Sub + Float> Sub for Complex<T> { // and for corresponding real types 
+impl<T: Sub> Sub for Complex<T> { // and for corresponding real types 
   type Output = Self;
 
   fn sub(self, other: Self) -> Self::Output;
