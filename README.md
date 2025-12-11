@@ -42,8 +42,6 @@ following.
 
   - Any semantic or syntactic change to the language that is not a bugfix.
   - Removing language features, including those that are feature-gated.
-  - Changes to the interface between the compiler and libraries, including lang
-    items and intrinsics.
   - Large additions to `std`.
 
 Some changes do not require an RFC:
