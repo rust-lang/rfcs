@@ -973,7 +973,7 @@ let name = match b {
 
 #### Next variant's implicit discriminant
 
-When a named variant without an implicit discriminant follows an unnamed
+When a named variant without an explicit discriminant follows an unnamed
 variant, the assigned implicit discriminant is the next integer after the
 declared discriminant range for that unnamed variant. If the unnamed variant is
 assigned to an integer, it is the next integer.
