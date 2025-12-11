@@ -751,8 +751,9 @@ produced if the discriminant range assigned to an unnamed variant is empty.
 enum Foo {
     X = 0,
     // error: empty range assigned to `_` variant
-    // help: variant has discriminant range `0..1`
-    _ = Self::X..Self::Y,
+    // note: this variant has no effect
+    // help: variant has discriminant range `1..1`
+    _ = (Self::X + 1)..Self::Y,
     Y = 1,
 }
 
@@ -760,8 +761,9 @@ enum Foo {
 enum Bar {
     X = 2,
     // error: empty range assigned to `_` variant
-    // help: variant has discriminant range `2..0`
-    _ = Self::X..Self::Y,
+    // note: this variant has no effect
+    // help: variant has discriminant range `3..0`
+    _ = (Self::X + 1)..Self::Y,
     Y = 0,
 }
 ```
@@ -1627,7 +1629,7 @@ _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
 
 - C++'s [scoped enumerations][cpp-scoped-enums] and C enums are both open
   enums.
-- C## uses [open enums][cs-open-enums], with a [proposal][cs-closed-enums] to
+- C♯ uses [open enums][cs-open-enums], with a [proposal][cs-closed-enums] to
   add closed enums for guaranteed exhaustiveness.
 - Java uses closed enums.
 - [Protobuf][protobuf-enum] uses closed enums with the `proto2` syntax, treating
