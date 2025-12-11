@@ -3,14 +3,14 @@
 - RFC PR: [rust-lang/rfcs#3872](https://github.com/rust-lang/rfcs/pull/3872)
 - Rust Issue: [rust-lang/rust#3872](https://github.com/rust-lang/rust/issues/3872)
 
-# Summary
+## Summary
 
 [summary]: #summary
 
 This RFC proposes that crates.io should provide insight into vulnerabilities and unsound
 API surface based on the RustSec advisory database.
 
-# Motivation
+## Motivation
 
 [motivation]: #motivation
 
@@ -44,7 +44,7 @@ graph is a more complex problem that is outside the scope of this RFC (but see f
 [Log4Shell]: https://en.wikipedia.org/wiki/Log4j#Log4Shell_vulnerability
 [Principles for Package Repository Security]: https://repos.openssf.org/principles-for-package-repository-security.html
 
-# Guide-level explanation
+## Guide-level explanation
 
 [guide-level-explanation]: #guide-level-explanation
 
@@ -68,7 +68,7 @@ For example, the UI could be somewhat like this:
 The way advisories are represented in the crates.io UI will evolve over time based on the
 available data and user feedback. This RFC does not mandate a specific UI design.
 
-# Reference-level explanation
+## Reference-level explanation
 
 [reference-level-explanation]: #reference-level-explanation
 
@@ -80,7 +80,7 @@ directly.
 
 [advisory-db repository]: https://github.com/RustSec/advisory-db
 
-# Drawbacks
+## Drawbacks
 
 [drawbacks]: #drawbacks
 
@@ -97,7 +97,7 @@ that are best for their projects.
 
 [ongoing discussion]: https://github.com/rust-lang/leadership-council/issues/140
 
-# Rationale and alternatives
+## Rationale and alternatives
 
 [rationale-and-alternatives]: #rationale-and-alternatives
 
@@ -115,7 +115,7 @@ seems mostly unrelated to what crates.io does, and seems like an interesting fut
 [cargo-audit]: https://crates.io/crates/cargo-audit
 [cargo-deny]: https://crates.io/crates/cargo-deny
 
-# Prior art
+## Prior art
 
 [prior-art]: #prior-art
 
@@ -129,7 +129,7 @@ both RustSec advisories and reviews from [cargo-crev] and [cargo-vet].
 [cargo-crev]: https://github.com/crev-dev/cargo-crev
 [cargo-vet]: https://github.com/mozilla/cargo-vet
 
-# Unresolved questions
+## Unresolved questions
 
 [unresolved-questions]: #unresolved-questions
 
@@ -137,7 +137,7 @@ This seems like a relatively straightforward feature with a limited scope. The m
 are about the desirability of the feature, the implementation approach, and the governance
 of the source data.
 
-# Future possibilities
+## Future possibilities
 
 [future-possibilities]: #future-possibilities
 
