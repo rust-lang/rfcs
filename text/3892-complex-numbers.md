@@ -246,7 +246,7 @@ impl f32 {
 ```
 that could help simplify the life of people who otherwise would have to keep writing `Complex::new()`?
 - Should we support Imaginary eventually? This RFC doesn't cover it, but I think we can do this later in another RFC.
-- Eventually we may support Gaussian integers (an extension of the real integers) which have a Euclidean division procedure with remainder. We could theoretically eventually support these integers?
-- We can also support f16 and f128 once methods for them are stabilised.
+- Eventually we may support Gaussian integers (an extension of the real integers) which have a Euclidean division procedure with remainder. GCC has these, and we could theoretically eventually support these integers alongside GCC FFI.
+- We can also support f16 and f128 once methods for them are stabilised. 
 - We should also think about a `Display` implementation. Should we support something like `1 + 2i` or something else? Should we not make a `Display` impl at all, and just use re() and im() for the implementation?
 - We should also consider adding aliases (like c32 and c64) for floating points once they are established, to allow for a shorthand syntax.
