@@ -214,6 +214,10 @@ Modules in the first path of an attribute (e.g. `#[unregistered::name]`) are ass
 
 Unknown tool names in lints remain a hard error until the story for proc-macro lints is resolved (see [Future possibilities](#future-possibilities)).
 
+[Inner attributes][custom-inner-attributes] for tools remain a hard error.
+Tool names are not affected by the current scope,
+but we need to know the current scope in order to give an ambiguity error.
+
 `#![no_implicit_prelude]` does not affect tools,
 i.e. the tool prelude is always present.
 
@@ -221,6 +225,7 @@ i.e. the tool prelude is always present.
 [manifest]: https://doc.rust-lang.org/cargo/reference/manifest.html
 [tool attributes]: https://doc.rust-lang.org/nightly/reference/attributes.html#tool-attributes
 [`unknown_lints`]: https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#unknown-lints
+[custom-inner-attributes]: https://github.com/rust-lang/rust/issues/54726
 
 # Drawbacks
 [drawbacks]: #drawbacks
