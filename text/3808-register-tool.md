@@ -74,27 +74,45 @@ There are also some tools that would benefit from using developer-added metadata
 Several official tools let you configure their behavior on specific parts of your code. For example, Clippy lets you use `#[warn(clippy::as_ptr_cast_mut)]` to warn on that lint for a single item, and Rustfmt lets you use `#[rustfmt::skip]` to avoid formatting a single item. You can also do this for external tools that are not provided in the Rust toolchain. See the documentation of those tools for the lints and attributes they support.
 
 To tell the compiler about an external tool, add `#![register_tool(some_tool)]` to your crate root.
-Note that this changes name resolution, and may give errors if you have a crate named `some_tool`.
-The compiler will suggest ways to fix the new errors.
-
-If a tool name conflicts with a crate name, you can disambiguate the crate with `::some_tool`:
-```rust
-// This is the attribute specified in the crate.
-#[::some_tool::attribute]
-fn foo() {
-    // ...
-}
-
-// This is the attribute specified by the tool.
-#[some_tool::attribute]
-fn bar() {
-    // ...
-}
-```
 
 Crate-level lints for external tools can use `#![warn(some_tool::lint_name)]`, like any lint.
 Tools may also support a custom configuration format that allows you to control lints for your whole workspace at once.
 Consult the documentation of the tool you use.
+
+### Fixing name resolution errors
+
+Note that `register_tool` changes name resolution, and may give errors if you have a crate named `some_tool`.
+The compiler will suggest ways to fix the new errors.
+
+If a tool name conflicts with a crate name, you can disambiguate the crate with `::some_tool`:
+```rust
+#![register_tool(some_tool)]
+extern crate some_tool;
+
+#[some_tool::attribute] //~ ERROR: is this the tool or a proc-macro?
+fn bar() {
+    // ...
+}
+
+#[::some_tool::attribute] // OK: This is the proc-macro defined in the crate.
+fn foo() {
+    // ...
+}
+```
+However, if you want to go on to use a tool attribute,
+you must rename the crate so it doesn't conflict:
+```rust
+#![register_tool(some_tool)]
+extern crate some_tool as my_library;
+
+#[some_tool::attribute] // OK: This is the attribute specified by the tool.
+fn bar() {
+    // ...
+}
+```
+Alternatively, if you only want to use lints, you can use `register_lint_tool` instead of `register_tool`, which will avoid resolution errors.
+
+Overlaps like this are expected to be rare in practice.
 
 [Kani]: https://github.com/model-checking/kani
 [`bevy_lint`]: https://thebevyflock.github.io/bevy_cli/bevy_lint/
