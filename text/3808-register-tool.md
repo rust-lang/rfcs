@@ -6,7 +6,7 @@
 # Summary
 [summary]: #summary
 
-This RFC adds two new attributes:
+This RFC adds three new attributes:
 - `#![register_lint_tool(tool_name)]` allows controlling namespaced lints with `#[warn(tool_name::lint_name)]`.
 - `#![register_attribute_tool(tool_name)]` allows using tool names in [inert attributes][inert] with `#[tool_name::attribute_name(token_tree)]`.
 - `#![register_tool(tool_name)]` is an alias for `#![register_lint_tool(tool_name)] #![register_attribute_tool(tool_name)]`.
@@ -196,7 +196,8 @@ Modules in the first path of an attribute (e.g. `#[unregistered::name]`) are ass
 
 Unknown tool names in lints remain a hard error until the story for proc-macro lints is resolved (see [Future possibilities](#future-possibilities)).
 
-`#![no_implicit_prelude]` does not affect tools.
+`#![no_implicit_prelude]` does not affect tools,
+i.e. the tool prelude is always present.
 
 [`--crate-attr`]: https://github.com/rust-lang/rfcs/pull/3791
 [manifest]: https://doc.rust-lang.org/cargo/reference/manifest.html
