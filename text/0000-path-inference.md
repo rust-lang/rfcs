@@ -151,15 +151,28 @@ print_weather_data(.{
 ## Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
-### Syntax Additions
+### Syntax Changes
 
-```rust
-InferredPath :
-    '.' VariantIdent
-    '.' VariantIdent '(' ExprList? ')'
-    '.' VariantIdent '{' FieldList? '}'
-    '.' '(' ExprList? ')'
-    '.' '{' FieldList? '}'
+```diff
+  PathInExpression ::=
+      "::"? PathExprSegment ( "::" PathExprSegment )*
++   | "." IDENTIFIER
+
+  StructExpression ::=
+-     PathInExpression "{" ( StructExprFields | StructBase)? "}"
++     ( PathInExpression | "." ) "{" ( StructExprFields | StructBase)? "}"
+
+  CallExpression ::=
+-     Expression "(" CallParams? ")"
++     ( Expression | "." ) "(" CallParams? ")"
+
+  StructPattern ::=
+-     PathInExpression "{" StructPatternElements? "}"
++     ( PathInExpression | "." ) "{" StructPatternElements? "}"
+
+  TupleStructPattern ::=
+-     PathInExpression "(" TupleStructItems? ")"
++     ( PathInExpression | "." ) "(" TupleStructItems? ")"
 ```
 
 ### Type Resolution
