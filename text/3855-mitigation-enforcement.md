@@ -65,7 +65,7 @@ To avoid these consequences, teams that write software with high security needs 
 example, browsers and the Linux kernel - need to have a way to make sure that the
 programs they produce have the mitigations they want enabled.
 
-On the other hand, for teams that write software in a more messy environment, it
+On the other hand, for teams that write software in a more uncoordinated environment, it
 can be hard to chase down all dependencies, and especially for "local" mitigations,
 being able to enable them on an object-by-object basis is the only thing that allows
 for the mitigations to actually be deployed. Especially important is progressive
@@ -204,7 +204,7 @@ the alternative [with order dependency].
 
 For example,
 ```
--Callow-partial-mitigations=stack-protector -Callow-partial-mitigations=overflow-checkd
+-Callow-partial-mitigations=stack-protector -Callow-partial-mitigations=overflow-checks
 -Callow-partial-mitigations=kcfi -Cdeny-partial-mitigations=overflow-checks -Csanitizer=kcfi
 ```
 
@@ -334,26 +334,29 @@ certainly have both the `noenforce` syntax and the `allow-partial-mitigations` s
 with `noenforce` disabling enforcement for all crates while `allow-partial-mitigations`
 disables it only for specific crates.
 
-## Interaction with `-C unsafe-allow-abi-mismatch` / `-C pretend-mitigation-enabled`
+## Interaction with `-C unsafe-allow-abi-mismatch`
 
 The proposed rules do not interact with `-C unsafe-allow-abi-mismatch` at all, so if
 you have a "sanitizer runtime" crate that is compiled with the following options:
 
 > -C no-fixed-x18 -C sanitizer=shadow-call-stack=off -C unsafe-allow-abi-mismatch=fixed-x18 -C unsafe-allow-abi-mismatch=shadow-call-stack
 
-Then dependencies will need to use it via `-C sanitizer=shadow-call-stack-noenforce`
+Then dependencies will need to use it with `-C allow-partial-mitigations=shadow-call-stack`
 rather than `-C sanitizer=shadow-call-stack`, otherwise they will get an error.
 
 As far as I can see, there is no current demand for that sort of sanitizer runtime,
 but if that is desired, it might be a good idea to add a
-`-C pretend-mitigation-enabled=shadow-call-stack`, and possibly to make
-`-C unsafe-allow-abi-mismatch` do that for crates that are target modifiers.
+`-C pretend-mitigation-enabled=shadow-call-stack` (which would
+act like `-C allow-unsafe-api-mismatch` and mark a crate as a
+"wildcard"), and possibly to make `-C unsafe-allow-abi-mismatch` act like
+`-C pretend-mitigation-enabled` as well for mitigations that are also
+target modifiers.
 
 ## Defaults
 
 We want that the most obvious way to enable mitigations (e.g.
 `-C stack-protector=strong` or `-C sanitizer=shadow-call-stack`) to turn on
-enforcement, since that will set people up to a pit of success where mitigations
+enforcement, since that will set people for a safer default where mitigations
 are enabled throughout.
 
 However, we do want an easy way for distribution owners (for example,
@@ -514,12 +517,44 @@ but they have limitations:
    can use to indicate mitigation support. That does fit our needs, but is
    specific to the GNU/Linux world - it is desirable to have a solution that
    works on all platforms.
+4. There is a similar tool called [`checksec`], with similar limitations.
 
 [`hardening-check(1)`]: https://manpages.debian.org/testing/devscripts/hardening-check.1.en.html
 [`objtool`]: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/tools/objtool/Documentation/objtool.txt?id=5cd64d4f92683afa691a6b83dcad5adfb2165ed0
 [`annobin`]: https://sourceware.org/cgit/annobin
+[`checksec`]: https://www.trapkit.de/tools/checksec/
 
-## .note.gnu.property
+## Mitigations that are manifestly visible from the program header
+
+For some mitigations, the mitigation is enabled for an entire program
+executable, by setting a flag in the program header.
+
+Many of these mitigations normally require all the code within the program
+to be compatible with them, and therefore they normally work in a way
+where every object file indicates whether it is compatible with them,
+and with the mitigation being enabled for the ELF if all of the
+comprising object files are compatible with it.
+
+Mitigations that act like that:
+
+1. Position-independent code ([`ET_DYN`])
+2. Non-executable stack ([`PT_GNU_STACK`][progheader])
+3. [`.note.gnu.property`](#notegnuproperty) mitigations
+
+Other mitigations are also manifest from the program header, but are
+selected at link-time, without requiring any changes to the compilation
+of the comprising object files:
+
+1. relro ([`PT_GNU_RELRO`][progheader])
+
+In these cases, programs such as [`hardening-check(1)`] can often be used
+to check the flags in the program header and see whether the mitigation
+is enabled.
+
+[`ET_DYN`]: https://stackoverflow.com/questions/34519521/why-does-gcc-create-a-shared-object-instead-of-an-executable-binary-according-to/34522357#34522357
+[progheader]: https://refspecs.linuxfoundation.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/progheader.html
+
+### .note.gnu.property
 
 The `.note.gnu.property` field contains a number of properties
 (for example, [`GNU_PROPERTY_AARCH64_FEATURE_1_BTI`]) that are used to indicate
