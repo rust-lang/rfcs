@@ -14,11 +14,11 @@ This RFC adds `Thin<T>` that wraps `T`'s metadata inline, which makes `Thin<T>` 
 [motivation]: #motivation
 
 Pointers of dynamically sized types (DSTs) are fat pointers, and they are not FFI-compatible,
-which obstables some common types like `&str`, `&[T]`, and `&dyn Trait` from being passed across
+which prevents some common types like `&str`, `&[T]`, and `&dyn Trait` from being passed across
 the FFI boundaries.
 
-## 1. Passing pointers of DSTs accross FFI-boundary is hard
-Currently, it's difficult to using DSTs in FFI-compatible functions (even by-pointer).
+## 1. Passing pointers of DSTs across FFI-boundaries is hard
+Currently, it's difficult to use DSTs in FFI-compatible functions (even by-pointer).
 For example, it is not allowed to use `&str`, `&[T]`, or `&dyn Trait` types in an
 `extern "C"` function.
 ```rust
@@ -60,7 +60,7 @@ Luckily, the [`abi_stable`] crate provides a series of FFI-compatible types like
 [`RSliceMut`], [`RStr<'a>`], and an attribute macro [`sabi_trait`] that makes ABI-stable trait
 objects (which are also FFI-compatible).
 
-However, that is tedious and and non-exhaustive because the library writer cannot enumerate all
+However, that is tedious and non-exhaustive because the library writer cannot enumerate all
 compound DSTs (e.g. ADTs with a DST field) exhaustively.
 
 [`abi_stable`]: https://crates.io/crates/abi_stable
@@ -72,7 +72,7 @@ compound DSTs (e.g. ADTs with a DST field) exhaustively.
 ## 2. Slices cannot be unsized to trait objects
 
 Suppose there is a `dyn`-safe trait `MyTrait`, and it is implemented for `[T]`. However, it is
-not possible to convert an `&[T]` to an `&dyn MyTrait` because `[T]` doesn't impl `Sized`. 
+not possible to convert an `&[T]` to an `&dyn MyTrait` because `[T]` doesn't implement `Sized`. 
 ```rust
 trait MyTrait {
     fn foo(&self);
@@ -89,10 +89,10 @@ fn as_my_trait<T>(x: &[T]) -> &dyn MyTrait {
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
-To overcome the obstacles above,  we introduce a `Thin<T>` wrapper that stores the metadata and
+To overcome the obstacles above, we introduce a `Thin<T>` wrapper that stores the metadata and
 a (sized) value inside and thus keeps pointers of `Thin<T>` thin.
 
-## Passing DST pointers accross the FFI boundraries
+## Passing DST pointers across the FFI boundaries
 ```rust
 extern "C" fn foo(
     str_slice: &Thin<str>, // ok because `&Thin<str>` is thin
@@ -104,7 +104,7 @@ extern "C" fn foo(
 let str_slice: &Thin<str> = thin_str!("something");
 let int_slice: &Thin<[i32]> = &Thin::new_unsized([1, 2, 3]);
 let opaque_obj: &Thin<dyn std::any::Any> = &Thin::new_unsized(String::from("hello"));
-// Pass the thin DSTs accross FFI boundary
+// Pass the thin DSTs across FFI boundaries
 unsafe {
     foo(str_slice, int_slice, opaque_obj);
 }
@@ -123,7 +123,7 @@ impl<T> MyTrait for Thin<[T]> {
 let value: &Thin<[i32]> = &Thin::new_unsized([1, 2, 3]);
 // Coerce it to a trait object
 // where `+ ValueSized` is needed to indicate that the size of this trait object
-// are calculated from its value.
+// is calculated from its value.
 let dyn_value: &dyn MyTrait + ValueSized = value; // ok because `Thin<[i32]>` is thin
 // Calls `<Thin<[i32]> as dyn MyTrait>::foo`
 dyn_value.foo();
@@ -142,7 +142,7 @@ Now they can be rewritten as:
 - `ThinBox<T>` -> `Box<Thin<T>>`
 - `BoxedTrait` -> `Box<Thin<dyn Trait>>`
 
-where much less boilerplate codes are needed.
+where much less boilerplate code is needed.
 
 [`List<T>`]: https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/type.List.html
 [`ThinVec<T>`]: https://docs.rs/thin-vec/latest/thin_vec/struct.ThinVec.html
@@ -158,7 +158,7 @@ Regarding [sized hierarchy], `Thin` is more than `PointeeSized` but not `MetaSiz
 - it is more than `PointeeSized` because we actually know its size by reading the metadata
   stored inside.
 
-We need to add a new stuff to the sized hierarchy, named `ValueSized`, to indicate a value of
+We need to add new stuff to the sized hierarchy, named `ValueSized`, to indicate a value of
 which the size is known by reading its value, as mentioned in [RFC 3729 (comments)].
 
 ```rust
@@ -189,7 +189,7 @@ The public APIs of `Thin` consist of 2 parts:
 - `Thin<T, U>`, which is a (maybe unsized) value of `T` with the metadata type of `U` carried on.
   Typically, `U = T` or `U` is some type that `T: Unsize<U>`.
 - `EraseMetadata<T>` which is a wrapper of (maybe unsized) `T`, which ignores the metadata of `T`.
-   E.g., both `&ErasedMetadata<dyn Trait>` and `&ErasedMetadata<[u8]>` has the same size as a
+   E.g., both `&EraseMetadata<dyn Trait>` and `&EraseMetadata<[u8]>` have the same size as a
    thin pointer `&()`.
 ```rust
 // mod core::thin;
@@ -197,7 +197,7 @@ The public APIs of `Thin` consist of 2 parts:
 /// Wrapping a DST `T` with its metadata inlined,
 /// then the pointers of `Thin<T>` are thin.
 ///
-/// the generic type `U` is for two-stage construction of
+/// The generic type `U` is for two-stage construction of
 /// `Thin`, i.e., `Thin<T, U> where T: Unsize<U>` must be
 /// constructed first, then coerced (unsized) to `Thin<T>`
 /// (aka `Thin<T, T>`)
@@ -217,6 +217,8 @@ pub struct EraseMetadata<T: Pointee>(T);
 
 // The size is unknown because the metadata is erased.
 impl<T: Pointee> PointeeSized for EraseMetadata<T> {}
+// `EraseMetadata` is a simple wrapper for sized types.
+impl<T: Sized> Sized for EraseMetadata<T> {}
 
 // Value accesses
 impl<U: Pointee> ops::Deref for Thin<U> {
@@ -229,8 +231,8 @@ impl<U: Pointee> ops::DerefMut for Thin<U> {
 ```
 
 ## Value constructions
-For a sized typed `Thin<T>`, it is able to construct with `Thin::<T>::new`.
-For an unsized (`MetaSized`) typed `Thin<U>`, in general, it requires 3 steps to construct
+For a sized type `Thin<T>`, it can be constructed with `Thin::<T>::new`.
+For an unsized (`MetaSized`) type `Thin<U>`, in general, it requires 3 steps to construct
 a `Thin<U>` on stack or on heap:
 - construct a sized value of `Thin<T, U>` via `Thin::<T, U>::new_unsized` (where `T: Unsize<U>`).
 - obtain a pointer (i.e., `&`, `&mut`, `Box`, `Rc`, `Arc`, etc.) of `Thin<T, U>` via
@@ -243,8 +245,8 @@ impl<T: Sized> Thin<T> {
     /// Create a sized `Thin<T>` value, which is a simple wrapper of `T`
     pub fn new(value: T) -> Thin<T> {
         Self {
-            metadata: (), // Sized type `T` has an empty metadata
-            data: ErasedMetadata(value),
+            metadata: (), // Sized type `T` has empty metadata
+            data: EraseMetadata(value),
         }
     }
 }
@@ -258,7 +260,7 @@ impl<T: Sized, U: Pointee> Thin<T, U> {
     {
         Self {
             metadata: ptr::metadata(&value as &U),
-            data: ErasedMetadata(value),
+            data: EraseMetadata(value),
         }
     }
     /// Consume the `Thin<T>` and return the inner wrapped value of `T`
@@ -279,12 +281,12 @@ where
 [drawbacks]: #drawbacks
 
 ## `Thin` is confusing with existing concepts
-The term `Thin` has a different meaning with a previous term: the trait `core::ptr::Thin`
+The term `Thin` has a different meaning from a previous term: the trait `core::ptr::Thin`
 (that means types with `Metadata = ()`).
 
 ## `ValueSized` doesn't fit `Thin` 100%
 Generally, the size of `ValueSized` type is calculated from its value. For instance, the size of
-a *real* C string (Not `core::ffi::CStr`) is determined by counting the bytes until a `\0`
+a *real* C string (not `core::ffi::CStr`) is determined by counting the bytes until a `\0`
 is reached. In general, `ValueSized` types are `Freeze`, or else the size can change after
 calculating from its value. Hence, `CStrV2` (the real C string type) is `ValueSized` but
 `UnsafeCell<CStrV2>` is not.
@@ -313,7 +315,7 @@ However, it is hard to construct values on stack.
 [prior-art]: #prior-art
 
 - [RFC 2594: Custom DSTs] introduced a more general way to define a DST. This RFC
-  focus on how to "thinify" a pointer to an existing DST via inlining the metadata,
+  focuses on how to "thinify" a pointer to an existing DST via inlining the metadata,
   which is a convenient helper for some common situations.
 - [RFC 3536: Trait for `!Sized` thin pointers] was very similar to this RFC.
     This RFC doesn't change the semantics of existing DSTs like `[T]`, which can avoid
@@ -326,7 +328,7 @@ However, it is hard to construct values on stack.
 [unresolved-questions]: #unresolved-questions
 
 - Should the trait `ValueSized` provide a user-implementable method `size`? (In this RFC,
-  such `size` method can only be generated by compiler.)
+  such a `size` method can only be generated by compiler.)
 
 ## Future possibilities
 [future-possibilities]: #future-possibilities
