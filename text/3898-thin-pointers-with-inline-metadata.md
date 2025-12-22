@@ -185,12 +185,12 @@ instead of a compile-time constant value.
 
 ## Public APIs
 
-The public APIs of `Thin` consist of 2 parts:
-- `Thin<T, U>`, which is a (maybe unsized) value of `T` with the metadata type of `U` carried on.
-  Typically, `U = T` or `U` is some type that `T: Unsize<U>`.
-- `EraseMetadata<T>` which is a wrapper of (maybe unsized) `T`, which ignores the metadata of `T`.
-   E.g., both `&EraseMetadata<dyn Trait>` and `&EraseMetadata<[u8]>` have the same size as a
-   thin pointer `&()`.
+The public APIs of `Thin` consist of 2 parts.
+
+### `Thin<T, U>`
+`Thin<T, U>` is a (maybe unsized) value of `T` with the metadata type of `U` carried on.
+
+Typically, `U = T` or `U` is some type that `T: Unsize<U>`.
 ```rust
 // mod core::thin;
 
@@ -210,16 +210,6 @@ pub struct Thin<T: Pointee, U: Pointee = T> {
 // The size is known via reading its metadata.
 impl<U: Pointee> ValueSized for Thin<U> {}
 
-/// A wrapper that ignores the metadata of a type.
-#[lang = "erase_metadata"]
-#[repr(transparent)]
-pub struct EraseMetadata<T: Pointee>(T);
-
-// The size is unknown because the metadata is erased.
-impl<T: Pointee> PointeeSized for EraseMetadata<T> {}
-// `EraseMetadata` is a simple wrapper for sized types.
-impl<T: Sized> Sized for EraseMetadata<T> {}
-
 // Value accesses
 impl<U: Pointee> ops::Deref for Thin<U> {
     type Target = U;
@@ -228,6 +218,49 @@ impl<U: Pointee> ops::Deref for Thin<U> {
 impl<U: Pointee> ops::DerefMut for Thin<U> {
     fn deref_mut(&mut self) -> &mut U;
 }
+```
+
+### `EraseMetadata<T>`
+`EraseMetadata<T>` is a wrapper of (maybe unsized) `T`, which ignores the metadata of `T`.
+
+E.g., both `&EraseMetadata<dyn Trait>` and `&EraseMetadata<[u8]>` have the same size as a thin pointer `&()`.
+
+```rust
+/// A wrapper that ignores the metadata of a type.
+#[lang = "erase_metadata"]
+#[repr(transparent)]
+pub struct EraseMetadata<T: Pointee>(T);
+
+// For sized types, `EraseMetadata` is a simple wrapper.
+impl<T: Sized> Sized for EraseMetadata<T> {}
+impl<T: Sized> ops::Deref for EraseMetadata<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+impl<T: Sized> ops::DerefMut for EraseMetadata<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
+
+impl<T: Sized> EraseMetadata<T> {
+    /// Wrap a sized value into an `EraseMetadata`.
+    pub fn new(inner: T) -> EraseMetadata<T> {
+        EraseMetadata(inner)
+    }
+    /// Unwrap a sized value from an `EraseMetadata`.
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+// For unsized types, `EraseMetadata` is completely opaque because it is unsafe
+// to read the inner value without the metadata.
+
+// The size is unknown because the metadata is erased.
+impl<T: MetaSized> PointeeSized for EraseMetadata<T> {}
 ```
 
 ## Value constructions
