@@ -1,6 +1,6 @@
 - Feature Name: (`thin_pointers`)
 - Start Date: 2025-12-16
-- RFC PR: [rust-lang/rfcs#3894](https://github.com/rust-lang/rfcs/pull/3894)
+- RFC PR: [rust-lang/rfcs#3898](https://github.com/rust-lang/rfcs/pull/3898)
 - Rust Issue:
   [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
