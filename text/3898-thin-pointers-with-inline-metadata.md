@@ -199,8 +199,8 @@ Typically, `U = T` or `U` is some type that `T: Unsize<U>`.
 ///
 /// The generic type `U` is for two-stage construction of
 /// `Thin`, i.e., `Thin<T, U> where T: Unsize<U>` must be
-/// constructed first, then coerced (unsized) to `Thin<T>`
-/// (aka `Thin<T, T>`)
+/// constructed first, then coerced (unsized) to `Thin<U>`
+/// (aka `Thin<U, U>`)
 #[repr(C)]
 pub struct Thin<T: Pointee, U: Pointee = T> {
     metadata: U::Metadata,
@@ -223,7 +223,8 @@ impl<U: Pointee> ops::DerefMut for Thin<U> {
 ### `EraseMetadata<T>`
 `EraseMetadata<T>` is a wrapper of (maybe unsized) `T`, which ignores the metadata of `T`.
 
-E.g., both `&EraseMetadata<dyn Trait>` and `&EraseMetadata<[u8]>` have the same size as a thin pointer `&()`.
+For example, both `&EraseMetadata<dyn Trait>` and `&EraseMetadata<[u8]>` have the same size as a thin
+pointer `&()`.
 
 ```rust
 /// A wrapper that ignores the metadata of a type.
