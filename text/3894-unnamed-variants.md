@@ -1621,6 +1621,31 @@ Cons:
   variant by changing the `repr`. This is non-obvious and can be avoided by
   forbidding `non_exhaustive` when a valid unnamed variant exists.
 
+### Allow an implicit discriminant expression for unnamed variants
+
+Consider:
+
+```rust
+#[repr(u32)]
+enum Color {
+  Red,
+  Green,
+  _,  // this is an unnamed variant, but covering what discriminant(s)?
+}
+```
+
+Ordinarily, a variant's implicit discriminant is one more than the previous
+variant's. However, a common usage of an unnamed variant is to open the entire
+enum, and so it is ambiguous what exactly the variant does. It is also not a
+particularly large burden to require an explicit discriminant expression.
+
+### Allow usage without `repr`
+
+Consider if an unnamed variant could be present without a `repr`. It could be
+equivalent to `#[non_exhaustive]`. However, this is confusing for a syntax that
+describes ranges of variants: what does the range `_ = ..` actually cover? Is
+there still ABI compatibility?
+
 ## Prior art
 
 _Open_ and _closed_ enums are [pre-existing industry terms][acord-xml].
