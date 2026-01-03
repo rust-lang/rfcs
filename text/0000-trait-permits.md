@@ -15,7 +15,7 @@ trait Test permits mycrate_extra, crate {
 }
 ```
 
-Motivation
+## Motivation
 Rust currently allows any downstream crate to implement traits for types they own, subject to the orphan rules. While flexible, this can lead to:
 
 Accidental or malicious impls: External crates can implement traits in ways that break invariants.
@@ -42,7 +42,7 @@ Other identifiers refer to external crates by name.
 
 If no permits clause is present, behavior is unchanged (any crate may implement the trait, subject to orphan rules).
 
-# Semantics
+## Semantics
 Only the listed crates may provide impl TraitName for Type.
 
 Attempting to implement the trait in a non-permitted crate results in a compiler error.
@@ -74,7 +74,7 @@ impl Test for OtherType {
 // ERROR: Trait `Test` does not permit implementations in `othercrate`
 ```
 
-# Drawbacks
+## Drawbacks
 Reduced flexibility: Downstream crates cannot extend traits unless explicitly permitted.
 
 Ecosystem impact: Existing crates relying on open trait impls may break if traits adopt permits.
