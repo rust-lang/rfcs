@@ -34,6 +34,8 @@ The `permits` clause allows trait authors to specify which crates may provide im
 pub trait Test permits crate, mycrate_extra {
     fn run(&self);
 }
+```
+
 crate refers to the defining crate.
 
 Other identifiers refer to external crates by name.
