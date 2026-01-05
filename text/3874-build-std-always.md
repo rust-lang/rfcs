@@ -241,7 +241,7 @@ target in the project.
 
 - [*Allow reusing sysroot artifacts if available*][future-reuse-sysroot]
 
-[Opaque dependencies]: https://hackmd.io/@epage/ByGfPtRell
+[Opaque dependencies]: https://github.com/rust-lang/cargo/issues/3573#issuecomment-3498262549
 
 ### Standard library crate stability
 [standard-library-crate-stability]: #standard-library-crate-stability
