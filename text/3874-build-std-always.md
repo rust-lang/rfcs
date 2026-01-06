@@ -293,10 +293,22 @@ default: std
 supported: core, alloc, std
 ```
 
+Following [compiler-team#860], `target-standard-library-support` can also be
+output in JSON:
+
+```shell-session
+$ rustc --print target-standard-library-support:json --target armv7a-none-eabi
+{ "default": "core", "supported": ["core", "alloc"] }
+$ rustc --print target-standard-library-support:json --target aarch64-unknown-linux-gnu
+{ "default": "core", "supported": ["core", "alloc", "std"] }
+```
+
 *See the following sections for rationale/alternatives:*
 
 - [*Why introduce `standard_library_support`?*][rationale-why-standard-library-support]
 - [*Should target specifications own knowledge of which standard library crates are supported?*][rationale-target-spec-purpose]
+
+[compiler-team#860]: https://github.com/rust-lang/compiler-team/issues/860
 
 ### Interactions with `#![no_std]`
 [interactions-with-no_std]: #interactions-with-no_std
