@@ -610,7 +610,8 @@ Any Cargo command which accepts a package spec with `-p` will not recognise
 subcommands will need modification to support build-std:
 
 [`cargo clean`][cargo-clean] will additionally delete any builds of the standard
-library performed by build-std.
+library performed by build-std. See also
+[*Should `cargo clean` delete builds of the standard library?*][unresolved-cargo-clean].
 
 [`cargo fetch`][cargo-fetch] will not fetch the standard library dependencies as
 they are already vendored in the `rust-src` component.
@@ -1402,6 +1403,16 @@ bandwidth costs for the project. The impact on usability is limited for the user
 to once per toolchain as the component persists through updates.
 
 ↩ [*Vendored rust-src*][vendored-rust-src]
+
+### Should `cargo clean` delete builds of the standard library?
+[unresolved-cargo-clean]: #should-cargo-clean-delete-builds-of-the-standard-library
+
+`cargo clean` could retain builds of the standard library unless explicitly
+requested. Builds of the standard library are not going change unless the toolchain
+version has changed. This should be consistent with the treatment of opaque
+dependencies in `cargo clean` more broadly.
+
+↩ [*Cargo subcommands*][cargo-subcommands]
 
 ## Prior art
 [prior-art]: #prior-art
