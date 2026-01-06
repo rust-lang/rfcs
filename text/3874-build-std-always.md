@@ -473,7 +473,8 @@ crate being compiled is within the same sysroot as the rustc binary being
 invoked ([?][rationale-implied-bootstrap]). Cargo will not need to use
 `RUSTC_BOOTSTRAP` when compiling the standard library with a stable toolchain.
 The standard library's dependencies will not be permitted to use build probes to
-detect whether a nightly version is being used.
+detect whether a nightly version is being used (at time of writing, currently only
+`object` and `libc` detect the rustc version in their `build.rs`).
 
 *See the following sections for rationale/alternatives:*
 
