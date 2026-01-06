@@ -495,6 +495,20 @@ edition = "2024"
 std = { builtin = true, public = true } # <-- this would be added
 ```
 
+If adding `std` or `alloc` with `--optional`, then a non-optional `core` would
+also be added:
+
+```toml
+[package]
+name = "hello_world"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+std = { builtin = true, optional = true } # <-- this would be added
+core = { builtin = true } # <-- this would also be added
+```
+
 [`cargo info`][cargo-info] will learn how to print information for the built-in
 `std`, `alloc` and `core` dependencies:
 
