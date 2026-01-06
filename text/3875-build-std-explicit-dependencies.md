@@ -93,9 +93,13 @@ Cargo feature.
 > [!NOTE]
 >
 > Explicit dependencies are passed to rustc without the `noprelude` modifier
-> ([?][rationale-explicit-noprelude]). When adding an explicit dependency, users
-> may need to adjust their code (removing extraneous `extern crate` statements
-> or root-relative paths, like `::std`).
+> ([?][rationale-explicit-noprelude]) (`noprelude` refers to the compiler's
+> notion of the "extern prelude", not the prelude in the the user-facing
+> sense of `std::prelude::*`).
+>
+> When adding an explicit dependency, users > may need to adjust their code
+> (removing extraneous `extern crate` statements > or root-relative paths,
+> like `::std` - this will likely only be the case on the 2015 edition).
 
 Crates without an explicit dependency on the standard library now have a
 implicit dependency ([?][rationale-no-migration]) on that target's default set
