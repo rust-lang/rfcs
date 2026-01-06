@@ -33,12 +33,12 @@ RFCs:**
 
 [build-std project goal]: https://rust-lang.github.io/rust-project-goals/2025h2/build-std.html
 
-[rfcs#3873]: https://github.com/rust-lang/rfcs/pull/3873
-[rfcs#3873-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#proposal
-[rfcs#3873-background]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#background
-[rfcs#3873-history]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#history
-[rfcs#3873-motivation]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#motivation
-[rfcs#3873-dependencies]: https://github.com/davidtwco/rfcs/blob/build-std-part-one-context/text/3873-build-std-context.md#dependencies
+[rfcs#3873]: https://rust-lang.github.io/rfcs/3873-build-std-context.html
+[rfcs#3873-proposal]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#proposal
+[rfcs#3873-background]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#background
+[rfcs#3873-history]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#history
+[rfcs#3873-motivation]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#motivation
+[rfcs#3873-dependencies]: https://rust-lang.github.io/rfcs/3873-build-std-context.html#dependencies
 
 [rfcs#3874]: https://github.com/rust-lang/rfcs/pull/3874
 [rfcs#3874-proposal]: https://github.com/davidtwco/rfcs/blob/build-std-part-two-always/text/3874-build-std-always.md#proposal
