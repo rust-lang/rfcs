@@ -935,8 +935,8 @@ both are shipped as part of the `rust-std` component. As the `dylib` does not
 contain a metadata hash, it can be rebuilt unnecessarily when toolchain versions
 change (e.g. switching between stable and nightly and back). The `dylib` is only
 linked against when `-Cprefer-dynamic` is used. build-std will initially be
-conservative and not include the `dylib` and `-Cprefer-dynamic` would fail
-compilation.
+conservative and not include the `dylib` and `-Cprefer-dynamic` would fallback
+to static compilation.
 
 *See the following sections for future possibilities:*
 
