@@ -593,24 +593,24 @@ or `core` will have a version number.
 > ├── rand v0.7.3
 > │   ├── getrandom v0.1.14
 > │   │   ├── cfg-if v0.1.10
-> │   │   │   └── core v0.0.0
+> │   │   │   └── core (built-in)
 > │   │   ├── libc v0.2.68
-> │   │   │   └── core v0.0.0
-> │   │   └── core v0.0.0
+> │   │   │   └── core (built-in)
+> │   │   └── core (built-in)
 > │   ├── libc v0.2.68 (*)
-> │   │   └── core v0.0.0
+> │   │   └── core (built-in)
 > │   ├── rand_chacha v0.2.2
 > │   │   ├── ppv-lite86 v0.2.6
-> │   │   │   └── core v0.0.0
+> │   │   │   └── core (built-in)
 > │   │   ├── rand_core v0.5.1
 > │   │   │   ├── getrandom v0.1.14 (*)
-> │   │   │   └── core v0.0.0
-> │   │   └── std v0.0.0
-> │   │       └── alloc v0.0.0
-> │   │           └── core v0.0.0
+> │   │   │   └── core (built-in)
+> │   │   └── std (built-in)
+> │   │       └── alloc (built-in)
+> │   │           └── core (built-in)
 > │   ├── rand_core v0.5.1 (*)
-> │   └── std v0.0.0 (*)
-> └── std v0.0.0 (*)
+> │   └── std (built-in) (*)
+> └── std (built-in) (*)
 > ```
 
 This part of the RFC has no implications for the following Cargo subcommands:
