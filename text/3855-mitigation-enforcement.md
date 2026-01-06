@@ -374,6 +374,9 @@ On the other hand, maybe there is not actually desire to add
 `-C stack-protector=strong -C allow-partial-mitigations=stack-protector` as a default,
 which would make this less interesting?
 
+Currently, the best way for a distribution to enable a mitigation by default would be
+to patch `rustc`, as opposed to setting a `RUSTFLAGS`.
+
 Maybe it is actually possible to ship a `-C stack-protector=strong` standard library and
 add a `-C stack-protector=strong` default, since the enforcement check only works
 "towards roots"?
@@ -580,6 +583,22 @@ but is not good if we want to be able to add new enforced mitigations without re
 cooperation from all platforms.
 
 [`GNU_PROPERTY_AARCH64_FEATURE_1_BTI`]: https://docs.rs/object/0.37/object/elf/constant.GNU_PROPERTY_AARCH64_FEATURE_1_BTI.html
+
+## Passing enforced mitigations to the linker
+
+Currently, the mitigation enforcement RFC does not do anything for native dependencies,
+which can be compiled without mitigations within a program that supports mitigations.
+
+As far as I can tell, the `rustc` compiler currently does not read the object files
+of native dependencies, but instead passes to the linker arguments that allow the
+linker to find and link in the object files.
+
+If a linker accepts flags that enforce certain mitigations - currently, these are
+mostly [mitigations manifest from the program header](#mitigations-that-are-manifestly-visible-from-the-program-header) - the
+compiler should pass these flags to the relevant linker.
+
+Since that is a breaking change as it breaks compilation with existing C code, it
+might need to be done over an edition or linker-change boundary.
 
 ## .gnu.build.attributes
 
