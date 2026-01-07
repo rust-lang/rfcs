@@ -48,7 +48,9 @@ This would not be a strict alternative in that nothing prevents this from being 
 # Prior art
 [prior-art]: #prior-art
 
-[RFC #3737](https://github.com/rust-lang/rfcs/pull/3737) is vaguely related (only in that it also pertains to `#[must_use]`). Otherwise I do not see any prior art.
+[RFC #3737](https://github.com/rust-lang/rfcs/pull/3737) is vaguely related (only in that it also pertains to `#[must_use]`).
+
+`#[must_use`] is already tracked through tuples ([example](https://play.rust-lang.org/?version=stable&mode=debug&edition=2024&gist=488fc81eba51a4aded6faeab7ee9bf44)), though strictly speaking this does not apply `#[must_use]` to the tuple type.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
