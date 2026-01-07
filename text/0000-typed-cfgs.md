@@ -140,7 +140,7 @@ There is a single, unified parsing and comparison logic that is part of the lang
 *   The comparison is performed component-by-component, filling in any missing components with `0`. For example, a predicate `my_cfg >= "1.5"` will evaluate to true for versions `1.5.0`, `1.6.0`, and `2.0`, but false for `1.4.9`.
 *   For `rust_version`, a lint will be issued if the literal has more than two components (e.g., `"1.92.0"`). This is because language features should not depend on patch releases.
     *   A new lint, `useless_version_constraint`, warns for version checks that are logically guaranteed to be true or false (e.g., `rust_version >= "1.20"` when the feature was stabilized in 1.90).
-*   For `rust_edition`, a lint will be issued if the literal has more than one component or if the value is not a recognized Rust edition.
+*   For `rust_edition`, a lint will be issued if the literal has more than one component or if we know the value is never going to be a Rust edition (for example, `"2019"`).
 *   Pre-release identifiers (e.g., `"1.92-beta"`) are not supported in this RFC. They will be ignored during comparison and a lint will be emitted. See the "Unresolved Questions" section for further discussion.
 
 Using version-typed config values with the `=` predicate results in a hard error.
