@@ -143,6 +143,8 @@ There is a single, unified parsing and comparison logic that is part of the lang
 *   For `rust_edition`, a lint will be issued if the literal has more than one component or if the value is not a recognized Rust edition.
 *   Pre-release identifiers (e.g., `"1.92-beta"`) are not supported in this RFC. They will be ignored during comparison and a lint will be emitted. See the "Unresolved Questions" section for further discussion.
 
+Using version-typed config values with the `=` predicate results in a hard error.
+
 ### Interaction with Compiler Flags
 
 The `version` type integrates with existing compiler flags.
@@ -155,7 +157,7 @@ The `version` type integrates with existing compiler flags.
 
     * If a version cfg is used with a string literal in a comparison that is not a valid version string, a hard error is emitted.
     * If a cfg that is not a version type is used in a version comparison, a hard error is emitted. For undefined cfgs, this could be relaxed to evaluate to false in the future.
-    * If a cfg
+    * If a cfg that is a version type is used in a non-version comparison (`=`), a hard error is emitted.
 
 *   **`--print cfg`**: For the built-in `rust_version` and `rust_edition` cfgs, this flag will *not* print them by default to avoid breaking tools that parse this output. They are only printed if overridden via `--cfg`. User-defined version cfgs are printed in the `name=version("...")` format.
 
