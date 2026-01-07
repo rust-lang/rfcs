@@ -91,19 +91,19 @@ For this RFC, the only supported comparison operators are `>=` and `<`.
 
 This RFC adds a new kind of predicate to the `cfg` attribute, allowing for comparison against version identifiers.
 
-### `version` predicates
+### Version predicates
 
-A `version` predicate is available for `cfg` identifiers that are declared to be of type `version`.
+A version predicate is available for `cfg` identifiers that are declared to be of type `version`.
 
 The following grammar will be added for `cfg` predicates:
 
 ```text
-cfg_predicate :
+ConfigurationPredicate :
     IDENTIFIER ('>=' | '<') STRING_LITERAL
   | ...
 ```
 
-This form of predicate is only valid when the `IDENTIFIER` on the left-hand side is a known `cfg` of type `version`. This RFC proposes two built-in `version` identifiers, `rust_version` and `rust_edition`, and a mechanism for build scripts and command-line tools to introduce new ones.
+This form of predicate is only valid when the `IDENTIFIER` on the left-hand side names a known `cfg` option of type `version`.
 
 A `cfg` identifier is of type `version` if:
 *   It is one of the built-in identifiers `rust_version` or `rust_edition`.
@@ -111,7 +111,7 @@ A `cfg` identifier is of type `version` if:
 
 The `ident` must be a known `cfg` identifier of type `version`. The `literal` must be a string literal that represents a valid version.
 
-A `version` predicate evaluates to `true` if the comparison is true, and `false` otherwise. If the identifier is not a known version `cfg`, or the literal is not a valid version string, a compile-time error is produced.
+A `version` predicate evaluates to `true` if the comparison is true, and `false` otherwise. If the identifier is not a known version-typed `cfg`, or the literal is not a valid version string, a compile-time error is produced.
 
 ```rust
 #[cfg(rust_version >= "1.90")]
@@ -186,7 +186,7 @@ This approach delivers the most critical functionality to users quickly, while a
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ### Why this design?
-This design directly solves the MSRV problem in a way that previous attempts did not. The syntax `rust_version >= "1.85"` is highly intuitive and directly expresses the user's intent once the feature is available. It is a **principled** design, as by introducing a `version` type to the `cfg` system, we create a sound basis for comparison operators. This avoids the semantic confusion of proposals like `rust_version = "1.85"` which would have overloaded the meaning of `=` for a single special case. Furthermore, it's an extensible design that paves the way for other comparison operators, `cfg(some_dependency >= "1.2.3")`, or other typed `cfg`s in the future.
+This design directly solves the MSRV problem in a way that previous attempts did not. The syntax `rust_version >= "1.85"` is highly intuitive and directly expresses the user's intent once the feature is available. It is a principled design, as by introducing a `version` type to the `cfg` system, we create a sound basis for comparison operators. This avoids the semantic confusion of proposals like `rust_version = "1.85"` which would have overloaded the meaning of `=` for a single special case. Furthermore, it's an extensible design that paves the way for other comparison operators, `cfg(some_dependency >= "1.2.3")`, or other typed `cfg`s in the future.
 
 ### Alternative 1: `#[cfg(version(1.85))]` (RFC 2523)
 This was the original accepted RFC for version-based conditional compilation.
