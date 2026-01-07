@@ -34,14 +34,13 @@ This RFC proposes a solution that avoids these pitfalls.
 
 A key motivating example is making it ergonomic to adopt attributes that were stabilized after a crate's MSRV. For example, the `#[diagnostic::on_unimplemented]` attribute is a stable feature that library authors can use to provide better error messages. However, if a library has an MSRV from before this attribute was stabilized, they cannot use it without a build script. A build script is often too much overhead for such a small, non-essential feature.
 
-This RFC makes it trivial to adopt. In a hypothetical world where this RFC landed in Rust 1.55 and `#[diagnostic::on_unimplemented]` landed in 1.60, a crate with an MSRV of 1.50 could use the attribute like this:
+This RFC makes it trivial to adopt even in a crate that doesn't want to use a build script. In this case, since the diagnostic attribute namespace landed before `rust_version`, you would write
 
 ```rust
-// MSRV = 1.50, this RFC = 1.55, diagnostic attribute = 1.60
-#[cfg_attr(rust_version, cfg_attr(rust_version >= "1.60", diagnostic::on_unimplemented(
+#[cfg_attr(rust_version, diagnostic::on_unimplemented(
     message = "`{Self}` does not implement `MyTrait`",
     label = "missing implementation for `{Self}`",
-)))]
+))]
 impl<T> MyTrait for T { /* ... */ }
 ```
 
@@ -53,42 +52,26 @@ With this feature, we will hopefully see more people using useful attributes lik
 If your crate's MSRV is at least the version where typed `cfg`s were stabilized, you can directly use the version comparison. For example, imagine a new function `pretty_print()` is stabilized in Rust 1.92:
 
 ```rust
-#[cfg(rust_version >= "1.92")]
-fn use_new_feature() {
+fn print_something() {
+    #[cfg(rust_version >= "1.92")]
     pretty_print();
 }
 ```
 
-However, the primary benefit of this feature is to allow conditional compilation while maintaining a *lower* MSRV. The key is to first check for the existence of the `rust_version` configuration itself before trying to use it in a comparison.
-
-For example, to conditionally apply the `#[diagnostic::on_unimplemented]` attribute itself (if, for example, your MSRV is older than when that attribute was stabilized in 1.60), you can use nested `cfg_attr`:
+`rust_version` also allows the use of these predicates while maintaining a lower MSRV than the version `rust_version` itself ships in. The key is to first check for the existence of the `rust_version` configuration itself before trying to use it in a comparison.
 
 ```rust
-// For an MSRV of 1.50, where this RFC is in 1.55 and the diagnostic attribute is in 1.60
-#[cfg_attr(rust_version, cfg_attr(cfg(rust_version >= "1.60", diagnostic::on_unimplemented(
-    message = "`{Self}` does not implement `MyTrait`",
-    label = "missing implementation for `{Self}`",
-))))]
-impl<T> MyTrait for T { /* ... */ }
+fn print_something() {
+    #[cfg(rust_version)]
+    #[cfg(rust_version >= "1.92")]
+    pretty_print();
+
+    #[cfg_attr(rust_version, cfg(rust_version < "1.92"))]
+    println!("something less pretty");
+}
 ```
 
-This pattern ensures that on compilers older than 1.55, nothing is emitted. On compilers between 1.55 and 1.59, only the outer `cfg_attr` is processed, and since `rust_version >= "1.60"` is false, nothing is emitted. On compilers 1.60 and newer, the full attribute is applied.
-
-Similarly, you can provide different diagnostics depending on whether a new field has been added to an existing attribute. Imagine the `admonition` field is added in version 1.Y:
-
-```rust
-// If your crate's MSRV is high enough to assume `diagnostic::on_unimplemented` exists
-#[cfg_attr(rust_version < "1.Y", diagnostic::on_unimplemented(
-    message = "`{Self}` does not implement `MyTrait`; perhaps you need to enable feature 'foo'?",
-    label = "missing implementation for `{Self}`",
-))]
-#[cfg_attr(rust_version >= "1.Y", diagnostic::on_unimplemented(
-    message = "`{Self}` does not implement `MyTrait`",
-    label = "missing implementation for `{Self}`",
-    admonition = "Perhaps you need to enable feature 'foo'?" // Using a hypothetical new field
-))]
-impl<T> MyTrait for T { /* ... */ }
-```
+This chained config pattern is only necessary when your MSRV straddles both the `rust_version` feature and a new feature that shipped after it.
 
 Similarly, you can check the Rust edition:
 
@@ -99,9 +82,9 @@ fn my_function() {
 }
 ```
 
-Note that because new compilers can still compile older editions, the `#[cfg(rust_edition)]` stacking pattern is less broadly useful than it is for `rust_version`. Its primary use case is within macros or code generation that needs to produce different code depending on the edition context it's being expanded into.
+Note that because new compilers can still compile older editions, the `#[cfg(rust_edition)]` stacking pattern is less useful than it is for `rust_version`. The primary use case for rust_edition is within macros or code generation that needs to produce different code depending on the edition context it's being expanded into.
 
-For this initial proposal, the only supported comparison operators are `>=` and `<`.
+For this RFC, the only supported comparison operators are `>=` and `<`.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
