@@ -600,6 +600,28 @@ compiler should pass these flags to the relevant linker.
 Since that is a breaking change as it breaks compilation with existing C code, it
 might need to be done over an edition or linker-change boundary.
 
+## Use of the lint mechanism
+
+In theory, mitigation enforcement could be a collection of lints, accessible via our standard
+lint infrastructure, and as such e.g. exposed in Cargo via existing lint configuation.
+
+The problem with this is that lints are designed to be capped - normally, lints are intended
+for cases where a probable bug exists, but generally, for code that is not currently under active
+development, users prefer to use the code with a probable, pre-existing bug as opposed to
+changing it, and cap the lints (using e.g. `--cap-lints=warn`) while sending the warnings to
+a place that might be handled eventually.
+
+Lints have a `force-warn` option that always warns, as well as a `forbid` option that overrides
+`allow`. We would need a `force-error-but-allow-allow` option that overrides capping lints
+but does not override `allow`, which would make the lint ordering a lattice as opposed
+to a total ordering, and be undesirable.
+
+For mitigations, this is an undesirable state, as you generally do not want to deploy code with
+pre-existing missing mitigations.
+
+Also, lints are generally controlled by developers, while mitigations are normally controlled
+by DevSecOps engineers, and it is reasonable to keep the separation functional.
+
 ## .gnu.build.attributes
 
 This is a [Fedora feature]. It actually behaves pretty similarly to how we expect
