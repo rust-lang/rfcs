@@ -145,7 +145,16 @@ There is a single, unified parsing and comparison logic that is part of the lang
 
 Using version-typed config values with the `=` predicate results in a hard error.
 
-### Interaction with Compiler Flags
+### Version-typed cfgs as options
+
+When cfg option with a version type and value is used as a bare option, it evalutes to true:
+
+```rust
+#[cfg(rust_version)]
+fn new_impl() { /* compiles */ }
+```
+
+### Defining version-typed configs and interaction with compiler flags
 
 The `version` type integrates with existing compiler flags.
 
