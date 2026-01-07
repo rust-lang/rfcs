@@ -1,6 +1,6 @@
 - Feature Name: Let `Option` derive `#[must_use]`
 - Start Date: 2026-01-07
-- RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
+- RFC PR: [rust-lang/rfcs#3906](https://github.com/rust-lang/rfcs/pull/3906)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
 
 # Summary
