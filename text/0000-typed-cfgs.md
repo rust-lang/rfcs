@@ -126,14 +126,14 @@ The `STRING_LITERAL` in a version predicate must conform to the following gramma
 
 ```text
 version_literal :
-    NUMERIC_COMPONENT ('.' NUMERIC_COMPONENT ('.' NUMERIC_COMPONENT)?)?
+    NUMERIC_COMPONENT ('.' NUMERIC_COMPONENT)*
 
 NUMERIC_COMPONENT :
     '0'
   | ('1'...'9') ('0'...'9')*
 ```
 
-This grammar defines a version as one, two, or three non-negative integer components separated by dots. Each component must not have leading zeros, unless the component itself is `0`. For example, `"1.90"` and `"0.2.0"` are valid, but `"1.09"` is not.
+This grammar defines a version as one or more non-negative integer components separated by dots. Each component must not have leading zeros, unless the component itself is `0`. For example, `"1.90"` and `"0.2.0"` are valid, but `"1.09"` is not.
 
 There is a single, unified parsing and comparison logic that is part of the language's semantics. Additional checks for the built-in version keys are implemented as lints.
 
@@ -212,13 +212,23 @@ While a good design, the "typed cfgs" approach with an actual comparison operato
 # Prior art
 [prior-art]: #prior-art
 
+## Rust
+
 - **Cargo's `rust-version`:** The `[package]` section of `Cargo.toml` can specify a `rust-version` field. This allows Cargo to select appropriate versions of dependencies and fail early if the compiler is too old. However, it does not provide fine-grained, in-code conditional compilation. This RFC brings a similar capability directly into the language, but for controlling code within a crate rather than for dependency resolution.
+
+## Other languages
 
 - **C++ (`__cplusplus`)**: The C++ standard defines the `__cplusplus` macro, which expands to an integer literal that increases with each new version of the standard (e.g., `201103L` for C++11, `202002L` for C++20). This allows for preprocessor checks like `#if __cplusplus >= 201103L`. This is very similar to the `rust_version >= "..."` proposal in that it uses standard comparison operators against a monotonically increasing value. However, it is less granular, as several years pass between new C++ versions.
 
 - **Clang/GCC (`__has_feature`, `__has_attribute`)**: These function-like macros allow for checking for the presence of specific compiler features, rather than the overall language version. For example, `__has_feature(cxx_rvalue_references)` checks for a specific language feature. This approach is more granular but also more verbose if one needs to check for many features at once. This approach was discussed in RFC #2523, but rejected, in part because we wanted to reinforce the idea of Rust as "one language" instead of a common subset with many compiler-specific extensions.
 
 - **Python (`sys.version_info`)**: Python exposes its version at runtime via `sys.version_info`, a tuple of integers `(major, minor, micro, ...)`. Code can check the version with standard tuple comparison, e.g., `if sys.version_info >= (3, 8):`. This component-wise comparison is very similar to the logic proposed in this RFC. However, because Python is interpreted, a file must be syntactically valid for the interpreter that is running it, which makes it difficult to use newer syntax in a file that must also run on an older interpreter. Rust, being a compiled language with a powerful conditional compilation system, does not have this limitation, and this RFC's design takes full advantage of that.
+
+## Versioning systems
+
+Not every system uses Rust's standard three-part semver versioning scheme, but many are close. In this section are examples of more bespoke versioning systems that this feature can accommodate.
+
+- **Chromium**: Chromium's version format is a four-part number: MAJOR.MINOR.BUILD.PATCH, where MAJOR increments with significant releases, MINOR is often 0, BUILD tracks trunk builds, and PATCH reflects updates from a specific branch, with BUILD and PATCH together identifying the exact code revision.
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
