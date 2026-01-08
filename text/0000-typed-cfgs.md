@@ -32,7 +32,7 @@ The primary blockers for existing solutions have been:
 
 This RFC proposes a solution that avoids these pitfalls.
 
-A key motivating example is making it ergonomic to adopt attributes that were stabilized after a crate's MSRV. For example, the `#[diagnostic::on_unimplemented]` attribute is a stable feature that library authors can use to provide better error messages. However, if a library has an MSRV from before this attribute was stabilized, they cannot use it without a build script. A build script is often too much overhead for such a small, non-essential feature.
+One motivating example is making it ergonomic to adopt attributes that were stabilized after a crate's MSRV. For example, the `#[diagnostic::on_unimplemented]` attribute is a stable feature that library authors can use to provide better error messages. However, if a library has an MSRV from before this attribute was stabilized, they cannot use it without a build script. A build script is often too much overhead for such a small, non-essential feature.
 
 This RFC makes it trivial to adopt even in a crate that doesn't want to use a build script. In this case, since the diagnostic attribute namespace landed before `rust_version`, you would write
 
@@ -44,7 +44,7 @@ This RFC makes it trivial to adopt even in a crate that doesn't want to use a bu
 impl<T> MyTrait for T { /* ... */ }
 ```
 
-With this feature, we will hopefully see more people using useful attributes like `on_unimplemented` even with MSRVs before when the diagnostic attribute namespace was added. The ability to conditionally add attributes for newer features is further detailed in the guide-level explanation.
+With this feature we hope to see more people using useful attributes like `on_unimplemented`, even with MSRVs before when the diagnostic attribute namespace was added. Gated `diagnostic` attributes like this will not be active until the Rust version where this feature ships, but adding them still adds value. While some crates must hold a low MSRV to allow building in environments with older compilers, like Linux distros, most active Rust development still takes place on recent compiler versions. Using this gating mechanism will mean that most users of a crate benefit from the attributes, without changing the crate's MSRV or adding a build script.
 
 # Guide-level explanation
 [guide-level-explanation]: #guide-level-explanation
