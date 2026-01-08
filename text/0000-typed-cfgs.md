@@ -167,6 +167,8 @@ The `version` type integrates with existing compiler flags.
     * If a version cfg is used with a string literal in a comparison that is not a valid version string, a hard error is emitted.
     * If a cfg that is not a version type is used in a version comparison, a hard error is emitted. For undefined cfgs, this could be relaxed to evaluate to false in the future.
     * If a cfg that is a version type is used in a non-version comparison (`=`), a hard error is emitted.
+    * Version typed cfgs are single-valued. Setting more than one value for the flag is a hard error. This includes values of other types, so given the example above, adding both `--cfg my_app_version` and `--cfg my_app_version="foo"` would cause a hard error.
+    * Setting the _same_ value multiple times on the command line should also be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
 
 *   **`--print cfg`**: For the built-in `rust_version` and `rust_edition` cfgs, this flag will *not* print them by default to avoid breaking tools that parse this output. They are only printed if overridden via `--cfg`. User-defined version cfgs are printed in the `name=version("...")` format.
 
