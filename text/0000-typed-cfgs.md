@@ -249,11 +249,14 @@ Not every system uses Rust's standard three-part semver versioning scheme, but m
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
+- **More expressive check-cfg:** We can support specifying an expected number of components in check-cfg, or an expected set of values to compare against, as in editions:
+    - `--check-cfg 'cfg(foo, version("2018", "2022", "2025"))'`
+    - `--check-cfg 'cfg(foo, version(values >= "1.75"))'`
+    - `--check-cfg 'cfg(foo, version(components <= 2))'`
 - **"Compatible-with" operator:** We could introduce a `~=` operator that works like Cargo's caret requirements. For example, `cfg(some_dep ~= "1.5")` would be equivalent to `cfg(all(some_dep >= "1.5", some_dep < "2.0"))`. The rationale for not doing this now is that it's easy enough to write by hand.
 - **More comparison operators:** While this RFC only proposes `>=` and `<`, the underlying `version` type makes it natural to add support for `<=`, `==`, `!=`, etc., in the future.
-- **More flexible version strings:** The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic.
+- **Pre-releases:** The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic.
 - **Dependency Version `cfg`s:** The "typed `cfg`" infrastructure could be extended to query the versions of direct dependencies, e.g., `#[cfg(serde >= "1.0.152")]`. This would require significant integration with Cargo.
 - **Other `cfg` types:** We could introduce other types, such as integers or single-valued strings. This could be useful for a variety of features, from system library versioning schemes ([kconfig](https://docs.kernel.org/kbuild/kconfig-language.html)) to enabling things like [mutually exclusive global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 - **Namespaced `cfg`s:** We could group Rust-specific `cfg`s under a `rust::` namespace, e.g., `#[cfg(rust::version >= "1.85")]`. This RFC intentionally keeps `rust_version` at the top level to simplify the initial implementation and stabilization, but namespacing could be explored in the future to better organize the growing number of built-in `cfg`s.
 - **Short-circuiting `cfg` predicates:** Change `any` and `all` predicates to short-circuit instead of evaluating all their arguments. This would make introducing new predicates and comparison operators much easier.
-- **More expressive check-cfg:** We can support specifying an expected number of components in check-cfg, or an expected set of values to compare against, as in editions.
