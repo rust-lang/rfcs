@@ -170,13 +170,16 @@ The `version` type integrates with existing compiler flags.
     * Version typed cfgs are single-valued. Setting more than one value for the flag is a hard error. This includes values of other types, so given the example above, adding both `--cfg my_app_version` and `--cfg my_app_version="foo"` would cause a hard error.
     * Setting the _same_ value multiple times on the command line should also be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
 
-*   **`--print cfg`**: For the built-in `rust_version` and `rust_edition` cfgs, this flag will *not* print them by default to avoid breaking tools that parse this output. They are only printed if overridden via `--cfg`. User-defined version cfgs are printed in the `name=version("...")` format.
-
 *   **`--check-cfg`**: To inform the compiler that a `cfg` is expected to be a version, and to enable linting, use:
     ```sh
     --check-cfg 'cfg(my_app_version, version())'
     ```
-    The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them.
+
+    This will accept any version value, but lint when the option is used as something other than a version. This is a more sensible default for versions, which don't have the equivalent of `values(none())`.
+
+*   **`--print cfg`**: For the built-in `rust_version` and `rust_edition` cfgs, this flag will *not* print them by default to avoid breaking tools that parse this output. They are only printed if overridden via `--cfg`. User-defined version cfgs are printed in the `name=version("...")` format.
+
+*   **`--print check-cfg`**: The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them.
 
 ### Stabilization
 
