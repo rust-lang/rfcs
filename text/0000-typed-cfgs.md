@@ -174,7 +174,7 @@ The `version` type integrates with existing compiler flags.
 
 *   **`--check-cfg`**: To inform the compiler that a `cfg` is expected to be a version, and to enable linting, use:
     ```sh
-    --check-cfg 'cfg(my_app_version, version)'
+    --check-cfg 'cfg(my_app_version, version())'
     ```
     The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them.
 
