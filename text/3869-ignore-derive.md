@@ -107,7 +107,7 @@ It is invalid for `#[ignore]` to receive a derive that isn't applied to the curr
 ```rust
 #[derive(Clone)]
 struct Foo {
-    #[ignore(Clone, PartialEq)]
+    #[ignore(PartialEq)]
     foo: String,
 }
 ```
@@ -136,28 +136,28 @@ When a derive macro such as `#[derive(std::hash::Hash)]` is applied to an item l
   that the `derive` macro receives - **with the list of derives removed**. The derive macro has no idea what other derives ignore
   this field, it just knows that it should ignore it.
 
-  **Example:** `std::hash::Hash` will see `#[ignore] field: ()` when the input contains `#[ignore(std::hash::Hash, Clone)] field: ()`
+  **Example:** `std::hash::Hash` will see `#[ignore] field: ()` when the input contains `#[ignore(std::hash::Hash, PartialEq)] field: ()`
 
 - If the `#[ignore]` attribute **does not** mention the derive, then the attribute is removed completely from the macro's input `TokenStream`.
   The derive macro doesn't know that other derives ignore this field.
 
-  **Example:** `Clone` will see just `field: ()` when the input contains `#[ignore(std::hash::Hash)] field: ()`
+  **Example:** `PartialEq` will see just `field: ()` when the input contains `#[ignore(std::hash::Hash)] field: ()`
 
 ### Example
 
 In the below example:
 
-- `Clone` will ignore fields `bar` and `baz`
+- `PartialEq` will ignore fields `bar` and `baz`
 - `std::hash::Hash` will ignore fields `foo` and `baz`
 
 ```rust
-#[derive(std::hash::Hash, Clone)]
+#[derive(std::hash::Hash, PartialEq)]
 struct Foo {
     #[ignore(std::hash::Hash)]
     foo: (),
-    #[ignore(Clone)]
+    #[ignore(PartialEq)]
     bar: (),
-    #[ignore(std::hash::Hash, Clone)]
+    #[ignore(std::hash::Hash, PartialEq)]
     baz: (),
     quux: ()
 }
@@ -364,9 +364,9 @@ struct Foo {
 The list of paths passed to `ignore` is not allowed to contain more than 1 of the same path:
 
 ```rust
-#[derive(Clone)]
+#[derive(PartialEq)]
 struct Foo {
-    #[ignore(Clone, ::core::clone::Clone)]
+    #[ignore(PartialEq, ::core::cmp::PartialEq)]
     ignored: ()
 }
 ```
