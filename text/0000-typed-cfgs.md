@@ -1,4 +1,4 @@
-- Feature Name: typed_cfgs
+- Feature Name: version_cfgs
 - Start Date: 2026-01-06
 - RFC PR: [rust-lang/rfcs#0000](https://github.com/rust-lang/rfcs/pull/0000)
 - Rust Issue: [rust-lang/rust#0000](https://github.com/rust-lang/rust/issues/0000)
