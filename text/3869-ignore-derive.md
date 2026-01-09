@@ -225,6 +225,9 @@ You want to implement:
 you'd need to implement those 3 traits manually:
 
 ```rust
+use std::fmt::Debug;
+use std::hash::Hash;
+
 #[derive(Clone)]
 pub struct Var<T> {
     pub ns: Symbol,
@@ -234,7 +237,7 @@ pub struct Var<T> {
     _phantom: PhantomData<T>
 }
 
-impl<T> fmt::Debug for Var<T> {
+impl<T> Debug for Var<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Var")
             .field("ns", &self.ns)
@@ -245,13 +248,13 @@ impl<T> fmt::Debug for Var<T> {
     }
 }
 
-impl PartialEq for Var {
+impl<T> PartialEq for Var<T> {
     fn eq(&self, other: &Self) -> bool {
         self.ns == other.ns && self.sym == other.sym
     }
 }
 
-impl Hash for Var {
+impl<T> Hash for Var<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         (&self.ns, &self.sym).hash(state);
     }
@@ -280,7 +283,10 @@ pub struct Var<T> {
 }
 ```
 
-Note: Multiple `#[ignore]` attributes can apply to the same field, which is the same as writing each argument to `ignore` in a single attribute.
+Notes:
+
+- Multiple `#[ignore]` attributes can apply to the same field, which is the same as writing each argument to `ignore` in a single attribute.
+- Unlike the manual implementations, the code will generate trait implementations that require the type parameter `T` to be bounded by the implementing trait, for example `impl<T: Debug> Debug for Var<T>`. Explained in the next section.
 
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
@@ -552,6 +558,74 @@ match foo {
 ```
 
 Hence any type deriving `PartialEq` with fields that are marked `#[ignore(PartialEq)]` will not implement `StructuralPartialEq` automatically
+
+### For the default derives, type parameter bounds are not affected by `ignore`
+
+Even if a type parameter is not used in any of the non-`ignore`d fields, like here:
+
+```rs
+#[derive(Debug)]
+pub struct Value<T> {
+    #[ignore(Debug)]
+    value: Option<T>,
+}
+```
+
+Code will still be generated that requires `T` to implement `Debug`:
+
+```rs
+impl<T: Debug> Debug for Value<T> { /* ... */ }
+```
+
+It would be possible to implement this, but it would be a SemVer hazard.
+
+The field `value` is private. One would rightfully expect that making changes to it should not affect the public API.
+The crate author might remove that `ignore` attribute, expecting it to be okay:
+
+```diff
+#[derive(Debug)]
+pub struct Value<T> {
+-   #[ignore(Debug)]
+    value: Option<T>,
+}
+```
+
+This will be a breaking change, because now, `Value<T>` only implements `Debug` if `T` does.
+When the `ignore` was still there, `Value<T>` would always implement `Debug`.
+
+This behaviour is similar to how here:
+
+```rs
+#[derive(Clone)]
+struct Value<T> {
+    value: Rc<T>
+}
+```
+
+The generated code requires `T` to implement `Clone`, even though it doesn't need to (because `Rc` is always `Clone`):
+
+```rs
+impl<T: Clone> Clone for Value<T> { /* ... */}
+```
+
+The macro could generate the following code instead:
+
+```rs
+impl<T> Clone for Value<T>
+where Rc<T>: Clone {
+    /* ... */
+}
+```
+
+But this will commit to `Value<T>` being `Clone` even when `T` is not. So if the library author then removes the
+`Rc` wrapper to instead own that `T`, this will be a breaking change:
+
+```rs
+#[derive(Clone)]
+struct Value<T> {
+    value: T
+}
+```
 
 # Drawbacks
 [drawbacks]: #drawbacks
