@@ -193,7 +193,7 @@ This approach delivers the most critical functionality to users quickly, while a
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- Increased compiler complexity. This introduces a new concept of "typed" `cfg`s into the compiler, which adds a small amount of complexity to the parsing and evaluation logic for conditional compilation.
+- Increased compiler complexity. This introduces a new concept of "typed" `cfg`s into the compiler, which adds complexity to the parsing and evaluation logic for conditional compilation.
 - Subtlety of MSRV-preserving patterns: The need for the "stacked `cfg`" pattern (`#[cfg(rust_version)] #[cfg(rust_version >= ...)]` and `#[cfg_attr(rust_version, cfg(rust_version >= ...))]`) is subtle. While we will add lints to guide users, it's less direct than a simple predicate. However, this subtlety is the explicit tradeoff made to achieve MSRV compatibility.
 
 # Rationale and alternatives
