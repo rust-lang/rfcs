@@ -177,7 +177,7 @@ The `version` type integrates with existing compiler flags.
 
     This will accept any version value, but lint when the option is used as something other than a version. This is a more sensible default for versions, which don't have the equivalent of `values(none())`.
 
-*   **`--print cfg`**: For the built-in `rust_version` and `rust_edition` cfgs, this flag will *not* print them by default to avoid breaking tools that parse this output. They are only printed if overridden via `--cfg`. User-defined version cfgs are printed in the `name=version("...")` format.
+*   **`--print cfg`**: User-defined version cfgs are printed in the `name=version("...")` format. Whether to print the built-in `rust_version` and `rust_edition` cfgs is left as an unresolved question to be determined based on tool compatibility. In future editions, the builtin cfgs should always be printed.
 
 *   **`--print check-cfg`**: The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them.
 
@@ -280,6 +280,7 @@ Operating systems include many versions, including kernel versions, public OS ve
 [unresolved-questions]: #unresolved-questions
 
 - How should pre-release identifiers in version strings be handled? This RFC proposes not supporting pre-release identifiers in version strings passed on the command line for now. For comparisons, this RFC proposes that if a pre-release identifier is present in a `cfg` predicate (e.g., `rust_version < "2.0-alpha"`), the pre-release part is ignored for the comparison (so it's treated as `2.0`), and a lint is emitted. This ensures forward compatibility, as comparisons like `cfg(all(foo >= "2.0-alpha", foo < "2.0"))` become trivially false on older compilers, which is a safe outcome. This behavior can be refined before stabilization.
+- Should the builtin `rust_version` and `rust_edition` be printed with `--print cfg` on the command line? We'd like the eventual answer to be "yes", but existing tools that parse the output might break with the new `rust_version=version("1.99")` syntax. If we can manage the breakage we should; otherwise we can gate it on a future edition.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
