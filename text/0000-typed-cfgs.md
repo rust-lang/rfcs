@@ -18,8 +18,8 @@ This design solves a long-standing problem of conditionally compiling code for d
 
 There are two primary use cases for conditional compilation based on versions, whether that is the version of the Rust language or the version of a dependency:
 
-1.  **Exposing new features** when code is compiled with newer versions of the language or a library.
-2.  **Straddling a breaking change** in an API, allowing code to compile against both the old and new versions.
+1.  **Exposing new features** when code is compiled with newer versions of the language or library while maintaining compatibility with older versions.
+2.  **Straddling a breaking change** in an API, allowing code to compile against both the old and new versions, which are mutually incompatible.
 
 The `rust_version` cfg proposed in this RFC is designed for the first use case, while `rust_edition` is a tool for the second. This RFC also provides a general mechanism for `version`-typed `cfg`s that can be used for libraries, which addresses both use cases.
 
@@ -28,7 +28,7 @@ This RFC also aims to solve long-standing problems that have been approached wit
 The primary blockers for existing solutions have been:
 
 - **Build Scripts are a Poor Solution:** The only stable tool for this today is a build script (`build.rs`). However, build scripts add significant compilation overhead and are clunky to write and maintain.
-- **Previous Attempts had Flaws:** Past RFCs have tried to solve this, but ran into an unfortunate issue: their proposed syntax, e.g. `#[cfg(version(1.85))]`, was a syntax error on older compilers. This means that to use the feature, a library would first have to bump its MSRV to the version that introduced the syntax, defeating the primary purpose of the feature.
+- **Previous Attempts had Flaws:** Past RFCs have tried to solve this, but ran into an unfortunate issue: their proposed syntax, e.g. `#[cfg(version(1.85))]`, was a syntax error on older compilers. This means that to use the feature, a library would first have to bump its MSRV to the version that introduced the syntax, somewhat defeating the primary purpose of the feature.
 
 This RFC proposes a solution that avoids these pitfalls.
 
@@ -195,6 +195,9 @@ This approach delivers the most critical functionality to users quickly, while a
 
 - Increased compiler complexity. This introduces a new concept of "typed" `cfg`s into the compiler, which adds complexity to the parsing and evaluation logic for conditional compilation.
 - Subtlety of MSRV-preserving patterns: The need for the "stacked `cfg`" pattern (`#[cfg(rust_version)] #[cfg(rust_version >= ...)]` and `#[cfg_attr(rust_version, cfg(rust_version >= ...))]`) is subtle. While we will add lints to guide users, it's less direct than a simple predicate. However, this subtlety is the explicit tradeoff made to achieve MSRV compatibility.
+- The "stacked `cfg`" pattern does not work inside Cargo, so users will not be able to use this feature in Cargo until their MSRV is bumped. For cases where a dependency needs to be conditional on the Rust version, one can define a "polyfill" crate and make use of the MSRV-aware feature resolver, like the `is_terminal_polyfill` crate does.
+- Conditional compilation adds testing complexity. In practice, most crate maintainers only test their MSRV and the latest stable.
+- This does not support branching on specific nightly versions. rustversion supports this with syntax like `#[rustversion::since(2025-01-01)]`.
 
 # Rationale and alternatives
 [rationale-and-alternatives]: #rationale-and-alternatives
@@ -276,8 +279,9 @@ Not every system uses Rust's standard three-part semver versioning scheme, but m
     - `--check-cfg 'cfg(foo, version(components <= 2))'`
 - **"Compatible-with" operator:** We could introduce a `~=` operator that works like Cargo's caret requirements. For example, `cfg(some_dep ~= "1.5")` would be equivalent to `cfg(all(some_dep >= "1.5", some_dep < "2.0"))`. The rationale for not doing this now is that it's easy enough to write by hand.
 - **More comparison operators:** While this RFC only proposes `>=` and `<`, the underlying `version` type makes it natural to add support for `<=`, `==`, `!=`, etc., in the future.
-- **Pre-releases:** The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic.
+- **Pre-releases:** The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic. RFC 3857 discusses this possibility for [generic versions](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#relaxing-version) as well as for the [language itself](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#pre-release).
 - **Dependency Version `cfg`s:** The "typed `cfg`" infrastructure could be extended to query the versions of direct dependencies, e.g., `#[cfg(serde >= "1.0.152")]`. This would require significant integration with Cargo.
 - **Other `cfg` types:** We could introduce other types, such as integers or single-valued strings. This could be useful for a variety of features, from system library versioning schemes ([kconfig](https://docs.kernel.org/kbuild/kconfig-language.html)) to enabling things like [mutually exclusive global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 - **Namespaced `cfg`s:** We could group Rust-specific `cfg`s under a `rust::` namespace, e.g., `#[cfg(rust::version >= "1.85")]`. This RFC intentionally keeps `rust_version` at the top level to simplify the initial implementation and stabilization, but namespacing could be explored in the future to better organize the growing number of built-in `cfg`s.
+- **Macro that evaluates to a cfg value:** We can add a `cfg_value!()` macro for single-valued configs that evalutes to its value.
 - **Short-circuiting `cfg` predicates:** Change `any` and `all` predicates to short-circuit instead of evaluating all their arguments. This would make introducing new predicates and comparison operators much easier.
