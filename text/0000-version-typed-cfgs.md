@@ -261,9 +261,18 @@ This RFC aims to obviate the need for these external dependencies for the common
 
 ## Versioning systems
 
-Not every system uses Rust's standard three-part semver versioning scheme, but many are close. In this section are examples of more bespoke versioning systems that this feature can accommodate.
+Not every system uses Rust's standard three-part semver versioning scheme, but many are close. In this section are examples of more bespoke versioning systems that this feature can accommodate. The "escape hatch" for when your version numbers are not semver like is to split them into different version cfgs, each of which is semver like (in the simplest case, just a number).
 
-- **Chromium**: Chromium's version format is a four-part number: MAJOR.MINOR.BUILD.PATCH, where MAJOR increments with significant releases, MINOR is often 0, BUILD tracks trunk builds, and PATCH reflects updates from a specific branch, with BUILD and PATCH together identifying the exact code revision.
+- **Chromium**: Chromium's version format is a four-part number: MAJOR.MINOR.BUILD.PATCH, where MAJOR increments with significant releases, MINOR is often 0, BUILD tracks trunk builds, and PATCH reflects updates from a specific branch, with BUILD and PATCH together identifying the exact code revision. (Thanks to Jacob Lifshay [on github](https://github.com/rust-lang/rfcs/pull/3905#discussion_r2666956191).)
+
+### Operating systems
+
+Operating systems include many versions, including kernel versions, public OS version, and system API versions. Usually API versions are the most relevant for conditional compilation. Most APIs are preserved across versions. Some operating systems, like Windows, prioritize backward compatibility of applications, while others balance backward compatibility with the deprecation and removal of APIs.
+
+- **Windows API version**: XP is 5.1, Vista is 6.0, 7 is 7.0, 7 with Service Pack 1 is 7.1, 8 is 8.0, 8.1 is 8.1 and Windows 10/11 currently ranges from 10.0.10240 to 10.0.26200. There are "friendlier" names such as 1507 for 10.0.10240 but I think those are better done as some kind of cfg alias rather than being built-in. (Thanks to Chris Denton [on zulip](https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/cfg.28version.28.2E.2E.29.29.20as.20a.20version.20comparison.20predicate/near/540907580).)
+- **Android API level**: Single, sequential integer value like "34", "35".
+- **macOS version**: Based on the operating system version; there is not a separate API level concept. In general these use multi-part versions like "10.15". Starting with macOS 11.0, the major version number has increased with each new version and the second component has been 0.
+- **Fuchsia API version**: Single number like "30", similar to Android, but released on a cadence closer to Rust's 6-week release cadence. Fuchsia itself uses Rust along with some build system hacks to express predicates like `fuchsia_api_level_less_than = "20"`. (Thanks to Hunter Freyer [on zulip](https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/cfg.28version.28.2E.2E.29.29.20as.20a.20version.20comparison.20predicate/near/539610890).)
 
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
