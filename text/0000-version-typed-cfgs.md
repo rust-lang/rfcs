@@ -217,6 +217,8 @@ This syntax is parseable by older compilers, which is a significant advantage fo
 #### Rationale for not choosing
 The use of `=` was highly controversial. In prior art, the `cfg` syntax has two conceptual models: "set inclusion" for multi-valued cfgs (e.g., `feature = "serde"`) and "queries" for boolean flags (e.g., `unix`). For set inclusion, `=` makes sense. However, checking the compiler version is a query for a single value, not a check for inclusion in a set. In this context, `=` strongly implies exact equality (`== 1.85`), while the overwhelming use case is for a lower bound (`>= 1.85`). Overloading `=` for this purpose was considered unprincipled and confusing. This RFC's approach of introducing a `version` type provides a proper semantic foundation for comparison operators like `>=`.
 
+The interaction with `--print cfg` was also unclear. See [RFC 3857](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#cfgrust--195-1) for more context.
+
 #### Advantage
 This approach *could* potentially be made to work inside `Cargo.toml` (e.g., for conditional dependencies), which currently cannot use the stacked-cfg trick. However, the disadvantages in terms of semantic clarity for the language itself outweigh this benefit for an in-language feature.
 
