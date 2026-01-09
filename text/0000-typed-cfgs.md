@@ -226,11 +226,29 @@ While a good design, the "typed cfgs" approach with an actual comparison operato
 # Prior art
 [prior-art]: #prior-art
 
-## Rust
+_Parts of this section are adapted from [RFC 3857](https://github.com/rust-lang/rfcs/pull/3857)._
 
-- **Cargo's `rust-version`:** The `[package]` section of `Cargo.toml` can specify a `rust-version` field. This allows Cargo to select appropriate versions of dependencies and fail early if the compiler is too old. However, it does not provide fine-grained, in-code conditional compilation. This RFC brings a similar capability directly into the language, but for controlling code within a crate rather than for dependency resolution.
+## Rust Ecosystem
+
+There are very widely used crates designed to work around the lack of native version-based conditional compilation. These rely on build scripts to detect the compiler version and set custom `cfg` flags. `rustversion` also has a proc macro component for the nicest user experience.
+
+-   **`rustversion`**: A popular proc-macro (over 260 million downloads) that allows checks like `#[rustversion::since(1.34)]`. It supports channel checks (stable, beta, nightly), equality, and range comparisons.
+-   **Build Script Helpers**: Crates like **`rustc_version`** and **`version_check`** are widely used in `build.rs` scripts to query the compiler version and emit `cargo:rustc-cfg` instructions. They provide programmatic access to version components, channels, and release dates.
+-   **Release Info**: Crates like **`shadow-rs`** and **`vergen`** expose build information, including the compiler version, to the compiled binary.
+-   **Polyfills**: Some crates, like `is_terminal_polyfill`, maintain separate versions for different MSRVs, relying on Cargo's [MSRV-aware resolver](https://rust-lang.github.io/rfcs/3537-msrv-resolver.html) to select the correct implementation.
+
+This RFC aims to obviate the need for these external dependencies for the common case of checking the language version, reducing build times and complexity.
+
+## Cargo
+
+- **`rust-version`:** The `[package]` section of `Cargo.toml` can specify a `rust-version` field. This allows Cargo to select appropriate versions of dependencies and fail early if the compiler is too old. However, it does not provide fine-grained, in-code conditional compilation. This RFC brings a similar capability directly into the language, but for controlling code within a crate rather than for dependency resolution.
 
 ## Other languages
+
+- **Swift (`#if compiler`, `#if swift`)**: Swift provides platform conditions for both the compiler version and the language mode.
+    - `compiler(>=5)` checks the version of the compiler.
+    - `swift(>=4.2)` checks the active language version mode.
+    - These support `>=` and `<` operators, similar to this proposal.
 
 - **C++ (`__cplusplus`)**: The C++ standard defines the `__cplusplus` macro, which expands to an integer literal that increases with each new version of the standard (e.g., `201103L` for C++11, `202002L` for C++20). This allows for preprocessor checks like `#if __cplusplus >= 201103L`. This is very similar to the `rust_version >= "..."` proposal in that it uses standard comparison operators against a monotonically increasing value. However, it is less granular, as several years pass between new C++ versions.
 
