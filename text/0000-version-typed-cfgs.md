@@ -161,6 +161,12 @@ A lint will be issued if `rust_version` is compared to more than two components 
 
 A new lint warns for version checks that are logically guaranteed to be true or false (e.g., `rust_version >= "1.20"` when the feature was stabilized in 1.90). This lint may be expanded to include user-defined cfgs when check-cfg supports specifying useful ranges.
 
+##### Pre-releases
+
+This RFC does not specify how "nightly" compilers with pre-release versions of the language are handled. That may change without breaking Rust's stability guarantees.
+
+_Note:_ The history of this question is [covered in RFC 3857](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#pre-release).
+
 #### `rust_edition`
 
 The `rust_edition` cfg is version typed and contains one component, the year of the edition.
