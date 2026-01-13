@@ -141,7 +141,7 @@ There is a single, unified parsing and comparison logic that is part of the lang
 *   For `rust_version`, a lint will be issued if the literal has more than two components (e.g., `"1.92.0"`). This is because language features should not depend on patch releases.
     *   A new lint, `useless_version_constraint`, warns for version checks that are logically guaranteed to be true or false (e.g., `rust_version >= "1.20"` when the feature was stabilized in 1.90).
 *   For `rust_edition`, a lint will be issued if the literal has more than one component or if we know the value is never going to be a Rust edition (for example, `"2019"`).
-*   Pre-release identifiers (e.g., `"1.92-beta"`) are not supported in this RFC. They will be ignored during comparison and a lint will be emitted. See the "Unresolved Questions" section for further discussion.
+*   Pre-release identifiers (e.g., `"1.92-beta"`) are ignored during comparison and a lint will be emitted. The comparison acts as if the pre-release was not specified. See the "Unresolved Questions" section for further discussion.
 
 Using version-typed config values with the `=` predicate results in a hard error.
 
