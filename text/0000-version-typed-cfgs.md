@@ -175,11 +175,14 @@ The `version` type integrates with existing compiler flags.
     --check-cfg 'cfg(my_app_version, version())'
     ```
 
-    This will accept any version value, but lint when the option is used as something other than a version. This is a more sensible default for versions, which don't have the equivalent of `values(none())`.
+    This will accept any version value, but lint when the option is used in a non-version comparison (note that this is an error if the option actually has a version-typed value). This is a more sensible default for versions, which don't have the equivalent of `values(none())`.
 
 *   **`--print cfg`**: User-defined version cfgs are printed in the `name=version("...")` format. Whether to print the built-in `rust_version` and `rust_edition` cfgs is left as an unresolved question to be determined based on tool compatibility. In future editions, the builtin cfgs should always be printed.
+    *   Note: Using editions being careful about passing `--edition` to `rustc --print cfg` invocations, which `cargo` for example does not currently do. This could introduce unexpected inconsistencies.
 
-*   **`--print check-cfg`**: The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them.
+*   **`--print check-cfg`**: The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them. We can add these immediately because `--print check-cfg` is unstable.
+
+*   **Clippy**: Clippy's `incompatible_msrv` lint should be updated to respect `rust_version` checks, avoiding false positives when code is guarded by a sufficient `rust_version`.
 
 ### Stabilization
 
