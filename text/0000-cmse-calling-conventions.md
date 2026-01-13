@@ -58,7 +58,19 @@ The foundation of the cmse ABIs is the platform's standard AAPCS calling convent
 
 The `cmse-nonsecure-call` ABI can only be used on function pointers. Using it in for a function definition or extern block emits an error. It is invalid to cast to or from `extern "aapcs"`.
 
-The `cmse-nonsecure-entry` ABI is allowed on function definitions, extern blocks and function pointers. It is sound and valid (in some cases even encouraged) to cast such a function to `extern "aapcs"`. Calling the function is valid and will behave as expected in both the secure and non-secure applications. Casting from `extern "aapcs"` to `extern "C"` is invalid.
+The `cmse-nonsecure-entry` ABI is allowed on function definitions, extern blocks and function pointers. It is sound and valid (in some cases even encouraged) to convert such a function to `extern "aapcs"`, particularly in the non-secure application.
+
+```rust
+#[unsafe(no_mangle)]
+extern "cmse-nonsecure-entry" fn foo(x: i32) -> i32 { x + x }
+
+unsafe extern "aapcs" {
+    #[link_name = "foo"]
+    safe fn bar(x: i32) -> i32;
+}
+```
+
+Calling the `bar` function is valid and will behave like `foo` in both the secure and non-secure applications. A transmute between `extern "cmse-nonsecure-entry"` and `extern "aapcs"` is similarly valid. Converting in the other direction, from `extern "aapcs"` to `extern "cmse-nonsecure-entry"`, is invalid.
 
 ### Argument passing
 
