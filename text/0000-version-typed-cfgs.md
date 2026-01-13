@@ -173,21 +173,23 @@ The `rust_edition` cfg is version typed and contains one component, the year of 
 
 A lint will be issued if the literal of a known edition has more than one component, or if we know the value is never going to be a Rust edition (for example, `"2019"`).
 
-### Defining version-typed configs and interaction with compiler flags
+### Defining version-typed configs
 
-The `version` type integrates with existing compiler flags.
+To define a `version`-typed `cfg`, the following syntax must be used:
 
-*   **`--cfg`**: To define a `version`-typed `cfg`, the following syntax must be used:
-    ```sh
-    --cfg 'my_app_version=version("2.1.0")'
-    ```
-    This can also be used to override built-in version cfgs (e.g. `--cfg 'rust_version=version("1.50.0")'`), which is primarily useful for testing.
+```sh
+--cfg 'my_app_version=version("2.1.0")'
+```
 
-    * If a version cfg is used with a string literal in a comparison that is not a valid version string, a hard error is emitted.
-    * If a cfg that is not a version type is used in a version comparison, a hard error is emitted. For undefined cfgs, this could be relaxed to evaluate to false in the future.
-    * If a cfg that is a version type is used in a non-version comparison (`=`), a hard error is emitted.
-    * Version typed cfgs are single-valued. Setting more than one value for the flag is a hard error. This includes values of other types, so given the example above, adding both `--cfg my_app_version` and `--cfg my_app_version="foo"` would cause a hard error.
-    * Setting the _same_ value multiple times on the command line should also be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
+This can also be used to override built-in version cfgs (e.g. `--cfg 'rust_version=version("1.50.0")'`), which is primarily useful for testing.
+
+* If a version cfg is used with a string literal in a comparison that is not a valid version string, a hard error is emitted.
+* If a cfg that is not a version type is used in a version comparison, a hard error is emitted. For undefined cfgs, this could be relaxed to evaluate to false in the future.
+* If a cfg that is a version type is used in a non-version comparison (`=`), a hard error is emitted.
+* Version typed cfgs are single-valued. Setting more than one value for the flag is a hard error. This includes values of other types, so given the example above, adding both `--cfg my_app_version` and `--cfg my_app_version="foo"` would cause a hard error.
+* Setting the _same_ value multiple times on the command line should also be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
+
+### Interaction with other compiler flags
 
 *   **`--check-cfg`**: To inform the compiler that a `cfg` is expected to be a version, and to enable linting, use:
     ```sh
@@ -200,8 +202,6 @@ The `version` type integrates with existing compiler flags.
     *   Note: Using editions being careful about passing `--edition` to `rustc --print cfg` invocations, which `cargo` for example does not currently do. This could introduce unexpected inconsistencies.
 
 *   **`--print check-cfg`**: The built-in `rust_version` and `rust_edition` cfgs are implicitly included, so `rustc --print=check-cfg` will always list them. We can add these immediately because `--print check-cfg` is unstable.
-
-*   **Clippy**: Clippy's `incompatible_msrv` lint should be updated to respect `rust_version` checks, avoiding false positives when code is guarded by a sufficient `rust_version`.
 
 ### Stabilization
 
