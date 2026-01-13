@@ -70,7 +70,7 @@ unsafe extern "aapcs" {
 }
 ```
 
-Calling the `bar` function is valid and will behave like `foo` in both the secure and non-secure applications. A transmute between `extern "cmse-nonsecure-entry"` and `extern "aapcs"` is similarly valid. Converting in the other direction, from `extern "aapcs"` to `extern "cmse-nonsecure-entry"`, is invalid.
+Calling the `bar` function is valid and will behave like `foo` in both the secure and non-secure applications. A transmute from `extern "cmse-nonsecure-entry"` to `extern "aapcs"` is similarly valid. Converting in the other direction, from `extern "aapcs"` to `extern "cmse-nonsecure-entry"`, is invalid.
 
 ### Argument passing
 
