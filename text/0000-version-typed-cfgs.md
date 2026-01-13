@@ -95,15 +95,21 @@ This RFC adds a new kind of predicate to the `cfg` attribute, allowing for compa
 
 A version predicate is available for `cfg` identifiers that are declared to be of type `version`.
 
-The following grammar will be added for `cfg` predicates:
+The grammar for `cfg` option predicates will be expanded to the following:
 
 ```text
-ConfigurationPredicate :
-    IDENTIFIER ('>=' | '<') STRING_LITERAL
-  | ...
+ConfigurationOption ->
+    IDENTIFIER
+  | IDENTIFIER ConfigurationComparison ( STRING_LITERAL | RAW_STRING_LITERAL )
+
+ConfigurationComparison ->
+    `=`
+  | `<`
+  | `>=`
 ```
 
-This form of predicate is only valid when the `IDENTIFIER` on the left-hand side names a known `cfg` option of type `version`.
+The `<` and `>=` comparisons are only valid when the `IDENTIFIER` on the left-hand side names a defined `cfg` option of type `version`.
+The `=` comparison is only valid when the option is undefined or of type `default`.
 
 A `cfg` identifier is of type `version` if:
 *   It is one of the built-in identifiers `rust_version` or `rust_edition`.
@@ -188,6 +194,8 @@ This can also be used to override built-in version cfgs (e.g. `--cfg 'rust_versi
 * If a cfg that is a version type is used in a non-version comparison (`=`), a hard error is emitted.
 * Version typed cfgs are single-valued. Setting more than one value for the flag is a hard error. This includes values of other types, so given the example above, adding both `--cfg my_app_version` and `--cfg my_app_version="foo"` would cause a hard error.
 * Setting the _same_ value multiple times on the command line should also be a hard error initially. This is a conservative choice that the compiler team may choose to relax, e.g. for build system integration reasons.
+
+Configs defined using the existing command-line syntax `--cfg 'name="value"'` have the `default` config type. The name of this type is not user-facing and may change.
 
 ### Interaction with other compiler flags
 
