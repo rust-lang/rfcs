@@ -199,12 +199,22 @@ The `version` type integrates with existing compiler flags.
 
 ### Stabilization
 
-The features described in this RFC can be stabilized in phases:
+The features described in this RFC may be stabilized in phases:
 
 1.  The initial stabilization can include the built-in `rust_version` and `rust_edition` cfgs and the ability to compare them with `>=` and `<`.
 2.  The ability for users to define their own `version`-typed `cfg`s via `--cfg` and `--check-cfg` can be stabilized later.
 
 This approach delivers the most critical functionality to users quickly, while allowing more time to finalize the design for user-defined version predicates.
+
+### Lint names
+
+* `useless_rust_version_constraint` (deny by default): A Rust version constraint will always be true or false because it names a version prior to when this feature stabilized.
+* `version_constraint_unknown_version` (warn by default): A `rust_edition` constraint falls outside the expected set of values.
+* `version_constraint_wrong_precision` (warn by default): A version constraint's precision level falls outside the expected range, e.g. `rust_version >= "1"` or `rust_edition >= "2015.0"`.
+
+Note that the first lint is specific to `rust_version`, while the remaining lints can be generalized to any version constraint. The reason to have a lint specific to `rust_version` is that we can say for certain whether it will be true, which can impact the severity of the lint.
+
+This section is subject to change prior to stabilization.
 
 # Drawbacks
 [drawbacks]: #drawbacks
