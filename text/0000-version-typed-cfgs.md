@@ -27,10 +27,10 @@ This RFC also aims to solve long-standing problems that have been approached wit
 
 The primary blockers for existing solutions have been:
 
-- **Build Scripts are a Poor Solution:** The only stable tool for this today is a build script (`build.rs`). However, build scripts add significant compilation overhead and are clunky to write and maintain.
-- **Previous Attempts had Flaws:** Past RFCs have tried to solve this, but ran into an unfortunate issue: their proposed syntax, e.g. `#[cfg(version(1.85))]`, was a syntax error on older compilers. This means that to use the feature, a library would first have to bump its MSRV to the version that introduced the syntax, somewhat defeating the primary purpose of the feature.
+- **Build scripts are a poor solution:** The only stable tool for this today is a build script (`build.rs`). However, build scripts add significant compilation overhead and are clunky to write and maintain.
+- **Previous attempts had flaws:** RFC [#2523](https://rust-lang.github.io/rfcs/2523-cfg-path-version.html) tried to solve this, but ran into an unfortunate issue: its proposed syntax, e.g. `#[cfg(version(1.85))]`, was a syntax error on older compilers. This means that to use the feature, a library would first have to bump its MSRV to the version that introduced the syntax, somewhat defeating the primary purpose of the feature. If we knew this was the syntax we wanted going forward, this tradeoff might be worth it. But on close inspection the earlier RFC, which merged in 2019, had left the syntax question undecided due to this very issue, and the current lang team did not have consensus on the syntax used in the RFC.
 
-This RFC proposes a solution that avoids these pitfalls.
+This RFC proposes a solution that avoids these pitfalls, solves related versioning problems besides just the Rust version, and builds a scaffolding for related `cfg` features we might add in the future.
 
 One motivating example is making it ergonomic to adopt attributes that were stabilized after a crate's MSRV. For example, the `#[diagnostic::on_unimplemented]` attribute is a stable feature that library authors can use to provide better error messages. However, if a library has an MSRV from before this attribute was stabilized, they cannot use it without a build script. A build script is often too much overhead for such a small, non-essential feature.
 
