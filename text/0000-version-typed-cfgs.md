@@ -233,6 +233,7 @@ This section is subject to change prior to stabilization.
 # Drawbacks
 [drawbacks]: #drawbacks
 
+- Making the perfect the enemy of the good. RFC 2523 was accepted, and an implementation of its `version()` predicate is ready.
 - Increased compiler complexity. This introduces a new concept of "typed" `cfg`s into the compiler, which adds complexity to the parsing and evaluation logic for conditional compilation.
 - Subtlety of MSRV-preserving patterns: The need for the "stacked `cfg`" pattern (`#[cfg(rust_version)] #[cfg(rust_version >= ...)]` and `#[cfg_attr(rust_version, cfg(rust_version >= ...))]`) is subtle. While we will add lints to guide users, it's less direct than a simple predicate. However, this subtlety is the explicit tradeoff made to achieve MSRV compatibility.
 - The "stacked `cfg`" pattern does not work inside Cargo, so users will not be able to use this feature in Cargo until their MSRV is bumped. For cases where a dependency needs to be conditional on the Rust version, one can define a "polyfill" crate and make use of the MSRV-aware feature resolver, like the `is_terminal_polyfill` crate does.
