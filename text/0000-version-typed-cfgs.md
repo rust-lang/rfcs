@@ -244,21 +244,40 @@ This section is subject to change prior to stabilization.
 [rationale-and-alternatives]: #rationale-and-alternatives
 
 ### Why this design?
-This design directly solves the MSRV problem in a way that previous attempts did not. The syntax `rust_version >= "1.85"` is highly intuitive and directly expresses the user's intent once the feature is available. It is a principled design, as by introducing a `version` type to the `cfg` system, we create a sound basis for comparison operators. This avoids the semantic confusion of proposals like `rust_version = "1.85"` which would have overloaded the meaning of `=` for a single special case. Furthermore, it's an extensible design that paves the way for other comparison operators, `cfg(some_dependency >= "1.2.3")`, or other typed `cfg`s in the future.
+The syntax `rust_version >= "1.85"` is highly intuitive and directly expresses the user's intent. It is a general design that can be used to solve an entire class of adjacent problems, including platform versioning. It is a principled design, as by introducing a `version` type to the `cfg` system, we create a sound basis for comparison operators and other config types in the future. The syntax avoids the semantic confusion of proposals like `rust_version = "1.85"` which would have overloaded the meaning of `=` for a single special case.
+
+This design directly solves the MSRV problem in a way that RFC 2523 did not. The fact that crates maintaining an MSRV will be able to adopt it for newer version constraints buys back some of the time that was spent designing and implementing the newer iteration of this feature.[^buy-back] While sometimes it is better to ship something functional quickly, the fact that users have an functional workaround in the form of build scripts pushes the balance more in the direction of waiting to deliver a high quality solution.
+
+Single-valued config types give us a chance to revisit some earlier decisions like the use of `=` in predicates. For now these are a hard error. Future extensions might add `==` comparisons with a more natural meaning for single-valued configs.
+
+[^buy-back]:
+    A quick [sample][crate-sample] of two MSRV-preserving popular crates that already make use of feature gating, serde and proc-macro2, showed that those crates would be able to drop their build scripts roughly **a year earlier** with a solution that did not break MSRV compatibility. Obviously, this analysis is incomplete, but it has the benefit of emphasizing popular crates that show up in the critical path of many build graphs.
+
+    Shipping an MSRV-incompatible feature sooner would allow immediate use by non-MSRV-preserving crates. Picking the MSRV-compatible option later allows crates that do not make use of feature gating with build scripts today to begin feature gating as soon as `rust_version` ships, without introducing build scripts and without bumping their MSRV.
+
+[crate-sample]: https://github.com/rust-lang/rust/pull/141766#issuecomment-2942369855
 
 ### Alternative 1: `#[cfg(version(1.85))]` (RFC 2523)
 This was the original accepted RFC for version-based conditional compilation.
 
 #### Rationale for not choosing
-This syntax has several drawbacks. Most importantly, it introduces a new syntax that is a hard error on older compilers, making it unusable for its primary purpose of maintaining a low MSRV. The syntax `version("1.85")` is ambiguous; it is not clear from context whether this refers to the Rust version, the crate version, or some other dependency's version. The function-call-like syntax adds a level of nesting and is not necessarily intuitive for a `cfg` predicate. It evolves the language along two axes at once: adding a new capability *and* a new syntax paradigm for `cfg`. The current proposal, by contrast, builds on the existing `cfg` syntax in a more minimal way.
+The syntax of this RFC was [left as an open question](https://github.com/rust-lang/rfcs/pull/2523#discussion_r326361347) by the RFC author after a concern was raised by the maintainer of the libc crate about the MSRV issue. Since then, the lang team has not been able to reach a consensus on the syntax. Several problems have been identified:
+
+* The word `version` does not sufficiently communicate that it's the Rust version we're talking about.
+* The mechanism is special-purpose and geared toward one use case (detecting the Rust version).
+* The function-call syntax, chosen for consistency with `cfg(accessible())`, isn't obvious enough in its meaning and does not cleanly extend to new kinds of comparisons. A recent poll of the lang team showed that most people opposed extending that syntax to include other kinds of comparisons within the quotes, like `version("< 1.2.3")`. At the same time, it adds another level of nested parantheses, which can be hard for humans to parse.
+* Crates supporting old MSRVs won't be able to use the feature until bumping their MSRV.
+* The RFC was accepted more than 6 years ago. During this time we've learned about more adjacent use cases and directions we would like to evolve the language. If designed today, the feature would look much more like this RFC than RFC 2523.
 
 ### Alternative 2: `#[cfg(rust_version = "1.85")]` (meaning `>=`)
 This syntax is parseable by older compilers, which is a significant advantage for MSRV compatibility.
 
 #### Rationale for not choosing
-The use of `=` was highly controversial. In prior art, the `cfg` syntax has two conceptual models: "set inclusion" for multi-valued cfgs (e.g., `feature = "serde"`) and "queries" for boolean flags (e.g., `unix`). For set inclusion, `=` makes sense. However, checking the compiler version is a query for a single value, not a check for inclusion in a set. In this context, `=` strongly implies exact equality (`== 1.85`), while the overwhelming use case is for a lower bound (`>= 1.85`). Overloading `=` for this purpose was considered unprincipled and confusing. This RFC's approach of introducing a `version` type provides a proper semantic foundation for comparison operators like `>=`.
+The use of `=` was highly controversial. In Rust today, the `cfg` syntax has two conceptual models: "set inclusion" for multi-valued cfgs (e.g., `feature = "serde"`) and "queries" for boolean flags (e.g., `unix`). However, people tend to think of `=` more as "equality" than as "set inclusion", and the use of `=` for versions strongly implies exact equality (`== 1.85`).
 
-The interaction with `--print cfg` was also unclear. See [RFC 3857](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#cfgrust--195-1) for more context.
+Likening `>=` to set inclusion makes sense in the narrow context of Rust versions, which do not have semver-incompatible changes, but it does not generalize well to versions that do. Checking the compiler version is is really a comparison between two values, not a check for inclusion in a set.
+
+The interaction with `--print cfg` was unclear. See [RFC 3857](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#cfgrust--195-1) for more context.
 
 #### Advantage
 This approach *could* potentially be made to work inside `Cargo.toml` (e.g., for conditional dependencies), which currently cannot use the stacked-cfg trick. However, the disadvantages in terms of semantic clarity for the language itself outweigh this benefit for an in-language feature.
@@ -268,6 +287,11 @@ This alternative also avoids the MSRV problem and is extensible, similar to the 
 
 #### Rationale for not choosing
 While a good design, the "typed cfgs" approach with an actual comparison operator (`>=`, `<`) is arguably more natural and ergonomic. A language team poll indicated a preference for `rust_version >= "1.85"` if it could be made to work. This RFC provides the mechanism to make it work in a principled way.
+
+The next runner up in the poll[^condorcet] was a tweaked version of this syntax, `version(rust, since = "1.85")`, and this version may have been accepted. However, the RFC was closed by the author before this change was made. After making some effort to resurrect it, the author of the current RFC decided to pursue the direction in this RFC instead.
+
+[^condorcet]:
+    The poll was conducted using a [Condorcet voting method](https://en.wikipedia.org/wiki/Condorcet_method) that asked team members to rank their choices from most to least preferred. This runner up did not represent the preferred syntax of every individual on the team.
 
 # Prior art
 [prior-art]: #prior-art
