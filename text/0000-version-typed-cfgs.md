@@ -222,7 +222,7 @@ This approach delivers the most critical functionality to users quickly, while a
 ### Lint names
 
 * `useless_rust_version_constraint` (deny by default): A Rust version constraint will always be true or false because it names a version prior to when this feature stabilized.
-* `version_constraint_unknown_version` (warn by default): A `rust_edition` constraint falls outside the expected set of values.
+* `version_constraint_unknown_version` (warn by default): A `rust_edition` constraint falls outside the expected set of values. This should not include future years where there may be editions, e.g. 2034.
 * `version_constraint_wrong_precision` (warn by default): A version constraint's precision level falls outside the expected range, e.g. `rust_version >= "1"` or `rust_edition >= "2015.0"`.
 
 Note that the first lint is specific to `rust_version`, while the remaining lints can be generalized to any version constraint. The reason to have a lint specific to `rust_version` is that we can say for certain whether it will be true, which can impact the severity of the lint.
