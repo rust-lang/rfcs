@@ -198,7 +198,7 @@ A lint will be issued if the literal of a known edition has more than one compon
 
 ### Defining version-typed configs
 
-To define a `version`-typed `cfg`, the following syntax must be used:
+To define a `version`-typed `cfg`, the following syntax must be used. `version()` must contain a valid `version_literal`.
 
 ```sh
 --cfg 'my_app_version=version("2.1.0")'
