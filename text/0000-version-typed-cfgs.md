@@ -85,6 +85,24 @@ Note that because new compilers can still compile older editions, the `#[cfg(rus
 
 For this RFC, the only supported comparison operators are `>=` and `<`.
 
+## Maintaining an MSRV
+
+Crates that want to maintain an MSRV are strongly encouraged to test against that MSRV in CI.
+
+Version gates may cause warnings on older compilers. If you want your MSRV builds to build warning-free, allow the `version_constraint_unknown_version` lint by running cargo with this in your environment:
+
+```
+RUSTFLAGS="-A version_constraint_unknown_version"
+```
+
+If your MSRV is earlier than when `rust_version` was released and you use the "cfg stacking" method described above, additionally add this to your Cargo.toml:
+
+```toml
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ["cfg(rust_version)"]
+```
+
 # Reference-level explanation
 [reference-level-explanation]: #reference-level-explanation
 
