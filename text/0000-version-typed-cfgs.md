@@ -158,10 +158,9 @@ VERSION_FIELD :
 
 This grammar defines a version as one or more non-negative integer fields separated by dots. Each field must not have leading zeros, unless the field itself is `0`. For example, `"1.90"` and `"0.2.0"` are valid, but `"1.09"` is not.
 
-There is a single, unified parsing and comparison logic that is part of the language's semantics. Additional checks for the built-in version keys are implemented as lints.
+The comparison is performed field-by-field, filling in any missing fields with `0`. For example, a predicate `my_cfg >= "1.5"` will evaluate to true for versions `1.5.0`, `1.6.0`, and `2.0`, but false for `1.4.9`.
 
-*   The comparison is performed field-by-field, filling in any missing fields with `0`. For example, a predicate `my_cfg >= "1.5"` will evaluate to true for versions `1.5.0`, `1.6.0`, and `2.0`, but false for `1.4.9`.
-*   Pre-release identifiers (e.g., `"1.92-beta"`) are ignored during comparison and a lint will be emitted. The comparison acts as if the pre-release was not specified. See the "Unresolved Questions" section for further discussion.
+There is a single, unified parsing and comparison logic that is part of the language's semantics. Additional checks for the built-in version keys are implemented as lints.
 
 Using version-typed config values with the `=` predicate results in a hard error.
 
@@ -184,9 +183,9 @@ A lint will be issued if `rust_version` is compared to more than two fields (e.g
 
 A new lint warns for version checks that are logically guaranteed to be true or false (e.g., `rust_version >= "1.20"` when the feature was stabilized in 1.90). This lint may be expanded to include user-defined cfgs when check-cfg supports specifying useful ranges.
 
-##### Pre-releases
+##### Rust pre-releases
 
-This RFC does not specify how "nightly" compilers with pre-release versions of the language are handled. That may change without breaking Rust's stability guarantees.
+This RFC does not specify how "nightly" compilers with pre-release versions of the language are handled, i.e. whether they are marked as being the previous version or the "upcoming" version. That may change without breaking Rust's stability guarantees.
 
 _Note:_ The history of this question is [covered in RFC 3857](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#pre-release).
 
@@ -374,7 +373,6 @@ Operating systems include many versions, including kernel versions, public OS ve
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
-- How should pre-release identifiers in version strings be handled? This RFC proposes not supporting pre-release identifiers in version strings passed on the command line for now. For comparisons, this RFC proposes that if a pre-release identifier is present in a `cfg` predicate (e.g., `rust_version < "2.0-alpha"`), the pre-release part is ignored for the comparison (so it's treated as `2.0`), and a lint is emitted. This ensures forward compatibility, as comparisons like `cfg(all(foo >= "2.0-alpha", foo < "2.0"))` become trivially false on older compilers, which is a safe outcome. This behavior can be refined before stabilization.
 - Should the builtin `rust_version` and `rust_edition` be printed with `--print cfg` on the command line? We'd like the eventual answer to be "yes", but existing tools that parse the output might break with the new `rust_version=version("1.99")` syntax. If we can manage the breakage we should; otherwise we can gate it on a future edition.
 - Cargo team: How should `cargo` expose version-typed `cfg`s to build scripts? Should `--cfg foo=version("1.0")` result in `CARGO_CFG_FOO=1.0` or `CARGO_CFG_FOO=version("1.0")`? This is technically out of scope for this RFC but important for the ecosystem.
 
@@ -387,10 +385,26 @@ Operating systems include many versions, including kernel versions, public OS ve
     - `--check-cfg 'cfg(foo, version(fields <= 2))'`
 - **"Compatible-with" operator:** We could introduce a `~=` operator that works like Cargo's caret requirements. For example, `cfg(some_dep ~= "1.5")` would be equivalent to `cfg(all(some_dep >= "1.5", some_dep < "2.0"))`. The rationale for not doing this now is that it's easy enough to write by hand.
 - **More comparison operators:** While this RFC only proposes `>=` and `<`, the underlying `version` type makes it natural to add support for `<=`, `==`, `!=`, etc., in the future.
-- **Pre-releases:** The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic. RFC 3857 discusses this possibility for [generic versions](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#relaxing-version) as well as for the [language itself](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#pre-release).
 - **Dependency Version `cfg`s:** The "typed `cfg`" infrastructure could be extended to query the versions of direct dependencies, e.g., `#[cfg(serde >= "1.0.152")]`. This would require significant integration with Cargo.
 - **System library versions supplied by `sys` crates:** Cargo could allow `sys` crates to expose the versions of their system libraries to dependents as version-typed cfgs.
 - **Other `cfg` types:** We could introduce other types, such as integers or single-valued strings. This could be useful for a variety of features, from system library versioning schemes ([kconfig](https://docs.kernel.org/kbuild/kconfig-language.html)) to enabling things like [mutually exclusive global features](https://internals.rust-lang.org/t/pre-rfc-mutually-excusive-global-features/19618).
 - **Namespaced `cfg`s:** We could group Rust-specific `cfg`s under a `rust::` namespace, e.g., `#[cfg(rust::version >= "1.85")]`. This RFC intentionally keeps `rust_version` at the top level to simplify the initial implementation and stabilization, but namespacing could be explored in the future to better organize the growing number of built-in `cfg`s.
 - **Macro that evaluates to a cfg value:** We can add a `cfg_value!()` macro for single-valued configs that evalutes to its value.
 - **Short-circuiting `cfg` predicates:** Change `any` and `all` predicates to short-circuit instead of evaluating all their arguments. This would make introducing new predicates and comparison operators much easier.
+
+### Pre-releases
+
+The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic. RFC 3857 discusses this possibility for [generic versions](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#relaxing-version) as well as for the [language itself](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#pre-release).
+
+Like 3857, this RFC does not support prereleases. It assumes prereleases info will be stripped from version numbers.
+
+If we decide to support prereleases in the future, they can be introduced over an edition. In older editions all predicates would be interpreted as if they had `-0`, or the smallest possible prerelease identifier, appended to them. For example:
+
+- `cfg(foo_version >= "1.5")` would be interpreted as `cfg(foo_version >= "1.5-0")`
+- `cfg(foo_version < "2.0")` would be interpreted as `cfg(foo_version < "2.0-0")`
+
+This is so any version that previously had its prerelease info stripped can now add it without changing the meaning in existing code.
+
+To see why an edition is necessary, consider how we would handle the predicate `cfg(foo_version >= "2.0")` when the actual version is `2.0-alpha`. This predicate would go from `true` to `false` once prereleases were accepted and passed on the command line.
+
+Technically this can be handled by the build system deciding what version to pass based on the edition. Decoupling the language and build system in this way would add flexibility for code using non-cargo build systems to migrate their code and adopt prereleases sooner. This seems like a small benefit; many projects using non-cargo build systems use a monorepo and wouldn't benefit from this feature. If we later decide to do something like this we could add support for prereleases to the language, but with a lint that tells you they are useless with cargo until the next edition. Otherwise, since we would need to add support for prereleases in the language, it's cleaner to handle the edition migration within the language as well.
