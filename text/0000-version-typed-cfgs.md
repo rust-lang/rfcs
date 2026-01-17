@@ -149,18 +149,18 @@ The `STRING_LITERAL` in a version predicate must conform to the following gramma
 
 ```text
 version_literal :
-    NUMERIC_COMPONENT ('.' NUMERIC_COMPONENT)*
+    VERSION_FIELD ('.' VERSION_FIELD)*
 
-NUMERIC_COMPONENT :
+VERSION_FIELD :
     '0'
   | ('1'...'9') ('0'...'9')*
 ```
 
-This grammar defines a version as one or more non-negative integer components separated by dots. Each component must not have leading zeros, unless the component itself is `0`. For example, `"1.90"` and `"0.2.0"` are valid, but `"1.09"` is not.
+This grammar defines a version as one or more non-negative integer fields separated by dots. Each field must not have leading zeros, unless the field itself is `0`. For example, `"1.90"` and `"0.2.0"` are valid, but `"1.09"` is not.
 
 There is a single, unified parsing and comparison logic that is part of the language's semantics. Additional checks for the built-in version keys are implemented as lints.
 
-*   The comparison is performed component-by-component, filling in any missing components with `0`. For example, a predicate `my_cfg >= "1.5"` will evaluate to true for versions `1.5.0`, `1.6.0`, and `2.0`, but false for `1.4.9`.
+*   The comparison is performed field-by-field, filling in any missing fields with `0`. For example, a predicate `my_cfg >= "1.5"` will evaluate to true for versions `1.5.0`, `1.6.0`, and `2.0`, but false for `1.4.9`.
 *   Pre-release identifiers (e.g., `"1.92-beta"`) are ignored during comparison and a lint will be emitted. The comparison acts as if the pre-release was not specified. See the "Unresolved Questions" section for further discussion.
 
 Using version-typed config values with the `=` predicate results in a hard error.
@@ -178,9 +178,9 @@ fn new_impl() { /* compiles */ }
 
 #### `rust_version`
 
-The `rust_version` cfg is version typed and contains two components (major and minor version). This may be expanded to all three components in the future.
+The `rust_version` cfg is version typed and contains two fields (major and minor version). This may be expanded to all three fields in the future.
 
-A lint will be issued if `rust_version` is compared to more than two components (e.g., `"1.92.0"`) of a version equal to or earlier than the current compiler. This is because language features should not depend on patch releases. However, we only lint on "known" versions in case we decide to include all three components in the future.
+A lint will be issued if `rust_version` is compared to more than two fields (e.g., `"1.92.0"`) of a version equal to or earlier than the current compiler. This is because language features should not depend on patch releases. However, we only lint on "known" versions in case we decide to include all three fields in the future.
 
 A new lint warns for version checks that are logically guaranteed to be true or false (e.g., `rust_version >= "1.20"` when the feature was stabilized in 1.90). This lint may be expanded to include user-defined cfgs when check-cfg supports specifying useful ranges.
 
@@ -192,9 +192,9 @@ _Note:_ The history of this question is [covered in RFC 3857](https://github.com
 
 #### `rust_edition`
 
-The `rust_edition` cfg is version typed and contains one component, the year of the edition.
+The `rust_edition` cfg is version typed and contains one field, the year of the edition.
 
-A lint will be issued if the literal of a known edition has more than one component, or if we know the value is never going to be a Rust edition (for example, `"2019"`).
+A lint will be issued if the literal of a known edition has more than one field, or if we know the value is never going to be a Rust edition (for example, `"2019"`).
 
 ### Defining version-typed configs
 
@@ -321,7 +321,7 @@ _Parts of this section are adapted from [RFC 3857](https://github.com/rust-lang/
 There are very widely used crates designed to work around the lack of native version-based conditional compilation. These rely on build scripts to detect the compiler version and set custom `cfg` flags. `rustversion` also has a proc macro component for the nicest user experience.
 
 -   **`rustversion`**: A popular proc-macro (over 260 million downloads) that allows checks like `#[rustversion::since(1.34)]`. It supports channel checks (stable, beta, nightly), equality, and range comparisons.
--   **Build Script Helpers**: Crates like **`rustc_version`** and **`version_check`** are widely used in `build.rs` scripts to query the compiler version and emit `cargo:rustc-cfg` instructions. They provide programmatic access to version components, channels, and release dates.
+-   **Build Script Helpers**: Crates like **`rustc_version`** and **`version_check`** are widely used in `build.rs` scripts to query the compiler version and emit `cargo:rustc-cfg` instructions. They provide programmatic access to version numbers, channels, and release dates.
 -   **Release Info**: Crates like **`shadow-rs`** and **`vergen`** expose build information, including the compiler version, to the compiled binary.
 -   **Polyfills**: Some crates, like `is_terminal_polyfill`, maintain separate versions for different MSRVs, relying on Cargo's [MSRV-aware resolver](https://rust-lang.github.io/rfcs/3537-msrv-resolver.html) to select the correct implementation.
 
@@ -342,7 +342,7 @@ This RFC aims to obviate the need for these external dependencies for the common
 
 - **Clang/GCC (`__has_feature`, `__has_attribute`)**: These function-like macros allow for checking for the presence of specific compiler features, rather than the overall language version. For example, `__has_feature(cxx_rvalue_references)` checks for a specific language feature. This approach is more granular but also more verbose if one needs to check for many features at once. This approach was discussed in RFC #2523, but rejected, in part because we wanted to reinforce the idea of Rust as "one language" instead of a common subset with many compiler-specific extensions.
 
-- **Python (`sys.version_info`)**: Python exposes its version at runtime via `sys.version_info`, a tuple of integers `(major, minor, micro, ...)`. Code can check the version with standard tuple comparison, e.g., `if sys.version_info >= (3, 8):`. This component-wise comparison is very similar to the logic proposed in this RFC. However, because Python is interpreted, a file must be syntactically valid for the interpreter that is running it, which makes it difficult to use newer syntax in a file that must also run on an older interpreter. Rust, being a compiled language with a powerful conditional compilation system, does not have this limitation, and this RFC's design takes full advantage of that.
+- **Python (`sys.version_info`)**: Python exposes its version at runtime via `sys.version_info`, a tuple of integers `(major, minor, micro, ...)`. Code can check the version with standard tuple comparison, e.g., `if sys.version_info >= (3, 8):`. This field-wise comparison is very similar to the logic proposed in this RFC. However, because Python is interpreted, a file must be syntactically valid for the interpreter that is running it, which makes it difficult to use newer syntax in a file that must also run on an older interpreter. Rust, being a compiled language with a powerful conditional compilation system, does not have this limitation, and this RFC's design takes full advantage of that.
 
 ## Versioning systems
 
@@ -356,7 +356,7 @@ Operating systems include many versions, including kernel versions, public OS ve
 
 - **Windows API version**: XP is 5.1, Vista is 6.0, 7 is 7.0, 7 with Service Pack 1 is 7.1, 8 is 8.0, 8.1 is 8.1 and Windows 10/11 currently ranges from 10.0.10240 to 10.0.26200. There are "friendlier" names such as 1507 for 10.0.10240 but I think those are better done as some kind of cfg alias rather than being built-in. (Thanks to Chris Denton [on zulip](https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/cfg.28version.28.2E.2E.29.29.20as.20a.20version.20comparison.20predicate/near/540907580).)
 - **Android API level**: Single, sequential integer value like "34", "35".
-- **macOS version**: Based on the operating system version; there is not a separate API level concept. In general these use multi-part versions like "10.15". Starting with macOS 11.0, the major version number has increased with each new version and the second component has been 0.
+- **macOS version**: Based on the operating system version; there is not a separate API level concept. In general these use multi-part versions like "10.15". Starting with macOS 11.0, the major version number has increased with each new version and the second field has been 0.
 - **Fuchsia API version**: Single number like "30", similar to Android, but released on a cadence closer to Rust's 6-week release cadence. Fuchsia itself uses Rust along with some build system hacks to express predicates like `fuchsia_api_level_less_than = "20"`. (Thanks to Hunter Freyer [on zulip](https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/cfg.28version.28.2E.2E.29.29.20as.20a.20version.20comparison.20predicate/near/539610890).)
 
 ### Systems that fall outside this RFC
@@ -381,10 +381,10 @@ Operating systems include many versions, including kernel versions, public OS ve
 # Future possibilities
 [future-possibilities]: #future-possibilities
 
-- **More expressive check-cfg:** We can support specifying an expected number of components in check-cfg, or an expected set of values to compare against, as in editions:
+- **More expressive check-cfg:** We can support specifying an expected number of fields in check-cfg, or an expected set of values to compare against, as in editions:
     - `--check-cfg 'cfg(foo, version("2018", "2022", "2025"))'`
     - `--check-cfg 'cfg(foo, version(values >= "1.75"))'`
-    - `--check-cfg 'cfg(foo, version(components <= 2))'`
+    - `--check-cfg 'cfg(foo, version(fields <= 2))'`
 - **"Compatible-with" operator:** We could introduce a `~=` operator that works like Cargo's caret requirements. For example, `cfg(some_dep ~= "1.5")` would be equivalent to `cfg(all(some_dep >= "1.5", some_dep < "2.0"))`. The rationale for not doing this now is that it's easy enough to write by hand.
 - **More comparison operators:** While this RFC only proposes `>=` and `<`, the underlying `version` type makes it natural to add support for `<=`, `==`, `!=`, etc., in the future.
 - **Pre-releases:** The version string parsing could be extended to support pre-release identifiers (`-beta`, `-nightly`), though this adds complexity to the comparison logic. RFC 3857 discusses this possibility for [generic versions](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#relaxing-version) as well as for the [language itself](https://github.com/rust-lang/rfcs/blob/4551bbd827eb84fc6673ac0204506321274ea839/text/3857-cfg-version.md#pre-release).
