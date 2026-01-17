@@ -253,6 +253,7 @@ This section is subject to change prior to stabilization.
 - Making the perfect the enemy of the good. RFC 2523 was accepted, and an implementation of its `version()` predicate is ready.
 - Increased compiler complexity. This introduces a new concept of "typed" `cfg`s into the compiler, which adds complexity to the parsing and evaluation logic for conditional compilation.
 - Subtlety of MSRV-preserving patterns: The need for the "stacked `cfg`" pattern (`#[cfg(rust_version)] #[cfg(rust_version >= ...)]` and `#[cfg_attr(rust_version, cfg(rust_version >= ...))]`) is subtle. While we will add lints to guide users, it's less direct than a simple predicate. However, this subtlety is the explicit tradeoff made to achieve MSRV compatibility.
+- The MSRV-preserving pattern still does not allow using the feature to check for versions prior to when this feature was introduced.
 - The "stacked `cfg`" pattern does not work inside Cargo, so users will not be able to use this feature in Cargo until their MSRV is bumped. For cases where a dependency needs to be conditional on the Rust version, one can define a "polyfill" crate and make use of the MSRV-aware feature resolver, like the `is_terminal_polyfill` crate does.
 - Conditional compilation adds testing complexity. In practice, most crate maintainers only test their MSRV and the latest stable.
 - This does not support branching on specific nightly versions. rustversion supports this with syntax like `#[rustversion::since(2025-01-01)]`.
@@ -283,7 +284,7 @@ The syntax of this RFC was [left as an open question](https://github.com/rust-la
 * The word `version` does not sufficiently communicate that it's the Rust version we're talking about.
 * The mechanism is special-purpose and geared toward one use case (detecting the Rust version).
 * The function-call syntax, chosen for consistency with `cfg(accessible())`, isn't obvious enough in its meaning and does not cleanly extend to new kinds of comparisons. A recent poll of the lang team showed that most people opposed extending that syntax to include other kinds of comparisons within the quotes, like `version("< 1.2.3")`. At the same time, it adds another level of nested parantheses, which can be hard for humans to parse.
-* Crates supporting old MSRVs won't be able to use the feature until bumping their MSRV.
+* Crates supporting old MSRVs won't be able to use the feature until bumping their MSRV. (Note that even in this RFC, crates with existing feature gates using build scripts won't be able remove their build scripts until the last legacy feature gate falls outside their MSRV window.)
 * The RFC was accepted more than 6 years ago. During this time we've learned about more adjacent use cases and directions we would like to evolve the language. If designed today, the feature would look much more like this RFC than RFC 2523.
 
 ### Alternative 2: `#[cfg(rust_version = "1.85")]` (meaning `>=`)
