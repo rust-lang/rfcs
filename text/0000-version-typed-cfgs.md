@@ -255,7 +255,7 @@ This section is subject to change prior to stabilization.
 - Subtlety of MSRV-preserving patterns: The need for the "stacked `cfg`" pattern (`#[cfg(rust_version)] #[cfg(rust_version >= ...)]` and `#[cfg_attr(rust_version, cfg(rust_version >= ...))]`) is subtle. While we will add lints to guide users, it's less direct than a simple predicate. However, this subtlety is the explicit tradeoff made to achieve MSRV compatibility.
 - The MSRV-preserving pattern still does not allow using the feature to check for versions prior to when this feature was introduced.
 - The "stacked `cfg`" pattern does not work inside Cargo, so users will not be able to use this feature in Cargo until their MSRV is bumped. For cases where a dependency needs to be conditional on the Rust version, one can define a "polyfill" crate and make use of the MSRV-aware feature resolver, like the `is_terminal_polyfill` crate does.
-- Conditional compilation adds testing complexity. In practice, most crate maintainers only test their MSRV and the latest stable.
+- Conditional compilation adds testing complexity. In practice, most crate maintainers only test their MSRV and the latest stable. Note that tools like `cargo hack` make testing across a range of versions easier.
 - This does not support branching on specific nightly versions. rustversion supports this with syntax like `#[rustversion::since(2025-01-01)]`.
 
 # Rationale and alternatives
