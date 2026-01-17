@@ -359,6 +359,18 @@ Operating systems include many versions, including kernel versions, public OS ve
 - **macOS version**: Based on the operating system version; there is not a separate API level concept. In general these use multi-part versions like "10.15". Starting with macOS 11.0, the major version number has increased with each new version and the second component has been 0.
 - **Fuchsia API version**: Single number like "30", similar to Android, but released on a cadence closer to Rust's 6-week release cadence. Fuchsia itself uses Rust along with some build system hacks to express predicates like `fuchsia_api_level_less_than = "20"`. (Thanks to Hunter Freyer [on zulip](https://rust-lang.zulipchat.com/#narrow/channel/213817-t-lang/topic/cfg.28version.28.2E.2E.29.29.20as.20a.20version.20comparison.20predicate/near/539610890).)
 
+### Systems that fall outside this RFC
+
+- **Python packages**: Python's package versioning system is defined in [PEP 440](https://peps.python.org/pep-0440/) to have five segments, only one of which (the release segment) is directly supported in this RFC. This level of flexibility seems to exist because it was designed to cover the many diverging versioning schemes used by Python packages at the time it was introduced. (Thanks to Ed Page [on github](https://github.com/rust-lang/rfcs/pull/3905#discussion_r2677156303).)
+
+> Public version identifiers are separated into up to five segments:
+>
+> - Epoch segment: `N!`
+> - Release segment: `N(.N)*`
+> - Pre-release segment: `{a|b|rc}N`
+> - Post-release segment: `.postN`
+> - Development release segment: `.devN`
+
 # Unresolved questions
 [unresolved-questions]: #unresolved-questions
 
