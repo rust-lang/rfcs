@@ -376,6 +376,7 @@ Operating systems include many versions, including kernel versions, public OS ve
 
 - How should pre-release identifiers in version strings be handled? This RFC proposes not supporting pre-release identifiers in version strings passed on the command line for now. For comparisons, this RFC proposes that if a pre-release identifier is present in a `cfg` predicate (e.g., `rust_version < "2.0-alpha"`), the pre-release part is ignored for the comparison (so it's treated as `2.0`), and a lint is emitted. This ensures forward compatibility, as comparisons like `cfg(all(foo >= "2.0-alpha", foo < "2.0"))` become trivially false on older compilers, which is a safe outcome. This behavior can be refined before stabilization.
 - Should the builtin `rust_version` and `rust_edition` be printed with `--print cfg` on the command line? We'd like the eventual answer to be "yes", but existing tools that parse the output might break with the new `rust_version=version("1.99")` syntax. If we can manage the breakage we should; otherwise we can gate it on a future edition.
+- Cargo team: How should `cargo` expose version-typed `cfg`s to build scripts? Should `--cfg foo=version("1.0")` result in `CARGO_CFG_FOO=1.0` or `CARGO_CFG_FOO=version("1.0")`? This is technically out of scope for this RFC but important for the ecosystem.
 
 # Future possibilities
 [future-possibilities]: #future-possibilities
