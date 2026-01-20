@@ -185,7 +185,8 @@ Dependencies with `builtin = true` cannot be renamed with the `package` key
 on the `builtin` source using the `[source]` Cargo config table
 ([?][rationale-source-replacement]), and nor is it possible to override
 `builtin` dependencies with the `[replace]` sections or `paths` overrides
-([?][rationale-overriding-builtins]), though [patching][patches] is permitted.
+([?][rationale-overriding-builtins]), though [patching][patches] is permitted
+under a perma-unstable feature flag.
 
 Dependencies with `builtin = true` can be specified as platform-specific
 dependencies:
