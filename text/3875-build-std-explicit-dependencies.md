@@ -558,8 +558,11 @@ documentation: https://doc.rust-lang.org/1.86.0/core/index.html
 [`cargo metadata`][cargo-metadata] will emit `std`, `alloc` and `core`
 dependencies to the metadata emitted by `cargo metadata` (when those crates are
 explicit dependencies). `source` would be set to `builtin` and the remaining
-fields would be set like any other dependency. See also unresolved question
-[*Should `cargo metadata` include the standard library's dependencies?*][unresolved-cargo-metadata].
+fields would be set like any other dependency. Per the `cargo metadata`
+[*Compatibility*][cargo-metadata-compat] documentation, adding a new source kind
+is not considered an incompatible change. See also unresolved question [*Should
+`cargo metadata` include the standard library's
+dependencies?*][unresolved-cargo-metadata].
 
 > [!NOTE]
 >
@@ -700,6 +703,7 @@ This part of the RFC has no implications for the following Cargo subcommands:
 [cargo-login]: https://doc.rust-lang.org/cargo/commands/cargo-login.html
 [cargo-logout]: https://doc.rust-lang.org/cargo/commands/cargo-login.html
 [cargo-metadata]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html
+[cargo-metadata-compat]: https://doc.rust-lang.org/cargo/commands/cargo-metadata.html#compatibility
 [cargo-miri]: https://doc.rust-lang.org/cargo/commands/cargo-miri.html
 [cargo-new]: https://doc.rust-lang.org/cargo/commands/cargo-new.html
 [cargo-owner]: https://doc.rust-lang.org/cargo/commands/cargo-owner.html
