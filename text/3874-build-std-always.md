@@ -1389,7 +1389,9 @@ standard library and caches the newly-built standard library.
 ### What should `build-std.crates` be named?
 [unresolved-build-std-crate-name]: #what-should-build-stdcrates-be-named
 
-What should this configuration option be named?
+What should this configuration option be named? In particular, `crates` being
+plural is unintuitive: while it can enable building multiple crates, it is set
+with the name of only a single crate. `up-to` might be better.
 
 ↩ [*Proposal*][proposal]
 
