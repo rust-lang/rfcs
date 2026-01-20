@@ -904,6 +904,9 @@ modification of the standard library sources is out-of-scope for this proposal.
 non-lossy process in order to make the `Cargo.lock` useful without doing further
 resolution to fill in missing `builtin` packages.
 
+Cargo will nevertheless need to support lockfiles without builtin dependencies
+as Cargo does not force new lockfile versions.
+
 ↩ [*Proposal*][proposal]
 
 ### Why unstably permit patching of the standard library dependencies?
