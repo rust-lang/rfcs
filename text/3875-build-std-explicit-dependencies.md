@@ -957,7 +957,9 @@ dependencies?*][rationale-explicit-noprelude]).
 [rationale-cargo-index]: #why-add-standard-library-crates-to-cargos-index
 
 When Cargo builds the dependency graph, it is driven by the index (not
-`Cargo.toml`), so builtin dependencies need to be included in the index.
+`Cargo.toml`), so builtin dependencies need to be included in the index format
+(so that packages can have builtin dependencies - standard library crates will
+not exist as top-level packages in the index).
 
 ↩ [*Registries*][registries]
 
