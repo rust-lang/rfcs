@@ -186,7 +186,7 @@ on the `builtin` source using the `[source]` Cargo config table
 ([?][rationale-source-replacement]), and nor is it possible to override
 `builtin` dependencies with the `[replace]` sections or `paths` overrides
 ([?][rationale-overriding-builtins]), though [patching][patches] is permitted
-under a perma-unstable feature flag.
+under a perma-unstable feature flag ([?][rationale-patching]).
 
 Dependencies with `builtin = true` can be specified as platform-specific
 dependencies:
