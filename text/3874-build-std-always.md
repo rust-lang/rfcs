@@ -144,11 +144,17 @@ A value of "std" means that every crate in the graph has a direct dependency on
 If `std` is to be built and Cargo is building a test or benchmark using the
 default test harness then Cargo will also build the `test` crate.
 
-If [*Standard library dependencies*][rfcs#3875] are implemented then `builtin`
-dependencies will be used if `build-std.crates` is not explicitly set.
-Otherwise, `build-std.crates` will default to the crate intended to be supported
-by the target (see later
-[*Standard library crate stability*][standard-library-crate-stability] section).
+When `build-std.crates` is unset, then the standard library crates built will
+depend on whether [*Standard library dependencies*][rfcs#3875] are implemented:
+
+- If [*Standard library dependencies*][rfcs#3875] *is not* implemented, then the
+  crates intended to be supported by the target inform which crates are built
+  (see later [*Standard library crate
+  stability*][standard-library-crate-stability] section).
+
+- If [*Standard library dependencies*][rfcs#3875] *is* implemented, then the
+  implicit or explicit `builtin` dependencies of the crate graph inform which
+  crates are built .
 
 > [!NOTE]
 >
