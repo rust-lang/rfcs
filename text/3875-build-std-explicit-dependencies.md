@@ -1050,7 +1050,8 @@ should it stay only as a URL+scheme?
 [unresolved-patch-syntax]: #what-syntax-is-used-to-patch-dependencies-on-the-standard-library-in-cargotoml
 
 `[patch.builtin]` is the natural syntax given `builtin` is a new source, but may
-be needlessly different to existing packages.
+be needlessly different to existing packages. This mechanism exists only for
+internal purposes so the exact syntax isn't especially important.
 
 ↩ [*Patches*][patches]
 
