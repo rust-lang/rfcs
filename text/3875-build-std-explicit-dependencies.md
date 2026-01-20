@@ -342,8 +342,8 @@ std = { builtin = true, default-features = false } # not permitted
 ### Public and private dependencies
 [public-and-private-dependencies]: #public-and-private-dependencies
 
-Implicit and explicit dependencies on the standard library default to being
-public dependencies ([?][rationale-default-public]).
+Implicit dependencies on the standard library default to being public
+dependencies ([?][rationale-default-implicit-public]).
 
 ```toml
 [package]
@@ -366,13 +366,20 @@ edition = "2024"
 std = { builtin = true, public = true }
 ```
 
+Explicit dependencies on the standard library default to being private
+dependencies ([?][rationale-default-implicit-public]). `cargo add` will add
+`public = true` by default for builtin dependencies (see [*Cargo
+subcommands*][cargo-subcommands]).
+
 *See the following sections for relevant unresolved questions:*
 
-- [*Should standard library dependencies default to public?*][unresolved-std-default-public]
+- [*Should implicit standard library dependencies default to public?*][unresolved-std-default-implicit-public]
+- [*Should explicit standard library dependencies default to private?*][unresolved-std-default-explicit-private]
 
 *See the following sections for rationale/alternatives:*
 
-- [*Why default to public for standard library dependencies?*][rationale-default-public]
+- [*Why default to public for implicit standard library dependencies?*][rationale-default-implicit-public]
+- [*Why default to private for explicit standard library dependencies?*][rationale-default-explicit-private]
 
 ### `dev-dependencies` and `build-dependencies`
 [dev-dependencies-and-build-dependencies]: #dev-dependencies-and-build-dependencies
@@ -922,13 +929,24 @@ desirable. See
 
 ↩ [*Features*][features]
 
-### Why default to public for standard library dependencies?
-[rationale-default-public]: #why-default-to-public-for-standard-library-dependencies
+### Why default to public for implicit standard library dependencies?
+[rationale-default-implicit-public]: #why-default-to-public-for-implicit-standard-library-dependencies
 
 There are crates building on stable which re-export from the standard library.
 If implicit standard library dependencies were not public then these crates would
 start to trigger the `exported_private_dependencies` lint when upgrading to a
 version of Cargo with a implicit standard library dependency.
+
+↩ [*Public and private dependencies*][public-and-private-dependencies]
+
+### Why default to private for explicit standard library dependencies?
+[rationale-default-explicit-private]: #why-default-to-private-for-explicit-standard-library-dependencies
+
+All other explicitly written dependencies in the Cargo manifest are
+private-by-default. This RFC tries to make builtin dependencies as consistent
+with other dependencies in the manifest as possible (e.g. in [*Why not use
+`noprelude` for explicit `builtin`
+dependencies?*][rationale-explicit-noprelude]).
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
@@ -1031,18 +1049,22 @@ be needlessly different to existing packages.
 
 ↩ [*Patches*][patches]
 
-### Should standard library dependencies default to public?
-[unresolved-std-default-public]: #should-standard-library-dependencies-default-to-public
+### Should implicit standard library dependencies default to public?
+[unresolved-std-default-implicit-public]: #should-implicit-standard-library-dependencies-default-to-public
 
-Standard library dependencies defaulting to public is a trade-off between
-special-casing in Cargo and requiring that any user with a dependency on the
-standard library who re-exports from the standard library manually declare their
-dependency as public.
+Implicit standard library dependencies defaulting to public is a trade-off
+between special-casing in Cargo and requiring that any user with a dependency on
+the standard library who re-exports from the standard library manually declare
+their dependency as public.
 
-It is also inconsistent with
-[*Why not use `noprelude` for explicit `builtin` dependencies?*][rationale-explicit-noprelude]
-which aims to make builtin dependencies consistent with other dependencies in
-the manifest.
+↩ [*Public and private dependencies*][public-and-private-dependencies]
+
+### Should explicit standard library dependencies default to private?
+[unresolved-std-default-explicit-private]: #should-explicit-standard-library-dependencies-default-to-private
+
+Explicit standard library dependencies defaulting to private is a trade-off
+between consistency with other dependencies in the manifest and implicit
+standard library dependencies.
 
 ↩ [*Public and private dependencies*][public-and-private-dependencies]
 
