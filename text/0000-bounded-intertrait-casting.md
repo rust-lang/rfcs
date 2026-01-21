@@ -87,11 +87,11 @@ impl Trait6 for S3 { }
 fn s0() {
     let s = S0;
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait1>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait1 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait1)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait2>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait2 in dyn SuperTrait).map(|r| r as *const _).ok(),
         None
     );
 }
@@ -99,15 +99,15 @@ fn s0() {
 fn s1() {
     let s = S1;
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait1>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait1 in dyn SuperTrait).map(|r| r as *const _).ok(),
         None
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait2>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait2 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait2)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait3>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait3 in dyn SuperTrait).map(|r| r as *const _).ok(),
         None
     );
 }
@@ -115,25 +115,25 @@ fn s1() {
 fn s2() {
     let s = S2;
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait1>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait1 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait1)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait2>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait2 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait2)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait3>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait3 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
-    let s1 = TraitCast::<dyn SuperTrait, dyn Trait1>::cast(&s).unwrap();
-    let s2 = TraitCast::<dyn SuperTrait, dyn Trait2>::cast(&s).unwrap();
+    let s1 = cast!(&s to dyn Trait1 in dyn SuperTrait).unwrap();
+    let s2 = cast!(&s to dyn Trait2 in dyn SuperTrait).unwrap();
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait3>::cast(s1).map(|r| r as *const _).ok(),
+        cast!(s1 to dyn Trait3 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait3>::cast(s2).map(|r| r as *const _).ok(),
+        cast!(s2 to dyn Trait3 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
 }
@@ -141,33 +141,33 @@ fn s2() {
 fn s3() {
     let s = S3;
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait1>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait1 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait1)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait2>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait2 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait2)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait3>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait3 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait4>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait4 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait4)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait5>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait5 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait5)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait6>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait6 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait6)
     );
 
-    let s3 = TraitCast::<dyn SuperTrait, dyn Trait3>::cast(&s).unwrap();
+    let s3 = cast!(&s to dyn Trait3 in dyn SuperTrait).unwrap();
     assert_eq!(
-        TraitCast::<dyn SuperTrait, dyn Trait4>::cast(s3).map(|r| r as *const _).ok(),
+        cast!(s3 to dyn Trait4 in dyn SuperTrait).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait4)
     );
 }
@@ -203,39 +203,39 @@ impl Trait3 for S3 { }
 fn s3_multiple_supertraits() {
     let s = S3;
     assert_eq!(
-        TraitCast::<dyn SuperTrait1, dyn Trait1>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait1 in dyn SuperTrait1).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait1)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait2, dyn Trait2>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait2 in dyn SuperTrait2).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait2)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait1, dyn Trait3>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait3 in dyn SuperTrait1).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait2, dyn Trait3>::cast(&s).map(|r| r as *const _).ok(),
+        cast!(&s to dyn Trait3 in dyn SuperTrait2).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
 
     // So far, so obvious. But what about this?
-    let s1 = TraitCast::<dyn SuperTrait1, dyn Trait1>::cast(&s).unwrap();
-    let s2 = TraitCast::<dyn SuperTrait2, dyn Trait2>::cast(&s).unwrap();
+    let s1 = cast!(&s to dyn Trait1 in dyn SuperTrait1).unwrap();
+    let s2 = cast!(&s to dyn Trait2 in dyn SuperTrait2).unwrap();
     // Typeck failure: Trait1 and Trait2 do not share a common supertrait, so this will
     // have unsatisfiable constraints. The current version of the compiler is able to
     // check this.
-    // TraitCast::<dyn SuperTrait1, dyn Trait2>::cast(s1)
-    // TraitCast::<dyn SuperTrait2, dyn Trait1>::cast(s2)
+    // cast!(s1 to dyn Trait2 in dyn SuperTrait1)
+    // cast!(s2 to dyn Trait1 in dyn SuperTrait2)
 
     // But we can still do this because we know that Trait3 has a shared supertrait with both
     // Trait1 and Trait2:
     assert_eq!(
-        TraitCast::<dyn SuperTrait1, dyn Trait3>::cast(s1).map(|r| r as *const _).ok(),
+        cast!(s1 to dyn Trait3 in dyn SuperTrait1).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
     assert_eq!(
-        TraitCast::<dyn SuperTrait2, dyn Trait3>::cast(s2).map(|r| r as *const _).ok(),
+        cast!(s2 to dyn Trait3 in dyn SuperTrait2).map(|r| r as *const _).ok(),
         Some(&s as *const dyn Trait3)
     );
 }
@@ -277,9 +277,9 @@ fn outer<'a1>() -> &'a1 u8 {
 }
 
 fn inner<'a, 'b>(s: &dyn SuperTrait + 'a) -> &'b u8 {
-    // Without restricting lifetimes, this would succeed, escaping `x` 
-    // from the scope of `outer`. 
-    TraitCast::<dyn SuperTrait + 'a, dyn Trait1<'b> + 'a>::cast(s).unwrap().f()
+    // Without restricting lifetimes, this would succeed, escaping `x`
+    // from the scope of `outer`.
+    cast!(s to dyn Trait1<'b> + 'a in dyn SuperTrait + 'a).unwrap().f()
 }
 ```
 
@@ -294,41 +294,40 @@ In other words, `'static` is special. Consider the following:
 trait SuperTrait: TraitMetadataTable<dyn SuperTrait> { }
 trait SubTrait<'a>: SuperTrait { }
 
-struct S0<'a>(PhantomData<&'a ()>);
+struct S0<'a>(PhantomData<fn(&'a ()) -> &'a()>);
 impl<'a> SuperTrait for S0<'a> { }
 impl<'a> SubTrait<'a> for S0<'a> { }
 
-struct S1<'a>(PhantomData<&'a ()>);
+struct S1<'a>(PhantomData<fn(&'a ()) -> &'a()>);
 impl<'a> SuperTrait for S1<'a> { }
 impl<'a> SubTrait<'a> for S1<'static> { }
 // Technically, `S1<'static>` implements `for<'a> SubTrait<'a>`,
 // ie for all lifetimes.
 
-struct S2<'a>(/*...*/);
+struct S2<'a>(PhantomData<fn(&'a ()) -> &'a()>);
 impl<'a> SuperTrait for S2<'a> { }
 impl<'a> SubTrait<'static> for S2<'a> { }
 // Note: `S1<'_>` does not implement `for<'a> SubTrait<'a>` (!= `SubTrait<'static>`).
 // Trait generics are invariant, so `'static` can't be "relaxed" to any lifetime
 // like, e.g., `&'static u8` can.
 
-macro_rules! cast {
+macro_rules! cast_helper {
   ($a:lifetime, $b:lifetime, $e:expr) => (
-    TraitCast::<dyn SuperTrait, dyn SubTrait<$b>>::cast($e as &(dyn SuperTrait + $b)).ok()
+    cast!($e as &(dyn SuperTrait + $b) to dyn SubTrait<$b> in dyn SuperTrait).ok()
   )
 }
 
 #[test]
 fn static_s0() {
   const S: S0<'static> = S0(/*...*/);
-  assert!(cast!('_, 'static, &S).is_some());
+  assert!(cast_helper!('_, 'static, &S).is_some());
 }
 #[test]
 fn non_static_s0() {
   let s = S0(/*...*/);
   fn inner<'a>(s: &'a S0<'a>) {
-    assert!(cast!('_, 'a, s).is_some());
-    // Fails due to lifetime erasure: 'static is a longer lifetime than 'a.
-    assert!(cast!('_, 'static, s).is_none());
+    assert!(cast_helper!('_, 'a, s).is_some());
+    assert!(cast_helper!('_, 'static, s).is_none());
   }
   inner(&s);
 }
@@ -336,11 +335,11 @@ fn non_static_s0() {
 fn static_s1() {
   const S: S1<'static> = S1(/*...*/);
   fn inner<'a>(s: &'static S1<'static>, _: &'a ()) {
-    assert!(cast!('_, 'a, s).is_some());
-    assert!(cast!('_, 'static, s).is_some());
+    assert!(cast_helper!('_, 'a, s).is_some());
+    assert!(cast_helper!('_, 'static, s).is_some());
   }
   inner(&S, &());
-  assert!(TraitCast::<dyn SuperTrait, dyn for<'out> SubTrait<'out>>::cast(&S).is_ok());
+  assert!(cast!(&S to dyn for<'out> SubTrait<'out> in dyn SuperTrait).is_ok());
 }
 #[test]
 fn non_static_s1() {
@@ -348,8 +347,8 @@ fn non_static_s1() {
   fn inner<'a>(s: &'a S1<'a>) {
     // `S1<'a>` does not implement `SubTrait<'_>` for any lifetime other
     // than `'static`.
-    assert!(cast!('_, 'a, s).is_none());
-    assert!(cast!('_, 'static, s).is_none());
+    assert!(cast_helper!('_, 'a, s).is_none());
+    assert!(cast_helper!('_, 'static, s).is_none());
   }
   inner(&s);
 }
@@ -357,11 +356,9 @@ fn non_static_s1() {
 fn non_static_s2() {
   let s = S2(/*...*/);
   fn inner<'a>(s: &'a S2<'_>) {
-    assert!(cast!('_, 'a, s).is_none());
+    assert!(cast_helper!('_, 'a, s).is_none());
     // `S2<'a>` implements `SubTrait<'static>` for any lifetime `'a`.
-    // This doesn't violate the downcast-safety requirement: `'static` is an 
-    // erased lifetime.
-    assert!(cast!('_, 'static, s).is_some()); // !
+    assert!(cast_helper!('_, 'static, s).is_some()); // !
   }
   inner(&s);
 }
@@ -405,33 +402,33 @@ impl<'a, 'b> SubTrait<'a, 'b> for S1<'a, 'b>
 where 'b: 'a,
 { }
 
-macro_rules! cast {
+macro_rules! cast_helper {
   ($a:lifetime, $b:lifetime, $e:expr) => (
-    TraitCast::<dyn SuperTrait<'_, '_>, dyn SubTrait<$a, $b>>::cast($e as &dyn SuperTrait<'_, '_>).ok()
+    cast!($e as &dyn SuperTrait<'_, '_> to dyn SubTrait<$a, $b> in dyn SuperTrait<'_, '_>).ok()
   )
 }
 
 #[test]
-fn a() {
+fn unrelated_lifetimes() {
   fn inner<'a, 'b>(_: &'a (), _: &'b ()) {
     let s = S0::<'a, 'b>::default();
-    assert!(cast!('a, 'b, &s).is_some());
+    assert!(cast_helper!('a, 'b, &s).is_some());
     let s = S1::<'a, 'b>::default();
-    assert!(cast!('a, 'b, &s).is_none());
+    assert!(cast_helper!('a, 'b, &s).is_none());
   }
   inner(&(), &());
 }
 #[test]
-fn b() {
-  fn inner<'a, 'b>(_: &'a (), _: &'b ()) 
+fn related_lifetimes() {
+  fn inner<'a, 'b>(_: &'a (), _: &'b ())
     where 'b: 'a,
   {
     let s0 = S0::<'a, 'b>::default();
-    assert!(cast!('a, 'b, &s0).is_some());
-    assert!(cast!('a, 'a, &s0).is_some()); // via variance of S0
+    assert!(cast_helper!('a, 'b, &s0).is_some());
+    assert!(cast_helper!('a, 'a, &s0).is_some()); // via variance of S0
     let s1 = S1::<'a, 'b>::default();
-    assert!(cast!('a, 'b, &s1).is_some()); // now we can cast S1 to SubTrait.
-    assert!(cast!('a, 'a, &s1).is_some()); // via variance of S1
+    assert!(cast_helper!('a, 'b, &s1).is_some()); // now we can cast S1 to SubTrait.
+    assert!(cast_helper!('a, 'a, &s1).is_some()); // via variance of S1
   }
   inner(&(), &());
 }
@@ -505,13 +502,13 @@ extern "C" fn uninit_obj(obj: *mut FfiObject) {
 #[no_mangle]
 extern "C" fn do_thing(obj: *mut FfiObject) -> core::ffi::c_int {
   let Some(obj) = obj.as_mut() else { return 0; };
-  let Ok(obj) = TraitCast::<dyn SuperTrait, dyn BTrait>::cast(&mut *obj) else { return 0; };
+  let Ok(obj) = cast!(&mut **obj to dyn BTrait in dyn SuperTrait) else { return 0; };
   obj.do_b_thing().is_ok() as _
 }
 #[no_mangle]
 extern "C" fn thing_done(obj: *mut FfiObject) -> core::ffi::c_int {
   let Some(obj) = obj.as_mut() else { return 0; };
-  let Ok(obj) = TraitCast::<dyn SuperTrait, dyn BTrait>::cast(&mut *obj) else { return 0; };
+  let Ok(obj) = cast!(&mut **obj to dyn BTrait in dyn SuperTrait) else { return 0; };
   obj.thing_done() as _
 }
 ```
@@ -552,13 +549,13 @@ extern "C" fn uninit_obj(obj: *mut FfiObject) {
 #[no_mangle]
 extern "C" fn do_thing(obj: *mut FfiObject) -> core::ffi::c_int {
   let Some(obj) = obj.as_mut() else { return 0; };
-  let Ok(obj) = TraitCast::<dyn SuperTrait, dyn ATrait>::cast(&mut *obj) else { return 0; };
+  let Ok(obj) = cast!(&mut **obj to dyn ATrait in dyn SuperTrait) else { return 0; };
   obj.do_a_thing().is_ok() as _
 }
 #[no_mangle]
 extern "C" fn thing_done(obj: *mut FfiObject) -> core::ffi::c_int {
   let Some(obj) = obj.as_mut() else { return 0; };
-  let Ok(obj) = TraitCast::<dyn SuperTrait, dyn ATrait>::cast(&mut *obj) else { return 0; };
+  let Ok(obj) = cast!(&mut **obj to dyn ATrait in dyn SuperTrait) else { return 0; };
   obj.thing_done() as _
 }
 ```
@@ -753,7 +750,7 @@ Must be overridable at compile time.
 Such crates are given a unique identifier, in the form of a unique address,
 which is used to identify the trait metadata tables and indices used by that crate.
 
-Note: this is not nessicarily normative, and this proposal is not prescribing 
+Note: this is not necessarily normative, and this proposal is not prescribing 
 a specific strategy. The above rules ensure that the metadata
 tables and indices are present for linking purposes for existing code/crates, 
 even if the casts fail even when, *in theory*, they could succeed with a 
@@ -785,7 +782,7 @@ architectures are awful and counterproductive to AoT optimizations.
 /// "Partially auto" to allow otherwise cyclic trait objectification (via the 
 /// `SuperTrait` param, which is actually just a marker).
 /// Effectively #[rustc_deny_explicit_impl] due to the impl below.
-#[lang_item = "trait_metadata_table"] 
+#[lang_item = "trait_metadata_table"]
 pub trait TraitMetadataTable<SuperTrait>: MetaSized 
   where SuperTrait: MetaSized + Pointee<Metadata = DynMetadata<SuperTrait>>,
 {
@@ -810,17 +807,30 @@ impl<'a, SuperTrait, T> TraitMetadataTable<SuperTrait + 'static> for T
     }
 }
 
-/// Retrieve the index of `Trait`'s vtable in the slice returned via "TraitMetadataTable::derived_metadata_table".
+/// Retrieve the index of `Trait`'s vtable in the slice returned via
+/// "TraitMetadataTable::derived_metadata_table". Does not include outlives 
+/// predicates.
 /// The specific index value returned is implementation defined and subject to whim.
 /// The value returned is constant for a given `Trait` and `SuperTrait`, but will not be "known
 /// enough" to be `const fn` due to the need for a global computation.
 /// Note: this value can only be computed globally, i.e., over all crates in the binary.
 /// The `&'static u8` is a unique address per global crate only. It is independent of
 /// the `SuperTrait` and `Trait` generic params.
+#[rustc_nounwind]
 #[rustc_intrinsic]
-pub fn trait_metadata_index<SuperTrait, Trait>() -> (&'static u8, usize)
+pub unsafe fn trait_metadata_index<SuperTrait, Trait>() -> (&'static u8, usize)
     where SuperTrait: MetaSized + Pointee<Metadata = DynMetadata<SuperTrait>> + TraitMetadataTable<SuperTrait>,
           Trait: MetaSized + Pointee<Metadata = DynMetadata<Trait>> + TraitMetadataTable<SuperTrait>;
+
+/// Retrieve the cast call-site lifetime predicates (from the ParamEnv). The 
+/// return value shall be added to the value returned by `trait_metadata_index().1`.
+/// The value returned is constant for a given `Trait` and `SuperTrait`, but will not be "known
+/// enough" to be `const fn` due to the need for a global computation.
+#[rustc_nounwind]
+#[rustc_intrinsic]
+pub unsafe fn trait_metadata_lifetime_predicates<SuperTrait, Trait>() -> usize
+where SuperTrait: MetaSized + Pointee<Metadata = DynMetadata<SuperTrait>> + TraitMetadataTable<SuperTrait>,
+      Trait: MetaSized + Pointee<Metadata = DynMetadata<Trait>> + TraitMetadataTable<SuperTrait>;
 
 /// Retrieve the slice returned via "TraitMetadataTable::derived_metadata_table" for the given `SuperTrait`.
 /// Calling this intrinsic forces the caller to be delayed until after global monomorphization.
@@ -829,18 +839,19 @@ pub fn trait_metadata_index<SuperTrait, Trait>() -> (&'static u8, usize)
 /// Note: this value can only be computed globally, i.e., over all crates in the binary.
 /// The `&'static u8` is a unique address per global crate only. It is independent of
 /// the `SuperTrait` and `Trait` generic params.
+#[rustc_nounwind]
 #[rustc_intrinsic]
-pub fn trait_metadata_table<SuperTrait, ConcreteType>() -> (&'static u8, &'static [Option<NonNull<()>>])
+pub unsafe fn trait_metadata_table<SuperTrait, ConcreteType>() -> (&'static u8, &'static [Option<NonNull<()>>])
     where SuperTrait: MetaSized + Pointee<Metadata = DynMetadata<SuperTrait>> + TraitMetadataTable<SuperTrait>,
           ConcreteType: Sized + TraitMetadataTable<SuperTrait>;
 
 /// Return true iff the cast from `SourceTrait` to `TargetTrait` is safe due to lifetime erasure.
-/// This is a compile-time check that can be used to ensure that the lifetimes of the source and 
+/// This is a compile-time check used to ensure that the lifetimes of the source and 
 /// target trait object are compatible. Obligation checks are separated from the metadata table entries
-/// to facilitate lifetime binders. Usage relaxes the lifetime erasure rules by allowing the source 
-/// trait lifetimes to participate in the legality of the cast.
+/// to facilitate lifetime binders.
+#[rustc_nounwind]
 #[rustc_intrinsic]
-pub const fn trait_cast_is_lifetime_erasure_safe<SuperTrait, SourceTrait, TargetTrait>() -> bool
+pub const unsafe fn trait_cast_is_lifetime_erasure_safe<SuperTrait, SourceTrait, TargetTrait>() -> bool
     where SuperTrait: MetaSized + Pointee<Metadata = DynMetadata<SuperTrait>> + TraitMetadataTable<SuperTrait>,
           SourceTrait: MetaSized + TraitMetadataTable<SuperTrait>,
           TargetTrait: MetaSized + Pointee<Metadata = DynMetadata<TargetTrait>> + TraitMetadataTable<SuperTrait>;
@@ -882,7 +893,11 @@ impl<T> TraitCastError<T> {
   }
 }
 
-/// `I` is the root supertrait.
+/// `I` is the root supertrait. Note: directly calling these functions is unsafe:
+/// impl-side lifetime predicates need access to the cast-call-site ParamEnv,
+/// which is provided by the `cast*!` macros. Providing the wrong value for the
+/// outlives-class argument will result in very unsound behavior. Hence, all
+/// functions here are unsafe.
 /// In a future extension, the root supertrait could be implied. Regardless of the specific root supertrait the result of
 /// the cast is the same, since the output vtable will be the same after monomorphization
 /// (or is essentially user-invisible).
@@ -892,19 +907,29 @@ pub trait TraitCast<I: MetaSized, U: MetaSized>: Sized
 {
     type Source: MetaSized + TraitMetadataTable<I>;
     type Target;
-    /// Attempt to cast `self` to `U`. All layout and trait satisfaction obligations are enforced,
+    /// Attempt to cast `self` to `U`. All trait impl-obligations are enforced,
     /// but lifetime-erasure soundness is not.
-    unsafe fn unchecked_cast(self) -> Result<Self::Target, TraitCastError<Self>>;
-    /// Attempt to cast `self` to `U`, returning an error if the cast is not 
-    /// possible due to lifetime erasure requirements.
-    fn checked_cast(self) -> Result<Self::Target, TraitCastError<Self>> {
+    /// Returns Err(TraitCastError::UnsatisfiedObligation) if the cast is not
+    /// possible due to unfulfilled generic obligations.
+    /// Returns Err(TraitCastError::ForeignTraitGraph) if the cast is not
+    /// possible because the object is from a different global crate.
+    unsafe fn unchecked_cast(self, outlives_class: usize) -> Result<Self::Target, TraitCastError<Self>>;
+    /// Attempt to cast `self` to `U`.
+    /// 
+    /// Returns Err(TraitCastError::ForeignTraitGraph) if the cast is not
+    /// possible because the object is from a different global crate.
+    /// Returns Err(TraitCastError::UnsatisfiedObligation) if the cast is not 
+    /// possible due to lifetime erasure requirements or because of unfulfilled 
+    /// generic obligations.
+    unsafe fn checked_cast(self, outlives_class: usize) -> Result<Self::Target, TraitCastError<Self>> {
         if !core::intrinsics::trait_cast_is_lifetime_erasure_safe::<I, Self::Source, U>() {
             return Err(TraitCastError::UnsatisfiedObligation(self));
         }
-        unsafe { self.unchecked_cast() }
+        unsafe { self.unchecked_cast(outlives_class) }
     }
-    fn cast(self) -> Result<Self::Target, Self> {
-        self.checked_cast().map_err(TraitCastError::unwrap)
+    /// Same as `checked_cast`, but strips TraitCastError::* from the return type.
+    unsafe fn cast(self, outlives_class: usize) -> Result<Self::Target, Self> {
+        self.checked_cast(outlives_class).map_err(TraitCastError::unwrap)
     }
 }
 impl<'r, T, U, I> TraitCast<I, U> for &'r T
@@ -914,7 +939,7 @@ impl<'r, T, U, I> TraitCast<I, U> for &'r T
 {
     type Source = T;
     type Target = &'r U;
-    unsafe fn unchecked_cast(self) -> Result<&'r U, TraitCastError<Self>> {
+    unsafe fn unchecked_cast(self, outlives_class: usize) -> Result<&'r U, TraitCastError<Self>> {
         unsafe {
             let (obj_graph_id, table) = <T as TraitMetadataTable<I>>::derived_metadata_table(self);
             let (crate_graph_id, idx) = core::intrinsics::trait_metadata_index::<I, U>();
@@ -923,7 +948,7 @@ impl<'r, T, U, I> TraitCast<I, U> for &'r T
             }
             
             let (p, _) = (self as *const T).to_raw_parts();
-            let Some(Some(vtable)) = table.get(idx) else {
+            let Some(Some(vtable)) = table.get(idx + outlives_class) else {
                 return Err(TraitCastError::UnsatisfiedObligation(self));
             };
             Ok(&*core::ptr::from_raw_parts(p, vtable.get()))
@@ -938,7 +963,7 @@ impl<'r, T, U, I> TraitCast<I, U> for &'r mut T
 {
     type Source = T;
     type Target = &'r mut U;
-    unsafe fn unchecked_cast(self) -> Result<&'r mut U, TraitCastError<Self>> {
+    unsafe fn unchecked_cast(self, outlives_class: usize) -> Result<&'r mut U, TraitCastError<Self>> {
         unsafe {
             let (obj_graph_id, table) = <T as TraitMetadataTable<I>>::derived_metadata_table(self);
             let (crate_graph_id, idx) = core::intrinsics::trait_metadata_index::<I, U>();
@@ -947,40 +972,13 @@ impl<'r, T, U, I> TraitCast<I, U> for &'r mut T
             }
     
             let (p, _) = (self as *mut T).to_raw_parts();
-            let Some(Some(vtable)) = table.get(idx) else {
+            let Some(Some(vtable)) = table.get(idx + outlives_class) else {
                 return Err(TraitCastError::UnsatisfiedObligation(self));
             };
             Ok(&mut *core::ptr::from_raw_parts_mut(p, vtable.get()))
         }
     }
 }
-/// As written, this is UB due to the formation of the reference needed to get the table pointer.
-/// If we could embed constants (relocations, rather) into our vtable, this could be UB-free by loading the table
-/// pointer directly from the vtable. For now, this author will ignore this.
-impl<T, U, I> TraitCast<I, U> for *const T
-    where I: Pointee<Metadata = DynMetadata<I>> + TraitMetadataTable<I>,
-          T: MetaSized + TraitMetadataTable<I>,
-          U: MetaSized + Pointee<Metadata = DynMetadata<U>> + TraitMetadataTable<I>,
-{
-    type Source = T;
-    type Target = *const U;
-    unsafe fn unchecked_cast(self) -> Result<*const U, TraitCastError<Self>> {
-        unsafe {
-            let (obj_graph_id, table) = <T as TraitMetadataTable<I>>::derived_metadata_table(self.as_ref_unchecked());
-            let (crate_graph_id, idx) = core::intrinsics::trait_metadata_index::<I, U>();
-            if crate_graph_id as *const u8 != obj_graph_id as *const u8 {
-                return Err(TraitCastError::ForeignTraitGraph(self));
-            }
-            
-            let (p, _) = self.to_raw_parts();
-            let Some(Some(vtable)) = table.get(idx) else {
-                return Err(TraitCastError::UnsatisfiedObligation(self));
-            };
-            Ok(core::ptr::from_raw_parts(p, vtable.get()))
-        }
-    }
-}
-// And so on for Unique, NonNull, and *mut.
 
 /// In `alloc`
 impl<'a, T, U, I, A> TraitCast<I, U> for Box<T, A> 
@@ -991,7 +989,7 @@ impl<'a, T, U, I, A> TraitCast<I, U> for Box<T, A>
 {
     type Source = T;
     type Target = Box<U, A>;
-    unsafe fn unchecked_cast(self) -> Result<Box<U, A>, TraitCastError<Self>> {
+    unsafe fn unchecked_cast(self, outlives_class: usize) -> Result<Box<U, A>, TraitCastError<Self>> {
         unsafe {
             let (obj_graph_id, table) = <T as TraitMetadataTable<I>>::derived_metadata_table(&*self);
             let (this, alloc) = Box::into_raw_with_allocator(self);
@@ -1000,7 +998,7 @@ impl<'a, T, U, I, A> TraitCast<I, U> for Box<T, A>
                 return Err(TraitCastError::ForeignTraitGraph(Box::from_raw_with_allocator(this, alloc)));
             }
             let (p, _) = (this as *const T).to_raw_parts();
-            let Some(Some(vtable)) = table.get(idx) else {
+            let Some(Some(vtable)) = table.get(idx + outlives_class) else {
                 let this = Box::from_raw_with_allocator(this, alloc);
                 return Err(TraitCastError::UnsatisfiedObligation(this));
             };
@@ -1012,12 +1010,74 @@ impl<'a, T, U, I, A> TraitCast<I, U> for Box<T, A>
 // And so on for Rc and Arc
 ```
 
+## Casting macros
+[cast-macros]: #cast-macros
+
+```rust
+/// In `core::trait_cast`.
+/// Attempt to cast `$e` to `$u` in the trait graph of `$i`.
+/// Returns Err($e) if the cast is not possible.
+#[macro_export]
+macro_rules! cast {
+    ($e:expr to $u:ty in $i:ty) => {{
+        let outlives_class: usize = unsafe {
+            core::intrinsics::trait_metadata_lifetime_predicates::<$i, $u>()
+        };
+        
+        unsafe {
+            core::trait_cast::TraitCast::<$i, $u>::cast($e, outlives_class)
+        }
+    }};
+}
+
+/// In `core::trait_cast`.
+/// Attempt to cast `$e` to `$u` in the trait graph of `$i`.
+///
+/// Returns Err(TraitCastError::ForeignTraitGraph) if the cast is not
+/// possible because the object is from a different global crate.
+/// Returns Err(TraitCastError::UnsatisfiedObligation) if the cast is not 
+/// possible due to lifetime erasure requirements or because of unfulfilled 
+/// generic obligations.
+#[macro_export]
+macro_rules! try_cast {
+    ($e:expr to $u:ty in $i:ty) => {{
+        let outlives_class: usize = unsafe {
+            core::intrinsics::trait_metadata_lifetime_predicates::<$i, $u>()
+        };
+        
+        unsafe {
+            core::trait_cast::TraitCast::<$i, $u>::checked_cast($e, outlives_class)
+        }
+    }};
+}
+
+/// In `core::trait_cast`.
+/// Unsafely attempt to cast `$e` to `$u` in the trait graph of `$i`.
+///
+/// All trait impl-obligations are enforced, but lifetime-erasure soundness is
+/// not.
+/// 
+/// Returns Err(TraitCastError::UnsatisfiedObligation) if the cast is not
+/// possible due to unfulfilled generic obligations.
+/// Returns Err(TraitCastError::ForeignTraitGraph) if the cast is not
+/// possible because the object is from a different global crate.
+#[macro_export]
+macro_rules! unchecked_cast {
+    ($e:expr to $u:ty in $i:ty) => {{
+        let outlives_class: usize = unsafe {
+            core::intrinsics::trait_metadata_lifetime_predicates::<$i, $u>()
+        };
+        
+        core::trait_cast::TraitCast::<$i, $u>::cast($e, outlives_class)
+    }};
+}
+```
+
 ## Lifetime Erasure or Downcast-Safety
 
-Downcasting via `TraitCast` must not be able to manufacture references whose lifetimes
-are longer than those of the underlying concrete value. Informally: after you erase 
-some part of a type's lifetime structure, you may not 
-reintroduce a "larger" lifetime when casting down.
+Downcasting via `TraitCast` must not be able to manufacture lifetimes after 
+erasure. Informally: after you erase some part of a type's lifetime structure, 
+you may not reintroduce a "larger" lifetime when casting down.
 
 The unsound pattern this would permit is:
 
@@ -1048,49 +1108,89 @@ To rule this out, we restrict which trait graphs can participate in `TraitCast` 
     ```
    participate in a downcast-safe graph, because `SuperTrait` has no region parameters that could bound the `'a` of `Trait1<'a>`.
 
-2. **Erased type parameters carry contravariant lifetime information**
+2. Erased parameters are existentially fixed (no “re-selection” on downcast)
 
-   When a trait in the graph erases a type parameter or lifetime parameter along a path
-   from `J` to `I`, the compiler conceptually associates that erased parameter with a 
-   hidden "erasure lifetime" that is contravariant:
+   When a trait object is formed by unsizing a concrete type `C<…>` to a root 
+   supertrait `dyn I<…>`, any type/lifetime parameters of `C` that are not 
+   present in the public interface of `I` become existentially hidden behind that
+   object. After this erasure step, the program must not be able to “choose” new
+   instantiations for those hidden parameters by casting down the trait graph.
 
-   - The erasure lifetime represents an upper bound on how long the erased component may be assumed to live.
+   Note: this does not modify unsizing.
 
-   - Downcasts are only permitted when they decrease this bound (i.e., do not treat an erased component as if it lived longer than it actually does).
-
-   In other words, erased parameters are treated as if they carried a hidden region
-   parameter that is contravariant in subtyping, and the trait solver enforces that
-   any `TraitCast` instantiation respects these variance constraints. This prevents
-   `TraitCast` from turning a short-lived instantiation of a type parameter into a
-   long-lived one solely by going "up and then down" the trait graph.
-
-Together, these restrictions ensure that lifetime erasure at the root supertrait is
-monotone: any downcast that type-checks cannot extend the lifetimes of the underlying
-concrete value or of any references reachable through that value.
-
+Together, these restrictions ensure that after unsizing to a root supertrait, any
+successful downcast cannot manufacture longer lifetimes than those that existed in
+the original concrete value or extend the lifetimes of any references reachable
+through that value.
 
 ## `trait_cast_is_lifetime_erasure_safe`
 
 The `trait_cast_is_lifetime_erasure_safe` intrinsic is used to check whether a
-cast from `SourceTrait` to `TargetTrait` is safe due to lifetime erasure. This
-check is separated from the metadata table entries to facilitate lifetime
+cast from `SuperTrait` to `TargetTrait` is safe due to lifetime erasure. 
+`SourceTrait` is not considered for lifetime erasure.
+This check is separated from the metadata table entries to facilitate lifetime
 binders.
 
 The computation proceeds as follows:
-1. Visit and collect all traits and params from `SourceTrait` and `TargetTrait` to `SuperTrait`.
-2. Eliminate the shared prefix from the trait lists. This will compute the gcd 
-   (or lcd, depending on how you look at the trait graph) of the trait lists: 
-   the `SourceTrait` to `SuperTrait` path will become the "upcast" portion, and
-   the `TargetTrait` to `SuperTrait` path will become the "downcast" portion.
+1. TODO finish this section
+
+## `trait_metadata_lifetime_predicates`
+[trait-metadata-lifetime-predicates]: #trait-metadata-lifetime-predicates
+
+The `trait_metadata_lifetime_predicates` intrinsic computes an offset into the
+metadata table based on the lifetime outlives predicates present in the caller's
+parameter environment (`ParamEnv`) at the cast site. This offset, referred to as
+the "outlives-class," is added to the base trait index to select the appropriate
+vtable entry when multiple entries exist for the same nominal trait but with
+different lifetime constraints.
+
+### Computation
+
+The intrinsic operates as follows:
+
+1. **Predicate extraction**: The intrinsic examines the caller's `ParamEnv` and
+   extracts all lifetime outlives predicates (`'a: 'b`) that involve region
+   parameters mentioned in either `SuperTrait` or `Trait`.
+
+2. **Canonicalization**: The extracted predicates are normalized into a
+   canonical representation.
+
+3. **Mapping to offset**: The canonical predicate set is mapped to an integer
+   offset using a globally consistent enumeration scheme. This scheme is
+   established during metadata table construction (see
+   [Metadata Table](#metadata-table)) and assigns a unique offset to each 
+   distinct outlives-class that appears in any implementation of `Trait` within
+   the trait graph rooted at `SuperTrait`.
+
+4. **Return value**: The intrinsic returns the computed offset as a `usize`. If
+   no additional lifetime predicates beyond those inherent in the trait bounds
+   themselves are satisfied, the offset is `0`.
+
+The mapping from predicate sets to offsets must be deterministic and consistent
+across the entire global crate. Multiple call sites with equivalent `ParamEnv`
+lifetime predicates must produce identical offsets.
+
+### Correctness requirements
+
+For soundness, the offset computation must satisfy several invariants:
+
+- **Consistency**: All call sites within the same monomorphization context that
+  have provably equivalent lifetime predicate sets must compute identical
+  offsets.
+
+- **Completeness**: The set of outlives-classes enumerated during global
+  metadata table construction must cover all possible predicate combinations
+  that can arise at cast sites. This is ensured by the global spanning tree
+  algorithm described in [Metadata Table Computation](#computation).
 
 ## Metadata Table
 
 ### Table Entries
 
-Each position in the metadata table corresponds to a concrete instantiation of a
-trait in the graph, expanded into multiple entries via lifetime relationships:
-* For each trait, there is an extra entry for each unique lifetime relationship
-  graph found over all participating type impls.
+Each position in the metadata table corresponds to a pair of 
+* the concrete trait instantiation,
+* and the outlives relationship graph (determined by the present concrete types
+  that query their table and the trait graph).
 
 We need to expand each trait into multiple entries because lifetime
 relationships are impl-selection predicates and can be different for different
@@ -1119,7 +1219,21 @@ impl<'a, 'b> SubTrait<'a, 'b> for S2<'a, 'b>
 // 1. The vtable for `SuperTrait`
 // 2. The vtable for `Trait1<'a, 'b>`
 // 3. The vtable for `Trait1<'a, 'b> where 'b: 'a`
+
+// For a given set of lifetimes, the tables for S1 and S2 would look like this:
+//
+// [ S1 Table ]                            [ S2 Table ]
+// +----------------------------------+    +----------------------------------+
+// | 0: vtable for SuperTrait         |    | 0: vtable for SuperTrait         |
+// +----------------------------------+    +----------------------------------+
+// | 1: None (no base Trait1 impl)    |    | 1: vtable for Trait1<'a, 'b>     |
+// +----------------------------------+    +----------------------------------+
+// | 2: vtable for Trait1 (if 'b: 'a) |    | 2: vtable for Trait1 (implied)   |
+// +----------------------------------+    +----------------------------------+
 ```
+
+This makes the table index encode the trait "ID" as well as an outlives
+relationship graph "sub-index".
 
 ### Computation
 
@@ -1135,13 +1249,14 @@ Modify mono:
 * In each MIR body: collect contained normalized but not erased
   unique (`SuperTrait`, `Trait`) pairs from the `trait_metadata_index` intrinsic. Collect similar
   unique (`SuperTrait`, `Struct`) pairs from the `trait_metadata_table` intrinsic.
-* Any direct call to `trait_metadata_index` / `trait_metadata_table` is treated
-  as a monomorphization request that is always fulfilled in the global crate.
+* Any direct call to `trait_metadata_index` / `trait_metadata_table` / 
+  `trait_metadata_lifetime_predicates` is treated as a monomorphization request,
+  to be fulfilled in the global crate.
   Upstream crates never codegen these intrinsics; they only record them as
   requirements in metadata. Note that `trait_cast_is_lifetime_erasure_safe` is
   not included here.
 * Ensure the linkage and visibility of direct references from ^ is linkable downstream.
-* In the global crate (i.e., binary or user-designated) only: 
+* In the global crate only: 
   - form a cardesian product of (`SuperTrait`, `Struct`, `Trait`) tuples,
   - use this set to compute the metadata tables and indices via a spanning tree algorithm,
   - for each `Struct`, prune the unsatisfiable `Trait`s (involves trait solver),
